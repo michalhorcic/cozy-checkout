@@ -37,7 +37,9 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
 
   @impl true
   def handle_event("create_new", _params, socket) do
-    {:ok, order} = Sales.create_order(%{"guest_id" => socket.assigns.guest.id, "status" => "open"})
+    {:ok, order} =
+      Sales.create_order(%{"guest_id" => socket.assigns.guest.id, "status" => "open"})
+
     {:noreply, push_navigate(socket, to: ~p"/pos/orders/#{order.id}")}
   end
 end

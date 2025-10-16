@@ -4,7 +4,10 @@ defmodule CozyCheckout.Repo.Migrations.CreatePricelists do
   def change do
     create table(:pricelists, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :product_id, references(:products, type: :binary_id, on_delete: :delete_all), null: false
+
+      add :product_id, references(:products, type: :binary_id, on_delete: :delete_all),
+        null: false
+
       add :price, :decimal, precision: 10, scale: 2, null: false
       add :vat_rate, :decimal, precision: 5, scale: 2, null: false
       add :valid_from, :date, null: false

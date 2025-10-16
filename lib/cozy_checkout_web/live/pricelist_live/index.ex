@@ -58,8 +58,7 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
         </div>
         <.link patch={~p"/pricelists/new"}>
           <.button>
-            <.icon name="hero-plus" class="w-5 h-5 mr-2" />
-            New Pricelist
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Pricelist
           </.button>
         </.link>
       </div>
