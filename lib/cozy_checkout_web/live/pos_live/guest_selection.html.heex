@@ -1,0 +1,60 @@
+<Layouts.pos page_title={@page_title}>
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-slate-900 mb-2">Select Guest</h1>
+      <p class="text-lg text-slate-600">Tap a guest to manage their order</p>
+    </div>
+
+    <!-- Guest Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div
+        :for={guest <- @guests}
+        phx-click="select_guest"
+        phx-value-guest-id={guest.id}
+        class={[
+          "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-200",
+          "p-8 cursor-pointer active:scale-95 border-4 border-transparent hover:border-blue-500",
+          "min-h-[180px] flex flex-col justify-between"
+        ]}
+      >
+        <div>
+          <!-- Guest Name -->
+          <h2 class="text-2xl font-bold text-slate-900 mb-3 break-words">
+            {guest.name}
+          </h2>
+
+          <!-- Room Number -->
+          <div :if={guest.room_number} class="flex items-center gap-2 mb-2">
+            <.icon name="hero-home" class="w-5 h-5 text-slate-500" />
+            <span class="text-lg text-slate-600">Room {guest.room_number}</span>
+          </div>
+
+          <!-- Check-in Period -->
+          <div :if={guest.check_in_date} class="flex items-center gap-2 text-sm text-slate-500">
+            <.icon name="hero-calendar" class="w-4 h-4" />
+            <span>
+              {Calendar.strftime(guest.check_in_date, "%b %d")}
+              {if guest.check_out_date, do: " - #{Calendar.strftime(guest.check_out_date, "%b %d")}", else: ""}
+            </span>
+          </div>
+        </div>
+
+        <!-- Open Orders Badge -->
+        <div :if={guest.open_orders_count > 0} class="mt-4 pt-4 border-t border-slate-200">
+          <div class="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold">
+            <.icon name="hero-shopping-cart" class="w-4 h-4" />
+            <span>{guest.open_orders_count} {if guest.open_orders_count == 1, do: "order", else: "orders"}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div :if={@guests == []} class="text-center py-20">
+      <.icon name="hero-user-group" class="w-24 h-24 text-slate-300 mx-auto mb-6" />
+      <h2 class="text-3xl font-bold text-slate-400 mb-2">No Active Guests</h2>
+      <p class="text-xl text-slate-400">Check in guests to start taking orders</p>
+    </div>
+  </div>
+</Layouts.pos>

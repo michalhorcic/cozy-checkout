@@ -8,28 +8,91 @@ defmodule CozyCheckout.Sales do
 
   alias CozyCheckout.Sales.{Order, OrderItem, Payment}
   alias CozyCheckout.Catalog
+  alias CozyCheckout.Guests
 
   ## Orders
+
+  @doc """
+  Returns the list of active guests with their open order counts.
+  """
+  def list_active_guests_with_orders do
+    guests = Guests.list_active_guests()
+
+    Enum.map(guests, fn guest ->
+      open_orders_count =
+        Order
+        |> where([o], o.guest_id == ^guest.id)
+        |> where([o], is_nil(o.deleted_at))
+        |> where([o], o.status in ["open", "partially_paid"])
+        |> Repo.aggregate(:count, :id)
+
+      Map.put(guest, :open_orders_count, open_orders_count)
+    end)
+  end
+
+  @doc """
+  Gets or creates an open order for a guest.
+  If multiple open orders exist, returns nil (requires manual selection).
+  """
+  def get_or_create_guest_order(guest_id) do
+    open_orders =
+      Order
+      |> where([o], o.guest_id == ^guest_id)
+      |> where([o], is_nil(o.deleted_at))
+      |> where([o], o.status in ["open", "partially_paid"])
+      |> preload([:guest, order_items: :product, payments: []])
+      |> order_by([o], desc: o.inserted_at)
+      |> Repo.all()
+      |> Enum.map(fn order ->
+        order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+        %{order | order_items: order_items}
+      end)
+
+    case open_orders do
+      [] ->
+        # Create new order
+        {:ok, order} = create_order(%{"guest_id" => guest_id, "status" => "open"})
+        {:ok, get_order!(order.id)}
+
+      [order] ->
+        {:ok, order}
+
+      orders when length(orders) > 1 ->
+        {:multiple, orders}
+    end
+  end
 
   @doc """
   Returns the list of orders.
   """
   def list_orders do
-    Order
-    |> where([o], is_nil(o.deleted_at))
-    |> preload([:guest, :order_items, :payments])
-    |> order_by([o], desc: o.inserted_at)
-    |> Repo.all()
+    orders =
+      Order
+      |> where([o], is_nil(o.deleted_at))
+      |> preload([:guest, :order_items, :payments])
+      |> order_by([o], desc: o.inserted_at)
+      |> Repo.all()
+
+    # Filter out deleted order items from each order
+    Enum.map(orders, fn order ->
+      order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+      %{order | order_items: order_items}
+    end)
   end
 
   @doc """
   Gets a single order.
   """
   def get_order!(id) do
-    Order
-    |> where([o], is_nil(o.deleted_at))
-    |> preload([:guest, order_items: :product, payments: []])
-    |> Repo.get!(id)
+    order =
+      Order
+      |> where([o], is_nil(o.deleted_at))
+      |> preload([:guest, order_items: :product, payments: []])
+      |> Repo.get!(id)
+
+    # Filter out deleted order items
+    order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+    %{order | order_items: order_items}
   end
 
   @doc """
@@ -81,6 +144,31 @@ defmodule CozyCheckout.Sales do
   ## Order Items
 
   @doc """
+  Returns the most popular products based on order frequency.
+  """
+  def get_popular_products(limit \\ 20) do
+    # Get product IDs with their order counts
+    product_ids_with_counts =
+      OrderItem
+      |> where([oi], is_nil(oi.deleted_at))
+      |> group_by([oi], oi.product_id)
+      |> select([oi], {oi.product_id, count(oi.id)})
+      |> order_by([oi], desc: count(oi.id))
+      |> limit(^limit)
+      |> Repo.all()
+      |> Enum.map(fn {product_id, _count} -> product_id end)
+
+    # Fetch the actual products maintaining the order
+    products = Catalog.list_products()
+
+    product_ids_with_counts
+    |> Enum.map(fn product_id ->
+      Enum.find(products, fn p -> p.id == product_id end)
+    end)
+    |> Enum.reject(&is_nil/1)
+  end
+
+  @doc """
   Creates an order item with price from current pricelist.
   """
   def create_order_item(attrs \\ %{}) do
@@ -91,7 +179,21 @@ defmodule CozyCheckout.Sales do
         pricelist = Catalog.get_active_pricelist_for_product(product_id)
 
         if pricelist do
-          quantity = String.to_integer(Map.get(attrs, "quantity", "1"))
+          quantity =
+            case Map.get(attrs, "quantity") do
+              q when is_binary(q) -> String.to_integer(q)
+              q when is_integer(q) -> q
+              _ -> 1
+            end
+
+          unit_amount =
+            case Map.get(attrs, "unit_amount") do
+              nil -> nil
+              "" -> nil
+              ua when is_binary(ua) -> Decimal.new(ua)
+              ua -> ua
+            end
+
           unit_price = pricelist.price
           vat_rate = pricelist.vat_rate
           subtotal = Decimal.mult(unit_price, quantity)
@@ -100,6 +202,7 @@ defmodule CozyCheckout.Sales do
           |> Map.put("unit_price", unit_price)
           |> Map.put("vat_rate", vat_rate)
           |> Map.put("subtotal", subtotal)
+          |> Map.put("unit_amount", unit_amount)
         else
           attrs
         end

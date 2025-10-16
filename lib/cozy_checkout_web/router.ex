@@ -50,6 +50,15 @@ defmodule CozyCheckoutWeb.Router do
     live "/payments/new", PaymentLive.New
   end
 
+  # Point of Sale (POS) - Touch-friendly interface for bar staff
+  scope "/pos", CozyCheckoutWeb.PosLive do
+    pipe_through :browser
+
+    live "/", GuestSelection
+    live "/guests/:guest_id/orders", OrderSelection
+    live "/orders/:id", OrderManagement
+  end
+
   # Other scopes may use custom stacks.
   # scope "/api", CozyCheckoutWeb do
   #   pipe_through :api

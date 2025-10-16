@@ -19,6 +19,15 @@ defmodule CozyCheckoutWeb.DashboardLive do
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <%!-- Point of Sale --%>
+          <.dashboard_card
+            title="🍹 POS System"
+            description="Touch-friendly bar interface"
+            icon="hero-device-tablet"
+            navigate={~p"/pos"}
+            color="emerald"
+          />
+
           <%!-- Catalog Management --%>
           <.dashboard_card
             title="Categories"

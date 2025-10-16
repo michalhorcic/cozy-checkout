@@ -103,3 +103,52 @@
 [data-phx-session], [data-phx-teleported-src] { display: contents }
 
 /* This file is for your main application CSS */
+
+/* POS-specific styles */
+.swipe-content {
+  position: relative;
+  z-index: 10;
+}
+
+.swipe-delete-bg {
+  z-index: 5;
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    transform: translateY(10%);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.4s ease-out;
+}
+
+/* Touch-friendly scrolling */
+.overflow-y-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent text selection on touch */
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Modal backdrop */
+.fixed.inset-0 {
+  backdrop-filter: blur(2px);
+}
+
+/* Prevent body scroll when modal is open */
+body:has(.fixed.inset-0) {
+  overflow: hidden;
+}

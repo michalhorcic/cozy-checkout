@@ -29,6 +29,102 @@ const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute
 
 // Custom hooks
 const Hooks = {
+  SwipeToDelete: {
+    mounted() {
+      let startX = 0
+      let currentX = 0
+      let isDragging = false
+      const threshold = 100 // pixels to swipe before deleting
+      
+      const content = this.el.querySelector('.swipe-content')
+      const deleteButton = this.el.querySelector('.swipe-delete-bg')
+      
+      if (!content || !deleteButton) return
+      
+      const handleTouchStart = (e) => {
+        startX = e.touches[0].clientX
+        isDragging = true
+        content.style.transition = 'none'
+      }
+      
+      const handleTouchMove = (e) => {
+        if (!isDragging) return
+        
+        currentX = e.touches[0].clientX
+        const diffX = startX - currentX
+        
+        // Only allow left swipe
+        if (diffX > 0) {
+          const translateX = Math.min(diffX, threshold * 1.5)
+          content.style.transform = `translateX(-${translateX}px)`
+        }
+      }
+      
+      const handleTouchEnd = () => {
+        if (!isDragging) return
+        
+        isDragging = false
+        const diffX = startX - currentX
+        
+        content.style.transition = 'transform 0.3s ease'
+        
+        if (diffX > threshold) {
+          // Delete the item
+          const itemId = this.el.dataset.itemId
+          this.pushEvent("delete_item", {item_id: itemId})
+          
+          // Animate out
+          content.style.transform = `translateX(-${this.el.offsetWidth}px)`
+          setTimeout(() => {
+            this.el.style.opacity = '0'
+            this.el.style.transform = 'scaleY(0)'
+            this.el.style.transition = 'all 0.3s ease'
+          }, 300)
+        } else {
+          // Reset position
+          content.style.transform = 'translateX(0)'
+        }
+        
+        startX = 0
+        currentX = 0
+      }
+      
+      this.el.addEventListener('touchstart', handleTouchStart, {passive: true})
+      this.el.addEventListener('touchmove', handleTouchMove, {passive: true})
+      this.el.addEventListener('touchend', handleTouchEnd)
+      
+      this.handleTouchStart = handleTouchStart
+      this.handleTouchMove = handleTouchMove
+      this.handleTouchEnd = handleTouchEnd
+    },
+    
+    destroyed() {
+      if (this.handleTouchStart) {
+        this.el.removeEventListener('touchstart', this.handleTouchStart)
+        this.el.removeEventListener('touchmove', this.handleTouchMove)
+        this.el.removeEventListener('touchend', this.handleTouchEnd)
+      }
+    }
+  },
+
+  UnitAmountSelector: {
+    mounted() {
+      // Add click handlers to quick select buttons
+      const buttons = this.el.querySelectorAll('[data-unit-amount]')
+      const input = this.el.querySelector('#unit-amount-input')
+      
+      if (!input) return
+      
+      buttons.forEach(button => {
+        button.addEventListener('click', (e) => {
+          const amount = e.currentTarget.dataset.unitAmount
+          input.value = amount
+          input.focus()
+        })
+      })
+    }
+  },
+  
   ProductUnitTracker: {
     mounted() {
       this.handleProductChange = () => {

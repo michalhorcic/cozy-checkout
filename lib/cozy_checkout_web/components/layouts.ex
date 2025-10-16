@@ -73,6 +73,27 @@ defmodule CozyCheckoutWeb.Layouts do
   end
 
   @doc """
+  Renders the POS layout for touch-friendly interface.
+
+  This layout is minimal and optimized for tablet/touch devices.
+
+  ## Examples
+
+      <Layouts.pos page_title={@page_title}>
+        <h1>Content</h1>
+      </Layouts.pos>
+
+  """
+  attr :page_title, :string, required: true
+  slot :inner_block, required: true
+
+  def pos(assigns) do
+    ~H"""
+    {render_slot(@inner_block)}
+    """
+  end
+
+  @doc """
   Shows the flash group with standard titles and content.
 
   ## Examples

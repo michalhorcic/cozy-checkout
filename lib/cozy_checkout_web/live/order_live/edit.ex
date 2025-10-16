@@ -271,7 +271,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
 
             <div :if={@order.order_items != []} class="space-y-2">
               <div
-                :for={item <- Enum.reject(@order.order_items, & &1.deleted_at)}
+                :for={item <- @order.order_items}
                 class="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
               >
                 <div class="flex-1">
