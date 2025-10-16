@@ -1,0 +1,303 @@
+defmodule CozyCheckoutWeb.OrderLive.New do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Guests, Catalog}
+  alias CozyCheckout.Sales.Order
+
+  @impl true
+  def mount(_params, _session, socket) do
+    order_number = Sales.generate_order_number()
+
+    socket =
+      socket
+      |> assign(:page_title, "New Order")
+      |> assign(:order, %Order{order_number: order_number})
+      |> assign(:form, to_form(Sales.change_order(%Order{order_number: order_number})))
+      |> assign(:guests, Guests.list_active_guests())
+      |> assign(:products, Catalog.list_products())
+      |> assign(:order_items, [])
+      |> assign(:selected_guest_id, nil)
+      |> assign(:discount_amount, Decimal.new("0"))
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("validate", %{"order" => order_params}, socket) do
+    changeset = Sales.change_order(socket.assigns.order, order_params)
+    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+  end
+
+  def handle_event("add_item", %{"product_id" => product_id, "quantity" => quantity}, socket) do
+    quantity = String.to_integer(quantity)
+
+    product_id =
+      case product_id do
+        "" -> nil
+        id -> id
+      end
+
+    if product_id && quantity > 0 do
+      product = Catalog.get_product!(product_id)
+      pricelist = Catalog.get_active_pricelist_for_product(product_id)
+
+      if pricelist do
+        unit_price = pricelist.price
+        vat_rate = pricelist.vat_rate
+        subtotal = Decimal.mult(unit_price, quantity)
+
+        item = %{
+          id: :erlang.unique_integer([:positive]),
+          product: product,
+          product_id: product_id,
+          quantity: quantity,
+          unit_price: unit_price,
+          vat_rate: vat_rate,
+          subtotal: subtotal
+        }
+
+        order_items = socket.assigns.order_items ++ [item]
+
+        {:noreply, assign(socket, order_items: order_items)}
+      else
+        {:noreply, put_flash(socket, :error, "No active pricelist found for #{product.name}")}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("remove_item", %{"id" => id}, socket) do
+    id = String.to_integer(id)
+    order_items = Enum.reject(socket.assigns.order_items, &(&1.id == id))
+
+    {:noreply, assign(socket, order_items: order_items)}
+  end
+
+  def handle_event("update_discount", %{"discount" => discount}, socket) do
+    discount_amount =
+      case Decimal.parse(discount) do
+        {amount, _} -> amount
+        :error -> Decimal.new("0")
+      end
+
+    {:noreply, assign(socket, discount_amount: discount_amount)}
+  end
+
+  def handle_event("save", %{"order" => order_params}, socket) do
+    if socket.assigns.order_items == [] do
+      {:noreply, put_flash(socket, :error, "Please add at least one item to the order")}
+    else
+      case create_order_with_items(socket, order_params) do
+        {:ok, order} ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Order created successfully")
+           |> push_navigate(to: ~p"/orders/#{order}")}
+
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, "Failed to create order: #{inspect(reason)}")}
+      end
+    end
+  end
+
+  defp create_order_with_items(socket, order_params) do
+    items_total =
+      socket.assigns.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    discount = socket.assigns.discount_amount
+    total = Decimal.sub(items_total, discount)
+    total = if Decimal.lt?(total, 0), do: Decimal.new("0"), else: total
+
+    order_attrs =
+      order_params
+      |> Map.put("total_amount", total)
+      |> Map.put("discount_amount", discount)
+
+    case Sales.create_order(order_attrs) do
+      {:ok, order} ->
+        # Create order items
+        Enum.each(socket.assigns.order_items, fn item ->
+          Sales.create_order_item(%{
+            "order_id" => order.id,
+            "product_id" => item.product_id,
+            "quantity" => item.quantity,
+            "unit_price" => item.unit_price,
+            "vat_rate" => item.vat_rate,
+            "subtotal" => item.subtotal
+          })
+        end)
+
+        {:ok, Sales.get_order!(order.id)}
+
+      error ->
+        error
+    end
+  end
+
+  defp calculate_total(order_items, discount) do
+    items_total =
+      Enum.reduce(order_items, Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    total = Decimal.sub(items_total, discount)
+    if Decimal.lt?(total, 0), do: Decimal.new("0"), else: total
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <div class="mb-8">
+        <.link navigate={~p"/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          ← Back to Orders
+        </.link>
+        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+        <p class="text-gray-600 mt-2">Order #{@order.order_number}</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <%!-- Order Form --%>
+        <div class="lg:col-span-2 space-y-8">
+          <%!-- Guest Selection --%>
+          <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Guest Information</h2>
+            <.form for={@form} id="order-form" phx-change="validate" phx-submit="save">
+              <.input
+                field={@form[:guest_id]}
+                type="select"
+                label="Guest"
+                prompt="Select a guest"
+                options={Enum.map(@guests, &{&1.name <> if(&1.room_number, do: " (Room #{&1.room_number})", else: ""), &1.id})}
+                required
+              />
+              <.input field={@form[:notes]} type="textarea" label="Order Notes" />
+            </.form>
+          </div>
+
+          <%!-- Add Items --%>
+          <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Add Items</h2>
+            <form phx-submit="add_item" class="space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                  <select
+                    name="product_id"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    required
+                  >
+                    <option value="">Select a product</option>
+                    <option :for={product <- @products} value={product.id}>{product.name}</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    name="quantity"
+                    min="1"
+                    value="1"
+                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+              <.button type="submit" class="w-full">
+                <.icon name="hero-plus" class="w-5 h-5 mr-2" />
+                Add Item
+              </.button>
+            </form>
+          </div>
+
+          <%!-- Order Items List --%>
+          <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Items</h2>
+
+            <div :if={@order_items == []} class="text-center py-8 text-gray-500">
+              No items added yet
+            </div>
+
+            <div :if={@order_items != []} class="space-y-2">
+              <div
+                :for={item <- @order_items}
+                class="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+              >
+                <div class="flex-1">
+                  <div class="font-medium text-gray-900">{item.product.name}</div>
+                  <div class="text-sm text-gray-500">
+                    {item.quantity} × ${item.unit_price} (VAT: {item.vat_rate}%)
+                  </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                  <div class="text-lg font-bold text-gray-900">${item.subtotal}</div>
+                  <button
+                    type="button"
+                    phx-click="remove_item"
+                    phx-value-id={item.id}
+                    class="text-red-600 hover:text-red-800"
+                  >
+                    <.icon name="hero-trash" class="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <%!-- Order Summary --%>
+        <div class="lg:col-span-1">
+          <div class="bg-white shadow-lg rounded-lg p-6 sticky top-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Summary</h2>
+
+            <div class="space-y-3">
+              <div class="flex justify-between text-gray-600">
+                <span>Subtotal:</span>
+                <span>
+                  ${Enum.reduce(@order_items, Decimal.new("0"), fn item, acc ->
+                    Decimal.add(acc, item.subtotal)
+                  end)}
+                </span>
+              </div>
+
+              <div class="border-t pt-3">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Discount</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={@discount_amount}
+                  phx-blur="update_discount"
+                  phx-value-discount=""
+                  name="discount"
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div class="border-t pt-3">
+                <div class="flex justify-between text-xl font-bold text-gray-900">
+                  <span>Total:</span>
+                  <span>${calculate_total(@order_items, @discount_amount)}</span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              phx-click="save"
+              class="w-full mt-6 btn btn-primary"
+              disabled={@order_items == []}
+            >
+              Create Order
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    """
+  end
+end
