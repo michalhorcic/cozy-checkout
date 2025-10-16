@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
   def mount(%{"id" => order_id}, _session, socket) do
@@ -23,6 +24,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:show_unit_modal, false)
        |> assign(:selected_product, nil)
        |> assign(:order, nil)
+       |> assign(:grouped_items, [])
        |> assign(:categories, [])
        |> assign(:products, [])
        |> assign(:popular_products, [])
@@ -78,7 +80,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
-  def handle_event("delete_item", %{"item_id" => item_id}, socket) do
+  def handle_event("delete_item", params, socket) do
+    item_id = params["item-id"] || params["item_id"]
     order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
 
     if order_item do
@@ -89,6 +92,26 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     else
       {:noreply, socket}
     end
+  end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+    grouped_items = OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+    grouped_items = OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
   end
 
   @impl true
@@ -127,9 +150,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   defp load_order(socket) do
     order = Sales.get_order!(socket.assigns.order_id)
     page_title = "Order: #{order.guest.name}"
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
     socket
     |> assign(:order, order)
+    |> assign(:grouped_items, grouped_items)
     |> assign(:page_title, page_title)
   end
 
@@ -163,4 +188,16 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   defp parse_default_amounts(_), do: []
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
 end

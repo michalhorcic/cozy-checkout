@@ -125,61 +125,114 @@
         <div class="px-6 py-4 border-b border-slate-200">
           <h2 class="text-xl font-bold text-slate-900">Current Order</h2>
           <p class="text-sm text-slate-600">
-            {Enum.count(Enum.filter(@order.order_items, &is_nil(&1.deleted_at)))} items
+            {Enum.count(@grouped_items)} {if Enum.count(@grouped_items) == 1, do: "item", else: "items"}
           </p>
         </div>
 
         <!-- Cart Items -->
         <div class="flex-1 overflow-y-auto p-6">
-          <%= if Enum.filter(@order.order_items, &is_nil(&1.deleted_at)) == [] do %>
+          <%= if @grouped_items == [] do %>
             <div class="text-center py-12">
               <.icon name="hero-shopping-cart" class="w-16 h-16 text-slate-300 mx-auto mb-4" />
               <p class="text-lg text-slate-400">No items yet</p>
               <p class="text-sm text-slate-400">Tap products to add</p>
             </div>
           <% else %>
-            <div class="space-y-3" id="cart-items" phx-update="stream">
-              <div
-                :for={item <- Enum.filter(@order.order_items, &is_nil(&1.deleted_at))}
-                id={"cart-item-#{item.id}"}
-                phx-hook="SwipeToDelete"
-                data-item-id={item.id}
-                class="bg-slate-50 rounded-xl p-4 relative overflow-hidden touch-pan-y"
-              >
-                <!-- Swipe Background -->
-                <div class="swipe-delete-bg absolute inset-0 bg-red-500 flex items-center justify-end px-6">
-                  <.icon name="hero-trash" class="w-6 h-6 text-white" />
-                </div>
-
-                <!-- Item Content -->
-                <div class="swipe-content relative bg-slate-50 rounded-xl">
+            <div class="space-y-3">
+              <div :for={group <- @grouped_items} class="bg-slate-50 rounded-xl overflow-hidden">
+                <!-- Grouped Item Display -->
+                <div
+                  id={"cart-group-#{Enum.join(group.item_ids, "-")}"}
+                  class="p-4"
+                >
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <h3 class="font-semibold text-slate-900 mb-1">
-                        {item.product.name}
+                        {group.product.name}
                       </h3>
                       <p class="text-sm text-slate-600">
-                        <%= if item.unit_amount do %>
-                          {Decimal.round(item.unit_amount, 2)}{item.product.unit || ""} × {item.quantity}
+                        <%= if group.unit_amount do %>
+                          {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(group.total_quantity, 2)}
                         <% else %>
-                          Qty: {item.quantity}
+                          Qty: {Decimal.round(group.total_quantity, 2)}
+                        <% end %>
+                        <%= if group.grouped? do %>
+                          <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            {length(group.items)} items
+                          </span>
                         <% end %>
                       </p>
                     </div>
                     <div class="text-right">
                       <p class="font-bold text-slate-900">
-                        ${Decimal.round(item.subtotal, 2)}
+                        ${Decimal.round(group.total_price, 2)}
                       </p>
-                      <button
-                        phx-click="delete_item"
-                        phx-value-item-id={item.id}
-                        class="mt-1 text-xs text-red-600 hover:text-red-800 active:scale-95"
-                      >
-                        Remove
-                      </button>
                     </div>
                   </div>
+
+                  <!-- Expand/Collapse Button for Grouped Items -->
+                  <%= if group.grouped? do %>
+                    <button
+                      phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
+                      phx-value-product-id={group.product.id}
+                      phx-value-unit-amount={group.unit_amount || ""}
+                      class="mt-3 w-full text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center gap-1"
+                    >
+                      <%= if group.expanded? do %>
+                        <.icon name="hero-chevron-up" class="w-4 h-4" />
+                        Hide individual items
+                      <% else %>
+                        <.icon name="hero-chevron-down" class="w-4 h-4" />
+                        Show {length(group.items)} individual items
+                      <% end %>
+                    </button>
+                  <% end %>
                 </div>
+
+                <!-- Individual Items (when expanded) -->
+                <%= if group.expanded? do %>
+                  <div class="border-t border-slate-200 bg-white">
+                    <div
+                      :for={item <- group.items}
+                      id={"cart-item-#{item.id}"}
+                      phx-hook="SwipeToDelete"
+                      data-item-id={item.id}
+                      class="relative overflow-hidden touch-pan-y"
+                    >
+                      <!-- Swipe Background -->
+                      <div class="swipe-delete-bg absolute inset-0 bg-red-500 flex items-center justify-end px-6">
+                        <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                      </div>
+
+                      <!-- Item Content -->
+                      <div class="swipe-content relative bg-white p-3 border-b border-slate-100 last:border-b-0">
+                        <div class="flex justify-between items-start text-sm">
+                          <div class="flex-1">
+                            <p class="text-slate-600">
+                              <%= if item.unit_amount do %>
+                                {Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity}
+                              <% else %>
+                                Qty: {item.quantity}
+                              <% end %>
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-3">
+                            <p class="text-slate-700 font-medium">
+                              ${Decimal.round(item.subtotal, 2)}
+                            </p>
+                            <button
+                              phx-click="delete_item"
+                              phx-value-item-id={item.id}
+                              class="text-red-600 hover:text-red-800 active:scale-95"
+                            >
+                              <.icon name="hero-x-mark" class="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
               </div>
             </div>
           <% end %>

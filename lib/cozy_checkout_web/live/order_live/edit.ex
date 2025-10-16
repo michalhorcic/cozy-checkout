@@ -2,16 +2,19 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     order = Sales.get_order!(id)
     products = Catalog.list_products()
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
     socket =
       socket
       |> assign(:page_title, "Edit Order")
       |> assign(:order, order)
+      |> assign(:grouped_items, grouped_items)
       |> assign(:products, products)
       |> assign(:form, to_form(Sales.change_order(order)))
 
@@ -72,16 +75,18 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
             # Recalculate order total
             {:ok, updated_order} = Sales.recalculate_order_total(socket.assigns.order)
 
-            # Reload order with items
-            order = Sales.get_order!(updated_order.id)
+          # Reload order with items
+          order = Sales.get_order!(updated_order.id)
+          grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
-            {:noreply,
-             socket
-             |> assign(:order, order)
-             |> put_flash(:info, "Item added successfully")}
+          {:noreply,
+           socket
+           |> assign(:order, order)
+           |> assign(:grouped_items, grouped_items)
+           |> put_flash(:info, "Item added successfully")}
 
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to add item")}
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Failed to add item")}
         end
       else
         {:noreply, put_flash(socket, :error, "No active pricelist found for #{product.name}")}
@@ -103,10 +108,12 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
 
           # Reload order with items
           order = Sales.get_order!(updated_order.id)
+          grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
           {:noreply,
            socket
            |> assign(:order, order)
+           |> assign(:grouped_items, grouped_items)
            |> put_flash(:info, "Item removed successfully")}
 
         {:error, _} ->
@@ -139,8 +146,12 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
 
         # Reload order
         order = Sales.get_order!(updated_order.id)
+        grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
-        {:noreply, assign(socket, :order, order)}
+        {:noreply,
+         socket
+         |> assign(:order, order)
+         |> assign(:grouped_items, grouped_items)}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to update discount")}
@@ -164,6 +175,68 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
         {:noreply, assign(socket, form: to_form(changeset))}
     end
   end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+    grouped_items = OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+    grouped_items = OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("remove_group", params, socket) do
+    item_ids_json = params["item-ids"] || params["item_ids"]
+
+    case Jason.decode(item_ids_json) do
+      {:ok, item_ids} ->
+        # Delete all items in the group
+        Enum.each(item_ids, fn item_id ->
+          order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
+          if order_item, do: Sales.delete_order_item(order_item)
+        end)
+
+        # Recalculate order total
+        {:ok, updated_order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        # Reload order
+        order = Sales.get_order!(updated_order.id)
+        grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+        {:noreply,
+         socket
+         |> assign(:order, order)
+         |> assign(:grouped_items, grouped_items)
+         |> put_flash(:info, "Items removed successfully")}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
 
   @impl true
   def render(assigns) do
@@ -265,40 +338,103 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
           <div class="bg-white shadow-lg rounded-lg p-6">
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Items</h2>
 
-            <div :if={@order.order_items == []} class="text-center py-8 text-gray-500">
+            <div :if={@grouped_items == []} class="text-center py-8 text-gray-500">
               No items in this order yet
             </div>
 
-            <div :if={@order.order_items != []} class="space-y-2">
-              <div
-                :for={item <- @order.order_items}
-                class="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div class="flex-1">
-                  <div class="font-medium text-gray-900">{item.product.name}</div>
-                  <div class="text-sm text-gray-500">
-                    <%= if item.unit_amount do %>
-                      {item.quantity} × {item.unit_amount}{item.product.unit} = {Decimal.mult(item.quantity, item.unit_amount)}{item.product.unit}
-                      <span class="text-gray-400">|</span>
-                    <% else %>
-                      Quantity: {item.quantity}
-                      <span class="text-gray-400">|</span>
-                    <% end %>
-                    ${item.unit_price} (VAT: {item.vat_rate}%)
+            <div :if={@grouped_items != []} class="space-y-2">
+              <div :for={group <- @grouped_items} class="border border-gray-200 rounded-lg overflow-hidden">
+                <!-- Grouped Item Display -->
+                <div class="p-4 bg-gray-50">
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                      <div class="font-medium text-gray-900">{group.product.name}</div>
+                      <div class="text-sm text-gray-500">
+                        <%= if group.unit_amount do %>
+                          {Decimal.round(group.total_quantity, 2)} × {group.unit_amount}{group.product.unit} = {Decimal.mult(group.total_quantity, group.unit_amount)}{group.product.unit}
+                          <span class="text-gray-400">|</span>
+                        <% else %>
+                          Total Quantity: {Decimal.round(group.total_quantity, 2)}
+                          <span class="text-gray-400">|</span>
+                        <% end %>
+                        ${group.price_per_unit} (VAT: {group.vat_rate}%)
+                        <%= if group.grouped? do %>
+                          <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            {length(group.items)} items
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                      <div class="text-lg font-bold text-gray-900">${Decimal.round(group.total_price, 2)}</div>
+                      <button
+                        type="button"
+                        phx-click="remove_group"
+                        phx-value-item-ids={Jason.encode!(group.item_ids)}
+                        data-confirm={
+                          if group.grouped?,
+                            do: "Are you sure you want to remove all #{length(group.items)} items in this group?",
+                            else: "Are you sure you want to remove this item?"
+                        }
+                        class="text-red-600 hover:text-red-800"
+                      >
+                        <.icon name="hero-trash" class="w-5 h-5" />
+                      </button>
+                    </div>
                   </div>
+
+                  <!-- Expand/Collapse Button for Grouped Items -->
+                  <%= if group.grouped? do %>
+                    <button
+                      phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
+                      phx-value-product-id={group.product.id}
+                      phx-value-unit-amount={group.unit_amount || ""}
+                      class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                    >
+                      <%= if group.expanded? do %>
+                        <.icon name="hero-chevron-up" class="w-4 h-4" />
+                        Hide individual items
+                      <% else %>
+                        <.icon name="hero-chevron-down" class="w-4 h-4" />
+                        Show {length(group.items)} individual items
+                      <% end %>
+                    </button>
+                  <% end %>
                 </div>
-                <div class="flex items-center space-x-4">
-                  <div class="text-lg font-bold text-gray-900">${item.subtotal}</div>
-                  <button
-                    type="button"
-                    phx-click="remove_item"
-                    phx-value-id={item.id}
-                    data-confirm="Are you sure you want to remove this item?"
-                    class="text-red-600 hover:text-red-800"
-                  >
-                    <.icon name="hero-trash" class="w-5 h-5" />
-                  </button>
-                </div>
+
+                <!-- Individual Items (when expanded) -->
+                <%= if group.expanded? do %>
+                  <div class="border-t border-gray-200">
+                    <div
+                      :for={item <- group.items}
+                      class="p-3 bg-white border-b border-gray-100 last:border-b-0"
+                    >
+                      <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600">
+                          <%= if item.unit_amount do %>
+                            {item.quantity} × {item.unit_amount}{item.product.unit}
+                          <% else %>
+                            Qty: {item.quantity}
+                          <% end %>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                          <div class="text-sm text-gray-900 font-medium">
+                            ${Decimal.round(item.subtotal, 2)}
+                          </div>
+                          <button
+                            type="button"
+                            phx-click="remove_item"
+                            phx-value-id={item.id}
+                            data-confirm="Are you sure you want to remove this item?"
+                            class="text-red-600 hover:text-red-800"
+                          >
+                            <.icon name="hero-x-mark" class="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
               </div>
             </div>
           </div>

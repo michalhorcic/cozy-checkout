@@ -69,9 +69,17 @@ const Hooks = {
         content.style.transition = 'transform 0.3s ease'
         
         if (diffX > threshold) {
-          // Delete the item
+          // Delete the item or group
           const itemId = this.el.dataset.itemId
-          this.pushEvent("delete_item", {item_id: itemId})
+          const itemIds = this.el.dataset.itemIds
+          
+          if (itemIds) {
+            // It's a group - delete all items
+            this.pushEvent("delete_group", {item_ids: itemIds})
+          } else if (itemId) {
+            // It's a single item
+            this.pushEvent("delete_item", {item_id: itemId})
+          }
           
           // Animate out
           content.style.transform = `translateX(-${this.el.offsetWidth}px)`

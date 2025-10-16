@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.Sales
+  alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
   def mount(_params, _session, socket) do
@@ -12,6 +13,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
   def handle_params(%{"id" => id}, _, socket) do
     order = Sales.get_order!(id)
     payments = Sales.list_payments_for_order(id)
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
     total_paid =
       Enum.reduce(payments, Decimal.new("0"), fn payment, acc ->
@@ -22,10 +24,43 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
      socket
      |> assign(:page_title, "Order Details")
      |> assign(:order, order)
+     |> assign(:grouped_items, grouped_items)
      |> assign(:payments, payments)
      |> assign(:total_paid, total_paid)
      |> assign(:amount_due, Decimal.sub(order.total_amount, total_paid))}
   end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+    grouped_items = OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+    grouped_items = OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
 
   @impl true
   def render(assigns) do
@@ -90,21 +125,72 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
           <div class="bg-white shadow-lg rounded-lg p-6">
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Items</h2>
             <div class="space-y-3">
-              <div :for={item <- @order.order_items} class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div class="flex-1">
-                  <div class="font-medium text-gray-900">{item.product.name}</div>
-                  <div class="text-sm text-gray-500">
-                    <%= if item.unit_amount do %>
-                      {item.quantity} × {item.unit_amount}{item.product.unit} = {Decimal.mult(item.quantity, item.unit_amount)}{item.product.unit}
-                      <span class="text-gray-400">|</span>
-                    <% else %>
-                      Quantity: {item.quantity}
-                      <span class="text-gray-400">|</span>
-                    <% end %>
-                    ${item.unit_price} (VAT: {item.vat_rate}%)
+              <div :for={group <- @grouped_items} class="border border-gray-200 rounded-lg overflow-hidden">
+                <!-- Grouped Item Display -->
+                <div class="p-4 bg-gray-50">
+                  <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                      <div class="font-medium text-gray-900">{group.product.name}</div>
+                      <div class="text-sm text-gray-500">
+                        <%= if group.unit_amount do %>
+                          {Decimal.round(group.total_quantity, 2)} × {group.unit_amount}{group.product.unit} = {Decimal.mult(group.total_quantity, group.unit_amount)}{group.product.unit}
+                          <span class="text-gray-400">|</span>
+                        <% else %>
+                          Total Quantity: {Decimal.round(group.total_quantity, 2)}
+                          <span class="text-gray-400">|</span>
+                        <% end %>
+                        ${group.price_per_unit} (VAT: {group.vat_rate}%)
+                        <%= if group.grouped? do %>
+                          <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            {length(group.items)} items
+                          </span>
+                        <% end %>
+                      </div>
+                    </div>
+                    <div class="text-lg font-bold text-gray-900">${Decimal.round(group.total_price, 2)}</div>
                   </div>
+
+                  <!-- Expand/Collapse Button for Grouped Items -->
+                  <%= if group.grouped? do %>
+                    <button
+                      phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
+                      phx-value-product-id={group.product.id}
+                      phx-value-unit-amount={group.unit_amount || ""}
+                      class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                    >
+                      <%= if group.expanded? do %>
+                        <.icon name="hero-chevron-up" class="w-4 h-4" />
+                        Hide individual items
+                      <% else %>
+                        <.icon name="hero-chevron-down" class="w-4 h-4" />
+                        Show {length(group.items)} individual items
+                      <% end %>
+                    </button>
+                  <% end %>
                 </div>
-                <div class="text-lg font-bold text-gray-900">${item.subtotal}</div>
+
+                <!-- Individual Items (when expanded) -->
+                <%= if group.expanded? do %>
+                  <div class="border-t border-gray-200">
+                    <div
+                      :for={item <- group.items}
+                      class="p-3 bg-white border-b border-gray-100 last:border-b-0"
+                    >
+                      <div class="flex items-center justify-between text-sm">
+                        <div class="text-gray-600">
+                          <%= if item.unit_amount do %>
+                            {item.quantity} × {item.unit_amount}{item.product.unit}
+                          <% else %>
+                            Qty: {item.quantity}
+                          <% end %>
+                        </div>
+                        <div class="text-gray-900 font-medium">
+                          ${Decimal.round(item.subtotal, 2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
               </div>
             </div>
           </div>
