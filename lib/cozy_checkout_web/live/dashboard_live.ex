@@ -9,31 +9,31 @@ defmodule CozyCheckoutWeb.DashboardLive do
     ~H"""
     <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-          <h1 class="text-5xl font-bold text-gray-900 mb-4">
-            Cozy Checkout
-          </h1>
-          <p class="text-xl text-gray-600">
-            Mountain Cottage Point of Sale System
-          </p>
+        <div class="flex justify-between items-center mb-12">
+          <div>
+            <h1 class="text-5xl font-bold text-gray-900 mb-4">
+              Admin Dashboard
+            </h1>
+            <p class="text-xl text-gray-600">
+              Manage your mountain cottage system
+            </p>
+          </div>
+          <.link
+            navigate={~p"/"}
+            class="px-6 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200 flex items-center gap-2"
+          >
+            <.icon name="hero-arrow-left" class="w-5 h-5" />
+            Back to Menu
+          </.link>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <%!-- Point of Sale --%>
-          <.dashboard_card
-            title="🍹 POS System"
-            description="Touch-friendly bar interface"
-            icon="hero-device-tablet"
-            navigate={~p"/pos"}
-            color="emerald"
-          />
-
           <%!-- Catalog Management --%>
           <.dashboard_card
             title="Categories"
             description="Manage product categories"
             icon="hero-tag"
-            navigate={~p"/categories"}
+            navigate={~p"/admin/categories"}
             color="blue"
           />
 
@@ -41,7 +41,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Products"
             description="Manage your bar products"
             icon="hero-cube"
-            navigate={~p"/products"}
+            navigate={~p"/admin/products"}
             color="indigo"
           />
 
@@ -49,7 +49,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Pricelists"
             description="Manage product pricing & VAT"
             icon="hero-currency-dollar"
-            navigate={~p"/pricelists"}
+            navigate={~p"/admin/pricelists"}
             color="green"
           />
 
@@ -58,7 +58,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Guests"
             description="Manage guest information"
             icon="hero-user-group"
-            navigate={~p"/guests"}
+            navigate={~p"/admin/guests"}
             color="purple"
           />
 
@@ -67,7 +67,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Orders"
             description="Create and manage orders"
             icon="hero-shopping-cart"
-            navigate={~p"/orders"}
+            navigate={~p"/admin/orders"}
             color="orange"
           />
 
@@ -75,7 +75,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Payments"
             description="Record and track payments"
             icon="hero-banknotes"
-            navigate={~p"/payments"}
+            navigate={~p"/admin/payments"}
             color="teal"
           />
 
@@ -84,7 +84,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="POHODA Export"
             description="Export to accounting software"
             icon="hero-arrow-down-tray"
-            navigate={~p"/pohoda-export"}
+            navigate={~p"/admin/pohoda-export"}
             color="purple"
           />
         </div>

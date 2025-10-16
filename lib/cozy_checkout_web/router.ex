@@ -17,6 +17,13 @@ defmodule CozyCheckoutWeb.Router do
   scope "/", CozyCheckoutWeb do
     pipe_through :browser
 
+    live "/", MainMenuLive
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
     live "/", DashboardLive
 
     # Categories
