@@ -57,7 +57,7 @@ defmodule CozyCheckout.Sales do
   """
   def delete_order(%Order{} = order) do
     order
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
   end
 
@@ -117,7 +117,7 @@ defmodule CozyCheckout.Sales do
   """
   def delete_order_item(%OrderItem{} = order_item) do
     order_item
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
   end
 
@@ -198,7 +198,7 @@ defmodule CozyCheckout.Sales do
 
   defp do_delete_payment(payment) do
     payment
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
   end
 

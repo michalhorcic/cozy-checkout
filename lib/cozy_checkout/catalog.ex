@@ -52,7 +52,7 @@ defmodule CozyCheckout.Catalog do
   """
   def delete_category(%Category{} = category) do
     category
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
   end
 
@@ -109,7 +109,7 @@ defmodule CozyCheckout.Catalog do
   """
   def delete_product(%Product{} = product) do
     product
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
   end
 
@@ -181,7 +181,7 @@ defmodule CozyCheckout.Catalog do
   """
   def delete_pricelist(%Pricelist{} = pricelist) do
     pricelist
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
   end
 

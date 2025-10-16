@@ -65,7 +65,7 @@ defmodule CozyCheckout.Guests do
   """
   def delete_guest(%Guest{} = guest) do
     guest
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
     |> Repo.update()
   end
 
