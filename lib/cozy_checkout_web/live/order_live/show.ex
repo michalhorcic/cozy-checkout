@@ -42,18 +42,26 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
               {Calendar.strftime(@order.inserted_at, "%B %d, %Y at %H:%M")}
             </p>
           </div>
-          <span class={[
-            "px-4 py-2 inline-flex text-lg font-semibold rounded-full",
-            case @order.status do
-              "paid" -> "bg-green-100 text-green-800"
-              "partially_paid" -> "bg-yellow-100 text-yellow-800"
-              "open" -> "bg-blue-100 text-blue-800"
-              "cancelled" -> "bg-red-100 text-red-800"
-              _ -> "bg-gray-100 text-gray-800"
-            end
-          ]}>
-            {String.replace(@order.status, "_", " ") |> String.capitalize()}
-          </span>
+          <div class="flex items-center space-x-4">
+            <.link navigate={~p"/orders/#{@order}/edit"}>
+              <.button>
+                <.icon name="hero-pencil" class="w-5 h-5 mr-2" />
+                Edit Order
+              </.button>
+            </.link>
+            <span class={[
+              "px-4 py-2 inline-flex text-lg font-semibold rounded-full",
+              case @order.status do
+                "paid" -> "bg-green-100 text-green-800"
+                "partially_paid" -> "bg-yellow-100 text-yellow-800"
+                "open" -> "bg-blue-100 text-blue-800"
+                "cancelled" -> "bg-red-100 text-red-800"
+                _ -> "bg-gray-100 text-gray-800"
+              end
+            ]}>
+              {String.replace(@order.status, "_", " ") |> String.capitalize()}
+            </span>
+          </div>
         </div>
       </div>
 

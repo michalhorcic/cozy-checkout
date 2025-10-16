@@ -1,23 +1,19 @@
-defmodule CozyCheckoutWeb.OrderLive.New do
+defmodule CozyCheckoutWeb.OrderLive.Edit do
   use CozyCheckoutWeb, :live_view
 
-  alias CozyCheckout.{Sales, Guests, Catalog}
-  alias CozyCheckout.Sales.Order
+  alias CozyCheckout.{Sales, Catalog}
 
   @impl true
-  def mount(_params, _session, socket) do
-    order_number = Sales.generate_order_number()
+  def mount(%{"id" => id}, _session, socket) do
+    order = Sales.get_order!(id)
+    products = Catalog.list_products()
 
     socket =
       socket
-      |> assign(:page_title, "New Order")
-      |> assign(:order, %Order{order_number: order_number})
-      |> assign(:form, to_form(Sales.change_order(%Order{order_number: order_number})))
-      |> assign(:guests, Guests.list_active_guests())
-      |> assign(:products, Catalog.list_products())
-      |> assign(:order_items, [])
-      |> assign(:selected_guest_id, nil)
-      |> assign(:discount_amount, Decimal.new("0"))
+      |> assign(:page_title, "Edit Order")
+      |> assign(:order, order)
+      |> assign(:products, products)
+      |> assign(:form, to_form(Sales.change_order(order)))
 
     {:ok, socket}
   end
@@ -42,23 +38,32 @@ defmodule CozyCheckoutWeb.OrderLive.New do
       pricelist = Catalog.get_active_pricelist_for_product(product_id)
 
       if pricelist do
-        unit_price = pricelist.price
-        vat_rate = pricelist.vat_rate
-        subtotal = Decimal.mult(unit_price, quantity)
-
-        item = %{
-          id: :erlang.unique_integer([:positive]),
-          product: product,
-          product_id: product_id,
-          quantity: quantity,
-          unit_price: unit_price,
-          vat_rate: vat_rate,
-          subtotal: subtotal
+        # Create the order item directly
+        attrs = %{
+          "order_id" => socket.assigns.order.id,
+          "product_id" => product_id,
+          "quantity" => Integer.to_string(quantity),
+          "unit_price" => pricelist.price,
+          "vat_rate" => pricelist.vat_rate,
+          "subtotal" => Decimal.mult(pricelist.price, quantity)
         }
 
-        order_items = socket.assigns.order_items ++ [item]
+        case Sales.create_order_item(attrs) do
+          {:ok, _item} ->
+            # Recalculate order total
+            {:ok, updated_order} = Sales.recalculate_order_total(socket.assigns.order)
 
-        {:noreply, assign(socket, order_items: order_items)}
+            # Reload order with items
+            order = Sales.get_order!(updated_order.id)
+
+            {:noreply,
+             socket
+             |> assign(:order, order)
+             |> put_flash(:info, "Item added successfully")}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to add item")}
+        end
       else
         {:noreply, put_flash(socket, :error, "No active pricelist found for #{product.name}")}
       end
@@ -68,10 +73,29 @@ defmodule CozyCheckoutWeb.OrderLive.New do
   end
 
   def handle_event("remove_item", %{"id" => id}, socket) do
-    id = String.to_integer(id)
-    order_items = Enum.reject(socket.assigns.order_items, &(&1.id == id))
+    # Find the order item
+    order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == id))
 
-    {:noreply, assign(socket, order_items: order_items)}
+    if order_item do
+      case Sales.delete_order_item(order_item) do
+        {:ok, _} ->
+          # Recalculate order total
+          {:ok, updated_order} = Sales.recalculate_order_total(socket.assigns.order)
+
+          # Reload order with items
+          order = Sales.get_order!(updated_order.id)
+
+          {:noreply,
+           socket
+           |> assign(:order, order)
+           |> put_flash(:info, "Item removed successfully")}
+
+        {:error, _} ->
+          {:noreply, put_flash(socket, :error, "Failed to remove item")}
+      end
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("update_discount", %{"value" => discount}, socket) do
@@ -85,92 +109,41 @@ defmodule CozyCheckoutWeb.OrderLive.New do
           end
       end
 
-    {:noreply, assign(socket, discount_amount: discount_amount)}
+    order_params = %{
+      "discount_amount" => discount_amount
+    }
+
+    case Sales.update_order(socket.assigns.order, order_params) do
+      {:ok, _order} ->
+        # Recalculate order total
+        {:ok, updated_order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        # Reload order
+        order = Sales.get_order!(updated_order.id)
+
+        {:noreply, assign(socket, :order, order)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update discount")}
+    end
   end
 
   def handle_event("save", _params, socket) do
     # Get the order params from the form
     order_params = %{
-      "guest_id" => Ecto.Changeset.get_field(socket.assigns.form.source, :guest_id),
-      "notes" => Ecto.Changeset.get_field(socket.assigns.form.source, :notes),
-      "order_number" => socket.assigns.order.order_number
+      "notes" => Ecto.Changeset.get_field(socket.assigns.form.source, :notes)
     }
 
-    if socket.assigns.order_items == [] do
-      {:noreply, put_flash(socket, :error, "Please add at least one item to the order")}
-    else
-      if is_nil(order_params["guest_id"]) do
-        {:noreply, put_flash(socket, :error, "Please select a guest")}
-      else
-        case create_order_with_items(socket, order_params) do
-          {:ok, order} ->
-            {:noreply,
-             socket
-             |> put_flash(:info, "Order created successfully")
-             |> push_navigate(to: ~p"/orders/#{order}")}
-
-          {:error, reason} ->
-            {:noreply, put_flash(socket, :error, "Failed to create order: #{inspect(reason)}")}
-        end
-      end
-    end
-  end
-
-  defp create_order_with_items(socket, order_params) do
-    items_total =
-      socket.assigns.order_items
-      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
-        Decimal.add(acc, item.subtotal)
-      end)
-
-    discount = socket.assigns.discount_amount
-    total = Decimal.sub(items_total, discount)
-    total = if Decimal.lt?(total, 0), do: Decimal.new("0"), else: total
-
-    order_attrs =
-      order_params
-      |> Map.put("total_amount", total)
-      |> Map.put("discount_amount", discount)
-
-    case Sales.create_order(order_attrs) do
+    case Sales.update_order(socket.assigns.order, order_params) do
       {:ok, order} ->
-        # Create order items - pass values in the correct format
-        results =
-          Enum.map(socket.assigns.order_items, fn item ->
-            Sales.create_order_item(%{
-              "order_id" => order.id,
-              "product_id" => item.product_id,
-              "quantity" => Integer.to_string(item.quantity),
-              "unit_price" => item.unit_price,
-              "vat_rate" => item.vat_rate,
-              "subtotal" => item.subtotal
-            })
-          end)
+        {:noreply,
+         socket
+         |> put_flash(:info, "Order updated successfully")
+         |> push_navigate(to: ~p"/orders/#{order}")}
 
-        # Check if any item creation failed
-        case Enum.find(results, fn result -> match?({:error, _}, result) end) do
-          nil ->
-            {:ok, Sales.get_order!(order.id)}
-
-          {:error, changeset} ->
-            # Rollback by deleting the order
-            Sales.delete_order(order)
-            {:error, changeset}
-        end
-
-      error ->
-        error
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, form: to_form(changeset))}
     end
-  end
-
-  defp calculate_total(order_items, discount) do
-    items_total =
-      Enum.reduce(order_items, Decimal.new("0"), fn item, acc ->
-        Decimal.add(acc, item.subtotal)
-      end)
-
-    total = Decimal.sub(items_total, discount)
-    if Decimal.lt?(total, 0), do: Decimal.new("0"), else: total
   end
 
   @impl true
@@ -178,8 +151,8 @@ defmodule CozyCheckoutWeb.OrderLive.New do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
-          ← Back to Orders
+        <.link navigate={~p"/orders/#{@order}"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          ← Back to Order
         </.link>
         <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
         <p class="text-gray-600 mt-2">Order #{@order.order_number}</p>
@@ -188,19 +161,26 @@ defmodule CozyCheckoutWeb.OrderLive.New do
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <%!-- Order Form --%>
         <div class="lg:col-span-2 space-y-8">
-          <%!-- Guest Selection --%>
+          <%!-- Guest Information --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Guest Information</h2>
+            <div class="space-y-2">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Name:</span>
+                <span class="font-medium">{@order.guest.name}</span>
+              </div>
+              <div :if={@order.guest.room_number} class="flex justify-between">
+                <span class="text-gray-600">Room:</span>
+                <span class="font-medium">{@order.guest.room_number}</span>
+              </div>
+            </div>
+          </div>
+
+          <%!-- Order Notes --%>
+          <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Notes</h2>
             <.form for={@form} id="order-form" phx-change="validate">
-              <.input
-                field={@form[:guest_id]}
-                type="select"
-                label="Guest"
-                prompt="Select a guest"
-                options={Enum.map(@guests, &{&1.name <> if(&1.room_number, do: " (Room #{&1.room_number})", else: ""), &1.id})}
-                required
-              />
-              <.input field={@form[:notes]} type="textarea" label="Order Notes" />
+              <.input field={@form[:notes]} type="textarea" label="Notes" />
             </.form>
           </div>
 
@@ -243,13 +223,13 @@ defmodule CozyCheckoutWeb.OrderLive.New do
           <div class="bg-white shadow-lg rounded-lg p-6">
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Items</h2>
 
-            <div :if={@order_items == []} class="text-center py-8 text-gray-500">
-              No items added yet
+            <div :if={@order.order_items == []} class="text-center py-8 text-gray-500">
+              No items in this order yet
             </div>
 
-            <div :if={@order_items != []} class="space-y-2">
+            <div :if={@order.order_items != []} class="space-y-2">
               <div
-                :for={item <- @order_items}
+                :for={item <- Enum.reject(@order.order_items, & &1.deleted_at)}
                 class="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
               >
                 <div class="flex-1">
@@ -264,6 +244,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
                     type="button"
                     phx-click="remove_item"
                     phx-value-id={item.id}
+                    data-confirm="Are you sure you want to remove this item?"
                     class="text-red-600 hover:text-red-800"
                   >
                     <.icon name="hero-trash" class="w-5 h-5" />
@@ -283,9 +264,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
               <div class="flex justify-between text-gray-600">
                 <span>Subtotal:</span>
                 <span>
-                  ${Enum.reduce(@order_items, Decimal.new("0"), fn item, acc ->
-                    Decimal.add(acc, item.subtotal)
-                  end)}
+                  ${Decimal.add(@order.total_amount, @order.discount_amount || Decimal.new("0"))}
                 </span>
               </div>
 
@@ -295,7 +274,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
                   type="number"
                   step="0.01"
                   min="0"
-                  value={@discount_amount}
+                  value={@order.discount_amount || 0}
                   phx-change="update_discount"
                   name="discount"
                   class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -305,7 +284,27 @@ defmodule CozyCheckoutWeb.OrderLive.New do
               <div class="border-t pt-3">
                 <div class="flex justify-between text-xl font-bold text-gray-900">
                   <span>Total:</span>
-                  <span>${calculate_total(@order_items, @discount_amount)}</span>
+                  <span>${@order.total_amount}</span>
+                </div>
+              </div>
+
+              <div class="border-t pt-3">
+                <div class="space-y-1 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-600">Status:</span>
+                    <span class={[
+                      "font-semibold",
+                      case @order.status do
+                        "paid" -> "text-green-600"
+                        "partially_paid" -> "text-yellow-600"
+                        "open" -> "text-blue-600"
+                        "cancelled" -> "text-red-600"
+                        _ -> "text-gray-600"
+                      end
+                    ]}>
+                      {String.replace(@order.status, "_", " ") |> String.capitalize()}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -314,10 +313,15 @@ defmodule CozyCheckoutWeb.OrderLive.New do
               type="button"
               phx-click="save"
               class="w-full mt-6 btn btn-primary"
-              disabled={@order_items == []}
             >
-              Create Order
+              Save Changes
             </button>
+
+            <.link navigate={~p"/orders/#{@order}"} class="block mt-3">
+              <button type="button" class="w-full btn btn-soft">
+                Cancel
+              </button>
+            </.link>
           </div>
         </div>
       </div>
