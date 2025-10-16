@@ -64,6 +64,9 @@ defmodule CozyCheckoutWeb.Router do
 
     # POHODA Export
     live "/pohoda-export", PohodaExportLive.Index, :index
+
+    # iCal Import
+    live "/ical-import", IcalImportLive.Index, :index
   end
 
   # Point of Sale (POS) - Touch-friendly interface for bar staff

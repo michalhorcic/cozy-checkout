@@ -95,6 +95,15 @@ defmodule CozyCheckoutWeb.DashboardLive do
             navigate={~p"/admin/pohoda-export"}
             color="purple"
           />
+
+          <%!-- iCal Import --%>
+          <.dashboard_card
+            title="Import Bookings"
+            description="Import from iCal file"
+            icon="hero-arrow-up-tray"
+            navigate={~p"/admin/ical-import"}
+            color="sky"
+          />
         </div>
       </div>
     </div>
