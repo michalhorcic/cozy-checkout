@@ -177,7 +177,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
         {:noreply,
          socket
          |> put_flash(:info, "Order updated successfully")
-         |> push_navigate(to: ~p"/orders/#{order}")}
+         |> push_navigate(to: ~p"/admin/orders/#{order}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
@@ -258,7 +258,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
         <.link
-          navigate={~p"/orders/#{@order}"}
+          navigate={~p"/admin/orders/#{@order}"}
           class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
         >
           ← Back to Order
@@ -533,7 +533,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
               Save Changes
             </button>
 
-            <.link navigate={~p"/orders/#{@order}"} class="block mt-3">
+            <.link navigate={~p"/admin/orders/#{@order}"} class="block mt-3">
               <button type="button" class="w-full btn btn-soft">
                 Cancel
               </button>

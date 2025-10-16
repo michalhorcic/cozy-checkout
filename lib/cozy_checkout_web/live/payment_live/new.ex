@@ -36,7 +36,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
         {:noreply,
          socket
          |> put_flash(:info, "Payment recorded successfully")
-         |> push_navigate(to: ~p"/orders/#{order}")}
+         |> push_navigate(to: ~p"/admin/orders/#{order}")}
 
       {:error, %Ecto.Changeset{} = changeset} ->
         {:noreply, assign(socket, form: to_form(changeset))}
@@ -49,7 +49,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
     <div class="max-w-3xl mx-auto px-4 py-8">
       <div class="mb-8">
         <.link
-          navigate={if @order, do: ~p"/orders/#{@order}", else: ~p"/payments"}
+          navigate={if @order, do: ~p"/admin/orders/#{@order}", else: ~p"/admin/payments"}
           class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
         >
           ← Back

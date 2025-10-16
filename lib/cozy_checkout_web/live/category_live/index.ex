@@ -51,12 +51,12 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
         </div>
-        <.link patch={~p"/categories/new"}>
+        <.link patch={~p"/admin/categories/new"}>
           <.button>
             <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Category
           </.button>
@@ -88,7 +88,7 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <.link
-                  patch={~p"/categories/#{category}/edit"}
+                  patch={~p"/admin/categories/#{category}/edit"}
                   class="text-indigo-600 hover:text-indigo-900 mr-4"
                 >
                   Edit
@@ -110,7 +110,7 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
         :if={@live_action in [:new, :edit]}
         id="category-modal"
         show
-        on_cancel={JS.patch(~p"/categories")}
+        on_cancel={JS.patch(~p"/admin/categories")}
       >
         <.live_component
           module={CozyCheckoutWeb.CategoryLive.FormComponent}
@@ -118,7 +118,7 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
           title={@page_title}
           action={@live_action}
           category={@category}
-          patch={~p"/categories"}
+          patch={~p"/admin/categories"}
         />
       </.modal>
     </div>

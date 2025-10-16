@@ -51,12 +51,12 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
         </div>
-        <.link patch={~p"/products/new"}>
+        <.link patch={~p"/admin/products/new"}>
           <.button>
             <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Product
           </.button>
@@ -114,7 +114,7 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <.link
-                  patch={~p"/products/#{product}/edit"}
+                  patch={~p"/admin/products/#{product}/edit"}
                   class="text-indigo-600 hover:text-indigo-900 mr-4"
                 >
                   Edit
@@ -136,7 +136,7 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
         :if={@live_action in [:new, :edit]}
         id="product-modal"
         show
-        on_cancel={JS.patch(~p"/products")}
+        on_cancel={JS.patch(~p"/admin/products")}
       >
         <.live_component
           module={CozyCheckoutWeb.ProductLive.FormComponent}
@@ -144,7 +144,7 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
           title={@page_title}
           action={@live_action}
           product={@product}
-          patch={~p"/products"}
+          patch={~p"/admin/products"}
         />
       </.modal>
     </div>

@@ -73,7 +73,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link navigate={~p"/admin/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
           ← Back to Orders
         </.link>
         <div class="flex items-center justify-between">
@@ -84,7 +84,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             </p>
           </div>
           <div class="flex items-center space-x-4">
-            <.link navigate={~p"/orders/#{@order}/edit"}>
+            <.link navigate={~p"/admin/orders/#{@order}/edit"}>
               <.button>
                 <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> Edit Order
               </.button>
@@ -237,7 +237,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
 
             <.link
               :if={@order.status != "paid" and @order.status != "cancelled"}
-              navigate={~p"/payments/new?order_id=#{@order.id}"}
+              navigate={~p"/admin/payments/new?order_id=#{@order.id}"}
               class="block mt-4"
             >
               <.button class="w-full">

@@ -32,12 +32,12 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
         </div>
-        <.link navigate={~p"/orders/new"}>
+        <.link navigate={~p"/admin/orders/new"}>
           <.button>
             <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Order
           </.button>
@@ -97,7 +97,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 {Calendar.strftime(order.inserted_at, "%Y-%m-%d %H:%M")}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <.link navigate={~p"/orders/#{order}"} class="text-blue-600 hover:text-blue-900 mr-4">
+                <.link navigate={~p"/admin/orders/#{order}"} class="text-blue-600 hover:text-blue-900 mr-4">
                   View
                 </.link>
                 <.link

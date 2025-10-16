@@ -127,7 +127,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
             {:noreply,
              socket
              |> put_flash(:info, "Order created successfully")
-             |> push_navigate(to: ~p"/orders/#{order}")}
+             |> push_navigate(to: ~p"/admin/orders/#{order}")}
 
           {:error, reason} ->
             {:noreply, put_flash(socket, :error, "Failed to create order: #{inspect(reason)}")}
@@ -208,7 +208,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link navigate={~p"/admin/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
           ← Back to Orders
         </.link>
         <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>

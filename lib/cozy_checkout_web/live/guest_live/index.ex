@@ -51,12 +51,12 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
         </div>
-        <.link patch={~p"/guests/new"}>
+        <.link patch={~p"/admin/guests/new"}>
           <.button>
             <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Guest
           </.button>
@@ -106,7 +106,7 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <.link
-                  patch={~p"/guests/#{guest}/edit"}
+                  patch={~p"/admin/guests/#{guest}/edit"}
                   class="text-indigo-600 hover:text-indigo-900 mr-4"
                 >
                   Edit
@@ -128,7 +128,7 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
         :if={@live_action in [:new, :edit]}
         id="guest-modal"
         show
-        on_cancel={JS.patch(~p"/guests")}
+        on_cancel={JS.patch(~p"/admin/guests")}
       >
         <.live_component
           module={CozyCheckoutWeb.GuestLive.FormComponent}
@@ -136,7 +136,7 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
           title={@page_title}
           action={@live_action}
           guest={@guest}
-          patch={~p"/guests"}
+          patch={~p"/admin/guests"}
         />
       </.modal>
     </div>

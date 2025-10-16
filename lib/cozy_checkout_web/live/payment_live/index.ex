@@ -54,7 +54,7 @@ defmodule CozyCheckoutWeb.PaymentLive.Index do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
           ← Back to Dashboard
         </.link>
         <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
@@ -94,7 +94,7 @@ defmodule CozyCheckoutWeb.PaymentLive.Index do
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <.link
-                  navigate={~p"/orders/#{payment.order}"}
+                  navigate={~p"/admin/orders/#{payment.order}"}
                   class="text-blue-600 hover:text-blue-800"
                 >
                   {payment.order.order_number}
