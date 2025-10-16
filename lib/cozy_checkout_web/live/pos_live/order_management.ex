@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
   alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
@@ -13,6 +14,10 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:selected_category_id, nil)
        |> assign(:show_unit_modal, false)
        |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
        |> load_order()
        |> load_products()
        |> assign(:show_success, false)}
@@ -23,6 +28,10 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:selected_category_id, nil)
        |> assign(:show_unit_modal, false)
        |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
        |> assign(:order, nil)
        |> assign(:grouped_items, [])
        |> assign(:categories, [])
@@ -129,6 +138,84 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   @impl true
   def handle_event("hide_success", _params, socket) do
     {:noreply, assign(socket, :show_success, false)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    # Create payment directly for cash
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(socket.assigns.order.total_amount),
+      "payment_method" => "cash",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(attrs) do
+      {:ok, payment} ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_modal, false)
+         |> load_order()
+         |> put_flash(:info, "Payment recorded successfully. Invoice: #{payment.invoice_number}")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to create payment")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    # Create payment and generate QR code
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(socket.assigns.order.total_amount),
+      "payment_method" => "qr_code",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(attrs) do
+      {:ok, payment} ->
+        # Generate QR code SVG
+        bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+        qr_svg = QrCode.generate_qr_svg(%{
+          account_number: bank_account,
+          amount: payment.amount,
+          currency: "CZK",
+          variable_symbol: payment.invoice_number,
+          message: "Order #{socket.assigns.order.order_number}"
+        })
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_code")
+         |> assign(:payment_qr_svg, qr_svg)
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> load_order()}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to create payment")}
+    end
   end
 
   defp add_item_to_order(socket, product_id, unit_amount) do

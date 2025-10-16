@@ -69,6 +69,11 @@ The screen is split into two main sections:
   - Enter custom amounts
   - Large touch-friendly buttons for quick selection
 - ✅ **Smart Display**: Cart items show unit amounts clearly (e.g., "500ml × 1")
+- ✅ **Payment Processing**: Direct payment within POS with two methods:
+  - **Cash Payment**: Quick one-tap payment recording
+  - **QR Code Payment**: Generates Czech banking QR code for mobile payment
+  - Automatic invoice number generation
+  - Visual feedback for paid orders
 
 ## Technical Implementation
 
@@ -185,6 +190,13 @@ Potential improvements for future versions:
 - [ ] Check admin CRUD show page displays grouped items
 - [ ] Check admin CRUD edit page displays grouped items
 - [ ] Verify individual items can be deleted from admin when expanded
+- [ ] Click "Pay Order" button on open order
+- [ ] Verify payment modal appears with two options
+- [ ] Process cash payment and verify order marked as paid
+- [ ] Process QR code payment and verify QR code displays
+- [ ] Scan QR code with banking app (if available)
+- [ ] Verify invoice number is generated and displayed
+- [ ] Verify paid orders show "Paid" badge instead of pay button
 
 ## Best Practices
 

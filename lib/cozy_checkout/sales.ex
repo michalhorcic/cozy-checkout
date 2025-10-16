@@ -260,9 +260,29 @@ defmodule CozyCheckout.Sales do
   end
 
   @doc """
+  Generates a unique invoice number for a payment.
+  Format: PAY-YYYYMMDD-NNNN
+  """
+  def generate_invoice_number do
+    date_part = Date.utc_today() |> Calendar.strftime("%Y%m%d")
+
+    # Get the count of payments created today
+    count =
+      Payment
+      |> where([p], fragment("DATE(?)", p.inserted_at) == ^Date.utc_today())
+      |> Repo.aggregate(:count, :id)
+
+    sequence = String.pad_leading("#{count + 1}", 4, "0")
+    "PAY-#{date_part}-#{sequence}"
+  end
+
+  @doc """
   Creates a payment and updates order status.
   """
   def create_payment(attrs \\ %{}) do
+    # Generate invoice number if not provided
+    attrs = Map.put_new(attrs, "invoice_number", generate_invoice_number())
+
     case Repo.transaction(fn ->
       with {:ok, payment} <- do_create_payment(attrs),
            {:ok, _order} <- update_order_payment_status(payment.order_id) do

@@ -9,6 +9,7 @@ defmodule CozyCheckout.Sales.Payment do
     field :payment_method, :string
     field :payment_date, :date
     field :notes, :string
+    field :invoice_number, :string
     field :deleted_at, :utc_datetime
 
     belongs_to :order, CozyCheckout.Sales.Order
@@ -19,10 +20,11 @@ defmodule CozyCheckout.Sales.Payment do
   @doc false
   def changeset(payment, attrs) do
     payment
-    |> cast(attrs, [:order_id, :amount, :payment_method, :payment_date, :notes])
-    |> validate_required([:order_id, :amount, :payment_method, :payment_date])
+    |> cast(attrs, [:order_id, :amount, :payment_method, :payment_date, :notes, :invoice_number])
+    |> validate_required([:order_id, :amount, :payment_method, :payment_date, :invoice_number])
     |> validate_number(:amount, greater_than: 0)
     |> validate_inclusion(:payment_method, ["cash", "qr_code"])
+    |> unique_constraint(:invoice_number)
     |> foreign_key_constraint(:order_id)
   end
 end
