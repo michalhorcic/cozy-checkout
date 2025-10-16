@@ -35,6 +35,18 @@ defmodule SeedHelper do
     DateTime.add(today, -offset_seconds, :second) |> DateTime.truncate(:second)
   end
 
+  def random_datetime_in_range(from_datetime, to_datetime) do
+    from_seconds = DateTime.to_unix(from_datetime)
+    to_seconds = DateTime.to_unix(to_datetime)
+
+    if from_seconds >= to_seconds do
+      from_datetime
+    else
+      random_seconds = from_seconds + :rand.uniform(to_seconds - from_seconds)
+      DateTime.from_unix!(random_seconds) |> DateTime.truncate(:second)
+    end
+  end
+
   def random_element(list) do
     Enum.random(list)
   end
@@ -315,11 +327,10 @@ orders =
 
       order_datetime = SeedHelper.random_datetime_in_range(Date.diff(today, order_date))
 
-      # Determine order status (70% paid, 20% partially paid, 10% open)
+      # Determine order status (80% paid, 20% open)
       status =
         case :rand.uniform(10) do
-          n when n <= 7 -> "paid"
-          n when n <= 9 -> "partially_paid"
+          n when n <= 8 -> "paid"
           _ -> "open"
         end
 
@@ -425,8 +436,9 @@ invoice_counters = %{}
 
 {payments, _final_counters} = Enum.flat_map_reduce(orders, invoice_counters, fn order, counters ->
   case order.status do
-    :paid ->
-      payment_date = SeedHelper.random_datetime_in_range(order.inserted_at, DateTime.utc_now())
+    "paid" ->
+      payment_datetime = SeedHelper.random_datetime_in_range(order.inserted_at, DateTime.utc_now())
+      payment_date = DateTime.to_date(payment_datetime)
       date = DateTime.to_date(order.inserted_at)
       counter = Map.get(counters, date, 0) + 1
       invoice_number = SeedHelper.generate_invoice_number(date, counter)
@@ -434,42 +446,15 @@ invoice_counters = %{}
       payment = Repo.insert!(%Payment{
         order_id: order.id,
         amount: order.total_amount,
-        payment_method: Enum.random([:cash, :qr_code]),
+        payment_method: Enum.random(["cash", "qr_code"]),
         payment_date: payment_date,
         notes: nil,
         invoice_number: invoice_number
       })
       {[payment], Map.put(counters, date, counter)}
 
-    :partially_paid ->
-      # Create 1-2 partial payments
-      num_payments = Enum.random(1..2)
-      payment_dates = Enum.map(1..num_payments, fn _ ->
-        SeedHelper.random_datetime_in_range(order.inserted_at, DateTime.utc_now())
-      end) |> Enum.sort()
-
-      date = DateTime.to_date(order.inserted_at)
-
-      {payments_list, new_counter} = Enum.map_reduce(payment_dates, Map.get(counters, date, 0), fn payment_date, counter ->
-        amount = Decimal.mult(order.total_amount, Decimal.from_float(:rand.uniform() * 0.7))
-        new_counter = counter + 1
-        invoice_number = SeedHelper.generate_invoice_number(date, new_counter)
-
-        payment = Repo.insert!(%Payment{
-          order_id: order.id,
-          amount: amount,
-          payment_method: Enum.random([:cash, :qr_code]),
-          payment_date: payment_date,
-          notes: "Partial payment",
-          invoice_number: invoice_number
-        })
-
-        {payment, new_counter}
-      end)
-
-      {payments_list, Map.put(counters, date, new_counter)}
-
     _ ->
+      # Open orders have no payments
       {[], counters}
   end
 end)
