@@ -53,7 +53,13 @@ The screen is split into two main sections:
 #### Features
 - ✅ **Real-time Updates**: Cart updates immediately when items are added
 - ✅ **Success Feedback**: Visual confirmation when item is added
-- ✅ **Swipe Gestures**: Natural iOS-style swipe-to-delete for cart items
+- ✅ **Visual Grouping**: Items with same product and unit amount are grouped together
+  - Shows total quantity and price for grouped items
+  - Badge indicates number of individual items in group
+  - Expand/collapse to view/manage individual items
+  - Individual items can be deleted when expanded (swipe or tap)
+  - Group deletion is disabled for safety
+- ✅ **Swipe Gestures**: Natural iOS-style swipe-to-delete for individual cart items
 - ✅ **Category Filtering**: Quick access to products by category
 - ✅ **Popular Products**: Most frequently ordered items shown first
 - ✅ **Automatic Calculations**: Prices and totals calculated from active pricelists
@@ -82,6 +88,12 @@ The screen is split into two main sections:
 - `list_active_guests_with_orders/0` - Get active guests with order counts
 - `get_or_create_guest_order/1` - Smart order retrieval/creation
 - `get_popular_products/1` - Get most frequently ordered products
+
+#### Helper Modules
+- `CozyCheckoutWeb.OrderItemGrouper` - Groups order items by product and unit amount for display
+  - `group_order_items/1` - Groups items and calculates totals
+  - `expand_group/3` - Shows individual items in a group
+  - `collapse_group/3` - Hides individual items in a group
 
 #### JavaScript Hooks
 - `SwipeToDelete` hook in `assets/js/app.js` - Touch swipe gesture handling
@@ -149,10 +161,18 @@ Potential improvements for future versions:
 - [ ] Add products from popular tab
 - [ ] Filter products by category
 - [ ] Add multiple items to cart
+- [ ] Add same product multiple times (verify grouping)
+- [ ] Add same product with different unit amounts (verify separate groups)
+- [ ] Expand grouped items to view individual entries
+- [ ] Delete individual item from expanded group via swipe
+- [ ] Delete individual item from expanded group via button
+- [ ] Collapse grouped items
+- [ ] Verify group delete button is not shown (disabled for safety)
 - [ ] Add product with unit (modal appears)
 - [ ] Select preset unit amount from quick buttons
 - [ ] Enter custom unit amount
-- [ ] Verify unit amounts display in cart (e.g., "500ml × 1")
+- [ ] Verify unit amounts display in cart (e.g., "500ml × 2")
+- [ ] Verify grouped totals are calculated correctly
 - [ ] Swipe to delete item from cart
 - [ ] Tap delete button on item
 - [ ] View order total updates in real-time
@@ -162,6 +182,9 @@ Potential improvements for future versions:
 - [ ] Verify order totals are calculated correctly
 - [ ] Confirm prices come from active pricelists
 - [ ] Confirm unit amounts are stored in order_items
+- [ ] Check admin CRUD show page displays grouped items
+- [ ] Check admin CRUD edit page displays grouped items
+- [ ] Verify individual items can be deleted from admin when expanded
 
 ## Best Practices
 
@@ -201,5 +224,18 @@ The POS system is designed to be completely independent from the admin interface
 - Optimized queries for speed
 - Touch-first interaction patterns
 - No complex forms or text input
+
+### Visual Grouping Implementation
+
+Order items with the same product and unit amount are **visually grouped** for cleaner display:
+- **Database**: Individual `order_items` records are maintained separately
+- **Display**: Items are grouped by `product_id` and `unit_amount` for UI presentation
+- **Benefits**: 
+  - Maintains accurate audit trail (each add = separate record)
+  - Cleaner cart display (reduces visual clutter)
+  - Can expand to view/manage individual items
+  - Preserves historical context for reporting
+- **Implementation**: `OrderItemGrouper` helper module handles grouping logic
+- **Both interfaces**: Grouping is used in both POS system and admin CRUD
 
 This separation allows the admin interface to remain full-featured while keeping the POS system fast and simple for staff use.
