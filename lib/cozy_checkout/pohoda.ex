@@ -43,7 +43,7 @@ defmodule CozyCheckout.Pohoda do
             <inv:text>Order #{order.order_number}</inv:text>
             <inv:partnerIdentity>
               <typ:address>
-                <typ:company>#{escape_xml(order.guest.name)}</typ:company>
+                <typ:company>#{escape_xml(order.booking.guest.name)}</typ:company>
               </typ:address>
             </inv:partnerIdentity>
             <inv:paymentType>

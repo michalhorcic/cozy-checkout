@@ -114,21 +114,29 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-6">
-          <%!-- Guest Information --%>
+          <%!-- Booking Information --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Guest Information</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
             <div class="space-y-2">
               <div class="flex justify-between">
-                <span class="text-gray-600">Name:</span>
-                <span class="font-medium">{@order.guest.name}</span>
+                <span class="text-gray-600">Guest Name:</span>
+                <span class="font-medium">{@order.booking.guest.name}</span>
               </div>
-              <div :if={@order.guest.room_number} class="flex justify-between">
+              <div :if={@order.booking.room_number} class="flex justify-between">
                 <span class="text-gray-600">Room:</span>
-                <span class="font-medium">{@order.guest.room_number}</span>
+                <span class="font-medium">{@order.booking.room_number}</span>
               </div>
-              <div :if={@order.guest.phone} class="flex justify-between">
+              <div :if={@order.booking.guest.phone} class="flex justify-between">
                 <span class="text-gray-600">Phone:</span>
-                <span class="font-medium">{@order.guest.phone}</span>
+                <span class="font-medium">{@order.booking.guest.phone}</span>
+              </div>
+              <div :if={@order.booking.check_in_date} class="flex justify-between">
+                <span class="text-gray-600">Check-in:</span>
+                <span class="font-medium">{Calendar.strftime(@order.booking.check_in_date, "%B %d, %Y")}</span>
+              </div>
+              <div :if={@order.booking.check_out_date} class="flex justify-between">
+                <span class="text-gray-600">Check-out:</span>
+                <span class="font-medium">{Calendar.strftime(@order.booking.check_out_date, "%B %d, %Y")}</span>
               </div>
             </div>
           </div>

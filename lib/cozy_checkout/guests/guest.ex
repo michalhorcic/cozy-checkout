@@ -6,13 +6,12 @@ defmodule CozyCheckout.Guests.Guest do
   @foreign_key_type :binary_id
   schema "guests" do
     field :name, :string
-    field :room_number, :string
+    field :email, :string
     field :phone, :string
     field :notes, :string
-    field :check_in_date, :date
-    field :check_out_date, :date
     field :deleted_at, :utc_datetime
 
+    has_many :bookings, CozyCheckout.Bookings.Booking
     has_many :orders, CozyCheckout.Sales.Order
 
     timestamps(type: :utc_datetime)
@@ -21,19 +20,9 @@ defmodule CozyCheckout.Guests.Guest do
   @doc false
   def changeset(guest, attrs) do
     guest
-    |> cast(attrs, [:name, :room_number, :phone, :notes, :check_in_date, :check_out_date])
+    |> cast(attrs, [:name, :email, :phone, :notes])
     |> validate_required([:name])
-    |> validate_date_range()
-  end
-
-  defp validate_date_range(changeset) do
-    check_in = get_field(changeset, :check_in_date)
-    check_out = get_field(changeset, :check_out_date)
-
-    if check_in && check_out && Date.compare(check_in, check_out) == :gt do
-      add_error(changeset, :check_out_date, "must be after check-in date")
-    else
-      changeset
-    end
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
+    |> unique_constraint(:email)
   end
 end

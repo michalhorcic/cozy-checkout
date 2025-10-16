@@ -46,6 +46,12 @@ defmodule CozyCheckoutWeb.Router do
     live "/guests/new", GuestLive.Index, :new
     live "/guests/:id/edit", GuestLive.Index, :edit
 
+    # Bookings
+    live "/bookings", BookingLive.Index, :index
+    live "/bookings/new", BookingLive.Index, :new
+    live "/bookings/:id", BookingLive.Show
+    live "/bookings/:id/edit", BookingLive.Index, :edit
+
     # Orders
     live "/orders", OrderLive.Index, :index
     live "/orders/new", OrderLive.New
@@ -65,7 +71,7 @@ defmodule CozyCheckoutWeb.Router do
     pipe_through :browser
 
     live "/", GuestSelection
-    live "/guests/:guest_id/orders", OrderSelection
+    live "/bookings/:booking_id/orders", OrderSelection
     live "/orders/:id", OrderManagement
   end
 

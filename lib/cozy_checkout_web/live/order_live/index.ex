@@ -79,7 +79,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 {order.order_number}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {order.guest && order.guest.name}
+                {order.booking && order.booking.guest && order.booking.guest.name}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {format_currency(order.total_amount)}

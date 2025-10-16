@@ -62,6 +62,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
             color="purple"
           />
 
+          <.dashboard_card
+            title="Bookings"
+            description="Manage guest bookings & stays"
+            icon="hero-calendar-days"
+            navigate={~p"/admin/bookings"}
+            color="rose"
+          />
+
           <%!-- Sales Management --%>
           <.dashboard_card
             title="Orders"

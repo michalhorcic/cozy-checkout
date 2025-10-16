@@ -1,7 +1,7 @@
 defmodule CozyCheckoutWeb.OrderLive.New do
   use CozyCheckoutWeb, :live_view
 
-  alias CozyCheckout.{Sales, Guests, Catalog}
+  alias CozyCheckout.{Sales, Bookings, Catalog}
   alias CozyCheckout.Sales.Order
 
   @impl true
@@ -13,10 +13,10 @@ defmodule CozyCheckoutWeb.OrderLive.New do
       |> assign(:page_title, "New Order")
       |> assign(:order, %Order{order_number: order_number})
       |> assign(:form, to_form(Sales.change_order(%Order{order_number: order_number})))
-      |> assign(:guests, Guests.list_active_guests())
+      |> assign(:bookings, Bookings.list_active_bookings())
       |> assign(:products, Catalog.list_products())
       |> assign(:order_items, [])
-      |> assign(:selected_guest_id, nil)
+      |> assign(:selected_booking_id, nil)
       |> assign(:discount_amount, Decimal.new("0"))
 
     {:ok, socket}
@@ -110,18 +110,23 @@ defmodule CozyCheckoutWeb.OrderLive.New do
 
   def handle_event("save", _params, socket) do
     # Get the order params from the form
-    order_params = %{
-      "guest_id" => Ecto.Changeset.get_field(socket.assigns.form.source, :guest_id),
-      "notes" => Ecto.Changeset.get_field(socket.assigns.form.source, :notes),
-      "order_number" => socket.assigns.order.order_number
-    }
+    booking_id = Ecto.Changeset.get_field(socket.assigns.form.source, :booking_id)
 
     if socket.assigns.order_items == [] do
       {:noreply, put_flash(socket, :error, "Please add at least one item to the order")}
     else
-      if is_nil(order_params["guest_id"]) do
-        {:noreply, put_flash(socket, :error, "Please select a guest")}
+      if is_nil(booking_id) do
+        {:noreply, put_flash(socket, :error, "Please select a booking")}
       else
+        booking = Bookings.get_booking!(booking_id)
+
+        order_params = %{
+          "booking_id" => booking_id,
+          "guest_id" => booking.guest_id,
+          "notes" => Ecto.Changeset.get_field(socket.assigns.form.source, :notes),
+          "order_number" => socket.assigns.order.order_number
+        }
+
         case create_order_with_items(socket, order_params) do
           {:ok, order} ->
             {:noreply,
@@ -218,19 +223,21 @@ defmodule CozyCheckoutWeb.OrderLive.New do
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <%!-- Order Form --%>
         <div class="lg:col-span-2 space-y-8">
-          <%!-- Guest Selection --%>
+          <%!-- Booking Selection --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Guest Information</h2>
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
             <.form for={@form} id="order-form" phx-change="validate">
               <.input
-                field={@form[:guest_id]}
+                field={@form[:booking_id]}
                 type="select"
-                label="Guest"
-                prompt="Select a guest"
+                label="Booking"
+                prompt="Select a booking"
                 options={
                   Enum.map(
-                    @guests,
-                    &{&1.name <> if(&1.room_number, do: " (Room #{&1.room_number})", else: ""), &1.id}
+                    @bookings,
+                    &{&1.guest.name <>
+                        if(&1.room_number, do: " (Room #{&1.room_number})", else: "") <>
+                        " - #{Calendar.strftime(&1.check_in_date, "%b %d")}", &1.id}
                   )
                 }
                 required

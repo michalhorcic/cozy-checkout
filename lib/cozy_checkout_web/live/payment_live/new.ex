@@ -86,7 +86,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Guest:</span>
-                <span class="font-medium">{@order.guest.name}</span>
+                <span class="font-medium">{@order.booking.guest.name}</span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Total:</span>

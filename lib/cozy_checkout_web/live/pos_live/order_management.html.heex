@@ -10,7 +10,12 @@
           <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
         </button>
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">{@order.guest.name}</h1>
+          <h1 class="text-2xl font-bold text-slate-900">
+            {@order.booking.guest.name}
+            <span :if={@order.booking.room_number} class="text-slate-500">
+              - Room {@order.booking.room_number}
+            </span>
+          </h1>
           <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
         </div>
       </div>

@@ -13,6 +13,7 @@ defmodule CozyCheckout.Sales.Order do
     field :deleted_at, :utc_datetime
 
     belongs_to :guest, CozyCheckout.Guests.Guest
+    belongs_to :booking, CozyCheckout.Bookings.Booking
     has_many :order_items, CozyCheckout.Sales.OrderItem
     has_many :payments, CozyCheckout.Sales.Payment
 
@@ -22,12 +23,13 @@ defmodule CozyCheckout.Sales.Order do
   @doc false
   def changeset(order, attrs) do
     order
-    |> cast(attrs, [:guest_id, :order_number, :status, :total_amount, :discount_amount, :notes])
-    |> validate_required([:guest_id, :order_number])
+    |> cast(attrs, [:guest_id, :booking_id, :order_number, :status, :total_amount, :discount_amount, :notes])
+    |> validate_required([:booking_id, :order_number])
     |> validate_inclusion(:status, ["open", "paid", "partially_paid", "cancelled"])
     |> validate_number(:total_amount, greater_than_or_equal_to: 0)
     |> validate_number(:discount_amount, greater_than_or_equal_to: 0)
     |> unique_constraint(:order_number)
     |> foreign_key_constraint(:guest_id)
+    |> foreign_key_constraint(:booking_id)
   end
 end

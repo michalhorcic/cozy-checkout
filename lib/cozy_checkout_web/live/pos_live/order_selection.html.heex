@@ -7,11 +7,14 @@
         class="mb-4 inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 text-lg active:scale-95 transition-transform"
       >
         <.icon name="hero-arrow-left" class="w-6 h-6" />
-        <span>Back to Guests</span>
+        <span>Back to Bookings</span>
       </button>
 
       <h1 class="text-4xl font-bold text-slate-900 mb-2">
-        {@guest.name}
+        {@booking.guest.name}
+        <span :if={@booking.room_number} class="text-slate-500">
+          - Room {@booking.room_number}
+        </span>
       </h1>
       <p class="text-lg text-slate-600">Select which order to work with</p>
     </div>

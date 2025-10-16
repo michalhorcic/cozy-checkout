@@ -3,25 +3,25 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
 
   import Ecto.Query
 
-  alias CozyCheckout.{Sales, Guests, Repo}
+  alias CozyCheckout.{Sales, Bookings, Repo}
 
   @impl true
-  def mount(%{"guest_id" => guest_id}, _session, socket) do
-    guest = Guests.get_guest!(guest_id)
+  def mount(%{"booking_id" => booking_id}, _session, socket) do
+    booking = Bookings.get_booking!(booking_id)
 
     orders =
       CozyCheckout.Sales.Order
-      |> where([o], o.guest_id == ^guest_id)
+      |> where([o], o.booking_id == ^booking_id)
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
-      |> preload([:guest, :order_items, :payments])
+      |> preload([booking: :guest, order_items: [], payments: []])
       |> order_by([o], desc: o.inserted_at)
       |> Repo.all()
 
     {:ok,
      socket
      |> assign(:page_title, "Select Order")
-     |> assign(:guest, guest)
+     |> assign(:booking, booking)
      |> assign(:orders, orders)}
   end
 
@@ -37,8 +37,14 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
 
   @impl true
   def handle_event("create_new", _params, socket) do
+    booking = socket.assigns.booking
+
     {:ok, order} =
-      Sales.create_order(%{"guest_id" => socket.assigns.guest.id, "status" => "open"})
+      Sales.create_order(%{
+        "booking_id" => booking.id,
+        "guest_id" => booking.guest_id,
+        "status" => "open"
+      })
 
     {:noreply, push_navigate(socket, to: ~p"/pos/orders/#{order.id}")}
   end

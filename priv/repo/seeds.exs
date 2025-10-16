@@ -14,6 +14,7 @@ import Ecto.Query
 alias CozyCheckout.Repo
 alias CozyCheckout.Catalog.{Category, Product, Pricelist}
 alias CozyCheckout.Guests.Guest
+alias CozyCheckout.Bookings.Booking
 alias CozyCheckout.Sales.{Order, OrderItem, Payment}
 
 # Helper functions
@@ -63,6 +64,7 @@ IO.puts("Clearing existing data...")
 Repo.delete_all(Payment)
 Repo.delete_all(OrderItem)
 Repo.delete_all(Order)
+Repo.delete_all(Booking)
 Repo.delete_all(Pricelist)
 Repo.delete_all(Product)
 Repo.delete_all(Category)
@@ -201,7 +203,7 @@ IO.puts("Created #{length(pricelists)} pricelists")
 
 IO.puts("Creating guests...")
 
-# Create 300 guests - make sure many are for today's date
+# Create 100 unique guests (persons who may visit multiple times)
 first_names = [
   "Jan",
   "Petr",
@@ -258,56 +260,115 @@ last_names = [
   "Fischer"
 ]
 
-today = Date.utc_today()
-
 guests =
-  Enum.map(1..300, fn i ->
-    # 40% of guests check in today, 30% checked in recently, 30% historical
-    {check_in, check_out} =
-      cond do
-        i <= 120 ->
-          # Guests checking in today
-          {today, Date.add(today, :rand.uniform(7))}
-
-        i <= 210 ->
-          # Guests checked in recently (last 7 days)
-          days_ago = :rand.uniform(7)
-          check_in = Date.add(today, -days_ago)
-          {check_in, Date.add(check_in, :rand.uniform(7) + days_ago)}
-
-        true ->
-          # Historical guests
-          check_in = SeedHelper.random_date_in_range(180, 0)
-          {check_in, Date.add(check_in, :rand.uniform(14))}
-      end
+  Enum.map(1..100, fn i ->
+    name = "#{SeedHelper.random_element(first_names)} #{SeedHelper.random_element(last_names)}"
 
     Repo.insert!(%Guest{
-      name:
-        "#{SeedHelper.random_element(first_names)} #{SeedHelper.random_element(last_names)}",
-      room_number: "#{:rand.uniform(50)}#{SeedHelper.random_element(["A", "B", ""])}",
+      name: name,
+      # Add the guest number to ensure unique emails
+      email: if(:rand.uniform() > 0.3, do: "#{String.downcase(String.replace(name, " ", "."))}#{i}@example.com", else: nil),
       phone: "+420#{:rand.uniform(900_000_000) + 100_000_000}",
-      notes: if(:rand.uniform() > 0.7, do: "VIP guest", else: nil),
-      check_in_date: check_in,
-      check_out_date: check_out
+      notes: if(:rand.uniform() > 0.8, do: "VIP guest - prefers quiet rooms", else: nil)
     })
   end)
 
 IO.puts("Created #{length(guests)} guests")
 
+IO.puts("Creating bookings...")
+
+# Create 300 bookings - some guests have multiple bookings
+today = Date.utc_today()
+
+# Track guest+date combinations to avoid duplicates
+used_combinations = MapSet.new()
+
+bookings =
+  Enum.reduce_while(1..300, {[], used_combinations}, fn i, {bookings_acc, used_combos} ->
+    # Pick a random guest (some guests will have multiple bookings)
+    # Try up to 10 times to find a guest+date combination that hasn't been used
+    result =
+      Enum.find_value(1..10, fn _attempt ->
+        guest = SeedHelper.random_element(guests)
+
+        # 40% of bookings check in today, 30% checked in recently, 30% historical
+        {check_in, check_out, status} =
+          cond do
+            i <= 120 ->
+              # Bookings checking in today (active)
+              check_in = today
+              check_out = Date.add(today, :rand.uniform(7))
+              {check_in, check_out, "active"}
+
+            i <= 210 ->
+              # Bookings checked in recently (some active, some completed)
+              days_ago = :rand.uniform(7)
+              check_in = Date.add(today, -days_ago)
+              check_out = Date.add(check_in, :rand.uniform(7))
+
+              status =
+                if Date.compare(check_out, today) == :lt do
+                  "completed"
+                else
+                  "active"
+                end
+
+              {check_in, check_out, status}
+
+            true ->
+              # Historical bookings (completed)
+              check_in = SeedHelper.random_date_in_range(180, 0)
+              check_out = Date.add(check_in, :rand.uniform(14))
+              {check_in, check_out, "completed"}
+          end
+
+        combination = {guest.id, check_in}
+
+        if MapSet.member?(used_combos, combination) do
+          nil
+        else
+          {guest, check_in, check_out, status, combination}
+        end
+      end)
+
+    case result do
+      nil ->
+        # Couldn't find a unique combination after 10 attempts, stop creating bookings
+        {:halt, {bookings_acc, used_combos}}
+
+      {guest, check_in, check_out, status, combination} ->
+        booking =
+          Repo.insert!(%Booking{
+            guest_id: guest.id,
+            room_number: "#{:rand.uniform(50)}#{SeedHelper.random_element(["A", "B", ""])}",
+            check_in_date: check_in,
+            check_out_date: check_out,
+            status: status,
+            notes: if(:rand.uniform() > 0.9, do: "Late check-in requested", else: nil)
+          })
+
+        {:cont, {[booking | bookings_acc], MapSet.put(used_combos, combination)}}
+    end
+  end)
+  |> elem(0)
+  |> Enum.reverse()
+
+IO.puts("Created #{length(bookings)} bookings")
+
 IO.puts("Creating orders...")
 
 # Create 500 orders - ensure many are for today
 orders =
-  Enum.flat_map(guests, fn guest ->
-    # Most active guests (checked in today) have 1-3 orders
-    # Recent guests have 1-2 orders
-    # Historical guests have 0-2 orders
+  Enum.flat_map(bookings, fn booking ->
+    # Most active bookings (checked in today) have 1-3 orders
+    # Recent bookings have 1-2 orders
+    # Historical bookings have 0-2 orders
     num_orders =
       cond do
-        Date.compare(guest.check_in_date, today) == :eq ->
+        booking.status == "active" and Date.compare(booking.check_in_date, today) == :eq ->
           :rand.uniform(3)
 
-        Date.diff(today, guest.check_in_date) <= 7 ->
+        booking.status == "active" ->
           :rand.uniform(2)
 
         true ->
@@ -315,35 +376,53 @@ orders =
       end
 
     Enum.map(1..num_orders, fn _order_idx ->
-      # Generate order date between check-in and check-out or today
+      # Generate order date between check-in and today
       order_date =
-        if Date.compare(guest.check_in_date, today) == :eq or
-             Date.compare(guest.check_in_date, today) == :gt do
-          today
+        if booking.status == "active" do
+          # Active bookings: order date between check-in and today
+          days_since_checkin = Date.diff(today, booking.check_in_date)
+
+          if days_since_checkin > 0 do
+            Date.add(booking.check_in_date, :rand.uniform(days_since_checkin))
+          else
+            today
+          end
         else
-          max_days = min(Date.diff(today, guest.check_in_date), 30)
-          Date.add(guest.check_in_date, :rand.uniform(max(max_days, 1)))
+          # Completed bookings: order date between check-in and check-out
+          days_of_stay = Date.diff(booking.check_out_date, booking.check_in_date)
+
+          if days_of_stay > 0 do
+            Date.add(booking.check_in_date, :rand.uniform(days_of_stay))
+          else
+            booking.check_in_date
+          end
         end
 
       order_datetime = SeedHelper.random_datetime_in_range(Date.diff(today, order_date))
 
-      # Determine order status (80% paid, 20% open)
+      # Determine order status (completed bookings: all paid, active bookings: 70% paid, 30% open)
       status =
-        case :rand.uniform(10) do
-          n when n <= 8 -> "paid"
-          _ -> "open"
+        if booking.status == "completed" do
+          "paid"
+        else
+          case :rand.uniform(10) do
+            n when n <= 7 -> "paid"
+            _ -> "open"
+          end
         end
 
       # Generate unique order number
       order_number =
-        "ORD-#{Date.to_string(order_date) |> String.replace("-", "")}-#{String.pad_leading(Integer.to_string(:rand.uniform(9999)), 4, "0")}-#{guest.id |> String.slice(0..7)}"
+        "ORD-#{Date.to_string(order_date) |> String.replace("-", "")}-#{String.pad_leading(Integer.to_string(:rand.uniform(9999)), 4, "0")}-#{booking.id |> String.slice(0..7)}"
 
       Repo.insert!(%Order{
-        guest_id: guest.id,
+        booking_id: booking.id,
+        guest_id: booking.guest_id,
         order_number: order_number,
         status: status,
         total_amount: Decimal.new("0"),
-        discount_amount: if(:rand.uniform() > 0.8, do: SeedHelper.random_decimal(10, 100), else: Decimal.new("0")),
+        discount_amount:
+          if(:rand.uniform() > 0.8, do: SeedHelper.random_decimal(10, 100), else: Decimal.new("0")),
         notes: if(:rand.uniform() > 0.8, do: "Special request", else: nil),
         inserted_at: order_datetime,
         updated_at: order_datetime
@@ -471,10 +550,11 @@ IO.puts("  - Categories: #{length(categories)}")
 IO.puts("  - Products: #{length(products)}")
 IO.puts("  - Pricelists: #{length(pricelists)}")
 IO.puts("  - Guests: #{length(guests)}")
+IO.puts("  - Bookings: #{length(bookings)}")
 IO.puts("  - Orders: #{length(orders)}")
 IO.puts("  - Order Items: #{length(order_items)}")
 IO.puts("  - Payments: #{length(payments)}")
 IO.puts("")
-IO.puts("Guests with today's check-in date: ~120")
+IO.puts("Active bookings (checked in today): ~120")
 IO.puts("Active orders for today: many")
 IO.puts("")

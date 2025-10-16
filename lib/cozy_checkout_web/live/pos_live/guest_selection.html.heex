@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="mb-4 flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-slate-900 mb-1">Select Guest</h1>
-        <p class="text-base text-slate-600">Tap a guest to manage their order</p>
+        <h1 class="text-3xl font-bold text-slate-900 mb-1">Select Booking</h1>
+        <p class="text-base text-slate-600">Tap a booking to manage orders</p>
       </div>
       <.link
         navigate={~p"/"}
@@ -15,12 +15,12 @@
       </.link>
     </div>
     
-<!-- Guest Grid -->
+<!-- Bookings Grid -->
     <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       <div
-        :for={guest <- @guests}
-        phx-click="select_guest"
-        phx-value-guest-id={guest.id}
+        :for={booking <- @bookings}
+        phx-click="select_booking"
+        phx-value-booking-id={booking.id}
         class={[
           "bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
           "p-4 cursor-pointer active:scale-95 border-2 border-transparent hover:border-blue-500",
@@ -30,33 +30,33 @@
         <div>
           <!-- Guest Name -->
           <h2 class="text-lg font-bold text-slate-900 mb-2 break-words leading-tight">
-            {guest.name}
+            {booking.guest.name}
           </h2>
           
 <!-- Room Number -->
-          <div :if={guest.room_number} class="flex items-center gap-1.5 mb-1.5">
+          <div :if={booking.room_number} class="flex items-center gap-1.5 mb-1.5">
             <.icon name="hero-home" class="w-4 h-4 text-slate-500" />
-            <span class="text-sm text-slate-600">Room {guest.room_number}</span>
+            <span class="text-sm text-slate-600">Room {booking.room_number}</span>
           </div>
           
 <!-- Check-in Period -->
-          <div :if={guest.check_in_date} class="flex items-center gap-1.5 text-xs text-slate-500">
+          <div :if={booking.check_in_date} class="flex items-center gap-1.5 text-xs text-slate-500">
             <.icon name="hero-calendar" class="w-3.5 h-3.5" />
             <span>
-              {Calendar.strftime(guest.check_in_date, "%b %d")}
-              {if guest.check_out_date,
-                do: " - #{Calendar.strftime(guest.check_out_date, "%b %d")}",
+              {Calendar.strftime(booking.check_in_date, "%b %d")}
+              {if booking.check_out_date,
+                do: " - #{Calendar.strftime(booking.check_out_date, "%b %d")}",
                 else: ""}
             </span>
           </div>
         </div>
         
 <!-- Open Orders Badge -->
-        <div :if={guest.open_orders_count > 0} class="mt-2 pt-2 border-t border-slate-200">
+        <div :if={booking.open_orders_count > 0} class="mt-2 pt-2 border-t border-slate-200">
           <div class="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold">
             <.icon name="hero-shopping-cart" class="w-3.5 h-3.5" />
             <span>
-              {guest.open_orders_count} {if guest.open_orders_count == 1,
+              {booking.open_orders_count} {if booking.open_orders_count == 1,
                 do: "order",
                 else: "orders"}
             </span>
@@ -66,9 +66,9 @@
     </div>
     
 <!-- Empty State -->
-    <div :if={@guests == []} class="text-center py-20">
-      <.icon name="hero-user-group" class="w-24 h-24 text-slate-300 mx-auto mb-6" />
-      <h2 class="text-3xl font-bold text-slate-400 mb-2">No Active Guests</h2>
+    <div :if={@bookings == []} class="text-center py-20">
+      <.icon name="hero-calendar-days" class="w-24 h-24 text-slate-300 mx-auto mb-6" />
+      <h2 class="text-3xl font-bold text-slate-400 mb-2">No Active Bookings</h2>
       <p class="text-xl text-slate-400">Check in guests to start taking orders</p>
     </div>
   </div>

@@ -255,7 +255,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   defp load_order(socket) do
     order = Sales.get_order!(socket.assigns.order_id)
-    page_title = "Order: #{order.guest.name}"
+    page_title = "Order: #{order.booking.guest.name}"
     grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
     socket

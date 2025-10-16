@@ -20,15 +20,11 @@ defmodule CozyCheckoutWeb.GuestLive.FormComponent do
       >
         <.input field={@form[:name]} type="text" label="Name" required />
 
-        <.input field={@form[:room_number]} type="text" label="Room Number" />
+        <.input field={@form[:email]} type="email" label="Email" />
 
         <.input field={@form[:phone]} type="tel" label="Phone" />
 
-        <.input field={@form[:check_in_date]} type="date" label="Check-in Date" />
-
-        <.input field={@form[:check_out_date]} type="date" label="Check-out Date" />
-
-        <.input field={@form[:notes]} type="textarea" label="Notes" />
+        <.input field={@form[:notes]} type="textarea" label="Notes" rows="3" />
 
         <div class="mt-6 flex items-center justify-end gap-x-6">
           <.button type="submit" phx-disable-with="Saving...">Save Guest</.button>

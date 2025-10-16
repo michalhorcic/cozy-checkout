@@ -19,21 +19,6 @@ defmodule CozyCheckout.Guests do
   end
 
   @doc """
-  Returns the list of active guests (currently checked in).
-  """
-  def list_active_guests do
-    today = Date.utc_today()
-
-    Guest
-    |> where([g], is_nil(g.deleted_at))
-    |> where([g], not is_nil(g.check_in_date))
-    |> where([g], g.check_in_date <= ^today)
-    |> where([g], is_nil(g.check_out_date) or g.check_out_date >= ^today)
-    |> order_by([g], g.name)
-    |> Repo.all()
-  end
-
-  @doc """
   Gets a single guest.
   """
   def get_guest!(id) do

@@ -71,16 +71,13 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
                 Name
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room
+                Email
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Phone
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-in
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-out
+                Notes
               </th>
               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -93,16 +90,13 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
                 {guest.name}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {guest.room_number || "—"}
+                {guest.email || "—"}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {guest.phone || "—"}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {guest.check_in_date || "—"}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {guest.check_out_date || "—"}
+              <td class="px-6 py-4 text-sm text-gray-500">
+                {if guest.notes, do: String.slice(guest.notes, 0, 50) <> "...", else: "—"}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <.link
