@@ -48,6 +48,9 @@ defmodule CozyCheckoutWeb.Router do
     # Payments
     live "/payments", PaymentLive.Index, :index
     live "/payments/new", PaymentLive.New
+
+    # POHODA Export
+    live "/pohoda-export", PohodaExportLive.Index, :index
   end
 
   # Point of Sale (POS) - Touch-friendly interface for bar staff

@@ -1,0 +1,156 @@
+<Layouts.app flash={@flash}>
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-slate-900 mb-2">POHODA Export</h1>
+      <p class="text-slate-600">Export paid orders to POHODA accounting software</p>
+    </div>
+
+    <!-- Date Range Filter -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <form phx-submit="load_orders" class="flex flex-wrap gap-4 items-end">
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Date From</label>
+          <input
+            type="date"
+            name="date_from"
+            value={@date_from}
+            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-slate-700 mb-2">Date To</label>
+          <input
+            type="date"
+            name="date_to"
+            value={@date_to}
+            class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+
+        <button
+          type="submit"
+          class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+        >
+          Load Orders
+        </button>
+      </form>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+      <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+        <div class="flex gap-2">
+          <button
+            phx-click="select_all"
+            class="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          >
+            Select All
+          </button>
+          <button
+            phx-click="deselect_all"
+            class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+          >
+            Deselect All
+          </button>
+        </div>
+
+        <div class="text-sm text-slate-600">
+          {MapSet.size(@selected_orders)} / {length(@orders)} selected
+        </div>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                Select
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                Order Number
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                Guest
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                Date
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                Items
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-slate-700 uppercase tracking-wider">
+                Total
+              </th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-slate-200">
+            <tr :for={order <- @orders} class="hover:bg-slate-50 transition-colors">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <input
+                  type="checkbox"
+                  checked={MapSet.member?(@selected_orders, order.id)}
+                  phx-click="toggle_order"
+                  phx-value-order-id={order.id}
+                  class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                />
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+                {order.order_number}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                {order.guest.name}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                {Calendar.strftime(order.inserted_at, "%Y-%m-%d %H:%M")}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
+                {Enum.count(order.order_items)}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
+                {format_currency(order.total_amount)}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div :if={@orders == []} class="text-center py-12 text-slate-500">
+          No paid orders found for the selected date range
+        </div>
+      </div>
+    </div>
+
+    <!-- Export Button -->
+    <div class="flex justify-end">
+      <button
+        phx-click="export"
+        disabled={MapSet.size(@selected_orders) == 0}
+        class={[
+          "px-8 py-3 font-semibold rounded-lg transition-all",
+          if(MapSet.size(@selected_orders) > 0,
+            do: "bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl",
+            else: "bg-slate-300 text-slate-500 cursor-not-allowed"
+          )
+        ]}
+      >
+        <.icon name="hero-arrow-down-tray" class="w-5 h-5 inline-block mr-2" />
+        Export Selected Orders
+      </button>
+    </div>
+  </div>
+</Layouts.app>
+
+<script>
+  window.addEventListener("phx:download", (e) => {
+    const { content, filename } = e.detail;
+    const blob = new Blob([content], { type: "application/xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>

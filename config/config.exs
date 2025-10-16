@@ -60,6 +60,11 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# POHODA Export Configuration
+config :cozy_checkout,
+  pohoda_ico: "12345678",  # Your company ICO (tax ID) - CHANGE THIS
+  pohoda_default_account: "1"  # Default accounting account in POHODA - CHANGE THIS
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

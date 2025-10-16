@@ -336,4 +336,42 @@ defmodule CozyCheckout.Sales do
   def change_payment(%Payment{} = payment, attrs \\ %{}) do
     Payment.changeset(payment, attrs)
   end
+
+  ## POHODA Export
+
+  @doc """
+  Lists orders with preloaded associations for POHODA export.
+  """
+  def list_orders_for_pohoda_export(order_ids) do
+    from(o in Order,
+      where: o.id in ^order_ids,
+      where: o.status == "paid",
+      where: is_nil(o.deleted_at),
+      preload: [:guest, order_items: :product, payments: []]
+    )
+    |> Repo.all()
+    |> Enum.map(fn order ->
+      order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+      %{order | order_items: order_items}
+    end)
+  end
+
+  @doc """
+  Lists paid orders within a date range for POHODA export.
+  """
+  def list_paid_orders_by_date(date_from, date_to) do
+    from(o in Order,
+      where: o.status == "paid",
+      where: is_nil(o.deleted_at),
+      where: o.inserted_at >= ^date_from,
+      where: o.inserted_at <= ^date_to,
+      preload: [:guest, order_items: :product, payments: []],
+      order_by: [asc: o.inserted_at]
+    )
+    |> Repo.all()
+    |> Enum.map(fn order ->
+      order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+      %{order | order_items: order_items}
+    end)
+  end
 end

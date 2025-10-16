@@ -78,6 +78,15 @@ defmodule CozyCheckoutWeb.DashboardLive do
             navigate={~p"/payments"}
             color="teal"
           />
+
+          <%!-- POHODA Export --%>
+          <.dashboard_card
+            title="POHODA Export"
+            description="Export to accounting software"
+            icon="hero-arrow-down-tray"
+            navigate={~p"/pohoda-export"}
+            color="purple"
+          />
         </div>
       </div>
     </div>
