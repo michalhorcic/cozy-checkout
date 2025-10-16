@@ -75,6 +75,9 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
                 Category
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Unit Tracking
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Description
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -92,6 +95,9 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {product.category && product.category.name}
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {product.unit || "-"}
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 {product.description}

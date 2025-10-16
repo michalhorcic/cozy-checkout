@@ -30,6 +30,27 @@ defmodule CozyCheckoutWeb.ProductLive.FormComponent do
 
         <.input field={@form[:description]} type="textarea" label="Description" />
 
+        <.input
+          field={@form[:unit]}
+          type="select"
+          label="Unit (for accounting tracking)"
+          prompt="No tracking"
+          options={[{"Milliliters (ml)", "ml"}, {"Liters (L)", "L"}, {"Pieces", "pcs"}]}
+        />
+
+        <div>
+          <.input
+            field={@form[:default_unit_amounts]}
+            type="text"
+            label="Default Unit Amounts (optional)"
+            placeholder="e.g., [300, 500, 1000] for preset portions"
+            phx-debounce="500"
+          />
+          <p class="mt-1 text-sm text-gray-500">
+            Enter preset portion sizes as a JSON array (e.g., [300, 500, 1000] for 300ml, 500ml, 1000ml). Leave empty to allow free-form entry when ordering.
+          </p>
+        </div>
+
         <.input field={@form[:active]} type="checkbox" label="Active" />
 
         <div class="mt-6 flex items-center justify-end gap-x-6">

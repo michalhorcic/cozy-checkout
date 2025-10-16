@@ -26,10 +26,66 @@ import {hooks as colocatedHooks} from "phoenix-colocated/cozy_checkout"
 import topbar from "../vendor/topbar"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+// Custom hooks
+const Hooks = {
+  ProductUnitTracker: {
+    mounted() {
+      this.handleProductChange = () => {
+        const productId = this.el.value
+        const products = JSON.parse(this.el.dataset.products || '[]')
+        const product = products.find(p => p.id === productId)
+        
+        const container = document.getElementById('unit-amount-container')
+        const input = document.getElementById('unit-amount-input')
+        const label = document.getElementById('unit-label')
+        const helpText = document.getElementById('unit-help-text')
+        
+        if (product && product.unit) {
+          container.classList.remove('hidden')
+          label.textContent = `(${product.unit})`
+          input.required = true
+          
+          // Handle default amounts
+          if (product.default_amounts) {
+            try {
+              const amounts = JSON.parse(product.default_amounts)
+              if (Array.isArray(amounts) && amounts.length > 0) {
+                helpText.textContent = `Suggested: ${amounts.join(', ')}`
+                // Optionally set first value as default
+                if (input.value === '') {
+                  input.value = amounts[0]
+                }
+              } else {
+                helpText.textContent = ''
+              }
+            } catch (e) {
+              helpText.textContent = ''
+            }
+          } else {
+            helpText.textContent = ''
+          }
+        } else {
+          container.classList.add('hidden')
+          input.required = false
+          input.value = ''
+          helpText.textContent = ''
+        }
+      }
+      
+      this.el.addEventListener('change', this.handleProductChange)
+    },
+    
+    destroyed() {
+      this.el.removeEventListener('change', this.handleProductChange)
+    }
+  }
+}
+
 const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...colocatedHooks},
+  hooks: {...colocatedHooks, ...Hooks},
 })
 
 // Show progress bar on live navigation and form submits

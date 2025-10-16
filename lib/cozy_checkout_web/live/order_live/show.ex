@@ -94,7 +94,14 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                 <div class="flex-1">
                   <div class="font-medium text-gray-900">{item.product.name}</div>
                   <div class="text-sm text-gray-500">
-                    {item.quantity} × ${item.unit_price} (VAT: {item.vat_rate}%)
+                    <%= if item.unit_amount do %>
+                      {item.quantity} × {item.unit_amount}{item.product.unit} = {Decimal.mult(item.quantity, item.unit_amount)}{item.product.unit}
+                      <span class="text-gray-400">|</span>
+                    <% else %>
+                      Quantity: {item.quantity}
+                      <span class="text-gray-400">|</span>
+                    <% end %>
+                    ${item.unit_price} (VAT: {item.vat_rate}%)
                   </div>
                 </div>
                 <div class="text-lg font-bold text-gray-900">${item.subtotal}</div>

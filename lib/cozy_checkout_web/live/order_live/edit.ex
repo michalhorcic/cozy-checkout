@@ -24,8 +24,19 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
-  def handle_event("add_item", %{"product_id" => product_id, "quantity" => quantity}, socket) do
+  def handle_event("add_item", %{"product_id" => product_id, "quantity" => quantity} = params, socket) do
     quantity = String.to_integer(quantity)
+    unit_amount = Map.get(params, "unit_amount", "")
+
+    unit_amount =
+      case unit_amount do
+        "" -> nil
+        value ->
+          case Decimal.parse(value) do
+            {amount, _} -> amount
+            :error -> nil
+          end
+      end
 
     product_id =
       case product_id do
@@ -47,6 +58,14 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
           "vat_rate" => pricelist.vat_rate,
           "subtotal" => Decimal.mult(pricelist.price, quantity)
         }
+
+        # Add unit_amount if it exists
+        attrs =
+          if unit_amount do
+            Map.put(attrs, "unit_amount", unit_amount)
+          else
+            attrs
+          end
 
         case Sales.create_order_item(attrs) do
           {:ok, _item} ->
@@ -187,17 +206,22 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
           <%!-- Add Items --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Add Items</h2>
-            <form phx-submit="add_item" class="space-y-4">
+            <form phx-submit="add_item" id="add-item-form-edit" class="space-y-4">
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="md:col-span-2">
                   <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
                   <select
                     name="product_id"
+                    id="product-select-edit"
+                    phx-hook="ProductUnitTracker"
+                    data-products={Jason.encode!(Enum.map(@products, fn p -> %{id: p.id, unit: p.unit, default_amounts: p.default_unit_amounts} end))}
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     required
                   >
                     <option value="">Select a product</option>
-                    <option :for={product <- @products} value={product.id}>{product.name}</option>
+                    <option :for={product <- @products} value={product.id}>
+                      {product.name}{if product.unit, do: " (#{product.unit})", else: ""}
+                    </option>
                   </select>
                 </div>
                 <div>
@@ -212,6 +236,24 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                   />
                 </div>
               </div>
+
+              <div id="unit-amount-container" class="hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-1">
+                  Unit Amount
+                  <span id="unit-label" class="text-gray-500"></span>
+                </label>
+                <input
+                  type="number"
+                  name="unit_amount"
+                  id="unit-amount-input"
+                  step="0.01"
+                  min="0"
+                  placeholder="e.g., 500 for 500ml"
+                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <p class="mt-1 text-sm text-gray-500" id="unit-help-text"></p>
+              </div>
+
               <.button type="submit" class="w-full">
                 <.icon name="hero-plus" class="w-5 h-5 mr-2" />
                 Add Item
@@ -235,7 +277,14 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                 <div class="flex-1">
                   <div class="font-medium text-gray-900">{item.product.name}</div>
                   <div class="text-sm text-gray-500">
-                    {item.quantity} × ${item.unit_price} (VAT: {item.vat_rate}%)
+                    <%= if item.unit_amount do %>
+                      {item.quantity} × {item.unit_amount}{item.product.unit} = {Decimal.mult(item.quantity, item.unit_amount)}{item.product.unit}
+                      <span class="text-gray-400">|</span>
+                    <% else %>
+                      Quantity: {item.quantity}
+                      <span class="text-gray-400">|</span>
+                    <% end %>
+                    ${item.unit_price} (VAT: {item.vat_rate}%)
                   </div>
                 </div>
                 <div class="flex items-center space-x-4">
