@@ -70,6 +70,18 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
+  def handle_event("quick_add_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+
+    add_item_to_order(socket, product_id, unit_amount)
+  end
+
+  @impl true
   def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
     product_id = socket.assigns.selected_product.id
 

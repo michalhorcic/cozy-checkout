@@ -303,30 +303,33 @@
           {@selected_product.name}
         </h2>
         <p class="text-lg text-slate-600 mb-6">
-          Select or enter amount ({@selected_product.unit})
+          Select amount ({@selected_product.unit})
         </p>
 
-        <form phx-submit="confirm_unit_amount" class="space-y-4">
-          <!-- Quick Select Buttons -->
-          <%= if @selected_product.default_unit_amounts do %>
-            <div class="grid grid-cols-3 gap-3 mb-6">
+        <!-- Quick Select Buttons -->
+        <%= if @selected_product.default_unit_amounts do %>
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Quick Add</p>
+            <div class="grid grid-cols-3 gap-3">
               <%= for amount <- parse_default_amounts(@selected_product.default_unit_amounts) do %>
                 <button
                   type="button"
                   data-unit-amount={amount}
-                  class="bg-blue-100 hover:bg-blue-200 text-blue-900 font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all"
+                  class="bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
                 >
                   {amount}
-                  <span class="text-sm block">{@selected_product.unit}</span>
+                  <span class="text-sm block mt-1">{@selected_product.unit}</span>
                 </button>
               <% end %>
             </div>
-          <% end %>
-          
-<!-- Custom Amount Input -->
+          </div>
+        <% end %>
+
+        <form phx-submit="confirm_unit_amount" class="space-y-4">
+          <!-- Custom Amount Input -->
           <div>
             <label class="block text-lg font-semibold text-slate-700 mb-2">
-              Custom Amount ({@selected_product.unit})
+              Or enter custom amount ({@selected_product.unit})
             </label>
             <input
               type="number"
@@ -337,11 +340,10 @@
               required
               class="w-full text-3xl font-bold px-6 py-4 border-4 border-slate-300 rounded-2xl focus:border-blue-500 focus:outline-none"
               placeholder="Enter amount"
-              autofocus
             />
           </div>
-          
-<!-- Action Buttons -->
+
+          <!-- Action Buttons -->
           <div class="grid grid-cols-2 gap-4 pt-4">
             <button
               type="button"
@@ -352,9 +354,9 @@
             </button>
             <button
               type="submit"
-              class="bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
             >
-              Add Item
+              Add Custom
             </button>
           </div>
         </form>

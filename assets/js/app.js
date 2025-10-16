@@ -126,8 +126,8 @@ const Hooks = {
       buttons.forEach(button => {
         button.addEventListener('click', (e) => {
           const amount = e.currentTarget.dataset.unitAmount
-          input.value = amount
-          input.focus()
+          // Directly add the item with this amount
+          this.pushEvent("quick_add_unit_amount", {unit_amount: amount})
         })
       })
     }
