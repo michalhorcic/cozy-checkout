@@ -430,7 +430,7 @@ invoice_counters = %{}
       date = DateTime.to_date(order.inserted_at)
       counter = Map.get(counters, date, 0) + 1
       invoice_number = SeedHelper.generate_invoice_number(date, counter)
-      
+
       payment = Repo.insert!(%Payment{
         order_id: order.id,
         amount: order.total_amount,
@@ -440,21 +440,21 @@ invoice_counters = %{}
         invoice_number: invoice_number
       })
       {[payment], Map.put(counters, date, counter)}
-    
+
     :partially_paid ->
       # Create 1-2 partial payments
       num_payments = Enum.random(1..2)
       payment_dates = Enum.map(1..num_payments, fn _ ->
         SeedHelper.random_datetime_in_range(order.inserted_at, DateTime.utc_now())
       end) |> Enum.sort()
-      
+
       date = DateTime.to_date(order.inserted_at)
-      
+
       {payments_list, new_counter} = Enum.map_reduce(payment_dates, Map.get(counters, date, 0), fn payment_date, counter ->
         amount = Decimal.mult(order.total_amount, Decimal.from_float(:rand.uniform() * 0.7))
         new_counter = counter + 1
         invoice_number = SeedHelper.generate_invoice_number(date, new_counter)
-        
+
         payment = Repo.insert!(%Payment{
           order_id: order.id,
           amount: amount,
@@ -463,12 +463,12 @@ invoice_counters = %{}
           notes: "Partial payment",
           invoice_number: invoice_number
         })
-        
+
         {payment, new_counter}
       end)
-      
+
       {payments_list, Map.put(counters, date, new_counter)}
-    
+
     _ ->
       {[], counters}
   end
