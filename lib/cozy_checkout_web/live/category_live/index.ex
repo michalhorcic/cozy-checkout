@@ -58,8 +58,7 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
         </div>
         <.link patch={~p"/categories/new"}>
           <.button>
-            <.icon name="hero-plus" class="w-5 h-5 mr-2" />
-            New Category
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Category
           </.button>
         </.link>
       </div>

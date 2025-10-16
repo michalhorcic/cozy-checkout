@@ -58,8 +58,7 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
         </div>
         <.link patch={~p"/guests/new"}>
           <.button>
-            <.icon name="hero-plus" class="w-5 h-5 mr-2" />
-            New Guest
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Guest
           </.button>
         </.link>
       </div>

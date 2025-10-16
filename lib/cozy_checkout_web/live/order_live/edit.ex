@@ -27,13 +27,19 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
-  def handle_event("add_item", %{"product_id" => product_id, "quantity" => quantity} = params, socket) do
+  def handle_event(
+        "add_item",
+        %{"product_id" => product_id, "quantity" => quantity} = params,
+        socket
+      ) do
     quantity = String.to_integer(quantity)
     unit_amount = Map.get(params, "unit_amount", "")
 
     unit_amount =
       case unit_amount do
-        "" -> nil
+        "" ->
+          nil
+
         value ->
           case Decimal.parse(value) do
             {amount, _} -> amount
@@ -75,18 +81,18 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
             # Recalculate order total
             {:ok, updated_order} = Sales.recalculate_order_total(socket.assigns.order)
 
-          # Reload order with items
-          order = Sales.get_order!(updated_order.id)
-          grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+            # Reload order with items
+            order = Sales.get_order!(updated_order.id)
+            grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
-          {:noreply,
-           socket
-           |> assign(:order, order)
-           |> assign(:grouped_items, grouped_items)
-           |> put_flash(:info, "Item added successfully")}
+            {:noreply,
+             socket
+             |> assign(:order, order)
+             |> assign(:grouped_items, grouped_items)
+             |> put_flash(:info, "Item added successfully")}
 
-        {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "Failed to add item")}
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to add item")}
         end
       else
         {:noreply, put_flash(socket, :error, "No active pricelist found for #{product.name}")}
@@ -127,7 +133,9 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
   def handle_event("update_discount", %{"value" => discount}, socket) do
     discount_amount =
       case discount do
-        "" -> Decimal.new("0")
+        "" ->
+          Decimal.new("0")
+
         value ->
           case Decimal.parse(value) do
             {amount, _} -> amount
@@ -182,7 +190,10 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
     unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
 
     unit_amount = parse_unit_amount(unit_amount_str)
-    grouped_items = OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    grouped_items =
+      OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
     {:noreply, assign(socket, :grouped_items, grouped_items)}
   end
 
@@ -192,7 +203,10 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
     unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
 
     unit_amount = parse_unit_amount(unit_amount_str)
-    grouped_items = OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    grouped_items =
+      OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
     {:noreply, assign(socket, :grouped_items, grouped_items)}
   end
 
@@ -243,7 +257,10 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/orders/#{@order}"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link
+          navigate={~p"/orders/#{@order}"}
+          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+        >
           ← Back to Order
         </.link>
         <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
@@ -287,7 +304,13 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                     name="product_id"
                     id="product-select-edit"
                     phx-hook="ProductUnitTracker"
-                    data-products={Jason.encode!(Enum.map(@products, fn p -> %{id: p.id, unit: p.unit, default_amounts: p.default_unit_amounts} end))}
+                    data-products={
+                      Jason.encode!(
+                        Enum.map(@products, fn p ->
+                          %{id: p.id, unit: p.unit, default_amounts: p.default_unit_amounts}
+                        end)
+                      )
+                    }
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     required
                   >
@@ -312,8 +335,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
 
               <div id="unit-amount-container" class="hidden">
                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Unit Amount
-                  <span id="unit-label" class="text-gray-500"></span>
+                  Unit Amount <span id="unit-label" class="text-gray-500"></span>
                 </label>
                 <input
                   type="number"
@@ -328,8 +350,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
               </div>
 
               <.button type="submit" class="w-full">
-                <.icon name="hero-plus" class="w-5 h-5 mr-2" />
-                Add Item
+                <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Add Item
               </.button>
             </form>
           </div>
@@ -343,7 +364,10 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
             </div>
 
             <div :if={@grouped_items != []} class="space-y-2">
-              <div :for={group <- @grouped_items} class="border border-gray-200 rounded-lg overflow-hidden">
+              <div
+                :for={group <- @grouped_items}
+                class="border border-gray-200 rounded-lg overflow-hidden"
+              >
                 <!-- Grouped Item Display -->
                 <div class="p-4 bg-gray-50">
                   <div class="flex items-center justify-between">
@@ -351,13 +375,16 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                       <div class="font-medium text-gray-900">{group.product.name}</div>
                       <div class="text-sm text-gray-500">
                         <%= if group.unit_amount do %>
-                          {Decimal.round(group.total_quantity, 2)} × {group.unit_amount}{group.product.unit} = {Decimal.mult(group.total_quantity, group.unit_amount)}{group.product.unit}
+                          {Decimal.round(group.total_quantity, 2)} × {group.unit_amount}{group.product.unit} = {Decimal.mult(
+                            group.total_quantity,
+                            group.unit_amount
+                          )}{group.product.unit}
                           <span class="text-gray-400">|</span>
                         <% else %>
                           Total Quantity: {Decimal.round(group.total_quantity, 2)}
                           <span class="text-gray-400">|</span>
                         <% end %>
-                        ${group.price_per_unit} (VAT: {group.vat_rate}%)
+                        {format_currency(group.price_per_unit)} (VAT: {group.vat_rate}%)
                         <%= if group.grouped? do %>
                           <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                             {length(group.items)} items
@@ -366,14 +393,17 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                       </div>
                     </div>
                     <div class="flex items-center space-x-4">
-                      <div class="text-lg font-bold text-gray-900">${Decimal.round(group.total_price, 2)}</div>
+                      <div class="text-lg font-bold text-gray-900">
+                        {format_currency(group.total_price)}
+                      </div>
                       <button
                         type="button"
                         phx-click="remove_group"
                         phx-value-item-ids={Jason.encode!(group.item_ids)}
                         data-confirm={
                           if group.grouped?,
-                            do: "Are you sure you want to remove all #{length(group.items)} items in this group?",
+                            do:
+                              "Are you sure you want to remove all #{length(group.items)} items in this group?",
                             else: "Are you sure you want to remove this item?"
                         }
                         class="text-red-600 hover:text-red-800"
@@ -383,7 +413,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                     </div>
                   </div>
 
-                  <!-- Expand/Collapse Button for Grouped Items -->
+    <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
                       phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
@@ -392,8 +422,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                       class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
                     >
                       <%= if group.expanded? do %>
-                        <.icon name="hero-chevron-up" class="w-4 h-4" />
-                        Hide individual items
+                        <.icon name="hero-chevron-up" class="w-4 h-4" /> Hide individual items
                       <% else %>
                         <.icon name="hero-chevron-down" class="w-4 h-4" />
                         Show {length(group.items)} individual items
@@ -402,7 +431,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                   <% end %>
                 </div>
 
-                <!-- Individual Items (when expanded) -->
+    <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-gray-200">
                     <div
@@ -419,7 +448,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                         </div>
                         <div class="flex items-center space-x-3">
                           <div class="text-sm text-gray-900 font-medium">
-                            ${Decimal.round(item.subtotal, 2)}
+                            {format_currency(item.subtotal)}
                           </div>
                           <button
                             type="button"
@@ -449,7 +478,9 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
               <div class="flex justify-between text-gray-600">
                 <span>Subtotal:</span>
                 <span>
-                  ${Decimal.add(@order.total_amount, @order.discount_amount || Decimal.new("0"))}
+                  {format_currency(
+                    Decimal.add(@order.total_amount, @order.discount_amount || Decimal.new("0"))
+                  )}
                 </span>
               </div>
 
@@ -469,7 +500,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
               <div class="border-t pt-3">
                 <div class="flex justify-between text-xl font-bold text-gray-900">
                   <span>Total:</span>
-                  <span>${@order.total_amount}</span>
+                  <span>{format_currency(@order.total_amount)}</span>
                 </div>
               </div>
 

@@ -65,7 +65,13 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
             type="select"
             label="Order"
             prompt="Select an order"
-            options={Enum.map(@orders, &{"#{&1.order_number} - #{&1.guest.name} ($#{&1.total_amount})", &1.id})}
+            options={
+              Enum.map(
+                @orders,
+                &{"#{&1.order_number} - #{&1.guest.name} (#{format_currency(&1.total_amount)})",
+                 &1.id}
+              )
+            }
             required
           />
 
@@ -84,7 +90,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Total:</span>
-                <span class="font-medium">${@order.total_amount}</span>
+                <span class="font-medium">{format_currency(@order.total_amount)}</span>
               </div>
             </div>
           </div>
@@ -104,7 +110,9 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
           <.input field={@form[:notes]} type="textarea" label="Notes" />
 
           <div class="mt-6">
-            <.button type="submit" phx-disable-with="Recording..." class="w-full">Record Payment</.button>
+            <.button type="submit" phx-disable-with="Recording..." class="w-full">
+              Record Payment
+            </.button>
           </div>
         </.form>
       </div>

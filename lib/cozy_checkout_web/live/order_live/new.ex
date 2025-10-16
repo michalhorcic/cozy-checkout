@@ -28,13 +28,19 @@ defmodule CozyCheckoutWeb.OrderLive.New do
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
-  def handle_event("add_item", %{"product_id" => product_id, "quantity" => quantity} = params, socket) do
+  def handle_event(
+        "add_item",
+        %{"product_id" => product_id, "quantity" => quantity} = params,
+        socket
+      ) do
     quantity = String.to_integer(quantity)
     unit_amount = Map.get(params, "unit_amount", "")
 
     unit_amount =
       case unit_amount do
-        "" -> nil
+        "" ->
+          nil
+
         value ->
           case Decimal.parse(value) do
             {amount, _} -> amount
@@ -89,7 +95,9 @@ defmodule CozyCheckoutWeb.OrderLive.New do
   def handle_event("update_discount", %{"value" => discount}, socket) do
     discount_amount =
       case discount do
-        "" -> Decimal.new("0")
+        "" ->
+          Decimal.new("0")
+
         value ->
           case Decimal.parse(value) do
             {amount, _} -> amount
@@ -219,7 +227,12 @@ defmodule CozyCheckoutWeb.OrderLive.New do
                 type="select"
                 label="Guest"
                 prompt="Select a guest"
-                options={Enum.map(@guests, &{&1.name <> if(&1.room_number, do: " (Room #{&1.room_number})", else: ""), &1.id})}
+                options={
+                  Enum.map(
+                    @guests,
+                    &{&1.name <> if(&1.room_number, do: " (Room #{&1.room_number})", else: ""), &1.id}
+                  )
+                }
                 required
               />
               <.input field={@form[:notes]} type="textarea" label="Order Notes" />
@@ -237,7 +250,13 @@ defmodule CozyCheckoutWeb.OrderLive.New do
                     name="product_id"
                     id="product-select"
                     phx-hook="ProductUnitTracker"
-                    data-products={Jason.encode!(Enum.map(@products, fn p -> %{id: p.id, unit: p.unit, default_amounts: p.default_unit_amounts} end))}
+                    data-products={
+                      Jason.encode!(
+                        Enum.map(@products, fn p ->
+                          %{id: p.id, unit: p.unit, default_amounts: p.default_unit_amounts}
+                        end)
+                      )
+                    }
                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     required
                   >
@@ -262,8 +281,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
 
               <div id="unit-amount-container" class="hidden">
                 <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Unit Amount
-                  <span id="unit-label" class="text-gray-500"></span>
+                  Unit Amount <span id="unit-label" class="text-gray-500"></span>
                 </label>
                 <input
                   type="number"
@@ -278,8 +296,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
               </div>
 
               <.button type="submit" class="w-full">
-                <.icon name="hero-plus" class="w-5 h-5 mr-2" />
-                Add Item
+                <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Add Item
               </.button>
             </form>
           </div>
@@ -301,17 +318,20 @@ defmodule CozyCheckoutWeb.OrderLive.New do
                   <div class="font-medium text-gray-900">{item.product.name}</div>
                   <div class="text-sm text-gray-500">
                     <%= if item.unit_amount do %>
-                      {item.quantity} × {item.unit_amount}{item.product.unit} = {Decimal.mult(item.quantity, item.unit_amount)}{item.product.unit}
+                      {item.quantity} × {item.unit_amount}{item.product.unit} = {Decimal.mult(
+                        item.quantity,
+                        item.unit_amount
+                      )}{item.product.unit}
                       <span class="text-gray-400">|</span>
                     <% else %>
                       Quantity: {item.quantity}
                       <span class="text-gray-400">|</span>
                     <% end %>
-                    ${item.unit_price} (VAT: {item.vat_rate}%)
+                    {format_currency(item.unit_price)} (VAT: {item.vat_rate}%)
                   </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                  <div class="text-lg font-bold text-gray-900">${item.subtotal}</div>
+                  <div class="text-lg font-bold text-gray-900">{format_currency(item.subtotal)}</div>
                   <button
                     type="button"
                     phx-click="remove_item"
@@ -335,9 +355,11 @@ defmodule CozyCheckoutWeb.OrderLive.New do
               <div class="flex justify-between text-gray-600">
                 <span>Subtotal:</span>
                 <span>
-                  ${Enum.reduce(@order_items, Decimal.new("0"), fn item, acc ->
-                    Decimal.add(acc, item.subtotal)
-                  end)}
+                  {format_currency(
+                    Enum.reduce(@order_items, Decimal.new("0"), fn item, acc ->
+                      Decimal.add(acc, item.subtotal)
+                    end)
+                  )}
                 </span>
               </div>
 
@@ -357,7 +379,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
               <div class="border-t pt-3">
                 <div class="flex justify-between text-xl font-bold text-gray-900">
                   <span>Total:</span>
-                  <span>${calculate_total(@order_items, @discount_amount)}</span>
+                  <span>{format_currency(calculate_total(@order_items, @discount_amount))}</span>
                 </div>
               </div>
             </div>

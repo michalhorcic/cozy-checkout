@@ -39,8 +39,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
         </div>
         <.link navigate={~p"/orders/new"}>
           <.button>
-            <.icon name="hero-plus" class="w-5 h-5 mr-2" />
-            New Order
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Order
           </.button>
         </.link>
       </div>
@@ -78,7 +77,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 {order.guest && order.guest.name}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${order.total_amount}
+                {format_currency(order.total_amount)}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class={[

@@ -28,13 +28,16 @@ defmodule CozyCheckoutWeb.OrderItemGrouper do
     end)
     |> Enum.map(fn {{_product_id, _unit_amount}, items} ->
       first = hd(items)
-      total_quantity = Enum.reduce(items, Decimal.new("0"), fn item, acc ->
-        Decimal.add(acc, item.quantity)
-      end)
 
-      total_price = Enum.reduce(items, Decimal.new("0"), fn item, acc ->
-        Decimal.add(acc, item.subtotal)
-      end)
+      total_quantity =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.quantity)
+        end)
+
+      total_price =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.subtotal)
+        end)
 
       %{
         product: first.product,

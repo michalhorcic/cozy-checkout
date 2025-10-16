@@ -87,6 +87,9 @@ defmodule CozyCheckoutWeb do
       # Core UI components
       import CozyCheckoutWeb.CoreComponents
 
+      # Currency formatting helper
+      import CozyCheckoutWeb.CurrencyHelper
+
       # Common modules used in templates
       alias Phoenix.LiveView.JS
       alias CozyCheckoutWeb.Layouts

@@ -21,7 +21,15 @@ defmodule CozyCheckout.Sales.OrderItem do
   @doc false
   def changeset(order_item, attrs) do
     order_item
-    |> cast(attrs, [:order_id, :product_id, :quantity, :unit_amount, :unit_price, :vat_rate, :subtotal])
+    |> cast(attrs, [
+      :order_id,
+      :product_id,
+      :quantity,
+      :unit_amount,
+      :unit_price,
+      :vat_rate,
+      :subtotal
+    ])
     |> validate_required([:order_id, :product_id, :quantity, :unit_price, :vat_rate, :subtotal])
     |> validate_number(:quantity, greater_than: 0)
     |> validate_number(:unit_amount, greater_than: 0)

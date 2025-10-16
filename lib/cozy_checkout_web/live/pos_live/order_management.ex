@@ -44,8 +44,9 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("add_product", %{"product-id" => product_id}, socket) do
-    product = Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
-              Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
 
     if product && product.unit do
       # Show modal for unit amount selection
@@ -100,7 +101,10 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
 
     unit_amount = parse_unit_amount(unit_amount_str)
-    grouped_items = OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    grouped_items =
+      OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
     {:noreply, assign(socket, :grouped_items, grouped_items)}
   end
 
@@ -110,7 +114,10 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
 
     unit_amount = parse_unit_amount(unit_amount_str)
-    grouped_items = OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    grouped_items =
+      OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
     {:noreply, assign(socket, :grouped_items, grouped_items)}
   end
 

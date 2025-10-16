@@ -93,7 +93,10 @@ defmodule CozyCheckoutWeb.PaymentLive.Index do
                 {Calendar.strftime(payment.payment_date, "%Y-%m-%d")}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <.link navigate={~p"/orders/#{payment.order}"} class="text-blue-600 hover:text-blue-800">
+                <.link
+                  navigate={~p"/orders/#{payment.order}"}
+                  class="text-blue-600 hover:text-blue-800"
+                >
                   {payment.order.order_number}
                 </.link>
               </td>
@@ -104,7 +107,7 @@ defmodule CozyCheckoutWeb.PaymentLive.Index do
                 {String.replace(payment.payment_method, "_", " ") |> String.capitalize()}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                ${payment.amount}
+                {format_currency(payment.amount)}
               </td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 {payment.notes || "—"}
