@@ -21,9 +21,14 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
   @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     order = Sales.get_order!(id)
-    {:ok, _} = Sales.delete_order(order)
 
-    {:noreply, stream_delete(socket, :orders, order)}
+    # Prevent deletion of paid orders - they serve as accounting history
+    if order.status == "paid" do
+      {:noreply, put_flash(socket, :error, "Cannot delete paid orders. They serve as accounting history.")}
+    else
+      {:ok, _} = Sales.delete_order(order)
+      {:noreply, stream_delete(socket, :orders, order)}
+    end
   end
 
   @impl true
@@ -100,13 +105,19 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 <.link navigate={~p"/admin/orders/#{order}"} class="text-blue-600 hover:text-blue-900 mr-4">
                   View
                 </.link>
-                <.link
-                  phx-click={JS.push("delete", value: %{id: order.id})}
-                  data-confirm="Are you sure?"
-                  class="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </.link>
+                <%= if order.status != "paid" do %>
+                  <.link
+                    phx-click={JS.push("delete", value: %{id: order.id})}
+                    data-confirm="Are you sure?"
+                    class="text-red-600 hover:text-red-900"
+                  >
+                    Delete
+                  </.link>
+                <% else %>
+                  <span class="text-gray-400 italic text-xs" title="Paid orders cannot be deleted">
+                    <.icon name="hero-lock-closed" class="w-4 h-4 inline" /> Locked
+                  </span>
+                <% end %>
               </td>
             </tr>
           </tbody>

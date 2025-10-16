@@ -84,11 +84,18 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             </p>
           </div>
           <div class="flex items-center space-x-4">
-            <.link navigate={~p"/admin/orders/#{@order}/edit"}>
+            <.link :if={@order.status != "paid"} navigate={~p"/admin/orders/#{@order}/edit"}>
               <.button>
                 <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> Edit Order
               </.button>
             </.link>
+            <div
+              :if={@order.status == "paid"}
+              class="text-sm text-gray-500 italic"
+              title="Paid orders cannot be edited as they serve as accounting history"
+            >
+              <.icon name="hero-lock-closed" class="w-5 h-5 inline" /> Locked for accounting
+            </div>
             <span class={[
               "px-4 py-2 inline-flex text-lg font-semibold rounded-full",
               case @order.status do

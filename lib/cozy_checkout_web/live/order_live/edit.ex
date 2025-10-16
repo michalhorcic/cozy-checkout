@@ -7,18 +7,29 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     order = Sales.get_order!(id)
-    products = Catalog.list_products()
-    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
-    socket =
-      socket
-      |> assign(:page_title, "Edit Order")
-      |> assign(:order, order)
-      |> assign(:grouped_items, grouped_items)
-      |> assign(:products, products)
-      |> assign(:form, to_form(Sales.change_order(order)))
+    # Prevent editing paid orders - they serve as history for accounting
+    if order.status == "paid" do
+      socket =
+        socket
+        |> put_flash(:error, "Cannot edit paid orders. They serve as accounting history.")
+        |> redirect(to: ~p"/admin/orders/#{order}")
 
-    {:ok, socket}
+      {:ok, socket}
+    else
+      products = Catalog.list_products()
+      grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+      socket =
+        socket
+        |> assign(:page_title, "Edit Order")
+        |> assign(:order, order)
+        |> assign(:grouped_items, grouped_items)
+        |> assign(:products, products)
+        |> assign(:form, to_form(Sales.change_order(order)))
+
+      {:ok, socket}
+    end
   end
 
   @impl true
