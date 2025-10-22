@@ -6,7 +6,14 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, stream(socket, :bookings, Bookings.list_bookings())}
+    bookings =
+      Bookings.list_bookings()
+      |> Enum.map(fn booking ->
+        rooms = Bookings.list_booking_rooms(booking.id)
+        Map.put(booking, :rooms_list, rooms)
+      end)
+
+    {:ok, stream(socket, :bookings, bookings)}
   end
 
   @impl true
@@ -34,7 +41,11 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   @impl true
   def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, booking}}, socket) do
-    {:noreply, stream_insert(socket, :bookings, Bookings.get_booking!(booking.id))}
+    updated_booking = Bookings.get_booking!(booking.id)
+    rooms = Bookings.list_booking_rooms(updated_booking.id)
+    updated_booking = Map.put(updated_booking, :rooms_list, rooms)
+
+    {:noreply, stream_insert(socket, :bookings, updated_booking)}
   end
 
   @impl true
@@ -93,7 +104,11 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                 {booking.guest.name}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {booking.room_number || "—"}
+                <%= if Map.get(booking, :rooms_list) && booking.rooms_list != [] do %>
+                  {Enum.map_join(booking.rooms_list, ", ", & &1.room_number)}
+                <% else %>
+                  —
+                <% end %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {Calendar.strftime(booking.check_in_date, "%b %d, %Y")}

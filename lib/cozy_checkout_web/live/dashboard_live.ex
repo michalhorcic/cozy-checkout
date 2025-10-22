@@ -63,6 +63,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
           />
 
           <.dashboard_card
+            title="Rooms"
+            description="Manage cottage rooms"
+            icon="hero-home"
+            navigate={~p"/admin/rooms"}
+            color="cyan"
+          />
+
+          <.dashboard_card
             title="Bookings"
             description="Manage guest bookings & stays"
             icon="hero-calendar-days"

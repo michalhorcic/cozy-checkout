@@ -11,11 +11,13 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
   @impl true
   def handle_params(%{"id" => id}, _, socket) do
     booking = Bookings.get_booking!(id)
+    rooms = Bookings.list_booking_rooms(booking.id)
 
     {:noreply,
      socket
      |> assign(:page_title, "Booking Details")
-     |> assign(:booking, booking)}
+     |> assign(:booking, booking)
+     |> assign(:rooms, rooms)}
   end
 
   @impl true
@@ -72,9 +74,18 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
         <div class="bg-white shadow-lg rounded-lg p-6">
           <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Details</h2>
           <div class="grid grid-cols-2 gap-4">
-            <div :if={@booking.room_number}>
-              <p class="text-sm text-gray-500">Room Number</p>
-              <p class="text-lg font-medium text-gray-900">{@booking.room_number}</p>
+            <div :if={@rooms != []}>
+              <p class="text-sm text-gray-500">Rooms</p>
+              <div class="flex flex-wrap gap-2 mt-1">
+                <%= for room <- @rooms do %>
+                  <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
+                    {room.room_number}
+                    <%= if room.name do %>
+                      - {room.name}
+                    <% end %>
+                  </span>
+                <% end %>
+              </div>
             </div>
             <div>
               <p class="text-sm text-gray-500">Status</p>

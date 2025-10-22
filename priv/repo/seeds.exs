@@ -275,6 +275,37 @@ guests =
 
 IO.puts("Created #{length(guests)} guests")
 
+IO.puts("Creating rooms...")
+
+# Create 13 rooms
+room_data = [
+  {"101", "Mountain View", "Cozy room with a beautiful view of the mountains", 2},
+  {"102", "Forest Room", "Peaceful room overlooking the forest", 2},
+  {"103", "Lake Suite", "Spacious suite with lake view", 4},
+  {"104", "Deluxe Double", "Comfortable double room with modern amenities", 2},
+  {"105", "Family Room", "Large room perfect for families", 4},
+  {"201", "Attic Retreat", "Charming attic room with sloped ceilings", 2},
+  {"202", "Garden View", "Room with a view of the garden", 2},
+  {"203", "Premium Suite", "Luxurious suite with premium furnishings", 3},
+  {"204", "Standard Double", "Standard room with double bed", 2},
+  {"205", "Triple Room", "Room with three single beds", 3},
+  {"301", "Penthouse", "Top floor penthouse with panoramic views", 4},
+  {"302", "Cozy Single", "Perfect for solo travelers", 1},
+  {"303", "Honeymoon Suite", "Romantic suite for couples", 2}
+]
+
+rooms =
+  Enum.map(room_data, fn {room_number, name, description, capacity} ->
+    Repo.insert!(%CozyCheckout.Rooms.Room{
+      room_number: room_number,
+      name: name,
+      description: description,
+      capacity: capacity
+    })
+  end)
+
+IO.puts("Created #{length(rooms)} rooms")
+
 IO.puts("Creating bookings...")
 
 # Create 300 bookings - some guests have multiple bookings
@@ -346,6 +377,17 @@ bookings =
             status: status,
             notes: if(:rand.uniform() > 0.9, do: "Late check-in requested", else: nil)
           })
+
+        # Assign 1-2 random rooms to the booking (most bookings have 1 room)
+        num_rooms = if :rand.uniform() > 0.8, do: 2, else: 1
+        selected_rooms = Enum.take_random(rooms, num_rooms)
+
+        Enum.each(selected_rooms, fn room ->
+          Repo.insert!(%CozyCheckout.Bookings.BookingRoom{
+            booking_id: booking.id,
+            room_id: room.id
+          })
+        end)
 
         {:cont, {[booking | bookings_acc], MapSet.put(used_combos, combination)}}
     end

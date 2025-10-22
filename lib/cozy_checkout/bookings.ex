@@ -8,6 +8,8 @@ defmodule CozyCheckout.Bookings do
 
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Rooms
 
   @doc """
   Returns the list of bookings.
@@ -221,11 +223,88 @@ defmodule CozyCheckout.Bookings do
   end
 
   @doc """
-  Gets a single booking guest.
+  Gets a booking guest.
   """
   def get_booking_guest!(id) do
     BookingGuest
     |> preload(:guest)
     |> Repo.get!(id)
+  end
+
+  # Booking Rooms Management
+
+  @doc """
+  Lists all rooms for a booking.
+  """
+  def list_booking_rooms(booking_id) do
+    Rooms.get_booking_rooms(booking_id)
+  end
+
+  @doc """
+  Adds a room to a booking with validation to prevent double-booking.
+  """
+  def add_room_to_booking(booking_id, room_id) do
+    booking = get_booking!(booking_id)
+
+    # Check if room is available for this booking's dates
+    check_out_date = booking.check_out_date || Date.add(booking.check_in_date, 365)
+
+    if Rooms.room_available?(room_id, booking.check_in_date, check_out_date, booking_id) do
+      %BookingRoom{}
+      |> BookingRoom.changeset(%{
+        booking_id: booking_id,
+        room_id: room_id
+      })
+      |> Repo.insert()
+    else
+      {:error, :room_not_available}
+    end
+  end
+
+  @doc """
+  Removes a room from a booking.
+  """
+  def remove_room_from_booking(booking_id, room_id) do
+    case Repo.get_by(BookingRoom, booking_id: booking_id, room_id: room_id) do
+      nil -> {:error, :not_found}
+      booking_room -> Repo.delete(booking_room)
+    end
+  end
+
+  @doc """
+  Sets rooms for a booking (replaces existing rooms).
+  Validates that all rooms are available for the booking dates.
+  """
+  def set_booking_rooms(booking_id, room_ids) do
+    booking = get_booking!(booking_id)
+    check_out_date = booking.check_out_date || Date.add(booking.check_in_date, 365)
+
+    # Validate all rooms are available
+    unavailable_rooms =
+      Enum.reject(room_ids, fn room_id ->
+        Rooms.room_available?(room_id, booking.check_in_date, check_out_date, booking_id)
+      end)
+
+    if Enum.empty?(unavailable_rooms) do
+      Repo.transaction(fn ->
+        # Remove existing room associations
+        from(br in BookingRoom, where: br.booking_id == ^booking_id)
+        |> Repo.delete_all()
+
+        # Add new room associations
+        Enum.each(room_ids, fn room_id ->
+          %BookingRoom{}
+          |> BookingRoom.changeset(%{
+            booking_id: booking_id,
+            room_id: room_id
+          })
+          |> Repo.insert!()
+        end)
+
+        :ok
+      end)
+    else
+      {:error, {:rooms_not_available, unavailable_rooms}}
+    end
   end
 end
