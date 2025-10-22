@@ -120,4 +120,44 @@ defmodule CozyCheckout.Bookings do
       {:ok, booking}
     end
   end
+
+  @doc """
+  Returns bookings for a specific month.
+  Useful for calendar views.
+  """
+  def list_bookings_for_month(year, month) do
+    start_date = Date.new!(year, month, 1)
+    end_date = Date.end_of_month(start_date)
+
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where(
+      [b],
+      (b.check_in_date >= ^start_date and b.check_in_date <= ^end_date) or
+        (b.check_out_date >= ^start_date and b.check_out_date <= ^end_date) or
+        (b.check_in_date < ^start_date and
+           (is_nil(b.check_out_date) or b.check_out_date > ^end_date))
+    )
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.guest_id])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns bookings for a specific date range.
+  """
+  def list_bookings_for_date_range(start_date, end_date) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where(
+      [b],
+      (b.check_in_date >= ^start_date and b.check_in_date <= ^end_date) or
+        (b.check_out_date >= ^start_date and b.check_out_date <= ^end_date) or
+        (b.check_in_date < ^start_date and
+           (is_nil(b.check_out_date) or b.check_out_date > ^end_date))
+    )
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.guest_id])
+    |> Repo.all()
+  end
 end

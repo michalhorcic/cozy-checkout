@@ -70,6 +70,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
             color="rose"
           />
 
+          <.dashboard_card
+            title="Calendar"
+            description="View bookings calendar"
+            icon="hero-calendar"
+            navigate={~p"/admin/bookings/calendar"}
+            color="pink"
+          />
+
           <%!-- Sales Management --%>
           <.dashboard_card
             title="Orders"

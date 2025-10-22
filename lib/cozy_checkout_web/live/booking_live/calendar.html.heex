@@ -1,0 +1,99 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <%!-- Header --%>
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        ← Back to Dashboard
+      </.link>
+      <h1 class="text-4xl font-bold text-gray-900">Booking Calendar</h1>
+    </div>
+    <.link navigate={~p"/admin/bookings"}>
+      <.button>
+        <.icon name="hero-list-bullet" class="w-5 h-5 mr-2" /> List View
+      </.button>
+    </.link>
+  </div>
+
+  <%!-- Calendar Navigation --%>
+  <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+    <div class="flex justify-between items-center">
+      <button
+        phx-click="prev_month"
+        class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      >
+        <.icon name="hero-chevron-left" class="w-6 h-6 text-gray-600" />
+      </button>
+
+      <div class="flex items-center gap-4">
+        <h2 class="text-2xl font-bold text-gray-900">
+          {CalendarHelpers.month_name(@month)} {@year}
+        </h2>
+        <button
+          phx-click="today"
+          class="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+        >
+          Today
+        </button>
+      </div>
+
+      <button
+        phx-click="next_month"
+        class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      >
+        <.icon name="hero-chevron-right" class="w-6 h-6 text-gray-600" />
+      </button>
+    </div>
+  </div>
+
+  <%!-- Calendar Grid --%>
+  <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <%!-- Day Headers --%>
+    <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+      <%= for day <- 1..7 do %>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+          {CalendarHelpers.day_name(day)}
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Calendar Days --%>
+    <div class="grid grid-cols-7">
+      <%= for week <- @weeks do %>
+        <%= for day <- week do %>
+          <%= if day do %>
+            <.day_cell
+              date={day}
+              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
+              is_today={CalendarHelpers.today?(day)}
+            />
+          <% else %>
+            <div class="min-h-[120px] bg-gray-50 border-r border-b border-gray-100"></div>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Legend --%>
+  <div class="mt-6 bg-white shadow-lg rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Legend</h3>
+    <div class="flex flex-wrap gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-blue-100 border-2 border-blue-300"></div>
+        <span class="text-sm text-gray-700">Upcoming</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-green-100 border-2 border-green-300"></div>
+        <span class="text-sm text-gray-700">Active</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-gray-100 border-2 border-gray-300"></div>
+        <span class="text-sm text-gray-700">Completed</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-red-100 border-2 border-red-300"></div>
+        <span class="text-sm text-gray-700">Cancelled</span>
+      </div>
+    </div>
+  </div>
+</div>
