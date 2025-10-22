@@ -126,6 +126,9 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Per-item VAT for flexibility (in case you add extras with different rates).
     *   Cache the total on the `booking_invoice` header.
 *   The quantity field in `booking_invoice_items` must allow zero values.
+*   Add `item_type` (string, default: "person", null: false) to the `booking_invoice_items` table, and create an index on this column. The `item_type` field should be validated to be either "person" or "extra".
+*   When calculating occupancy, use the `booking_invoice_items` table and filter by `item_type = "person"` to count the number of people booked for a given date.
+*   The cottage capacity is 45 people. This value is hardcoded in the `CozyCheckout.Bookings` module.
 
 ## TECH STACK
 
@@ -208,3 +211,11 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Per-item VAT for flexibility (in case you add extras with different rates).
     *   Cache the total on the `booking_invoice` header.
 *   The quantity field in `booking_invoice_items` must allow zero values.
+*   Add `item_type` (string, default: "person", null: false) to the `booking_invoice_items` table, and create an index on this column. The `item_type` field should be validated to be either "person" or "extra".
+*   When calculating occupancy, use the `booking_invoice_items` table and filter by `item_type = "person"` to count the number of people booked for a given date.
+*   The cottage capacity is 45 people. This value is hardcoded in the `CozyCheckout.Bookings` module.
+*   When displaying the calendar view, show the total number of booked people for each day, color-coded against the capacity limit.
+    *   🟢 Green (0-29): Plenty of space
+    *   🟡 Yellow (30-39): Getting full
+    *   🟠 Orange (40-44): Almost full
+    *   🔴 Red (45+): At/over capacity

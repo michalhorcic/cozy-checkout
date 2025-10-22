@@ -61,6 +61,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
               <thead class="bg-gray-50">
                 <tr>
                   <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
                   <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
                   <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/Night</th>
                   <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">VAT %</th>
@@ -72,7 +73,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
               <tbody class="bg-white divide-y divide-gray-200">
                 <%= if @invoice.items == [] && @editing_item_id != :new do %>
                   <tr>
-                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="8" class="px-4 py-8 text-center text-gray-500">
                       No items yet. Click "Add Item" to create one.
                     </td>
                   </tr>
@@ -82,11 +83,18 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                   <%= if @editing_item_id == item.id do %>
                     <%!-- Edit Mode --%>
                     <tr class="bg-blue-50">
-                      <td colspan="7" class="px-4 py-3">
+                      <td colspan="8" class="px-4 py-3">
                         <.form for={@item_form} id={"item-form-#{item.id}"} phx-target={@myself} phx-submit="save_item">
-                          <div class="grid grid-cols-6 gap-3">
+                          <div class="grid grid-cols-7 gap-3">
                             <div class="col-span-2">
                               <.input field={@item_form[:name]} type="text" placeholder="Item name" />
+                            </div>
+                            <div>
+                              <.input
+                                field={@item_form[:item_type]}
+                                type="select"
+                                options={[{"Person", "person"}, {"Extra", "extra"}]}
+                              />
                             </div>
                             <div>
                               <.input field={@item_form[:quantity]} type="number" min="0" placeholder="Qty" />
@@ -134,6 +142,15 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                     <%!-- Display Mode --%>
                     <tr class="hover:bg-gray-50">
                       <td class="px-4 py-3 text-sm text-gray-900">{item.name}</td>
+                      <td class="px-4 py-3 text-sm text-gray-700">
+                        <span class={[
+                          "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium",
+                          item.item_type == "person" && "bg-blue-100 text-blue-800",
+                          item.item_type == "extra" && "bg-purple-100 text-purple-800"
+                        ]}>
+                          {if item.item_type == "person", do: "Person", else: "Extra"}
+                        </span>
+                      </td>
                       <td class="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
                       <td class="px-4 py-3 text-sm text-gray-900 text-right">
                         {CozyCheckoutWeb.CurrencyHelper.format_currency(item.price_per_night)}
@@ -183,11 +200,19 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                 <%!-- New Item Form --%>
                 <%= if @editing_item_id == :new do %>
                   <tr class="bg-green-50">
-                    <td colspan="7" class="px-4 py-3">
+                    <td colspan="8" class="px-4 py-3">
                       <.form for={@item_form} id="new-item-form" phx-target={@myself} phx-submit="save_item">
-                        <div class="grid grid-cols-6 gap-3">
+                        <div class="grid grid-cols-7 gap-3">
                           <div class="col-span-2">
                             <.input field={@item_form[:name]} type="text" placeholder="Item name" required />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:item_type]}
+                              type="select"
+                              options={[{"Person", "person"}, {"Extra", "extra"}]}
+                              required
+                            />
                           </div>
                           <div>
                             <.input field={@item_form[:quantity]} type="number" min="0" placeholder="Qty" required />
@@ -338,7 +363,8 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
         position: next_position,
         quantity: 1,
         price_per_night: Decimal.new("0.00"),
-        vat_rate: Decimal.new("21.00")
+        vat_rate: Decimal.new("21.00"),
+        item_type: "person"
       })
       |> to_form()
 

@@ -13,6 +13,8 @@ defmodule CozyCheckout.Bookings do
   alias CozyCheckout.Bookings.BookingInvoiceItem
   alias CozyCheckout.Rooms
 
+  @cottage_capacity 45
+
   @doc """
   Returns the list of bookings.
   """
@@ -347,9 +349,9 @@ defmodule CozyCheckout.Bookings do
 
       # Create default line items
       default_items = [
-        %{name: "Dospělí", quantity: 2, price_per_night: Decimal.new("980.00"), vat_rate: Decimal.new("0"), position: 1, booking_invoice_id: invoice.id},
-        %{name: "Děti do 2 let", quantity: 0, price_per_night: Decimal.new("210.00"), vat_rate: Decimal.new("0"), position: 2, booking_invoice_id: invoice.id},
-        %{name: "Děti do 12 let", quantity: 0, price_per_night: Decimal.new("880.00"), vat_rate: Decimal.new("0"), position: 3, booking_invoice_id: invoice.id}
+        %{name: "Dospělí", quantity: 2, price_per_night: Decimal.new("980.00"), vat_rate: Decimal.new("0"), position: 1, booking_invoice_id: invoice.id, item_type: "person"},
+        %{name: "Děti do 2 let", quantity: 0, price_per_night: Decimal.new("210.00"), vat_rate: Decimal.new("0"), position: 2, booking_invoice_id: invoice.id, item_type: "person"},
+        %{name: "Děti do 12 let", quantity: 0, price_per_night: Decimal.new("880.00"), vat_rate: Decimal.new("0"), position: 3, booking_invoice_id: invoice.id, item_type: "person"}
       ]
 
       Enum.each(default_items, fn item_attrs ->
@@ -515,5 +517,86 @@ defmodule CozyCheckout.Bookings do
   """
   def change_invoice_item(%BookingInvoiceItem{} = item, attrs \\ %{}) do
     BookingInvoiceItem.changeset(item, attrs)
+  end
+
+  # Occupancy Tracking
+
+  @doc """
+  Returns the cottage capacity limit.
+  """
+  def cottage_capacity, do: @cottage_capacity
+
+  @doc """
+  Returns the total number of people booked for a specific date.
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_date(date) do
+    from(b in Booking,
+      join: bi in BookingInvoice, on: bi.booking_id == b.id,
+      join: bii in BookingInvoiceItem, on: bii.booking_invoice_id == bi.id,
+      where: b.status in ["upcoming", "active"],
+      where: b.check_in_date <= ^date,
+      where: is_nil(b.check_out_date) or b.check_out_date > ^date,
+      where: bii.item_type == "person",
+      select: sum(bii.quantity)
+    )
+    |> Repo.one()
+    |> case do
+      nil -> 0
+      count -> count
+    end
+  end
+
+  @doc """
+  Returns daily occupancy for a date range (for calendar view).
+  Returns a map: %{~D[2025-10-22] => 12, ~D[2025-10-23] => 15, ...}
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_range(start_date, end_date) do
+    # Get all bookings that overlap with the date range
+    bookings =
+      from(b in Booking,
+        join: bi in BookingInvoice, on: bi.booking_id == b.id,
+        join: bii in BookingInvoiceItem, on: bii.booking_invoice_id == bi.id,
+        where: b.status in ["upcoming", "active"],
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,
+        where: bii.item_type == "person",
+        select: %{
+          check_in: b.check_in_date,
+          check_out: b.check_out_date,
+          quantity: bii.quantity
+        }
+      )
+      |> Repo.all()
+
+    # Calculate occupancy for each day
+    Date.range(start_date, end_date)
+    |> Enum.map(fn date ->
+      count =
+        bookings
+        |> Enum.filter(fn b ->
+          Date.compare(b.check_in, date) != :gt and
+            (is_nil(b.check_out) or Date.compare(b.check_out, date) == :gt)
+        end)
+        |> Enum.map(& &1.quantity)
+        |> Enum.sum()
+
+      {date, count}
+    end)
+    |> Map.new()
+  end
+
+  @doc """
+  Returns the occupancy level for display purposes.
+  Returns: :low (0-29), :medium (30-39), :high (40-44), :full (45+)
+  """
+  def occupancy_level(count) do
+    cond do
+      count >= @cottage_capacity -> :full
+      count >= 40 -> :high
+      count >= 30 -> :medium
+      true -> :low
+    end
   end
 end

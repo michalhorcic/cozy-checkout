@@ -74,9 +74,20 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
     bookings = Bookings.list_bookings_for_month(year, month)
     weeks = CalendarHelpers.generate_calendar_grid(year, month)
 
+    # Get occupancy data for the entire calendar range
+    first_day = Date.new!(year, month, 1)
+    last_day = Date.end_of_month(first_day)
+    calendar_start = Date.beginning_of_week(first_day, :monday)
+    calendar_end = Date.end_of_week(last_day, :monday)
+
+    occupancy_map = Bookings.get_occupancy_for_range(calendar_start, calendar_end)
+    capacity = Bookings.cottage_capacity()
+
     socket
     |> assign(:bookings, bookings)
     |> assign(:weeks, weeks)
+    |> assign(:occupancy_map, occupancy_map)
+    |> assign(:capacity, capacity)
     |> assign(:page_title, "Calendar - #{CalendarHelpers.month_name(month)} #{year}")
   end
 
@@ -88,6 +99,21 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
       "cancelled" -> "bg-red-100 border-red-300 text-red-600"
       _ -> "bg-gray-100 border-gray-300 text-gray-600"
     end
+  end
+
+  defp occupancy_badge_class(count) do
+    level = Bookings.occupancy_level(count)
+
+    base_classes = "absolute top-1 right-1 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm"
+
+    color_classes = case level do
+      :full -> "bg-red-500 text-white"
+      :high -> "bg-orange-500 text-white"
+      :medium -> "bg-yellow-500 text-gray-900"
+      :low -> "bg-green-500 text-white"
+    end
+
+    "#{base_classes} #{color_classes}"
   end
 
   defp day_cell(assigns) do
@@ -107,8 +133,17 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
         </span>
       </div>
 
+      <%!-- Occupancy badge --%>
+      <%= if occupancy = Map.get(@occupancy_map, @date, 0) do %>
+        <%= if occupancy > 0 do %>
+          <div class={occupancy_badge_class(occupancy)}>
+            {occupancy}/{@capacity}
+          </div>
+        <% end %>
+      <% end %>
+
       <%!-- Bookings for this day --%>
-      <div class="space-y-1">
+      <div class="space-y-1 mt-6">
         <%= for booking <- Enum.take(@bookings, 3) do %>
           <.link
             navigate={~p"/admin/bookings/#{booking}"}

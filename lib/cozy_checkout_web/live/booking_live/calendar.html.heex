@@ -47,6 +47,31 @@
 
   <%!-- Calendar Grid --%>
   <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <%!-- Capacity legend --%>
+    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+      <div class="flex items-center gap-6 text-sm">
+        <span class="font-semibold text-gray-700">Capacity: {@capacity} people</span>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-green-500"></span>
+            <span class="text-gray-600">Low (0-29)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-yellow-500"></span>
+            <span class="text-gray-600">Medium (30-39)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-orange-500"></span>
+            <span class="text-gray-600">High (40-44)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-red-500"></span>
+            <span class="text-gray-600">Full (45+)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <%!-- Day Headers --%>
     <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
       <%= for day <- 1..7 do %>
@@ -65,6 +90,8 @@
               date={day}
               bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
               is_today={CalendarHelpers.today?(day)}
+              occupancy_map={@occupancy_map}
+              capacity={@capacity}
             />
           <% else %>
             <div class="min-h-[120px] bg-gray-50 border-r border-b border-gray-100"></div>

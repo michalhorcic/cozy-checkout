@@ -9,6 +9,7 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
     field :quantity, :integer
     field :price_per_night, :decimal
     field :vat_rate, :decimal
+    field :item_type, :string, default: "person"
 
     # Cached calculations
     field :subtotal, :decimal
@@ -34,12 +35,14 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
       :subtotal,
       :vat_amount,
       :total,
-      :position
+      :position,
+      :item_type
     ])
-    |> validate_required([:name, :quantity, :price_per_night, :vat_rate])
+    |> validate_required([:name, :quantity, :price_per_night, :vat_rate, :item_type])
     |> validate_number(:quantity, greater_than_or_equal_to: 0)
     |> validate_number(:price_per_night, greater_than_or_equal_to: 0)
     |> validate_number(:vat_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+    |> validate_inclusion(:item_type, ["person", "extra"])
   end
 
   @doc """
