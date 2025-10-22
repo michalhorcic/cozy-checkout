@@ -4,10 +4,11 @@ defmodule CozyCheckout.Repo.Migrations.CreateBookingRooms do
   def change do
     create table(:booking_rooms, primary_key: false) do
       add :id, :binary_id, primary_key: true
+
       add :booking_id, references(:bookings, on_delete: :delete_all, type: :binary_id),
         null: false
-      add :room_id, references(:rooms, on_delete: :delete_all, type: :binary_id),
-        null: false
+
+      add :room_id, references(:rooms, on_delete: :delete_all, type: :binary_id), null: false
 
       timestamps(type: :utc_datetime)
     end

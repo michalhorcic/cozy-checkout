@@ -195,7 +195,7 @@ defmodule CozyCheckout.Bookings do
     BookingGuest
     |> where([bg], bg.booking_id == ^booking_id)
     |> preload(:guest)
-    |> order_by([bg], [desc: bg.is_primary, asc: bg.inserted_at])
+    |> order_by([bg], desc: bg.is_primary, asc: bg.inserted_at)
     |> Repo.all()
   end
 
@@ -343,15 +343,40 @@ defmodule CozyCheckout.Bookings do
   def create_default_invoice(%Booking{} = booking) do
     Repo.transaction(fn ->
       # Create invoice header
-      invoice = %BookingInvoice{}
+      invoice =
+        %BookingInvoice{}
         |> BookingInvoice.changeset(%{booking_id: booking.id})
         |> Repo.insert!()
 
       # Create default line items
       default_items = [
-        %{name: "Dospělí", quantity: 2, price_per_night: Decimal.new("980.00"), vat_rate: Decimal.new("0"), position: 1, booking_invoice_id: invoice.id, item_type: "person"},
-        %{name: "Děti do 2 let", quantity: 0, price_per_night: Decimal.new("210.00"), vat_rate: Decimal.new("0"), position: 2, booking_invoice_id: invoice.id, item_type: "person"},
-        %{name: "Děti do 12 let", quantity: 0, price_per_night: Decimal.new("880.00"), vat_rate: Decimal.new("0"), position: 3, booking_invoice_id: invoice.id, item_type: "person"}
+        %{
+          name: "Dospělí",
+          quantity: 2,
+          price_per_night: Decimal.new("980.00"),
+          vat_rate: Decimal.new("0"),
+          position: 1,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 2 let",
+          quantity: 0,
+          price_per_night: Decimal.new("210.00"),
+          vat_rate: Decimal.new("0"),
+          position: 2,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 12 let",
+          quantity: 0,
+          price_per_night: Decimal.new("880.00"),
+          vat_rate: Decimal.new("0"),
+          position: 3,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        }
       ]
 
       Enum.each(default_items, fn item_attrs ->
@@ -427,31 +452,37 @@ defmodule CozyCheckout.Bookings do
       invoice = get_booking_invoice!(invoice.id)
 
       # Recalculate each item
-      updated_items = Enum.map(invoice.items, fn item ->
-        totals = BookingInvoiceItem.calculate_totals(item, nights)
+      updated_items =
+        Enum.map(invoice.items, fn item ->
+          totals = BookingInvoiceItem.calculate_totals(item, nights)
 
-        {:ok, updated_item} = item
-          |> BookingInvoiceItem.changeset(totals)
-          |> Repo.update()
+          {:ok, updated_item} =
+            item
+            |> BookingInvoiceItem.changeset(totals)
+            |> Repo.update()
 
-        updated_item
-      end)
+          updated_item
+        end)
 
       # Calculate invoice totals from items
-      invoice_subtotal = updated_items
+      invoice_subtotal =
+        updated_items
         |> Enum.map(& &1.subtotal)
         |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-      invoice_vat_amount = updated_items
+      invoice_vat_amount =
+        updated_items
         |> Enum.map(& &1.vat_amount)
         |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-      invoice_total = updated_items
+      invoice_total =
+        updated_items
         |> Enum.map(& &1.total)
         |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
       # Update invoice header with totals
-      {:ok, updated_invoice} = invoice
+      {:ok, updated_invoice} =
+        invoice
         |> BookingInvoice.changeset(%{
           subtotal: invoice_subtotal,
           vat_amount: invoice_vat_amount,
@@ -481,18 +512,22 @@ defmodule CozyCheckout.Bookings do
       )
       |> Repo.one()
 
-    next_number = case last_invoice do
-      nil -> 1
-      %{invoice_number: number} ->
-        # Extract NNNN part and increment
-        number
-        |> String.split("-")
-        |> List.last()
-        |> String.to_integer()
-        |> Kernel.+(1)
-    end
+    next_number =
+      case last_invoice do
+        nil ->
+          1
 
-    invoice_number = "#{date_prefix}-#{String.pad_leading(Integer.to_string(next_number), 4, "0")}"
+        %{invoice_number: number} ->
+          # Extract NNNN part and increment
+          number
+          |> String.split("-")
+          |> List.last()
+          |> String.to_integer()
+          |> Kernel.+(1)
+      end
+
+    invoice_number =
+      "#{date_prefix}-#{String.pad_leading(Integer.to_string(next_number), 4, "0")}"
 
     # Recalculate totals before generating
     {:ok, invoice} = recalculate_invoice_totals(invoice)
@@ -532,8 +567,10 @@ defmodule CozyCheckout.Bookings do
   """
   def get_occupancy_for_date(date) do
     from(b in Booking,
-      join: bi in BookingInvoice, on: bi.booking_id == b.id,
-      join: bii in BookingInvoiceItem, on: bii.booking_invoice_id == bi.id,
+      join: bi in BookingInvoice,
+      on: bi.booking_id == b.id,
+      join: bii in BookingInvoiceItem,
+      on: bii.booking_invoice_id == bi.id,
       where: b.status in ["upcoming", "active"],
       where: b.check_in_date <= ^date,
       where: is_nil(b.check_out_date) or b.check_out_date > ^date,
@@ -556,8 +593,10 @@ defmodule CozyCheckout.Bookings do
     # Get all bookings that overlap with the date range
     bookings =
       from(b in Booking,
-        join: bi in BookingInvoice, on: bi.booking_id == b.id,
-        join: bii in BookingInvoiceItem, on: bii.booking_invoice_id == bi.id,
+        join: bi in BookingInvoice,
+        on: bi.booking_id == b.id,
+        join: bii in BookingInvoiceItem,
+        on: bii.booking_invoice_id == bi.id,
         where: b.status in ["upcoming", "active"],
         where: b.check_in_date <= ^end_date,
         where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,

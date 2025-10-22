@@ -319,7 +319,9 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
 
           {:error, {:rooms_not_available, _unavailable_rooms}} ->
             {:noreply,
-             assign(socket, room_error: "One or more selected rooms are not available for these dates")}
+             assign(socket,
+               room_error: "One or more selected rooms are not available for these dates"
+             )}
         end
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -348,7 +350,9 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
             Bookings.delete_booking(booking)
 
             {:noreply,
-             assign(socket, room_error: "One or more selected rooms are not available for these dates")}
+             assign(socket,
+               room_error: "One or more selected rooms are not available for these dates"
+             )}
         end
 
       {:error, %Ecto.Changeset{} = changeset} ->

@@ -60,14 +60,30 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/Night</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">VAT %</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
-                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Name
+                  </th>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Type
+                  </th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    Qty
+                  </th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    Price/Night
+                  </th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    VAT %
+                  </th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    Subtotal
+                  </th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    Total
+                  </th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody class="bg-white divide-y divide-gray-200">
@@ -84,7 +100,12 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                     <%!-- Edit Mode --%>
                     <tr class="bg-blue-50">
                       <td colspan="8" class="px-4 py-3">
-                        <.form for={@item_form} id={"item-form-#{item.id}"} phx-target={@myself} phx-submit="save_item">
+                        <.form
+                          for={@item_form}
+                          id={"item-form-#{item.id}"}
+                          phx-target={@myself}
+                          phx-submit="save_item"
+                        >
                           <div class="grid grid-cols-7 gap-3">
                             <div class="col-span-2">
                               <.input field={@item_form[:name]} type="text" placeholder="Item name" />
@@ -97,7 +118,12 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                               />
                             </div>
                             <div>
-                              <.input field={@item_form[:quantity]} type="number" min="0" placeholder="Qty" />
+                              <.input
+                                field={@item_form[:quantity]}
+                                type="number"
+                                min="0"
+                                placeholder="Qty"
+                              />
                             </div>
                             <div>
                               <.input
@@ -151,28 +177,30 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                           {if item.item_type == "person", do: "Person", else: "Extra"}
                         </span>
                       </td>
-                      <td class="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
-                      <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
+                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.quantity)}
+                      </td>
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
                         {CozyCheckoutWeb.CurrencyHelper.format_currency(item.price_per_night)}
                       </td>
-                      <td class="px-4 py-3 text-sm text-gray-900 text-right">
-                        {Decimal.to_string(item.vat_rate)}%
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
+                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.vat_rate)}%
                       </td>
-                      <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap">
                         <%= if item.subtotal do %>
                           {CozyCheckoutWeb.CurrencyHelper.format_currency(item.subtotal)}
                         <% else %>
                           <span class="text-gray-400">—</span>
                         <% end %>
                       </td>
-                      <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                      <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap">
                         <%= if item.total do %>
                           {CozyCheckoutWeb.CurrencyHelper.format_currency(item.total)}
                         <% else %>
                           <span class="text-gray-400">—</span>
                         <% end %>
                       </td>
-                      <td class="px-4 py-3 text-right text-sm">
+                      <td class="px-4 py-3 text-right text-sm whitespace-nowrap">
                         <button
                           type="button"
                           phx-click="edit_item"
@@ -201,10 +229,20 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                 <%= if @editing_item_id == :new do %>
                   <tr class="bg-green-50">
                     <td colspan="8" class="px-4 py-3">
-                      <.form for={@item_form} id="new-item-form" phx-target={@myself} phx-submit="save_item">
+                      <.form
+                        for={@item_form}
+                        id="new-item-form"
+                        phx-target={@myself}
+                        phx-submit="save_item"
+                      >
                         <div class="grid grid-cols-7 gap-3">
                           <div class="col-span-2">
-                            <.input field={@item_form[:name]} type="text" placeholder="Item name" required />
+                            <.input
+                              field={@item_form[:name]}
+                              type="text"
+                              placeholder="Item name"
+                              required
+                            />
                           </div>
                           <div>
                             <.input
@@ -215,7 +253,13 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                             />
                           </div>
                           <div>
-                            <.input field={@item_form[:quantity]} type="number" min="0" placeholder="Qty" required />
+                            <.input
+                              field={@item_form[:quantity]}
+                              type="number"
+                              min="0"
+                              placeholder="Qty"
+                              required
+                            />
                           </div>
                           <div>
                             <.input
@@ -269,7 +313,9 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
           <div class="max-w-md ml-auto space-y-2">
             <div class="flex justify-between text-sm">
               <span class="text-gray-600">Number of Nights</span>
-              <span class="font-medium text-gray-900">{calculate_nights(@booking)}</span>
+              <span class="font-medium text-gray-900">
+                {CozyCheckoutWeb.CurrencyHelper.format_number(calculate_nights(@booking))}
+              </span>
             </div>
             <hr class="border-gray-300" />
             <%= if @invoice.subtotal do %>

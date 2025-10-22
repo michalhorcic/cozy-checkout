@@ -104,14 +104,16 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
   defp occupancy_badge_class(count) do
     level = Bookings.occupancy_level(count)
 
-    base_classes = "absolute top-1 right-1 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm"
+    base_classes =
+      "absolute top-1 right-1 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm"
 
-    color_classes = case level do
-      :full -> "bg-red-500 text-white"
-      :high -> "bg-orange-500 text-white"
-      :medium -> "bg-yellow-500 text-gray-900"
-      :low -> "bg-green-500 text-white"
-    end
+    color_classes =
+      case level do
+        :full -> "bg-red-500 text-white"
+        :high -> "bg-orange-500 text-white"
+        :medium -> "bg-yellow-500 text-gray-900"
+        :low -> "bg-green-500 text-white"
+      end
 
     "#{base_classes} #{color_classes}"
   end
@@ -126,7 +128,8 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
       <div class="text-right mb-1">
         <span class={[
           "text-sm font-semibold",
-          @is_today && "inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white",
+          @is_today &&
+            "inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white",
           !@is_today && "text-gray-700"
         ]}>
           {@date.day}

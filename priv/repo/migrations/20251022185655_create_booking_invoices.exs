@@ -5,7 +5,9 @@ defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do
     # Booking Invoice Header
     create table(:booking_invoices, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :booking_id, references(:bookings, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :booking_id, references(:bookings, on_delete: :delete_all, type: :binary_id),
+        null: false
 
       # Calculated totals (cached from line items)
       add :subtotal, :decimal, precision: 10, scale: 2
@@ -25,7 +27,9 @@ defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do
     # Booking Invoice Line Items
     create table(:booking_invoice_items, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :booking_invoice_id, references(:booking_invoices, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :booking_invoice_id,
+          references(:booking_invoices, on_delete: :delete_all, type: :binary_id), null: false
 
       # Line item details
       add :name, :string, null: false

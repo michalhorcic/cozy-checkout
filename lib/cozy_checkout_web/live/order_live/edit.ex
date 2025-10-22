@@ -423,7 +423,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                       </button>
                     </div>
                   </div>
-
+                  
     <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
@@ -441,7 +441,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                     </button>
                   <% end %>
                 </div>
-
+                
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-gray-200">

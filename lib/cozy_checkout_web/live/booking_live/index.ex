@@ -125,7 +125,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                 {Calendar.strftime(booking.check_in_date, "%b %d, %Y")}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {if booking.check_out_date, do: Calendar.strftime(booking.check_out_date, "%b %d, %Y"), else: "—"}
+                {if booking.check_out_date,
+                  do: Calendar.strftime(booking.check_out_date, "%b %d, %Y"),
+                  else: "—"}
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class={[

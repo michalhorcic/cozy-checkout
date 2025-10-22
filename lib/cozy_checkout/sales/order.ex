@@ -23,7 +23,15 @@ defmodule CozyCheckout.Sales.Order do
   @doc false
   def changeset(order, attrs) do
     order
-    |> cast(attrs, [:guest_id, :booking_id, :order_number, :status, :total_amount, :discount_amount, :notes])
+    |> cast(attrs, [
+      :guest_id,
+      :booking_id,
+      :order_number,
+      :status,
+      :total_amount,
+      :discount_amount,
+      :notes
+    ])
     |> validate_required([:booking_id, :order_number])
     |> validate_inclusion(:status, ["open", "paid", "partially_paid", "cancelled"])
     |> validate_number(:total_amount, greater_than_or_equal_to: 0)

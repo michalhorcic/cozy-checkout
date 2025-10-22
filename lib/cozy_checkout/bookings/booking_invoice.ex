@@ -40,6 +40,7 @@ defmodule CozyCheckout.Bookings.BookingInvoice do
   Returns 1 if check_out_date is nil (open-ended booking).
   """
   def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+
   def calculate_nights(%{check_in_date: check_in, check_out_date: check_out}) do
     Date.diff(check_out, check_in)
   end

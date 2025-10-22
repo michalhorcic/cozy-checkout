@@ -241,3 +241,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   🟡 Yellow (30-39): Getting full
     *   🟠 Orange (40-44): Almost full
     *   🔴 Red (45+): At/over capacity
+*   When displaying numbers in invoice items, use proper formatting, including thousand separators.

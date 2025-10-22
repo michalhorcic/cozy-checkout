@@ -210,13 +210,14 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         # Generate QR code SVG
         bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
 
-        qr_svg = QrCode.generate_qr_svg(%{
-          account_number: bank_account,
-          amount: payment.amount,
-          currency: "CZK",
-          variable_symbol: payment.invoice_number,
-          message: "Order #{socket.assigns.order.order_number}"
-        })
+        qr_svg =
+          QrCode.generate_qr_svg(%{
+            account_number: bank_account,
+            amount: payment.amount,
+            currency: "CZK",
+            variable_symbol: payment.invoice_number,
+            message: "Order #{socket.assigns.order.order_number}"
+          })
 
         {:noreply,
          socket

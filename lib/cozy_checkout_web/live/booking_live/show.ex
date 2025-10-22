@@ -23,9 +23,12 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin/bookings"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link
+          navigate={~p"/admin/bookings"}
+          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+        >
           ← Back to Bookings
         </.link>
         <div class="flex items-center justify-between">

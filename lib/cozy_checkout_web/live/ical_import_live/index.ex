@@ -98,7 +98,10 @@ defmodule CozyCheckoutWeb.IcalImportLive.Index do
           </div>
 
           <%!-- Show uploaded files --%>
-          <div :for={entry <- @uploads.ical_file.entries} class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+          <div
+            :for={entry <- @uploads.ical_file.entries}
+            class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+          >
             <.icon name="hero-document-text" class="w-8 h-8 text-blue-600" />
             <div class="flex-1">
               <p class="text-sm font-medium text-gray-900">{entry.client_name}</p>
@@ -121,8 +124,7 @@ defmodule CozyCheckoutWeb.IcalImportLive.Index do
 
           <div class="flex justify-end">
             <.button type="submit" disabled={@uploads.ical_file.entries == []}>
-              <.icon name="hero-arrow-down-tray" class="w-5 h-5 mr-2" />
-              Import Bookings
+              <.icon name="hero-arrow-down-tray" class="w-5 h-5 mr-2" /> Import Bookings
             </.button>
           </div>
         </form>

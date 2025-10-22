@@ -40,11 +40,11 @@ defmodule CozyCheckout.Sales do
       |> where([o], o.booking_id == ^booking_id)
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
-      |> preload([booking: :guest, order_items: :product, payments: []])
+      |> preload(booking: :guest, order_items: :product, payments: [])
       |> order_by([o], desc: o.inserted_at)
       |> Repo.all()
       |> Enum.map(fn order ->
-        order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+        order_items = Enum.reject(order.order_items, & &1.deleted_at)
         %{order | order_items: order_items}
       end)
 
@@ -53,7 +53,13 @@ defmodule CozyCheckout.Sales do
         # Get booking to extract guest_id
         booking = Bookings.get_booking!(booking_id)
         # Create new order
-        {:ok, order} = create_order(%{"booking_id" => booking_id, "guest_id" => booking.guest_id, "status" => "open"})
+        {:ok, order} =
+          create_order(%{
+            "booking_id" => booking_id,
+            "guest_id" => booking.guest_id,
+            "status" => "open"
+          })
+
         {:ok, get_order!(order.id)}
 
       [order] ->
@@ -71,13 +77,13 @@ defmodule CozyCheckout.Sales do
     orders =
       Order
       |> where([o], is_nil(o.deleted_at))
-      |> preload([booking: :guest, order_items: [], payments: []])
+      |> preload(booking: :guest, order_items: [], payments: [])
       |> order_by([o], desc: o.inserted_at)
       |> Repo.all()
 
     # Filter out deleted order items from each order
     Enum.map(orders, fn order ->
-      order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+      order_items = Enum.reject(order.order_items, & &1.deleted_at)
       %{order | order_items: order_items}
     end)
   end
@@ -89,11 +95,11 @@ defmodule CozyCheckout.Sales do
     order =
       Order
       |> where([o], is_nil(o.deleted_at))
-      |> preload([booking: :guest, order_items: :product, payments: []])
+      |> preload(booking: :guest, order_items: :product, payments: [])
       |> Repo.get!(id)
 
     # Filter out deleted order items
-    order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+    order_items = Enum.reject(order.order_items, & &1.deleted_at)
     %{order | order_items: order_items}
   end
 
@@ -286,13 +292,13 @@ defmodule CozyCheckout.Sales do
     attrs = Map.put_new(attrs, "invoice_number", generate_invoice_number())
 
     case Repo.transaction(fn ->
-      with {:ok, payment} <- do_create_payment(attrs),
-           {:ok, _order} <- update_order_payment_status(payment.order_id) do
-        payment
-      else
-        {:error, changeset} -> Repo.rollback(changeset)
-      end
-    end) do
+           with {:ok, payment} <- do_create_payment(attrs),
+                {:ok, _order} <- update_order_payment_status(payment.order_id) do
+             payment
+           else
+             {:error, changeset} -> Repo.rollback(changeset)
+           end
+         end) do
       {:ok, payment} -> {:ok, payment}
       {:error, changeset} -> {:error, changeset}
     end
@@ -309,13 +315,13 @@ defmodule CozyCheckout.Sales do
   """
   def delete_payment(%Payment{} = payment) do
     case Repo.transaction(fn ->
-      with {:ok, payment} <- do_delete_payment(payment),
-           {:ok, _order} <- update_order_payment_status(payment.order_id) do
-        payment
-      else
-        {:error, changeset} -> Repo.rollback(changeset)
-      end
-    end) do
+           with {:ok, payment} <- do_delete_payment(payment),
+                {:ok, _order} <- update_order_payment_status(payment.order_id) do
+             payment
+           else
+             {:error, changeset} -> Repo.rollback(changeset)
+           end
+         end) do
       {:ok, payment} -> {:ok, payment}
       {:error, changeset} -> {:error, changeset}
     end
@@ -373,7 +379,7 @@ defmodule CozyCheckout.Sales do
     )
     |> Repo.all()
     |> Enum.map(fn order ->
-      order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+      order_items = Enum.reject(order.order_items, & &1.deleted_at)
       %{order | order_items: order_items}
     end)
   end
@@ -392,7 +398,7 @@ defmodule CozyCheckout.Sales do
     )
     |> Repo.all()
     |> Enum.map(fn order ->
-      order_items = Enum.reject(order.order_items, &(&1.deleted_at))
+      order_items = Enum.reject(order.order_items, & &1.deleted_at)
       %{order | order_items: order_items}
     end)
   end

@@ -22,8 +22,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             navigate={~p"/"}
             class="px-6 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200 flex items-center gap-2"
           >
-            <.icon name="hero-arrow-left" class="w-5 h-5" />
-            Back to Menu
+            <.icon name="hero-arrow-left" class="w-5 h-5" /> Back to Menu
           </.link>
         </div>
 

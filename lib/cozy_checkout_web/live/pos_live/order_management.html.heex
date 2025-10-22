@@ -271,21 +271,19 @@
             </span>
           </div>
           
-          <!-- Payment Button -->
+<!-- Payment Button -->
           <%= if @order.status == "open" && Decimal.gt?(@order.total_amount, 0) do %>
             <button
               phx-click="open_payment_modal"
               class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg"
             >
-              <.icon name="hero-credit-card" class="w-6 h-6 inline-block mr-2" />
-              Pay Order
+              <.icon name="hero-credit-card" class="w-6 h-6 inline-block mr-2" /> Pay Order
             </button>
           <% end %>
-          
+
           <%= if @order.status == "paid" do %>
             <div class="bg-green-100 border-2 border-green-600 text-green-800 font-bold py-4 px-6 rounded-2xl text-center">
-              <.icon name="hero-check-circle" class="w-6 h-6 inline-block mr-2" />
-              Paid
+              <.icon name="hero-check-circle" class="w-6 h-6 inline-block mr-2" /> Paid
             </div>
           <% end %>
         </div>
@@ -310,8 +308,8 @@
         <p class="text-lg text-slate-600 mb-6">
           Select amount ({@selected_product.unit})
         </p>
-
-        <!-- Quick Select Buttons -->
+        
+<!-- Quick Select Buttons -->
         <%= if @selected_product.default_unit_amounts do %>
           <div class="mb-6">
             <p class="text-sm font-semibold text-slate-700 mb-3">Quick Add</p>
@@ -347,8 +345,8 @@
               placeholder="Enter amount"
             />
           </div>
-
-          <!-- Action Buttons -->
+          
+<!-- Action Buttons -->
           <div class="grid grid-cols-2 gap-4 pt-4">
             <button
               type="button"
@@ -397,29 +395,33 @@
             <p class="text-lg text-slate-600 mb-6">
               Invoice: {@payment_invoice_number}
             </p>
-            
+
             <div class="bg-white p-6 rounded-2xl border-4 border-slate-200 mb-6 inline-block">
               <%= if @payment_qr_svg do %>
-                <img src={"data:image/svg+xml;base64,#{@payment_qr_svg}"} alt="Payment QR Code" class="w-64 h-64" />
+                <img
+                  src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                  alt="Payment QR Code"
+                  class="w-64 h-64"
+                />
               <% else %>
                 <p class="text-red-600">Failed to generate QR code</p>
               <% end %>
             </div>
-            
+
             <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
               <p class="text-slate-700 font-semibold mb-2">Amount to Pay</p>
               <p class="text-4xl font-bold text-green-600">
                 {format_currency(@order.total_amount)}
               </p>
             </div>
-            
+
             <div class="text-left space-y-2 text-sm text-slate-600 mb-6">
               <p>• Open your banking app</p>
               <p>• Scan the QR code above</p>
               <p>• Verify the amount and invoice number</p>
               <p>• Complete the payment</p>
             </div>
-            
+
             <button
               phx-click="close_payment_modal"
               class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
@@ -431,9 +433,10 @@
           <!-- Payment Method Selection -->
           <h2 class="text-3xl font-bold text-slate-900 mb-4">Select Payment Method</h2>
           <p class="text-lg text-slate-600 mb-6">
-            Total: <span class="font-bold text-green-600">{format_currency(@order.total_amount)}</span>
+            Total:
+            <span class="font-bold text-green-600">{format_currency(@order.total_amount)}</span>
           </p>
-          
+
           <div class="grid grid-cols-1 gap-4 mb-6">
             <!-- Cash Payment -->
             <button
@@ -451,7 +454,7 @@
               </div>
             </button>
             
-            <!-- QR Code Payment -->
+<!-- QR Code Payment -->
             <button
               phx-click="select_payment_method"
               phx-value-method="qr_code"
@@ -467,7 +470,7 @@
               </div>
             </button>
           </div>
-          
+
           <button
             phx-click="close_payment_modal"
             class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"

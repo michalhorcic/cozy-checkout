@@ -51,12 +51,14 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
   """
   def calculate_totals(invoice_item, nights) do
     # subtotal = quantity * price_per_night * nights
-    subtotal = invoice_item.price_per_night
+    subtotal =
+      invoice_item.price_per_night
       |> Decimal.mult(Decimal.new(invoice_item.quantity))
       |> Decimal.mult(Decimal.new(nights))
 
     # vat_amount = subtotal * (vat_rate / 100)
-    vat_amount = subtotal
+    vat_amount =
+      subtotal
       |> Decimal.mult(invoice_item.vat_rate)
       |> Decimal.div(Decimal.new(100))
 

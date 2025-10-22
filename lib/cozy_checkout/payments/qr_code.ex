@@ -94,6 +94,7 @@ defmodule CozyCheckout.Payments.QrCode do
     qr_data = generate_qr_data(params)
 
     require Logger
+
     Logger.info("""
 
     ═══════════════════════════════════════════════════════════════
@@ -116,7 +117,9 @@ defmodule CozyCheckout.Payments.QrCode do
     |> QRCode.render(:svg)
     |> QRCode.to_base64()
     |> case do
-      {:ok, base64} -> base64
+      {:ok, base64} ->
+        base64
+
       {:error, reason} ->
         Logger.error("Failed to generate QR code: #{inspect(reason)}")
         nil

@@ -131,138 +131,141 @@ defmodule CozyCheckoutWeb.BookingLive.ManageGuests do
   def render(assigns) do
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-8">
-        <div class="mb-8">
-          <.link
-            navigate={~p"/admin/bookings/#{@booking}"}
-            class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
-          >
-            ← Back to Booking
-          </.link>
-          <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
-          <p class="text-gray-600 mt-2">
-            Booking for {@booking.guest.name} - Check-in: {Calendar.strftime(@booking.check_in_date, "%b %d, %Y")}
-          </p>
+      <div class="mb-8">
+        <.link
+          navigate={~p"/admin/bookings/#{@booking}"}
+          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+        >
+          ← Back to Booking
+        </.link>
+        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+        <p class="text-gray-600 mt-2">
+          Booking for {@booking.guest.name} - Check-in: {Calendar.strftime(
+            @booking.check_in_date,
+            "%b %d, %Y"
+          )}
+        </p>
+      </div>
+
+      <div class="bg-white shadow-lg rounded-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-bold text-gray-900">Guests ({length(@booking_guests)})</h2>
+          <.button :if={!@show_add_form} phx-click="show_add_form">
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Add Guest
+          </.button>
         </div>
 
-        <div class="bg-white shadow-lg rounded-lg p-6">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">Guests ({length(@booking_guests)})</h2>
-            <.button :if={!@show_add_form} phx-click="show_add_form">
-              <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Add Guest
-            </.button>
+        <%!-- Add Guest Form --%>
+        <div :if={@show_add_form} class="mb-6 p-4 bg-gray-50 rounded-lg">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Add Guest</h3>
+            <button
+              phx-click="cancel_add"
+              class="text-gray-400 hover:text-gray-600"
+              type="button"
+            >
+              <.icon name="hero-x-mark" class="w-6 h-6" />
+            </button>
           </div>
 
-          <%!-- Add Guest Form --%>
-          <div :if={@show_add_form} class="mb-6 p-4 bg-gray-50 rounded-lg">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-lg font-semibold text-gray-900">Add Guest</h3>
-              <button
-                phx-click="cancel_add"
-                class="text-gray-400 hover:text-gray-600"
-                type="button"
-              >
-                <.icon name="hero-x-mark" class="w-6 h-6" />
-              </button>
-            </div>
-
-            <%!-- Select Existing Guest --%>
-            <div class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Select Existing Guest
-              </label>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
-                <%= for guest <- @all_guests do %>
-                  <% is_already_added =
-                    Enum.any?(@booking_guests, fn bg -> bg.guest_id == guest.id end) %>
-                  <button
-                    :if={!is_already_added}
-                    phx-click="select_existing_guest"
-                    phx-value-guest_id={guest.id}
-                    class="text-left p-3 border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition-colors"
-                    type="button"
-                  >
-                    <div class="font-medium text-gray-900">{guest.name}</div>
-                    <div :if={guest.email} class="text-sm text-gray-500">{guest.email}</div>
-                  </button>
-                <% end %>
-              </div>
-            </div>
-
-            <div class="border-t border-gray-300 my-4 pt-4">
-              <p class="text-sm font-medium text-gray-700 mb-3">Or Create New Guest</p>
-              <form phx-submit="create_and_add_guest" class="space-y-3">
-                <div>
-                  <.input
-                    type="text"
-                    name="name"
-                    label="Name"
-                    value={@new_guest_name}
-                    required
-                    placeholder="Guest name"
-                  />
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                  <.input
-                    type="email"
-                    name="email"
-                    label="Email (optional)"
-                    value={@new_guest_email}
-                    placeholder="guest@example.com"
-                  />
-                  <.input
-                    type="text"
-                    name="phone"
-                    label="Phone (optional)"
-                    value={@new_guest_phone}
-                    placeholder="+1234567890"
-                  />
-                </div>
-                <.button type="submit" class="w-full">
-                  <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Create and Add Guest
-                </.button>
-              </form>
-            </div>
-          </div>
-
-          <%!-- Guests List --%>
-          <div class="space-y-3">
-            <%= for booking_guest <- @booking_guests do %>
-              <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                <div class="flex items-center space-x-3">
-                  <%= if booking_guest.is_primary do %>
-                    <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
-                      PRIMARY
-                    </span>
-                  <% end %>
-                  <div>
-                    <p class="font-medium text-gray-900">{booking_guest.guest.name}</p>
-                    <div class="flex items-center space-x-4 text-sm text-gray-500">
-                      <span :if={booking_guest.guest.email}>
-                        <.icon name="hero-envelope" class="w-4 h-4 inline" />
-                        {booking_guest.guest.email}
-                      </span>
-                      <span :if={booking_guest.guest.phone}>
-                        <.icon name="hero-phone" class="w-4 h-4 inline" />
-                        {booking_guest.guest.phone}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+          <%!-- Select Existing Guest --%>
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Select Existing Guest
+            </label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+              <%= for guest <- @all_guests do %>
+                <% is_already_added =
+                  Enum.any?(@booking_guests, fn bg -> bg.guest_id == guest.id end) %>
                 <button
-                  :if={!booking_guest.is_primary}
-                  phx-click="remove_guest"
-                  phx-value-id={booking_guest.id}
-                  data-confirm="Are you sure you want to remove this guest from the booking?"
-                  class="text-red-600 hover:text-red-800"
+                  :if={!is_already_added}
+                  phx-click="select_existing_guest"
+                  phx-value-guest_id={guest.id}
+                  class="text-left p-3 border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition-colors"
                   type="button"
                 >
-                  <.icon name="hero-trash" class="w-5 h-5" />
+                  <div class="font-medium text-gray-900">{guest.name}</div>
+                  <div :if={guest.email} class="text-sm text-gray-500">{guest.email}</div>
                 </button>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="border-t border-gray-300 my-4 pt-4">
+            <p class="text-sm font-medium text-gray-700 mb-3">Or Create New Guest</p>
+            <form phx-submit="create_and_add_guest" class="space-y-3">
+              <div>
+                <.input
+                  type="text"
+                  name="name"
+                  label="Name"
+                  value={@new_guest_name}
+                  required
+                  placeholder="Guest name"
+                />
               </div>
-            <% end %>
+              <div class="grid grid-cols-2 gap-3">
+                <.input
+                  type="email"
+                  name="email"
+                  label="Email (optional)"
+                  value={@new_guest_email}
+                  placeholder="guest@example.com"
+                />
+                <.input
+                  type="text"
+                  name="phone"
+                  label="Phone (optional)"
+                  value={@new_guest_phone}
+                  placeholder="+1234567890"
+                />
+              </div>
+              <.button type="submit" class="w-full">
+                <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Create and Add Guest
+              </.button>
+            </form>
           </div>
         </div>
+
+        <%!-- Guests List --%>
+        <div class="space-y-3">
+          <%= for booking_guest <- @booking_guests do %>
+            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <div class="flex items-center space-x-3">
+                <%= if booking_guest.is_primary do %>
+                  <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                    PRIMARY
+                  </span>
+                <% end %>
+                <div>
+                  <p class="font-medium text-gray-900">{booking_guest.guest.name}</p>
+                  <div class="flex items-center space-x-4 text-sm text-gray-500">
+                    <span :if={booking_guest.guest.email}>
+                      <.icon name="hero-envelope" class="w-4 h-4 inline" />
+                      {booking_guest.guest.email}
+                    </span>
+                    <span :if={booking_guest.guest.phone}>
+                      <.icon name="hero-phone" class="w-4 h-4 inline" />
+                      {booking_guest.guest.phone}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <button
+                :if={!booking_guest.is_primary}
+                phx-click="remove_guest"
+                phx-value-id={booking_guest.id}
+                data-confirm="Are you sure you want to remove this guest from the booking?"
+                class="text-red-600 hover:text-red-800"
+                type="button"
+              >
+                <.icon name="hero-trash" class="w-5 h-5" />
+              </button>
+            </div>
+          <% end %>
+        </div>
       </div>
+    </div>
     """
   end
 end

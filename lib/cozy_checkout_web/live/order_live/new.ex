@@ -213,7 +213,10 @@ defmodule CozyCheckoutWeb.OrderLive.New do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link
+          navigate={~p"/admin/orders"}
+          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+        >
           ← Back to Orders
         </.link>
         <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
@@ -236,8 +239,8 @@ defmodule CozyCheckoutWeb.OrderLive.New do
                   Enum.map(
                     @bookings,
                     &{&1.guest.name <>
-                        if(&1.room_number, do: " (Room #{&1.room_number})", else: "") <>
-                        " - #{Calendar.strftime(&1.check_in_date, "%b %d")}", &1.id}
+                       if(&1.room_number, do: " (Room #{&1.room_number})", else: "") <>
+                       " - #{Calendar.strftime(&1.check_in_date, "%b %d")}", &1.id}
                   )
                 }
                 required

@@ -14,7 +14,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
       |> where([o], o.booking_id == ^booking_id)
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
-      |> preload([booking: :guest, order_items: [], payments: []])
+      |> preload(booking: :guest, order_items: [], payments: [])
       |> order_by([o], desc: o.inserted_at)
       |> Repo.all()
 

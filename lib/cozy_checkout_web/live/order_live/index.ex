@@ -24,7 +24,8 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
 
     # Prevent deletion of paid orders - they serve as accounting history
     if order.status == "paid" do
-      {:noreply, put_flash(socket, :error, "Cannot delete paid orders. They serve as accounting history.")}
+      {:noreply,
+       put_flash(socket, :error, "Cannot delete paid orders. They serve as accounting history.")}
     else
       {:ok, _} = Sales.delete_order(order)
       {:noreply, stream_delete(socket, :orders, order)}
@@ -102,7 +103,10 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 {Calendar.strftime(order.inserted_at, "%Y-%m-%d %H:%M")}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <.link navigate={~p"/admin/orders/#{order}"} class="text-blue-600 hover:text-blue-900 mr-4">
+                <.link
+                  navigate={~p"/admin/orders/#{order}"}
+                  class="text-blue-600 hover:text-blue-900 mr-4"
+                >
                   View
                 </.link>
                 <%= if order.status != "paid" do %>

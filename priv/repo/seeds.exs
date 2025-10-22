@@ -267,7 +267,11 @@ guests =
     Repo.insert!(%Guest{
       name: name,
       # Add the guest number to ensure unique emails
-      email: if(:rand.uniform() > 0.3, do: "#{String.downcase(String.replace(name, " ", "."))}#{i}@example.com", else: nil),
+      email:
+        if(:rand.uniform() > 0.3,
+          do: "#{String.downcase(String.replace(name, " ", "."))}#{i}@example.com",
+          else: nil
+        ),
       phone: "+420#{:rand.uniform(900_000_000) + 100_000_000}",
       notes: if(:rand.uniform() > 0.8, do: "VIP guest - prefers quiet rooms", else: nil)
     })
@@ -464,7 +468,10 @@ orders =
         status: status,
         total_amount: Decimal.new("0"),
         discount_amount:
-          if(:rand.uniform() > 0.8, do: SeedHelper.random_decimal(10, 100), else: Decimal.new("0")),
+          if(:rand.uniform() > 0.8,
+            do: SeedHelper.random_decimal(10, 100),
+            else: Decimal.new("0")
+          ),
         notes: if(:rand.uniform() > 0.8, do: "Special request", else: nil),
         inserted_at: order_datetime,
         updated_at: order_datetime
@@ -514,7 +521,9 @@ order_items =
         subtotal =
           unit_price
           |> Decimal.mult(quantity)
-          |> Decimal.mult(Decimal.add(Decimal.new("1"), Decimal.div(vat_rate, Decimal.new("100"))))
+          |> Decimal.mult(
+            Decimal.add(Decimal.new("1"), Decimal.div(vat_rate, Decimal.new("100")))
+          )
           |> Decimal.round(2)
 
         Repo.insert!(%OrderItem{
@@ -555,30 +564,35 @@ IO.puts("Creating payments...")
 # Track invoice counter per date
 invoice_counters = %{}
 
-{payments, _final_counters} = Enum.flat_map_reduce(orders, invoice_counters, fn order, counters ->
-  case order.status do
-    "paid" ->
-      payment_datetime = SeedHelper.random_datetime_in_range(order.inserted_at, DateTime.utc_now())
-      payment_date = DateTime.to_date(payment_datetime)
-      date = DateTime.to_date(order.inserted_at)
-      counter = Map.get(counters, date, 0) + 1
-      invoice_number = SeedHelper.generate_invoice_number(date, counter)
+{payments, _final_counters} =
+  Enum.flat_map_reduce(orders, invoice_counters, fn order, counters ->
+    case order.status do
+      "paid" ->
+        payment_datetime =
+          SeedHelper.random_datetime_in_range(order.inserted_at, DateTime.utc_now())
 
-      payment = Repo.insert!(%Payment{
-        order_id: order.id,
-        amount: order.total_amount,
-        payment_method: Enum.random(["cash", "qr_code"]),
-        payment_date: payment_date,
-        notes: nil,
-        invoice_number: invoice_number
-      })
-      {[payment], Map.put(counters, date, counter)}
+        payment_date = DateTime.to_date(payment_datetime)
+        date = DateTime.to_date(order.inserted_at)
+        counter = Map.get(counters, date, 0) + 1
+        invoice_number = SeedHelper.generate_invoice_number(date, counter)
 
-    _ ->
-      # Open orders have no payments
-      {[], counters}
-  end
-end)
+        payment =
+          Repo.insert!(%Payment{
+            order_id: order.id,
+            amount: order.total_amount,
+            payment_method: Enum.random(["cash", "qr_code"]),
+            payment_date: payment_date,
+            notes: nil,
+            invoice_number: invoice_number
+          })
+
+        {[payment], Map.put(counters, date, counter)}
+
+      _ ->
+        # Open orders have no payments
+        {[], counters}
+    end
+  end)
 
 IO.puts("Created #{length(payments)} payments")
 

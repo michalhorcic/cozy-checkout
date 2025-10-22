@@ -73,7 +73,10 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin/orders"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link
+          navigate={~p"/admin/orders"}
+          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+        >
           ← Back to Orders
         </.link>
         <div class="flex items-center justify-between">
@@ -132,11 +135,15 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
               </div>
               <div :if={@order.booking.check_in_date} class="flex justify-between">
                 <span class="text-gray-600">Check-in:</span>
-                <span class="font-medium">{Calendar.strftime(@order.booking.check_in_date, "%B %d, %Y")}</span>
+                <span class="font-medium">
+                  {Calendar.strftime(@order.booking.check_in_date, "%B %d, %Y")}
+                </span>
               </div>
               <div :if={@order.booking.check_out_date} class="flex justify-between">
                 <span class="text-gray-600">Check-out:</span>
-                <span class="font-medium">{Calendar.strftime(@order.booking.check_out_date, "%B %d, %Y")}</span>
+                <span class="font-medium">
+                  {Calendar.strftime(@order.booking.check_out_date, "%B %d, %Y")}
+                </span>
               </div>
             </div>
           </div>
@@ -177,7 +184,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                       {format_currency(group.total_price)}
                     </div>
                   </div>
-
+                  
     <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
@@ -195,7 +202,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                     </button>
                   <% end %>
                 </div>
-
+                
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-gray-200">
