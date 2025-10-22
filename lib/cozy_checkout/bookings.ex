@@ -7,6 +7,7 @@ defmodule CozyCheckout.Bookings do
   alias CozyCheckout.Repo
 
   alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
 
   @doc """
   Returns the list of bookings.
@@ -58,11 +59,29 @@ defmodule CozyCheckout.Bookings do
 
   @doc """
   Creates a booking.
+  Automatically creates a booking_guest record for the primary guest.
   """
   def create_booking(attrs \\ %{}) do
-    %Booking{}
-    |> Booking.changeset(attrs)
-    |> Repo.insert()
+    Repo.transaction(fn ->
+      case %Booking{}
+           |> Booking.changeset(attrs)
+           |> Repo.insert() do
+        {:ok, booking} ->
+          # Create primary booking_guest record
+          %BookingGuest{}
+          |> BookingGuest.changeset(%{
+            booking_id: booking.id,
+            guest_id: booking.guest_id,
+            is_primary: true
+          })
+          |> Repo.insert!()
+
+          booking
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
   end
 
   @doc """
@@ -159,5 +178,54 @@ defmodule CozyCheckout.Bookings do
     |> preload(:guest)
     |> order_by([b], [b.check_in_date, b.guest_id])
     |> Repo.all()
+  end
+
+  # Booking Guests Management
+
+  @doc """
+  Lists all guests for a booking (including primary).
+  """
+  def list_booking_guests(booking_id) do
+    BookingGuest
+    |> where([bg], bg.booking_id == ^booking_id)
+    |> preload(:guest)
+    |> order_by([bg], [desc: bg.is_primary, asc: bg.inserted_at])
+    |> Repo.all()
+  end
+
+  @doc """
+  Adds a guest to a booking.
+  """
+  def add_guest_to_booking(booking_id, guest_id) do
+    %BookingGuest{}
+    |> BookingGuest.changeset(%{
+      booking_id: booking_id,
+      guest_id: guest_id,
+      is_primary: false
+    })
+    |> Repo.insert()
+  end
+
+  @doc """
+  Removes a non-primary guest from a booking.
+  Cannot remove the primary guest.
+  """
+  def remove_guest_from_booking(booking_guest_id) do
+    booking_guest = Repo.get!(BookingGuest, booking_guest_id)
+
+    if booking_guest.is_primary do
+      {:error, :cannot_remove_primary_guest}
+    else
+      Repo.delete(booking_guest)
+    end
+  end
+
+  @doc """
+  Gets a single booking guest.
+  """
+  def get_booking_guest!(id) do
+    BookingGuest
+    |> preload(:guest)
+    |> Repo.get!(id)
   end
 end

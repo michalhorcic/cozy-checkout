@@ -14,6 +14,8 @@ defmodule CozyCheckout.Bookings.Booking do
 
     belongs_to :guest, CozyCheckout.Guests.Guest
     has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
 
     timestamps(type: :utc_datetime)
   end

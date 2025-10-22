@@ -28,11 +28,19 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
         </.link>
         <div class="flex items-center justify-between">
           <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
-          <.link patch={~p"/admin/bookings/#{@booking}/edit"}>
-            <.button>
-              <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> Edit Booking
-            </.button>
-          </.link>
+          <div class="flex space-x-3">
+            <.link
+              navigate={~p"/admin/bookings/#{@booking}/guests"}
+              class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
+            >
+              <.icon name="hero-user-group" class="w-5 h-5 mr-2" /> Manage Guests
+            </.link>
+            <.link patch={~p"/admin/bookings/#{@booking}/edit"}>
+              <.button>
+                <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> Edit Booking
+              </.button>
+            </.link>
+          </div>
         </div>
       </div>
 

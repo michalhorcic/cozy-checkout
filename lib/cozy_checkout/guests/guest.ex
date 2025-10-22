@@ -13,6 +13,7 @@ defmodule CozyCheckout.Guests.Guest do
 
     has_many :bookings, CozyCheckout.Bookings.Booking
     has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
 
     timestamps(type: :utc_datetime)
   end
