@@ -169,6 +169,13 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
             </div>
           <% end %>
         </div>
+
+        <%!-- Invoice Details --%>
+        <.live_component
+          module={CozyCheckoutWeb.BookingLive.InvoiceComponent}
+          id="booking-invoice"
+          booking={@booking}
+        />
       </div>
     </div>
     """

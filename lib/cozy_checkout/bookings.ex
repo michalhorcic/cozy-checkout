@@ -9,6 +9,8 @@ defmodule CozyCheckout.Bookings do
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Bookings.BookingGuest
   alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Bookings.BookingInvoiceItem
   alias CozyCheckout.Rooms
 
   @doc """
@@ -306,5 +308,212 @@ defmodule CozyCheckout.Bookings do
     else
       {:error, {:rooms_not_available, unavailable_rooms}}
     end
+  end
+
+  # Booking Invoice Management
+
+  @doc """
+  Gets the invoice for a booking with preloaded items.
+  """
+  def get_invoice_by_booking_id(booking_id) do
+    items_query = from(i in BookingInvoiceItem, order_by: i.position)
+
+    BookingInvoice
+    |> where([i], i.booking_id == ^booking_id)
+    |> preload(items: ^items_query)
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a booking invoice by ID with preloaded items.
+  """
+  def get_booking_invoice!(id) do
+    items_query = from(i in BookingInvoiceItem, order_by: i.position)
+
+    BookingInvoice
+    |> preload(items: ^items_query)
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a default invoice for a booking with default line items.
+  """
+  def create_default_invoice(%Booking{} = booking) do
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice = %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Create default line items
+      default_items = [
+        %{name: "Dospělí", quantity: 2, price_per_night: Decimal.new("980.00"), vat_rate: Decimal.new("0"), position: 1, booking_invoice_id: invoice.id},
+        %{name: "Děti do 2 let", quantity: 0, price_per_night: Decimal.new("210.00"), vat_rate: Decimal.new("0"), position: 2, booking_invoice_id: invoice.id},
+        %{name: "Děti do 12 let", quantity: 0, price_per_night: Decimal.new("880.00"), vat_rate: Decimal.new("0"), position: 3, booking_invoice_id: invoice.id}
+      ]
+
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(item_attrs)
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+      get_booking_invoice!(invoice.id)
+    end)
+  end
+
+  @doc """
+  Updates a booking invoice header.
+  """
+  def update_booking_invoice(%BookingInvoice{} = invoice, attrs) do
+    invoice
+    |> BookingInvoice.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a booking invoice and all its items.
+  """
+  def delete_booking_invoice(%BookingInvoice{} = invoice) do
+    Repo.delete(invoice)
+  end
+
+  @doc """
+  Creates a new invoice item.
+  """
+  def create_invoice_item(invoice_id, attrs) do
+    attrs = Map.put(attrs, "booking_invoice_id", invoice_id)
+
+    %BookingInvoiceItem{}
+    |> BookingInvoiceItem.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an invoice item.
+  """
+  def update_invoice_item(%BookingInvoiceItem{} = item, attrs) do
+    item
+    |> BookingInvoiceItem.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an invoice item.
+  """
+  def delete_invoice_item(%BookingInvoiceItem{} = item) do
+    Repo.delete(item)
+  end
+
+  @doc """
+  Gets an invoice item by ID.
+  """
+  def get_invoice_item!(id) do
+    Repo.get!(BookingInvoiceItem, id)
+  end
+
+  @doc """
+  Recalculates and updates the cached totals for all invoice items and the invoice header.
+  """
+  def recalculate_invoice_totals(%BookingInvoice{} = invoice) do
+    Repo.transaction(fn ->
+      booking = get_booking!(invoice.booking_id)
+      nights = BookingInvoice.calculate_nights(booking)
+
+      # Reload invoice with items
+      invoice = get_booking_invoice!(invoice.id)
+
+      # Recalculate each item
+      updated_items = Enum.map(invoice.items, fn item ->
+        totals = BookingInvoiceItem.calculate_totals(item, nights)
+
+        {:ok, updated_item} = item
+          |> BookingInvoiceItem.changeset(totals)
+          |> Repo.update()
+
+        updated_item
+      end)
+
+      # Calculate invoice totals from items
+      invoice_subtotal = updated_items
+        |> Enum.map(& &1.subtotal)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+      invoice_vat_amount = updated_items
+        |> Enum.map(& &1.vat_amount)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+      invoice_total = updated_items
+        |> Enum.map(& &1.total)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+      # Update invoice header with totals
+      {:ok, updated_invoice} = invoice
+        |> BookingInvoice.changeset(%{
+          subtotal: invoice_subtotal,
+          vat_amount: invoice_vat_amount,
+          total_price: invoice_total
+        })
+        |> Repo.update()
+
+      # Reload with updated items
+      get_booking_invoice!(updated_invoice.id)
+    end)
+  end
+
+  @doc """
+  Generates an invoice number and marks the invoice as generated.
+  Format: INV-YYYYMMDD-NNNN (e.g., INV-20251022-0001)
+  """
+  def generate_invoice_number(%BookingInvoice{} = invoice) do
+    today = Date.utc_today()
+    date_prefix = "INV-#{Date.to_iso8601(today, :basic)}"
+
+    # Find the highest invoice number for today
+    last_invoice =
+      from(i in BookingInvoice,
+        where: fragment("? LIKE ?", i.invoice_number, ^"#{date_prefix}%"),
+        order_by: [desc: i.invoice_number],
+        limit: 1
+      )
+      |> Repo.one()
+
+    next_number = case last_invoice do
+      nil -> 1
+      %{invoice_number: number} ->
+        # Extract NNNN part and increment
+        number
+        |> String.split("-")
+        |> List.last()
+        |> String.to_integer()
+        |> Kernel.+(1)
+    end
+
+    invoice_number = "#{date_prefix}-#{String.pad_leading(Integer.to_string(next_number), 4, "0")}"
+
+    # Recalculate totals before generating
+    {:ok, invoice} = recalculate_invoice_totals(invoice)
+
+    invoice
+    |> BookingInvoice.changeset(%{
+      invoice_number: invoice_number,
+      invoice_generated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking invoice changes.
+  """
+  def change_booking_invoice(%BookingInvoice{} = invoice, attrs \\ %{}) do
+    BookingInvoice.changeset(invoice, attrs)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking invoice item changes.
+  """
+  def change_invoice_item(%BookingInvoiceItem{} = item, attrs \\ %{}) do
+    BookingInvoiceItem.changeset(item, attrs)
   end
 end

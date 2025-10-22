@@ -18,6 +18,7 @@ defmodule CozyCheckout.Bookings.Booking do
     has_many :additional_guests, through: [:booking_guests, :guest]
     has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
     has_many :rooms, through: [:booking_rooms, :room]
+    has_one :invoice, CozyCheckout.Bookings.BookingInvoice
 
     timestamps(type: :utc_datetime)
   end

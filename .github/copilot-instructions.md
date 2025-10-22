@@ -100,15 +100,6 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   During booking creation/editing, staff should select rooms via a modal. There will be just 13 rooms in our case.
 *   In the calendar view and booking list, show the specific room numbers that are booked.
 *   If a room's details (name, capacity) change, bookings should retain the room information as it was at booking time.
-*   Add invoicing details to each booking:
-    *   `adult_count` (integer, required)
-    *   `kids_under_2_count` (integer, default: 0)
-    *   `kids_under_12_count` (integer, default: 0)
-    *   `price_per_adult_per_night` (decimal, required)
-    *   `price_per_kid_under_2_per_night` (decimal, default: 0)
-    *   `price_per_kid_under_12_per_night` (decimal, required)
-    *   `total_price` (decimal, nullable) # calculated/cached
-    *   `invoice_number` (string, nullable, unique) # when invoice is generated
 *   Create a `booking_invoices` table to store the invoicing details. The table should have the following columns:
     *   `id` (binary_id, primary key)
     *   `booking_id` (binary_id, foreign key → bookings, on_delete: :delete_all), null: false
@@ -127,6 +118,14 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   `inserted_at`, `updated_at`
 *   Add unique index on `booking_invoices` table for `booking_id` column.
 *   Add unique index on `booking_invoices` table for `invoice_number` column.
+*   The invoicing system should have:
+    *   A `booking_invoice` table that acts as a "header" (stores invoice_number, invoice_generated_at, cached totals).
+    *   A `booking_invoice_items` table that stores individual line items (name, quantity, price_per_night, vat_rate).
+    *   A `quantity` field for each line item.
+    *   Automatically create default line items (Adults, Kids under 2, Kids under 12) that can be edited/removed when creating an invoice for a booking.
+    *   Per-item VAT for flexibility (in case you add extras with different rates).
+    *   Cache the total on the `booking_invoice` header.
+*   The quantity field in `booking_invoice_items` must allow zero values.
 
 ## TECH STACK
 
@@ -201,36 +200,11 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Add room selection (multi-select) during booking creation/editing via a modal. There will be just 13 rooms in our case.
     *   In the calendar view, don't show specific room numbers for now.
     *   Show current room details. No need to track room details historically.
-*   Create full CRUD to manage invoicing details for bookings in the admin section.
-
-## DEBUGGING
-
-*   When using Phoenix 1.8 with daisyUI, utilize `<.form>` from `Phoenix.Component` and existing `.input` components directly, instead of creating custom `<.simple_form>` components.
-*   When deleting order items in the POS interface, ensure the handler in `CozyCheckoutWeb.PosLive.OrderManagement` expects `"item_id"` in the params. The template sends `phx-value-item-id={item.id}` which becomes `"item_id"` in the params.
-*   When viewing orders in the admin CRUD interface, filter out deleted order items in the context layer, not in the views.
-*   When expanding groups in the POS system `handle_event`, ensure it accepts both `"product_id"` and `"product-id"` as well as `"unit_amount"` and `"unit-amount"` in params. Also ensure it accepts `"value"` as fallback for `unit_amount` in params.
-*   When deleting order items in the POS system `handle_event`, ensure it accepts both `"item_id"` and `"item-id"` in params.
-*   Deleting entire groups of order items in the POS system is disabled. Only deleting individual items is allowed.
-*   When removing groups in the admin CRUD interface, ensure it accepts both `"item_ids"` and `"item-ids"` in params.
-*   When exporting orders to POHODA, ensure the `product` association is preloaded for each `order_item` to retrieve the `product_name`. The `list_orders_for_pohoda_export/1` and `list_paid_orders_by_date/2` functions in the `Sales` context must preload the `product` association for each `order_item`.
-*   When generating the QR code for payments in the POS system, if you encounter a `protocol String.Chars not implemented for QRCode.QR (a struct)` error, ensure that you are correctly using the `qr_code` library. Specifically, `QRCode.render/2` returns a `Result.t()` tuple, and you need to call `QRCode.to_base64/1` on that result. The correct implementation is as follows:
-
-```elixir
-qr_data
-|> QRCode.create(:high)      # {:ok, qr_struct}
-|> QRCode.render(:svg)        # {:ok, svg_binary}
-|> QRCode.to_base64()         # {:ok, base64_string}
-|> case do
-  {:ok, base64} -> base64
-  {:error, reason} -> 
-    Logger.error(...)
-    nil
-end
-```
-*   When an order becomes "partially_paid", ensure it is still displayed in the POS guest selection.
-*   When loading orders after a payment is made, ensure that payments are being preloaded properly.
-*   When calculating the "Already Paid" amount in the payment modal, ensure to recalculate after the order is reloaded instead of assuming `payment_amount` is always the remaining amount. Ensure that deleted payments are filtered out when calculating the total paid amount.
-*   When the `guests` CRUD interface throws an error `key :room_number not found in`, it means the guest CRUD forms and index are still trying to access the old booking-related fields. The guest CRUD should only display and edit the fields: `name`, `email`, `phone`, and `notes`.
-*   When adding another room to the booking and getting the error `ERROR 42P18 (indeterminate_datatype) could not determine data type of parameter $3`, the issue is likely in the `room_available?` function in the Rooms context, specifically where `check_out_date` is `nil`. The query needs to handle the `nil` case by building the query conditionally instead of directly using `is_nil(^check_out_date)`. Ecto can't determine the type when a variable with `is_nil()` is used directly in the query. The solution is to check if `check_out_date` is `nil` in Elixir code (outside the query) and build different query conditions based on that:
-    1. **If `check_out_date` is provided**: Check for date overlap normally
-    2. **If `check_out_date` is `nil`** (open-ended booking): Only check if the check-in date conflicts with existing bookings
+*   The invoicing system should have:
+    *   A `booking_invoice` table that acts as a "header" (stores invoice_number, invoice_generated_at, cached totals).
+    *   A `booking_invoice_items` table that stores individual line items (name, quantity, price_per_night, vat_rate).
+    *   A `quantity` field for each line item.
+    *   Automatically create default line items (Adults, Kids under 2, Kids under 12) that can be edited/removed when creating an invoice for a booking.
+    *   Per-item VAT for flexibility (in case you add extras with different rates).
+    *   Cache the total on the `booking_invoice` header.
+*   The quantity field in `booking_invoice_items` must allow zero values.
