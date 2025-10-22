@@ -129,6 +129,28 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   Add `item_type` (string, default: "person", null: false) to the `booking_invoice_items` table, and create an index on this column. The `item_type` field should be validated to be either "person" or "extra".
 *   When calculating occupancy, use the `booking_invoice_items` table and filter by `item_type = "person"` to count the number of people booked for a given date.
 *   The cottage capacity is 45 people. This value is hardcoded in the `CozyCheckout.Bookings` module.
+*   When displaying the calendar view, show the total number of booked people for each day, color-coded against the capacity limit.
+    *   🟢 Green (0-29): Plenty of space
+    *   🟡 Yellow (30-39): Getting full
+    *   🟠 Orange (40-44): Almost full
+    *   🔴 Red (45+): At/over capacity
+*   ~~When creating new bookings in the admin section, implement a guest autocomplete feature:
+    *   The autocomplete should search guests by name and email.
+    *   Autocomplete suggestions should appear after typing a minimum of 3 characters.
+    *   When a user types a name that doesn't match any existing guest, show a "+ Create new guest: [name]" option that opens a modal to create the guest with additional details (email, phone, notes).
+    *   Guests should appear in the autocomplete dropdown with their name and email: "John Doe (john@example.com)".
+    *   Show a maximum of 10 guest suggestions at once.
+    *   The autocomplete should be inline in the booking form, replacing the current select dropdown.
+    *   Use `phx-debounce="300"` on the search input to avoid excessive server calls.
+    *   Display selected guest as a removable badge below the search input.
+    *   Use `phx-click-away` to hide the suggestions dropdown when clicking outside.~~
+*   When creating new bookings in the admin section, implement a guest autocomplete feature:
+    *   The autocomplete should search guests by name, email, and phone.
+    *   Autocomplete suggestions should appear after typing a minimum of 2-3 characters.
+    *   When a user types a name that doesn't match any existing guest, show a "+ Create new guest: [name]" option that opens a modal/form to create the guest with additional details (email, phone, notes).
+    *   Guests should appear in the autocomplete dropdown with their name and email: "John Doe (john@example.com)".
+    *   Show a maximum of 5-10 guest suggestions at once.
+    *   The autocomplete should be inline in the booking form, replacing the current select dropdown.
 
 ## TECH STACK
 

@@ -49,6 +49,17 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   end
 
   @impl true
+  def handle_info({:guest_created, guest}, socket) do
+    # Forward the message to the FormComponent
+    send_update(CozyCheckoutWeb.BookingLive.FormComponent,
+      id: socket.assigns.booking.id || :new,
+      guest_created: guest
+    )
+
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     booking = Bookings.get_booking!(id)
     {:ok, _} = Bookings.delete_booking(booking)

@@ -55,6 +55,33 @@ defmodule CozyCheckout.Guests do
   end
 
   @doc """
+  Searches for guests by name and email.
+  Requires at least 3 characters to search.
+  Returns up to 10 matching guests.
+  """
+  def search_guests(query) when is_binary(query) do
+    trimmed_query = String.trim(query)
+
+    if String.length(trimmed_query) < 3 do
+      []
+    else
+      search_pattern = "%#{trimmed_query}%"
+
+      Guest
+      |> where([g], is_nil(g.deleted_at))
+      |> where(
+        [g],
+        ilike(g.name, ^search_pattern) or ilike(g.email, ^search_pattern)
+      )
+      |> order_by([g], asc: g.name)
+      |> limit(10)
+      |> Repo.all()
+    end
+  end
+
+  def search_guests(_), do: []
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking guest changes.
   """
   def change_guest(%Guest{} = guest, attrs \\ %{}) do
