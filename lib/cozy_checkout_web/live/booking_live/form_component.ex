@@ -293,8 +293,29 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
 
   @impl true
   def handle_event("validate", %{"booking" => booking_params}, socket) do
+    # Auto-update check-out date when check-in date changes
+    booking_params = maybe_update_checkout_date(booking_params, socket.assigns.booking)
+
     changeset = Bookings.change_booking(socket.assigns.booking, booking_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+  end
+
+  defp maybe_update_checkout_date(booking_params, booking) do
+    with %{"check_in_date" => check_in_str} when is_binary(check_in_str) <- booking_params,
+         {:ok, check_in_date} <- Date.from_iso8601(check_in_str) do
+      # Only update if check-in date actually changed
+      current_check_in = booking.check_in_date
+
+      if current_check_in != check_in_date do
+        # Set check-out to one day after check-in
+        next_day = Date.add(check_in_date, 1)
+        Map.put(booking_params, "check_out_date", Date.to_iso8601(next_day))
+      else
+        booking_params
+      end
+    else
+      _ -> booking_params
+    end
   end
 
   def handle_event("save", %{"booking" => booking_params}, socket) do

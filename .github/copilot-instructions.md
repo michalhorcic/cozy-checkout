@@ -243,3 +243,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   🔴 Red (45+): At/over capacity
 *   When displaying numbers in invoice items, use proper formatting, including thousand separators.
 *   Ensure that numbers in invoice items do not wrap. The booking form may need to be wider to accommodate this.
+*   After creating a new booking in the admin section, redirect to the booking detail page (`/admin/bookings/:id`) instead of the booking index page. Use `push_navigate` for this redirect.
