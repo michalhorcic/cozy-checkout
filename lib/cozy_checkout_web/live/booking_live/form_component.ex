@@ -343,7 +343,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
             {:noreply,
              socket
              |> put_flash(:info, "Booking created successfully")
-             |> push_patch(to: socket.assigns.patch)}
+             |> push_navigate(to: ~p"/admin/bookings/#{booking}")}
 
           {:error, {:rooms_not_available, _unavailable_rooms}} ->
             # Rollback the booking creation
