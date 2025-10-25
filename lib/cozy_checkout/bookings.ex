@@ -27,6 +27,16 @@ defmodule CozyCheckout.Bookings do
   end
 
   @doc """
+  Returns paginated, filtered, and sorted bookings with Flop.
+  """
+  def list_bookings_with_flop(params \\ %{}) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> Flop.validate_and_run(params, for: Booking)
+  end
+
+  @doc """
   Returns the list of active bookings (currently checked in).
   """
   def list_active_bookings do

@@ -4,20 +4,38 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   alias CozyCheckout.Bookings
   alias CozyCheckout.Bookings.Booking
 
+  import CozyCheckoutWeb.FlopComponents
+
   @impl true
   def mount(_params, _session, socket) do
-    bookings =
-      Bookings.list_bookings()
-      |> Enum.map(fn booking ->
-        rooms = Bookings.list_booking_rooms(booking.id)
-        Map.put(booking, :rooms_list, rooms)
-      end)
-
-    {:ok, stream(socket, :bookings, bookings)}
+    {:ok, socket}
   end
 
   @impl true
   def handle_params(params, _url, socket) do
+    # Normalize params: convert indexed maps to arrays for Flop
+    normalized_params = normalize_flop_params(params)
+
+    socket =
+      case Bookings.list_bookings_with_flop(normalized_params) do
+        {:ok, {bookings, meta}} ->
+          # Add rooms to each booking
+          bookings_with_rooms =
+            Enum.map(bookings, fn booking ->
+              rooms = Bookings.list_booking_rooms(booking.id)
+              Map.put(booking, :rooms_list, rooms)
+            end)
+
+          socket
+          |> assign(:bookings, bookings_with_rooms)
+          |> assign(:meta, meta)
+
+        {:error, meta} ->
+          socket
+          |> assign(:bookings, [])
+          |> assign(:meta, meta)
+      end
+
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
@@ -40,12 +58,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   end
 
   @impl true
-  def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, booking}}, socket) do
-    updated_booking = Bookings.get_booking!(booking.id)
-    rooms = Bookings.list_booking_rooms(updated_booking.id)
-    updated_booking = Map.put(updated_booking, :rooms_list, rooms)
-
-    {:noreply, stream_insert(socket, :bookings, updated_booking)}
+  def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, _booking}}, socket) do
+    # Re-fetch bookings to show updated data
+    {:noreply, push_patch(socket, to: ~p"/admin/bookings")}
   end
 
   @impl true
@@ -64,7 +79,52 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     booking = Bookings.get_booking!(id)
     {:ok, _} = Bookings.delete_booking(booking)
 
-    {:noreply, stream_delete(socket, :bookings, booking)}
+    # Re-fetch bookings after delete
+    {:noreply, push_patch(socket, to: ~p"/admin/bookings")}
+  end
+
+  @impl true
+  def handle_event("filter", params, socket) do
+    # Push patch to update URL with filter params
+    {:noreply, push_patch(socket, to: ~p"/admin/bookings?#{build_filter_params(params)}")}
+  end
+
+  # Helper to build filter params from form
+  defp build_filter_params(params) do
+    filters =
+      case params["filters"] do
+        nil ->
+          []
+
+        filters_map ->
+          filters_map
+          |> Enum.map(fn {_idx, filter} ->
+            # Only include filters with non-empty values
+            if filter["value"] && filter["value"] != "" do
+              %{
+                "field" => filter["field"],
+                "op" => filter["op"] || "==",
+                "value" => filter["value"]
+              }
+            else
+              nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {filter, idx} ->
+            {to_string(idx), filter}
+          end)
+      end
+
+    # Preserve existing params
+    %{
+      "filters" => filters,
+      "page" => params["page"],
+      "page_size" => params["page_size"]
+    }
+    |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} end)
+    |> Map.new()
   end
 
   @impl true
@@ -86,81 +146,134 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       </div>
 
       <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Guest
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-in
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Check-out
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody id="bookings" phx-update="stream" class="bg-white divide-y divide-gray-200">
-            <tr :for={{id, booking} <- @streams.bookings} id={id} class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {booking.guest.name}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                <%= if Map.get(booking, :rooms_list) && booking.rooms_list != [] do %>
-                  {Enum.map_join(booking.rooms_list, ", ", & &1.room_number)}
-                <% else %>
-                  —
-                <% end %>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {Calendar.strftime(booking.check_in_date, "%b %d, %Y")}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {if booking.check_out_date,
-                  do: Calendar.strftime(booking.check_out_date, "%b %d, %Y"),
-                  else: "—"}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class={[
-                  "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                  status_badge_class(booking.status)
-                ]}>
-                  {String.capitalize(booking.status)}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <.link
-                  navigate={~p"/admin/bookings/#{booking}"}
-                  class="text-blue-600 hover:text-blue-900 mr-4"
-                >
-                  View
-                </.link>
-                <.link
-                  patch={~p"/admin/bookings/#{booking}/edit"}
-                  class="text-indigo-600 hover:text-indigo-900 mr-4"
-                >
-                  Edit
-                </.link>
-                <.link
-                  phx-click={JS.push("delete", value: %{id: booking.id})}
-                  data-confirm="Are you sure? This will not delete associated orders."
-                  class="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </.link>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Filter Form -->
+        <.filter_form meta={@meta} path={~p"/admin/bookings"} id="bookings-filter">
+          <:filter>
+            <input type="hidden" name="filters[0][field]" value="status" />
+            <input type="hidden" name="filters[0][op]" value="==" />
+            <.input
+              type="select"
+              name="filters[0][value]"
+              label="Status"
+              options={[
+                {"All", ""},
+                {"Upcoming", "upcoming"},
+                {"Active", "active"},
+                {"Completed", "completed"},
+                {"Cancelled", "cancelled"}
+              ]}
+              value={get_filter_value(@meta, :status)}
+            />
+          </:filter>
+          <:filter>
+            <input type="hidden" name="filters[1][field]" value="check_in_date" />
+            <input type="hidden" name="filters[1][op]" value=">=" />
+            <.input
+              type="date"
+              name="filters[1][value]"
+              label="Check-in From"
+              value={get_filter_value(@meta, :check_in_date)}
+            />
+          </:filter>
+          <:filter>
+            <input type="hidden" name="filters[2][field]" value="check_in_date" />
+            <input type="hidden" name="filters[2][op]" value="<=" />
+            <.input
+              type="date"
+              name="filters[2][value]"
+              label="Check-in To"
+              value={get_filter_value(@meta, :check_in_date)}
+            />
+          </:filter>
+        </.filter_form>
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Guest
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Room
+                </th>
+                <.sortable_header meta={@meta} field={:check_in_date} path={~p"/admin/bookings"}>
+                  Check-in
+                </.sortable_header>
+                <.sortable_header meta={@meta} field={:check_out_date} path={~p"/admin/bookings"}>
+                  Check-out
+                </.sortable_header>
+                <.sortable_header meta={@meta} field={:status} path={~p"/admin/bookings"}>
+                  Status
+                </.sortable_header>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <%= if @bookings == [] do %>
+                <tr>
+                  <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                    No bookings found.
+                  </td>
+                </tr>
+              <% else %>
+                <tr :for={booking <- @bookings} class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {booking.guest.name}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <%= if Map.get(booking, :rooms_list) && booking.rooms_list != [] do %>
+                      {Enum.map_join(booking.rooms_list, ", ", & &1.room_number)}
+                    <% else %>
+                      —
+                    <% end %>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {Calendar.strftime(booking.check_in_date, "%b %d, %Y")}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {if booking.check_out_date,
+                      do: Calendar.strftime(booking.check_out_date, "%b %d, %Y"),
+                      else: "—"}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class={[
+                      "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                      status_badge_class(booking.status)
+                    ]}>
+                      {String.capitalize(booking.status)}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <.link
+                      navigate={~p"/admin/bookings/#{booking}"}
+                      class="text-blue-600 hover:text-blue-900 mr-4"
+                    >
+                      View
+                    </.link>
+                    <.link
+                      patch={~p"/admin/bookings/#{booking}/edit"}
+                      class="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Edit
+                    </.link>
+                    <.link
+                      phx-click={JS.push("delete", value: %{id: booking.id})}
+                      data-confirm="Are you sure? This will not delete associated orders."
+                      class="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </.link>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <.pagination meta={@meta} path={~p"/admin/bookings"} />
       </div>
 
       <.modal
@@ -187,4 +300,28 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp status_badge_class("completed"), do: "bg-gray-100 text-gray-800"
   defp status_badge_class("cancelled"), do: "bg-red-100 text-red-800"
   defp status_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  # Convert Phoenix indexed map params (e.g., %{"0" => "value"}) to arrays for Flop
+  defp normalize_flop_params(params) do
+    params
+    |> normalize_array_param("order_by")
+    |> normalize_array_param("order_directions")
+  end
+
+  defp normalize_array_param(params, key) do
+    case Map.get(params, key) do
+      # If it's a map with string keys "0", "1", etc., convert to array
+      value when is_map(value) ->
+        array =
+          value
+          |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+          |> Enum.map(fn {_k, v} -> v end)
+
+        Map.put(params, key, array)
+
+      # Otherwise, leave it as is
+      _ ->
+        params
+    end
+  end
 end

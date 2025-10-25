@@ -60,6 +60,9 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Configure Flop
+config :flop, repo: CozyCheckout.Repo
+
 # POHODA Export Configuration
 config :cozy_checkout,
   # Your company ICO (tax ID) - CHANGE THIS

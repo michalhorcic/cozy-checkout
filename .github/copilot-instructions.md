@@ -134,29 +134,17 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   🟡 Yellow (30-39): Getting full
     *   🟠 Orange (40-44): Almost full
     *   🔴 Red (45+): At/over capacity
-*   ~~When creating new bookings in the admin section, implement a guest autocomplete feature:
-    *   The autocomplete should search guests by name and email.
-    *   Autocomplete suggestions should appear after typing a minimum of 3 characters.
-    *   When a user types a name that doesn't match any existing guest, show a "+ Create new guest: [name]" option that opens a modal to create the guest with additional details (email, phone, notes).
-    *   Guests should appear in the autocomplete dropdown with their name and email: "John Doe (john@example.com)".
-    *   Show a maximum of 10 guest suggestions at once.
-    *   The autocomplete should be inline in the booking form, replacing the current select dropdown.
-    *   Use `phx-debounce="300"` on the search input to avoid excessive server calls.
-    *   Display selected guest as a removable badge below the search input.
-    *   Use `phx-click-away` to hide the suggestions dropdown when clicking outside.~~
-*   When creating new bookings in the admin section, implement a guest autocomplete feature:
-    *   The autocomplete should search guests by name, email, and phone.
-    *   Autocomplete suggestions should appear after typing a minimum of 2-3 characters.
-    *   When a user types a name that doesn't match any existing guest, show a "+ Create new guest: [name]" option that opens a modal/form to create the guest with additional details (email, phone, notes).
-    *   Guests should appear in the autocomplete dropdown with their name and email: "John Doe (john@example.com)".
-    *   Show a maximum of 5-10 guest suggestions at once.
-    *   The autocomplete should be inline in the booking form, replacing the current select dropdown.
+*   When displaying numbers in invoice items, use proper formatting, including thousand separators.
+*   Ensure that numbers in invoice items do not wrap. The booking form may need to be wider to accommodate this.
+*   After creating a new booking in the admin section, redirect to the booking detail page (`/admin/bookings/:id`) instead of the booking index page. Use `push_navigate` for this redirect.
+*   **When implementing sorting, pagination, and filtering in admin tables:** Attempt to use the Flop library, creating reusable table components for filtering, sorting, and pagination, keeping the business logic separate from the UI, and making it easily reusable for other tables. However, due to version incompatibilities, it may be necessary to implement Flop without `flop_phoenix`, building the table components manually. If `flop_phoenix` can't be used, ensure that the filter parameters are properly encoded in the URL. If errors occur due to nil values, add guards to handle empty results.
 
 ## TECH STACK
 
 *   Ecto (with Elixir) for database interactions and migrations.
 *   daisyUI (with Phoenix 1.8) for UI components.
 *   `qr_code` Elixir library (version 3.2.0) for generating QR codes.
+*   Flop - for sorting, filtering and pagination.
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
 
@@ -244,3 +232,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   When displaying numbers in invoice items, use proper formatting, including thousand separators.
 *   Ensure that numbers in invoice items do not wrap. The booking form may need to be wider to accommodate this.
 *   After creating a new booking in the admin section, redirect to the booking detail page (`/admin/bookings/:id`) instead of the booking index page. Use `push_navigate` for this redirect.
+*   **When implementing sorting, pagination, and filtering in admin tables:** Attempt to use the Flop library, creating reusable table components for filtering, sorting, and pagination, keeping the business logic separate from the UI, and making it easily reusable for other tables. However, due to version incompatibilities, it may be necessary to implement Flop without `flop_phoenix`, building the table components manually. If `flop_phoenix` can't be used, ensure that the filter parameters are properly encoded in the URL. If errors occur due to nil values, add guards to handle empty results.

@@ -2,6 +2,14 @@ defmodule CozyCheckout.Bookings.Booking do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {
+    Flop.Schema,
+    filterable: [:status, :check_in_date, :check_out_date],
+    sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
+    default_limit: 20,
+    max_limit: 100
+  }
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "bookings" do
