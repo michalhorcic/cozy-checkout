@@ -80,11 +80,20 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
           </.link>
           <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
         </div>
-        <.link patch={~p"/admin/pricelists/new"}>
-          <.button>
-            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Pricelist
-          </.button>
-        </.link>
+        <div class="flex gap-3">
+          <.link
+            navigate={~p"/admin/pricelists/management"}
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
+          >
+            <.icon name="hero-clipboard-document-check" class="w-5 h-5 mr-2" />
+            Price Management
+          </.link>
+          <.link patch={~p"/admin/pricelists/new"}>
+            <.button>
+              <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Pricelist
+            </.button>
+          </.link>
+        </div>
       </div>
 
       <div class="bg-white shadow-lg rounded-lg overflow-hidden">

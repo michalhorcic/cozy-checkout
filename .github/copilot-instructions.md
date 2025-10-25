@@ -245,6 +245,20 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   If two categories have the same order number, use the category name as a secondary sort.
     *   When creating a new category, it should default to the highest order number + 1 (put at the end).
     *   This new order should replace the current sorting completely in the POS.
+*   **Price Management Page:** Create a "Price Management" page (`/admin/pricelists/management`) that shows:
+    *   **Products Without Any Prices:** List all active products that have NO pricelists. Show: Product name, Category, Unit (if applicable). Action: "Quick Add Price" button that opens a modal to create a pricelist. Use a 🔴 Red badge to indicate this.
+    *   **Products With Invalid/Expired Prices:** List active products whose pricelists are not valid for today. Show: Product name, Last valid date, Expired price. Action: "Extend/Update Price" button. Use a 🟡 Yellow badge to indicate this.
+    *   **Products With Incomplete Price Tiers:** List products with `default_unit_amounts` that don't have prices for all tiers. Show: Product name, Missing tiers. Action: "Complete Pricing" button. Use a 🟠 Orange badge to indicate this.
+    *   The page should have three distinct sections showing different pricing problems.
+    *   The page should use color-coded badges (🔴 Red, 🟡 Yellow, 🟠 Orange) for visual clarity.
+    *   The page should have summary cards at the top showing counts of each pricing problem.
+    *   The page should have quick "Add Price" buttons that open a modal.
+    *   The modal should be smart and show tier inputs only for products with `default_unit_amounts`.
+    *   The system should have complete tier pricing support - checks if ALL tiers have prices configured.
+    *   For `Products With Incomplete Price Tiers` the `default_unit_amounts` is stored as a JSON string, not a native PostgreSQL array, so the query should check if the JSON string is not empty or "[]".
+    *   When creating a pricelist with tier prices, use plain HTML inputs with the `name` attribute instead of the `<.input>` component from Phoenix. The `<.input>` component requires a `field` attribute that's tied to the form changeset, which is not suitable for dynamic tier prices.
+    *   In the pricelists index page (`/admin/pricelists`), the "Price Management" button should use a polished gradient style with an emerald-to-teal gradient (`bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`), proper shadow effects, focus ring states, smooth transitions, and the `hero-clipboard-document-check` icon. This creates a visually distinct, premium button appearance.
+*   The default VAT rate should be zero.
 
 ## TECH STACK
 
@@ -254,3 +268,14 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   Flop - for sorting, filtering and pagination.
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
+
+*   The Price Management system has a dedicated page at `/admin/pricelists/management`.
+*   It consists of three distinct sections: Products Without Any Prices, Products With Expired Prices, and Products With Incomplete Price Tiers.
+*   It utilizes color-coded badges (🔴 Red, 🟡 Yellow, 🟠 Orange) for visual clarity.
+*   Summary cards at the top show counts of each pricing problem.
+*   Quick "Add Price" buttons open a modal for price creation.
+*   The modal dynamically shows tier inputs only for products with `default_unit_amounts`.
+*   The system has complete tier pricing support, checking if ALL tiers have prices configured.
+*   The `default_unit_amounts` is stored as a JSON string, not a native PostgreSQL array, so the query should check if the JSON string is not empty or "[]".
+*   When creating a pricelist with tier prices, use plain HTML inputs with the `name` attribute instead of the `<.input>` component from Phoenix. The `<.input>` component requires a `field` attribute that's tied to the form changeset, which is not suitable for dynamic tier prices.
+*   The default VAT rate is zero.

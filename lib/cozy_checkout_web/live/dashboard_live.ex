@@ -53,11 +53,19 @@ defmodule CozyCheckoutWeb.DashboardLive do
           />
 
           <.dashboard_card
+            title="Price Management"
+            description="Ensure all products have prices"
+            icon="hero-chart-bar"
+            navigate={~p"/admin/pricelists/management"}
+            color="emerald"
+          />
+
+          <.dashboard_card
             title="Print Pricelist"
             description="Generate printable pricelist"
             icon="hero-printer"
             navigate={~p"/admin/pricelists/print"}
-            color="emerald"
+            color="teal"
           />
 
           <%!-- Guest Management --%>

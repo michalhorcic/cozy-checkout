@@ -277,6 +277,138 @@ defmodule CozyCheckout.Catalog do
     end)
   end
 
+  @doc """
+  Returns all active products that have pricing issues.
+  Returns a map with three keys:
+  - :no_prices - products with no pricelists at all
+  - :expired_prices - products with pricelists that are not valid for today
+  - :incomplete_tiers - products with default_unit_amounts that don't have prices for all tiers
+  """
+  def get_products_with_pricing_issues(date \\ Date.utc_today()) do
+    %{
+      no_prices: get_products_without_prices(),
+      expired_prices: get_products_with_expired_prices(date),
+      incomplete_tiers: get_products_with_incomplete_tiers(date)
+    }
+  end
+
+  @doc """
+  Returns active products that have no pricelists at all.
+  """
+  def get_products_without_prices do
+    from(p in Product,
+      left_join: pl in Pricelist,
+      on: pl.product_id == p.id and is_nil(pl.deleted_at),
+      where: is_nil(p.deleted_at),
+      where: p.active == true,
+      where: is_nil(pl.id),
+      preload: [:category],
+      order_by: [asc: p.name]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns active products whose pricelists are not valid for the given date.
+  This includes products with only expired or future pricelists.
+  """
+  def get_products_with_expired_prices(date \\ Date.utc_today()) do
+    # Get products that have pricelists but none valid for today
+    products_with_invalid_prices =
+      from(p in Product,
+        join: pl in Pricelist,
+        on: pl.product_id == p.id and is_nil(pl.deleted_at),
+        where: is_nil(p.deleted_at),
+        where: p.active == true,
+        group_by: p.id,
+        having:
+          fragment(
+            "COUNT(CASE WHEN ? <= ? AND (? IS NULL OR ? >= ?) THEN 1 END) = 0",
+            pl.valid_from,
+            ^date,
+            pl.valid_to,
+            pl.valid_to,
+            ^date
+          ),
+        select: p.id
+      )
+      |> Repo.all()
+
+    # Fetch full product data with preloads
+    from(p in Product,
+      where: p.id in ^products_with_invalid_prices,
+      preload: [
+        :category,
+        pricelists:
+          ^from(pl in Pricelist,
+            where: is_nil(pl.deleted_at),
+            order_by: [desc: pl.valid_until]
+          )
+      ],
+      order_by: [asc: p.name]
+    )
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns active products with default_unit_amounts that don't have prices for all tiers.
+  Only considers pricelists that are valid for the given date.
+  """
+  def get_products_with_incomplete_tiers(date \\ Date.utc_today()) do
+    products =
+      from(p in Product,
+        where: is_nil(p.deleted_at),
+        where: p.active == true,
+        where: not is_nil(p.default_unit_amounts),
+        where: p.default_unit_amounts != "" and p.default_unit_amounts != "[]",
+        preload: [
+          :category,
+          pricelists:
+            ^from(pl in Pricelist,
+              where: is_nil(pl.deleted_at),
+              where: pl.valid_from <= ^date,
+              where: is_nil(pl.valid_to) or pl.valid_to >= ^date
+            )
+        ]
+      )
+      |> Repo.all()
+
+    # Filter products that have missing tier prices
+    Enum.filter(products, fn product ->
+      # Parse the default_unit_amounts from JSON string
+      required_amounts =
+        case Jason.decode(product.default_unit_amounts || "[]") do
+          {:ok, amounts} when is_list(amounts) -> amounts
+          _ -> []
+        end
+
+      # Skip if no required amounts
+      if required_amounts == [] do
+        false
+      else
+        case product.pricelists do
+          [] ->
+            true
+
+          pricelists ->
+            # Check if any pricelist has all required tiers
+            has_complete_pricing =
+              Enum.any?(pricelists, fn pricelist ->
+                configured_amounts =
+                  Enum.map(pricelist.price_tiers || [], fn tier ->
+                    tier["unit_amount"] || tier[:unit_amount]
+                  end)
+
+                missing_amounts = required_amounts -- configured_amounts
+                length(missing_amounts) == 0
+              end)
+
+            !has_complete_pricing
+        end
+      end
+    end)
+  end
+
   # Private helper for Czech alphabet-aware string comparison
   defp compare_czech_names(a, b) do
     normalize_czech(a) <= normalize_czech(b)
