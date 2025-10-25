@@ -145,6 +145,18 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   "Staff order"
     *   "Walk-in customer"
 *   Orders must have either a `guest_id` OR a `name`.
+*   When implementing product selection in pricelists, use a modern autocomplete search component with the following features:
+    *   Real-time filtering with a debounce of 300ms.
+    *   Search by product name or category name.
+    *   Limit results to 10 items.
+    *   Display selected product as a card with a check icon, product name, category name, and clear button.
+    *   Use a dropdown for results, showing product name, category, and unit badge.
+    *   Implement proper state management for products, filtered results, selected product, and search query.
+    *   Utilize daisyUI components for styling.
+    *   Ensure the component is responsive and accessible.
+    *   Initially display at least 20 products even without search.
+    *   Ensure the component is responsive and accessible.
+*   When using `phx-change` on an input, the input element needs a `name` attribute for `phx-change` to work properly.
 
 ## TECH STACK
 
@@ -154,181 +166,3 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   Flop - for sorting, filtering and pagination.
 
 ## PROJECT DOCUMENTATION & CONTEXT SYSTEM
-
-## WORKFLOW & RELEASE RULES
-
-*   When building CRUD interfaces, create full CRUD for all tables.
-*   When building an application with multiple sections, create a main menu to access all sections.
-*   When building order management systems, ensure the ability to edit orders after creation, including adding new items.
-*   For day-to-day staff order management, create a separate, touch-friendly Point of Sale (POS) interface, distinct from the admin dashboard. This POS interface should prioritize simplicity and speed of use, and should be created from scratch, not using existing liveviews. The POS interface should be accessible via a separate route, specifically `/pos`.
-*   The POS interface should:
-    *   Utilize large touch targets (minimum 44x44px, ideally 60x60px for buttons).
-    *   Minimize text input, using buttons and taps wherever possible.
-    *   Provide clear visual feedback for all actions (loading states, success confirmations).
-    *   Include a product grid with category filters for fast access.
-    *   Include a floating cart summary that is always visible, showing the current order total.
-    *   Utilize swipe gestures to remove items.
-    *   Utilize clear color coding (green for success, red for remove, etc.).
-    *   Display popular products across all orders for quick access.
-    *   Display a list of open orders to choose from if a guest has multiple open orders.
-    *   Automatically create a new order when the first item is added for a guest with no existing open orders.
-    *   Target iPad 11 inches size and bigger.
-    *   When adding products with a `unit` field to orders in the POS interface, provide a modal allowing staff to select from `default_unit_amounts` or enter a custom amount.
-    *   When adding items with a `unit` field to an order in the POS interface, when a user clicks on a chosen amount, the item is immediately added to the order without requiring a separate "Add Item" button click. The quick add buttons should be visually distinct (green) and labeled clearly in the modal as "Quick Add". Custom amounts can still be entered, requiring a separate "Add Custom" button click.
-    *   When displaying Guest cards in the POS view, use a more compact layout to display more cards at once. Use the following styles:
-        *   Grid layout: `grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6`
-        *   Card size: Reduced padding from `p-8` to `p-4`, reduced min-height from `180px` to `120px`, reduced gap between cards from `gap-6` to `gap-3`, reduced border from `border-4` to `border-2`, changed border radius from `rounded-2xl` to `rounded-xl`.
-        *   Typography & spacing: Guest name: `text-2xl mb-3` → `text-lg mb-2`, Room info: `text-lg gap-2 mb-2` → `text-sm gap-1.5 mb-1.5`, Icons: Reduced from `w-5 h-5` to `w-4 h-4` (and `w-3.5 h-3.5` for calendar), Check-in dates: `text-sm` → `text-xs`, Badge: Reduced padding and font sizes.
-        *   Header: Made slightly smaller (`text-4xl` → `text-3xl`, `text-lg` → `text-base`), Reduced bottom margin from `mb-8` to `mb-4`.
-*   Implement functionality to export paid orders into POHODA accounting software, generating POHODA-compatible XML files.
-    *   The XML format should follow POHODA's standard for issued invoices. VAT rates, payment types and account numbers may need adjustment.
-    *   ICO and default account should be configurable in `config.exs`.
-*   Implement the ability to pay for orders directly within the POS system, supporting two payment methods:
-    *   Cash: Creates a payment record directly.
-    *   QR Code: Creates a payment record and displays a QR code containing relevant order details. The `invoice_number` must be included in the payment table and embedded within the QR code. The QR code should be generated using the `qr_code` Elixir library. Use `QRCode.render/2` to generate the QR code struct, then use `QRCode.to_base64/1` on the result to get the base64-encoded SVG.
-        *   When generating the QR code, ensure that the ACC field contains the account number in IBAN format. Czech banking apps require valid IBAN format in the ACC field. The IBAN check digits must be correctly calculated using the mod-97 algorithm.
-    *   The invoice number should follow the format `PAY-YYYYMMDD-NNNN` (e.g., `PAY-20251016-0001`), auto-incrementing per day. A unique constraint should be added to the database to prevent duplicates.
-    *   The bank account for QR code payments should be configurable in `config.exs`.
-    *   The ACC field in the QR code data must contain the account number in IBAN format.
-*   Implement a main menu to switch between the POS and admin sections of the application. The admin dashboard should be located under the `/admin` route. The navigation card to the POS system should be removed from the current dashboard and placed within the admin route. Add a "Back to Menu" link to the POS guest selection page.
-*   **All routes for admin CRUD interfaces must be prefixed with `/admin`.** This includes routes for creating, editing, and viewing guests, categories, and other admin-managed resources. When separating the admin and POS sections, ensure all routes are updated accordingly.
-*   In the admin section, order editing and deletion should be disabled for paid orders. Paid orders serve as immutable historical records for accounting purposes and should not be modified or deleted.
-*   Ensure that partially paid orders can be paid from the POS view. By default, the whole remaining amount will be selected, but staff must be able to choose which amount will be paid. Partially paid orders must also be able to receive additional payments.
-*   Ensure that all orders without payments have `open` status in the seeds file.
-*   When populating the seeds file, the `payment_method` field in the `payments` table should use strings (`"cash"`, `"qr_code"`) instead of atoms (`:cash`, `:qr_code`).
-*   In the seeds file, all orders should be either fully paid with one payment or have `"open"` status. Partially paid orders should not be created in the seeds file.
-*   Create full CRUD for `bookings` in the admin section.
-*   When implementing the calendar view for bookings:
-    *   Prioritize pure Elixir/LiveView implementation to avoid JavaScript dependencies.
-    *   Utilize Tailwind CSS for styling.
-    *   Create a new context function to get bookings for a specific month.
-    *   Create a calendar LiveView component.
-    *   Create calendar helper functions to generate the calendar grid.
-*   When implementing the calendar view, ensure the templates don't use the `<Layouts.app>` wrapper, mirroring the structure of other LiveView templates.
-*   Add an option to change the daisyUI theme from dark to light in the top part of the system.
-*   When displaying the "Manage Guests" button on the booking show page, use a properly styled link with Tailwind classes directly for a consistent look:
-    *   Purple background (`bg-purple-600`)
-    *   Darker purple on hover (`hover:bg-purple-700`)
-    *   White text
-    *   Proper padding, rounded corners, and shadow
-    *   Smooth transition effect
-*   When adding rooms to the system:
-    *   Create a `rooms` table with soft deletes.
-    *   Create a `booking_rooms` join table to link bookings to rooms.
-    *   Add validation to prevent double-booking the same room for overlapping dates.
-    *   Create full CRUD for rooms in the admin section.
-    *   Add room selection (multi-select) during booking creation/editing via a modal. There will be just 13 rooms in our case.
-    *   In the calendar view, don't show specific room numbers for now.
-    *   Show current room details. No need to track room details historically.
-*   The invoicing system should have:
-    *   A `booking_invoice` table that acts as a "header" (stores invoice_number, invoice_generated_at, cached totals).
-    *   A `booking_invoice_items` table that stores individual line items (name, quantity, price_per_night, vat_rate).
-    *   A `quantity` field for each line item.
-    *   Automatically create default line items (Adults, Kids under 2, Kids under 12) that can be edited/removed when creating an invoice for a booking.
-    *   Per-item VAT for flexibility (in case you add extras with different rates).
-    *   Cache the total on the `booking_invoice` header.
-*   The quantity field in `booking_invoice_items` must allow zero values.
-*   Add `item_type` (string, default: "person", null: false) to the `booking_invoice_items` table, and create an index on this column. The `item_type` field should be validated to be either "person" or "extra".
-*   When calculating occupancy, use the `booking_invoice_items` table and filter by `item_type = "person"` to count the number of people booked for a given date.
-*   The cottage capacity is 45 people. This value is hardcoded in the `CozyCheckout.Bookings` module.
-*   When displaying the calendar view, show the total number of booked people for each day, color-coded against the capacity limit.
-    *   🟢 Green (0-29): Plenty of space
-    *   🟡 Yellow (30-39): Getting full
-    *   🟠 Orange (40-44): Almost full
-    *   🔴 Red (45+): At/over capacity
-*   When displaying numbers in invoice items, use proper formatting, including thousand separators.
-*   Ensure that numbers in invoice items do not wrap. The booking form may need to be wider to accommodate this.
-*   After creating a new booking in the admin section, redirect to the booking detail page (`/admin/bookings/:id`) instead of the booking index page. Use `push_navigate` for this redirect.
-*   **When implementing sorting, pagination, and filtering in admin tables:** Attempt to use the Flop library, creating reusable table components for filtering, sorting, and pagination, keeping the business logic separate from the UI, and making it easily reusable for other tables. However, due to version incompatibilities, it may be necessary to implement Flop without `flop_phoenix`, building the table components manually. If `flop_phoenix` can't be used, ensure that the filter parameters are properly encoded in the URL. If errors occur due to nil values, add guards to handle empty results.
-*   Orders can be created without a booking or guest, using an "order name" to identify the order. This provides flexibility when bookings are made for only one person, and there's no need to add all guests to the system. These standalone orders must be payable via the POS system.
-*   In the `orders` table, `guest_id` and `booking_id` are nullable to support standalone orders.
-*   The `name` field is the primary identifier for standalone orders. Examples include:
-    *   "Kids - Room 5"
-    *   "Staff order"
-    *   "Walk-in customer"
-*   Orders must have either a `guest_id` OR a `name`.
-
-## TECH STACK
-
-*   Ecto (with Elixir) for database interactions and migrations.
-*   daisyUI (with Phoenix 1.8) for UI components.
-*   `qr_code` Elixir library (version 3.2.0) for generating QR codes.
-*   Flop - for sorting, filtering and pagination.
-
-## PROJECT DOCUMENTATION & CONTEXT SYSTEM
-
-## WORKFLOW & RELEASE RULES
-
-*   When building CRUD interfaces, create full CRUD for all tables.
-*   When building an application with multiple sections, create a main menu to access all sections.
-*   When building order management systems, ensure the ability to edit orders after creation, including adding new items.
-*   For day-to-day staff order management, create a separate, touch-friendly Point of Sale (POS) interface, distinct from the admin dashboard. This POS interface should prioritize simplicity and speed of use, and should be created from scratch, not using existing liveviews. The POS interface should be accessible via a separate route, specifically `/pos`.
-*   The POS interface should:
-    *   Utilize large touch targets (minimum 44x44px, ideally 60x60px for buttons).
-    *   Minimize text input, using buttons and taps wherever possible.
-    *   Provide clear visual feedback for all actions (loading states, success confirmations).
-    *   Include a product grid with category filters for fast access.
-    *   Include a floating cart summary that is always visible, showing the current order total.
-    *   Utilize swipe gestures to remove items.
-    *   Utilize clear color coding (green for success, red for remove, etc.).
-    *   Display popular products across all orders for quick access.
-    *   Display a list of open orders to choose from if a guest has multiple open orders.
-    *   Automatically create a new order when the first item is added for a guest with no existing open orders.
-    *   Target iPad 11 inches size and bigger.
-    *   When adding products with a `unit` field to orders in the POS interface, provide a modal allowing staff to select from `default_unit_amounts` or enter a custom amount.
-    *   When adding items with a `unit` field to an order in the POS interface, when a user clicks on a chosen amount, the item is immediately added to the order without requiring a separate "Add Item" button click. The quick add buttons should be visually distinct (green) and labeled clearly in the modal as "Quick Add". Custom amounts can still be entered, requiring a separate "Add Custom" button click.
-    *   When displaying Guest cards in the POS view, use a more compact layout to display more cards at once. Use the following styles:
-        *   Grid layout: `grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6`
-        *   Card size: Reduced padding from `p-8` to `p-4`, reduced min-height from `180px` to `120px`, reduced gap between cards from `gap-6` to `gap-3`, reduced border from `border-4` to `border-2`, changed border radius from `rounded-2xl` to `rounded-xl`.
-        *   Typography & spacing: Guest name: `text-2xl mb-3` → `text-lg mb-2`, Room info: `text-lg gap-2 mb-2` → `text-sm gap-1.5 mb-1.5`, Icons: Reduced from `w-5 h-5` to `w-4 h-4` (and `w-3.5 h-3.5` for calendar), Check-in dates: `text-sm` → `text-xs`, Badge: Reduced padding and font sizes.
-        *   Header: Made slightly smaller (`text-4xl` → `text-3xl`, `text-lg` → `text-base`), Reduced bottom margin from `mb-8` to `mb-4`.
-*   Implement functionality to export paid orders into POHODA accounting software, generating POHODA-compatible XML files.
-    *   The XML format should follow POHODA's standard for issued invoices. VAT rates, payment types and account numbers may need adjustment.
-    *   ICO and default account should be configurable in `config.exs`.
-*   Implement the ability to pay for orders directly within the POS system, supporting two payment methods:
-    *   Cash: Creates a payment record directly.
-    *   QR Code: Creates a payment record and displays a QR code containing relevant order details. The `invoice_number` must be included in the payment table and embedded within the QR code. The QR code should be generated using the `qr_code` Elixir library. Use `QRCode.render/2` to generate the QR code struct, then use `QRCode.to_base64/1` on the result to get the base64-encoded SVG.
-        *   When generating the QR code, ensure that the ACC field contains the account number in IBAN format. Czech banking apps require valid IBAN format in the ACC field. The IBAN check digits must be correctly calculated using the mod-97 algorithm.
-    *   The invoice number should follow the format `PAY-YYYYMMDD-NNNN` (e.g., `PAY-20251016-0001`), auto-incrementing per day. A unique constraint should be added to the database to prevent duplicates.
-    *   The bank account for QR code payments should be configurable in `config.exs`.
-    *   The ACC field in the QR code data must contain the account number in IBAN format.
-*   Implement a main menu to switch between the POS and admin sections of the application. The admin dashboard should be located under the `/admin` route. The navigation card to the POS system should be removed from the current dashboard and placed within the admin route. Add a "Back to Menu" link to the POS guest selection page.
-*   **All routes for admin CRUD interfaces must be prefixed with `/admin`.** This includes routes for creating, editing, and viewing guests, categories, and other admin-managed resources. When separating the admin and POS sections, ensure all routes are updated accordingly.
-*   In the admin section, order editing and deletion should be disabled for paid orders. Paid orders serve as immutable historical records for accounting purposes and should not be modified or deleted.
-*   Ensure that partially paid orders can be paid from the POS view. By default, the whole remaining amount will be selected, but staff must be able to choose which amount will be paid. Partially paid orders must also be able to receive additional payments.
-*   Ensure that all orders without payments have `open` status in the seeds file.
-*   When populating the seeds file, the `payment_method` field in the `payments` table should use strings (`"cash"`, `"qr_code"`) instead of atoms (`:cash`, `:qr_code`).
-*   In the seeds file, all orders should be either fully paid with one payment or have `"open"` status. Partially paid orders should not be created in the seeds file.
-*   Create full CRUD for `bookings` in the admin section.
-*   When implementing the calendar view for bookings:
-    *   Prioritize pure Elixir/LiveView implementation to avoid JavaScript dependencies.
-    *   Utilize Tailwind CSS for styling.
-    *   Create a new context function to get bookings for a specific month.
-    *   Create a calendar LiveView component.
-    *   Create calendar helper functions to generate the calendar grid.
-*   When implementing the calendar view, ensure the templates don't use the `<Layouts.app>` wrapper, mirroring the structure of other LiveView templates.
-*   Add an option to change the daisyUI theme from dark to light in the top part of the system.
-*   When displaying the "Manage Guests" button on the booking show page, use a properly styled link with Tailwind classes directly for a consistent look:
-    *   Purple background (`bg-purple-600`)
-    *   Darker purple on hover (`hover:bg-purple-700`)
-    *   White text
-    *   Proper padding, rounded corners, and shadow
-    *   Smooth transition effect
-*   When adding rooms to the system:
-    *   Create a `rooms` table with soft deletes.
-    *   Create a `booking_rooms` join table to link bookings to rooms.
-    *   Add validation to prevent double-booking the same room for overlapping dates.
-    *   Create full CRUD for rooms in the admin section.
-    *   Add room selection (multi-select) during booking creation/editing via a modal. There will be just 13 rooms in our case.
-    *   In the calendar view, don't show specific room numbers for now.
-    *   Show current room details. No need to track room details historically.
-*   The invoicing system should have:
-    *   A `booking_invoice` table that acts as a "header" (stores invoice_number, invoice_generated_at, cached totals).
-    *   A `booking_invoice_items` table that stores individual line items (name, quantity, price_per_night, vat_rate).
-    *   A `quantity` field for each line item.
-    *   Automatically create default line items (Adults, Kids under 2, Kids under 12) that can be edited/removed when creating an invoice for a booking.
-    *   Per-item VAT for flexibility (in case you add extras with different rates).
-    *   Cache the total on the `booking_invoice` header.
-*   The quantity field in `booking_invoice_items` must allow zero values.
-*   Add `item_type` (string, default: "person", null: false) to the `booking_invoice_items` table, and create an index on this column. The `item_type` field should be validated to be either "person" or "extra".
-*   When calculating occupancy, use the `booking_invoice_items` table and filter by `item_type =
