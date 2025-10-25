@@ -43,7 +43,7 @@ defmodule CozyCheckout.Pohoda do
             <inv:text>Order #{order.order_number}</inv:text>
             <inv:partnerIdentity>
               <typ:address>
-                <typ:company>#{escape_xml(order.booking.guest.name)}</typ:company>
+                <typ:company>#{escape_xml(get_customer_name(order))}</typ:company>
               </typ:address>
             </inv:partnerIdentity>
             <inv:paymentType>
@@ -87,6 +87,17 @@ defmodule CozyCheckout.Pohoda do
 
   defp active_order_items(order) do
     Enum.filter(order.order_items, &is_nil(&1.deleted_at))
+  end
+
+  defp get_customer_name(order) do
+    cond do
+      order.booking_id && order.booking && order.booking.guest ->
+        order.booking.guest.name
+      order.name ->
+        order.name
+      true ->
+        "Unknown Customer"
+    end
   end
 
   defp format_date(%DateTime{} = datetime) do

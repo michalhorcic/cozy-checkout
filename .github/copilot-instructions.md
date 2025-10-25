@@ -182,6 +182,18 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   `inserted_at`
         *   `status`
     *   The default sorting should be by `desc: o.inserted_at` (newest first).
+*   To force the application to always use the light theme:
+    *   Modify the JavaScript in `root.html.heex` to always set the theme to "light". Remove the localStorage checks and system preference detection, and remove the event listeners for theme switching.
+    *   Update the daisyUI configuration in `app.css` to change `prefersdark: true` to `prefersdark: false` in the dark theme configuration. This prevents the dark theme from being applied when the browser has a dark mode preference.
+*   When displaying guest names in the Pohoda export, use the following logic to handle standalone orders:
+    *   In the template (`index.html.heex`), add a conditional check: `<%= if order.booking_id do %>`
+    *   If the order has a booking, display the guest name: `{order.booking.guest.name}`
+    *   If it's a standalone order, display a "Standalone" badge with the order name: `{order.name}`. This matches the styling used in the orders index page.
+    *   In the Pohoda module (`pohoda.ex`), replace direct access `order.booking.guest.name` with a helper function call: `get_customer_name(order)`
+    *   Add a new helper function `get_customer_name/1` that:
+        *   Returns the guest name if the order has a booking with a guest
+        *   Returns the order name for standalone orders
+        *   Falls back to "Unknown Customer" if neither is available
 
 ## TECH STACK
 
