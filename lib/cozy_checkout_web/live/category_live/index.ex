@@ -68,6 +68,9 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
           <thead class="bg-gray-50">
             <tr>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Order
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Name
               </th>
               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -80,6 +83,9 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
           </thead>
           <tbody id="categories" phx-update="stream" class="bg-white divide-y divide-gray-200">
             <tr :for={{id, category} <- @streams.categories} id={id} class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {category.order}
+              </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {category.name}
               </td>

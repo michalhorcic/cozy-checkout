@@ -236,6 +236,14 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   **Additional Information:** Include the cottage name ("Jindřichův dům") and the company name and IČO in the footer ("Moruška s.r.o. - IČO: 23741457").
     *   **Format Preferences:** Use portrait orientation, multiple pages if needed, and include the generated date. Page numbers are not needed.
     *   When generating the printable pricelist, use `Date.utc_today()` for the generated date to avoid timezone conversion issues.
+*   **Printable Pricelist Display Format for Tiers:** When showing prices for tiers in the printable pricelist, display them in the following format: `name_of_product (tier1/tier2) tier prices separated by / in same order as tiers`. For example: `Product Name (300/500 ml) 45/70 CZK`.
+*   **Category Ordering**:
+    *   Add an integer `order` field to the `categories` table.
+    *   When adding this field, existing categories should get sequential numbers (1, 2, 3...) based on their `inserted_at`.
+    *   The UI for changing the category order should be in the category edit form as a number input.
+    *   If two categories have the same order number, use the category name as a secondary sort.
+    *   When creating a new category, it should default to the highest order number + 1 (put at the end).
+    *   This new order should replace the current sorting completely in the POS.
 
 ## TECH STACK
 

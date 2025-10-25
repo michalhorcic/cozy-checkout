@@ -16,7 +16,7 @@ defmodule CozyCheckout.Catalog do
   def list_categories do
     Category
     |> where([c], is_nil(c.deleted_at))
-    |> order_by([c], c.name)
+    |> order_by([c], [asc: c.order, asc: c.name])
     |> Repo.all()
   end
 
@@ -33,6 +33,21 @@ defmodule CozyCheckout.Catalog do
   Creates a category.
   """
   def create_category(attrs \\ %{}) do
+    # If order is not provided, set it to max order + 1
+    attrs =
+      if Map.has_key?(attrs, "order") || Map.has_key?(attrs, :order) do
+        attrs
+      else
+        max_order =
+          Category
+          |> where([c], is_nil(c.deleted_at))
+          |> select([c], max(c.order))
+          |> Repo.one()
+
+        next_order = if max_order, do: max_order + 1, else: 1
+        Map.put(attrs, :order, next_order)
+      end
+
     %Category{}
     |> Category.changeset(attrs)
     |> Repo.insert()
@@ -248,7 +263,13 @@ defmodule CozyCheckout.Catalog do
     # Group by category
     pricelists_by_product
     |> Enum.group_by(& &1.product.category)
-    |> Enum.sort_by(fn {category, _} -> category && category.name end)
+    |> Enum.sort_by(fn {category, _} ->
+      if category do
+        {category.order, category.name}
+      else
+        {999_999, ""}
+      end
+    end)
     |> Enum.map(fn {category, pricelists} ->
       sorted_pricelists = Enum.sort_by(pricelists, & &1.product.name)
       {category, sorted_pricelists}

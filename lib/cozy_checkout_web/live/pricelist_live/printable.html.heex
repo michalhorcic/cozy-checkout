@@ -90,11 +90,20 @@
                   
                   <%!-- Product with price tiers --%>
                   <%= if pricelist.price_tiers != nil && pricelist.price_tiers != [] do %>
-                    <%!-- Product name row --%>
+                    <% 
+                      tier_amounts = Enum.map(pricelist.price_tiers, fn tier -> 
+                        format_number(tier["unit_amount"] || tier[:unit_amount])
+                      end)
+                      tier_prices = Enum.map(pricelist.price_tiers, fn tier -> 
+                        format_currency(Decimal.new(to_string(tier["price"] || tier[:price])))
+                      end)
+                      tier_amounts_str = Enum.join(tier_amounts, "/")
+                      tier_prices_str = Enum.join(tier_prices, " / ")
+                    %>
                     <tr class="border-b border-gray-200">
-                      <td class="py-2 pr-2" colspan="2">
+                      <td class="py-2 pr-2">
                         <div class="font-semibold text-gray-900 text-sm">
-                          <%= product.name %>
+                          <%= product.name %> (<%= tier_amounts_str %> <%= product.unit %>)
                         </div>
                         <%= if product.description do %>
                           <div class="text-xs text-gray-600 mt-0.5">
@@ -102,19 +111,10 @@
                           </div>
                         <% end %>
                       </td>
+                      <td class="py-2 text-right font-medium text-gray-900 whitespace-nowrap text-xs">
+                        <%= tier_prices_str %>
+                      </td>
                     </tr>
-                    
-                    <%!-- Price tier rows --%>
-                    <%= for tier <- pricelist.price_tiers do %>
-                      <tr class="border-b border-gray-100">
-                        <td class="py-1.5 pl-4 text-gray-700 text-xs">
-                          <%= format_number(tier["unit_amount"] || tier[:unit_amount]) %> <%= product.unit %>
-                        </td>
-                        <td class="py-1.5 text-right font-medium text-gray-900 text-xs whitespace-nowrap">
-                          <%= format_currency(Decimal.new(to_string(tier["price"] || tier[:price]))) %>
-                        </td>
-                      </tr>
-                    <% end %>
                   <% else %>
                     <%!-- Product with single price --%>
                     <tr class="border-b border-gray-200">
