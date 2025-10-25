@@ -271,8 +271,36 @@ defmodule CozyCheckout.Catalog do
       end
     end)
     |> Enum.map(fn {category, pricelists} ->
-      sorted_pricelists = Enum.sort_by(pricelists, & &1.product.name)
+      # Sort products alphabetically with Czech collation support
+      sorted_pricelists = Enum.sort(pricelists, &compare_czech_names(&1.product.name, &2.product.name))
       {category, sorted_pricelists}
     end)
+  end
+
+  # Private helper for Czech alphabet-aware string comparison
+  defp compare_czech_names(a, b) do
+    normalize_czech(a) <= normalize_czech(b)
+  end
+
+  # Normalize strings for Czech collation by replacing special characters
+  # with sortable equivalents that maintain proper Czech alphabetical order
+  defp normalize_czech(string) do
+    string
+    |> String.downcase()
+    |> String.replace("á", "a\x01")
+    |> String.replace("č", "c\x01")
+    |> String.replace("ď", "d\x01")
+    |> String.replace("é", "e\x01")
+    |> String.replace("ě", "e\x02")
+    |> String.replace("í", "i\x01")
+    |> String.replace("ň", "n\x01")
+    |> String.replace("ó", "o\x01")
+    |> String.replace("ř", "r\x01")
+    |> String.replace("š", "s\x01")
+    |> String.replace("ť", "t\x01")
+    |> String.replace("ú", "u\x01")
+    |> String.replace("ů", "u\x02")
+    |> String.replace("ý", "y\x01")
+    |> String.replace("ž", "z\x01")
   end
 end

@@ -237,6 +237,7 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   **Format Preferences:** Use portrait orientation, multiple pages if needed, and include the generated date. Page numbers are not needed.
     *   When generating the printable pricelist, use `Date.utc_today()` for the generated date to avoid timezone conversion issues.
 *   **Printable Pricelist Display Format for Tiers:** When showing prices for tiers in the printable pricelist, display them in the following format: `name_of_product (tier1/tier2) tier prices separated by / in same order as tiers`. For example: `Product Name (300/500 ml) 45/70 CZK`.
+*   **Product Sorting in Printable Pricelist:** Products within each category should be sorted alphabetically using Czech collation rules. This means special Czech characters (á, č, ď, é, ě, í, ň, ó, ř, š, ť, ú, ů, ý, ž) are sorted correctly according to Czech alphabet ordering.
 *   **Category Ordering**:
     *   Add an integer `order` field to the `categories` table.
     *   When adding this field, existing categories should get sequential numbers (1, 2, 3...) based on their `inserted_at`.

@@ -132,7 +132,7 @@ Now let's verify the code compiles correctly: Perfect! The code compiles success
 
 ---
 
-_**User (2025-10-25 18:00Z)**_
+_**User (2025-10-25 18:01Z)**_
 
 @agent Continue: "Continue to iterate?"
 
@@ -145,6 +145,64 @@ _**Assistant (copilot/claude-sonnet-4.5)**_
 
 ```
 Perfect! Now let's update the project documentation to reflect this new feature: 
+```
+
+```
+Perfect! I've successfully implemented the category ordering feature. Here's what was done:
+
+## Summary
+
+✅ **Database Changes:**
+- Added an `order` integer field to the `categories` table
+- Created an index on the `order` column for efficient sorting
+- Set existing categories' order based on their `inserted_at` date (1, 2, 3...)
+
+✅ **Schema & Business Logic:**
+- Updated `Category` schema to include the `:order` field
+- Updated `Category` changeset to cast and validate the order field
+- Modified `Catalog.list_categories/0` to sort by `order` first, then `name` as secondary sort
+- Updated `Catalog.create_category/1` to automatically set order to `max(order) + 1` for new categories
+- Updated `Catalog.get_active_pricelists_for_print/1` to sort categories by order field
+
+✅ **UI Changes:**
+- Added order input field to the category edit form with helpful label
+- Added "Order" column to the categories index table so staff can see the current ordering
+- The order field appears in the form whenever creating or editing a category
+
+✅ **Documentation:**
+- Updated project rules in `copilot-instructions.md` to document the ordering feature
+
+## How It Works
+
+1. **Lower numbers appear first** - Category with order=1 appears before order=2
+2. **Alphabetical fallback** - If two categories have the same order number, they're sorted alphabetically by name
+3. **Auto-incrementing** - New categories automatically get the highest order + 1
+4. **Used everywhere** - This ordering is now used in:
+   - Category admin index
+   - POS system category tabs
+   - Printable pricelist
+
+The migration ran successfully and the code compiles without errors!
+
+---
+
+_**User (2025-10-25 18:03Z)**_
+
+Add one more thing. Sort products in each category in printable pricelist alphabetically, and try to support czech alphabet which has special letters
+
+---
+
+_**Assistant (copilot/claude-sonnet-4.5)**_
+
+I'll update the printable pricelist to sort products alphabetically with proper Czech alphabet support. Let me check the current implementation: Perfect! I can see the current sorting is just using `&1.product.name` which uses simple ASCII sorting. For proper Czech alphabet support, I need to use a collation-aware sorting. Let me update it: 
+```
+
+```
+Actually, for proper Czech collation support, I should use a more robust approach. Let me check if there's a better library available and implement proper Czech sorting: For proper Czech collation, the best approach in Elixir is to create a custom sorting function that understands Czech character ordering. Let me implement this: 
+```
+
+```
+Now let's compile and test: Perfect! The code compiles successfully. Let me also update the documentation to reflect this change: 
 ```
 
 ```
