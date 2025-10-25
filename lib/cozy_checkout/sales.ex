@@ -89,6 +89,123 @@ defmodule CozyCheckout.Sales do
   end
 
   @doc """
+  Returns paginated, filtered, and sorted orders with Flop.
+  """
+  def list_orders_with_flop(params \\ %{}) do
+    # Extract and handle date and guest_name filters separately
+    {date_filters, params_without_dates} = extract_date_filters(params)
+    {guest_name_filter, other_params} = extract_guest_name_filter(params_without_dates)
+
+    query =
+      Order
+      |> where([o], is_nil(o.deleted_at))
+      |> apply_date_filters(date_filters)
+      |> apply_guest_name_filter(guest_name_filter)
+      |> preload(booking: :guest, order_items: [], payments: [])
+
+    Flop.validate_and_run(query, other_params, for: Order)
+  end
+
+  defp extract_date_filters(params) do
+    filters = params["filters"] || %{}
+
+    {date_filters, other_filters} =
+      filters
+      |> Enum.split_with(fn {_idx, filter} ->
+        filter["field"] == "inserted_at"
+      end)
+
+    date_filters_map =
+      Enum.reduce(date_filters, %{}, fn {_idx, filter}, acc ->
+        case {filter["op"], filter["value"]} do
+          {">=", value} when value != nil and value != "" ->
+            Map.put(acc, :from, value)
+
+          {"<=", value} when value != nil and value != "" ->
+            Map.put(acc, :to, value)
+
+          _ ->
+            acc
+        end
+      end)
+
+    other_params = Map.put(params, "filters", Map.new(other_filters))
+
+    {date_filters_map, other_params}
+  end
+
+  defp extract_guest_name_filter(params) do
+    filters = params["filters"] || %{}
+
+    {guest_name_filters, other_filters} =
+      filters
+      |> Enum.split_with(fn {_idx, filter} ->
+        filter["field"] == "guest_name"
+      end)
+
+    guest_name =
+      case guest_name_filters do
+        [{_idx, filter}] when is_map(filter) ->
+          case filter["value"] do
+            value when value != nil and value != "" -> value
+            _ -> nil
+          end
+
+        _ ->
+          nil
+      end
+
+    other_params = Map.put(params, "filters", Map.new(other_filters))
+
+    {guest_name, other_params}
+  end
+
+  defp apply_date_filters(query, date_filters) when date_filters == %{}, do: query
+
+  defp apply_date_filters(query, date_filters) do
+    query
+    |> apply_date_from_filter(Map.get(date_filters, :from))
+    |> apply_date_to_filter(Map.get(date_filters, :to))
+  end
+
+  defp apply_date_from_filter(query, nil), do: query
+
+  defp apply_date_from_filter(query, date_string) do
+    case Date.from_iso8601(date_string) do
+      {:ok, date} ->
+        datetime = DateTime.new!(date, ~T[00:00:00])
+        where(query, [o], o.inserted_at >= ^datetime)
+
+      _ ->
+        query
+    end
+  end
+
+  defp apply_date_to_filter(query, nil), do: query
+
+  defp apply_date_to_filter(query, date_string) do
+    case Date.from_iso8601(date_string) do
+      {:ok, date} ->
+        datetime = DateTime.new!(date, ~T[23:59:59])
+        where(query, [o], o.inserted_at <= ^datetime)
+
+      _ ->
+        query
+    end
+  end
+
+  defp apply_guest_name_filter(query, nil), do: query
+
+  defp apply_guest_name_filter(query, guest_name) do
+    pattern = "%#{guest_name}%"
+
+    query
+    |> join(:left, [o], b in assoc(o, :booking))
+    |> join(:left, [o, b], g in assoc(b, :guest))
+    |> where([o, b, g], ilike(g.name, ^pattern))
+  end
+
+  @doc """
   Gets a single order.
   """
   def get_order!(id) do

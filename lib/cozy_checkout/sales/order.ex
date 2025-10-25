@@ -2,6 +2,14 @@ defmodule CozyCheckout.Sales.Order do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {
+    Flop.Schema,
+    filterable: [:status, :name, :order_number, :guest_id],
+    sortable: [:inserted_at, :status, :order_number, :total_amount],
+    default_limit: 20,
+    max_limit: 100
+  }
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "orders" do

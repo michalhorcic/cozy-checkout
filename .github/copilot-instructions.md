@@ -157,6 +157,31 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Initially display at least 20 products even without search.
     *   Ensure the component is responsive and accessible.
 *   When using `phx-change` on an input, the input element needs a `name` attribute for `phx-change` to work properly.
+*   When displaying the orders index table, include the `orders.name` field. When `guest_id` is `nil`, display the `name` field with a "Standalone" badge. Use the following logic:
+    ```elixir
+    <%= if order.booking_id do %>
+      {order.booking && order.booking.guest && order.booking.guest.name}
+    <% else %>
+      <span class="flex items-center gap-2">
+        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+          Standalone
+        </span>
+        <span class="font-medium text-gray-900">{order.name}</span>
+      </span>
+    <% end %>
+    ```
+*   When implementing Flop filtering and sorting in the orders index:
+    *   The following fields should be filterable:
+        *   `status` (open, paid, partially_paid, cancelled)
+        *   `name` (for standalone orders)
+        *   `guest_id`
+        *   `order_number` (use case-insensitive pattern match (ILIKE) instead of exact equality.)
+        *   `inserted_at` (date range for when orders were created)
+        *   Guest Name (searches in the associated booking's guest name)
+    *   The following fields should be sortable:
+        *   `inserted_at`
+        *   `status`
+    *   The default sorting should be by `desc: o.inserted_at` (newest first).
 
 ## TECH STACK
 
