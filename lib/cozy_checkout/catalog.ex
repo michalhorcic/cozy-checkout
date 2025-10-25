@@ -342,7 +342,7 @@ defmodule CozyCheckout.Catalog do
         pricelists:
           ^from(pl in Pricelist,
             where: is_nil(pl.deleted_at),
-            order_by: [desc: pl.valid_until]
+            order_by: [desc: pl.valid_to]
           )
       ],
       order_by: [asc: p.name]

@@ -259,6 +259,7 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   When creating a pricelist with tier prices, use plain HTML inputs with the `name` attribute instead of the `<.input>` component from Phoenix. The `<.input>` component requires a `field` attribute that's tied to the form changeset, which is not suitable for dynamic tier prices.
     *   In the pricelists index page (`/admin/pricelists`), the "Price Management" button should use a polished gradient style with an emerald-to-teal gradient (`bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`), proper shadow effects, focus ring states, smooth transitions, and the `hero-clipboard-document-check` icon. This creates a visually distinct, premium button appearance.
 *   The default VAT rate should be zero.
+*   **Pricelist Sorting:** When retrieving pricelists for a product, sort by `valid_to` in descending order. The column name in the database is `valid_to`, not `valid_until`.
 
 ## TECH STACK
 
