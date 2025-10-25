@@ -608,7 +608,7 @@ Perfect! Changed from `@order.guest` to `@order.booking_id` - this directly chec
 
 ---
 
-_**User (2025-10-25 14:46Z)**_
+_**User (2025-10-25 14:47Z)**_
 
 Well, now it is working. Just when I try to see all orders I do not see standalone ones in there. Please make sure that I can still access them in POS system
 
@@ -616,7 +616,42 @@ Well, now it is working. Just when I try to see all orders I do not see standalo
 
 _**Assistant (copilot/claude-sonnet-4.5)**_
 
-Let me check the order selection view in the POS system to see how orders are listed: 
+Let me check the order selection view in the POS system to see how orders are listed: I see - this is for when you select a specific booking. But I don't see where standalone orders would be listed. Let me check the guest selection view to see if there's a way to list all orders: I need to add a section to display standalone orders on the guest selection page. Let me first load them in the LiveView: Now let me add a function to load standalone orders and update the view: 
+```
+
+```
+
+```
+
+```
+
+```
+
+```
+Now let me add the standalone orders section to the template: 
+```
+
+```
+Perfect! Now standalone orders will appear in a separate section on the guest selection page with:
+- A purple-themed design to distinguish them from regular bookings
+- Clear "Standalone" badge
+- Order name and number
+- Total amount
+- Clickable to go directly to the order management page
+
+The server should auto-reload. Try navigating back to the POS guest selection page and you should now see your standalone orders listed there!
+
+---
+
+_**User (2025-10-25 14:56Z)**_
+
+check payment_live index, there seems to be some kind of a problem. I expect it is because of the changes we did
+
+---
+
+_**Assistant (copilot/claude-sonnet-4.5)**_
+
+
 
 ---
 

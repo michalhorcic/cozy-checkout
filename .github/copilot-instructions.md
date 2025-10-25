@@ -45,8 +45,8 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   `inserted_at`, `updated_at`
     *   `deleted_at` (soft delete)
 *   The `orders` table should:
-    *   Keep `guest_id` for quick reference
-    *   Add `booking_id` (binary_id, foreign key → bookings)
+    *   Keep `guest_id` for quick reference, but make it nullable.
+    *   Add `booking_id` (binary_id, foreign key → bookings), but make it nullable.
     *   Add `name` field (string, nullable).
     *   This way orders are linked to both the guest AND the specific stay
 *   The `payments` table should remain linked to orders (which are already linked to bookings).
@@ -331,4 +331,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Cache the total on the `booking_invoice` header.
 *   The quantity field in `booking_invoice_items` must allow zero values.
 *   Add `item_type` (string, default: "person", null: false) to the `booking_invoice_items` table, and create an index on this column. The `item_type` field should be validated to be either "person" or "extra".
-*   When calculating occupancy, use the `booking_invoice_items` table and filter by `item_type = "person"` to count the number of people booked for
+*   When calculating occupancy, use the `booking_invoice_items` table and filter by `item_type =

@@ -101,7 +101,16 @@ defmodule CozyCheckoutWeb.PaymentLive.Index do
                 </.link>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {payment.order.booking.guest.name}
+                <%= if payment.order.booking_id do %>
+                  {payment.order.booking.guest.name}
+                <% else %>
+                  <span class="flex items-center gap-2">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                      Standalone
+                    </span>
+                    <span>{payment.order.name}</span>
+                  </span>
+                <% end %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {String.replace(payment.payment_method, "_", " ") |> String.capitalize()}
