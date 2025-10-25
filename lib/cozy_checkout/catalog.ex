@@ -216,4 +216,42 @@ defmodule CozyCheckout.Catalog do
   def change_pricelist(%Pricelist{} = pricelist, attrs \\ %{}) do
     Pricelist.changeset(pricelist, attrs)
   end
+
+  @doc """
+  Gets all active pricelists grouped by category for printing.
+  Only includes pricelists that are active and valid for today.
+  Returns a list of {category, products_with_pricelists} tuples.
+  """
+  def get_active_pricelists_for_print(date \\ Date.utc_today()) do
+    # Get all active pricelists valid for the given date
+    pricelists =
+      Pricelist
+      |> where([p], is_nil(p.deleted_at))
+      |> where([p], p.active == true)
+      |> where([p], p.valid_from <= ^date)
+      |> where([p], is_nil(p.valid_to) or p.valid_to >= ^date)
+      |> preload([p], product: :category)
+      |> order_by([p], desc: p.valid_from)
+      |> Repo.all()
+
+    # Group by product (take most recent pricelist per product)
+    pricelists_by_product =
+      pricelists
+      |> Enum.group_by(& &1.product_id)
+      |> Enum.map(fn {_product_id, pricelists} ->
+        # Take the most recent pricelist for this product
+        List.first(pricelists)
+      end)
+      |> Enum.filter(& &1.product != nil)
+      |> Enum.filter(& &1.product.active == true)
+
+    # Group by category
+    pricelists_by_product
+    |> Enum.group_by(& &1.product.category)
+    |> Enum.sort_by(fn {category, _} -> category && category.name end)
+    |> Enum.map(fn {category, pricelists} ->
+      sorted_pricelists = Enum.sort_by(pricelists, & &1.product.name)
+      {category, sorted_pricelists}
+    end)
+  end
 end

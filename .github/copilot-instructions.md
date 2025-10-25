@@ -229,6 +229,13 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   If not, display the single price (e.g., "50 CZK"), formatting the price using `format_currency/1`.
     *   If no price is set, display "—".
 *   In the POS, when showing products, display their prices. If they have just one price, show it on the product card. When they have tiers, show prices in the tiers choice.
+*   **Printable Pricelist Feature:**
+    *   **Access Point:** Add a "Print Pricelist" button in the admin pricelists index page, and create a dedicated route like `/admin/pricelists/print` that can be accessed from the admin dashboard.
+    *   **Layout Style:** Use a modern table format with columns for Product, Unit/Size, and Price. Implement a two-column layout on a page to save more space and fit more information on one page.
+    *   **Pricelist Inclusion:** Only include active pricelists (those currently valid).
+    *   **Additional Information:** Include the cottage name ("Jindřichův dům") and the company name and IČO in the footer ("Moruška s.r.o. - IČO: 23741457").
+    *   **Format Preferences:** Use portrait orientation, multiple pages if needed, and include the generated date. Page numbers are not needed.
+    *   When generating the printable pricelist, use `Date.utc_today()` for the generated date to avoid timezone conversion issues.
 
 ## TECH STACK
 

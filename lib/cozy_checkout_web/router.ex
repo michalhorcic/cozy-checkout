@@ -40,6 +40,7 @@ defmodule CozyCheckoutWeb.Router do
     live "/pricelists", PricelistLive.Index, :index
     live "/pricelists/new", PricelistLive.Index, :new
     live "/pricelists/:id/edit", PricelistLive.Index, :edit
+    live "/pricelists/print", PricelistLive.Printable
 
     # Guests
     live "/guests", GuestLive.Index, :index

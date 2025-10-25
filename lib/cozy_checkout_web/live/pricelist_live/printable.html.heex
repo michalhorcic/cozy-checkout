@@ -1,0 +1,163 @@
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      .category-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    }
+    
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+
+  <%!-- Print Button (Hidden on print) --%>
+  <div class="no-print fixed top-4 right-4 z-50">
+    <button
+      phx-click="print"
+      class="btn btn-primary gap-2"
+    >
+      <.icon name="hero-printer" class="h-5 w-5" />
+      Vytisknout ceník
+    </button>
+  </div>
+
+  <%!-- Printable Content --%>
+  <div class="max-w-7xl mx-auto p-6">
+    <%!-- Header --%>
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-1">Jindřichův dům</h1>
+      <h2 class="text-xl text-gray-600 mb-2">Ceník</h2>
+      <p class="text-xs text-gray-500">
+        Platný od <%= Calendar.strftime(@generated_at, "%d. %m. %Y") %>
+      </p>
+    </div>
+
+    <%!-- Categories and Products in Two Columns --%>
+    <%= if @pricelists_by_category == [] do %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
+      </div>
+    <% else %>
+      <div class="grid grid-cols-2 gap-6">
+        <%= for {category, pricelists} <- @pricelists_by_category do %>
+          <div class="category-section mb-6">
+            <%!-- Category Header --%>
+            <div class="border-b-2 border-gray-900 pb-1 mb-3">
+              <h3 class="text-lg font-bold text-gray-900">
+                <%= if category, do: category.name, else: "Bez kategorie" %>
+              </h3>
+            </div>
+
+            <%!-- Products Table --%>
+            <table class="w-full text-sm">
+              <tbody>
+                <%= for pricelist <- pricelists do %>
+                  <% product = pricelist.product %>
+                  
+                  <%!-- Product with price tiers --%>
+                  <%= if pricelist.price_tiers != nil && pricelist.price_tiers != [] do %>
+                    <%!-- Product name row --%>
+                    <tr class="border-b border-gray-200">
+                      <td class="py-2 pr-2" colspan="2">
+                        <div class="font-semibold text-gray-900 text-sm">
+                          <%= product.name %>
+                        </div>
+                        <%= if product.description do %>
+                          <div class="text-xs text-gray-600 mt-0.5">
+                            <%= product.description %>
+                          </div>
+                        <% end %>
+                      </td>
+                    </tr>
+                    
+                    <%!-- Price tier rows --%>
+                    <%= for tier <- pricelist.price_tiers do %>
+                      <tr class="border-b border-gray-100">
+                        <td class="py-1.5 pl-4 text-gray-700 text-xs">
+                          <%= format_number(tier["unit_amount"] || tier[:unit_amount]) %> <%= product.unit %>
+                        </td>
+                        <td class="py-1.5 text-right font-medium text-gray-900 text-xs whitespace-nowrap">
+                          <%= format_currency(Decimal.new(to_string(tier["price"] || tier[:price]))) %>
+                        </td>
+                      </tr>
+                    <% end %>
+                  <% else %>
+                    <%!-- Product with single price --%>
+                    <tr class="border-b border-gray-200">
+                      <td class="py-2 pr-2">
+                        <div class="font-semibold text-gray-900 text-sm">
+                          <%= product.name %>
+                        </div>
+                        <%= if product.description do %>
+                          <div class="text-xs text-gray-600 mt-0.5">
+                            <%= product.description %>
+                          </div>
+                        <% end %>
+                      </td>
+                      <td class="py-2 text-right font-medium text-gray-900 whitespace-nowrap text-xs">
+                        <%= if pricelist.price do %>
+                          <%= format_currency(pricelist.price) %>
+                        <% else %>
+                          <span class="text-gray-400">—</span>
+                        <% end %>
+                      </td>
+                    </tr>
+                  <% end %>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%!-- Footer --%>
+    <div class="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-600">
+      <p>Moruška s.r.o.</p>
+      <p>IČO: 23741457</p>
+      <p class="mt-1 text-xs text-gray-500">
+        Všechny ceny jsou uvedeny včetně DPH
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.addEventListener("phx:print", () => {
+    window.print();
+  });
+</script>
