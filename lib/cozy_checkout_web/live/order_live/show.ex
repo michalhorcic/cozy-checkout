@@ -118,35 +118,52 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-6">
           <%!-- Booking Information --%>
-          <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
-            <div class="space-y-2">
-              <div class="flex justify-between">
-                <span class="text-gray-600">Guest Name:</span>
-                <span class="font-medium">{@order.booking.guest.name}</span>
-              </div>
-              <div :if={@order.booking.room_number} class="flex justify-between">
-                <span class="text-gray-600">Room:</span>
-                <span class="font-medium">{@order.booking.room_number}</span>
-              </div>
-              <div :if={@order.booking.guest.phone} class="flex justify-between">
-                <span class="text-gray-600">Phone:</span>
-                <span class="font-medium">{@order.booking.guest.phone}</span>
-              </div>
-              <div :if={@order.booking.check_in_date} class="flex justify-between">
-                <span class="text-gray-600">Check-in:</span>
-                <span class="font-medium">
-                  {Calendar.strftime(@order.booking.check_in_date, "%B %d, %Y")}
-                </span>
-              </div>
-              <div :if={@order.booking.check_out_date} class="flex justify-between">
-                <span class="text-gray-600">Check-out:</span>
-                <span class="font-medium">
-                  {Calendar.strftime(@order.booking.check_out_date, "%B %d, %Y")}
-                </span>
+          <%= if @order.guest do %>
+            <div class="bg-white shadow-lg rounded-lg p-6">
+              <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Guest Name:</span>
+                  <span class="font-medium">{@order.booking.guest.name}</span>
+                </div>
+                <div :if={@order.booking.room_number} class="flex justify-between">
+                  <span class="text-gray-600">Room:</span>
+                  <span class="font-medium">{@order.booking.room_number}</span>
+                </div>
+                <div :if={@order.booking.guest.phone} class="flex justify-between">
+                  <span class="text-gray-600">Phone:</span>
+                  <span class="font-medium">{@order.booking.guest.phone}</span>
+                </div>
+                <div :if={@order.booking.check_in_date} class="flex justify-between">
+                  <span class="text-gray-600">Check-in:</span>
+                  <span class="font-medium">
+                    {Calendar.strftime(@order.booking.check_in_date, "%B %d, %Y")}
+                  </span>
+                </div>
+                <div :if={@order.booking.check_out_date} class="flex justify-between">
+                  <span class="text-gray-600">Check-out:</span>
+                  <span class="font-medium">
+                    {Calendar.strftime(@order.booking.check_out_date, "%B %d, %Y")}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          <% else %>
+            <div class="bg-white shadow-lg rounded-lg p-6">
+              <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                Order Information
+                <span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+                  Standalone Order
+                </span>
+              </h2>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Order Name:</span>
+                  <span class="font-medium">{@order.name}</span>
+                </div>
+              </div>
+            </div>
+          <% end %>
 
           <%!-- Order Items --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
@@ -184,7 +201,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                       {format_currency(group.total_price)}
                     </div>
                   </div>
-                  
+
     <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
@@ -202,7 +219,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                     </button>
                   <% end %>
                 </div>
-                
+
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-gray-200">

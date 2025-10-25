@@ -6,6 +6,7 @@ defmodule CozyCheckout.Sales.Order do
   @foreign_key_type :binary_id
   schema "orders" do
     field :order_number, :string
+    field :name, :string
     field :status, :string, default: "open"
     field :total_amount, :decimal, default: Decimal.new("0")
     field :discount_amount, :decimal, default: Decimal.new("0")
@@ -26,18 +27,31 @@ defmodule CozyCheckout.Sales.Order do
     |> cast(attrs, [
       :guest_id,
       :booking_id,
+      :name,
       :order_number,
       :status,
       :total_amount,
       :discount_amount,
       :notes
     ])
-    |> validate_required([:booking_id, :order_number])
+    |> validate_required([:order_number])
+    |> validate_order_reference()
     |> validate_inclusion(:status, ["open", "paid", "partially_paid", "cancelled"])
     |> validate_number(:total_amount, greater_than_or_equal_to: 0)
     |> validate_number(:discount_amount, greater_than_or_equal_to: 0)
     |> unique_constraint(:order_number)
     |> foreign_key_constraint(:guest_id)
     |> foreign_key_constraint(:booking_id)
+  end
+
+  defp validate_order_reference(changeset) do
+    guest_id = get_field(changeset, :guest_id)
+    name = get_field(changeset, :name)
+
+    if is_nil(guest_id) and (is_nil(name) or String.trim(name) == "") do
+      add_error(changeset, :name, "must provide either a guest or order name")
+    else
+      changeset
+    end
   end
 end

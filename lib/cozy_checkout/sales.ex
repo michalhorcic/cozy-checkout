@@ -115,6 +115,31 @@ defmodule CozyCheckout.Sales do
   end
 
   @doc """
+  Creates a standalone order without a guest or booking.
+  """
+  def create_standalone_order(attrs \\ %{}) do
+    attrs =
+      attrs
+      |> Map.put_new("order_number", generate_order_number())
+      |> Map.put_new("status", "open")
+
+    %Order{}
+    |> Order.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Gets the display name for an order (guest name or order name).
+  """
+  def get_order_display_name(%Order{} = order) do
+    cond do
+      order.guest && order.guest.name -> order.guest.name
+      order.name && order.name != "" -> order.name
+      true -> "Unknown"
+    end
+  end
+
+  @doc """
   Updates an order.
   """
   def update_order(%Order{} = order, attrs) do

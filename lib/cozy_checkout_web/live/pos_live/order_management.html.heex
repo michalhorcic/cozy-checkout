@@ -10,12 +10,23 @@
           <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
         </button>
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">
-            {@order.booking.guest.name}
-            <span :if={@order.booking.room_number} class="text-slate-500">
-              - Room {@order.booking.room_number}
-            </span>
-          </h1>
+          <%= if @order.booking_id do %>
+            <h1 class="text-2xl font-bold text-slate-900">
+              {@order.booking.guest.name}
+              <span :if={@order.booking.room_number} class="text-slate-500">
+                - Room {@order.booking.room_number}
+              </span>
+            </h1>
+          <% else %>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl font-bold text-slate-900">
+                📋 {@order.name}
+              </h1>
+              <span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+                Standalone Order
+              </span>
+            </div>
+          <% end %>
           <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
         </div>
       </div>

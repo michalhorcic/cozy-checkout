@@ -256,7 +256,17 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   defp load_order(socket) do
     order = Sales.get_order!(socket.assigns.order_id)
-    page_title = "Order: #{order.booking.guest.name}"
+
+    page_title =
+      cond do
+        # Standalone order (no booking)
+        is_nil(order.booking_id) -> "Order: #{order.name}"
+        # Regular order with booking
+        order.booking && order.booking.guest -> "Order: #{order.booking.guest.name}"
+        # Fallback
+        true -> "Order: #{order.name || "Unknown"}"
+      end
+
     grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
     socket

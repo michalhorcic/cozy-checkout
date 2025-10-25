@@ -13,6 +13,58 @@
         <.icon name="hero-arrow-left" class="w-5 h-5" /> Menu
       </.link>
     </div>
+
+    <!-- Quick Order Button -->
+    <div class="mb-6">
+      <button
+        phx-click="show_quick_order_modal"
+        class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-98"
+      >
+        <.icon name="hero-plus-circle" class="w-7 h-7" />
+        <span class="text-xl font-bold">Quick Order (No Booking)</span>
+      </button>
+    </div>
+
+    <!-- Standalone Orders Section -->
+    <div :if={@standalone_orders != []} class="mb-6">
+      <h2 class="text-2xl font-bold text-slate-900 mb-3">Standalone Orders</h2>
+      <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        <div
+          :for={order <- @standalone_orders}
+          phx-click="select_order"
+          phx-value-order-id={order.id}
+          class={[
+            "bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
+            "p-4 cursor-pointer active:scale-95 border-2 border-purple-200 hover:border-purple-400",
+            "min-h-[120px] flex flex-col justify-between"
+          ]}
+        >
+          <div>
+            <div class="flex items-center gap-2 mb-2">
+              <.icon name="hero-shopping-cart" class="w-5 h-5 text-purple-600" />
+              <span class="px-2 py-0.5 bg-purple-200 text-purple-800 text-xs font-semibold rounded-full">
+                Standalone
+              </span>
+            </div>
+            <h2 class="text-lg font-bold text-slate-900 mb-2 break-words leading-tight">
+              {order.name}
+            </h2>
+            <div class="text-xs text-slate-500">
+              Order #{order.order_number}
+            </div>
+          </div>
+          
+          <div class="mt-2 pt-2 border-t border-purple-200">
+            <div class="text-sm font-semibold text-purple-700">
+              {format_currency(order.total_amount)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bookings Section -->
+    <h2 :if={@bookings != []} class="text-2xl font-bold text-slate-900 mb-3">Active Bookings</h2>
     
 <!-- Bookings Grid -->
     <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -67,11 +119,54 @@
       </div>
     </div>
     
-<!-- Empty State -->
+    <!-- Empty State -->
     <div :if={@bookings == []} class="text-center py-20">
       <.icon name="hero-calendar-days" class="w-24 h-24 text-slate-300 mx-auto mb-6" />
       <h2 class="text-3xl font-bold text-slate-400 mb-2">No Active Bookings</h2>
       <p class="text-xl text-slate-400">Check in guests to start taking orders</p>
     </div>
+
+    <!-- Quick Order Modal -->
+    <%= if @show_quick_order_modal do %>
+      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-in fade-in zoom-in duration-200">
+          <h3 class="text-3xl font-bold text-slate-900 mb-6">Create Quick Order</h3>
+
+          <div class="mb-8">
+            <label class="block text-lg font-semibold text-slate-700 mb-3">
+              Order Name
+            </label>
+            <input
+              type="text"
+              name="order_name"
+              placeholder="e.g., Kids - Room 5, Staff lunch, Walk-in"
+              class="w-full px-4 py-4 text-lg border-2 border-slate-300 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+              value={@quick_order_name}
+              phx-keyup="update_quick_order_name"
+              autofocus
+            />
+            <p class="mt-2 text-sm text-slate-500">
+              Enter a descriptive name for this order
+            </p>
+          </div>
+
+          <div class="flex gap-4">
+            <button
+              phx-click="hide_quick_order_modal"
+              class="flex-1 px-6 py-4 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-colors text-lg font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              phx-click="create_quick_order"
+              disabled={String.trim(@quick_order_name) == ""}
+              class="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+            >
+              Create Order
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
   </div>
 </Layouts.pos>

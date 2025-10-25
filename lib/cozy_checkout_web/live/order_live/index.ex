@@ -79,8 +79,17 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {order.order_number}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {order.booking && order.booking.guest && order.booking.guest.name}
+              <td class="px-6 py-4 text-sm text-gray-500">
+                <%= if order.guest do %>
+                  {order.booking && order.booking.guest && order.booking.guest.name}
+                <% else %>
+                  <span class="flex items-center gap-2">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                      Standalone
+                    </span>
+                    <span class="font-medium text-gray-900">{order.name}</span>
+                  </span>
+                <% end %>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 {format_currency(order.total_amount)}
