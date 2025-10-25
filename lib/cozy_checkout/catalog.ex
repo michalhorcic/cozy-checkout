@@ -159,6 +159,31 @@ defmodule CozyCheckout.Catalog do
   end
 
   @doc """
+  Gets the price for a product with a specific unit amount.
+  Returns {:ok, price, vat_rate, pricelist} if found, {:error, reason} otherwise.
+  """
+  def get_price_for_product(product_id, unit_amount, date \\ Date.utc_today()) do
+    case get_active_pricelist_for_product(product_id, date) do
+      nil ->
+        {:error, :no_active_pricelist}
+
+      pricelist ->
+        case Pricelist.get_price_for_amount(pricelist, unit_amount) do
+          {:ok, price} ->
+            {:ok, price, pricelist.vat_rate, pricelist}
+
+          {:error, :no_price_for_amount} ->
+            # Fallback to single price if no price tier matches
+            if pricelist.price do
+              {:ok, pricelist.price, pricelist.vat_rate, pricelist}
+            else
+              {:error, :no_price_for_amount}
+            end
+        end
+    end
+  end
+
+  @doc """
   Creates a pricelist.
   """
   def create_pricelist(attrs \\ %{}) do

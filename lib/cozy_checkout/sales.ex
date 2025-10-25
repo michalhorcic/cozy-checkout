@@ -326,35 +326,48 @@ defmodule CozyCheckout.Sales do
 
     attrs =
       if product_id do
-        pricelist = Catalog.get_active_pricelist_for_product(product_id)
+        quantity =
+          case Map.get(attrs, "quantity") do
+            q when is_binary(q) -> String.to_integer(q)
+            q when is_integer(q) -> q
+            _ -> 1
+          end
 
-        if pricelist do
-          quantity =
-            case Map.get(attrs, "quantity") do
-              q when is_binary(q) -> String.to_integer(q)
-              q when is_integer(q) -> q
-              _ -> 1
+        unit_amount =
+          case Map.get(attrs, "unit_amount") do
+            nil -> nil
+            "" -> nil
+            ua when is_binary(ua) -> Decimal.new(ua)
+            ua -> Decimal.new(to_string(ua))
+          end
+
+        # Get price for the specific unit amount if available
+        price_result =
+          if unit_amount do
+            Catalog.get_price_for_product(product_id, unit_amount)
+          else
+            pricelist = Catalog.get_active_pricelist_for_product(product_id)
+
+            if pricelist && pricelist.price do
+              {:ok, pricelist.price, pricelist.vat_rate, pricelist}
+            else
+              {:error, :no_active_pricelist}
             end
+          end
 
-          unit_amount =
-            case Map.get(attrs, "unit_amount") do
-              nil -> nil
-              "" -> nil
-              ua when is_binary(ua) -> Decimal.new(ua)
-              ua -> ua
-            end
+        case price_result do
+          {:ok, unit_price, vat_rate, _pricelist} ->
+            subtotal = Decimal.mult(unit_price, quantity)
 
-          unit_price = pricelist.price
-          vat_rate = pricelist.vat_rate
-          subtotal = Decimal.mult(unit_price, quantity)
+            attrs
+            |> Map.put("unit_price", unit_price)
+            |> Map.put("vat_rate", vat_rate)
+            |> Map.put("subtotal", subtotal)
+            |> Map.put("unit_amount", unit_amount)
 
-          attrs
-          |> Map.put("unit_price", unit_price)
-          |> Map.put("vat_rate", vat_rate)
-          |> Map.put("subtotal", subtotal)
-          |> Map.put("unit_amount", unit_amount)
-        else
-          attrs
+          {:error, _reason} ->
+            # No price found - attrs remain unchanged and validation will fail
+            attrs
         end
       else
         attrs

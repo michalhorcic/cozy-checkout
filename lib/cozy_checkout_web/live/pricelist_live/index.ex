@@ -45,6 +45,30 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
     {:noreply, stream_delete(socket, :pricelists, pricelist)}
   end
 
+  defp format_price_display(pricelist) do
+    cond do
+      # Has price tiers - show them
+      pricelist.price_tiers && pricelist.price_tiers != [] ->
+        pricelist.price_tiers
+        |> Enum.map(fn tier ->
+          unit_amount = tier["unit_amount"] || tier[:unit_amount]
+          price = tier["price"] || tier[:price]
+          # Convert to Decimal for proper formatting
+          price_decimal = if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+          "#{format_number(unit_amount)}: #{format_currency(price_decimal)}"
+        end)
+        |> Enum.join(", ")
+
+      # Has single price
+      pricelist.price ->
+        format_currency(pricelist.price)
+
+      # No price set
+      true ->
+        "—"
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -95,8 +119,8 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                 {pricelist.product && pricelist.product.name}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                ${pricelist.price}
+              <td class="px-6 py-4 text-sm text-gray-900">
+                {format_price_display(pricelist)}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                 {pricelist.vat_rate}%

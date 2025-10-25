@@ -194,6 +194,41 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   Returns the guest name if the order has a booking with a guest
         *   Returns the order name for standalone orders
         *   Falls back to "Unknown Customer" if neither is available
+*   **POS System - Product Pricing Adjustments:** Implement an "Edit Price" button next to each order item in the POS system. Clicking this button should:
+    *   Show the current total price (quantity × unit_price).
+    *   Allow staff to override the total price for that line item.
+    *   Store both `original_price` and `actual_price` in the `order_items` table.
+    *   Clearly indicate when a price has been adjusted (e.g., with a badge or highlight).
+*   **Pricelist - Price Tiers**: Instead of storing a single price in `pricelist_items`, store multiple price tiers based on `unit_amount`.
+    *   The `pricelist_items` table should have a `price_tiers` column of type `jsonb` that stores an array of price tiers. Example: `[%{unit_amount: 300, price: 45.00}, %{unit_amount: 500, price: 70.00}]`
+    *   Keep the old `price` column for backwards compatibility initially. It can be removed later after migration.
+    *   Create a GIN index on the `price_tiers` column: `create index(:pricelist_items, [:price_tiers], using: :gin)`.
+    *   The `PricelistItem` schema should have a `price_tiers` field of type `{:array, :map}, default: []`.
+    *   The `PricelistItem` changeset should validate the `price_tiers` field:
+        *   It can't be blank.
+        *   It must have at least one price tier.
+        *   Each price tier must be a map with `unit_amount` (number > 0) and `price` (number >= 0).
+    *   Add a `get_price_for_amount/2` helper function to the `PricelistItem` module to get the price for a specific unit amount.
+*   In the pricelist item form in the admin UI, show all `default_unit_amounts` from the product and allow setting prices for each.
+*   **POS System - No Custom Amounts:** The POS system should not allow entering custom amounts for products. Only predefined amounts from the product's `default_unit_amounts` should be available for selection. If a product does not have `default_unit_amounts`, the system should function as it currently does.
+*   **Pricelist - Price Tiers**: Instead of storing a single price in `pricelists`, store multiple price tiers based on `unit_amount`.
+    *   The `pricelists` table has a `price_tiers` column of type `jsonb` that stores an array of price tiers. Example: `[%{"unit_amount" => 300, "price" => 45.00}, %{"unit_amount" => 500, "price" => 70.00}]`
+    *   The old `price` column is kept for backwards compatibility for products without `default_unit_amounts`.
+    *   There is a GIN index on the `price_tiers` column for efficient querying.
+    *   The `Pricelist` schema has a `price_tiers` field of type `{:array, :map}, default: []`.
+    *   The `Pricelist` changeset validates that either `price` or `price_tiers` must be set.
+    *   Each price tier must be a map with `unit_amount` (number > 0) and `price` (number >= 0).
+    *   The `Pricelist.get_price_for_amount/2` function gets the price for a specific unit amount.
+    *   The `Catalog.get_price_for_product/3` function gets the price for a product with a specific unit amount.
+    *   In the pricelist form, if a product has `default_unit_amounts`, show all amounts and allow setting prices for each. If not, show a single price field.
+    *   In the POS system, when adding items, the correct price is fetched from `price_tiers` based on the selected unit amount.
+*   When editing pricelists, the product autocomplete should only be shown when creating a new pricelist, not when editing an existing one. The product selection should be disabled (not just the dropdown hidden) when editing.
+*   In the pricelists index page, show the price tiers as well as the price in the price column. If price tiers are available, display them (e.g., "300: 45 CZK, 500: 70 CZK"). If not, display the single price (e.g., "50 CZK"). If no price is set, display "—".
+    *   Use the `format_number/1` helper function from `CozyCheckoutWeb.CurrencyHelper` to format numbers with thousand separators.
+    *   If price tiers are available, display them (e.g., "300: 45 CZK, 500: 70 CZK"), formatting the unit amounts using `format_number/1`.
+    *   If not, display the single price (e.g., "50 CZK"), formatting the price using `format_currency/1`.
+    *   If no price is set, display "—".
+*   In the POS, when showing products, display their prices. If they have just one price, show it on the product card. When they have tiers, show prices in the tiers choice.
 
 ## TECH STACK
 

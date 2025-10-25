@@ -99,6 +99,18 @@
                   <p :if={product.category} class="text-xs text-slate-500 mb-2 text-left">
                     {product.category.name}
                   </p>
+                  <%= if product.pricing_info do %>
+                    <p class="text-sm font-semibold text-green-600 text-left">
+                      <%= case product.pricing_info.type do %>
+                        <% :single -> %>
+                          {format_currency(product.pricing_info.price)}
+                        <% :tiers -> %>
+                          Multiple prices
+                        <% :none -> %>
+                          —
+                      <% end %>
+                    </p>
+                  <% end %>
                 </div>
                 <div class="flex items-center justify-between mt-auto pt-3">
                   <span class="text-sm text-slate-600">
@@ -123,6 +135,18 @@
                   <h3 class="text-lg font-bold text-slate-900 mb-2 line-clamp-2 text-left">
                     {product.name}
                   </h3>
+                  <%= if product.pricing_info do %>
+                    <p class="text-sm font-semibold text-green-600 text-left">
+                      <%= case product.pricing_info.type do %>
+                        <% :single -> %>
+                          {format_currency(product.pricing_info.price)}
+                        <% :tiers -> %>
+                          Multiple prices
+                        <% :none -> %>
+                          —
+                      <% end %>
+                    </p>
+                  <% end %>
                 </div>
                 <div class="flex items-center justify-between mt-auto pt-3">
                   <span class="text-sm text-slate-600">
@@ -323,57 +347,51 @@
 <!-- Quick Select Buttons -->
         <%= if @selected_product.default_unit_amounts do %>
           <div class="mb-6">
-            <p class="text-sm font-semibold text-slate-700 mb-3">Quick Add</p>
+            <p class="text-sm font-semibold text-slate-700 mb-3">Select Amount</p>
             <div class="grid grid-cols-3 gap-3">
               <%= for amount <- parse_default_amounts(@selected_product.default_unit_amounts) do %>
                 <button
                   type="button"
-                  data-unit-amount={amount}
-                  class="bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
+                  phx-click="quick_add_unit_amount"
+                  phx-value-unit_amount={amount}
+                  class="bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-4 rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center"
                 >
-                  {amount}
-                  <span class="text-sm block mt-1">{@selected_product.unit}</span>
+                  <span class="text-2xl">{amount}</span>
+                  <span class="text-sm mt-1">{@selected_product.unit}</span>
+                  <%= if price = get_price_for_amount(@selected_product, amount) do %>
+                    <span class="text-xs mt-1 opacity-90">{format_currency(price)}</span>
+                  <% end %>
                 </button>
               <% end %>
             </div>
           </div>
-        <% end %>
-
-        <form phx-submit="confirm_unit_amount" class="space-y-4">
-          <!-- Custom Amount Input -->
-          <div>
-            <label class="block text-lg font-semibold text-slate-700 mb-2">
-              Or enter custom amount ({@selected_product.unit})
-            </label>
-            <input
-              type="number"
-              name="unit_amount"
-              id="unit-amount-input"
-              step="0.01"
-              min="0.01"
-              required
-              class="w-full text-3xl font-bold px-6 py-4 border-4 border-slate-300 rounded-2xl focus:border-blue-500 focus:outline-none"
-              placeholder="Enter amount"
-            />
-          </div>
-          
-<!-- Action Buttons -->
-          <div class="grid grid-cols-2 gap-4 pt-4">
+        <% else %>
+          <!-- For products without predefined amounts, show a simple add button -->
+          <div class="mb-6">
+            <p class="text-sm text-slate-600 mb-4">
+              This product doesn't have predefined amounts.
+            </p>
             <button
               type="button"
-              phx-click="cancel_unit_modal"
-              class="bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+              phx-click="quick_add_unit_amount"
+              phx-value-unit_amount="0"
+              class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
             >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
-            >
-              Add Custom
+              Add to Order
             </button>
           </div>
-        </form>
+        <% end %>
+
+        <!-- Cancel Button -->
+        <div class="pt-4">
+          <button
+            type="button"
+            phx-click="cancel_unit_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
     

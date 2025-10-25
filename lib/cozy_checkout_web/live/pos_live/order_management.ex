@@ -280,10 +280,35 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     all_products = Catalog.list_products()
     popular_products = Sales.get_popular_products(20)
 
+    # Enrich products with pricing information
+    products_with_prices = enrich_products_with_prices(all_products)
+    popular_with_prices = enrich_products_with_prices(popular_products)
+
     socket
     |> assign(:categories, categories)
-    |> assign(:products, all_products)
-    |> assign(:popular_products, popular_products)
+    |> assign(:products, products_with_prices)
+    |> assign(:popular_products, popular_with_prices)
+  end
+
+  defp enrich_products_with_prices(products) do
+    Enum.map(products, fn product ->
+      pricelist = Catalog.get_active_pricelist_for_product(product.id)
+
+      pricing_info = if pricelist do
+        cond do
+          pricelist.price_tiers && pricelist.price_tiers != [] ->
+            %{type: :tiers, tiers: pricelist.price_tiers}
+          pricelist.price ->
+            %{type: :single, price: pricelist.price}
+          true ->
+            %{type: :none}
+        end
+      else
+        %{type: :none}
+      end
+
+      Map.put(product, :pricing_info, pricing_info)
+    end)
   end
 
   defp filter_products(products, nil), do: products
@@ -317,4 +342,22 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   defp parse_unit_amount(_), do: nil
+
+  defp get_price_for_amount(product, amount) do
+    if product.pricing_info && product.pricing_info.type == :tiers do
+      tier = Enum.find(product.pricing_info.tiers, fn tier ->
+        tier_amount = tier["unit_amount"] || tier[:unit_amount]
+        tier_amount == amount
+      end)
+
+      if tier do
+        price = tier["price"] || tier[:price]
+        if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+      else
+        nil
+      end
+    else
+      product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
+    end
+  end
 end
