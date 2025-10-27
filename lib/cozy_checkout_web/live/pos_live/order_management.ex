@@ -186,9 +186,9 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       {:ok, payment} ->
         {:noreply,
          socket
-         |> assign(:show_payment_modal, false)
-         |> load_order()
-         |> put_flash(:info, "Payment recorded successfully. Invoice: #{payment.invoice_number}")}
+         |> assign(:payment_method, "cash_success")
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> load_order()}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to create payment")}

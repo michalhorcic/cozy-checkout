@@ -66,6 +66,7 @@ defmodule CozyCheckoutWeb.Router do
     live "/orders/new", OrderLive.New
     live "/orders/:id/edit", OrderLive.Edit
     live "/orders/:id", OrderLive.Show
+    live "/orders/:id/receipt", OrderLive.Receipt
 
     # Payments
     live "/payments", PaymentLive.Index, :index

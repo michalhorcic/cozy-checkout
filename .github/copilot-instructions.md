@@ -261,6 +261,23 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   The default VAT rate should be zero.
 *   **Pricelist Sorting:** When retrieving pricelists for a product, sort by `valid_to` in descending order. The column name in the database is `valid_to`, not `valid_until`.
 *   **Order Name Handling:** When displaying guest names in the order details, payments, and other related sections, always check if the order has a booking associated with it (`order.booking_id`). If a booking exists, display the guest name from the booking. If not, display the `order.name` as a "Standalone Order." This ensures proper handling of standalone orders throughout the application.
+*   **POS System - Receipt Printing:** When paying orders, implement an option to print a receipt for the guest. The receipt should include:
+    *   The content of the order (all bought items with prices).
+    *   The total price.
+    *   Company information:
+        *   Company name: "Moruška s.r.o."
+        *   IČO: 23741457
+        *   Place of order: Jindřichův dům, Pec pod Sněžkou 24
+    *   Date of order payment.
+    *   Receipt/document number (for tracking).
+    *   VAT breakdown (showing VAT rates and amounts)
+    *   The receipt is accessible at `/admin/orders/:id/receipt` and is formatted for thermal printer (80mm width).
+    *   A "Print Receipt" button is available in:
+        *   Admin order details page (`/admin/orders/:id`)
+        *   POS payment success modal (for both cash and QR code payments)
+    *   After payment in POS, staff can immediately print the receipt without switching to admin interface.
+*   The receipt should be formatted for thermal printer (80mm width).
+*   Thermal receipt printers typically come with their own driver software that adds the 80mm receipt paper size to your system's print options. Until you install the printer and its drivers, you won't see that paper size available.
 
 ## TECH STACK
 
@@ -278,6 +295,13 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   Quick "Add Price" buttons open a modal for price creation.
 *   The modal dynamically shows tier inputs only for products with `default_unit_amounts`.
 *   The system has complete tier pricing support, checking if ALL tiers have prices configured.
-*   The `default_unit_amounts` is stored as a JSON string, not a native PostgreSQL array, so the query should check if the JSON string is not empty or "[]".
+*   For `Products With Incomplete Price Tiers` the `default_unit_amounts` is stored as a JSON string, not a native PostgreSQL array, so the query should check if the JSON string is not empty or "[]".
 *   When creating a pricelist with tier prices, use plain HTML inputs with the `name` attribute instead of the `<.input>` component from Phoenix. The `<.input>` component requires a `field` attribute that's tied to the form changeset, which is not suitable for dynamic tier prices.
 *   The default VAT rate is zero.
+*   The receipt printing feature includes a `receipt.ex` LiveView module accessible at `/admin/orders/:id/receipt`, and a thermal printer-optimized `receipt.html.heex` template.
+*   The receipts generated are compliant with Czech simplified tax document requirements.
+*   "Print Receipt" buttons are available in the admin order details page and the POS payment success modal (for both cash and QR code payments).
+*   After payment in POS, staff can immediately print the receipt without switching to admin interface.
+*   The POS system now includes a "Print Receipt" button for cash payments as well. After payment in POS, staff can immediately print the receipt without switching to admin interface.
+*   The receipt printing feature in POS uses a success modal with a "Print Receipt" button for both cash and QR code payments. The button opens the receipt in a new tab, ready to print.
+*   The issue with the print button not working was due to pushing the wrong event from the Elixir code. `push_event/3` automatically adds the `phx:` prefix, so pushing `"phx:print"` resulted in `"phx:phx:print"`. The correct solution is to push `"print"` from the Elixir side.

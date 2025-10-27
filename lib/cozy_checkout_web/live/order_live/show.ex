@@ -87,6 +87,11 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             </p>
           </div>
           <div class="flex items-center space-x-4">
+            <.link navigate={~p"/admin/orders/#{@order}/receipt"} target="_blank">
+              <.button class="btn-soft">
+                <.icon name="hero-printer" class="w-5 h-5 mr-2" /> Print Receipt
+              </.button>
+            </.link>
             <.link :if={@order.status != "paid"} navigate={~p"/admin/orders/#{@order}/edit"}>
               <.button>
                 <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> Edit Order

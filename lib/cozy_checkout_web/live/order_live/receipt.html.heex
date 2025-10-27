@@ -1,0 +1,243 @@
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      /* Thermal receipt printer format: 80mm width, auto height */
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      
+      html, body {
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+      }
+    }
+    
+    /* Receipt styling for thermal printer format */
+    .receipt-container {
+      width: 80mm;
+      margin: 0 auto;
+      padding: 10mm;
+      font-family: 'Courier New', monospace;
+      background: white;
+    }
+    
+    .receipt-header {
+      text-align: center;
+      margin-bottom: 15px;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 10px;
+    }
+    
+    .receipt-section {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #999;
+    }
+    
+    .receipt-items {
+      font-size: 12px;
+    }
+    
+    .receipt-item {
+      margin-bottom: 8px;
+    }
+    
+    .receipt-total {
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    
+    .receipt-footer {
+      text-align: center;
+      font-size: 11px;
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 2px dashed #000;
+    }
+  </style>
+
+  <%!-- Print Button (Hidden on print) --%>
+  <div class="no-print fixed top-4 right-4 z-50">
+    <button
+      phx-click="print"
+      class="btn btn-primary gap-2"
+    >
+      <.icon name="hero-printer" class="h-5 w-5" />
+      Vytisknout účtenku
+    </button>
+  </div>
+
+  <%!-- Receipt Content --%>
+  <div class="receipt-container">
+    <%!-- Header with Company Info --%>
+    <div class="receipt-header">
+      <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">
+        Jindřichův dům
+      </div>
+      <div style="font-size: 13px; margin-bottom: 3px;">
+        Pec pod Sněžkou 24
+      </div>
+      <div style="font-size: 13px; margin-bottom: 3px;">
+        542 21 Pec pod Sněžkou
+      </div>
+      <div style="font-size: 12px; margin-top: 8px;">
+        <div>Moruška s.r.o.</div>
+        <div>IČO: 23741457</div>
+      </div>
+    </div>
+
+    <%!-- Order Information --%>
+    <div class="receipt-section">
+      <div style="font-size: 12px;">
+        <div style="margin-bottom: 3px;">
+          <strong>Účtenka č.:</strong> {@order.order_number}
+        </div>
+        <div style="margin-bottom: 3px;">
+          <strong>Datum:</strong>
+          <%= if @payments != [] do %>
+            <%= Calendar.strftime(List.first(@payments).payment_date, "%d.%m.%Y") %>
+          <% else %>
+            <%= Calendar.strftime(@order.inserted_at, "%d.%m.%Y") %>
+          <% end %>
+        </div>
+        <div style="margin-bottom: 3px;">
+          <strong>Čas:</strong> <%= Calendar.strftime(@generated_at, "%H:%M:%S") %>
+        </div>
+        <%= if @order.booking_id do %>
+          <div style="margin-bottom: 3px;">
+            <strong>Host:</strong> {@order.booking.guest.name}
+          </div>
+          <%= if @order.booking.room_number do %>
+            <div style="margin-bottom: 3px;">
+              <strong>Pokoj:</strong> {@order.booking.room_number}
+            </div>
+          <% end %>
+        <% else %>
+          <%= if @order.name do %>
+            <div style="margin-bottom: 3px;">
+              <strong>Název:</strong> {@order.name}
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <%!-- Order Items --%>
+    <div class="receipt-section receipt-items">
+      <div style="font-weight: bold; margin-bottom: 8px;">POLOŽKY:</div>
+      <%= for item <- Enum.filter(@order.order_items, &is_nil(&1.deleted_at)) do %>
+        <div class="receipt-item">
+          <div style="margin-bottom: 2px;">
+            <strong>{item.product.name}</strong>
+            <%= if item.unit_amount do %>
+              <span style="font-size: 11px;">
+                ({item.quantity} × {item.unit_amount}{item.product.unit})
+              </span>
+            <% else %>
+              <span style="font-size: 11px;">
+                (ks: {item.quantity})
+              </span>
+            <% end %>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>{format_currency(item.unit_price)} × {item.quantity}</span>
+            <span><strong>{format_currency(item.subtotal)}</strong></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- VAT Breakdown --%>
+    <%= if @vat_breakdown != [] do %>
+      <div class="receipt-section" style="font-size: 11px;">
+        <div style="font-weight: bold; margin-bottom: 5px;">REKAPITULACE DPH:</div>
+        <%= for vat <- @vat_breakdown do %>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Základ DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.base)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.vat_amount)}</span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%!-- Discount (if any) --%>
+    <%= if Decimal.gt?(@order.discount_amount || Decimal.new("0"), 0) do %>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+        <span>Sleva:</span>
+        <span>-{format_currency(@order.discount_amount)}</span>
+      </div>
+    <% end %>
+
+    <%!-- Total --%>
+    <div class="receipt-total">
+      <div style="display: flex; justify-content: space-between; font-size: 16px; margin-bottom: 8px;">
+        <span>CELKEM:</span>
+        <span>{format_currency(@order.total_amount)}</span>
+      </div>
+    </div>
+
+    <%!-- Payment Information --%>
+    <%= if @payments != [] do %>
+      <div class="receipt-section" style="font-size: 12px;">
+        <div style="font-weight: bold; margin-bottom: 5px;">PLATBA:</div>
+        <%= for payment <- @payments do %>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+            <span>
+              {String.replace(payment.payment_method, "_", " ") |> String.capitalize()}
+              <%= if payment.invoice_number do %>
+                <br />
+                <span style="font-size: 10px;">({payment.invoice_number})</span>
+              <% end %>
+            </span>
+            <span>{format_currency(payment.amount)}</span>
+          </div>
+        <% end %>
+        
+        <%= if Decimal.lt?(@total_paid, @order.total_amount) do %>
+          <div style="display: flex; justify-content: space-between; margin-top: 5px; font-weight: bold;">
+            <span>Zbývá zaplatit:</span>
+            <span>{format_currency(Decimal.sub(@order.total_amount, @total_paid))}</span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%!-- Footer --%>
+    <div class="receipt-footer">
+      <div style="margin-bottom: 5px;">
+        Děkujeme za Vaši návštěvu!
+      </div>
+      <div style="font-size: 10px; color: #666;">
+        Ceny jsou uvedeny včetně DPH
+      </div>
+      <%= if @order.notes do %>
+        <div style="margin-top: 8px; font-size: 10px; font-style: italic;">
+          Poznámka: {@order.notes}
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<script>
+  window.addEventListener("phx:print", () => {
+    window.print();
+  });
+</script>

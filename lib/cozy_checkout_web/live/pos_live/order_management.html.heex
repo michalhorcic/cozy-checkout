@@ -417,7 +417,49 @@
         class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
         phx-click={JS.exec("phx:stop-propagation")}
       >
-        <%= if @payment_method == "qr_code" do %>
+        <%= if @payment_method == "cash_success" do %>
+          <!-- Cash Payment Success -->
+          <div class="text-center">
+            <div class="mb-6">
+              <div class="inline-flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-4">
+                <.icon name="hero-check-circle" class="w-16 h-16 text-green-600" />
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-2">Payment Successful!</h2>
+              <p class="text-lg text-slate-600 mb-2">
+                Invoice: {@payment_invoice_number}
+              </p>
+            </div>
+
+            <div class="bg-green-50 border-2 border-green-200 rounded-xl p-6 mb-6">
+              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+              <p class="text-4xl font-bold text-green-600">
+                {format_currency(@order.total_amount)}
+              </p>
+            </div>
+
+            <.link
+              navigate={~p"/admin/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mb-3"
+            >
+              <button
+                type="button"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <.icon name="hero-printer" class="w-6 h-6" />
+                Print Receipt
+              </button>
+            </.link>
+
+            <button
+              phx-click="close_payment_modal"
+              class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+            >
+              Done
+            </button>
+          </div>
+        <% else %>
+          <%= if @payment_method == "qr_code" do %>
           <!-- QR Code Display -->
           <div class="text-center">
             <h2 class="text-3xl font-bold text-slate-900 mb-2">Scan to Pay</h2>
@@ -457,6 +499,20 @@
             >
               Done
             </button>
+            
+            <.link
+              navigate={~p"/admin/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mt-3"
+            >
+              <button
+                type="button"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <.icon name="hero-printer" class="w-6 h-6" />
+                Print Receipt
+              </button>
+            </.link>
           </div>
         <% else %>
           <!-- Payment Method Selection -->
@@ -506,6 +562,7 @@
           >
             Cancel
           </button>
+        <% end %>
         <% end %>
       </div>
     </div>
