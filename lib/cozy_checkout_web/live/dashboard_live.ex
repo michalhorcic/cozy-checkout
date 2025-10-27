@@ -118,6 +118,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
             color="teal"
           />
 
+          <.dashboard_card
+            title="Economy"
+            description="View revenue & statistics"
+            icon="hero-chart-pie"
+            navigate={~p"/admin/economy"}
+            color="emerald"
+          />
+
           <%!-- POHODA Export --%>
           <.dashboard_card
             title="POHODA Export"

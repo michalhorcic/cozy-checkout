@@ -1,0 +1,236 @@
+<div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <!-- Header -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold text-gray-900">Economy Management</h1>
+    <p class="mt-2 text-sm text-gray-600">
+      View and analyze booking revenue and statistics
+    </p>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white rounded-lg shadow p-6 mb-8">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+    
+    <.form for={%{}} phx-change="filter" id="filter-form" class="space-y-6">
+      <!-- Date Range -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">
+            Start Date (Check-in)
+          </label>
+          <input
+            type="date"
+            id="start_date"
+            name="start_date"
+            value={Date.to_iso8601(@start_date)}
+            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+        <div>
+          <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">
+            End Date (Check-in)
+          </label>
+          <input
+            type="date"
+            id="end_date"
+            name="end_date"
+            value={Date.to_iso8601(@end_date)}
+            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+          />
+        </div>
+      </div>
+
+      <!-- Invoice States -->
+      <div>
+        <div class="flex items-center justify-between mb-3">
+          <label class="block text-sm font-medium text-gray-700">
+            Invoice States
+          </label>
+          <div class="flex gap-2">
+            <button
+              type="button"
+              phx-click="select_all_states"
+              class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              Select All
+            </button>
+            <span class="text-gray-400">|</span>
+            <button
+              type="button"
+              phx-click="clear_all_states"
+              class="text-sm text-gray-600 hover:text-gray-800 font-medium"
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+        
+        <div class="flex flex-wrap gap-3">
+          <%= for state <- @all_states do %>
+            <label class="inline-flex items-center cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={state in @selected_states}
+                phx-click="toggle_state"
+                phx-value-state={state}
+                class="sr-only peer"
+              />
+              <span class={[
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                "border-2",
+                if(state in @selected_states,
+                  do: "#{state_badge_class(state)} border-current",
+                  else: "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
+                )
+              ]}>
+                {state_label(state)}
+              </span>
+            </label>
+          <% end %>
+        </div>
+      </div>
+    </.form>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Total Revenue -->
+    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-emerald-100 text-sm font-medium">Total Revenue</p>
+          <p class="text-3xl font-bold mt-2 whitespace-nowrap">
+            {CozyCheckoutWeb.CurrencyHelper.format_currency(@stats.total_revenue)}
+          </p>
+        </div>
+        <div class="bg-white bg-opacity-20 rounded-full p-3">
+          <.icon name="hero-banknotes" class="w-8 h-8" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Bookings -->
+    <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-blue-100 text-sm font-medium">Total Bookings</p>
+          <p class="text-3xl font-bold mt-2 whitespace-nowrap">{@stats.booking_count}</p>
+        </div>
+        <div class="bg-white bg-opacity-20 rounded-full p-3">
+          <.icon name="hero-calendar-days" class="w-8 h-8" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Average per Booking -->
+    <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-lg p-6 text-white">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-purple-100 text-sm font-medium">Average per Booking</p>
+          <p class="text-3xl font-bold mt-2 whitespace-nowrap">
+            <%= if @stats.booking_count > 0 do %>
+              {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.div(@stats.total_revenue, @stats.booking_count))}
+            <% else %>
+              {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.new(0))}
+            <% end %>
+          </p>
+        </div>
+        <div class="bg-white bg-opacity-20 rounded-full p-3">
+          <.icon name="hero-calculator" class="w-8 h-8" />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- State Breakdown -->
+  <%= if map_size(@stats.state_breakdown) > 0 do %>
+    <div class="bg-white rounded-lg shadow p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Breakdown by State</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <%= for {state, data} <- @stats.state_breakdown do %>
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-2">
+              <span class={[
+                "px-3 py-1 rounded-full text-xs font-semibold",
+                state_badge_class(state)
+              ]}>
+                {state_label(state)}
+              </span>
+              <span class="text-sm text-gray-600 whitespace-nowrap">{data.count} bookings</span>
+            </div>
+            <p class="text-2xl font-bold text-gray-900 mt-2 whitespace-nowrap">
+              {CozyCheckoutWeb.CurrencyHelper.format_currency(data.total)}
+            </p>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Monthly Charts -->
+  <%= if @monthly_stats != [] do %>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Revenue Chart -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Monthly Revenue</h2>
+        <div class="h-64 flex items-end justify-around gap-2">
+          <%= for month_data <- @monthly_stats do %>
+            <div class="flex-1 flex flex-col items-center group">
+              <div class="w-full flex flex-col items-center justify-end h-48">
+                <div class="relative w-full">
+                  <div
+                    class="w-full bg-gradient-to-t from-emerald-500 to-emerald-400 rounded-t-lg transition-all hover:from-emerald-600 hover:to-emerald-500 cursor-pointer"
+                    style={"height: #{bar_height(Decimal.to_float(month_data.revenue), max_value(@monthly_stats, :revenue)) * 1.92}px; min-height: 4px;"}
+                    title={"#{month_data.month_name}: #{CozyCheckoutWeb.CurrencyHelper.format_currency(month_data.revenue)}"}
+                  >
+                  </div>
+                  <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    {CozyCheckoutWeb.CurrencyHelper.format_currency(month_data.revenue)}
+                  </div>
+                </div>
+              </div>
+              <div class="text-xs text-gray-600 mt-2 text-center">
+                {String.slice(month_data.month_name, 0..2)}
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <!-- Bookings Count Chart -->
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-6">Monthly Bookings</h2>
+        <div class="h-64 flex items-end justify-around gap-2">
+          <%= for month_data <- @monthly_stats do %>
+            <div class="flex-1 flex flex-col items-center group">
+              <div class="w-full flex flex-col items-center justify-end h-48">
+                <div class="relative w-full">
+                  <div
+                    class="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all hover:from-blue-600 hover:to-blue-500 cursor-pointer"
+                    style={"height: #{bar_height(month_data.booking_count / 1, max_booking_count(@monthly_stats)) * 1.92}px; min-height: 4px;"}
+                    title={"#{month_data.month_name}: #{month_data.booking_count} bookings"}
+                  >
+                  </div>
+                  <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    {month_data.booking_count} bookings
+                  </div>
+                </div>
+              </div>
+              <div class="text-xs text-gray-600 mt-2 text-center">
+                {String.slice(month_data.month_name, 0..2)}
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  <% else %>
+    <div class="bg-gray-50 rounded-lg p-12 text-center">
+      <.icon name="hero-chart-bar" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
+      <h3 class="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
+      <p class="text-gray-600">
+        No bookings found for the selected date range and filters.
+      </p>
+    </div>
+  <% end %>
+</div>

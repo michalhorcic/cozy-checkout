@@ -752,4 +752,128 @@ defmodule CozyCheckout.Bookings do
       true -> :low
     end
   end
+
+  # Economy Management
+
+  @doc """
+  Returns invoice statistics for a given date range and states.
+  Filters by check_in_date.
+  Returns a map with total revenue, booking count, and breakdown by state.
+  """
+  def get_economy_stats(start_date, end_date, states \\ []) do
+    query =
+      from(b in Booking,
+        join: bi in BookingInvoice,
+        on: bi.booking_id == b.id,
+        where: b.check_in_date >= ^start_date,
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.deleted_at)
+      )
+
+    query =
+      if Enum.empty?(states) do
+        query
+      else
+        from([b, bi] in query, where: bi.state in ^states)
+      end
+
+    invoices = Repo.all(query |> select([b, bi], bi))
+
+    total_revenue =
+      invoices
+      |> Enum.map(& &1.total_price)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+    booking_count = length(invoices)
+
+    # Group by state
+    state_breakdown =
+      invoices
+      |> Enum.group_by(& &1.state)
+      |> Enum.map(fn {state, state_invoices} ->
+        state_total =
+          state_invoices
+          |> Enum.map(& &1.total_price)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+        {state, %{count: length(state_invoices), total: state_total}}
+      end)
+      |> Map.new()
+
+    %{
+      total_revenue: total_revenue,
+      booking_count: booking_count,
+      state_breakdown: state_breakdown
+    }
+  end
+
+  @doc """
+  Returns monthly statistics for a given date range and states.
+  Returns a list of maps with month, revenue, and booking count.
+  """
+  def get_monthly_stats(start_date, end_date, states \\ []) do
+    query =
+      from(b in Booking,
+        join: bi in BookingInvoice,
+        on: bi.booking_id == b.id,
+        where: b.check_in_date >= ^start_date,
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.deleted_at)
+      )
+
+    query =
+      if Enum.empty?(states) do
+        query
+      else
+        from([b, bi] in query, where: bi.state in ^states)
+      end
+
+    invoices =
+      Repo.all(
+        query
+        |> select([b, bi], %{
+          check_in_date: b.check_in_date,
+          total_price: bi.total_price,
+          state: bi.state
+        })
+      )
+
+    # Group by year-month
+    invoices
+    |> Enum.group_by(fn invoice ->
+      {invoice.check_in_date.year, invoice.check_in_date.month}
+    end)
+    |> Enum.map(fn {{year, month}, month_invoices} ->
+      month_revenue =
+        month_invoices
+        |> Enum.map(& &1.total_price)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+
+      %{
+        year: year,
+        month: month,
+        month_name: month_name(month),
+        revenue: month_revenue,
+        booking_count: length(month_invoices)
+      }
+    end)
+    |> Enum.sort_by(&{&1.year, &1.month})
+  end
+
+  # Helper function to get month name
+  defp month_name(1), do: "Leden"
+  defp month_name(2), do: "Únor"
+  defp month_name(3), do: "Březen"
+  defp month_name(4), do: "Duben"
+  defp month_name(5), do: "Květen"
+  defp month_name(6), do: "Červen"
+  defp month_name(7), do: "Červenec"
+  defp month_name(8), do: "Srpen"
+  defp month_name(9), do: "Září"
+  defp month_name(10), do: "Říjen"
+  defp month_name(11), do: "Listopad"
+  defp month_name(12), do: "Prosinec"
 end
