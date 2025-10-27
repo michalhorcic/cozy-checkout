@@ -118,7 +118,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div class="lg:col-span-2 space-y-6">
           <%!-- Booking Information --%>
-          <%= if @order.guest do %>
+          <%= if @order.booking_id do %>
             <div class="bg-white shadow-lg rounded-lg p-6">
               <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
               <div class="space-y-2">

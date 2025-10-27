@@ -260,6 +260,7 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   In the pricelists index page (`/admin/pricelists`), the "Price Management" button should use a polished gradient style with an emerald-to-teal gradient (`bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700`), proper shadow effects, focus ring states, smooth transitions, and the `hero-clipboard-document-check` icon. This creates a visually distinct, premium button appearance.
 *   The default VAT rate should be zero.
 *   **Pricelist Sorting:** When retrieving pricelists for a product, sort by `valid_to` in descending order. The column name in the database is `valid_to`, not `valid_until`.
+*   **Order Name Handling:** When displaying guest names in the order details, payments, and other related sections, always check if the order has a booking associated with it (`order.booking_id`). If a booking exists, display the guest name from the booking. If not, display the `order.name` as a "Standalone Order." This ensures proper handling of standalone orders throughout the application.
 
 ## TECH STACK
 

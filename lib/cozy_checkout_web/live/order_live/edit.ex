@@ -282,19 +282,36 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
         <%!-- Order Form --%>
         <div class="lg:col-span-2 space-y-8">
           <%!-- Booking Information --%>
-          <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
-            <div class="space-y-2">
-              <div class="flex justify-between">
-                <span class="text-gray-600">Guest Name:</span>
-                <span class="font-medium">{@order.booking.guest.name}</span>
-              </div>
-              <div :if={@order.booking.room_number} class="flex justify-between">
-                <span class="text-gray-600">Room:</span>
-                <span class="font-medium">{@order.booking.room_number}</span>
+          <%= if @order.booking_id do %>
+            <div class="bg-white shadow-lg rounded-lg p-6">
+              <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Guest Name:</span>
+                  <span class="font-medium">{@order.booking.guest.name}</span>
+                </div>
+                <div :if={@order.booking.room_number} class="flex justify-between">
+                  <span class="text-gray-600">Room:</span>
+                  <span class="font-medium">{@order.booking.room_number}</span>
+                </div>
               </div>
             </div>
-          </div>
+          <% else %>
+            <div class="bg-white shadow-lg rounded-lg p-6">
+              <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                Order Information
+                <span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+                  Standalone Order
+                </span>
+              </h2>
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-gray-600">Order Name:</span>
+                  <span class="font-medium">{@order.name}</span>
+                </div>
+              </div>
+            </div>
+          <% end %>
 
           <%!-- Order Notes --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
@@ -423,7 +440,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                       </button>
                     </div>
                   </div>
-                  
+
     <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
@@ -441,7 +458,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                     </button>
                   <% end %>
                 </div>
-                
+
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-gray-200">

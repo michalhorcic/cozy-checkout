@@ -66,11 +66,17 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
             label="Order"
             prompt="Select an order"
             options={
-              Enum.map(
-                @orders,
-                &{"#{&1.order_number} - #{&1.guest.name} (#{format_currency(&1.total_amount)})",
-                 &1.id}
-              )
+              Enum.map(@orders, fn order ->
+                display_name =
+                  if order.booking_id do
+                    order.booking.guest.name
+                  else
+                    order.name
+                  end
+
+                {"#{order.order_number} - #{display_name} (#{format_currency(order.total_amount)})",
+                 order.id}
+              end)
             }
             required
           />
@@ -85,8 +91,16 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
                 <span class="font-medium">{@order.order_number}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Guest:</span>
-                <span class="font-medium">{@order.booking.guest.name}</span>
+                <span class="text-gray-600">
+                  <%= if @order.booking_id, do: "Guest:", else: "Name:" %>
+                </span>
+                <span class="font-medium">
+                  <%= if @order.booking_id do %>
+                    {@order.booking.guest.name}
+                  <% else %>
+                    {@order.name}
+                  <% end %>
+                </span>
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">Total:</span>
