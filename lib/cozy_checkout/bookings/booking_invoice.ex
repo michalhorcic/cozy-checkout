@@ -20,7 +20,7 @@ defmodule CozyCheckout.Bookings.BookingInvoice do
     timestamps(type: :utc_datetime)
   end
 
-  @valid_states ~w(draft generated sent paid)
+  @valid_states ~w(draft personal generated sent paid)
 
   @doc false
   def changeset(booking_invoice, attrs) do

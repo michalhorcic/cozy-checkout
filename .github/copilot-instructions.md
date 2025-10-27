@@ -302,6 +302,17 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   **Invoice State Management UI:** Add the ability to manually set the invoice state in the booking detail page in the admin section. Use separate action buttons for each state transition.
 *   **Booking Index Invoice State Visibility:** Display the invoice state in the bookings index page in a new column with a badge.
 *   **Bookings Sorting:** The default sorting for bookings should be by `check_in_date` from earliest to latest.
+*   **Booking Invoice States - "Personal" State**: Add a "personal" state to booking invoices.
+    *   The "personal" state should:
+        *   Be a parallel state that can be set at any time.
+        *   Allow switching from "created" to "personal" and back.
+        *   Allow switching from "personal" to "generated".
+        *   Not generate an invoice number.
+        *   Count toward the 45-person cottage capacity.
+        *   Appear in the bookings index table with a different color badge.
+        *   Store all invoice items (adults, kids, etc.).
+        *   Store prices and VAT.
+        *   Have the recalculate functionality.
 
 ## TECH STACK
 
@@ -320,13 +331,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   The modal dynamically shows tier inputs only for products with `default_unit_amounts`.
 *   The system has complete tier pricing support, checking if ALL tiers have prices configured.
 *   For `Products With Incomplete Price Tiers` the `default_unit_amounts` is stored as a JSON string, not a native PostgreSQL array, so the query should check if the JSON string is not empty or "[]".
-*   When creating a pricelist with tier prices, use plain HTML inputs with the `name` attribute instead of the `<.input>` component from Phoenix. The `<.input>` component requires a `field` attribute that's tied to the form changeset, which is not suitable for dynamic tier prices.
-*   The default VAT rate is zero.
-*   The receipt printing feature includes a `receipt.ex` LiveView module accessible at `/admin/orders/:id/receipt`, and a thermal printer-optimized `receipt.html.heex` template.
-*   The receipts generated are compliant with Czech simplified tax document requirements.
-*   "Print Receipt" buttons are available in the admin order details page and the POS payment success modal (for both cash and QR code payments).
-*   After payment in POS, staff can immediately print the receipt without switching to admin interface.
-*   The POS system now includes a "Print Receipt" button for cash payments as well. After payment in POS, staff can immediately print the receipt without switching to admin interface.
-*   The receipt printing feature in POS uses a success modal with a "Print Receipt" button for both cash and QR code payments. The button opens the receipt in a new tab, ready to print.
-*   The issue with the print button not working was due to pushing the wrong event from the Elixir code. `push_event/3` automatically adds the `phx:` prefix, so pushing `"phx:print"` resulted in `"phx:phx:print"`. The correct solution is to push `"print"` from the Elixir side.
-*   The invoice number format is `YY08XXXXX` (e.g., `250800021`), and the sequential numbering logic is to be implemented. The sequential numbering resets every year, the month field is static "08
+*   When creating a pricelist with tier prices, use plain HTML inputs with the `name` attribute instead of the

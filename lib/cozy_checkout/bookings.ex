@@ -608,6 +608,21 @@ defmodule CozyCheckout.Bookings do
     end
   end
 
+  @doc """
+  Transitions the invoice to "personal" state.
+  This state does not generate an invoice number and is used for capacity counting only.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_personal(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "personal"})
+      |> Repo.update()
+    end
+  end
+
   # Helper function to validate invoice before state changes
   defp validate_invoice_for_state_change(invoice) do
     cond do

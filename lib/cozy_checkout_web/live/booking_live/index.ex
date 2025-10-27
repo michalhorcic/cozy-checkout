@@ -321,12 +321,14 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp status_badge_class(_), do: "bg-gray-100 text-gray-800"
 
   defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp invoice_state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
   defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
   defp invoice_state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
   defp invoice_state_badge_class("paid"), do: "bg-green-100 text-green-800"
   defp invoice_state_badge_class(_), do: "bg-gray-100 text-gray-800"
 
   defp invoice_state_label("draft"), do: "Draft"
+  defp invoice_state_label("personal"), do: "Personal"
   defp invoice_state_label("generated"), do: "Generated"
   defp invoice_state_label("sent"), do: "Sent"
   defp invoice_state_label("paid"), do: "Paid"

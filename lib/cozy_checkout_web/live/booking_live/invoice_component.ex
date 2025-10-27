@@ -41,6 +41,32 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
           <%= if @invoice.state == "draft" do %>
             <button
               type="button"
+              phx-click="transition_to_personal"
+              phx-target={@myself}
+              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-user" class="w-4 h-4 inline mr-1" /> Mark as Personal
+            </button>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <% end %>
+          <%= if @invoice.state == "personal" do %>
+            <button
+              type="button"
+              phx-click="transition_to_draft"
+              phx-target={@myself}
+              class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-arrow-uturn-left" class="w-4 h-4 inline mr-1" /> Back to Draft
+            </button>
+            <button
+              type="button"
               phx-click="transition_to_generated"
               phx-target={@myself}
               class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
@@ -591,17 +617,50 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
     end
   end
 
+  @impl true
+  def handle_event("transition_to_personal", _params, socket) do
+    case Bookings.transition_to_personal(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as personal")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as personal")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_draft", _params, socket) do
+    case Bookings.update_booking_invoice(socket.assigns.invoice, %{state: "draft"}) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice returned to draft")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to return invoice to draft")}
+    end
+  end
+
   defp calculate_nights(booking) do
     BookingInvoice.calculate_nights(booking)
   end
 
   defp state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
   defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
   defp state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
   defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
   defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
 
   defp state_label("draft"), do: "Draft"
+  defp state_label("personal"), do: "Personal"
   defp state_label("generated"), do: "Generated"
   defp state_label("sent"), do: "Sent"
   defp state_label("paid"), do: "Paid"
