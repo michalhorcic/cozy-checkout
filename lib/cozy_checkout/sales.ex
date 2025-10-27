@@ -32,7 +32,9 @@ defmodule CozyCheckout.Sales do
 
   @doc """
   Gets or creates an open order for a booking.
-  If multiple open orders exist, returns nil (requires manual selection).
+  Returns {:needs_guest_selection, guests} if booking has multiple guests and no orders exist.
+  Returns {:multiple, orders} if multiple open orders exist (requires manual order selection).
+  Returns {:ok, order} if a single order exists or was created.
   """
   def get_or_create_booking_order(booking_id) do
     open_orders =
@@ -40,7 +42,7 @@ defmodule CozyCheckout.Sales do
       |> where([o], o.booking_id == ^booking_id)
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
-      |> preload(booking: :guest, order_items: :product, payments: [])
+      |> preload([:guest, booking: :guest, order_items: :product, payments: []])
       |> order_by([o], desc: o.inserted_at)
       |> Repo.all()
       |> Enum.map(fn order ->
@@ -50,24 +52,57 @@ defmodule CozyCheckout.Sales do
 
     case open_orders do
       [] ->
-        # Get booking to extract guest_id
-        booking = Bookings.get_booking!(booking_id)
-        # Create new order
-        {:ok, order} =
-          create_order(%{
-            "booking_id" => booking_id,
-            "guest_id" => booking.guest_id,
-            "status" => "open"
-          })
+        # Check if booking has multiple guests
+        booking_guests = Bookings.list_booking_guests(booking_id)
 
-        {:ok, get_order!(order.id)}
+        case booking_guests do
+          [_single_guest] ->
+            # Only one guest - auto-create order
+            guest_id = hd(booking_guests).guest_id
+
+            {:ok, order} =
+              create_order(%{
+                "booking_id" => booking_id,
+                "guest_id" => guest_id,
+                "status" => "open"
+              })
+
+            {:ok, get_order!(order.id)}
+
+          multiple_guests when length(multiple_guests) > 1 ->
+            # Multiple guests - need selection
+            {:needs_guest_selection, multiple_guests}
+        end
 
       [order] ->
-        {:ok, order}
+        # Check if booking has multiple guests
+        booking_guests = Bookings.list_booking_guests(order.booking_id)
+
+        if length(booking_guests) > 1 do
+          # Multiple guests but only 1 order - still allow creating more orders
+          {:multiple, [order]}
+        else
+          # Single guest, single order
+          {:ok, order}
+        end
 
       orders when length(orders) > 1 ->
         {:multiple, orders}
     end
+  end
+
+  @doc """
+  Creates an order for a specific guest in a booking.
+  """
+  def create_booking_order_for_guest(booking_id, guest_id) do
+    {:ok, order} =
+      create_order(%{
+        "booking_id" => booking_id,
+        "guest_id" => guest_id,
+        "status" => "open"
+      })
+
+    {:ok, get_order!(order.id)}
   end
 
   @doc """
@@ -77,7 +112,7 @@ defmodule CozyCheckout.Sales do
     orders =
       Order
       |> where([o], is_nil(o.deleted_at))
-      |> preload(booking: :guest, order_items: [], payments: [])
+      |> preload([:guest, booking: :guest, order_items: [], payments: []])
       |> order_by([o], desc: o.inserted_at)
       |> Repo.all()
 
@@ -101,7 +136,7 @@ defmodule CozyCheckout.Sales do
       |> where([o], is_nil(o.deleted_at))
       |> apply_date_filters(date_filters)
       |> apply_guest_name_filter(guest_name_filter)
-      |> preload(booking: :guest, order_items: [], payments: [])
+      |> preload([:guest, booking: :guest, order_items: [], payments: []])
 
     Flop.validate_and_run(query, other_params, for: Order)
   end
@@ -212,7 +247,7 @@ defmodule CozyCheckout.Sales do
     order =
       Order
       |> where([o], is_nil(o.deleted_at))
-      |> preload(booking: :guest, order_items: :product, payments: [])
+      |> preload([:guest, booking: :guest, order_items: :product, payments: []])
       |> Repo.get!(id)
 
     # Filter out deleted order items
@@ -530,7 +565,7 @@ defmodule CozyCheckout.Sales do
       where: o.id in ^order_ids,
       where: o.status == "paid",
       where: is_nil(o.deleted_at),
-      preload: [booking: :guest, order_items: :product, payments: []]
+      preload: [:guest, booking: :guest, order_items: :product, payments: []]
     )
     |> Repo.all()
     |> Enum.map(fn order ->
@@ -548,7 +583,7 @@ defmodule CozyCheckout.Sales do
       where: is_nil(o.deleted_at),
       where: o.inserted_at >= ^date_from,
       where: o.inserted_at <= ^date_to,
-      preload: [booking: :guest, order_items: :product, payments: []],
+      preload: [:guest, booking: :guest, order_items: :product, payments: []],
       order_by: [asc: o.inserted_at]
     )
     |> Repo.all()

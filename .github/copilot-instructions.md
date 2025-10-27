@@ -318,22 +318,18 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   In the invoice items UI, allow staff to:
         *   Add multiple line items for the same person type.
         *   Override the number of nights for each line item.
-
-## TECH STACK
-
-*   Ecto (with Elixir) for database interactions and migrations.
-*   daisyUI (with Phoenix 1.8) for UI components.
-*   `qr_code` Elixir library (version 3.2.0) for generating QR codes.
-*   Flop - for sorting, filtering and pagination.
-
-## PROJECT DOCUMENTATION & CONTEXT SYSTEM
-
-*   The Price Management system has a dedicated page at `/admin/pricelists/management`.
-*   It consists of three distinct sections: Products Without Any Prices, Products With Expired Prices, and Products With Incomplete Price Tiers.
-*   It utilizes color-coded badges (🔴 Red, 🟡 Yellow, 🟠 Orange) for visual clarity.
-*   Summary cards at the top show counts of each pricing problem.
-*   Quick "Add Price" buttons open a modal for price creation.
-*   The modal dynamically shows tier inputs only for products with `default_unit_amounts`.
-*   The system has complete tier pricing support, checking if ALL tiers have prices configured.
-*   For `Products With Incomplete Price Tiers` the `default_unit_amounts` is stored as a JSON string, not a native PostgreSQL array, so the query should check if the JSON string is not empty or "[]".
-*   When creating a pricelist with tier prices, use plain HTML inputs with the `name` attribute instead of the
+*   **POS System - Order Creation for Multiple Guests:** The POS system allows creating multiple orders (one per guest) for bookings with multiple guests:
+    *   If a booking has **only 1 guest** (primary): automatically create order for that guest (no modal).
+    *   If a booking has **2+ guests**: show a modal to select which guest when clicking "Create New Order".
+    *   The modal only shows guests who don't already have an active order.
+    *   Staff can create multiple orders (one per guest) for the same booking.
+    *   The `guest_id` on the `orders` table should point to the specific guest from `booking_guests`, NOT always the primary guest.
+    *   Save that `guest_id` to the `orders` table next to the `booking_id`.
+    *   In the order selection screen, show a badge indicating how many guests have orders (e.g., "2 / 3 guests with orders").
+    *   When all guests have orders, show an error message when trying to create a new order.
+    *   In POS, when an order for another guest is created, show it separately so staff can quickly choose it and add new items to it.
+    *   When a booking has multiple orders in the POS system, list them with clear guest labels.
+    *   In all places where guest names are displayed (e.g., order details, payments, receipts), use `order.guest.name` (the specific guest assigned to the order) instead of `order.booking.guest.name` (the primary booking guest).
+    *   When showing receipts or payment info, display the specific guest who ordered (from `order.guest_id`).
+    *   When creating new order for booking with more than one guest the modal to select a guest should appear. Custom name should not be allowed (lets keep it for standalone order).
+    *   The order selection screen should show a badge indicating how many guests have

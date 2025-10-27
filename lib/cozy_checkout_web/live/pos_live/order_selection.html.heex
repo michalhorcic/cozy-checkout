@@ -16,10 +16,24 @@
           - Room {@booking.room_number}
         </span>
       </h1>
-      <p class="text-lg text-slate-600">Select which order to work with</p>
+      <div class="flex items-center gap-4">
+        <p class="text-lg text-slate-600">
+          <%= if @orders == [] do %>
+            Create an order for a guest
+          <% else %>
+            Select an order or create a new one
+          <% end %>
+        </p>
+        <span
+          :if={@total_guests > 1}
+          class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full"
+        >
+          {length(@orders)} / {@total_guests} guests with orders
+        </span>
+      </div>
     </div>
-    
-<!-- Orders Grid -->
+
+    <!-- Orders Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
       <div
         :for={order <- @orders}
@@ -30,29 +44,37 @@
           "p-8 cursor-pointer active:scale-95 border-4 border-transparent hover:border-blue-500"
         ]}
       >
+        <!-- Guest Name -->
+        <div class="mb-4">
+          <p class="text-sm text-slate-500 mb-1">Guest</p>
+          <p class="text-lg font-semibold text-slate-900">
+            {if order.guest, do: order.guest.name, else: "Unknown"}
+          </p>
+        </div>
+
         <!-- Order Number -->
         <div class="mb-4">
           <p class="text-sm text-slate-500 mb-1">Order Number</p>
           <p class="text-xl font-bold text-slate-900">{order.order_number}</p>
         </div>
-        
-<!-- Items Count -->
+
+        <!-- Items Count -->
         <div class="mb-4">
           <p class="text-sm text-slate-500 mb-1">Items</p>
           <p class="text-2xl font-bold text-blue-600">
             {Enum.count(Enum.filter(order.order_items, &is_nil(&1.deleted_at)))}
           </p>
         </div>
-        
-<!-- Total Amount -->
+
+        <!-- Total Amount -->
         <div class="mb-4">
           <p class="text-sm text-slate-500 mb-1">Total</p>
           <p class="text-2xl font-bold text-green-600">
             {format_currency(order.total_amount || Decimal.new("0"))}
           </p>
         </div>
-        
-<!-- Status Badge -->
+
+        <!-- Status Badge -->
         <div class="mt-4 pt-4 border-t border-slate-200">
           <span class={[
             "inline-block px-4 py-2 rounded-full text-sm font-semibold",
@@ -66,8 +88,8 @@
         </div>
       </div>
     </div>
-    
-<!-- Create New Order Button -->
+
+    <!-- Create New Order Button -->
     <div class="max-w-md mx-auto">
       <button
         phx-click="create_new"
@@ -75,6 +97,66 @@
       >
         <.icon name="hero-plus-circle" class="w-8 h-8 inline-block mr-3" /> Create New Order
       </button>
+    </div>
+
+    <!-- Guest Selection Modal -->
+    <div
+      :if={@show_guest_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      phx-click="hide_guest_modal"
+    >
+      <div
+        class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8"
+        phx-click="stop_propagation"
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-6">Select Guest for Order</h2>
+
+        <div class="space-y-4">
+          <button
+            :for={booking_guest <- @booking_guests}
+            phx-click="select_guest"
+            phx-value-guest-id={booking_guest.guest_id}
+            class={[
+              "w-full bg-white border-2 rounded-xl p-6 text-left",
+              "hover:border-blue-500 hover:bg-blue-50 transition-all duration-200",
+              "active:scale-95 cursor-pointer",
+              if(booking_guest.is_primary,
+                do: "border-blue-500 bg-blue-50",
+                else: "border-slate-200"
+              )
+            ]}
+          >
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-xl font-bold text-slate-900">{booking_guest.guest.name}</p>
+                <p :if={booking_guest.guest.email} class="text-sm text-slate-600 mt-1">
+                  {booking_guest.guest.email}
+                </p>
+                <p :if={booking_guest.guest.phone} class="text-sm text-slate-600">
+                  {booking_guest.guest.phone}
+                </p>
+              </div>
+              <div>
+                <span
+                  :if={booking_guest.is_primary}
+                  class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white"
+                >
+                  Primary
+                </span>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <div class="mt-8 flex justify-end">
+          <button
+            phx-click="hide_guest_modal"
+            class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </Layouts.pos>

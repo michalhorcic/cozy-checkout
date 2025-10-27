@@ -118,7 +118,7 @@
         </div>
         <%= if @order.booking_id do %>
           <div style="margin-bottom: 3px;">
-            <strong>Host:</strong> {@order.booking.guest.name}
+            <strong>Host:</strong> {if @order.guest, do: @order.guest.name, else: "Unknown"}
           </div>
           <%= if @order.booking.room_number do %>
             <div style="margin-bottom: 3px;">

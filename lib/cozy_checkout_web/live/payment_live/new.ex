@@ -69,7 +69,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
               Enum.map(@orders, fn order ->
                 display_name =
                   if order.booking_id do
-                    order.booking.guest.name
+                    if order.guest, do: order.guest.name, else: "Unknown"
                   else
                     order.name
                   end
@@ -96,7 +96,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
                 </span>
                 <span class="font-medium">
                   <%= if @order.booking_id do %>
-                    {@order.booking.guest.name}
+                    {if @order.guest, do: @order.guest.name, else: "Unknown"}
                   <% else %>
                     {@order.name}
                   <% end %>

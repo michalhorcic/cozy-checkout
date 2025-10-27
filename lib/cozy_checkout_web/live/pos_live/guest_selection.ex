@@ -29,9 +29,15 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
   def handle_event("select_booking", %{"booking-id" => booking_id}, socket) do
     case Sales.get_or_create_booking_order(booking_id) do
       {:ok, order} ->
+        # Single guest, single order - go directly to order
         {:noreply, push_navigate(socket, to: ~p"/pos/orders/#{order.id}")}
 
+      {:needs_guest_selection, _guests} ->
+        # Multiple guests but no orders - go to order selection to show guest modal
+        {:noreply, push_navigate(socket, to: ~p"/pos/bookings/#{booking_id}/orders")}
+
       {:multiple, _orders} ->
+        # Multiple orders exist - go to order selection
         {:noreply, push_navigate(socket, to: ~p"/pos/bookings/#{booking_id}/orders")}
     end
   end

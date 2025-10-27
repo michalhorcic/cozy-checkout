@@ -129,15 +129,17 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
               <div class="space-y-2">
                 <div class="flex justify-between">
                   <span class="text-gray-600">Guest Name:</span>
-                  <span class="font-medium">{@order.booking.guest.name}</span>
+                  <span class="font-medium">
+                    {if @order.guest, do: @order.guest.name, else: "Unknown"}
+                  </span>
                 </div>
                 <div :if={@order.booking.room_number} class="flex justify-between">
                   <span class="text-gray-600">Room:</span>
                   <span class="font-medium">{@order.booking.room_number}</span>
                 </div>
-                <div :if={@order.booking.guest.phone} class="flex justify-between">
+                <div :if={@order.guest && @order.guest.phone} class="flex justify-between">
                   <span class="text-gray-600">Phone:</span>
-                  <span class="font-medium">{@order.booking.guest.phone}</span>
+                  <span class="font-medium">{@order.guest.phone}</span>
                 </div>
                 <div :if={@order.booking.check_in_date} class="flex justify-between">
                   <span class="text-gray-600">Check-in:</span>

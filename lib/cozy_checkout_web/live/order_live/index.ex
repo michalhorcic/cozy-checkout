@@ -247,7 +247,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                   </td>
                   <td class="px-6 py-4 text-sm text-gray-500">
                     <%= if order.booking_id do %>
-                      {order.booking && order.booking.guest && order.booking.guest.name}
+                      {if order.guest, do: order.guest.name, else: "Unknown"}
                     <% else %>
                       <span class="flex items-center gap-2">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">

@@ -91,8 +91,8 @@ defmodule CozyCheckout.Pohoda do
 
   defp get_customer_name(order) do
     cond do
-      order.booking_id && order.booking && order.booking.guest ->
-        order.booking.guest.name
+      order.guest ->
+        order.guest.name
       order.name ->
         order.name
       true ->

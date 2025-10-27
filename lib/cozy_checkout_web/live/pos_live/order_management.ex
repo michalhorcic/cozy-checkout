@@ -261,8 +261,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       cond do
         # Standalone order (no booking)
         is_nil(order.booking_id) -> "Order: #{order.name}"
-        # Regular order with booking
-        order.booking && order.booking.guest -> "Order: #{order.booking.guest.name}"
+        # Regular order with guest
+        order.guest -> "Order: #{order.guest.name}"
         # Fallback
         true -> "Order: #{order.name || "Unknown"}"
       end
