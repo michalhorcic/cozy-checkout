@@ -93,8 +93,10 @@ defmodule CozyCheckout.Pohoda do
     cond do
       order.guest ->
         order.guest.name
+
       order.name ->
         order.name
+
       true ->
         "Unknown Customer"
     end

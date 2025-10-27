@@ -294,18 +294,21 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     Enum.map(products, fn product ->
       pricelist = Catalog.get_active_pricelist_for_product(product.id)
 
-      pricing_info = if pricelist do
-        cond do
-          pricelist.price_tiers && pricelist.price_tiers != [] ->
-            %{type: :tiers, tiers: pricelist.price_tiers}
-          pricelist.price ->
-            %{type: :single, price: pricelist.price}
-          true ->
-            %{type: :none}
+      pricing_info =
+        if pricelist do
+          cond do
+            pricelist.price_tiers && pricelist.price_tiers != [] ->
+              %{type: :tiers, tiers: pricelist.price_tiers}
+
+            pricelist.price ->
+              %{type: :single, price: pricelist.price}
+
+            true ->
+              %{type: :none}
+          end
+        else
+          %{type: :none}
         end
-      else
-        %{type: :none}
-      end
 
       Map.put(product, :pricing_info, pricing_info)
     end)
@@ -345,10 +348,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   defp get_price_for_amount(product, amount) do
     if product.pricing_info && product.pricing_info.type == :tiers do
-      tier = Enum.find(product.pricing_info.tiers, fn tier ->
-        tier_amount = tier["unit_amount"] || tier[:unit_amount]
-        tier_amount == amount
-      end)
+      tier =
+        Enum.find(product.pricing_info.tiers, fn tier ->
+          tier_amount = tier["unit_amount"] || tier[:unit_amount]
+          tier_amount == amount
+        end)
 
       if tier do
         price = tier["price"] || tier[:price]

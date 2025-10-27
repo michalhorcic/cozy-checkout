@@ -39,7 +39,15 @@ defmodule CozyCheckout.Bookings.Booking do
   @doc false
   def changeset(booking, attrs) do
     booking
-    |> cast(attrs, [:guest_id, :room_number, :check_in_date, :check_out_date, :status, :notes, :short_note])
+    |> cast(attrs, [
+      :guest_id,
+      :room_number,
+      :check_in_date,
+      :check_out_date,
+      :status,
+      :notes,
+      :short_note
+    ])
     |> validate_required([:guest_id, :check_in_date])
     |> validate_length(:short_note, max: 30)
     |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])

@@ -604,6 +604,21 @@ defmodule CozyCheckout.Bookings do
   end
 
   @doc """
+  Transitions the invoice to "advance_paid" state.
+  This indicates that 50% of the total amount has been paid.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_advance_paid(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "advance_paid"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
   Transitions the invoice to "paid" state.
   Validates that invoice has items and total > 0.
   """

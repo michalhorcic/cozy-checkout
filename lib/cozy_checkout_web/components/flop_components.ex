@@ -30,7 +30,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
         patch={build_path(@path, @meta, :order, @field)}
         class="flex items-center gap-2 no-underline"
       >
-        <span><%= render_slot(@inner_block) %></span>
+        <span>{render_slot(@inner_block)}</span>
         <.sort_icon meta={@meta} field={@field} />
       </.link>
     </th>
@@ -99,7 +99,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
         <div class="flex flex-wrap gap-4 items-end">
           <%= for filter <- @filter do %>
             <div class="flex-1 min-w-[200px]">
-              <%= render_slot(filter) %>
+              {render_slot(filter)}
             </div>
           <% end %>
 
@@ -165,19 +165,17 @@ defmodule CozyCheckoutWeb.FlopComponents do
           </span>
         <% end %>
       </div>
-
-      <!-- Desktop pagination -->
+      
+    <!-- Desktop pagination -->
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
           <p class="text-sm text-gray-700">
-            Showing
-            <span class="font-medium"><%= @meta.current_offset + 1 %></span>
+            Showing <span class="font-medium">{@meta.current_offset + 1}</span>
             to
             <span class="font-medium">
-              <%= min(@meta.current_offset + @meta.page_size, @meta.total_count) %>
+              {min(@meta.current_offset + @meta.page_size, @meta.total_count)}
             </span>
-            of
-            <span class="font-medium"><%= @meta.total_count %></span>
+            of <span class="font-medium">{@meta.total_count}</span>
             results
           </p>
         </div>
@@ -201,14 +199,14 @@ defmodule CozyCheckoutWeb.FlopComponents do
             <%= for page <- page_numbers(@meta) do %>
               <%= if page == @meta.current_page do %>
                 <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600">
-                  <%= page %>
+                  {page}
                 </span>
               <% else %>
                 <.link
                   patch={build_path(@path, @meta, :page, page)}
                   class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
                 >
-                  <%= page %>
+                  {page}
                 </.link>
               <% end %>
             <% end %>

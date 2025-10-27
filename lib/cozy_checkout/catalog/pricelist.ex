@@ -60,7 +60,11 @@ defmodule CozyCheckout.Catalog.Pricelist do
         if Enum.all?(tiers, &valid_price_tier?/1) do
           changeset
         else
-          add_error(changeset, :price_tiers, "contains invalid price tiers (must have unit_amount > 0 and price >= 0)")
+          add_error(
+            changeset,
+            :price_tiers,
+            "contains invalid price tiers (must have unit_amount > 0 and price >= 0)"
+          )
         end
 
       _ ->

@@ -23,7 +23,7 @@
         padding: 0;
       }
     }
-    
+
     /* Receipt styling for thermal printer format */
     .receipt-container {
       width: 80mm;
@@ -32,34 +32,34 @@
       font-family: 'Courier New', monospace;
       background: white;
     }
-    
+
     .receipt-header {
       text-align: center;
       margin-bottom: 15px;
       border-bottom: 2px dashed #000;
       padding-bottom: 10px;
     }
-    
+
     .receipt-section {
       margin-bottom: 15px;
       padding-bottom: 10px;
       border-bottom: 1px dashed #999;
     }
-    
+
     .receipt-items {
       font-size: 12px;
     }
-    
+
     .receipt-item {
       margin-bottom: 8px;
     }
-    
+
     .receipt-total {
       font-size: 14px;
       font-weight: bold;
       margin-top: 10px;
     }
-    
+
     .receipt-footer {
       text-align: center;
       font-size: 11px;
@@ -75,8 +75,7 @@
       phx-click="print"
       class="btn btn-primary gap-2"
     >
-      <.icon name="hero-printer" class="h-5 w-5" />
-      Vytisknout účtenku
+      <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout účtenku
     </button>
   </div>
 
@@ -108,13 +107,13 @@
         <div style="margin-bottom: 3px;">
           <strong>Datum:</strong>
           <%= if @payments != [] do %>
-            <%= Calendar.strftime(List.first(@payments).payment_date, "%d.%m.%Y") %>
+            {Calendar.strftime(List.first(@payments).payment_date, "%d.%m.%Y")}
           <% else %>
-            <%= Calendar.strftime(@order.inserted_at, "%d.%m.%Y") %>
+            {Calendar.strftime(@order.inserted_at, "%d.%m.%Y")}
           <% end %>
         </div>
         <div style="margin-bottom: 3px;">
-          <strong>Čas:</strong> <%= Calendar.strftime(@generated_at, "%H:%M:%S") %>
+          <strong>Čas:</strong> {Calendar.strftime(@generated_at, "%H:%M:%S")}
         </div>
         <%= if @order.booking_id do %>
           <div style="margin-bottom: 3px;">
@@ -209,7 +208,7 @@
             <span>{format_currency(payment.amount)}</span>
           </div>
         <% end %>
-        
+
         <%= if Decimal.lt?(@total_paid, @order.total_amount) do %>
           <div style="display: flex; justify-content: space-between; margin-top: 5px; font-weight: bold;">
             <span>Zbývá zaplatit:</span>

@@ -42,6 +42,7 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   `check_out_date` (date, nullable)
     *   `status` (string: "upcoming", "active", "completed", "cancelled")
     *   `notes` (text, nullable) - stay-specific notes
+    *   `short_note` (string, nullable, max 30 characters) - for visually grouping bookings
     *   `inserted_at`, `updated_at`
     *   `deleted_at` (soft delete)
 *   The `orders` table should:
@@ -331,5 +332,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   When a booking has multiple orders in the POS system, list them with clear guest labels.
     *   In all places where guest names are displayed (e.g., order details, payments, receipts), use `order.guest.name` (the specific guest assigned to the order) instead of `order.booking.guest.name` (the primary booking guest).
     *   When showing receipts or payment info, display the specific guest who ordered (from `order.guest_id`).
-    *   When creating new order for booking with more than one guest the modal to select a guest should appear. Custom name should not be allowed (lets keep it for standalone order).
-    *   The order selection screen should show a badge indicating how many guests have
+    *   When creating new order for booking with more than one guest the modal to select a guest should appear. Custom name should not be allowed

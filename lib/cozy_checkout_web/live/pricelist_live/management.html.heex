@@ -17,8 +17,8 @@
       🔄 Refresh
     </button>
   </div>
-
-  <!-- Summary Cards -->
+  
+<!-- Summary Cards -->
   <div class="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-3">
     <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6">
       <dt class="truncate text-sm font-medium text-gray-500">No Prices</dt>
@@ -39,8 +39,8 @@
       </dd>
     </div>
   </div>
-
-  <!-- Section 1: Products Without Any Prices -->
+  
+<!-- Section 1: Products Without Any Prices -->
   <div class="mt-8">
     <div class="sm:flex sm:items-center">
       <div class="sm:flex-auto">
@@ -115,8 +115,8 @@
       </div>
     </div>
   </div>
-
-  <!-- Section 2: Products With Expired Prices -->
+  
+<!-- Section 2: Products With Expired Prices -->
   <div class="mt-12">
     <div class="sm:flex sm:items-center">
       <div class="sm:flex-auto">
@@ -189,8 +189,8 @@
       </div>
     </div>
   </div>
-
-  <!-- Section 3: Products With Incomplete Tiers -->
+  
+<!-- Section 3: Products With Incomplete Tiers -->
   <div class="mt-12 mb-8">
     <div class="sm:flex sm:items-center">
       <div class="sm:flex-auto">
@@ -284,7 +284,13 @@
             <div class="space-y-4">
               <.input field={@form[:valid_from]} type="date" label="Valid From" required />
               <.input field={@form[:valid_to]} type="date" label="Valid Until" />
-              <.input field={@form[:vat_rate]} type="number" label="VAT Rate (%)" step="0.01" required />
+              <.input
+                field={@form[:vat_rate]}
+                type="number"
+                label="VAT Rate (%)"
+                step="0.01"
+                required
+              />
 
               <%= if get_default_unit_amounts(@selected_product) != [] do %>
                 <div class="space-y-3">
@@ -293,8 +299,11 @@
                   </label>
                   <%= for amount <- get_default_unit_amounts(@selected_product) do %>
                     <div>
-                      <label for={"price_#{amount}"} class="block text-sm font-medium leading-6 text-gray-900">
-                        Price for <%= amount %> <%= @selected_product.unit %>
+                      <label
+                        for={"price_#{amount}"}
+                        class="block text-sm font-medium leading-6 text-gray-900"
+                      >
+                        Price for {amount} {@selected_product.unit}
                       </label>
                       <input
                         type="number"

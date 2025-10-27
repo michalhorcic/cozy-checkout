@@ -208,7 +208,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                       {format_currency(group.total_price)}
                     </div>
                   </div>
-
+                  
     <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
@@ -226,7 +226,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                     </button>
                   <% end %>
                 </div>
-
+                
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-gray-200">

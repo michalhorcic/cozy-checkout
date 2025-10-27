@@ -7,7 +7,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
   @impl true
   def render(assigns) do
     ~H"""
-          <div class="bg-white shadow-lg rounded-lg p-6">
+    <div class="bg-white shadow-lg rounded-lg p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-bold text-gray-900">Invoice Details</h2>
         <div class="flex space-x-2">
@@ -74,7 +74,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
               <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
             </button>
           <% end %>
-          <%= if @invoice.state in ["generated", "sent"] do %>
+          <%= if @invoice.state in ["generated", "sent", "advance_paid"] do %>
             <%= if @invoice.state == "generated" do %>
               <button
                 type="button"
@@ -83,6 +83,17 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
                 class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
               >
                 <.icon name="hero-paper-airplane" class="w-4 h-4 inline mr-1" /> Mark as Sent
+              </button>
+            <% end %>
+            <%= if @invoice.state in ["sent", "generated"] do %>
+              <button
+                type="button"
+                phx-click="transition_to_advance_paid"
+                phx-target={@myself}
+                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-currency-dollar" class="w-4 h-4 inline mr-1" />
+                Mark as Advance Paid (50%)
               </button>
             <% end %>
             <button
@@ -628,6 +639,23 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
   end
 
   @impl true
+  def handle_event("transition_to_advance_paid", _params, socket) do
+    case Bookings.transition_to_advance_paid(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as advance paid (50%)")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as advance paid")}
+    end
+  end
+
+  @impl true
   def handle_event("transition_to_paid", _params, socket) do
     case Bookings.transition_to_paid(socket.assigns.invoice) do
       {:ok, invoice} ->
@@ -683,6 +711,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
   defp state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
   defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
   defp state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp state_badge_class("advance_paid"), do: "bg-yellow-100 text-yellow-800"
   defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
   defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
 
@@ -690,6 +719,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
   defp state_label("personal"), do: "Personal"
   defp state_label("generated"), do: "Generated"
   defp state_label("sent"), do: "Sent"
+  defp state_label("advance_paid"), do: "Advance Paid (50%)"
   defp state_label("paid"), do: "Paid"
   defp state_label(state), do: String.capitalize(state)
 end

@@ -37,7 +37,7 @@
         page-break-inside: avoid;
       }
     }
-    
+
     @page {
       size: A4 portrait;
       margin: 1.5cm;
@@ -50,8 +50,7 @@
       phx-click="print"
       class="btn btn-primary gap-2"
     >
-      <.icon name="hero-printer" class="h-5 w-5" />
-      Vytisknout ceník
+      <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout ceník
     </button>
   </div>
 
@@ -62,7 +61,7 @@
       <h1 class="text-3xl font-bold text-gray-900 mb-1">Jindřichův dům</h1>
       <h2 class="text-xl text-gray-600 mb-2">Ceník</h2>
       <p class="text-xs text-gray-500">
-        Platný od <%= Calendar.strftime(@generated_at, "%d. %m. %Y") %>
+        Platný od {Calendar.strftime(@generated_at, "%d. %m. %Y")}
       </p>
     </div>
 
@@ -78,7 +77,7 @@
             <%!-- Category Header --%>
             <div class="border-b-2 border-gray-900 pb-1 mb-3">
               <h3 class="text-lg font-bold text-gray-900">
-                <%= if category, do: category.name, else: "Bez kategorie" %>
+                {if category, do: category.name, else: "Bez kategorie"}
               </h3>
             </div>
 
@@ -87,32 +86,34 @@
               <tbody>
                 <%= for pricelist <- pricelists do %>
                   <% product = pricelist.product %>
-                  
+
                   <%!-- Product with price tiers --%>
                   <%= if pricelist.price_tiers != nil && pricelist.price_tiers != [] do %>
-                    <% 
-                      tier_amounts = Enum.map(pricelist.price_tiers, fn tier -> 
+                    <% tier_amounts =
+                      Enum.map(pricelist.price_tiers, fn tier ->
                         format_number(tier["unit_amount"] || tier[:unit_amount])
                       end)
-                      tier_prices = Enum.map(pricelist.price_tiers, fn tier -> 
+
+                    tier_prices =
+                      Enum.map(pricelist.price_tiers, fn tier ->
                         format_currency(Decimal.new(to_string(tier["price"] || tier[:price])))
                       end)
-                      tier_amounts_str = Enum.join(tier_amounts, "/")
-                      tier_prices_str = Enum.join(tier_prices, " / ")
-                    %>
+
+                    tier_amounts_str = Enum.join(tier_amounts, "/")
+                    tier_prices_str = Enum.join(tier_prices, " / ") %>
                     <tr class="border-b border-gray-200">
                       <td class="py-2 pr-2">
                         <div class="font-semibold text-gray-900 text-sm">
-                          <%= product.name %> (<%= tier_amounts_str %> <%= product.unit %>)
+                          {product.name} ({tier_amounts_str} {product.unit})
                         </div>
                         <%= if product.description do %>
                           <div class="text-xs text-gray-600 mt-0.5">
-                            <%= product.description %>
+                            {product.description}
                           </div>
                         <% end %>
                       </td>
                       <td class="py-2 text-right font-medium text-gray-900 whitespace-nowrap text-xs">
-                        <%= tier_prices_str %>
+                        {tier_prices_str}
                       </td>
                     </tr>
                   <% else %>
@@ -120,17 +121,17 @@
                     <tr class="border-b border-gray-200">
                       <td class="py-2 pr-2">
                         <div class="font-semibold text-gray-900 text-sm">
-                          <%= product.name %>
+                          {product.name}
                         </div>
                         <%= if product.description do %>
                           <div class="text-xs text-gray-600 mt-0.5">
-                            <%= product.description %>
+                            {product.description}
                           </div>
                         <% end %>
                       </td>
                       <td class="py-2 text-right font-medium text-gray-900 whitespace-nowrap text-xs">
                         <%= if pricelist.price do %>
-                          <%= format_currency(pricelist.price) %>
+                          {format_currency(pricelist.price)}
                         <% else %>
                           <span class="text-gray-400">—</span>
                         <% end %>

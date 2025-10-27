@@ -342,6 +342,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp invoice_state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
   defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
   defp invoice_state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp invoice_state_badge_class("advance_paid"), do: "bg-yellow-100 text-yellow-800"
   defp invoice_state_badge_class("paid"), do: "bg-green-100 text-green-800"
   defp invoice_state_badge_class(_), do: "bg-gray-100 text-gray-800"
 
@@ -349,6 +350,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp invoice_state_label("personal"), do: "Personal"
   defp invoice_state_label("generated"), do: "Generated"
   defp invoice_state_label("sent"), do: "Sent"
+  defp invoice_state_label("advance_paid"), do: "Advance Paid (50%)"
   defp invoice_state_label("paid"), do: "Paid"
   defp invoice_state_label(state), do: String.capitalize(state)
 

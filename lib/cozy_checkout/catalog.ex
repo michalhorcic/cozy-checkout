@@ -16,7 +16,7 @@ defmodule CozyCheckout.Catalog do
   def list_categories do
     Category
     |> where([c], is_nil(c.deleted_at))
-    |> order_by([c], [asc: c.order, asc: c.name])
+    |> order_by([c], asc: c.order, asc: c.name)
     |> Repo.all()
   end
 
@@ -257,8 +257,8 @@ defmodule CozyCheckout.Catalog do
         # Take the most recent pricelist for this product
         List.first(pricelists)
       end)
-      |> Enum.filter(& &1.product != nil)
-      |> Enum.filter(& &1.product.active == true)
+      |> Enum.filter(&(&1.product != nil))
+      |> Enum.filter(&(&1.product.active == true))
 
     # Group by category
     pricelists_by_product
@@ -272,7 +272,9 @@ defmodule CozyCheckout.Catalog do
     end)
     |> Enum.map(fn {category, pricelists} ->
       # Sort products alphabetically with Czech collation support
-      sorted_pricelists = Enum.sort(pricelists, &compare_czech_names(&1.product.name, &2.product.name))
+      sorted_pricelists =
+        Enum.sort(pricelists, &compare_czech_names(&1.product.name, &2.product.name))
+
       {category, sorted_pricelists}
     end)
   end

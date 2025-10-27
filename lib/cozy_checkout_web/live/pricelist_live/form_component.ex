@@ -29,8 +29,8 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
           is_editing={@action == :edit}
           target={@myself}
         />
-
-        <!-- Price tiers for products with default_unit_amounts -->
+        
+    <!-- Price tiers for products with default_unit_amounts -->
         <div :if={@selected_product && @selected_product.default_unit_amounts} class="mb-6">
           <label class="block text-sm font-semibold text-gray-700 mb-4">
             Price Tiers for {@selected_product.name}
@@ -73,8 +73,8 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
             Set prices for each predefined size. These will be used when adding items in the POS system.
           </p>
         </div>
-
-        <!-- Single price for products without default_unit_amounts -->
+        
+    <!-- Single price for products without default_unit_amounts -->
         <div :if={@selected_product && !@selected_product.default_unit_amounts}>
           <.input field={@form[:price]} type="number" label="Price" step="0.01" required />
           <p class="mt-2 text-sm text-gray-500">
@@ -119,8 +119,8 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
       <div class="relative">
         <!-- Hidden input to store the actual product_id -->
         <input type="hidden" name={"#{@form.name}[#{@field}]"} value={@form[@field].value} />
-
-        <!-- Search input (disabled when editing) -->
+        
+    <!-- Search input (disabled when editing) -->
         <div :if={!@is_editing} class="relative">
           <input
             type="text"
@@ -139,8 +139,8 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
             class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
           />
         </div>
-
-        <!-- Selected product display -->
+        
+    <!-- Selected product display -->
         <div
           :if={@selected_product}
           class="mt-2 flex items-center justify-between p-3 bg-base-200 rounded-lg"
@@ -167,8 +167,8 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
             <.icon name="hero-x-mark" class="w-5 h-5" />
           </button>
         </div>
-
-        <!-- Dropdown with results -->
+        
+    <!-- Dropdown with results -->
         <div
           :if={@show_dropdown && @products != []}
           class="absolute z-50 w-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg max-h-96 overflow-y-auto"
@@ -195,8 +195,8 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
             </li>
           </ul>
         </div>
-
-        <!-- No results message -->
+        
+    <!-- No results message -->
         <div
           :if={@show_dropdown && @products == [] && @search_query != ""}
           class="absolute z-50 w-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg p-4"
@@ -236,7 +236,7 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
      |> assign(:filtered_products, Enum.take(all_products, 20))
      |> assign(:selected_product, selected_product)
      |> assign(:price_tiers, price_tiers)
-     |> assign(:search_query, selected_product && selected_product.name || "")
+     |> assign(:search_query, (selected_product && selected_product.name) || "")
      |> assign(:show_dropdown, show_dropdown)
      |> assign_new(:form, fn ->
        to_form(Catalog.change_pricelist(pricelist))

@@ -54,7 +54,9 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
           unit_amount = tier["unit_amount"] || tier[:unit_amount]
           price = tier["price"] || tier[:price]
           # Convert to Decimal for proper formatting
-          price_decimal = if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+          price_decimal =
+            if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+
           "#{format_number(unit_amount)}: #{format_currency(price_decimal)}"
         end)
         |> Enum.join(", ")
@@ -85,8 +87,7 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
             navigate={~p"/admin/pricelists/management"}
             class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-200"
           >
-            <.icon name="hero-clipboard-document-check" class="w-5 h-5 mr-2" />
-            Price Management
+            <.icon name="hero-clipboard-document-check" class="w-5 h-5 mr-2" /> Price Management
           </.link>
           <.link patch={~p"/admin/pricelists/new"}>
             <.button>

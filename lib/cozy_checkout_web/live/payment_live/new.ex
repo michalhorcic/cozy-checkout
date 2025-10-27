@@ -92,7 +92,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
               </div>
               <div class="flex justify-between">
                 <span class="text-gray-600">
-                  <%= if @order.booking_id, do: "Guest:", else: "Name:" %>
+                  {if @order.booking_id, do: "Guest:", else: "Name:"}
                 </span>
                 <span class="font-medium">
                   <%= if @order.booking_id do %>

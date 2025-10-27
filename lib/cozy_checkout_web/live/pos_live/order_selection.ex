@@ -67,7 +67,10 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
         # All guests already have orders
         {:noreply,
          socket
-         |> put_flash(:error, "All guests already have orders. Select an existing order or add more guests to the booking.")
+         |> put_flash(
+           :error,
+           "All guests already have orders. Select an existing order or add more guests to the booking."
+         )
          |> assign(:show_guest_modal, false)}
 
       [single_guest] ->
