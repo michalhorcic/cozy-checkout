@@ -121,13 +121,15 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           end)
       end
 
-    # Preserve existing params
+    # Preserve existing params including custom filters
     %{
       "filters" => filters,
       "page" => params["page"],
-      "page_size" => params["page_size"]
+      "page_size" => params["page_size"],
+      "invoice_state" => params["invoice_state"],
+      "guest_search" => params["guest_search"]
     }
-    |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} end)
+    |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} || v == "" end)
     |> Map.new()
   end
 
@@ -152,6 +154,33 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       <div class="bg-white shadow-lg rounded-lg overflow-hidden">
         <!-- Filter Form -->
         <.filter_form meta={@meta} path={~p"/admin/bookings"} id="bookings-filter">
+          <:filter>
+            <.input
+              type="select"
+              name="invoice_state"
+              label="Invoice State"
+              options={[
+                {"All", ""},
+                {"No Invoice", "no_invoice"},
+                {"Draft", "draft"},
+                {"Personal", "personal"},
+                {"Generated", "generated"},
+                {"Sent", "sent"},
+                {"Advance Paid (50%)", "advance_paid"},
+                {"Paid", "paid"}
+              ]}
+              value={Map.get(@meta.params, "invoice_state", "")}
+            />
+          </:filter>
+          <:filter>
+            <.input
+              type="text"
+              name="guest_search"
+              label="Guest Name/Email"
+              placeholder="Search by name or email"
+              value={Map.get(@meta.params, "guest_search", "")}
+            />
+          </:filter>
           <:filter>
             <input type="hidden" name="filters[0][field]" value="status" />
             <input type="hidden" name="filters[0][op]" value="==" />

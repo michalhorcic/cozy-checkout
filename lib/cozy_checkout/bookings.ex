@@ -29,13 +29,57 @@ defmodule CozyCheckout.Bookings do
 
   @doc """
   Returns paginated, filtered, and sorted bookings with Flop.
+  Supports custom filters for invoice state and guest name/email.
   """
   def list_bookings_with_flop(params \\ %{}) do
-    Booking
-    |> where([b], is_nil(b.deleted_at))
-    |> preload(:guest)
-    |> Flop.validate_and_run(params, for: Booking)
+    base_query =
+      Booking
+      |> where([b], is_nil(b.deleted_at))
+      |> join(:left, [b], i in assoc(b, :invoice), as: :invoice)
+      |> join(:left, [b], g in assoc(b, :guest), as: :guest)
+      |> preload([b, invoice: i, guest: g], guest: g)
+
+    # Apply custom filters
+    query = apply_custom_filters(base_query, params)
+
+    Flop.validate_and_run(query, params, for: Booking)
   end
+
+  # Apply custom filters that aren't supported by Flop directly
+  defp apply_custom_filters(query, params) do
+    query
+    |> apply_invoice_state_filter(params)
+    |> apply_guest_search_filter(params)
+  end
+
+  # Filter by invoice state
+  defp apply_invoice_state_filter(query, %{"invoice_state" => state}) when state != "" do
+    case state do
+      "no_invoice" ->
+        where(query, [b, invoice: i], is_nil(i.id))
+
+      state when state in ["draft", "personal", "generated", "sent", "advance_paid", "paid"] ->
+        where(query, [b, invoice: i], i.state == ^state)
+
+      _ ->
+        query
+    end
+  end
+
+  defp apply_invoice_state_filter(query, _params), do: query
+
+  # Filter by guest name or email (partial match, case-insensitive)
+  defp apply_guest_search_filter(query, %{"guest_search" => search}) when is_binary(search) and search != "" do
+    search_pattern = "%#{search}%"
+
+    where(
+      query,
+      [b, guest: g],
+      ilike(g.name, ^search_pattern) or ilike(g.email, ^search_pattern)
+    )
+  end
+
+  defp apply_guest_search_filter(query, _params), do: query
 
   @doc """
   Returns the list of active bookings (currently checked in).
