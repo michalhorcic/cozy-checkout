@@ -6,6 +6,10 @@ defmodule CozyCheckout.Bookings.Booking do
     Flop.Schema,
     filterable: [:status, :check_in_date, :check_out_date],
     sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
+    default_order: %{
+      order_by: [:check_in_date],
+      order_directions: [:asc]
+    },
     default_limit: 20,
     max_limit: 100
   }

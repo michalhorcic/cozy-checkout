@@ -23,7 +23,7 @@ defmodule CozyCheckout.Bookings do
     Booking
     |> where([b], is_nil(b.deleted_at))
     |> preload(:guest)
-    |> order_by([b], desc: b.check_in_date)
+    |> order_by([b], asc: b.check_in_date)
     |> Repo.all()
   end
 
@@ -60,7 +60,7 @@ defmodule CozyCheckout.Bookings do
     Booking
     |> where([b], is_nil(b.deleted_at))
     |> where([b], b.guest_id == ^guest_id)
-    |> order_by([b], desc: b.check_in_date)
+    |> order_by([b], asc: b.check_in_date)
     |> Repo.all()
   end
 
