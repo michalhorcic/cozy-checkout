@@ -8,6 +8,7 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
     field :name, :string
     field :quantity, :integer
     field :price_per_night, :decimal
+    field :nights, :integer, default: 1
     field :vat_rate, :decimal
     field :item_type, :string, default: "person"
 
@@ -31,6 +32,7 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
       :name,
       :quantity,
       :price_per_night,
+      :nights,
       :vat_rate,
       :subtotal,
       :vat_amount,
@@ -38,18 +40,22 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
       :position,
       :item_type
     ])
-    |> validate_required([:name, :quantity, :price_per_night, :vat_rate, :item_type])
+    |> validate_required([:name, :quantity, :price_per_night, :nights, :vat_rate, :item_type])
     |> validate_number(:quantity, greater_than_or_equal_to: 0)
+    |> validate_number(:nights, greater_than: 0)
     |> validate_number(:price_per_night, greater_than_or_equal_to: 0)
     |> validate_number(:vat_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
     |> validate_inclusion(:item_type, ["person", "extra"])
   end
 
   @doc """
-  Calculate line item totals based on booking dates and item pricing.
+  Calculate line item totals based on the item's nights and pricing.
   Returns a map with :subtotal, :vat_amount, and :total.
   """
-  def calculate_totals(invoice_item, nights) do
+  def calculate_totals(invoice_item) do
+    # Get nights from item, default to 1 if not set
+    nights = invoice_item.nights || 1
+
     # subtotal = quantity * price_per_night * nights
     subtotal =
       invoice_item.price_per_night

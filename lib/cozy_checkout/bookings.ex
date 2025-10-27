@@ -465,7 +465,10 @@ defmodule CozyCheckout.Bookings do
       # Recalculate each item
       updated_items =
         Enum.map(invoice.items, fn item ->
-          totals = BookingInvoiceItem.calculate_totals(item, nights)
+          # Ensure the item has nights set (use booking nights if not set)
+          item = if is_nil(item.nights), do: %{item | nights: nights}, else: item
+
+          totals = BookingInvoiceItem.calculate_totals(item)
 
           {:ok, updated_item} =
             item

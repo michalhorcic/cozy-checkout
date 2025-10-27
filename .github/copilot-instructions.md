@@ -309,10 +309,15 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   Allow switching from "personal" to "generated".
         *   Not generate an invoice number.
         *   Count toward the 45-person cottage capacity.
-        *   Appear in the bookings index table with a different color badge.
         *   Store all invoice items (adults, kids, etc.).
         *   Store prices and VAT.
         *   Have the recalculate functionality.
+*   **Handling Variable Stay Durations for Booking Invoices:**
+    *   Add a `nights` field to `booking_invoice_items` (defaults to the booking's total nights).
+    *   Update the price calculation to use `price_per_night × quantity × nights`.
+    *   In the invoice items UI, allow staff to:
+        *   Add multiple line items for the same person type.
+        *   Override the number of nights for each line item.
 
 ## TECH STACK
 
