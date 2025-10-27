@@ -564,6 +564,71 @@ defmodule CozyCheckout.Bookings do
     BookingInvoiceItem.changeset(item, attrs)
   end
 
+  @doc """
+  Transitions the invoice to "generated" state.
+  Validates that invoice has items and total > 0.
+  Also generates the invoice number if not already generated.
+  """
+  def transition_to_generated(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice),
+         {:ok, invoice} <- maybe_generate_invoice_number(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "generated"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Transitions the invoice to "sent" state.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_sent(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "sent"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Transitions the invoice to "paid" state.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_paid(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "paid"})
+      |> Repo.update()
+    end
+  end
+
+  # Helper function to validate invoice before state changes
+  defp validate_invoice_for_state_change(invoice) do
+    cond do
+      invoice.items == [] ->
+        {:error, "Invoice must have at least one item"}
+
+      is_nil(invoice.total_price) or Decimal.compare(invoice.total_price, 0) != :gt ->
+        {:error, "Invoice total must be greater than zero. Please recalculate the invoice."}
+
+      true ->
+        :ok
+    end
+  end
+
+  # Helper to generate invoice number only if not already generated
+  defp maybe_generate_invoice_number(%BookingInvoice{invoice_number: nil} = invoice) do
+    generate_invoice_number(invoice)
+  end
+
+  defp maybe_generate_invoice_number(invoice), do: {:ok, invoice}
+
   # Occupancy Tracking
 
   @doc """

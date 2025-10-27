@@ -286,6 +286,21 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Concurrency: Although unlikely, if multiple invoices can be generated simultaneously, proper locking is needed to prevent duplicate numbers.
     *   This requires a database migration to modify the `invoice_number` column and potentially add validation, a mechanism to track the sequential counter, and updates to the invoice generation logic.
 *   **Invoice Number Generation for Bookings:** Implement the `generate_invoice_number` function in the Bookings context to use the new format `YY08XXXXX` for booking invoices.
+*   **Booking Invoice States:** Implement a state management system for booking invoices with the following states:
+    *   `created`: Initial state when the invoice is created.
+    *   `generated`: State after the invoice number is generated.
+    *   `sent`: State after the invoice is sent (no email sending required at this time).
+    *   `paid`: State after the invoice is paid.
+    *   Keep it flexible for now, so state progression does not need to be linear.
+    *   State names should be:
+        *   `created` - Invoice created but no number assigned
+        *   `generated` - Invoice has a number assigned
+        *   `sent` - Invoice has been sent to guest
+        *   `paid` - Invoice has been paid
+    *   Validation: Check for invoice items and that total is not zero (it was recalculated at least once with some items)
+    *   Tracking: It is just a flag. Invoices and orders are completely separate for now. Orders are for bar, invoices are for bookings (actual stay)
+*   **Invoice State Management UI:** Add the ability to manually set the invoice state in the booking detail page in the admin section. Use separate action buttons for each state transition.
+*   **Booking Index Invoice State Visibility:** Display the invoice state in the bookings index page in a new column with a badge.
 
 ## TECH STACK
 
@@ -314,3 +329,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   The receipt printing feature in POS uses a success modal with a "Print Receipt" button for both cash and QR code payments. The button opens the receipt in a new tab, ready to print.
 *   The issue with the print button not working was due to pushing the wrong event from the Elixir code. `push_event/3` automatically adds the `phx:` prefix, so pushing `"phx:print"` resulted in `"phx:phx:print"`. The correct solution is to push `"print"` from the Elixir side.
 *   The invoice number format is `YY08XXXXX` (e.g., `250800021`), and the sequential numbering logic is to be implemented. The sequential numbering resets every year, the month field is static "08", and the numbering starts from 00001 each year.
+*   The `InvoiceCounter` module is in the ``

@@ -7,7 +7,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="bg-white shadow-lg rounded-lg p-6">
+          <div class="bg-white shadow-lg rounded-lg p-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-2xl font-bold text-gray-900">Invoice Details</h2>
         <div class="flex space-x-2">
@@ -17,6 +17,12 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
             </span>
           <% end %>
           <%= if @invoice do %>
+            <span class={[
+              "px-3 py-1 rounded-full text-sm font-semibold",
+              state_badge_class(@invoice.state)
+            ]}>
+              {state_label(@invoice.state)}
+            </span>
             <button
               type="button"
               phx-click="recalculate"
@@ -25,21 +31,44 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
             >
               <.icon name="hero-calculator" class="w-4 h-4 inline mr-1" /> Recalculate
             </button>
-            <%= if !@invoice.invoice_number do %>
-              <button
-                type="button"
-                phx-click="generate_invoice"
-                phx-target={@myself}
-                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                <.icon name="hero-document-text" class="w-4 h-4 inline mr-1" /> Generate Invoice
-              </button>
-            <% end %>
           <% end %>
         </div>
       </div>
 
       <%= if @invoice do %>
+        <%!-- State Transition Buttons --%>
+        <div class="mb-6 flex items-center justify-end space-x-2">
+          <%= if @invoice.state == "draft" do %>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <% end %>
+          <%= if @invoice.state in ["generated", "sent"] do %>
+            <%= if @invoice.state == "generated" do %>
+              <button
+                type="button"
+                phx-click="transition_to_sent"
+                phx-target={@myself}
+                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-paper-airplane" class="w-4 h-4 inline mr-1" /> Mark as Sent
+              </button>
+            <% end %>
+            <button
+              type="button"
+              phx-click="transition_to_paid"
+              phx-target={@myself}
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-banknotes" class="w-4 h-4 inline mr-1" /> Mark as Paid
+            </button>
+          <% end %>
+        </div>
         <%!-- Invoice Items Table --%>
         <div class="mb-6">
           <div class="flex items-center justify-between mb-3">
@@ -511,7 +540,70 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
     end
   end
 
+  @impl true
+  def handle_event("transition_to_generated", _params, socket) do
+    case Bookings.transition_to_generated(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice #{invoice.invoice_number} generated successfully")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to generate invoice")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_sent", _params, socket) do
+    case Bookings.transition_to_sent(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as sent")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as sent")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_paid", _params, socket) do
+    case Bookings.transition_to_paid(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as paid")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as paid")}
+    end
+  end
+
   defp calculate_nights(booking) do
     BookingInvoice.calculate_nights(booking)
   end
+
+  defp state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+  defp state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
+  defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp state_label("draft"), do: "Draft"
+  defp state_label("generated"), do: "Generated"
+  defp state_label("sent"), do: "Sent"
+  defp state_label("paid"), do: "Paid"
+  defp state_label(state), do: String.capitalize(state)
 end

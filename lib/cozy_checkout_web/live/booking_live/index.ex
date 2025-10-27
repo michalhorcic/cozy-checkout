@@ -19,11 +19,15 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     socket =
       case Bookings.list_bookings_with_flop(normalized_params) do
         {:ok, {bookings, meta}} ->
-          # Add rooms to each booking
+          # Add rooms and invoice to each booking
           bookings_with_rooms =
             Enum.map(bookings, fn booking ->
               rooms = Bookings.list_booking_rooms(booking.id)
-              Map.put(booking, :rooms_list, rooms)
+              invoice = Bookings.get_invoice_by_booking_id(booking.id)
+
+              booking
+              |> Map.put(:rooms_list, rooms)
+              |> Map.put(:invoice, invoice)
             end)
 
           socket
@@ -206,6 +210,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                 <.sortable_header meta={@meta} field={:status} path={~p"/admin/bookings"}>
                   Status
                 </.sortable_header>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Invoice
+                </th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -214,7 +221,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             <tbody class="bg-white divide-y divide-gray-200">
               <%= if @bookings == [] do %>
                 <tr>
-                  <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                  <td colspan="7" class="px-6 py-12 text-center text-gray-500">
                     No bookings found.
                   </td>
                 </tr>
@@ -245,6 +252,18 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                     ]}>
                       {String.capitalize(booking.status)}
                     </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <%= if Map.get(booking, :invoice) do %>
+                      <span class={[
+                        "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                        invoice_state_badge_class(booking.invoice.state)
+                      ]}>
+                        {invoice_state_label(booking.invoice.state)}
+                      </span>
+                    <% else %>
+                      <span class="text-gray-400 text-sm">—</span>
+                    <% end %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
@@ -300,6 +319,18 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp status_badge_class("completed"), do: "bg-gray-100 text-gray-800"
   defp status_badge_class("cancelled"), do: "bg-red-100 text-red-800"
   defp status_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+  defp invoice_state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp invoice_state_badge_class("paid"), do: "bg-green-100 text-green-800"
+  defp invoice_state_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp invoice_state_label("draft"), do: "Draft"
+  defp invoice_state_label("generated"), do: "Generated"
+  defp invoice_state_label("sent"), do: "Sent"
+  defp invoice_state_label("paid"), do: "Paid"
+  defp invoice_state_label(state), do: String.capitalize(state)
 
   # Convert Phoenix indexed map params (e.g., %{"0" => "value"}) to arrays for Flop
   defp normalize_flop_params(params) do
