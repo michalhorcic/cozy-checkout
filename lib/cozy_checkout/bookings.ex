@@ -359,12 +359,16 @@ defmodule CozyCheckout.Bookings do
         |> BookingInvoice.changeset(%{booking_id: booking.id})
         |> Repo.insert!()
 
+      # Calculate actual nights from booking
+      nights = BookingInvoice.calculate_nights(booking)
+
       # Create default line items
       default_items = [
         %{
           name: "Dospělí",
           quantity: 2,
-          price_per_night: Decimal.new("980.00"),
+          nights: nights,
+          price_per_night: Decimal.new("950.00"),
           vat_rate: Decimal.new("0"),
           position: 1,
           booking_invoice_id: invoice.id,
@@ -373,6 +377,7 @@ defmodule CozyCheckout.Bookings do
         %{
           name: "Děti do 2 let",
           quantity: 0,
+          nights: nights,
           price_per_night: Decimal.new("210.00"),
           vat_rate: Decimal.new("0"),
           position: 2,
@@ -382,6 +387,7 @@ defmodule CozyCheckout.Bookings do
         %{
           name: "Děti do 12 let",
           quantity: 0,
+          nights: nights,
           price_per_night: Decimal.new("880.00"),
           vat_rate: Decimal.new("0"),
           position: 3,

@@ -491,7 +491,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
         quantity: 1,
         nights: nights,
         price_per_night: Decimal.new("0.00"),
-        vat_rate: Decimal.new("21.00"),
+        vat_rate: Decimal.new("0.00"),
         item_type: "person"
       })
       |> to_form()
