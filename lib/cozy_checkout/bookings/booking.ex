@@ -10,7 +10,7 @@ defmodule CozyCheckout.Bookings.Booking do
       order_by: [:check_in_date],
       order_directions: [:asc]
     },
-    default_limit: 20,
+    default_limit: 100,
     max_limit: 100
   }
 
