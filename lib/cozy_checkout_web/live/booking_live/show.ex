@@ -112,6 +112,12 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
               </p>
             </div>
           </div>
+          <div :if={@booking.short_note} class="mt-4">
+            <p class="text-sm text-gray-500">Group/Tag</p>
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+              {@booking.short_note}
+            </span>
+          </div>
           <div :if={@booking.notes} class="mt-4">
             <p class="text-sm text-gray-500">Booking Notes</p>
             <p class="text-gray-900">{@booking.notes}</p>

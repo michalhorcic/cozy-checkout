@@ -189,6 +189,17 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
               value={get_filter_value(@meta, :check_in_date)}
             />
           </:filter>
+          <:filter>
+            <input type="hidden" name="filters[3][field]" value="short_note" />
+            <input type="hidden" name="filters[3][op]" value="==" />
+            <.input
+              type="text"
+              name="filters[3][value]"
+              label="Group/Tag"
+              placeholder="Filter by short note"
+              value={get_filter_value(@meta, :short_note)}
+            />
+          </:filter>
         </.filter_form>
         <!-- Table -->
         <div class="overflow-x-auto">
@@ -228,7 +239,14 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
               <% else %>
                 <tr :for={booking <- @bookings} class="hover:bg-gray-50">
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                    {booking.guest.name}
+                    <div class="flex items-center gap-2">
+                      <span>{booking.guest.name}</span>
+                      <%= if booking.short_note do %>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                          {booking.short_note}
+                        </span>
+                      <% end %>
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <%= if Map.get(booking, :rooms_list) && booking.rooms_list != [] do %>

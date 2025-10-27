@@ -159,6 +159,14 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
           required
         />
 
+        <.input
+          field={@form[:short_note]}
+          type="text"
+          label="Short Note (for grouping)"
+          placeholder="e.g., Group A, Family reunion"
+          maxlength="30"
+        />
+
         <.input field={@form[:notes]} type="textarea" label="Notes" rows="3" />
 
         <div class="mt-6 flex items-center justify-end gap-x-6">

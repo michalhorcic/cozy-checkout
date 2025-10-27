@@ -4,7 +4,7 @@ defmodule CozyCheckout.Bookings.Booking do
 
   @derive {
     Flop.Schema,
-    filterable: [:status, :check_in_date, :check_out_date],
+    filterable: [:status, :check_in_date, :check_out_date, :short_note],
     sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
     default_order: %{
       order_by: [:check_in_date],
@@ -22,6 +22,7 @@ defmodule CozyCheckout.Bookings.Booking do
     field :check_out_date, :date
     field :status, :string, default: "upcoming"
     field :notes, :string
+    field :short_note, :string
     field :deleted_at, :utc_datetime
 
     belongs_to :guest, CozyCheckout.Guests.Guest
@@ -38,8 +39,9 @@ defmodule CozyCheckout.Bookings.Booking do
   @doc false
   def changeset(booking, attrs) do
     booking
-    |> cast(attrs, [:guest_id, :room_number, :check_in_date, :check_out_date, :status, :notes])
+    |> cast(attrs, [:guest_id, :room_number, :check_in_date, :check_out_date, :status, :notes, :short_note])
     |> validate_required([:guest_id, :check_in_date])
+    |> validate_length(:short_note, max: 30)
     |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])
     |> validate_date_range()
     |> foreign_key_constraint(:guest_id)
