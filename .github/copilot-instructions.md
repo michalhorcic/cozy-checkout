@@ -278,6 +278,14 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   After payment in POS, staff can immediately print the receipt without switching to admin interface.
 *   The receipt should be formatted for thermal printer (80mm width).
 *   Thermal receipt printers typically come with their own driver software that adds the 80mm receipt paper size to your system's print options. Until you install the printer and its drivers, you won't see that paper size available.
+*   **Invoice Number Format and Sequence:** The invoice number should follow the format `YY08XXXXX` (e.g., `250800021`).
+    *   `YY` represents the last two digits of the year.
+    *   `08` represents the month. It is a static number and does not represent the month of invoice generation.
+    *   `XXXXX` represents a sequential number that increments by 1 for each new invoice and resets annually.
+    *   The sequential number starts at `00001` each year.
+    *   Concurrency: Although unlikely, if multiple invoices can be generated simultaneously, proper locking is needed to prevent duplicate numbers.
+    *   This requires a database migration to modify the `invoice_number` column and potentially add validation, a mechanism to track the sequential counter, and updates to the invoice generation logic.
+*   **Invoice Number Generation for Bookings:** Implement the `generate_invoice_number` function in the Bookings context to use the new format `YY08XXXXX` for booking invoices.
 
 ## TECH STACK
 
@@ -305,3 +313,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   The POS system now includes a "Print Receipt" button for cash payments as well. After payment in POS, staff can immediately print the receipt without switching to admin interface.
 *   The receipt printing feature in POS uses a success modal with a "Print Receipt" button for both cash and QR code payments. The button opens the receipt in a new tab, ready to print.
 *   The issue with the print button not working was due to pushing the wrong event from the Elixir code. `push_event/3` automatically adds the `phx:` prefix, so pushing `"phx:print"` resulted in `"phx:phx:print"`. The correct solution is to push `"print"` from the Elixir side.
+*   The invoice number format is `YY08XXXXX` (e.g., `250800021`), and the sequential numbering logic is to be implemented. The sequential numbering resets every year, the month field is static "08", and the numbering starts from 00001 each year.

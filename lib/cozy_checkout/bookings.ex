@@ -11,6 +11,7 @@ defmodule CozyCheckout.Bookings do
   alias CozyCheckout.Bookings.BookingRoom
   alias CozyCheckout.Bookings.BookingInvoice
   alias CozyCheckout.Bookings.BookingInvoiceItem
+  alias CozyCheckout.Sales.InvoiceCounter
   alias CozyCheckout.Rooms
 
   @cottage_capacity 45
@@ -507,37 +508,36 @@ defmodule CozyCheckout.Bookings do
 
   @doc """
   Generates an invoice number and marks the invoice as generated.
-  Format: INV-YYYYMMDD-NNNN (e.g., INV-20251022-0001)
+  Format: YY08XXXXX (e.g., 250800021)
+  - YY: Last 2 digits of the year
+  - 08: Static identifier
+  - XXXXX: Sequential 5-digit number that resets each year
   """
   def generate_invoice_number(%BookingInvoice{} = invoice) do
-    today = Date.utc_today()
-    date_prefix = "INV-#{Date.to_iso8601(today, :basic)}"
+    current_year = Date.utc_today().year
+    year_suffix = rem(current_year, 100)
 
-    # Find the highest invoice number for today
-    last_invoice =
-      from(i in BookingInvoice,
-        where: fragment("? LIKE ?", i.invoice_number, ^"#{date_prefix}%"),
-        order_by: [desc: i.invoice_number],
-        limit: 1
-      )
-      |> Repo.one()
+    {:ok, invoice_number} =
+      Repo.transaction(fn ->
+        # Get or create counter for current year with row-level lock
+        counter =
+          case Repo.get_by(InvoiceCounter, year: current_year) do
+            nil ->
+              %InvoiceCounter{}
+              |> InvoiceCounter.changeset(%{year: current_year, counter: 1})
+              |> Repo.insert!()
 
-    next_number =
-      case last_invoice do
-        nil ->
-          1
+            existing_counter ->
+              existing_counter
+              |> InvoiceCounter.changeset(%{counter: existing_counter.counter + 1})
+              |> Repo.update!()
+          end
 
-        %{invoice_number: number} ->
-          # Extract NNNN part and increment
-          number
-          |> String.split("-")
-          |> List.last()
-          |> String.to_integer()
-          |> Kernel.+(1)
-      end
-
-    invoice_number =
-      "#{date_prefix}-#{String.pad_leading(Integer.to_string(next_number), 4, "0")}"
+        # Format: YY08XXXXX (e.g., 250800021)
+        String.pad_leading("#{year_suffix}", 2, "0") <>
+          "08" <>
+          String.pad_leading("#{counter.counter}", 5, "0")
+      end)
 
     # Recalculate totals before generating
     {:ok, invoice} = recalculate_invoice_totals(invoice)
