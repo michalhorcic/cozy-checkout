@@ -203,3 +203,19 @@ The numbers will now display on a single line without wrapping, and the page has
 
 ---
 
+_**User (2025-10-27 17:17Z)**_
+
+One small thing. Add buttong to get back to dashboard. Check other pages how to do that.
+
+---
+
+_**Assistant (copilot/claude-sonnet-4.5)**_
+
+Perfect! Now let me check the current state of the economy index file and add the back button: 
+```
+
+```
+Perfect! I've added the "← Back to Dashboard" link at the top of the Economy Management page, consistent with the other admin pages. The link uses the same styling (blue text with hover effect) and navigates back to `/admin`.
+
+---
+
