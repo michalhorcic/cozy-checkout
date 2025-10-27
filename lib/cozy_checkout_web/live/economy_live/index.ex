@@ -5,10 +5,9 @@ defmodule CozyCheckoutWeb.EconomyLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    # Default to current year
+    # Default to current date + 1 year
     today = Date.utc_today()
-    start_of_year = Date.new!(today.year, 1, 1)
-    end_of_year = Date.new!(today.year, 12, 31)
+    one_year_ahead = Date.add(today, 365)
 
     # Default to all states selected
     all_states = ["draft", "personal", "generated", "sent", "advance_paid", "paid"]
@@ -16,8 +15,8 @@ defmodule CozyCheckoutWeb.EconomyLive.Index do
     socket =
       socket
       |> assign(:page_title, "Economy Management")
-      |> assign(:start_date, start_of_year)
-      |> assign(:end_date, end_of_year)
+      |> assign(:start_date, today)
+      |> assign(:end_date, one_year_ahead)
       |> assign(:selected_states, all_states)
       |> assign(:all_states, all_states)
       |> load_economy_data()
