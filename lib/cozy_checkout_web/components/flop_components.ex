@@ -165,7 +165,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
           </span>
         <% end %>
       </div>
-      
+
     <!-- Desktop pagination -->
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
@@ -371,5 +371,28 @@ defmodule CozyCheckoutWeb.FlopComponents do
         ]
     end
     |> Enum.filter(&(&1 != :ellipsis))
+  end
+
+  @doc """
+  Builds a path with query parameters preserved.
+  Useful for maintaining filter state when navigating between pages.
+
+  ## Examples
+
+      build_path_with_params(~p"/admin/bookings", %{"status" => "active"})
+      #=> "/admin/bookings?status=active"
+
+      build_path_with_params(~p"/admin/bookings", %{})
+      #=> "/admin/bookings"
+
+      build_path_with_params(~p"/admin/bookings", nil)
+      #=> "/admin/bookings"
+  """
+  def build_path_with_params(base_path, params) do
+    if params == %{} or is_nil(params) do
+      base_path
+    else
+      "#{base_path}?#{Plug.Conn.Query.encode(params)}"
+    end
   end
 end

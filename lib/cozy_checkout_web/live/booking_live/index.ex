@@ -33,11 +33,13 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           socket
           |> assign(:bookings, bookings_with_rooms)
           |> assign(:meta, meta)
+          |> assign(:current_params, params)
 
         {:error, meta} ->
           socket
           |> assign(:bookings, [])
           |> assign(:meta, meta)
+          |> assign(:current_params, params)
       end
 
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
@@ -63,8 +65,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   @impl true
   def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, _booking}}, socket) do
-    # Re-fetch bookings to show updated data
-    {:noreply, push_patch(socket, to: ~p"/admin/bookings")}
+    # Re-fetch bookings to show updated data, preserving current filters
+    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
   end
 
   @impl true
@@ -83,8 +85,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     booking = Bookings.get_booking!(id)
     {:ok, _} = Bookings.delete_booking(booking)
 
-    # Re-fetch bookings after delete
-    {:noreply, push_patch(socket, to: ~p"/admin/bookings")}
+    # Re-fetch bookings after delete, preserving current filters
+    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
   end
 
   @impl true
@@ -144,7 +146,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           </.link>
           <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
         </div>
-        <.link patch={~p"/admin/bookings/new"}>
+        <.link patch={build_path_with_params(~p"/admin/bookings/new", @current_params)}>
           <.button>
             <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Booking
           </.button>
@@ -314,13 +316,13 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
-                      navigate={~p"/admin/bookings/#{booking}"}
+                      navigate={build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)}
                       class="text-blue-600 hover:text-blue-900 mr-4"
                     >
                       View
                     </.link>
                     <.link
-                      patch={~p"/admin/bookings/#{booking}/edit"}
+                      patch={build_path_with_params(~p"/admin/bookings/#{booking}/edit", @current_params)}
                       class="text-indigo-600 hover:text-indigo-900 mr-4"
                     >
                       Edit
@@ -346,7 +348,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         :if={@live_action in [:new, :edit]}
         id="booking-modal"
         show
-        on_cancel={JS.patch(~p"/admin/bookings")}
+        on_cancel={JS.patch(build_path_with_params(~p"/admin/bookings", @current_params))}
       >
         <.live_component
           module={CozyCheckoutWeb.BookingLive.FormComponent}
@@ -354,7 +356,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           title={@page_title}
           action={@live_action}
           booking={@booking}
-          patch={~p"/admin/bookings"}
+          patch={build_path_with_params(~p"/admin/bookings", @current_params)}
         />
       </.modal>
     </div>

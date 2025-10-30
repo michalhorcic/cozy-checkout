@@ -46,3 +46,28 @@ If you meant to keep the current behavior but make it clearer in the UI, the cur
 
 ---
 
+_**User (2025-10-27 18:50Z)**_
+
+Show data for this range: current_date to current_date + 1.year. 
+
+---
+
+_**Assistant (copilot/claude-sonnet-4.5)**_
+
+I'll update the economy dashboard to show data from the current date to one year ahead. Let me find and modify the relevant file. Now I'll update the default date range to show from current date to current date + 1 year: 
+```
+
+```
+
+```
+
+```
+Perfect! I've updated the economy dashboard to show data from the current date to one year ahead. The changes:
+
+1. **Changed from**: Start of current year to end of current year (Jan 1, 2025 - Dec 31, 2025)
+2. **Changed to**: Current date to current date + 1 year (Oct 27, 2025 - Oct 27, 2026)
+
+This gives you a rolling 12-month window starting from today, which is more useful for forward-looking planning and tracking bookings that are relevant from now onwards.
+
+---
+

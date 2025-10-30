@@ -3,21 +3,27 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
 
   alias CozyCheckout.Bookings
 
+  import CozyCheckoutWeb.FlopComponents, only: [build_path_with_params: 2]
+
   @impl true
   def mount(_params, _session, socket) do
     {:ok, socket}
   end
 
   @impl true
-  def handle_params(%{"id" => id}, _, socket) do
+  def handle_params(%{"id" => id} = params, _, socket) do
     booking = Bookings.get_booking!(id)
     rooms = Bookings.list_booking_rooms(booking.id)
+
+    # Extract filter params (all params except "id")
+    filter_params = Map.delete(params, "id")
 
     {:noreply,
      socket
      |> assign(:page_title, "Booking Details")
      |> assign(:booking, booking)
-     |> assign(:rooms, rooms)}
+     |> assign(:rooms, rooms)
+     |> assign(:filter_params, filter_params)}
   end
 
   @impl true
@@ -26,7 +32,7 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
         <.link
-          navigate={~p"/admin/bookings"}
+          navigate={build_path_with_params(~p"/admin/bookings", @filter_params)}
           class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
         >
           ← Back to Bookings
