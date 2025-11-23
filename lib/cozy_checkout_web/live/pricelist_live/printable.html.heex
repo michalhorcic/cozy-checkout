@@ -1,6 +1,25 @@
 <div class="min-h-screen bg-white">
   <%!-- Print Styles --%>
   <style>
+    /* Force two columns for both screen and print */
+    .pricelist-columns {
+      -webkit-column-count: 2;
+      -moz-column-count: 2;
+      column-count: 2;
+      -webkit-column-gap: 1.5rem;
+      -moz-column-gap: 1.5rem;
+      column-gap: 1.5rem;
+    }
+
+    .category-section {
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 1rem;
+      -webkit-column-break-inside: avoid;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
     @media print {
       body {
         margin: 0;
@@ -32,15 +51,28 @@
         display: table-header-group;
       }
       
+      /* Ensure categories don't break across columns */
       .category-section {
-        break-inside: avoid;
-        page-break-inside: avoid;
+        display: inline-block !important;
+        width: 100% !important;
+        -webkit-column-break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
 
-      /* Force two columns on print */
-      .columns-2 {
+      /* Force two columns on print with all vendor prefixes */
+      .pricelist-columns {
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
         column-count: 2 !important;
+        -webkit-column-gap: 1.5rem !important;
+        -moz-column-gap: 1.5rem !important;
         column-gap: 1.5rem !important;
+      }
+
+      /* Remove max-width constraint for print */
+      .max-w-7xl {
+        max-width: none !important;
       }
     }
 
@@ -77,7 +109,7 @@
         <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
       </div>
     <% else %>
-      <div class="columns-2 gap-6">
+      <div class="pricelist-columns">
         <%= for {category, pricelists} <- @pricelists_by_category do %>
           <div class="category-section mb-4 break-inside-avoid">
             <%!-- Category Header --%>

@@ -232,7 +232,6 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   In the POS, when showing products, display their prices. If they have just one price, show it on the product card. When they have tiers, show prices in the tiers choice.
 *   **Printable Pricelist Feature:**
     *   **Access Point:** Add a "Print Pricelist" button in the admin pricelists index page, and create a dedicated route like `/admin/pricelists/print` that can be accessed from the admin dashboard.
-    *   **Layout Style:** Use a modern table format with columns for Product, Unit/Size, and Price. Implement a two-column layout on a page to save more space and fit more information on one page.
     *   **Pricelist Inclusion:** Only include active pricelists (those currently valid).
     *   **Additional Information:** Include the cottage name ("Jindřichův dům") and the company name and IČO in the footer ("Moruška s.r.o. - IČO: 23741457").
     *   **Format Preferences:** Use portrait orientation, multiple pages if needed, and include the generated date. Page numbers are not needed.
@@ -243,6 +242,10 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Categories fill columns naturally, so shorter categories don't leave empty space.
     *   `break-inside-avoid` ensures categories don't split across columns.
     *   Reduced margin (`mb-4`) keeps categories close together while maintaining readability.
+    *   Add print-specific styles to ensure the two-column layout is maintained when printing to A4:
+        *   `column-count: 2 !important` - Ensures exactly 2 columns are maintained in print
+        *   `column-gap: 1.5rem !important` - Maintains proper spacing between columns
+        *   `display: table` - Ensures that CSS columns work in print.
 *   **Product Sorting in Printable Pricelist:** Products within each category should be sorted alphabetically using Czech collation rules. This means special Czech characters (á, č, ď, é, ě, í, ň, ó, ř, š, ť, ú, ů, ý, ž) are sorted correctly according to Czech alphabet ordering.
 *   **Category Ordering**:
     *   Add an integer `order` field to the `categories` table.
@@ -332,6 +335,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Save that `guest_id` to the `orders` table next to the `booking_id`.
     *   In the order selection screen, show a badge indicating how many guests have orders (e.g., "2 / 3 guests with orders").
     *   When all guests have orders, show an error message when trying to create a new order.
-    *   In POS, when an order for another guest is created, show it separately so staff can quickly choose it and add new items to it.
-    *   When a booking has multiple orders in the POS system, list them with clear guest labels.
-    *   In all
+    *   In POS, when an order for another guest is created, show
