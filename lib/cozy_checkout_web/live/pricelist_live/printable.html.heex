@@ -36,6 +36,12 @@
         break-inside: avoid;
         page-break-inside: avoid;
       }
+
+      /* Force two columns on print */
+      .columns-2 {
+        column-count: 2 !important;
+        column-gap: 1.5rem !important;
+      }
     }
 
     @page {

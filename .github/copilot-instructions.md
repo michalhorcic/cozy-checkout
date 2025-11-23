@@ -238,7 +238,11 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   **Format Preferences:** Use portrait orientation, multiple pages if needed, and include the generated date. Page numbers are not needed.
     *   When generating the printable pricelist, use `Date.utc_today()` for the generated date to avoid timezone conversion issues.
 *   **Printable Pricelist Display Format for Tiers:** When showing prices for tiers in the printable pricelist, display them in the following format: `name_of_product (tier1/tier2) tier prices separated by / in same order as tiers`. For example: `Product Name (300/500 ml) 45/70 CZK`.
-*   **Printable Pricelist Layout:** Change the printable pricelist layout from a two-column grid to a single-column sequential layout. This means removing the grid layout (`grid grid-cols-2 gap-6`) and using `space-y-6` for vertical spacing. Categories will now flow one after another vertically instead of side-by-side and the extra margin on the `category-section` will be removed.
+*   **Printable Pricelist Layout:** The printable pricelist layout should use a two-column layout with a masonry-like flow. This can be achieved using CSS columns (`columns-2`) instead of a grid. This creates a flowing two-column layout where:
+    *   Categories automatically flow into two columns without rigid alignment.
+    *   Categories fill columns naturally, so shorter categories don't leave empty space.
+    *   `break-inside-avoid` ensures categories don't split across columns.
+    *   Reduced margin (`mb-4`) keeps categories close together while maintaining readability.
 *   **Product Sorting in Printable Pricelist:** Products within each category should be sorted alphabetically using Czech collation rules. This means special Czech characters (á, č, ď, é, ě, í, ň, ó, ř, š, ť, ú, ů, ý, ž) are sorted correctly according to Czech alphabet ordering.
 *   **Category Ordering**:
     *   Add an integer `order` field to the `categories` table.
@@ -330,4 +334,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   When all guests have orders, show an error message when trying to create a new order.
     *   In POS, when an order for another guest is created, show it separately so staff can quickly choose it and add new items to it.
     *   When a booking has multiple orders in the POS system, list them with clear guest labels.
-    *   In all places where guest names are displayed (e.g., order details, payments, receipts), use `order.guest.name` (the specific guest assigned to the order) instead of `
+    *   In all

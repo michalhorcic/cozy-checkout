@@ -49,3 +49,24 @@ This will give you the space-saving benefits of two columns while looking much m
 
 ---
 
+_**User (2025-11-23 23:41Z)**_
+
+Looks great, can you also make sure it fits to A4 and still keeps two columns when printing? Now it folds to one column
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+I'll add print-specific styles to ensure the two-column layout is maintained when printing to A4. 
+```
+
+```
+Done! I've added print-specific styles that force the two-column layout when printing:
+
+- `column-count: 2 !important` - Ensures exactly 2 columns are maintained in print
+- `column-gap: 1.5rem !important` - Maintains proper spacing between columns
+
+The layout will now stay in two columns when printing to A4, and the categories will flow naturally between the columns without awkward gaps.
+
+---
+
