@@ -2,6 +2,13 @@ defmodule CozyCheckout.Catalog.Product do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {
+    Flop.Schema,
+    filterable: [:name, :category_id, :active],
+    sortable: [],
+    default_limit: 20
+  }
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "products" do

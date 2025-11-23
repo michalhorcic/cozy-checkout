@@ -2,6 +2,13 @@ defmodule CozyCheckout.Catalog.Pricelist do
   use Ecto.Schema
   import Ecto.Changeset
 
+  @derive {
+    Flop.Schema,
+    filterable: [:active, :product_id],
+    sortable: [],
+    default_limit: 20
+  }
+
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "pricelists" do

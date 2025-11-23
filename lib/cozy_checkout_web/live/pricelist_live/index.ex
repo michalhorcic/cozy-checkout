@@ -4,13 +4,33 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
   alias CozyCheckout.Catalog
   alias CozyCheckout.Catalog.Pricelist
 
+  import CozyCheckoutWeb.FlopComponents
+
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, stream(socket, :pricelists, Catalog.list_pricelists())}
+    {:ok, socket}
   end
 
   @impl true
   def handle_params(params, _url, socket) do
+    # Normalize params: convert indexed maps to arrays for Flop
+    normalized_params = normalize_flop_params(params)
+
+    socket =
+      case Catalog.list_pricelists_with_flop(normalized_params) do
+        {:ok, {pricelists, meta}} ->
+          socket
+          |> assign(:pricelists, pricelists)
+          |> assign(:meta, meta)
+          |> assign(:current_params, params)
+
+        {:error, meta} ->
+          socket
+          |> assign(:pricelists, [])
+          |> assign(:meta, meta)
+          |> assign(:current_params, params)
+      end
+
     {:noreply, apply_action(socket, socket.assigns.live_action, params)}
   end
 
@@ -33,8 +53,9 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
   end
 
   @impl true
-  def handle_info({CozyCheckoutWeb.PricelistLive.FormComponent, {:saved, pricelist}}, socket) do
-    {:noreply, stream_insert(socket, :pricelists, Catalog.get_pricelist!(pricelist.id))}
+  def handle_info({CozyCheckoutWeb.PricelistLive.FormComponent, {:saved, _pricelist}}, socket) do
+    # Re-fetch pricelists to show updated data, preserving current filters
+    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/pricelists", socket.assigns.current_params))}
   end
 
   @impl true
@@ -42,7 +63,54 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
     pricelist = Catalog.get_pricelist!(id)
     {:ok, _} = Catalog.delete_pricelist(pricelist)
 
-    {:noreply, stream_delete(socket, :pricelists, pricelist)}
+    # Re-fetch pricelists after delete, preserving current filters
+    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/pricelists", socket.assigns.current_params))}
+  end
+
+  @impl true
+  def handle_event("filter", params, socket) do
+    # Push patch to update URL with filter params
+    {:noreply, push_patch(socket, to: ~p"/admin/pricelists?#{build_filter_params(params)}")}
+  end
+
+  # Helper to build filter params from form
+  defp build_filter_params(params) do
+    filters =
+      case params["filters"] do
+        nil ->
+          []
+
+        filters_map ->
+          filters_map
+          |> Enum.map(fn {_idx, filter} ->
+            # Only include filters with non-empty values
+            if filter["value"] && filter["value"] != "" do
+              %{
+                "field" => filter["field"],
+                "op" => filter["op"] || "==",
+                "value" => filter["value"]
+              }
+            else
+              nil
+            end
+          end)
+          |> Enum.reject(&is_nil/1)
+          |> Enum.with_index()
+          |> Enum.into(%{}, fn {filter, idx} ->
+            {to_string(idx), filter}
+          end)
+      end
+
+    # Preserve existing params including custom filters
+    %{
+      "filters" => filters,
+      "page" => params["page"],
+      "page_size" => params["page_size"],
+      "product_name" => params["product_name"],
+      "category_id" => params["category_id"]
+    }
+    |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} || v == "" end)
+    |> Map.new()
   end
 
   defp format_price_display(pricelist) do
@@ -89,7 +157,7 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
           >
             <.icon name="hero-clipboard-document-check" class="w-5 h-5 mr-2" /> Price Management
           </.link>
-          <.link patch={~p"/admin/pricelists/new"}>
+          <.link patch={build_path_with_params(~p"/admin/pricelists/new", @current_params)}>
             <.button>
               <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Pricelist
             </.button>
@@ -98,85 +166,140 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
       </div>
 
       <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Product
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Price
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                VAT Rate
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Valid From
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Valid To
-              </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
-              </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody id="pricelists" phx-update="stream" class="bg-white divide-y divide-gray-200">
-            <tr :for={{id, pricelist} <- @streams.pricelists} id={id} class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                {pricelist.product && pricelist.product.name}
-              </td>
-              <td class="px-6 py-4 text-sm text-gray-900">
-                {format_price_display(pricelist)}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {pricelist.vat_rate}%
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {pricelist.valid_from}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {pricelist.valid_to || "—"}
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class={[
-                  "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                  if(pricelist.active,
-                    do: "bg-green-100 text-green-800",
-                    else: "bg-gray-100 text-gray-800"
-                  )
-                ]}>
-                  {if pricelist.active, do: "Active", else: "Inactive"}
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <.link
-                  patch={~p"/admin/pricelists/#{pricelist}/edit"}
-                  class="text-indigo-600 hover:text-indigo-900 mr-4"
-                >
-                  Edit
-                </.link>
-                <.link
-                  phx-click={JS.push("delete", value: %{id: pricelist.id})}
-                  data-confirm="Are you sure?"
-                  class="text-red-600 hover:text-red-900"
-                >
-                  Delete
-                </.link>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Filter Form -->
+        <.filter_form meta={@meta} path={~p"/admin/pricelists"} id="pricelists-filter">
+          <:filter>
+            <.input
+              type="text"
+              name="product_name"
+              label="Product Name"
+              placeholder="Search by product name"
+              value={Map.get(@meta.params, "product_name", "")}
+            />
+          </:filter>
+          <:filter>
+            <.input
+              type="select"
+              name="category_id"
+              label="Category"
+              options={[{"All", ""} | Enum.map(Catalog.list_categories(), &{&1.name, &1.id})]}
+              value={Map.get(@meta.params, "category_id", "")}
+            />
+          </:filter>
+          <:filter>
+            <input type="hidden" name="filters[0][field]" value="active" />
+            <input type="hidden" name="filters[0][op]" value="==" />
+            <.input
+              type="select"
+              name="filters[0][value]"
+              label="Status"
+              options={[
+                {"All", ""},
+                {"Active", "true"},
+                {"Inactive", "false"}
+              ]}
+              value={get_filter_value(@meta, :active)}
+            />
+          </:filter>
+        </.filter_form>
+        <!-- Table -->
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Product
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Category
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Price
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  VAT Rate
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Valid From
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Valid To
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <%= if @pricelists == [] do %>
+                <tr>
+                  <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                    No pricelists found.
+                  </td>
+                </tr>
+              <% else %>
+                <tr :for={pricelist <- @pricelists} class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    {pricelist.product && pricelist.product.name}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {pricelist.product && pricelist.product.category && pricelist.product.category.name}
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900">
+                    {format_price_display(pricelist)}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {pricelist.vat_rate}%
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {pricelist.valid_from}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {pricelist.valid_to || "—"}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class={[
+                      "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                      if(pricelist.active,
+                        do: "bg-green-100 text-green-800",
+                        else: "bg-gray-100 text-gray-800"
+                      )
+                    ]}>
+                      {if pricelist.active, do: "Active", else: "Inactive"}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <.link
+                      patch={build_path_with_params(~p"/admin/pricelists/#{pricelist}/edit", @current_params)}
+                      class="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      Edit
+                    </.link>
+                    <.link
+                      phx-click={JS.push("delete", value: %{id: pricelist.id})}
+                      data-confirm="Are you sure?"
+                      class="text-red-600 hover:text-red-900"
+                    >
+                      Delete
+                    </.link>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        <!-- Pagination -->
+        <.pagination meta={@meta} path={~p"/admin/pricelists"} />
       </div>
 
       <.modal
         :if={@live_action in [:new, :edit]}
         id="pricelist-modal"
         show
-        on_cancel={JS.patch(~p"/admin/pricelists")}
+        on_cancel={JS.patch(build_path_with_params(~p"/admin/pricelists", @current_params))}
       >
         <.live_component
           module={CozyCheckoutWeb.PricelistLive.FormComponent}
@@ -184,10 +307,34 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
           title={@page_title}
           action={@live_action}
           pricelist={@pricelist}
-          patch={~p"/admin/pricelists"}
+          patch={build_path_with_params(~p"/admin/pricelists", @current_params)}
         />
       </.modal>
     </div>
     """
+  end
+
+  # Convert Phoenix indexed map params (e.g., %{"0" => "value"}) to arrays for Flop
+  defp normalize_flop_params(params) do
+    params
+    |> normalize_array_param("order_by")
+    |> normalize_array_param("order_directions")
+  end
+
+  defp normalize_array_param(params, key) do
+    case Map.get(params, key) do
+      # If it's a map with string keys "0", "1", etc., convert to array
+      value when is_map(value) ->
+        array =
+          value
+          |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+          |> Enum.map(fn {_k, v} -> v end)
+
+        Map.put(params, key, array)
+
+      # Otherwise, leave it as is
+      _ ->
+        params
+    end
   end
 end

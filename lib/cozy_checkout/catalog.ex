@@ -92,6 +92,32 @@ defmodule CozyCheckout.Catalog do
   end
 
   @doc """
+  Returns paginated, filtered products with Flop.
+  Supports custom filters for product name search.
+  """
+  def list_products_with_flop(params \\ %{}) do
+    base_query =
+      Product
+      |> where([p], is_nil(p.deleted_at))
+      |> join(:left, [p], c in assoc(p, :category), as: :category)
+      |> preload([p, category: c], category: c)
+      |> order_by([p], asc: p.name)
+
+    # Apply custom filters
+    query = apply_product_name_filter(base_query, params)
+
+    Flop.validate_and_run(query, params, for: Product)
+  end
+
+  # Filter by product name (partial match, case-insensitive)
+  defp apply_product_name_filter(query, %{"product_name" => name}) when is_binary(name) and name != "" do
+    search_pattern = "%#{name}%"
+    where(query, [p], ilike(p.name, ^search_pattern))
+  end
+
+  defp apply_product_name_filter(query, _params), do: query
+
+  @doc """
   Gets a single product.
   """
   def get_product!(id) do
@@ -147,6 +173,43 @@ defmodule CozyCheckout.Catalog do
     |> order_by([p], desc: p.valid_from)
     |> Repo.all()
   end
+
+  @doc """
+  Returns paginated, filtered pricelists with Flop.
+  Supports custom filters for product name and category.
+  """
+  def list_pricelists_with_flop(params \\ %{}) do
+    base_query =
+      Pricelist
+      |> where([pl], is_nil(pl.deleted_at))
+      |> join(:left, [pl], p in assoc(pl, :product), as: :product)
+      |> join(:left, [pl, product: p], c in assoc(p, :category), as: :category)
+      |> preload([pl, product: p, category: c], product: {p, category: c})
+      |> order_by([pl], desc: pl.valid_from)
+
+    # Apply custom filters
+    query =
+      base_query
+      |> apply_pricelist_product_name_filter(params)
+      |> apply_pricelist_category_filter(params)
+
+    Flop.validate_and_run(query, params, for: Pricelist)
+  end
+
+  # Filter by product name (partial match, case-insensitive)
+  defp apply_pricelist_product_name_filter(query, %{"product_name" => name}) when is_binary(name) and name != "" do
+    search_pattern = "%#{name}%"
+    where(query, [pl, product: p], ilike(p.name, ^search_pattern))
+  end
+
+  defp apply_pricelist_product_name_filter(query, _params), do: query
+
+  # Filter by category
+  defp apply_pricelist_category_filter(query, %{"category_id" => category_id}) when is_binary(category_id) and category_id != "" do
+    where(query, [pl, product: p], p.category_id == ^category_id)
+  end
+
+  defp apply_pricelist_category_filter(query, _params), do: query
 
   @doc """
   Gets a single pricelist.
