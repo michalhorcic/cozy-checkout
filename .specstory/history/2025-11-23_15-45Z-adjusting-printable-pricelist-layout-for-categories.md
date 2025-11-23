@@ -241,7 +241,7 @@ This should now print with two columns side-by-side on A4 paper!
 
 ---
 
-_**User (2025-11-23 23:54Z)**_
+_**User (2025-11-23 23:55Z)**_
 
 Doesn't this going to introduce gaps between categories with different number of entries?
 
@@ -259,7 +259,54 @@ Let me try a different approach - using **flexbox with column direction**, which
 ```
 
 ```
+Perfect! I've switched to **flexbox with column wrapping**, which creates a true masonry-like flow:
 
+**How it works:**
+1. **`flex-direction: column`** - Items stack vertically first
+2. **`flex-wrap: wrap`** - When the container height is reached, items wrap to the next column
+3. **`max-height: 900px`** - Sets the height where wrapping occurs (adjusted for A4 print)
+4. **`width: calc(50% - 0.5rem)`** - Each category takes half the width minus gap
+
+This creates a **natural flowing two-column layout** where:
+- Categories fill the left column from top to bottom
+- When the max-height is reached, they continue in the right column
+- **No gaps** between categories regardless of their size
+- Categories stay compact and close together
+
+The max-height determines where the split happens. For print, 900px should work well for A4 paper. If you find the split happening at the wrong point, we can adjust this value.
+
+---
+
+_**User (2025-11-23 23:58Z)**_
+
+Better, now it prints in columns properly, but when there is more content than for two columns it will overflow to third column and it is not printed. Can we do the same but without restriction to 1 A4 page? I am fine with more A4 pages.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Ah yes! The `max-height` is causing overflow. Let me remove that restriction so content can flow across multiple pages naturally: 
+```
+
+```
+
+```
+
+```
+Perfect! I've gone back to CSS columns but this time **without any height restriction**. The key difference now:
+
+1. **No `max-height`** - Content can flow naturally across as many pages as needed
+2. **`display: inline-block` on categories** - This is the critical part that makes columns work reliably in print (from the Stack Overflow research)
+3. **`width: 100%`** - Ensures each category takes the full column width
+4. **`page-break-inside: avoid`** - Prevents categories from splitting
+
+Now the content will:
+- Flow in two columns from top to bottom
+- Categories fill the left column, then the right column
+- When a page is full, it continues on the next page with two columns again
+- No content will be lost or hidden
+
+The `display: inline-block` trick is what makes CSS columns actually work properly in print - it was in the Stack Overflow answers but we needed to combine it with no height restrictions for multi-page support.
 
 ---
 
