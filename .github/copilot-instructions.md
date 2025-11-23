@@ -252,7 +252,6 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   **Products With Incomplete Price Tiers:** List products with `default_unit_amounts` that don't have prices for all tiers. Show: Product name, Missing tiers. Action: "Complete Pricing" button. Use a 🟠 Orange badge to indicate this.
     *   The page should have three distinct sections showing different pricing problems.
     *   The page should use color-coded badges (🔴 Red, 🟡 Yellow, 🟠 Orange) for visual clarity.
-    *   The page should have summary cards at the top showing counts of each pricing problem.
     *   The page should have quick "Add Price" buttons that open a modal.
     *   The modal should be smart and show tier inputs only for products with `default_unit_amounts`.
     *   The system should have complete tier pricing support - checks if ALL tiers have prices configured.
@@ -333,3 +332,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   In all places where guest names are displayed (e.g., order details, payments, receipts), use `order.guest.name` (the specific guest assigned to the order) instead of `order.booking.guest.name` (the primary booking guest).
     *   When showing receipts or payment info, display the specific guest who ordered (from `order.guest_id`).
     *   When creating new order for booking with more than one guest the modal to select a guest should appear. Custom name should not be allowed
+*   When creating default invoice items, calculate the actual number of nights from check-in and
