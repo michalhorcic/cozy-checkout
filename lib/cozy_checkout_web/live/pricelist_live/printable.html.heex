@@ -1,23 +1,20 @@
 <div class="min-h-screen bg-white">
   <%!-- Print Styles --%>
   <style>
-    /* Force two columns for both screen and print */
+    /* Flexbox column layout for masonry-like flow */
     .pricelist-columns {
-      -webkit-column-count: 2;
-      -moz-column-count: 2;
-      column-count: 2;
-      -webkit-column-gap: 1.5rem;
-      -moz-column-gap: 1.5rem;
-      column-gap: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      max-height: 1000px;
+      gap: 1rem;
     }
 
     .category-section {
-      display: inline-block;
-      width: 100%;
       margin-bottom: 1rem;
-      -webkit-column-break-inside: avoid;
       page-break-inside: avoid;
       break-inside: avoid;
+      width: calc(50% - 0.5rem);
     }
 
     @media print {
@@ -51,28 +48,46 @@
         display: table-header-group;
       }
       
-      /* Ensure categories don't break across columns */
+      /* Flexbox column layout for print with adjusted height */
+      .pricelist-columns {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        max-height: 900px !important;
+        gap: 0.75rem !important;
+      }
+
       .category-section {
-        display: inline-block !important;
-        width: 100% !important;
-        -webkit-column-break-inside: avoid !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
+        width: calc(50% - 0.5rem) !important;
       }
 
-      /* Force two columns on print with all vendor prefixes */
-      .pricelist-columns {
-        -webkit-column-count: 2 !important;
-        -moz-column-count: 2 !important;
-        column-count: 2 !important;
-        -webkit-column-gap: 1.5rem !important;
-        -moz-column-gap: 1.5rem !important;
-        column-gap: 1.5rem !important;
-      }
-
-      /* Remove max-width constraint for print */
+      /* Scale and fit for A4 print */
       .max-w-7xl {
-        max-width: none !important;
+        max-width: 100% !important;
+        padding: 0.5rem !important;
+      }
+
+      /* Scale down font sizes for print */
+      h1 {
+        font-size: 1.5rem !important;
+      }
+
+      h2 {
+        font-size: 1rem !important;
+      }
+
+      h3 {
+        font-size: 0.875rem !important;
+      }
+
+      .text-sm {
+        font-size: 0.75rem !important;
+      }
+
+      .text-xs {
+        font-size: 0.625rem !important;
       }
     }
 

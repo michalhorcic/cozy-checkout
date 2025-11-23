@@ -147,7 +147,7 @@ This should maintain the two-column layout when printing. The `inline-block` dis
 
 ---
 
-_**User (2025-11-23 23:48Z)**_
+_**User (2025-11-23 23:49Z)**_
 
 Still the same, does it matter how many categories I have? Because I am testing it only with two categories
 
@@ -155,7 +155,111 @@ Still the same, does it matter how many categories I have? Because I am testing 
 
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
-Ah, that might be the issue! With only two categories, CSS columns might be displaying them vertically because there's not enough content to fill two columns properly. Let me search for more information about this specific scenario. 
+Ah, that might be the issue! With only two categories, CSS columns might be displaying them vertically because there's not enough content to fill two columns properly. Let me search for more information about this specific scenario. Let me try a different search: Yes, you're right! The issue is likely that with only 2 categories, CSS columns by default tries to **balance** the height of the columns. This means if your content isn't tall enough, it will stack them vertically instead of side-by-side. 
+
+The key property we need is `column-fill: balance` vs `column-fill: auto`. Let me also add a minimum height constraint for print: 
+```
+
+```
+
+```
+
+```
+Perfect! I've added two critical fixes:
+
+1. **`column-fill: balance`** - This tells the browser to balance content across columns, which should help with a small number of categories
+2. **`min-height: 500px` (screen) and `800px` (print)** - This ensures the container is tall enough for the browser to actually create two columns side-by-side. With only 2 categories, if the container height is too small, browsers will just stack them vertically.
+
+The minimum height gives the browser enough vertical space to understand "yes, I should put these items side by side in two columns" rather than just stacking them one after another.
+
+Try printing now - with the minimum height constraint, even with just 2 categories, they should appear side-by-side in two columns!
+
+---
+
+_**User (2025-11-23 23:52Z)**_
+
+Not working at all. Is it maybe too wide for two columns to fit on A4? Can we scale it down maybe?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Yes! That's likely the issue - the `max-w-7xl` container is too wide for A4 paper when trying to fit two columns. Let me scale it down and adjust the sizing for print: 
+```
+
+```
+Perfect! I've made several key changes to make it fit on A4 with two columns:
+
+1. **Reduced column gap** - Changed from `1.5rem` to `1rem` to give more space for content
+2. **Full width for print** - Set `max-w-7xl` to `100%` width and reduced padding
+3. **Scaled down all fonts** - Reduced font sizes across the board for print:
+   - H1: `1.5rem` (was `3xl` / 1.875rem)
+   - H2: `1rem` (was `xl` / 1.25rem)
+   - H3: `0.875rem` (was `lg` / 1.125rem)
+   - Body text: Scaled proportionally
+
+This should now fit comfortably on A4 paper with two columns side-by-side. The content will be more compact but still readable, which is standard for printed pricelists.
+
+---
+
+_**User (2025-11-23 23:54Z)**_
+
+Not helping. Search internet again an try to find out what people use to make printable content with specific requirements like these. Maybe HTML to print is not enough
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+You're absolutely right - CSS columns in print are notoriously unreliable. Based on the research, the real-world approach for professional printable documents is to either:
+
+1. **Use a PDF generation library** (like wkhtmltopdf, Puppeteer, or similar)
+2. **Use a simpler layout** that doesn't rely on CSS columns for print
+
+Let me try a completely different approach - instead of using CSS columns, let's use a **simple two-column grid layout** that's proven to work reliably in print: 
+```
+
+```
+
+```
+
+```
+Perfect! I've completely changed the approach from CSS columns to **CSS Grid**, which is much more reliable for printing:
+
+**Key changes:**
+1. **Replaced CSS columns with CSS Grid** - `display: grid` with `grid-template-columns: 1fr 1fr` creates two equal-width columns
+2. **Simple gap property** - Instead of column-gap, just use `gap` for spacing
+3. **Removed complex column-break properties** - Grid doesn't need these; items naturally flow into grid cells
+4. **Kept page-break-inside: avoid** - This prevents categories from splitting across pages
+
+CSS Grid is **much more reliable for print** than CSS columns because:
+- It's a true layout system, not a flow-based column system
+- Browsers handle it more consistently in print
+- Each category naturally goes into its own grid cell
+- It doesn't try to "balance" content like CSS columns do
+
+This should now print with two columns side-by-side on A4 paper!
+
+---
+
+_**User (2025-11-23 23:54Z)**_
+
+Doesn't this going to introduce gaps between categories with different number of entries?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+You're absolutely right! CSS Grid will create a rigid grid where each cell aligns with cells in the other column, creating gaps. We need the categories to flow naturally like a masonry layout.
+
+Let me try a different approach - using **flexbox with column direction**, which should work more reliably in print than CSS columns: 
+```
+
+```
+
+```
+
+```
+
 
 ---
 
