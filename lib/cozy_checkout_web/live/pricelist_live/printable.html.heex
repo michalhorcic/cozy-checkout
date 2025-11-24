@@ -15,12 +15,7 @@
       page-break-inside: avoid;
       break-inside: avoid;
       width: calc(50% - 0.5rem);
-    }
-
-    /* Ensure category header stays with its content */
-    .category-section > div:first-child {
-      page-break-after: avoid;
-      break-after: avoid;
+      overflow: hidden;
     }
 
     @media print {
@@ -67,16 +62,19 @@
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         width: calc(50% - 0.5rem) !important;
+        overflow: hidden !important;
+        display: table !important;
       }
 
-      /* Ensure category header stays with its content in print */
-      .category-section > div:first-child {
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-      }
-
+      /* Prevent breaks in tables */
       table {
-        page-break-inside: auto !important;
+        page-break-inside: avoid !important;
+      }
+
+      /* Keep table rows together */
+      tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
       }
 
       /* Scale and fit for A4 print */

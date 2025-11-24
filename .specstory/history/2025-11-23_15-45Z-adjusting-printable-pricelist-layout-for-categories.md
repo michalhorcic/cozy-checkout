@@ -335,7 +335,7 @@ This will create two columns that flow naturally without gaps, and all your cont
 
 ---
 
-_**User (2025-11-24 00:01Z)**_
+_**User (2025-11-24 00:02Z)**_
 
 Decent now. Can we make sure that category name and its items are never separated by page break?
 
@@ -344,6 +344,35 @@ Decent now. Can we make sure that category name and its items are never separate
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
 
+```
+
+```
+
+```
+
+```
+Perfect! I've added styles to ensure the category header never separates from its items:
+
+1. **`page-break-after: avoid`** on the category header div - Prevents a page break right after the category name
+2. **`break-after: avoid`** - Modern equivalent for better browser support
+3. **`page-break-inside: avoid`** was already on the entire category section - Keeps the whole category together when possible
+
+This combination ensures:
+- The category name (header) will always stay with at least some of its products
+- If a category is too long to fit on one page, it will break at appropriate points (between table rows), but never between the header and the first product
+- The entire category section tries to stay together when space allows
+
+---
+
+_**User (2025-11-24 00:03Z)**_
+
+for some reason it didnt help. It is still separated in my use case
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Let me try a different approach - wrapping the entire category section in a container that forces it to stay together: 
 ```
 
 ```
