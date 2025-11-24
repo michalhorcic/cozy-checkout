@@ -335,3 +335,19 @@ This will create two columns that flow naturally without gaps, and all your cont
 
 ---
 
+_**User (2025-11-24 00:01Z)**_
+
+Decent now. Can we make sure that category name and its items are never separated by page break?
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+
+---
+

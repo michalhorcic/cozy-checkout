@@ -17,6 +17,12 @@
       width: calc(50% - 0.5rem);
     }
 
+    /* Ensure category header stays with its content */
+    .category-section > div:first-child {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
     @media print {
       body {
         margin: 0;
@@ -61,6 +67,16 @@
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         width: calc(50% - 0.5rem) !important;
+      }
+
+      /* Ensure category header stays with its content in print */
+      .category-section > div:first-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      table {
+        page-break-inside: auto !important;
       }
 
       /* Scale and fit for A4 print */
