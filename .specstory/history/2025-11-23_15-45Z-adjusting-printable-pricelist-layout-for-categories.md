@@ -310,3 +310,28 @@ The `display: inline-block` trick is what makes CSS columns actually work proper
 
 ---
 
+_**User (2025-11-24 00:00Z)**_
+
+Now we are back at printing just one columns :( Would it help to go back but instead of one A4 use two A4s? That should be enough for my use case.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+Yes! Let's go back to the flexbox approach with a specific height for 2 pages. We'll set the max-height to accommodate 2 A4 pages: 
+```
+
+```
+
+```
+
+```
+Perfect! I've set it back to the flexbox approach with a `max-height` that accommodates 2 A4 pages:
+
+- **Screen view**: `max-height: 2000px` - enough space for about 2 A4 pages worth of content
+- **Print view**: `max-height: 1800px` - adjusted for actual print dimensions (A4 with margins is roughly 900px height per page)
+
+This will create two columns that flow naturally without gaps, and all your content should fit within 2 pages. If you find the content is still getting cut off or the split isn't quite right, we can adjust these height values (increase for more content, decrease to make columns more compact).
+
+---
+

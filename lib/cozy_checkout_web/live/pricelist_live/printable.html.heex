@@ -1,18 +1,20 @@
 <div class="min-h-screen bg-white">
   <%!-- Print Styles --%>
   <style>
-    /* Simple two-column layout using columns */
+    /* Flexbox column layout for masonry-like flow */
     .pricelist-columns {
-      column-count: 2;
-      column-gap: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      max-height: 2000px;
+      gap: 1rem;
     }
 
     .category-section {
       margin-bottom: 1rem;
       page-break-inside: avoid;
       break-inside: avoid;
-      display: inline-block;
-      width: 100%;
+      width: calc(50% - 0.5rem);
     }
 
     @media print {
@@ -46,17 +48,19 @@
         display: table-header-group;
       }
       
-      /* Two columns that flow across multiple pages */
+      /* Flexbox layout for 2 A4 pages in print */
       .pricelist-columns {
-        column-count: 2 !important;
-        column-gap: 1rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        max-height: 1800px !important;
+        gap: 0.75rem !important;
       }
 
       .category-section {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        display: inline-block !important;
-        width: 100% !important;
+        width: calc(50% - 0.5rem) !important;
       }
 
       /* Scale and fit for A4 print */
