@@ -21,13 +21,13 @@ defmodule CozyCheckout.Payments.QrCode do
       ...>   variable_symbol: "PAY-20251016-0001",
       ...>   message: "Order payment"
       ...> })
-      "SPD*1.0*ACC:CZ1201000000000123456789*AM:150.50*CC:CZK*MSG:Order payment*X-VS:PAY-20251016-0001"
+      "SPD*1.0*ACC:CZ1201000000000123456789*AM:150.50*CC:CZK*MSG:Order payment*X-VS:2025101600"
   """
   def generate_qr_data(params) do
     account_number = Map.get(params, :account_number)
     amount = Map.get(params, :amount) |> Decimal.to_string()
     currency = Map.get(params, :currency, "CZK")
-    variable_symbol = Map.get(params, :variable_symbol)
+    variable_symbol = Map.get(params, :variable_symbol) |> sanitize_variable_symbol()
     message = Map.get(params, :message)
 
     # Parse account number format "123456789/0100" to IBAN
@@ -170,4 +170,22 @@ defmodule CozyCheckout.Payments.QrCode do
       rem(acc * 10 + String.to_integer(digit), 97)
     end)
   end
+
+  # Sanitizes variable symbol to contain only numbers and be max 10 characters.
+  # Extracts all digits from the input string and takes the last 10 digits.
+  # For invoice numbers like "PAY-20251130-0001", this produces "2025113000" (10 chars)
+  # For shorter numbers, it returns all digits found.
+  defp sanitize_variable_symbol(nil), do: nil
+  defp sanitize_variable_symbol(""), do: nil
+
+  defp sanitize_variable_symbol(value) when is_binary(value) do
+    digits =
+      value
+      |> String.replace(~r/\D/, "")
+      |> String.slice(-10..-1//1)
+
+    if digits == "", do: nil, else: digits
+  end
+
+  defp sanitize_variable_symbol(_), do: nil
 end

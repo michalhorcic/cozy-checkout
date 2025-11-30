@@ -70,7 +70,7 @@ config :cozy_checkout,
   # Default accounting account in POHODA - CHANGE THIS
   pohoda_default_account: "1",
   # Bank account for QR code payments - CHANGE THIS
-  bank_account: "2601156149/2010"
+  bank_account: "2903322739/2010"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
