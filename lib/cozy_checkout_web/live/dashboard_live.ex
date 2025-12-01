@@ -126,6 +126,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
             color="emerald"
           />
 
+          <.dashboard_card
+            title="Statistics"
+            description="Product sales analysis"
+            icon="hero-chart-bar-square"
+            navigate={~p"/admin/statistics"}
+            color="violet"
+          />
+
           <%!-- POHODA Export --%>
           <.dashboard_card
             title="POHODA Export"

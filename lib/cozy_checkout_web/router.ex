@@ -75,6 +75,9 @@ defmodule CozyCheckoutWeb.Router do
     # Economy Management
     live "/economy", EconomyLive.Index
 
+    # Statistics
+    live "/statistics", StatisticsLive.Index
+
     # POHODA Export
     live "/pohoda-export", PohodaExportLive.Index, :index
 

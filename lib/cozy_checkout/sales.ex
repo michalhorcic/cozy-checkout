@@ -592,4 +592,159 @@ defmodule CozyCheckout.Sales do
       %{order | order_items: order_items}
     end)
   end
+
+  ## Statistics
+
+  @doc """
+  Gets product sales statistics for a date range and optional status filter.
+  Returns a list of maps with product details and sales metrics.
+  """
+  def get_product_statistics(date_from, date_to, status_filter \\ ["paid", "open"]) do
+    # Query to get aggregated order item data
+    query =
+      from(oi in OrderItem,
+        join: o in Order,
+        on: oi.order_id == o.id,
+        join: p in assoc(oi, :product),
+        join: c in assoc(p, :category),
+        where: is_nil(oi.deleted_at),
+        where: is_nil(o.deleted_at),
+        where: o.status != "cancelled",
+        where: o.inserted_at >= ^date_from and o.inserted_at <= ^date_to,
+        group_by: [p.id, p.name, p.unit, c.id, c.name, c.order],
+        select: %{
+          product_id: p.id,
+          product_name: p.name,
+          product_unit: p.unit,
+          category_id: c.id,
+          category_name: c.name,
+          category_order: c.order,
+          total_quantity: sum(oi.quantity),
+          total_amount: sum(oi.unit_amount * oi.quantity),
+          total_revenue: sum(oi.subtotal),
+          order_count: count(fragment("DISTINCT ?", o.id))
+        }
+      )
+
+    query =
+      if status_filter && status_filter != [] do
+        where(query, [oi, o], o.status in ^status_filter)
+      else
+        query
+      end
+
+    results = Repo.all(query)
+
+    # Group by category and sort
+    results
+    |> Enum.group_by(& &1.category_id)
+    |> Enum.map(fn {_category_id, products} ->
+      category = hd(products)
+
+      %{
+        category_id: category.category_id,
+        category_name: category.category_name,
+        category_order: category.category_order || 999,
+        products:
+          products
+          |> Enum.sort_by(& &1.product_name, :asc)
+      }
+    end)
+    |> Enum.sort_by(& &1.category_order)
+  end
+
+  @doc """
+  Gets the most popular products by quantity sold.
+  """
+  def get_most_popular_products(date_from, date_to, status_filter \\ ["paid", "open"], limit \\ 10) do
+    query =
+      from(oi in OrderItem,
+        join: o in Order,
+        on: oi.order_id == o.id,
+        join: p in assoc(oi, :product),
+        join: c in assoc(p, :category),
+        where: is_nil(oi.deleted_at),
+        where: is_nil(o.deleted_at),
+        where: o.status != "cancelled",
+        where: o.inserted_at >= ^date_from and o.inserted_at <= ^date_to,
+        group_by: [p.id, p.name, c.name],
+        select: %{
+          product_id: p.id,
+          product_name: p.name,
+          category_name: c.name,
+          total_quantity: sum(oi.quantity)
+        },
+        order_by: [desc: sum(oi.quantity)],
+        limit: ^limit
+      )
+
+    query =
+      if status_filter && status_filter != [] do
+        where(query, [oi, o], o.status in ^status_filter)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Gets the products with highest revenue.
+  """
+  def get_top_revenue_products(date_from, date_to, status_filter \\ ["paid", "open"], limit \\ 10) do
+    query =
+      from(oi in OrderItem,
+        join: o in Order,
+        on: oi.order_id == o.id,
+        join: p in assoc(oi, :product),
+        join: c in assoc(p, :category),
+        where: is_nil(oi.deleted_at),
+        where: is_nil(o.deleted_at),
+        where: o.status != "cancelled",
+        where: o.inserted_at >= ^date_from and o.inserted_at <= ^date_to,
+        group_by: [p.id, p.name, c.name],
+        select: %{
+          product_id: p.id,
+          product_name: p.name,
+          category_name: c.name,
+          total_revenue: sum(oi.subtotal)
+        },
+        order_by: [desc: sum(oi.subtotal)],
+        limit: ^limit
+      )
+
+    query =
+      if status_filter && status_filter != [] do
+        where(query, [oi, o], o.status in ^status_filter)
+      else
+        query
+      end
+
+    Repo.all(query)
+  end
+
+  @doc """
+  Gets overall statistics for a date range.
+  """
+  def get_overall_statistics(date_from, date_to, status_filter \\ ["paid", "open"]) do
+    query =
+      from(o in Order,
+        where: is_nil(o.deleted_at),
+        where: o.status != "cancelled",
+        where: o.inserted_at >= ^date_from and o.inserted_at <= ^date_to,
+        select: %{
+          total_orders: count(o.id),
+          total_revenue: sum(o.total_amount)
+        }
+      )
+
+    query =
+      if status_filter && status_filter != [] do
+        where(query, [o], o.status in ^status_filter)
+      else
+        query
+      end
+
+    Repo.one(query) || %{total_orders: 0, total_revenue: Decimal.new("0")}
+  end
 end
