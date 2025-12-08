@@ -20,6 +20,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:payment_invoice_number, nil)
        |> assign(:show_recalculate_modal, false)
        |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
        |> load_order()
        |> load_products()
        |> assign(:show_success, false)}
@@ -36,6 +38,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:payment_invoice_number, nil)
        |> assign(:show_recalculate_modal, false)
        |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
        |> assign(:order, nil)
        |> assign(:grouped_items, [])
        |> assign(:categories, [])
@@ -111,12 +115,41 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
 
     if order_item do
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, true)
+       |> assign(:item_to_delete, order_item)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_delete_confirm, false)
+     |> assign(:item_to_delete, nil)}
+  end
+
+  @impl true
+  def handle_event("confirm_delete", _params, socket) do
+    order_item = socket.assigns.item_to_delete
+
+    if order_item do
       {:ok, _} = Sales.delete_order_item(order_item)
       {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
 
-      {:noreply, load_order(socket)}
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> load_order()}
     else
-      {:noreply, socket}
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)}
     end
   end
 

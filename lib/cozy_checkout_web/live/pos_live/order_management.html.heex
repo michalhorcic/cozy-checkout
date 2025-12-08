@@ -191,41 +191,39 @@
           <% else %>
             <div class="space-y-3">
               <div :for={group <- @grouped_items} class="bg-slate-50 rounded-xl overflow-hidden">
-                <!-- Grouped Item Display -->
-                <div
-                  id={"cart-group-#{Enum.join(group.item_ids, "-")}"}
-                  class="p-4"
-                >
-                  <div class="flex justify-between items-start">
-                    <div class="flex-1">
-                      <h3 class="font-semibold text-slate-900 mb-1">
-                        {group.product.name}
-                      </h3>
-                      <p class="text-sm text-slate-600">
-                        <%= if group.unit_amount do %>
-                          {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
-                            group.total_quantity,
-                            2
-                          )}
-                        <% else %>
-                          Qty: {Decimal.round(group.total_quantity, 2)}
-                        <% end %>
-                        <%= if group.grouped? do %>
+                <%= if group.grouped? do %>
+                  <!-- Grouped Item Display -->
+                  <div
+                    id={"cart-group-#{Enum.join(group.item_ids, "-")}"}
+                    class="p-4"
+                  >
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1">
+                        <h3 class="font-semibold text-slate-900 mb-1">
+                          {group.product.name}
+                        </h3>
+                        <p class="text-sm text-slate-600">
+                          <%= if group.unit_amount do %>
+                            {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                              group.total_quantity,
+                              2
+                            )}
+                          <% else %>
+                            Qty: {Decimal.round(group.total_quantity, 2)}
+                          <% end %>
                           <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
                             {length(group.items)} items
                           </span>
-                        <% end %>
-                      </p>
+                        </p>
+                      </div>
+                      <div class="text-right">
+                        <p class="font-bold text-slate-900">
+                          {format_currency(group.total_price)}
+                        </p>
+                      </div>
                     </div>
-                    <div class="text-right">
-                      <p class="font-bold text-slate-900">
-                        {format_currency(group.total_price)}
-                      </p>
-                    </div>
-                  </div>
-                  
+                    
 <!-- Expand/Collapse Button for Grouped Items -->
-                  <%= if group.grouped? do %>
                     <button
                       phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
                       phx-value-product-id={group.product.id}
@@ -239,8 +237,54 @@
                         Show {length(group.items)} individual items
                       <% end %>
                     </button>
-                  <% end %>
-                </div>
+                  </div>
+                <% else %>
+                  <!-- Single Item Display (not grouped) with delete functionality -->
+                  <div
+                    id={"cart-item-single-#{hd(group.items).id}"}
+                    phx-hook="SwipeToDelete"
+                    data-item-id={hd(group.items).id}
+                    class="relative overflow-hidden touch-pan-y"
+                  >
+                    <!-- Swipe Background -->
+                    <div class="swipe-delete-bg absolute inset-0 bg-red-500 flex items-center justify-end px-6">
+                      <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                    </div>
+                    
+<!-- Item Content -->
+                    <div class="swipe-content relative bg-slate-50 p-4">
+                      <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                          <h3 class="font-semibold text-slate-900 mb-1">
+                            {group.product.name}
+                          </h3>
+                          <p class="text-sm text-slate-600">
+                            <%= if group.unit_amount do %>
+                              {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                                group.total_quantity,
+                                2
+                              )}
+                            <% else %>
+                              Qty: {Decimal.round(group.total_quantity, 2)}
+                            <% end %>
+                          </p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                          <p class="font-bold text-slate-900">
+                            {format_currency(group.total_price)}
+                          </p>
+                          <button
+                            phx-click="delete_item"
+                            phx-value-item-id={hd(group.items).id}
+                            class="text-red-600 hover:text-red-800 active:scale-95"
+                          >
+                            <.icon name="hero-x-mark" class="w-5 h-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
                 
 <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
@@ -416,6 +460,58 @@
       </div>
     </div>
     
+    <!-- Delete Confirmation Modal -->
+    <div
+      :if={@show_delete_confirm && @item_to_delete}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_delete"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+            <.icon name="hero-trash" class="w-8 h-8 text-red-600" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 mb-2">Delete Item?</h2>
+          <p class="text-slate-600">This action cannot be undone.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-xl p-4 mb-6">
+          <h3 class="font-bold text-slate-900 text-lg mb-2">
+            {@item_to_delete.product.name}
+          </h3>
+          <div class="space-y-1 text-sm text-slate-700">
+            <p>
+              <%= if @item_to_delete.unit_amount do %>
+                Amount: {Decimal.round(@item_to_delete.unit_amount, 2)}{@item_to_delete.product.unit}
+              <% end %>
+            </p>
+            <p>Quantity: {@item_to_delete.quantity}</p>
+            <p class="font-semibold text-base text-slate-900 mt-2">
+              Price: {format_currency(@item_to_delete.subtotal)}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <button
+            phx-click="confirm_delete"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Yes, Delete Item
+          </button>
+          <button
+            phx-click="cancel_delete"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Recalculation Modal -->
     <div
       :if={@show_recalculate_modal}
