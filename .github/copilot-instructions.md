@@ -335,4 +335,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Save that `guest_id` to the `orders` table next to the `booking_id`.
     *   In the order selection screen, show a badge indicating how many guests have orders (e.g., "2 / 3 guests with orders").
     *   When all guests have orders, show an error message when trying to create a new order.
-    *   In POS, when an order for another guest is created, show
+*   When displaying the calendar view, move the occupancy badge from `top-

@@ -17,6 +17,8 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
       socket
       |> assign(:year, today.year)
       |> assign(:month, today.month)
+      |> assign(:modal_date, nil)
+      |> assign(:modal_bookings, [])
       |> assign_helpers()
       |> load_calendar_data()
 
@@ -67,6 +69,19 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_event("show_day_bookings", %{"date" => date_string}, socket) do
+    date = Date.from_iso8601!(date_string)
+    bookings = CalendarHelpers.bookings_for_date(socket.assigns.bookings, date)
+
+    {:noreply, assign(socket, modal_date: date, modal_bookings: bookings)}
+  end
+
+  @impl true
+  def handle_event("close_modal", _params, socket) do
+    {:noreply, assign(socket, modal_date: nil, modal_bookings: [])}
+  end
+
   defp load_calendar_data(socket) do
     year = socket.assigns.year
     month = socket.assigns.month
@@ -105,7 +120,7 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
     level = Bookings.occupancy_level(count)
 
     base_classes =
-      "absolute top-1 right-1 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm"
+      "absolute top-1 left-1 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm"
 
     color_classes =
       case level do
@@ -164,9 +179,14 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
 
         <%!-- Show count if more than 3 bookings --%>
         <%= if length(@bookings) > 3 do %>
-          <div class="text-[10px] text-gray-500 text-center pt-1">
+          <button
+            type="button"
+            phx-click="show_day_bookings"
+            phx-value-date={@date}
+            class="text-[10px] text-blue-600 hover:text-blue-800 font-medium text-center pt-1 w-full hover:underline cursor-pointer"
+          >
             +{length(@bookings) - 3} more
-          </div>
+          </button>
         <% end %>
       </div>
     </div>
