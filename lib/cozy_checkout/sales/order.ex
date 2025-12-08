@@ -18,6 +18,8 @@ defmodule CozyCheckout.Sales.Order do
     field :status, :string, default: "open"
     field :total_amount, :decimal, default: Decimal.new("0")
     field :discount_amount, :decimal, default: Decimal.new("0")
+    field :tips_amount, :decimal, default: Decimal.new("0")
+    field :discount_reason, :string
     field :notes, :string
     field :deleted_at, :utc_datetime
 
@@ -40,6 +42,8 @@ defmodule CozyCheckout.Sales.Order do
       :status,
       :total_amount,
       :discount_amount,
+      :tips_amount,
+      :discount_reason,
       :notes
     ])
     |> validate_required([:order_number])
@@ -47,6 +51,7 @@ defmodule CozyCheckout.Sales.Order do
     |> validate_inclusion(:status, ["open", "paid", "partially_paid", "cancelled"])
     |> validate_number(:total_amount, greater_than_or_equal_to: 0)
     |> validate_number(:discount_amount, greater_than_or_equal_to: 0)
+    |> validate_number(:tips_amount, greater_than_or_equal_to: 0)
     |> unique_constraint(:order_number)
     |> foreign_key_constraint(:guest_id)
     |> foreign_key_constraint(:booking_id)

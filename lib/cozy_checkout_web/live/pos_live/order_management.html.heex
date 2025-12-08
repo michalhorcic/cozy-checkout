@@ -721,11 +721,109 @@
             </div>
           <% else %>
             <!-- Payment Method Selection -->
-            <h2 class="text-3xl font-bold text-slate-900 mb-4">Select Payment Method</h2>
-            <p class="text-lg text-slate-600 mb-6">
-              Total:
-              <span class="font-bold text-green-600">{format_currency(@order.total_amount)}</span>
-            </p>
+            <h2 class="text-3xl font-bold text-slate-900 mb-6">Payment Details</h2>
+            
+            <!-- Tips and Discount Form -->
+            <div class="space-y-4 mb-6 bg-slate-50 p-6 rounded-2xl">
+              <form phx-change="update_payment_fields">
+                <div class="grid grid-cols-2 gap-4">
+                  <!-- Discount Amount -->
+                  <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                      Discount Amount
+                    </label>
+                    <input
+                      type="number"
+                      name="discount_amount"
+                      value={@discount_amount}
+                      step="0.01"
+                      min="0"
+                      class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                      placeholder="0.00"
+                    />
+                  </div>
+
+                  <!-- Tips Amount -->
+                  <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                      Tips Amount
+                    </label>
+                    <input
+                      type="number"
+                      name="tips_amount"
+                      value={@tips_amount}
+                      step="0.01"
+                      min="0"
+                      class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <!-- Discount Reason -->
+                <div class="mt-4">
+                  <label class="block text-sm font-semibold text-slate-700 mb-2">
+                    Discount Reason (optional)
+                  </label>
+                  <input
+                    type="text"
+                    name="discount_reason"
+                    value={@discount_reason}
+                    class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                    placeholder="e.g., Staff discount, Promotional offer"
+                  />
+                </div>
+              </form>
+
+              <!-- Total Calculation Preview -->
+              <%
+                items_subtotal = Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc -> 
+                  Decimal.add(acc, item.subtotal) 
+                end)
+                
+                discount_dec = case Decimal.parse(@discount_amount || "0") do
+                  {amount, _} -> amount
+                  :error -> Decimal.new("0")
+                end
+                
+                tips_dec = case Decimal.parse(@tips_amount || "0") do
+                  {amount, _} -> amount
+                  :error -> Decimal.new("0")
+                end
+                
+                final_total = items_subtotal
+                  |> Decimal.sub(discount_dec)
+                  |> Decimal.add(tips_dec)
+              %>
+              <div class="border-t-2 border-slate-200 pt-4 mt-4 space-y-2">
+                <div class="flex justify-between text-slate-700">
+                  <span>Subtotal (Items):</span>
+                  <span class="font-semibold">
+                    {format_currency(items_subtotal)}
+                  </span>
+                </div>
+                <%= if Decimal.gt?(discount_dec, 0) do %>
+                  <div class="flex justify-between text-red-600">
+                    <span>Discount:</span>
+                    <span class="font-semibold">-{format_currency(discount_dec)}</span>
+                  </div>
+                <% end %>
+                <%= if Decimal.gt?(tips_dec, 0) do %>
+                  <div class="flex justify-between text-green-600">
+                    <span>Tips:</span>
+                    <span class="font-semibold">+{format_currency(tips_dec)}</span>
+                  </div>
+                <% end %>
+                <div class="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t-2 border-slate-300">
+                  <span>Final Total:</span>
+                  <span class="text-green-600">
+                    {format_currency(final_total)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
 
             <div class="grid grid-cols-1 gap-4 mb-6">
               <!-- Cash Payment -->

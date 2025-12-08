@@ -49,6 +49,8 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Keep `guest_id` for quick reference, but make it nullable.
     *   Add `booking_id` (binary_id, foreign key → bookings), but make it nullable.
     *   Add `name` field (string, nullable).
+    *   Add `tips_amount` (decimal, precision: 10, scale: 2, default: 0)
+    *   Add `discount_reason` (string)
     *   This way orders are linked to both the guest AND the specific stay
 *   The `payments` table should remain linked to orders (which are already linked to bookings).
 *   Add a `bookings.status` field to distinguish:
@@ -333,6 +335,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   Staff can create multiple orders (one per guest) for the same booking.
     *   The `guest_id` on the `orders` table should point to the specific guest from `booking_guests`, NOT always the primary guest.
     *   Save that `guest_id` to the `orders` table next to the `booking_id`.
-    *   In the order selection screen, show a badge indicating how many guests have orders (e.g., "2 / 3 guests with orders").
-    *   When all guests have orders, show an error message when trying to create a new order.
-*   When displaying the calendar view, move the occupancy badge from `top-
+    *   In the order selection screen, show a badge indicating how many guests have orders (e.g., "2 / 3 guests

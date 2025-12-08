@@ -208,7 +208,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                       {format_currency(group.total_price)}
                     </div>
                   </div>
-                  
+
     <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
@@ -226,7 +226,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                     </button>
                   <% end %>
                 </div>
-                
+
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-gray-200">
@@ -304,13 +304,19 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             <h2 class="text-2xl font-bold text-gray-900 mb-4">Summary</h2>
 
             <div class="space-y-3">
+              <%
+                items_subtotal = Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
+                  if is_nil(item.deleted_at) do
+                    Decimal.add(acc, item.subtotal)
+                  else
+                    acc
+                  end
+                end)
+              %>
+
               <div class="flex justify-between text-gray-600">
-                <span>Subtotal:</span>
-                <span>
-                  {format_currency(
-                    Decimal.add(@order.total_amount, @order.discount_amount || Decimal.new("0"))
-                  )}
-                </span>
+                <span>Subtotal (Items):</span>
+                <span>{format_currency(items_subtotal)}</span>
               </div>
 
               <div
@@ -319,6 +325,20 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
               >
                 <span>Discount:</span>
                 <span class="text-red-600">-{format_currency(@order.discount_amount)}</span>
+              </div>
+
+              <%= if @order.discount_reason && @order.discount_reason != "" do %>
+                <div class="text-sm text-gray-500 italic pl-4">
+                  Reason: {@order.discount_reason}
+                </div>
+              <% end %>
+
+              <div
+                :if={Decimal.gt?(@order.tips_amount || Decimal.new("0"), 0)}
+                class="flex justify-between text-gray-600"
+              >
+                <span>Tips:</span>
+                <span class="text-green-600">+{format_currency(@order.tips_amount)}</span>
               </div>
 
               <div class="border-t pt-3">
