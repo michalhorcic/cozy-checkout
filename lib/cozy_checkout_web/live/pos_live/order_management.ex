@@ -18,6 +18,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:payment_method, nil)
        |> assign(:payment_qr_svg, nil)
        |> assign(:payment_invoice_number, nil)
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
        |> load_order()
        |> load_products()
        |> assign(:show_success, false)}
@@ -32,6 +34,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:payment_method, nil)
        |> assign(:payment_qr_svg, nil)
        |> assign(:payment_invoice_number, nil)
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
        |> assign(:order, nil)
        |> assign(:grouped_items, [])
        |> assign(:categories, [])
@@ -196,6 +200,47 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
+  def handle_event("open_recalculate_modal", _params, socket) do
+    # Calculate the sum from order items
+    recalculated_total =
+      socket.assigns.order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, true)
+     |> assign(:recalculated_total, recalculated_total)}
+  end
+
+  @impl true
+  def handle_event("close_recalculate_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, false)
+     |> assign(:recalculated_total, nil)}
+  end
+
+  @impl true
+  def handle_event("apply_recalculation", _params, socket) do
+    case Sales.update_order(socket.assigns.order, %{
+           total_amount: socket.assigns.recalculated_total
+         }) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> assign(:show_recalculate_modal, false)
+         |> assign(:recalculated_total, nil)
+         |> load_order()
+         |> put_flash(:info, "Order total updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+    end
+  end
+
+  @impl true
   def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
     # Create payment and generate QR code
     attrs = %{
@@ -345,6 +390,16 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   defp parse_unit_amount(_), do: nil
+
+  defp total_out_of_sync?(order) do
+    items_total =
+      order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    !Decimal.equal?(order.total_amount, items_total)
+  end
 
   defp get_price_for_amount(product, amount) do
     if product.pricing_info && product.pricing_info.type == :tiers do
