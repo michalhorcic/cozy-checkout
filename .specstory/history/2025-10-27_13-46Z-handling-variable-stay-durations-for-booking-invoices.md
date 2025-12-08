@@ -182,27 +182,601 @@ Please implement it completely now, when I switched to agent
 
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
-I'll implement the complete solution to support variable stay durations for booking invoices. Let me start by gathering the necessary context and then implement all the required changes. 
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Created 8 todos**
+
+- [ ] Read booking invoice item schema
+  > Read the current BookingInvoiceItem schema to understand the existing structure
+- [ ] Create migration to add nights column
+  > Create a migration to add the nights column to booking_invoice_items table
+- [ ] Update BookingInvoiceItem schema
+  > Add nights field to the schema and update the changeset validation
+- [ ] Update calculate_total function
+  > Update the price calculation to include nights in the formula
+- [ ] Update Bookings context functions
+  > Update functions that create/calculate invoice items to use nights
+- [ ] Update UI forms for invoice items
+  > Add nights input field to the invoice items form in the admin UI
+- [ ] Update display templates
+  > Update templates that display invoice items to show nights
+- [ ] Run migration and test
+  > Run the migration and verify everything works correctly
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex)</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex)
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_findFiles">
+<details>
+<summary>Tool use: **copilot_findFiles**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_findFiles",
+  "isHidden": false
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Searching for files matching &#96;**/bookings.ex&#96;",
+  "pastTenseMessage": "Searched for files matching &#96;**/bookings.ex&#96;, 2 matches",
+  "resultDetails": [
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex",
+      "scheme": "file"
+    }
+  ],
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "",
+  "textEditContent": "",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `booking_invoice_items` (`**/priv/repo/migrations/*.exs`)</summary>
+
+
+Searched text for `booking_invoice_items` (`**/priv/repo/migrations/*.exs`), 5 results
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Starting (2/8) *Create migration to add nights column***
+
+- [x] Read booking invoice item schema
+  > Read the current BookingInvoiceItem schema to understand the existing structure
+- [-] Create migration to add nights column
+  > Create a migration to add the nights column to booking_invoice_items table
+- [ ] Update BookingInvoiceItem schema
+  > Add nights field to the schema and update the changeset validation
+- [ ] Update calculate_totals function
+  > Update the price calculation to include nights in the formula
+- [ ] Update Bookings context functions
+  > Update functions that create/calculate invoice items to use nights
+- [ ] Update UI forms for invoice items
+  > Add nights input field to the invoice items form in the admin UI
+- [ ] Update display templates
+  > Update templates that display invoice items to show nights
+- [ ] Run migration and test
+  > Run the migration and verify everything works correctly
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="run_in_terminal">
+<details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+
+Parameters:
+
+```json
+{
+  "kind": "terminal",
+  "terminalToolSessionId": "775c0541-8527-407e-a172-ad6e1ede3fe3",
+  "commandLine": {
+    "original": "cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout &amp;&amp; mix ecto.gen.migration add_nights_to_booking_invoice_items",
+    "toolEdited": "mix ecto.gen.migration add_nights_to_booking_invoice_items"
+  },
+  "language": "sh",
+  "autoApproveInfo": {
+    "value": "_Auto approved by rule [&#96;mix&#96;](command:_chat.openTerminalSettingsLink?%255B3%255D \"View rule in settings\")_",
+    "isTrusted": {
+      "enabledCommands": [
+        "_chat.openTerminalSettingsLink"
+      ]
+    },
+    "supportThemeIcons": false,
+    "supportHtml": false
+  }
+}
+```
+Additional data:
+
+```json
+{
+  "vscodeToolId": "run_in_terminal",
+  "isHidden": false
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Run in Terminal\"",
+  "pastTenseMessage": "_Auto approved by rule [&#96;mix&#96;](command:_chat.openTerminalSettingsLink?%255B3%255D \"View rule in settings\")_",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "",
+  "textEditContent": "",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027135319_add_nights_to_booking_invoice_items.exs)</summary>
+
+```elixir
+defmodule CozyCheckout.Repo.Migrations.AddNightsToBookingInvoiceItems do
+  use Ecto.Migration
+
+  def change do
+    alter table(:booking_invoice_items) do
+      add :nights, :integer, null: false, default: 1
+    end
+  end
+end
 ```
 
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Starting (3/8) *Update BookingInvoiceItem schema***
+
+- [x] Read booking invoice item schema
+  > Read the current BookingInvoiceItem schema to understand the existing structure
+- [x] Create migration to add nights column
+  > Create a migration to add the nights column to booking_invoice_items table
+- [-] Update BookingInvoiceItem schema
+  > Add nights field to the schema and update the changeset validation
+- [ ] Update calculate_totals function
+  > Update the price calculation to include nights in the formula
+- [ ] Update Bookings context functions
+  > Update functions that create/calculate invoice items to use nights
+- [ ] Update UI forms for invoice items
+  > Add nights input field to the invoice items form in the admin UI
+- [ ] Update display templates
+  > Update templates that display invoice items to show nights
+- [ ] Run migration and test
+  > Run the migration and verify everything works correctly
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Starting (4/8) *Update calculate_totals function***
+
+- [x] Read booking invoice item schema
+  > Read the current BookingInvoiceItem schema to understand the existing structure
+- [x] Create migration to add nights column
+  > Create a migration to add the nights column to booking_invoice_items table
+- [x] Update BookingInvoiceItem schema
+  > Add nights field to the schema and update the changeset validation
+- [-] Update calculate_totals function
+  > Update the price calculation to include nights in the formula
+- [ ] Update Bookings context functions
+  > Update functions that create/calculate invoice items to use nights
+- [ ] Update UI forms for invoice items
+  > Add nights input field to the invoice items form in the admin UI
+- [ ] Update display templates
+  > Update templates that display invoice items to show nights
+- [ ] Run migration and test
+  > Run the migration and verify everything works correctly
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `calculate_totals` (`**/lib/**/*.ex`)</summary>
+
+
+Searched text for `calculate_totals` (`**/lib/**/*.ex`), 4 results
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Starting (5/8) *Update Bookings context functions***
+
+- [x] Read booking invoice item schema
+  > Read the current BookingInvoiceItem schema to understand the existing structure
+- [x] Create migration to add nights column
+  > Create a migration to add the nights column to booking_invoice_items table
+- [x] Update BookingInvoiceItem schema
+  > Add nights field to the schema and update the changeset validation
+- [x] Update calculate_totals function
+  > Update the price calculation to include nights in the formula
+- [-] Update Bookings context functions
+  > Update functions that create/calculate invoice items to use nights
+- [ ] Update UI forms for invoice items
+  > Add nights input field to the invoice items form in the admin UI
+- [ ] Update display templates
+  > Update templates that display invoice items to show nights
+- [ ] Run migration and test
+  > Run the migration and verify everything works correctly
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#460-460), lines 460 to 490</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#460-460), lines 460 to 490
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#440-440), lines 440 to 480</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#440-440), lines 440 to 480
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#456-456), lines 456 to 516</summary>
+
+```elixir
+  def recalculate_invoice_totals(%BookingInvoice{} = invoice) do
+    Repo.transaction(fn ->
+      booking = get_booking!(invoice.booking_id)
+      nights = BookingInvoice.calculate_nights(booking)
+
+      # Reload invoice with items
+      invoice = get_booking_invoice!(invoice.id)
+
+      # Recalculate each item
+      updated_items =
+        Enum.map(invoice.items, fn item ->
+          # Ensure the item has nights set (use booking nights if not set)
+          item = if is_nil(item.nights), do: %{item | nights: nights}, else: item
+          
+          totals = BookingInvoiceItem.calculate_totals(item)
+
+          {:ok, updated_item} =
+            item
+            |> BookingInvoiceItem.changeset(totals)
+            |> Repo.update()
+
+          updated_item
+        end)
 ```
 
-```
 
-```
+</details>
+</tool-use>
 
-```
+---
 
-```
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `create_invoice_item` (`**/lib/cozy_checkout/bookings.ex`)</summary>
 
-```
 
-```
-Now let me find where the `calculate_totals` function is called to update those calls: Now I need to update this function to remove the `nights` parameter from `calculate_totals` and ensure items have the nights field set before calculation: 
-```
+Searched text for `create_invoice_item` (`**/lib/cozy_checkout/bookings.ex`), 2 results
 
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#420-420), lines 420 to 450</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#420-420), lines 420 to 450
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `create_default_invoice_items` (`**/lib/cozy_checkout/bookings.ex`)</summary>
+
+
+No results found
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `Adults` (`**/lib/cozy_checkout/bookings.ex`)</summary>
+
+
+No results found
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `adult_count` (`**/lib/**/*.ex`)</summary>
+
+
+No results found
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `BookingInvoiceItem` (`**/lib/**/*live*.ex`)</summary>
+
+
+No results found
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_findFiles">
+<details>
+<summary>Tool use: **copilot_findFiles**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_findFiles",
+  "isHidden": false
+}
 ```
-Now let me search for where invoice items are created to ensure they get the nights field set: Now let me check where default invoice items are created when an invoice is initialized: Let me search for where invoice items get created initially: Let me search in the LiveView files for invoice forms: [object Object]
+Result:
+
+```json
+{
+  "invocationMessage": "Searching for files matching &#96;**/booking_live/**/*.ex&#96;",
+  "pastTenseMessage": "Searched for files matching &#96;**/booking_live/**/*.ex&#96;, 16 matches",
+  "resultDetails": [
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex",
+      "scheme": "file"
+    },
+    {
+      "$mid": 1,
+      "fsPath": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex",
+      "external": "file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex",
+      "path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex",
+      "scheme": "file"
+    }
+  ],
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "",
+  "textEditContent": "",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `create_invoice_item` (`**/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`)</summary>
+
+
+Searched text for `create_invoice_item` (`**/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`), 2 results
+
+</details>
+</tool-use>
+
+---
+
+I'll implement the complete solution to support variable stay durations for booking invoices. Let me start by gathering the necessary context and then implement all the required changes. Now let me find where the `calculate_totals` function is called to update those calls: Now I need to update this function to remove the `nights` parameter from `calculate_totals` and ensure items have the nights field set before calculation: Now let me search for where invoice items are created to ensure they get the nights field set: Now let me check where default invoice items are created when an invoice is initialized: Let me search for where invoice items get created initially: Let me search in the LiveView files for invoice forms: 
 
 ---
 
@@ -214,27 +788,542 @@ _**User (2025-10-27 14:00Z)**_
 
 _**Agent (model copilot/claude-sonnet-4.5)**_
 
-Now let me look at the invoice component to see where new items are added: Now I need to update the `add_item` handler to include the `nights` field with the booking's default nights: 
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#490-490), lines 490 to 540</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#490-490), lines 490 to 540
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `add_item` (`**/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`)</summary>
+
+
+Searched text for `add_item` (`**/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`), 4 results
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#455-455), lines 455 to 495</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#455-455), lines 455 to 495
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n  @impl true\n  def handle_event(\"add_item\", _params, socket) do\n    next_position = length(socket.assigns.invoice.items) + 1\n    \n    # Calculate default nights from booking\n    nights = BookingInvoice.calculate_nights(socket.assigns.booking)\n\n    form =\n      Bookings.change_invoice_item(%BookingInvoiceItem{}, %{\n        position: next_position,\n        quantity: 1,\n        nights: nights,\n        price_per_night: Decimal.new(\"0.00\"),\n        vat_rate: Decimal.new(\"21.00\"),\n        item_type: \"person\"\n      })\n      |&gt; to_form()\n\n    {:noreply,\n     socket\n     |&gt; assign(:editing_item_id, :new)\n     |&gt; assign(:item_form, form)}\n  end\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "  @impl true\n  def handle_event(\"add_item\", _params, socket) do\n    next_position = length(socket.assigns.invoice.items) + 1\n    \n    # Calculate default nights from booking\n    nights = BookingInvoice.calculate_nights(socket.assigns.booking)\n\n    form =\n      Bookings.change_invoice_item(%BookingInvoiceItem{}, %{\n        position: next_position,\n        quantity: 1,\n        nights: nights,\n        price_per_night: Decimal.new(\"0.00\"),\n        vat_rate: Decimal.new(\"21.00\"),\n        item_type: \"person\"\n      })\n      |&gt; to_form()\n\n    {:noreply,\n     socket\n     |&gt; assign(:editing_item_id, :new)\n     |&gt; assign(:item_form, form)}\n  end",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#1-1), lines 1 to 101</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#1-1), lines 1 to 101
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#100-100), lines 100 to 220</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#100-100), lines 100 to 220
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#215-215), lines 215 to 315</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#215-215), lines 215 to 315
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n          &lt;div class=\"overflow-hidden border border-gray-200 rounded-lg\"&gt;\n            &lt;table class=\"min-w-full divide-y divide-gray-200\"&gt;\n              &lt;thead class=\"bg-gray-50\"&gt;\n                &lt;tr&gt;\n                  &lt;th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase\"&gt;\n                    Name\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase\"&gt;\n                    Type\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Qty\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Nights\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Price/Night\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    VAT %\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Subtotal\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Total\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Actions\n                  &lt;/th&gt;\n                &lt;/tr&gt;\n              &lt;/thead&gt;\n              &lt;tbody class=\"bg-white divide-y divide-gray-200\"&gt;\n                &lt;%= if @invoice.items == [] &amp;&amp; @editing_item_id != :new do %&gt;\n                  &lt;tr&gt;\n                    &lt;td colspan=\"9\" class=\"px-4 py-8 text-center text-gray-500\"&gt;\n                      No items yet. Click \"Add Item\" to create one.\n                    &lt;/td&gt;\n                  &lt;/tr&gt;\n                &lt;% end %&gt;\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;elixir\n                &lt;%= for item &lt;- @invoice.items do %&gt;\n                  &lt;%= if @editing_item_id == item.id do %&gt;\n                    &lt;%!-- Edit Mode --%&gt;\n                    &lt;tr class=\"bg-blue-50\"&gt;\n                      &lt;td colspan=\"9\" class=\"px-4 py-3\"&gt;\n                        &lt;.form\n                          for={@item_form}\n                          id={\"item-form-#{item.id}\"}\n                          phx-target={@myself}\n                          phx-submit=\"save_item\"\n                        &gt;\n                          &lt;div class=\"grid grid-cols-8 gap-3\"&gt;\n                            &lt;div class=\"col-span-2\"&gt;\n                              &lt;.input field={@item_form[:name]} type=\"text\" placeholder=\"Item name\" /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:item_type]}\n                                type=\"select\"\n                                options={[{\"Person\", \"person\"}, {\"Extra\", \"extra\"}]}\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:quantity]}\n                                type=\"number\"\n                                min=\"0\"\n                                placeholder=\"Qty\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:nights]}\n                                type=\"number\"\n                                min=\"1\"\n                                placeholder=\"Nights\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:price_per_night]}\n                                type=\"number\"\n                                step=\"0.01\"\n                                min=\"0\"\n                                placeholder=\"Price\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:vat_rate]}\n                                type=\"number\"\n                                step=\"0.01\"\n                                min=\"0\"\n                                max=\"100\"\n                                placeholder=\"VAT %\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div class=\"flex space-x-2\"&gt;\n                              &lt;button\n                                type=\"submit\"\n                                class=\"px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors\"\n                              &gt;\n                                Save\n                              &lt;/button&gt;\n                              &lt;button\n                                type=\"button\"\n                                phx-click=\"cancel_edit\"\n                                phx-target={@myself}\n                                class=\"px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm rounded transition-colors\"\n                              &gt;\n                                Cancel\n                              &lt;/button&gt;\n                            &lt;/div&gt;\n                          &lt;/div&gt;\n                        &lt;/.form&gt;\n                      &lt;/td&gt;\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "          &lt;div class=\"overflow-hidden border border-gray-200 rounded-lg\"&gt;\n            &lt;table class=\"min-w-full divide-y divide-gray-200\"&gt;\n              &lt;thead class=\"bg-gray-50\"&gt;\n                &lt;tr&gt;\n                  &lt;th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase\"&gt;\n                    Name\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase\"&gt;\n                    Type\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Qty\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Nights\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Price/Night\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    VAT %\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Subtotal\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Total\n                  &lt;/th&gt;\n                  &lt;th class=\"px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap\"&gt;\n                    Actions\n                  &lt;/th&gt;\n                &lt;/tr&gt;\n              &lt;/thead&gt;\n              &lt;tbody class=\"bg-white divide-y divide-gray-200\"&gt;\n                &lt;%= if @invoice.items == [] &amp;&amp; @editing_item_id != :new do %&gt;\n                  &lt;tr&gt;\n                    &lt;td colspan=\"9\" class=\"px-4 py-8 text-center text-gray-500\"&gt;\n                      No items yet. Click \"Add Item\" to create one.\n                    &lt;/td&gt;\n                  &lt;/tr&gt;\n                &lt;% end %&gt;                &lt;%= for item &lt;- @invoice.items do %&gt;\n                  &lt;%= if @editing_item_id == item.id do %&gt;\n                    &lt;%!-- Edit Mode --%&gt;\n                    &lt;tr class=\"bg-blue-50\"&gt;\n                      &lt;td colspan=\"9\" class=\"px-4 py-3\"&gt;\n                        &lt;.form\n                          for={@item_form}\n                          id={\"item-form-#{item.id}\"}\n                          phx-target={@myself}\n                          phx-submit=\"save_item\"\n                        &gt;\n                          &lt;div class=\"grid grid-cols-8 gap-3\"&gt;\n                            &lt;div class=\"col-span-2\"&gt;\n                              &lt;.input field={@item_form[:name]} type=\"text\" placeholder=\"Item name\" /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:item_type]}\n                                type=\"select\"\n                                options={[{\"Person\", \"person\"}, {\"Extra\", \"extra\"}]}\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:quantity]}\n                                type=\"number\"\n                                min=\"0\"\n                                placeholder=\"Qty\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:nights]}\n                                type=\"number\"\n                                min=\"1\"\n                                placeholder=\"Nights\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:price_per_night]}\n                                type=\"number\"\n                                step=\"0.01\"\n                                min=\"0\"\n                                placeholder=\"Price\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div&gt;\n                              &lt;.input\n                                field={@item_form[:vat_rate]}\n                                type=\"number\"\n                                step=\"0.01\"\n                                min=\"0\"\n                                max=\"100\"\n                                placeholder=\"VAT %\"\n                              /&gt;\n                            &lt;/div&gt;\n                            &lt;div class=\"flex space-x-2\"&gt;\n                              &lt;button\n                                type=\"submit\"\n                                class=\"px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors\"\n                              &gt;\n                                Save\n                              &lt;/button&gt;\n                              &lt;button\n                                type=\"button\"\n                                phx-click=\"cancel_edit\"\n                                phx-target={@myself}\n                                class=\"px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm rounded transition-colors\"\n                              &gt;\n                                Cancel\n                              &lt;/button&gt;\n                            &lt;/div&gt;\n                          &lt;/div&gt;\n                        &lt;/.form&gt;\n                      &lt;/td&gt;",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n                  &lt;% else %&gt;\n                    &lt;%!-- Display Mode --%&gt;\n                    &lt;tr class=\"hover:bg-gray-50\"&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900\"&gt;{item.name}&lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-700\"&gt;\n                        &lt;span class={[\n                          \"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium\",\n                          item.item_type == \"person\" &amp;&amp; \"bg-blue-100 text-blue-800\",\n                          item.item_type == \"extra\" &amp;&amp; \"bg-purple-100 text-purple-800\"\n                        ]}&gt;\n                          {if item.item_type == \"person\", do: \"Person\", else: \"Extra\"}\n                        &lt;/span&gt;\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.quantity)}\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.nights || 1)}\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_currency(item.price_per_night)}\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.vat_rate)}%\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        &lt;%= if item.subtotal do %&gt;\n                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.subtotal)}\n                        &lt;% else %&gt;\n                          &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                        &lt;% end %&gt;\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap\"&gt;\n                        &lt;%= if item.total do %&gt;\n                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.total)}\n                        &lt;% else %&gt;\n                          &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                        &lt;% end %&gt;\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-right text-sm whitespace-nowrap\"&gt;\n                        &lt;button\n                          type=\"button\"\n                          phx-click=\"edit_item\"\n                          phx-value-item-id={item.id}\n                          phx-target={@myself}\n                          class=\"text-indigo-600 hover:text-indigo-900 mr-3\"\n                        &gt;\n                          Edit\n                        &lt;/button&gt;\n                        &lt;button\n                          type=\"button\"\n                          phx-click=\"delete_item\"\n                          phx-value-item-id={item.id}\n                          phx-target={@myself}\n                          class=\"text-red-600 hover:text-red-900\"\n                          data-confirm=\"Are you sure you want to delete this item?\"\n                        &gt;\n                          Delete\n                        &lt;/button&gt;\n                      &lt;/td&gt;\n                    &lt;/tr&gt;\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "                  &lt;% else %&gt;\n                    &lt;%!-- Display Mode --%&gt;\n                    &lt;tr class=\"hover:bg-gray-50\"&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900\"&gt;{item.name}&lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-700\"&gt;\n                        &lt;span class={[\n                          \"inline-flex items-center px-2 py-0.5 rounded text-xs font-medium\",\n                          item.item_type == \"person\" &amp;&amp; \"bg-blue-100 text-blue-800\",\n                          item.item_type == \"extra\" &amp;&amp; \"bg-purple-100 text-purple-800\"\n                        ]}&gt;\n                          {if item.item_type == \"person\", do: \"Person\", else: \"Extra\"}\n                        &lt;/span&gt;\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.quantity)}\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.nights || 1)}\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_currency(item.price_per_night)}\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.vat_rate)}%\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm text-gray-900 text-right whitespace-nowrap\"&gt;\n                        &lt;%= if item.subtotal do %&gt;\n                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.subtotal)}\n                        &lt;% else %&gt;\n                          &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                        &lt;% end %&gt;\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap\"&gt;\n                        &lt;%= if item.total do %&gt;\n                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.total)}\n                        &lt;% else %&gt;\n                          &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                        &lt;% end %&gt;\n                      &lt;/td&gt;\n                      &lt;td class=\"px-4 py-3 text-right text-sm whitespace-nowrap\"&gt;\n                        &lt;button\n                          type=\"button\"\n                          phx-click=\"edit_item\"\n                          phx-value-item-id={item.id}\n                          phx-target={@myself}\n                          class=\"text-indigo-600 hover:text-indigo-900 mr-3\"\n                        &gt;\n                          Edit\n                        &lt;/button&gt;\n                        &lt;button\n                          type=\"button\"\n                          phx-click=\"delete_item\"\n                          phx-value-item-id={item.id}\n                          phx-target={@myself}\n                          class=\"text-red-600 hover:text-red-900\"\n                          data-confirm=\"Are you sure you want to delete this item?\"\n                        &gt;\n                          Delete\n                        &lt;/button&gt;\n                      &lt;/td&gt;\n                    &lt;/tr&gt;",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#275-275), lines 275 to 335</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#275-275), lines 275 to 335
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex#330-330), lines 330 to 390</summary>
+
+```elixir
+                <%!-- New Item Form --%>
+                <%= if @editing_item_id == :new do %>
+                  <tr class="bg-green-50">
+                    <td colspan="9" class="px-4 py-3">
+                      <.form
+                        for={@item_form}
+                        id="new-item-form"
+                        phx-target={@myself}
+                        phx-submit="save_item"
+                      >
+                        <div class="grid grid-cols-8 gap-3">
+                          <div class="col-span-2">
+                            <.input
+                              field={@item_form[:name]}
+                              type="text"
+                              placeholder="Item name"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:item_type]}
+                              type="select"
+                              options={[{"Person", "person"}, {"Extra", "extra"}]}
+                              required
+                            />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:quantity]}
+                              type="number"
+                              min="0"
+                              placeholder="Qty"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:nights]}
+                              type="number"
+                              min="1"
+                              placeholder="Nights"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:price_per_night]}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="Price"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:vat_rate]}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="VAT %"
+                              required
+                            />
+                          </div>
+                          <div class="flex space-x-2">
+                            <button
+                              type="submit"
+                              class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="cancel_edit"
+                              phx-target={@myself}
+                              class="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm rounded transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </.form>
+                    </td>
+                  </tr>
+                <% end %>
 ```
 
-```
-Now let me find the template part where invoice items are displayed and add the nights field to the form: I can see the edit form for items. I need to add the nights field. Let me look further to find where the display of items shows the values: Now I need to update both the edit and new item forms to include the nights field. Let me update the table header first and then the forms: 
-```
 
-```
+</details>
+</tool-use>
 
-```
+---
 
-```
-Now let me update the display mode to show the nights value: 
-```
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
 
-```
-Now let me update the new item form as well: 
-```
+**Starting (8/8) *Run migration and test***
 
+- [x] Read booking invoice item schema
+  > Read the current BookingInvoiceItem schema to understand the existing structure
+- [x] Create migration to add nights column
+  > Create a migration to add the nights column to booking_invoice_items table
+- [x] Update BookingInvoiceItem schema
+  > Add nights field to the schema and update the changeset validation
+- [x] Update calculate_totals function
+  > Update the price calculation to include nights in the formula
+- [x] Update Bookings context functions
+  > Update functions that create/calculate invoice items to use nights
+- [x] Update UI forms for invoice items
+  > Add nights input field to the invoice items form in the admin UI
+- [x] Update display templates
+  > Update templates that display invoice items to show nights
+- [-] Run migration and test
+  > Run the migration and verify everything works correctly
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="run_in_terminal">
+<details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+
+Parameters:
+
+```json
+{
+  "kind": "terminal",
+  "terminalToolSessionId": "70d8817a-79ae-4220-911a-d60ab1ff1c49",
+  "commandLine": {
+    "original": "mix ecto.migrate"
+  },
+  "language": "sh",
+  "autoApproveInfo": {
+    "value": "_Auto approved by rule [&#96;mix&#96;](command:_chat.openTerminalSettingsLink?%255B3%255D \"View rule in settings\")_",
+    "isTrusted": {
+      "enabledCommands": [
+        "_chat.openTerminalSettingsLink"
+      ]
+    },
+    "supportThemeIcons": false,
+    "supportHtml": false
+  }
+}
 ```
-Now let me run the migration: Great! The migration ran successfully. Now let me check if there are any other places where invoice items need to be updated. Let me search for where invoice calculations might be displayed or used: Let me check if there are queries that need to be updated regarding the new nights field: The occupancy calculation already uses `bii.quantity`, which is correct. The nights field is per-item and doesn't affect how we count people for occupancy purposes - it only affects pricing calculations.
+Additional data:
+
+```json
+{
+  "vscodeToolId": "run_in_terminal",
+  "isHidden": false
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Run in Terminal\"",
+  "pastTenseMessage": "_Auto approved by rule [&#96;mix&#96;](command:_chat.openTerminalSettingsLink?%255B3%255D \"View rule in settings\")_",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "",
+  "textEditContent": "",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `BookingInvoiceItem` (`**/lib/**/*.ex`)</summary>
+
+
+Searched text for `BookingInvoiceItem` (`**/lib/**/*.ex`), 20 results
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#660-660), lines 660 to 690</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex#660-660), lines 660 to 690
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md#1-1), lines 1 to 51</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md#1-1), lines 1 to 51
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching text for `Handling Variable Stay Durations` (`**/.github/copilot-instructions.md`)</summary>
+
+
+Searched text for `Handling Variable Stay Durations` (`**/.github/copilot-instructions.md`), 2 results
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_getErrors">
+<details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_getErrors",
+  "isHidden": false
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Checking workspace for problems",
+  "pastTenseMessage": "Checked workspace, 3 problems found in [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs), [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md)",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "",
+  "textEditContent": "",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="run_in_terminal">
+<details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+
+Parameters:
+
+```json
+{
+  "kind": "terminal",
+  "terminalToolSessionId": "3dcd61c6-dd71-4c4e-87c5-ab803140cd81",
+  "commandLine": {
+    "original": "mix compile"
+  },
+  "language": "sh",
+  "autoApproveInfo": {
+    "value": "_Auto approved by rule [&#96;mix&#96;](command:_chat.openTerminalSettingsLink?%255B3%255D \"View rule in settings\")_",
+    "isTrusted": {
+      "enabledCommands": [
+        "_chat.openTerminalSettingsLink"
+      ]
+    },
+    "supportThemeIcons": false,
+    "supportHtml": false
+  }
+}
+```
+Additional data:
+
+```json
+{
+  "vscodeToolId": "run_in_terminal",
+  "isHidden": false
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Run in Terminal\"",
+  "pastTenseMessage": "_Auto approved by rule [&#96;mix&#96;](command:_chat.openTerminalSettingsLink?%255B3%255D \"View rule in settings\")_",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "",
+  "textEditContent": "",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Completed (8/8) *Run migration and test***
+
+- [x] Read booking invoice item schema
+  > Read the current BookingInvoiceItem schema to understand the existing structure
+- [x] Create migration to add nights column
+  > Create a migration to add the nights column to booking_invoice_items table
+- [x] Update BookingInvoiceItem schema
+  > Add nights field to the schema and update the changeset validation
+- [x] Update calculate_totals function
+  > Update the price calculation to include nights in the formula
+- [x] Update Bookings context functions
+  > Update functions that create/calculate invoice items to use nights
+- [x] Update UI forms for invoice items
+  > Add nights input field to the invoice items form in the admin UI
+- [x] Update display templates
+  > Update templates that display invoice items to show nights
+- [x] Run migration and test
+  > Run the migration and verify everything works correctly
+
+</details>
+</tool-use>
+
+---
+
+Now let me look at the invoice component to see where new items are added: Now I need to update the `add_item` handler to include the `nights` field with the booking's default nights: Now let me find the template part where invoice items are displayed and add the nights field to the form: I can see the edit form for items. I need to add the nights field. Let me look further to find where the display of items shows the values: Now I need to update both the edit and new item forms to include the nights field. Let me update the table header first and then the forms: Now let me update the display mode to show the nights value: Now let me update the new item form as well: Now let me run the migration: Great! The migration ran successfully. Now let me check if there are any other places where invoice items need to be updated. Let me search for where invoice calculations might be displayed or used: Let me check if there are queries that need to be updated regarding the new nights field: The occupancy calculation already uses `bii.quantity`, which is correct. The nights field is per-item and doesn't affect how we count people for occupancy purposes - it only affects pricing calculations.
 
 Let me now update the project guidelines to document this change: Good! The guideline is already documented. Let me check if there are any compilation errors: The mix dependency error seems unrelated to our changes. Let me verify the compilation works by restarting the server: Perfect! The compilation succeeded with only some warnings that were already there. Now let me create a summary document: Perfect! I've successfully implemented the complete solution for handling variable stay durations for booking invoices. Here's a summary of what was done:
 
