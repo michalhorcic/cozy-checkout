@@ -79,7 +79,7 @@
         
 <!-- Product Grid -->
         <div class="flex-1 overflow-y-auto p-6">
-          <div class="grid grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <%= if is_nil(@selected_category_id) do %>
               <!-- Show Popular Products -->
               <button
@@ -87,20 +87,20 @@
                 phx-click="add_product"
                 phx-value-product-id={product.id}
                 class={[
-                  "bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-200",
-                  "p-6 active:scale-95 border-2 border-transparent hover:border-blue-500",
-                  "min-h-[140px] flex flex-col justify-between"
+                  "bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200",
+                  "p-4 active:scale-95 border-2 border-transparent hover:border-blue-500",
+                  "flex items-center gap-4 text-left"
                 ]}
               >
-                <div>
-                  <h3 class="text-lg font-bold text-slate-900 mb-2 line-clamp-2 text-left">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
                     {product.name}
                   </h3>
-                  <p :if={product.category} class="text-xs text-slate-500 mb-2 text-left">
+                  <p :if={product.category} class="text-xs text-slate-500 mb-1 truncate">
                     {product.category.name}
                   </p>
                   <%= if product.pricing_info do %>
-                    <p class="text-sm font-semibold text-green-600 text-left">
+                    <p class="text-base font-bold text-green-600">
                       <%= case product.pricing_info.type do %>
                         <% :single -> %>
                           {format_currency(product.pricing_info.price)}
@@ -111,13 +111,11 @@
                       <% end %>
                     </p>
                   <% end %>
-                </div>
-                <div class="flex items-center justify-between mt-auto pt-3">
-                  <span class="text-sm text-slate-600">
-                    {if product.unit, do: "per #{product.unit}", else: ""}
+                  <span :if={product.unit} class="text-xs text-slate-600">
+                    per {product.unit}
                   </span>
-                  <.icon name="hero-plus-circle" class="w-8 h-8 text-blue-600" />
                 </div>
+                <.icon name="hero-plus-circle" class="w-10 h-10 text-blue-600 flex-shrink-0" />
               </button>
             <% else %>
               <!-- Show Category Products -->
@@ -126,17 +124,17 @@
                 phx-click="add_product"
                 phx-value-product-id={product.id}
                 class={[
-                  "bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-200",
-                  "p-6 active:scale-95 border-2 border-transparent hover:border-blue-500",
-                  "min-h-[140px] flex flex-col justify-between"
+                  "bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200",
+                  "p-4 active:scale-95 border-2 border-transparent hover:border-blue-500",
+                  "flex items-center gap-4 text-left"
                 ]}
               >
-                <div>
-                  <h3 class="text-lg font-bold text-slate-900 mb-2 line-clamp-2 text-left">
+                <div class="flex-1 min-w-0">
+                  <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
                     {product.name}
                   </h3>
                   <%= if product.pricing_info do %>
-                    <p class="text-sm font-semibold text-green-600 text-left">
+                    <p class="text-base font-bold text-green-600">
                       <%= case product.pricing_info.type do %>
                         <% :single -> %>
                           {format_currency(product.pricing_info.price)}
@@ -147,13 +145,11 @@
                       <% end %>
                     </p>
                   <% end %>
-                </div>
-                <div class="flex items-center justify-between mt-auto pt-3">
-                  <span class="text-sm text-slate-600">
-                    {if product.unit, do: "per #{product.unit}", else: ""}
+                  <span :if={product.unit} class="text-xs text-slate-600">
+                    per {product.unit}
                   </span>
-                  <.icon name="hero-plus-circle" class="w-8 h-8 text-blue-600" />
                 </div>
+                <.icon name="hero-plus-circle" class="w-10 h-10 text-blue-600 flex-shrink-0" />
               </button>
             <% end %>
           </div>
