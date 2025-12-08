@@ -190,6 +190,8 @@ const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
   hooks: {...colocatedHooks, ...Hooks},
+  heartbeatIntervalMs: 15000,  // Send heartbeat every 15 seconds (default: 30s)
+  timeout: 20000                // Wait 20s for server response (default: 10s)
 })
 
 // Show progress bar on live navigation and form submits
@@ -199,6 +201,44 @@ window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()
+
+// For POS tablets - prevent sleep and maintain connection
+if (/pos/.test(window.location.pathname)) {
+  // Send a ping every 30 seconds to keep connection alive
+  setInterval(() => {
+    if (liveSocket.isConnected()) {
+      // Touch a DOM element to prevent sleep
+      document.body.style.transform = 'translateZ(0)'
+      setTimeout(() => {
+        document.body.style.transform = ''
+      }, 100)
+    }
+  }, 30000)
+  
+  // Request wake lock API (keeps screen on)
+  if ('wakeLock' in navigator) {
+    let wakeLock = null
+    const requestWakeLock = async () => {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen')
+        wakeLock.addEventListener('release', () => {
+          console.log('Screen Wake Lock released')
+        })
+        console.log('Screen Wake Lock acquired')
+      } catch (err) {
+        console.error('Wake Lock error:', err)
+      }
+    }
+    requestWakeLock()
+    
+    // Re-acquire wake lock if page becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock()
+      }
+    })
+  }
+}
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
