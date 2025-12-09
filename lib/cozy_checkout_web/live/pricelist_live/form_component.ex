@@ -32,9 +32,9 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
         
     <!-- Price tiers for products with default_unit_amounts -->
         <div :if={@selected_product && @selected_product.default_unit_amounts} class="mb-6">
-          <label class="block text-sm font-semibold text-gray-700 mb-4">
+          <label class="block text-sm font-semibold text-primary-500 mb-4">
             Price Tiers for {@selected_product.name}
-            <span :if={@selected_product.unit} class="text-sm font-normal text-gray-500">
+            <span :if={@selected_product.unit} class="text-sm font-normal text-primary-400">
               ({@selected_product.unit})
             </span>
           </label>
@@ -42,10 +42,10 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
           <div class="space-y-3">
             <div
               :for={{tier, idx} <- Enum.with_index(@price_tiers)}
-              class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+              class="flex items-center gap-4 p-4 bg-secondary-50 rounded-lg"
             >
               <div class="flex-1">
-                <span class="text-lg font-medium text-gray-900">
+                <span class="text-lg font-medium text-primary-500">
                   {format_tier_amount(tier["unit_amount"])} {@selected_product.unit}
                 </span>
               </div>
@@ -60,16 +60,16 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
                   phx-target={@myself}
                   phx-value-index={idx}
                   name="price"
-                  class="w-32 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  class="w-32 px-4 py-2 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="0.00"
                   required
                 />
-                <span class="text-gray-600 font-medium">CZK</span>
+                <span class="text-primary-400 font-medium">CZK</span>
               </div>
             </div>
           </div>
 
-          <p class="mt-3 text-sm text-gray-500">
+          <p class="mt-3 text-sm text-primary-400">
             Set prices for each predefined size. These will be used when adding items in the POS system.
           </p>
         </div>
@@ -77,7 +77,7 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
     <!-- Single price for products without default_unit_amounts -->
         <div :if={@selected_product && !@selected_product.default_unit_amounts}>
           <.input field={@form[:price]} type="number" label="Price" step="0.01" required />
-          <p class="mt-2 text-sm text-gray-500">
+          <p class="mt-2 text-sm text-primary-400">
             This product has no predefined amounts, so a single price will be used.
           </p>
         </div>

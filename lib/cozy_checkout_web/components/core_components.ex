@@ -469,8 +469,8 @@ defmodule CozyCheckoutWeb.CoreComponents do
       class="relative z-50 hidden"
     >
       <div
-        id={"#{@id}-bg"}
-        class="fixed inset-0 bg-gray-900/50 transition-opacity"
+        id="#{@id}-bg"
+        class="fixed inset-0 bg-primary-900/50 transition-opacity"
         aria-hidden="true"
       />
       <div
@@ -494,10 +494,10 @@ defmodule CozyCheckoutWeb.CoreComponents do
                 <button
                   phx-click={JS.exec("data-cancel", to: "##{@id}")}
                   type="button"
-                  class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition"
+                  class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-secondary-100 transition"
                   aria-label={gettext("close")}
                 >
-                  <.icon name="hero-x-mark" class="w-6 h-6 text-gray-500" />
+                  <.icon name="hero-x-mark" class="w-6 h-6 text-primary-400" />
                 </button>
               </div>
               <div id={"#{@id}-content"}>

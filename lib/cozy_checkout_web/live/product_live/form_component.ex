@@ -46,7 +46,7 @@ defmodule CozyCheckoutWeb.ProductLive.FormComponent do
             placeholder="e.g., [300, 500, 1000] for preset portions"
             phx-debounce="500"
           />
-          <p class="mt-1 text-sm text-gray-500">
+          <p class="mt-1 text-sm text-primary-400">
             Enter preset portion sizes as a JSON array (e.g., [300, 500, 1000] for 300ml, 500ml, 1000ml). Leave empty to allow free-form entry when ordering.
           </p>
         </div>

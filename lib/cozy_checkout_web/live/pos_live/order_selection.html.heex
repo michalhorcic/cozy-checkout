@@ -1,23 +1,23 @@
 <Layouts.pos page_title={@page_title}>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+  <div class="min-h-screen bg-secondary-50 p-6">
     <!-- Header with Back Button -->
     <div class="mb-8">
       <button
         phx-click="back"
-        class="mb-4 inline-flex items-center gap-2 text-slate-600 hover:text-slate-900 text-lg active:scale-95 transition-transform"
+        class="mb-4 inline-flex items-center gap-2 text-primary-400 hover:text-primary-500 text-lg active:scale-95 transition-transform"
       >
         <.icon name="hero-arrow-left" class="w-6 h-6" />
         <span>Back to Bookings</span>
       </button>
 
-      <h1 class="text-4xl font-bold text-slate-900 mb-2">
+      <h1 class="text-4xl font-bold text-primary-500 mb-2">
         {@booking.guest.name}
-        <span :if={@booking.room_number} class="text-slate-500">
+        <span :if={@booking.room_number} class="text-primary-300">
           - Room {@booking.room_number}
         </span>
       </h1>
       <div class="flex items-center gap-4">
-        <p class="text-lg text-slate-600">
+        <p class="text-lg text-primary-400">
           <%= if @orders == [] do %>
             Create an order for a guest
           <% else %>
@@ -26,7 +26,7 @@
         </p>
         <span
           :if={@total_guests > 1}
-          class="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-semibold rounded-full"
+          class="px-3 py-1 bg-tertiary-100 text-tertiary-800 text-sm font-semibold rounded-full"
         >
           {length(@orders)} / {@total_guests} guests with orders
         </span>
@@ -41,13 +41,13 @@
         phx-value-order-id={order.id}
         class={[
           "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-200",
-          "p-8 cursor-pointer active:scale-95 border-4 border-transparent hover:border-blue-500"
+          "p-8 cursor-pointer active:scale-95 border-4 border-transparent hover:border-tertiary-500"
         ]}
       >
         <!-- Guest Name -->
         <div class="mb-4">
-          <p class="text-sm text-slate-500 mb-1">Guest</p>
-          <p class="text-lg font-semibold text-slate-900">
+          <p class="text-sm text-primary-300 mb-1">Guest</p>
+          <p class="text-lg font-semibold text-primary-500">
             {if order.guest, do: order.guest.name, else: "Unknown"}
           </p>
         </div>
@@ -61,7 +61,7 @@
 <!-- Items Count -->
         <div class="mb-4">
           <p class="text-sm text-slate-500 mb-1">Items</p>
-          <p class="text-2xl font-bold text-blue-600">
+          <p class="text-2xl font-bold text-tertiary-600">
             {Enum.count(Enum.filter(order.order_items, &is_nil(&1.deleted_at)))}
           </p>
         </div>
@@ -69,7 +69,7 @@
 <!-- Total Amount -->
         <div class="mb-4">
           <p class="text-sm text-slate-500 mb-1">Total</p>
-          <p class="text-2xl font-bold text-green-600">
+          <p class="text-2xl font-bold text-success-dark">
             {format_currency(order.total_amount || Decimal.new("0"))}
           </p>
         </div>
@@ -79,8 +79,8 @@
           <span class={[
             "inline-block px-4 py-2 rounded-full text-sm font-semibold",
             if(order.status == "open",
-              do: "bg-blue-100 text-blue-800",
-              else: "bg-yellow-100 text-yellow-800"
+              do: "bg-tertiary-100 text-tertiary-800",
+              else: "bg-warning-light text-warning-dark"
             )
           ]}>
             {String.replace(order.status, "_", " ") |> String.capitalize()}
@@ -89,11 +89,11 @@
       </div>
     </div>
     
-<!-- Create New Order Button -->
+    <!-- Create New Order Button -->
     <div class="max-w-md mx-auto">
       <button
         phx-click="create_new"
-        class="w-full bg-green-600 hover:bg-green-700 text-white text-xl font-bold py-6 px-8 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200"
+        class="w-full bg-success text-white text-xl font-bold py-6 px-8 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 hover:bg-success-dark"
       >
         <.icon name="hero-plus-circle" class="w-8 h-8 inline-block mr-3" /> Create New Order
       </button>
@@ -118,10 +118,10 @@
             phx-value-guest-id={booking_guest.guest_id}
             class={[
               "w-full bg-white border-2 rounded-xl p-6 text-left",
-              "hover:border-blue-500 hover:bg-blue-50 transition-all duration-200",
+              "hover:border-tertiary-500 hover:bg-tertiary-50 transition-all duration-200",
               "active:scale-95 cursor-pointer",
               if(booking_guest.is_primary,
-                do: "border-blue-500 bg-blue-50",
+                do: "border-tertiary-500 bg-tertiary-50",
                 else: "border-slate-200"
               )
             ]}
@@ -139,7 +139,7 @@
               <div>
                 <span
                   :if={booking_guest.is_primary}
-                  class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white"
+                  class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-tertiary-600 text-white"
                 >
                   Primary
                 </span>

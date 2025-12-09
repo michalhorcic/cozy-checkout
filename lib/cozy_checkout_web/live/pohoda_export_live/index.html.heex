@@ -1,10 +1,10 @@
 <div class="max-w-7xl mx-auto px-4 py-8">
   <div class="mb-8 flex items-center justify-between">
     <div>
-      <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+      <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
         ← Back to Dashboard
       </.link>
-      <h1 class="text-4xl font-bold text-gray-900">POHODA Export</h1>
+      <h1 class="text-4xl font-bold text-primary-500">POHODA Export</h1>
       <p class="text-slate-600 mt-2">Export paid orders to POHODA accounting software</p>
     </div>
   </div>
@@ -34,7 +34,7 @@
 
       <button
         type="submit"
-        class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+        class="px-6 py-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-semibold rounded-lg transition-colors"
       >
         Load Orders
       </button>
@@ -47,7 +47,7 @@
       <div class="flex gap-2">
         <button
           phx-click="select_all"
-          class="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          class="px-4 py-2 text-sm text-tertiary-600 hover:bg-tertiary-50 rounded-lg transition-colors"
         >
           Select All
         </button>
@@ -96,7 +96,7 @@
                 checked={MapSet.member?(@selected_orders, order.id)}
                 phx-click="toggle_order"
                 phx-value-order-id={order.id}
-                class="w-5 h-5 text-blue-600 border-slate-300 rounded focus:ring-blue-500"
+                class="w-5 h-5 text-tertiary-600 border-slate-300 rounded focus:ring-blue-500"
               />
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
@@ -107,10 +107,10 @@
                 {if order.guest, do: order.guest.name, else: "Unknown"}
               <% else %>
                 <span class="flex items-center gap-2">
-                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                  <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-info-light text-info-dark">
                     Standalone
                   </span>
-                  <span class="font-medium text-gray-900">{order.name}</span>
+                  <span class="font-medium text-primary-500">{order.name}</span>
                 </span>
               <% end %>
             </td>
@@ -141,7 +141,7 @@
       class={[
         "px-8 py-3 font-semibold rounded-lg transition-all",
         if(MapSet.size(@selected_orders) > 0,
-          do: "bg-green-600 hover:bg-green-700 text-white shadow-lg hover:shadow-xl",
+          do: "bg-success hover:bg-success-dark text-white shadow-lg hover:shadow-xl",
           else: "bg-slate-300 text-slate-500 cursor-not-allowed"
         )
       ]}

@@ -75,14 +75,14 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
       <div class="mb-8">
         <.link
           navigate={~p"/admin/orders"}
-          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
         >
           ← Back to Orders
         </.link>
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-4xl font-bold text-gray-900">Order {@order.order_number}</h1>
-            <p class="text-gray-600 mt-2">
+            <h1 class="text-4xl font-bold text-primary-500">Order {@order.order_number}</h1>
+            <p class="text-primary-400 mt-2">
               {Calendar.strftime(@order.inserted_at, "%B %d, %Y at %H:%M")}
             </p>
           </div>
@@ -99,7 +99,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             </.link>
             <div
               :if={@order.status == "paid"}
-              class="text-sm text-gray-500 italic"
+              class="text-sm text-primary-400 italic"
               title="Paid orders cannot be edited as they serve as accounting history"
             >
               <.icon name="hero-lock-closed" class="w-5 h-5 inline" /> Locked for accounting
@@ -107,11 +107,11 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             <span class={[
               "px-4 py-2 inline-flex text-lg font-semibold rounded-full",
               case @order.status do
-                "paid" -> "bg-green-100 text-green-800"
-                "partially_paid" -> "bg-yellow-100 text-yellow-800"
-                "open" -> "bg-blue-100 text-blue-800"
-                "cancelled" -> "bg-red-100 text-red-800"
-                _ -> "bg-gray-100 text-gray-800"
+                "paid" -> "bg-success-light text-success-dark"
+                "partially_paid" -> "bg-warning-light text-warning-dark"
+                "open" -> "bg-tertiary-100 text-tertiary-800"
+                "cancelled" -> "bg-error-light text-error-dark"
+                _ -> "bg-secondary-100 text-primary-500"
               end
             ]}>
               {String.replace(@order.status, "_", " ") |> String.capitalize()}
@@ -125,30 +125,30 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
           <%!-- Booking Information --%>
           <%= if @order.booking_id do %>
             <div class="bg-white shadow-lg rounded-lg p-6">
-              <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
+              <h2 class="text-2xl font-bold text-primary-500 mb-4">Booking Information</h2>
               <div class="space-y-2">
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Guest Name:</span>
+                  <span class="text-primary-400">Guest Name:</span>
                   <span class="font-medium">
                     {if @order.guest, do: @order.guest.name, else: "Unknown"}
                   </span>
                 </div>
                 <div :if={@order.booking.room_number} class="flex justify-between">
-                  <span class="text-gray-600">Room:</span>
+                  <span class="text-primary-400">Room:</span>
                   <span class="font-medium">{@order.booking.room_number}</span>
                 </div>
                 <div :if={@order.guest && @order.guest.phone} class="flex justify-between">
-                  <span class="text-gray-600">Phone:</span>
+                  <span class="text-primary-400">Phone:</span>
                   <span class="font-medium">{@order.guest.phone}</span>
                 </div>
                 <div :if={@order.booking.check_in_date} class="flex justify-between">
-                  <span class="text-gray-600">Check-in:</span>
+                  <span class="text-primary-400">Check-in:</span>
                   <span class="font-medium">
                     {Calendar.strftime(@order.booking.check_in_date, "%B %d, %Y")}
                   </span>
                 </div>
                 <div :if={@order.booking.check_out_date} class="flex justify-between">
-                  <span class="text-gray-600">Check-out:</span>
+                  <span class="text-primary-400">Check-out:</span>
                   <span class="font-medium">
                     {Calendar.strftime(@order.booking.check_out_date, "%B %d, %Y")}
                   </span>
@@ -157,15 +157,15 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             </div>
           <% else %>
             <div class="bg-white shadow-lg rounded-lg p-6">
-              <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+              <h2 class="text-2xl font-bold text-primary-500 mb-4 flex items-center gap-3">
                 Order Information
-                <span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+                <span class="px-3 py-1 bg-info-light text-purple-700 text-sm font-semibold rounded-full">
                   Standalone Order
                 </span>
               </h2>
               <div class="space-y-2">
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Order Name:</span>
+                  <span class="text-primary-400">Order Name:</span>
                   <span class="font-medium">{@order.name}</span>
                 </div>
               </div>
@@ -174,37 +174,37 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
 
           <%!-- Order Items --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Items</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Order Items</h2>
             <div class="space-y-3">
               <div
                 :for={group <- @grouped_items}
-                class="border border-gray-200 rounded-lg overflow-hidden"
+                class="border border-secondary-200 rounded-lg overflow-hidden"
               >
                 <!-- Grouped Item Display -->
-                <div class="p-4 bg-gray-50">
+                <div class="p-4 bg-secondary-50">
                   <div class="flex items-center justify-between">
                     <div class="flex-1">
-                      <div class="font-medium text-gray-900">{group.product.name}</div>
-                      <div class="text-sm text-gray-500">
+                      <div class="font-medium text-primary-500">{group.product.name}</div>
+                      <div class="text-sm text-primary-400">
                         <%= if group.unit_amount do %>
                           {Decimal.round(group.total_quantity, 2)} × {group.unit_amount}{group.product.unit} = {Decimal.mult(
                             group.total_quantity,
                             group.unit_amount
                           )}{group.product.unit}
-                          <span class="text-gray-400">|</span>
+                          <span class="text-primary-300">|</span>
                         <% else %>
                           Total Quantity: {Decimal.round(group.total_quantity, 2)}
-                          <span class="text-gray-400">|</span>
+                          <span class="text-primary-300">|</span>
                         <% end %>
                         {format_currency(group.price_per_unit)} (VAT: {group.vat_rate}%)
                         <%= if group.grouped? do %>
-                          <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          <span class="ml-2 text-xs bg-tertiary-100 text-tertiary-800 px-2 py-1 rounded-full">
                             {length(group.items)} items
                           </span>
                         <% end %>
                       </div>
                     </div>
-                    <div class="text-lg font-bold text-gray-900">
+                    <div class="text-lg font-bold text-primary-500">
                       {format_currency(group.total_price)}
                     </div>
                   </div>
@@ -215,7 +215,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                       phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
                       phx-value-product-id={group.product.id}
                       phx-value-unit-amount={group.unit_amount || ""}
-                      class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                      class="mt-3 text-sm text-tertiary-600 hover:text-tertiary-800 font-medium flex items-center gap-1"
                     >
                       <%= if group.expanded? do %>
                         <.icon name="hero-chevron-up" class="w-4 h-4" /> Hide individual items
@@ -229,20 +229,20 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
 
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
-                  <div class="border-t border-gray-200">
+                  <div class="border-t border-secondary-200">
                     <div
                       :for={item <- group.items}
                       class="p-3 bg-white border-b border-gray-100 last:border-b-0"
                     >
                       <div class="flex items-center justify-between text-sm">
-                        <div class="text-gray-600">
+                        <div class="text-primary-400">
                           <%= if item.unit_amount do %>
                             {item.quantity} × {item.unit_amount}{item.product.unit}
                           <% else %>
                             Qty: {item.quantity}
                           <% end %>
                         </div>
-                        <div class="text-gray-900 font-medium">
+                        <div class="text-primary-500 font-medium">
                           {format_currency(item.subtotal)}
                         </div>
                       </div>
@@ -255,29 +255,29 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
 
           <%!-- Payment History --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Payment History</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Payment History</h2>
 
-            <div :if={@payments == []} class="text-center py-8 text-gray-500">
+            <div :if={@payments == []} class="text-center py-8 text-primary-400">
               No payments recorded yet
             </div>
 
             <div :if={@payments != []} class="space-y-3">
               <div
                 :for={payment <- @payments}
-                class="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
+                class="flex items-center justify-between p-4 bg-secondary-50 rounded-lg"
               >
                 <div class="flex-1">
-                  <div class="font-medium text-gray-900">
+                  <div class="font-medium text-primary-500">
                     {String.replace(payment.payment_method, "_", " ") |> String.capitalize()}
                   </div>
-                  <div class="text-sm text-gray-500">
+                  <div class="text-sm text-primary-400">
                     {Calendar.strftime(payment.payment_date, "%B %d, %Y")}
                   </div>
-                  <div :if={payment.notes} class="text-sm text-gray-500 mt-1">
+                  <div :if={payment.notes} class="text-sm text-primary-400 mt-1">
                     {payment.notes}
                   </div>
                 </div>
-                <div class="text-lg font-bold text-green-600">+{format_currency(payment.amount)}</div>
+                <div class="text-lg font-bold text-success-dark">+{format_currency(payment.amount)}</div>
               </div>
             </div>
 
@@ -293,15 +293,15 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
           </div>
 
           <div :if={@order.notes} class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Notes</h2>
-            <p class="text-gray-600">{@order.notes}</p>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Notes</h2>
+            <p class="text-primary-400">{@order.notes}</p>
           </div>
         </div>
 
         <%!-- Order Summary --%>
         <div class="lg:col-span-1">
           <div class="bg-white shadow-lg rounded-lg p-6 sticky top-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Summary</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Summary</h2>
 
             <div class="space-y-3">
               <%
@@ -314,42 +314,42 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                 end)
               %>
 
-              <div class="flex justify-between text-gray-600">
+              <div class="flex justify-between text-primary-400">
                 <span>Subtotal (Items):</span>
                 <span>{format_currency(items_subtotal)}</span>
               </div>
 
               <div
                 :if={Decimal.gt?(@order.discount_amount || Decimal.new("0"), 0)}
-                class="flex justify-between text-gray-600"
+                class="flex justify-between text-primary-400"
               >
                 <span>Discount:</span>
-                <span class="text-red-600">-{format_currency(@order.discount_amount)}</span>
+                <span class="text-error">-{format_currency(@order.discount_amount)}</span>
               </div>
 
               <%= if @order.discount_reason && @order.discount_reason != "" do %>
-                <div class="text-sm text-gray-500 italic pl-4">
+                <div class="text-sm text-primary-400 italic pl-4">
                   Reason: {@order.discount_reason}
                 </div>
               <% end %>
 
               <div
                 :if={Decimal.gt?(@order.tips_amount || Decimal.new("0"), 0)}
-                class="flex justify-between text-gray-600"
+                class="flex justify-between text-primary-400"
               >
                 <span>Tips:</span>
-                <span class="text-green-600">+{format_currency(@order.tips_amount)}</span>
+                <span class="text-success-dark">+{format_currency(@order.tips_amount)}</span>
               </div>
 
               <div class="border-t pt-3">
-                <div class="flex justify-between text-xl font-bold text-gray-900">
+                <div class="flex justify-between text-xl font-bold text-primary-500">
                   <span>Total:</span>
                   <span>{format_currency(@order.total_amount)}</span>
                 </div>
               </div>
 
               <div class="border-t pt-3">
-                <div class="flex justify-between text-green-600 font-medium">
+                <div class="flex justify-between text-success-dark font-medium">
                   <span>Paid:</span>
                   <span>{format_currency(@total_paid)}</span>
                 </div>
@@ -358,12 +358,12 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
               <div class="border-t pt-3">
                 <div class="flex justify-between text-xl font-bold">
                   <span class={
-                    if Decimal.gt?(@amount_due, 0), do: "text-red-600", else: "text-green-600"
+                    if Decimal.gt?(@amount_due, 0), do: "text-error", else: "text-success-dark"
                   }>
                     Amount Due:
                   </span>
                   <span class={
-                    if Decimal.gt?(@amount_due, 0), do: "text-red-600", else: "text-green-600"
+                    if Decimal.gt?(@amount_due, 0), do: "text-error", else: "text-success-dark"
                   }>
                     {format_currency(@amount_due)}
                   </span>

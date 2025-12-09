@@ -7,13 +7,13 @@ defmodule CozyCheckoutWeb.MainMenuLive do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div class="min-h-screen bg-primary-800">
       <div class="max-w-6xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div class="text-center mb-16">
           <h1 class="text-6xl font-bold text-white mb-4 tracking-tight">
             Cozy Checkout
           </h1>
-          <p class="text-2xl text-purple-200">
+          <p class="text-2xl text-secondary-100">
             Mountain Cottage Point of Sale System
           </p>
         </div>
@@ -24,8 +24,8 @@ defmodule CozyCheckoutWeb.MainMenuLive do
             navigate={~p"/pos"}
             class={[
               "group relative overflow-hidden",
-              "bg-gradient-to-br from-emerald-500 to-teal-600",
-              "rounded-3xl shadow-2xl hover:shadow-emerald-500/50",
+              "bg-tertiary-500",
+              "rounded-3xl shadow-2xl hover:shadow-tertiary-500/50",
               "transform transition-all duration-300 hover:scale-105",
               "p-12 text-center"
             ]}
@@ -40,7 +40,7 @@ defmodule CozyCheckoutWeb.MainMenuLive do
               <h2 class="text-4xl font-bold text-white mb-4">
                 POS System
               </h2>
-              <p class="text-xl text-emerald-50">
+              <p class="text-xl text-white opacity-90">
                 Touch-friendly bar interface for quick orders
               </p>
             </div>
@@ -53,8 +53,8 @@ defmodule CozyCheckoutWeb.MainMenuLive do
             navigate={~p"/admin"}
             class={[
               "group relative overflow-hidden",
-              "bg-gradient-to-br from-blue-600 to-indigo-700",
-              "rounded-3xl shadow-2xl hover:shadow-blue-500/50",
+              "bg-success",
+              "rounded-3xl shadow-2xl hover:shadow-success/50",
               "transform transition-all duration-300 hover:scale-105",
               "p-12 text-center"
             ]}
@@ -69,7 +69,7 @@ defmodule CozyCheckoutWeb.MainMenuLive do
               <h2 class="text-4xl font-bold text-white mb-4">
                 Admin Dashboard
               </h2>
-              <p class="text-xl text-blue-50">
+              <p class="text-xl text-white opacity-90">
                 Manage products, guests, orders & exports
               </p>
             </div>

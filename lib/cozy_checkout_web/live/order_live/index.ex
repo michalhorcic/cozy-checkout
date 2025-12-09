@@ -125,10 +125,10 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
             ← Back to Dashboard
           </.link>
-          <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+          <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
         </div>
         <.link navigate={~p"/admin/orders/new"}>
           <.button>
@@ -211,15 +211,15 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
         <!-- Table -->
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+            <thead class="bg-secondary-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Order #
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Guest / Name
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Total
                 </th>
                 <.sortable_header meta={@meta} field={:status} path={~p"/admin/orders"}>
@@ -228,7 +228,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 <.sortable_header meta={@meta} field={:inserted_at} path={~p"/admin/orders"}>
                   Date
                 </.sortable_header>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -236,51 +236,51 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
             <tbody class="bg-white divide-y divide-gray-200">
               <%= if @orders == [] do %>
                 <tr>
-                  <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                  <td colspan="6" class="px-6 py-12 text-center text-primary-400">
                     No orders found.
                   </td>
                 </tr>
               <% else %>
-                <tr :for={order <- @orders} class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr :for={order <- @orders} class="hover:bg-secondary-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
                     {order.order_number}
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-500">
+                  <td class="px-6 py-4 text-sm text-primary-400">
                     <%= if order.booking_id do %>
                       {if order.guest, do: order.guest.name, else: "Unknown"}
                     <% else %>
                       <span class="flex items-center gap-2">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-info-light text-info-dark">
                           Standalone
                         </span>
-                        <span class="font-medium text-gray-900">{order.name}</span>
+                        <span class="font-medium text-primary-500">{order.name}</span>
                       </span>
                     <% end %>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500">
                     {format_currency(order.total_amount)}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class={[
                       "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
                       case order.status do
-                        "paid" -> "bg-green-100 text-green-800"
-                        "partially_paid" -> "bg-yellow-100 text-yellow-800"
-                        "open" -> "bg-blue-100 text-blue-800"
-                        "cancelled" -> "bg-red-100 text-red-800"
-                        _ -> "bg-gray-100 text-gray-800"
+                        "paid" -> "bg-success-light text-success-dark"
+                        "partially_paid" -> "bg-warning-light text-warning-dark"
+                        "open" -> "bg-tertiary-100 text-tertiary-800"
+                        "cancelled" -> "bg-error-light text-error-dark"
+                        _ -> "bg-secondary-100 text-primary-500"
                       end
                     ]}>
                       {String.replace(order.status, "_", " ") |> String.capitalize()}
                     </span>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {Calendar.strftime(order.inserted_at, "%Y-%m-%d %H:%M")}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
                       navigate={~p"/admin/orders/#{order}"}
-                      class="text-blue-600 hover:text-blue-900 mr-4"
+                      class="text-tertiary-600 hover:text-blue-900 mr-4"
                     >
                       View
                     </.link>
@@ -288,13 +288,13 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                       <.link
                         phx-click={JS.push("delete", value: %{id: order.id})}
                         data-confirm="Are you sure?"
-                        class="text-red-600 hover:text-red-900"
+                        class="text-error hover:text-error-dark"
                       >
                         Delete
                       </.link>
                     <% else %>
                       <span
-                        class="text-gray-400 italic text-xs"
+                        class="text-primary-300 italic text-xs"
                         title="Paid orders cannot be deleted"
                       >
                         <.icon name="hero-lock-closed" class="w-4 h-4 inline" /> Locked

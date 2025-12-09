@@ -145,10 +145,10 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
             ← Back to Dashboard
           </.link>
-          <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+          <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
         </div>
         <div class="flex gap-3">
           <.link
@@ -205,30 +205,30 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
         <!-- Table -->
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+            <thead class="bg-secondary-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Product
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Category
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Price
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   VAT Rate
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Valid From
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Valid To
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Status
                 </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -236,36 +236,36 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
             <tbody class="bg-white divide-y divide-gray-200">
               <%= if @pricelists == [] do %>
                 <tr>
-                  <td colspan="8" class="px-6 py-12 text-center text-gray-500">
+                  <td colspan="8" class="px-6 py-12 text-center text-primary-400">
                     No pricelists found.
                   </td>
                 </tr>
               <% else %>
-                <tr :for={pricelist <- @pricelists} class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr :for={pricelist <- @pricelists} class="hover:bg-secondary-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
                     {pricelist.product && pricelist.product.name}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {pricelist.product && pricelist.product.category && pricelist.product.category.name}
                   </td>
-                  <td class="px-6 py-4 text-sm text-gray-900">
+                  <td class="px-6 py-4 text-sm text-primary-500">
                     {format_price_display(pricelist)}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {pricelist.vat_rate}%
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {pricelist.valid_from}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {pricelist.valid_to || "—"}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class={[
                       "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
                       if(pricelist.active,
-                        do: "bg-green-100 text-green-800",
-                        else: "bg-gray-100 text-gray-800"
+                        do: "bg-success-light text-success-dark",
+                        else: "bg-secondary-100 text-primary-500"
                       )
                     ]}>
                       {if pricelist.active, do: "Active", else: "Inactive"}
@@ -274,14 +274,14 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
                       patch={build_path_with_params(~p"/admin/pricelists/#{pricelist}/edit", @current_params)}
-                      class="text-indigo-600 hover:text-indigo-900 mr-4"
+                      class="text-tertiary-600 hover:text-white-900 mr-4"
                     >
                       Edit
                     </.link>
                     <.link
                       phx-click={JS.push("delete", value: %{id: pricelist.id})}
                       data-confirm="Are you sure?"
-                      class="text-red-600 hover:text-red-900"
+                      class="text-error hover:text-error-dark"
                     >
                       Delete
                     </.link>

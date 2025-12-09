@@ -141,10 +141,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
             ← Back to Dashboard
           </.link>
-          <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+          <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
         </div>
         <.link patch={build_path_with_params(~p"/admin/bookings/new", @current_params)}>
           <.button>
@@ -235,12 +235,12 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         <!-- Table -->
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+            <thead class="bg-secondary-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Guest
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Room
                 </th>
                 <.sortable_header meta={@meta} field={:check_in_date} path={~p"/admin/bookings"}>
@@ -252,10 +252,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                 <.sortable_header meta={@meta} field={:status} path={~p"/admin/bookings"}>
                   Status
                 </.sortable_header>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Invoice
                 </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -263,33 +263,33 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             <tbody class="bg-white divide-y divide-gray-200">
               <%= if @bookings == [] do %>
                 <tr>
-                  <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                  <td colspan="7" class="px-6 py-12 text-center text-primary-400">
                     No bookings found.
                   </td>
                 </tr>
               <% else %>
-                <tr :for={booking <- @bookings} class="hover:bg-gray-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                <tr :for={booking <- @bookings} class="hover:bg-secondary-50">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
                     <div class="flex items-center gap-2">
                       <span>{booking.guest.name}</span>
                       <%= if booking.short_note do %>
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-info-light text-tertiary-800">
                           {booking.short_note}
                         </span>
                       <% end %>
                     </div>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     <%= if Map.get(booking, :rooms_list) && booking.rooms_list != [] do %>
                       {Enum.map_join(booking.rooms_list, ", ", & &1.room_number)}
                     <% else %>
                       —
                     <% end %>
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {Calendar.strftime(booking.check_in_date, "%b %d, %Y")}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {if booking.check_out_date,
                       do: Calendar.strftime(booking.check_out_date, "%b %d, %Y"),
                       else: "—"}
@@ -311,26 +311,26 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                         {invoice_state_label(booking.invoice.state)}
                       </span>
                     <% else %>
-                      <span class="text-gray-400 text-sm">—</span>
+                      <span class="text-primary-300 text-sm">—</span>
                     <% end %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
                       navigate={build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)}
-                      class="text-blue-600 hover:text-blue-900 mr-4"
+                      class="text-tertiary-600 hover:text-blue-900 mr-4"
                     >
                       View
                     </.link>
                     <.link
                       patch={build_path_with_params(~p"/admin/bookings/#{booking}/edit", @current_params)}
-                      class="text-indigo-600 hover:text-indigo-900 mr-4"
+                      class="text-tertiary-600 hover:text-white-900 mr-4"
                     >
                       Edit
                     </.link>
                     <.link
                       phx-click={JS.push("delete", value: %{id: booking.id})}
                       data-confirm="Are you sure? This will not delete associated orders."
-                      class="text-red-600 hover:text-red-900"
+                      class="text-error hover:text-error-dark"
                     >
                       Delete
                     </.link>
@@ -363,19 +363,19 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     """
   end
 
-  defp status_badge_class("upcoming"), do: "bg-blue-100 text-blue-800"
-  defp status_badge_class("active"), do: "bg-green-100 text-green-800"
-  defp status_badge_class("completed"), do: "bg-gray-100 text-gray-800"
-  defp status_badge_class("cancelled"), do: "bg-red-100 text-red-800"
-  defp status_badge_class(_), do: "bg-gray-100 text-gray-800"
+  defp status_badge_class("upcoming"), do: "bg-tertiary-100 text-tertiary-800"
+  defp status_badge_class("active"), do: "bg-success-light text-success-dark"
+  defp status_badge_class("completed"), do: "bg-secondary-100 text-primary-500"
+  defp status_badge_class("cancelled"), do: "bg-error-light text-error-dark"
+  defp status_badge_class(_), do: "bg-secondary-100 text-primary-500"
 
-  defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
-  defp invoice_state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
-  defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
-  defp invoice_state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
-  defp invoice_state_badge_class("advance_paid"), do: "bg-yellow-100 text-yellow-800"
-  defp invoice_state_badge_class("paid"), do: "bg-green-100 text-green-800"
-  defp invoice_state_badge_class(_), do: "bg-gray-100 text-gray-800"
+  defp invoice_state_badge_class("draft"), do: "bg-secondary-100 text-primary-500"
+  defp invoice_state_badge_class("personal"), do: "bg-warning-light text-warning-dark"
+  defp invoice_state_badge_class("generated"), do: "bg-tertiary-100 text-tertiary-800"
+  defp invoice_state_badge_class("sent"), do: "bg-info-light text-info-dark"
+  defp invoice_state_badge_class("advance_paid"), do: "bg-warning-light text-warning-dark"
+  defp invoice_state_badge_class("paid"), do: "bg-success-light text-success-dark"
+  defp invoice_state_badge_class(_), do: "bg-secondary-100 text-primary-500"
 
   defp invoice_state_label("draft"), do: "Draft"
   defp invoice_state_label("personal"), do: "Personal"

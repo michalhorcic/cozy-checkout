@@ -23,7 +23,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
   def sortable_header(assigns) do
     ~H"""
     <th class={[
-      "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors",
+      "px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider cursor-pointer hover:bg-secondary-100 transition-colors",
       @class
     ]}>
       <.link
@@ -55,7 +55,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
       <% :desc -> %>
         <.icon name="hero-chevron-down" class="w-4 h-4" />
       <% _ -> %>
-        <.icon name="hero-chevron-up-down" class="w-4 h-4 text-gray-300" />
+        <.icon name="hero-chevron-up-down" class="w-4 h-4 text-secondary-300" />
     <% end %>
     """
   end
@@ -94,7 +94,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
 
   def filter_form(assigns) do
     ~H"""
-    <div class={["p-4 border-b border-gray-200 bg-gray-50", @class]}>
+    <div class={["p-4 border-b border-secondary-200 bg-secondary-50", @class]}>
       <form phx-change="filter" phx-submit="filter" id={@id}>
         <div class="flex flex-wrap gap-4 items-end">
           <%= for filter <- @filter do %>
@@ -106,13 +106,13 @@ defmodule CozyCheckoutWeb.FlopComponents do
           <div class="flex gap-2">
             <button
               type="submit"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              class="px-4 py-2 bg-tertiary-600 text-white rounded-lg hover:bg-tertiary-700 transition-colors"
             >
               Apply
             </button>
             <.link
               patch={@path}
-              class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              class="px-4 py-2 bg-secondary-200 text-primary-500 rounded-lg hover:bg-secondary-300 transition-colors"
             >
               Clear
             </.link>
@@ -136,18 +136,18 @@ defmodule CozyCheckoutWeb.FlopComponents do
 
   def pagination(assigns) do
     ~H"""
-    <div class={["px-4 py-3 flex items-center justify-between border-t border-gray-200", @class]}>
+    <div class={["px-4 py-3 flex items-center justify-between border-t border-secondary-200", @class]}>
       <!-- Mobile pagination -->
       <div class="flex-1 flex justify-between sm:hidden">
         <%= if @meta.has_previous_page? do %>
           <.link
             patch={build_path(@path, @meta, :previous)}
-            class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-primary-500 bg-white hover:bg-secondary-50"
           >
             Previous
           </.link>
         <% else %>
-          <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+          <span class="relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-secondary-400 bg-secondary-100 cursor-not-allowed">
             Previous
           </span>
         <% end %>
@@ -155,12 +155,12 @@ defmodule CozyCheckoutWeb.FlopComponents do
         <%= if @meta.has_next_page? do %>
           <.link
             patch={build_path(@path, @meta, :next)}
-            class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+            class="ml-3 relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-primary-500 bg-white hover:bg-secondary-50"
           >
             Next
           </.link>
         <% else %>
-          <span class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed">
+          <span class="ml-3 relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-secondary-400 bg-secondary-100 cursor-not-allowed">
             Next
           </span>
         <% end %>
@@ -169,7 +169,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
     <!-- Desktop pagination -->
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
-          <p class="text-sm text-gray-700">
+          <p class="text-sm text-primary-500">
             Showing <span class="font-medium">{@meta.current_offset + 1}</span>
             to
             <span class="font-medium">
@@ -186,25 +186,25 @@ defmodule CozyCheckoutWeb.FlopComponents do
             <%= if @meta.has_previous_page? do %>
               <.link
                 patch={build_path(@path, @meta, :previous)}
-                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-secondary-300 bg-white text-sm font-medium text-primary-400 hover:bg-secondary-50"
               >
                 <.icon name="hero-chevron-left" class="w-5 h-5" />
               </.link>
             <% else %>
-              <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+              <span class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-secondary-300 bg-secondary-100 text-sm font-medium text-secondary-400 cursor-not-allowed">
                 <.icon name="hero-chevron-left" class="w-5 h-5" />
               </span>
             <% end %>
             <!-- Page numbers -->
             <%= for page <- page_numbers(@meta) do %>
               <%= if page == @meta.current_page do %>
-                <span class="relative inline-flex items-center px-4 py-2 border border-blue-500 bg-blue-50 text-sm font-medium text-blue-600">
+                <span class="relative inline-flex items-center px-4 py-2 border border-tertiary-500 bg-tertiary-50 text-sm font-medium text-tertiary-600">
                   {page}
                 </span>
               <% else %>
                 <.link
                   patch={build_path(@path, @meta, :page, page)}
-                  class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  class="relative inline-flex items-center px-4 py-2 border border-secondary-300 bg-white text-sm font-medium text-primary-500 hover:bg-secondary-50"
                 >
                   {page}
                 </.link>
@@ -214,12 +214,12 @@ defmodule CozyCheckoutWeb.FlopComponents do
             <%= if @meta.has_next_page? do %>
               <.link
                 patch={build_path(@path, @meta, :next)}
-                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+                class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-secondary-300 bg-white text-sm font-medium text-primary-400 hover:bg-secondary-50"
               >
                 <.icon name="hero-chevron-right" class="w-5 h-5" />
               </.link>
             <% else %>
-              <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-gray-100 text-sm font-medium text-gray-400 cursor-not-allowed">
+              <span class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-secondary-300 bg-secondary-100 text-sm font-medium text-secondary-400 cursor-not-allowed">
                 <.icon name="hero-chevron-right" class="w-5 h-5" />
               </span>
             <% end %>

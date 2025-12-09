@@ -1,24 +1,24 @@
 <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <!-- Header -->
   <div class="mb-8">
-    <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+    <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
       ← Back to Dashboard
     </.link>
-    <h1 class="text-3xl font-bold text-gray-900">Economy Management</h1>
-    <p class="mt-2 text-sm text-gray-600">
+    <h1 class="text-3xl font-bold text-primary-500">Economy Management</h1>
+    <p class="mt-2 text-sm text-primary-400">
       View and analyze booking revenue and statistics
     </p>
   </div>
 
   <!-- Filters -->
   <div class="bg-white rounded-lg shadow p-6 mb-8">
-    <h2 class="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+    <h2 class="text-lg font-semibold text-primary-500 mb-4">Filters</h2>
     
     <.form for={%{}} phx-change="filter" id="filter-form" class="space-y-6">
       <!-- Date Range -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">
+          <label for="start_date" class="block text-sm font-medium text-primary-500 mb-1">
             Start Date (Check-in)
           </label>
           <input
@@ -26,11 +26,11 @@
             id="start_date"
             name="start_date"
             value={Date.to_iso8601(@start_date)}
-            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+            class="w-full rounded-lg border-secondary-300 focus:border-tertiary-500 focus:ring-blue-500"
           />
         </div>
         <div>
-          <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">
+          <label for="end_date" class="block text-sm font-medium text-primary-500 mb-1">
             End Date (Check-in)
           </label>
           <input
@@ -38,7 +38,7 @@
             id="end_date"
             name="end_date"
             value={Date.to_iso8601(@end_date)}
-            class="w-full rounded-lg border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+            class="w-full rounded-lg border-secondary-300 focus:border-tertiary-500 focus:ring-blue-500"
           />
         </div>
       </div>
@@ -46,22 +46,22 @@
       <!-- Invoice States -->
       <div>
         <div class="flex items-center justify-between mb-3">
-          <label class="block text-sm font-medium text-gray-700">
+          <label class="block text-sm font-medium text-primary-500">
             Invoice States
           </label>
           <div class="flex gap-2">
             <button
               type="button"
               phx-click="select_all_states"
-              class="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              class="text-sm text-tertiary-600 hover:text-tertiary-800 font-medium"
             >
               Select All
             </button>
-            <span class="text-gray-400">|</span>
+            <span class="text-primary-300">|</span>
             <button
               type="button"
               phx-click="clear_all_states"
-              class="text-sm text-gray-600 hover:text-gray-800 font-medium"
+              class="text-sm text-primary-400 hover:text-primary-500 font-medium"
             >
               Clear All
             </button>
@@ -83,7 +83,7 @@
                 "border-2",
                 if(state in @selected_states,
                   do: "#{state_badge_class(state)} border-current",
-                  else: "bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100"
+                  else: "bg-secondary-50 text-primary-300 border-secondary-200 hover:bg-secondary-100"
                 )
               ]}>
                 {state_label(state)}
@@ -148,10 +148,10 @@
   <!-- State Breakdown -->
   <%= if map_size(@stats.state_breakdown) > 0 do %>
     <div class="bg-white rounded-lg shadow p-6 mb-8">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Breakdown by State</h2>
+      <h2 class="text-lg font-semibold text-primary-500 mb-4">Breakdown by State</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <%= for {state, data} <- @stats.state_breakdown do %>
-          <div class="border border-gray-200 rounded-lg p-4">
+          <div class="border border-secondary-200 rounded-lg p-4">
             <div class="flex items-center justify-between mb-2">
               <span class={[
                 "px-3 py-1 rounded-full text-xs font-semibold",
@@ -159,9 +159,9 @@
               ]}>
                 {state_label(state)}
               </span>
-              <span class="text-sm text-gray-600 whitespace-nowrap">{data.count} bookings</span>
+              <span class="text-sm text-primary-400 whitespace-nowrap">{data.count} bookings</span>
             </div>
-            <p class="text-2xl font-bold text-gray-900 mt-2 whitespace-nowrap">
+            <p class="text-2xl font-bold text-primary-500 mt-2 whitespace-nowrap">
               {CozyCheckoutWeb.CurrencyHelper.format_currency(data.total)}
             </p>
           </div>
@@ -175,7 +175,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Revenue Chart -->
       <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-6">Monthly Revenue</h2>
+        <h2 class="text-lg font-semibold text-primary-500 mb-6">Monthly Revenue</h2>
         <div class="h-64 flex items-end justify-around gap-2">
           <%= for month_data <- @monthly_stats do %>
             <div class="flex-1 flex flex-col items-center group">
@@ -192,7 +192,7 @@
                   </div>
                 </div>
               </div>
-              <div class="text-xs text-gray-600 mt-2 text-center">
+              <div class="text-xs text-primary-400 mt-2 text-center">
                 {String.slice(month_data.month_name, 0..2)}
               </div>
             </div>
@@ -202,7 +202,7 @@
 
       <!-- Bookings Count Chart -->
       <div class="bg-white rounded-lg shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-6">Monthly Bookings</h2>
+        <h2 class="text-lg font-semibold text-primary-500 mb-6">Monthly Bookings</h2>
         <div class="h-64 flex items-end justify-around gap-2">
           <%= for month_data <- @monthly_stats do %>
             <div class="flex-1 flex flex-col items-center group">
@@ -219,7 +219,7 @@
                   </div>
                 </div>
               </div>
-              <div class="text-xs text-gray-600 mt-2 text-center">
+              <div class="text-xs text-primary-400 mt-2 text-center">
                 {String.slice(month_data.month_name, 0..2)}
               </div>
             </div>
@@ -228,10 +228,10 @@
       </div>
     </div>
   <% else %>
-    <div class="bg-gray-50 rounded-lg p-12 text-center">
-      <.icon name="hero-chart-bar" class="w-16 h-16 text-gray-400 mx-auto mb-4" />
-      <h3 class="text-lg font-medium text-gray-900 mb-2">No Data Available</h3>
-      <p class="text-gray-600">
+    <div class="bg-secondary-50 rounded-lg p-12 text-center">
+      <.icon name="hero-chart-bar" class="w-16 h-16 text-primary-300 mx-auto mb-4" />
+      <h3 class="text-lg font-medium text-primary-500 mb-2">No Data Available</h3>
+      <p class="text-primary-400">
         No bookings found for the selected date range and filters.
       </p>
     </div>

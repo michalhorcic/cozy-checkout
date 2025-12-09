@@ -61,11 +61,11 @@ defmodule CozyCheckoutWeb.IcalImportLive.Index do
     ~H"""
     <div class="max-w-4xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
           ← Back to Dashboard
         </.link>
-        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
-        <p class="text-gray-600 mt-2">
+        <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
+        <p class="text-primary-400 mt-2">
           Import bookings from an iCal (.ics) file. The system will create guests and bookings automatically.
         </p>
       </div>
@@ -73,26 +73,26 @@ defmodule CozyCheckoutWeb.IcalImportLive.Index do
       <div class="bg-white shadow-lg rounded-lg p-6">
         <form phx-submit="import" phx-change="validate" class="space-y-6">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-primary-500 mb-2">
               Select iCal File
             </label>
             <div
-              class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors"
+              class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-secondary-300 border-dashed rounded-lg hover:border-blue-400 transition-colors"
               phx-drop-target={@uploads.ical_file.ref}
             >
               <div class="space-y-1 text-center">
-                <.icon name="hero-document-arrow-up" class="mx-auto h-12 w-12 text-gray-400" />
-                <div class="flex text-sm text-gray-600">
+                <.icon name="hero-document-arrow-up" class="mx-auto h-12 w-12 text-primary-300" />
+                <div class="flex text-sm text-primary-400">
                   <label
                     for={@uploads.ical_file.ref}
-                    class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
+                    class="relative cursor-pointer bg-white rounded-md font-medium text-tertiary-600 hover:text-white opacity-900"
                   >
                     <span>Upload a file</span>
                     <.live_file_input upload={@uploads.ical_file} class="sr-only" />
                   </label>
                   <p class="pl-1">or drag and drop</p>
                 </div>
-                <p class="text-xs text-gray-500">iCal files (.ics) up to 5MB</p>
+                <p class="text-xs text-primary-400">iCal files (.ics) up to 5MB</p>
               </div>
             </div>
           </div>
@@ -100,25 +100,25 @@ defmodule CozyCheckoutWeb.IcalImportLive.Index do
           <%!-- Show uploaded files --%>
           <div
             :for={entry <- @uploads.ical_file.entries}
-            class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
+            class="flex items-center gap-4 p-4 bg-secondary-50 rounded-lg"
           >
-            <.icon name="hero-document-text" class="w-8 h-8 text-blue-600" />
+            <.icon name="hero-document-text" class="w-8 h-8 text-tertiary-600" />
             <div class="flex-1">
-              <p class="text-sm font-medium text-gray-900">{entry.client_name}</p>
-              <p class="text-xs text-gray-500">{format_bytes(entry.client_size)}</p>
+              <p class="text-sm font-medium text-primary-500">{entry.client_name}</p>
+              <p class="text-xs text-primary-400">{format_bytes(entry.client_size)}</p>
             </div>
             <button
               type="button"
               phx-click="cancel-upload"
               phx-value-ref={entry.ref}
-              class="text-red-600 hover:text-red-800"
+              class="text-error hover:text-error-dark"
             >
               <.icon name="hero-x-mark" class="w-5 h-5" />
             </button>
           </div>
 
           <%!-- Upload errors --%>
-          <div :for={err <- upload_errors(@uploads.ical_file)} class="text-red-600 text-sm">
+          <div :for={err <- upload_errors(@uploads.ical_file)} class="text-error text-sm">
             {error_to_string(err)}
           </div>
 
@@ -132,22 +132,22 @@ defmodule CozyCheckoutWeb.IcalImportLive.Index do
 
       <%!-- Import Results --%>
       <div :if={@import_result} class="mt-6 bg-white shadow-lg rounded-lg p-6">
-        <h2 class="text-2xl font-bold text-gray-900 mb-4">Import Results</h2>
+        <h2 class="text-2xl font-bold text-primary-500 mb-4">Import Results</h2>
 
         <%= case @import_result do %>
           <% {:ok, stats} -> %>
             <div class="space-y-4">
               <div class="grid grid-cols-2 gap-4">
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p class="text-sm text-green-600 font-medium">Guests Created</p>
+                <div class="bg-success-light border border-green-200 rounded-lg p-4">
+                  <p class="text-sm text-success-dark font-medium">Guests Created</p>
                   <p class="text-3xl font-bold text-green-900">{stats.guests_created}</p>
                 </div>
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p class="text-sm text-blue-600 font-medium">Guests Found</p>
+                <div class="bg-tertiary-50 border border-blue-200 rounded-lg p-4">
+                  <p class="text-sm text-tertiary-600 font-medium">Guests Found</p>
                   <p class="text-3xl font-bold text-blue-900">{stats.guests_found}</p>
                 </div>
-                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <p class="text-sm text-green-600 font-medium">Bookings Created</p>
+                <div class="bg-success-light border border-green-200 rounded-lg p-4">
+                  <p class="text-sm text-success-dark font-medium">Bookings Created</p>
                   <p class="text-3xl font-bold text-green-900">{stats.bookings_created}</p>
                 </div>
                 <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -157,17 +157,17 @@ defmodule CozyCheckoutWeb.IcalImportLive.Index do
               </div>
 
               <div :if={stats.errors != []} class="mt-4">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2">Errors</h3>
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
-                  <div :for={{guest_name, error} <- stats.errors} class="text-sm text-red-800">
+                <h3 class="text-lg font-semibold text-primary-500 mb-2">Errors</h3>
+                <div class="bg-error-light border border-red-200 rounded-lg p-4 space-y-2">
+                  <div :for={{guest_name, error} <- stats.errors} class="text-sm text-error-dark">
                     <span class="font-medium">{guest_name}:</span> {error}
                   </div>
                 </div>
               </div>
             </div>
           <% {:error, reason} -> %>
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p class="text-red-800">{reason}</p>
+            <div class="bg-error-light border border-red-200 rounded-lg p-4">
+              <p class="text-error-dark">{reason}</p>
             </div>
         <% end %>
       </div>

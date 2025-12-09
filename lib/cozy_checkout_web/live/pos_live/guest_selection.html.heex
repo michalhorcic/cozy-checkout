@@ -1,14 +1,14 @@
 <Layouts.pos page_title={@page_title}>
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+  <div class="min-h-screen bg-secondary-50 p-6">
     <!-- Header -->
     <div class="mb-4 flex justify-between items-center">
       <div>
-        <h1 class="text-3xl font-bold text-slate-900 mb-1">Select Booking</h1>
-        <p class="text-base text-slate-600">Tap a booking to manage orders</p>
+        <h1 class="text-3xl font-bold text-primary-500 mb-1">Select Booking</h1>
+        <p class="text-base text-primary-400">Tap a booking to manage orders</p>
       </div>
       <.link
         navigate={~p"/"}
-        class="px-5 py-2.5 bg-slate-700 text-white rounded-xl hover:bg-slate-600 transition-colors duration-200 flex items-center gap-2"
+        class="px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors duration-200 flex items-center gap-2"
       >
         <.icon name="hero-arrow-left" class="w-5 h-5" /> Menu
       </.link>
@@ -18,7 +18,7 @@
     <div class="mb-6">
       <button
         phx-click="show_quick_order_modal"
-        class="w-full px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-98"
+        class="w-full px-6 py-4 bg-tertiary-500 text-white rounded-xl hover:bg-tertiary-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-98"
       >
         <.icon name="hero-plus-circle" class="w-7 h-7" />
         <span class="text-xl font-bold">Quick Order (No Booking)</span>
@@ -27,35 +27,35 @@
     
 <!-- Standalone Orders Section -->
     <div :if={@standalone_orders != []} class="mb-6">
-      <h2 class="text-2xl font-bold text-slate-900 mb-3">Standalone Orders</h2>
+      <h2 class="text-2xl font-bold text-primary-500 mb-3">Standalone Orders</h2>
       <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         <div
           :for={order <- @standalone_orders}
           phx-click="select_order"
           phx-value-order-id={order.id}
           class={[
-            "bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
-            "p-4 cursor-pointer active:scale-95 border-2 border-purple-200 hover:border-purple-400",
+            "bg-tertiary-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
+            "p-4 cursor-pointer active:scale-95 border-2 border-tertiary-200 hover:border-tertiary-400",
             "min-h-[120px] flex flex-col justify-between"
           ]}
         >
           <div>
-            <div class="flex items-center gap-2 mb-2">
-              <.icon name="hero-shopping-cart" class="w-5 h-5 text-purple-600" />
-              <span class="px-2 py-0.5 bg-purple-200 text-purple-800 text-xs font-semibold rounded-full">
+            <div class="flex items-center gap-2">
+              <.icon name="hero-shopping-cart" class="w-5 h-5 text-tertiary-600" />
+              <span class="px-2 py-0.5 bg-tertiary-200 text-tertiary-800 text-xs font-semibold rounded-full">
                 Standalone
               </span>
             </div>
-            <h2 class="text-lg font-bold text-slate-900 mb-2 break-words leading-tight">
+            <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
               {order.name}
             </h2>
-            <div class="text-xs text-slate-500">
+            <div class="text-xs text-primary-300">
               Order #{order.order_number}
             </div>
           </div>
 
-          <div class="mt-2 pt-2 border-t border-purple-200">
-            <div class="text-sm font-semibold text-purple-700">
+          <div class="mt-2 pt-2 border-t border-tertiary-200">
+            <div class="text-sm font-semibold text-tertiary-700">
               {format_currency(order.total_amount)}
             </div>
           </div>
@@ -64,36 +64,36 @@
     </div>
     
 <!-- Bookings Section -->
-    <h2 :if={@bookings != []} class="text-2xl font-bold text-slate-900 mb-3">Active Bookings</h2>
+    <h2 :if={@bookings != []} class="text-2xl font-bold text-primary-500 mb-3">Active Bookings</h2>
     
 <!-- Bookings Grid -->
     <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       <div
         :for={booking <- @bookings}
         phx-click="select_booking"
-        phx-value-booking-id={booking.id}
+        phx-value-booking_id={booking.id}
         class={[
           "bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
-          "p-4 cursor-pointer active:scale-95 border-2 border-transparent hover:border-blue-500",
+          "p-4 cursor-pointer active:scale-95 border-2 border-transparent hover:border-tertiary-500",
           "min-h-[120px] flex flex-col justify-between"
         ]}
       >
         <div>
           <!-- Guest Name -->
-          <h2 class="text-lg font-bold text-slate-900 mb-2 break-words leading-tight">
+          <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
             {booking.guest.name}
           </h2>
           
 <!-- Room Number -->
-          <div :if={booking.room_number} class="flex items-center gap-1.5 mb-1.5">
-            <.icon name="hero-home" class="w-4 h-4 text-slate-500" />
-            <span class="text-sm text-slate-600">Room {booking.room_number}</span>
+          <div :if={booking.room_number} class="flex items-center gap-1.5 mt-1">
+            <.icon name="hero-home" class="w-4 h-4 text-primary-300" />
+            <span class="text-sm text-primary-400">Room {booking.room_number}</span>
           </div>
           
 <!-- Check-in Period -->
           <div
             :if={booking.check_in_date}
-            class="flex items-center gap-1.5 text-xs text-slate-500"
+            class="flex items-center gap-1.5 text-xs text-primary-300"
           >
             <.icon name="hero-calendar" class="w-3.5 h-3.5" />
             <span>
@@ -106,8 +106,8 @@
         </div>
         
 <!-- Open Orders Badge -->
-        <div :if={booking.open_orders_count > 0} class="mt-2 pt-2 border-t border-slate-200">
-          <div class="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold">
+        <div :if={booking.open_orders_count > 0} class="mt-2 pt-2 border-t border-secondary-200">
+          <div class="inline-flex items-center gap-1.5 bg-success-light text-success-dark px-2.5 py-1 rounded-full text-xs font-semibold">
             <.icon name="hero-shopping-cart" class="w-3.5 h-3.5" />
             <span>
               {booking.open_orders_count} {if booking.open_orders_count == 1,
@@ -121,31 +121,31 @@
     
 <!-- Empty State -->
     <div :if={@bookings == []} class="text-center py-20">
-      <.icon name="hero-calendar-days" class="w-24 h-24 text-slate-300 mx-auto mb-6" />
-      <h2 class="text-3xl font-bold text-slate-400 mb-2">No Active Bookings</h2>
-      <p class="text-xl text-slate-400">Check in guests to start taking orders</p>
+      <.icon name="hero-calendar-days" class="w-24 h-24 text-secondary-300 mx-auto mb-6" />
+      <h2 class="text-3xl font-bold text-primary-300 mb-2">No Active Bookings</h2>
+      <p class="text-xl text-primary-300">Check in guests to start taking orders</p>
     </div>
     
 <!-- Quick Order Modal -->
     <%= if @show_quick_order_modal do %>
-      <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div class="fixed inset-0 bg-primary-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-in fade-in zoom-in duration-200">
-          <h3 class="text-3xl font-bold text-slate-900 mb-6">Create Quick Order</h3>
+          <h3 class="text-3xl font-bold text-primary-500 mb-6">Create Quick Order</h3>
 
           <div class="mb-8">
-            <label class="block text-lg font-semibold text-slate-700 mb-3">
+            <label class="block text-lg font-semibold text-primary-500 mb-3">
               Order Name
             </label>
             <input
               type="text"
               name="order_name"
               placeholder="e.g., Kids - Room 5, Staff lunch, Walk-in"
-              class="w-full px-4 py-4 text-lg border-2 border-slate-300 rounded-xl focus:border-blue-500 focus:outline-none transition-colors"
+              class="w-full px-4 py-4 text-lg border-2 border-secondary-300 rounded-xl focus:border-tertiary-500 focus:outline-none transition-colors"
               value={@quick_order_name}
               phx-keyup="update_quick_order_name"
               autofocus
             />
-            <p class="mt-2 text-sm text-slate-500">
+            <p class="mt-2 text-sm text-primary-300">
               Enter a descriptive name for this order
             </p>
           </div>
@@ -153,14 +153,14 @@
           <div class="flex gap-4">
             <button
               phx-click="hide_quick_order_modal"
-              class="flex-1 px-6 py-4 bg-slate-200 text-slate-700 rounded-xl hover:bg-slate-300 transition-colors text-lg font-semibold"
+              class="flex-1 px-6 py-4 bg-secondary-200 text-primary-500 rounded-xl hover:bg-secondary-300 transition-colors text-lg font-semibold"
             >
               Cancel
             </button>
             <button
               phx-click="create_quick_order"
               disabled={String.trim(@quick_order_name) == ""}
-              class="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+              class="flex-1 px-6 py-4 bg-tertiary-500 text-white rounded-xl hover:bg-tertiary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
             >
               Create Order
             </button>

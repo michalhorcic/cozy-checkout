@@ -50,11 +50,11 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
       <div class="mb-8">
         <.link
           navigate={if @order, do: ~p"/admin/orders/#{@order}", else: ~p"/admin/payments"}
-          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
         >
           ← Back
         </.link>
-        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+        <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
       </div>
 
       <div class="bg-white shadow-lg rounded-lg p-8">
@@ -83,15 +83,15 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
 
           <input :if={@order} type="hidden" name="payment[order_id]" value={@order.id} />
 
-          <div :if={@order} class="mb-6 p-4 bg-gray-50 rounded-lg">
-            <h3 class="font-semibold text-gray-900 mb-2">Order Details</h3>
+          <div :if={@order} class="mb-6 p-4 bg-secondary-50 rounded-lg">
+            <h3 class="font-semibold text-primary-500 mb-2">Order Details</h3>
             <div class="space-y-1 text-sm">
               <div class="flex justify-between">
-                <span class="text-gray-600">Order:</span>
+                <span class="text-primary-400">Order:</span>
                 <span class="font-medium">{@order.order_number}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">
+                <span class="text-primary-400">
                   {if @order.booking_id, do: "Guest:", else: "Name:"}
                 </span>
                 <span class="font-medium">
@@ -103,7 +103,7 @@ defmodule CozyCheckoutWeb.PaymentLive.New do
                 </span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-600">Total:</span>
+                <span class="text-primary-400">Total:</span>
                 <span class="font-medium">{format_currency(@order.total_amount)}</span>
               </div>
             </div>

@@ -270,12 +270,12 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
       <div class="mb-8">
         <.link
           navigate={~p"/admin/orders/#{@order}"}
-          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
         >
           ← Back to Order
         </.link>
-        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
-        <p class="text-gray-600 mt-2">Order #{@order.order_number}</p>
+        <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
+        <p class="text-primary-400 mt-2">Order #{@order.order_number}</p>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -284,31 +284,31 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
           <%!-- Booking Information --%>
           <%= if @order.booking_id do %>
             <div class="bg-white shadow-lg rounded-lg p-6">
-              <h2 class="text-2xl font-bold text-gray-900 mb-4">Booking Information</h2>
+              <h2 class="text-2xl font-bold text-primary-500 mb-4">Booking Information</h2>
               <div class="space-y-2">
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Guest Name:</span>
+                  <span class="text-primary-400">Guest Name:</span>
                   <span class="font-medium">
                     {if @order.guest, do: @order.guest.name, else: "Unknown"}
                   </span>
                 </div>
                 <div :if={@order.booking.room_number} class="flex justify-between">
-                  <span class="text-gray-600">Room:</span>
+                  <span class="text-primary-400">Room:</span>
                   <span class="font-medium">{@order.booking.room_number}</span>
                 </div>
               </div>
             </div>
           <% else %>
             <div class="bg-white shadow-lg rounded-lg p-6">
-              <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+              <h2 class="text-2xl font-bold text-primary-500 mb-4 flex items-center gap-3">
                 Order Information
-                <span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">
+                <span class="px-3 py-1 bg-info-light text-purple-700 text-sm font-semibold rounded-full">
                   Standalone Order
                 </span>
               </h2>
               <div class="space-y-2">
                 <div class="flex justify-between">
-                  <span class="text-gray-600">Order Name:</span>
+                  <span class="text-primary-400">Order Name:</span>
                   <span class="font-medium">{@order.name}</span>
                 </div>
               </div>
@@ -317,7 +317,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
 
           <%!-- Order Notes --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Notes</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Order Notes</h2>
             <.form for={@form} id="order-form" phx-change="validate">
               <.input field={@form[:notes]} type="textarea" label="Notes" />
             </.form>
@@ -325,11 +325,11 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
 
           <%!-- Add Items --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Add Items</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Add Items</h2>
             <form phx-submit="add_item" id="add-item-form-edit" class="space-y-4">
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="md:col-span-2">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Product</label>
+                  <label class="block text-sm font-medium text-primary-500 mb-1">Product</label>
                   <select
                     name="product_id"
                     id="product-select-edit"
@@ -341,7 +341,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                         end)
                       )
                     }
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    class="mt-1 block w-full rounded-md border-secondary-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     required
                   >
                     <option value="">Select a product</option>
@@ -351,21 +351,21 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                   </select>
                 </div>
                 <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                  <label class="block text-sm font-medium text-primary-500 mb-1">Quantity</label>
                   <input
                     type="number"
                     name="quantity"
                     min="1"
                     value="1"
-                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                    class="mt-1 block w-full rounded-md border-secondary-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                     required
                   />
                 </div>
               </div>
 
               <div id="unit-amount-container" class="hidden">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                  Unit Amount <span id="unit-label" class="text-gray-500"></span>
+                <label class="block text-sm font-medium text-primary-500 mb-1">
+                  Unit Amount <span id="unit-label" class="text-primary-400"></span>
                 </label>
                 <input
                   type="number"
@@ -374,9 +374,9 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                   step="0.01"
                   min="0"
                   placeholder="e.g., 500 for 500ml"
-                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="mt-1 block w-full rounded-md border-secondary-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
-                <p class="mt-1 text-sm text-gray-500" id="unit-help-text"></p>
+                <p class="mt-1 text-sm text-primary-400" id="unit-help-text"></p>
               </div>
 
               <.button type="submit" class="w-full">
@@ -387,43 +387,43 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
 
           <%!-- Order Items List --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Items</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Order Items</h2>
 
-            <div :if={@grouped_items == []} class="text-center py-8 text-gray-500">
+            <div :if={@grouped_items == []} class="text-center py-8 text-primary-400">
               No items in this order yet
             </div>
 
             <div :if={@grouped_items != []} class="space-y-2">
               <div
                 :for={group <- @grouped_items}
-                class="border border-gray-200 rounded-lg overflow-hidden"
+                class="border border-secondary-200 rounded-lg overflow-hidden"
               >
                 <!-- Grouped Item Display -->
-                <div class="p-4 bg-gray-50">
+                <div class="p-4 bg-secondary-50">
                   <div class="flex items-center justify-between">
                     <div class="flex-1">
-                      <div class="font-medium text-gray-900">{group.product.name}</div>
-                      <div class="text-sm text-gray-500">
+                      <div class="font-medium text-primary-500">{group.product.name}</div>
+                      <div class="text-sm text-primary-400">
                         <%= if group.unit_amount do %>
                           {Decimal.round(group.total_quantity, 2)} × {group.unit_amount}{group.product.unit} = {Decimal.mult(
                             group.total_quantity,
                             group.unit_amount
                           )}{group.product.unit}
-                          <span class="text-gray-400">|</span>
+                          <span class="text-primary-300">|</span>
                         <% else %>
                           Total Quantity: {Decimal.round(group.total_quantity, 2)}
-                          <span class="text-gray-400">|</span>
+                          <span class="text-primary-300">|</span>
                         <% end %>
                         {format_currency(group.price_per_unit)} (VAT: {group.vat_rate}%)
                         <%= if group.grouped? do %>
-                          <span class="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                          <span class="ml-2 text-xs bg-tertiary-100 text-tertiary-800 px-2 py-1 rounded-full">
                             {length(group.items)} items
                           </span>
                         <% end %>
                       </div>
                     </div>
                     <div class="flex items-center space-x-4">
-                      <div class="text-lg font-bold text-gray-900">
+                      <div class="text-lg font-bold text-primary-500">
                         {format_currency(group.total_price)}
                       </div>
                       <button
@@ -436,7 +436,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                               "Are you sure you want to remove all #{length(group.items)} items in this group?",
                             else: "Are you sure you want to remove this item?"
                         }
-                        class="text-red-600 hover:text-red-800"
+                        class="text-error hover:text-error-dark"
                       >
                         <.icon name="hero-trash" class="w-5 h-5" />
                       </button>
@@ -449,7 +449,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                       phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
                       phx-value-product-id={group.product.id}
                       phx-value-unit-amount={group.unit_amount || ""}
-                      class="mt-3 text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                      class="mt-3 text-sm text-tertiary-600 hover:text-tertiary-800 font-medium flex items-center gap-1"
                     >
                       <%= if group.expanded? do %>
                         <.icon name="hero-chevron-up" class="w-4 h-4" /> Hide individual items
@@ -463,13 +463,13 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                 
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
-                  <div class="border-t border-gray-200">
+                  <div class="border-t border-secondary-200">
                     <div
                       :for={item <- group.items}
                       class="p-3 bg-white border-b border-gray-100 last:border-b-0"
                     >
                       <div class="flex items-center justify-between">
-                        <div class="text-sm text-gray-600">
+                        <div class="text-sm text-primary-400">
                           <%= if item.unit_amount do %>
                             {item.quantity} × {item.unit_amount}{item.product.unit}
                           <% else %>
@@ -477,7 +477,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                           <% end %>
                         </div>
                         <div class="flex items-center space-x-3">
-                          <div class="text-sm text-gray-900 font-medium">
+                          <div class="text-sm text-primary-500 font-medium">
                             {format_currency(item.subtotal)}
                           </div>
                           <button
@@ -485,7 +485,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                             phx-click="remove_item"
                             phx-value-id={item.id}
                             data-confirm="Are you sure you want to remove this item?"
-                            class="text-red-600 hover:text-red-800"
+                            class="text-error hover:text-error-dark"
                           >
                             <.icon name="hero-x-mark" class="w-4 h-4" />
                           </button>
@@ -502,10 +502,10 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
         <%!-- Order Summary --%>
         <div class="lg:col-span-1">
           <div class="bg-white shadow-lg rounded-lg p-6 sticky top-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Order Summary</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Order Summary</h2>
 
             <div class="space-y-3">
-              <div class="flex justify-between text-gray-600">
+              <div class="flex justify-between text-primary-400">
                 <span>Subtotal:</span>
                 <span>
                   {format_currency(
@@ -515,7 +515,7 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
               </div>
 
               <div class="border-t pt-3">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Discount</label>
+                <label class="block text-sm font-medium text-primary-500 mb-1">Discount</label>
                 <input
                   type="number"
                   step="0.01"
@@ -523,12 +523,12 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                   value={@order.discount_amount || 0}
                   phx-change="update_discount"
                   name="discount"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  class="block w-full rounded-md border-secondary-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
                 />
               </div>
 
               <div class="border-t pt-3">
-                <div class="flex justify-between text-xl font-bold text-gray-900">
+                <div class="flex justify-between text-xl font-bold text-primary-500">
                   <span>Total:</span>
                   <span>{format_currency(@order.total_amount)}</span>
                 </div>
@@ -537,15 +537,15 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
               <div class="border-t pt-3">
                 <div class="space-y-1 text-sm">
                   <div class="flex justify-between">
-                    <span class="text-gray-600">Status:</span>
+                    <span class="text-primary-400">Status:</span>
                     <span class={[
                       "font-semibold",
                       case @order.status do
-                        "paid" -> "text-green-600"
+                        "paid" -> "text-success-dark"
                         "partially_paid" -> "text-yellow-600"
-                        "open" -> "text-blue-600"
-                        "cancelled" -> "text-red-600"
-                        _ -> "text-gray-600"
+                        "open" -> "text-tertiary-600"
+                        "cancelled" -> "text-error"
+                        _ -> "text-primary-400"
                       end
                     ]}>
                       {String.replace(@order.status, "_", " ") |> String.capitalize()}

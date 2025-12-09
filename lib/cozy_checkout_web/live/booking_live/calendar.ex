@@ -108,11 +108,11 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
 
   defp status_color(status) do
     case status do
-      "upcoming" -> "bg-blue-100 border-blue-300 text-blue-800"
-      "active" -> "bg-green-100 border-green-300 text-green-800"
-      "completed" -> "bg-gray-100 border-gray-300 text-gray-600"
-      "cancelled" -> "bg-red-100 border-red-300 text-red-600"
-      _ -> "bg-gray-100 border-gray-300 text-gray-600"
+      "upcoming" -> "bg-tertiary-100 border-tertiary-300 text-tertiary-800"
+      "active" -> "bg-success-light border-success text-success-dark"
+      "completed" -> "bg-secondary-100 border-secondary-300 text-primary-400"
+      "cancelled" -> "bg-error-light border-error text-error"
+      _ -> "bg-secondary-100 border-secondary-300 text-primary-400"
     end
   end
 
@@ -124,10 +124,10 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
 
     color_classes =
       case level do
-        :full -> "bg-red-500 text-white"
-        :high -> "bg-orange-500 text-white"
-        :medium -> "bg-yellow-500 text-gray-900"
-        :low -> "bg-green-500 text-white"
+        :full -> "bg-error text-white"
+        :high -> "bg-warning text-white"
+        :medium -> "bg-warning text-primary-500"
+        :low -> "bg-success text-white"
       end
 
     "#{base_classes} #{color_classes}"
@@ -136,16 +136,16 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
   defp day_cell(assigns) do
     ~H"""
     <div class={[
-      "min-h-[120px] border-r border-b border-gray-200 p-2 relative",
-      @is_today && "bg-blue-50"
+      "min-h-[120px] border-r border-b border-secondary-200 p-2 relative",
+      @is_today && "bg-tertiary-50"
     ]}>
       <%!-- Day number --%>
       <div class="text-right mb-1">
         <span class={[
           "text-sm font-semibold",
           @is_today &&
-            "inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white",
-          !@is_today && "text-gray-700"
+            "inline-flex items-center justify-center w-7 h-7 rounded-full bg-tertiary-600 text-white",
+          !@is_today && "text-primary-500"
         ]}>
           {@date.day}
         </span>
@@ -183,7 +183,7 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
             type="button"
             phx-click="show_day_bookings"
             phx-value-date={@date}
-            class="text-[10px] text-blue-600 hover:text-blue-800 font-medium text-center pt-1 w-full hover:underline cursor-pointer"
+            class="text-[10px] text-tertiary-600 hover:text-tertiary-800 font-medium text-center pt-1 w-full hover:underline cursor-pointer"
           >
             +{length(@bookings) - 3} more
           </button>

@@ -134,12 +134,12 @@ defmodule CozyCheckoutWeb.BookingLive.ManageGuests do
       <div class="mb-8">
         <.link
           navigate={~p"/admin/bookings/#{@booking}"}
-          class="text-blue-600 hover:text-blue-800 mb-2 inline-block"
+          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
         >
           ← Back to Booking
         </.link>
-        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
-        <p class="text-gray-600 mt-2">
+        <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
+        <p class="text-primary-400 mt-2">
           Booking for {@booking.guest.name} - Check-in: {Calendar.strftime(
             @booking.check_in_date,
             "%b %d, %Y"
@@ -149,19 +149,19 @@ defmodule CozyCheckoutWeb.BookingLive.ManageGuests do
 
       <div class="bg-white shadow-lg rounded-lg p-6">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-bold text-gray-900">Guests ({length(@booking_guests)})</h2>
+          <h2 class="text-2xl font-bold text-primary-500">Guests ({length(@booking_guests)})</h2>
           <.button :if={!@show_add_form} phx-click="show_add_form">
             <.icon name="hero-plus" class="w-5 h-5 mr-2" /> Add Guest
           </.button>
         </div>
 
         <%!-- Add Guest Form --%>
-        <div :if={@show_add_form} class="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div :if={@show_add_form} class="mb-6 p-4 bg-secondary-50 rounded-lg">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">Add Guest</h3>
+            <h3 class="text-lg font-semibold text-primary-500">Add Guest</h3>
             <button
               phx-click="cancel_add"
-              class="text-gray-400 hover:text-gray-600"
+              class="text-primary-300 hover:text-primary-400"
               type="button"
             >
               <.icon name="hero-x-mark" class="w-6 h-6" />
@@ -170,7 +170,7 @@ defmodule CozyCheckoutWeb.BookingLive.ManageGuests do
 
           <%!-- Select Existing Guest --%>
           <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-primary-500 mb-2">
               Select Existing Guest
             </label>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
@@ -181,18 +181,18 @@ defmodule CozyCheckoutWeb.BookingLive.ManageGuests do
                   :if={!is_already_added}
                   phx-click="select_existing_guest"
                   phx-value-guest_id={guest.id}
-                  class="text-left p-3 border border-gray-300 rounded-lg hover:bg-blue-50 hover:border-blue-500 transition-colors"
+                  class="text-left p-3 border border-secondary-300 rounded-lg hover:bg-tertiary-50 hover:border-tertiary-500 transition-colors"
                   type="button"
                 >
-                  <div class="font-medium text-gray-900">{guest.name}</div>
-                  <div :if={guest.email} class="text-sm text-gray-500">{guest.email}</div>
+                  <div class="font-medium text-primary-500">{guest.name}</div>
+                  <div :if={guest.email} class="text-sm text-primary-400">{guest.email}</div>
                 </button>
               <% end %>
             </div>
           </div>
 
-          <div class="border-t border-gray-300 my-4 pt-4">
-            <p class="text-sm font-medium text-gray-700 mb-3">Or Create New Guest</p>
+          <div class="border-t border-secondary-300 my-4 pt-4">
+            <p class="text-sm font-medium text-primary-500 mb-3">Or Create New Guest</p>
             <form phx-submit="create_and_add_guest" class="space-y-3">
               <div>
                 <.input
@@ -230,16 +230,16 @@ defmodule CozyCheckoutWeb.BookingLive.ManageGuests do
         <%!-- Guests List --%>
         <div class="space-y-3">
           <%= for booking_guest <- @booking_guests do %>
-            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <div class="flex items-center justify-between p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50">
               <div class="flex items-center space-x-3">
                 <%= if booking_guest.is_primary do %>
-                  <span class="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">
+                  <span class="px-3 py-1 bg-tertiary-100 text-tertiary-800 text-xs font-semibold rounded-full">
                     PRIMARY
                   </span>
                 <% end %>
                 <div>
-                  <p class="font-medium text-gray-900">{booking_guest.guest.name}</p>
-                  <div class="flex items-center space-x-4 text-sm text-gray-500">
+                  <p class="font-medium text-primary-500">{booking_guest.guest.name}</p>
+                  <div class="flex items-center space-x-4 text-sm text-primary-400">
                     <span :if={booking_guest.guest.email}>
                       <.icon name="hero-envelope" class="w-4 h-4 inline" />
                       {booking_guest.guest.email}
@@ -256,7 +256,7 @@ defmodule CozyCheckoutWeb.BookingLive.ManageGuests do
                 phx-click="remove_guest"
                 phx-value-id={booking_guest.id}
                 data-confirm="Are you sure you want to remove this guest from the booking?"
-                class="text-red-600 hover:text-red-800"
+                class="text-error hover:text-error-dark"
                 type="button"
               >
                 <.icon name="hero-trash" class="w-5 h-5" />

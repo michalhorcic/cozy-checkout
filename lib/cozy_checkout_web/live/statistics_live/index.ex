@@ -146,14 +146,14 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-secondary-50">
       <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-3xl font-bold text-gray-900">Sales Statistics</h1>
-              <p class="mt-2 text-sm text-gray-500">
+              <h1 class="text-3xl font-bold text-primary-500">Sales Statistics</h1>
+              <p class="mt-2 text-sm text-primary-400">
                 Product sales analysis and reports
               </p>
             </div>
@@ -171,7 +171,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Date Range Selection -->
             <div>
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Date Range</h3>
+              <h3 class="text-lg font-medium text-primary-500 mb-4">Date Range</h3>
               <!-- Preset Buttons -->
               <div class="flex flex-wrap gap-2 mb-4">
                 <button
@@ -180,7 +180,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_7_days" && "bg-emerald-600 text-white",
-                    @preset != "last_7_days" && "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    @preset != "last_7_days" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last 7 days
@@ -191,7 +191,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_30_days" && "bg-emerald-600 text-white",
-                    @preset != "last_30_days" && "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    @preset != "last_30_days" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last 30 days
@@ -202,7 +202,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_90_days" && "bg-emerald-600 text-white",
-                    @preset != "last_90_days" && "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    @preset != "last_90_days" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last 90 days
@@ -213,7 +213,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "this_month" && "bg-emerald-600 text-white",
-                    @preset != "this_month" && "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    @preset != "this_month" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   This month
@@ -224,7 +224,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_month" && "bg-emerald-600 text-white",
-                    @preset != "last_month" && "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    @preset != "last_month" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last month
@@ -235,7 +235,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "this_year" && "bg-emerald-600 text-white",
-                    @preset != "this_year" && "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    @preset != "this_year" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   This year
@@ -245,21 +245,21 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
               <!-- Custom Date Range -->
               <form phx-submit="update_dates" class="flex gap-3 items-end">
                 <div class="flex-1">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">From</label>
+                  <label class="block text-sm font-medium text-primary-500 mb-1">From</label>
                   <input
                     type="date"
                     name="date_from"
                     value={@date_from}
-                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                    class="block w-full rounded-md border-secondary-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
                   />
                 </div>
                 <div class="flex-1">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">To</label>
+                  <label class="block text-sm font-medium text-primary-500 mb-1">To</label>
                   <input
                     type="date"
                     name="date_to"
                     value={@date_to}
-                    class="block w-full rounded-md border-gray-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
+                    class="block w-full rounded-md border-secondary-300 shadow-sm focus:border-emerald-500 focus:ring-emerald-500 sm:text-sm"
                   />
                 </div>
                 <button
@@ -273,7 +273,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
 
             <!-- Status Filter -->
             <div>
-              <h3 class="text-lg font-medium text-gray-900 mb-4">Order Status Filter</h3>
+              <h3 class="text-lg font-medium text-primary-500 mb-4">Order Status Filter</h3>
               <form phx-change="update_status_filter" class="space-y-2">
                 <div class="flex items-center">
                   <input
@@ -282,9 +282,9 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                     name="status[paid]"
                     value="true"
                     checked={@status_filter && "paid" in @status_filter}
-                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
                   />
-                  <label for="status_paid" class="ml-2 block text-sm text-gray-900">
+                  <label for="status_paid" class="ml-2 block text-sm text-primary-500">
                     Paid orders
                   </label>
                 </div>
@@ -295,9 +295,9 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                     name="status[open]"
                     value="true"
                     checked={@status_filter && "open" in @status_filter}
-                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
                   />
-                  <label for="status_open" class="ml-2 block text-sm text-gray-900">
+                  <label for="status_open" class="ml-2 block text-sm text-primary-500">
                     Open orders
                   </label>
                 </div>
@@ -308,9 +308,9 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                     name="status[partially_paid]"
                     value="true"
                     checked={@status_filter && "partially_paid" in @status_filter}
-                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded"
+                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
                   />
-                  <label for="status_partially_paid" class="ml-2 block text-sm text-gray-900">
+                  <label for="status_partially_paid" class="ml-2 block text-sm text-primary-500">
                     Partially paid orders
                   </label>
                 </div>
@@ -327,8 +327,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                 <.icon name="hero-shopping-bag" class="h-8 w-8 text-emerald-600" />
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-500">Total Orders</p>
-                <p class="text-2xl font-semibold text-gray-900">
+                <p class="text-sm font-medium text-primary-400">Total Orders</p>
+                <p class="text-2xl font-semibold text-primary-500">
                   {CozyCheckoutWeb.CurrencyHelper.format_number(@overall.total_orders)}
                 </p>
               </div>
@@ -341,8 +341,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                 <.icon name="hero-currency-dollar" class="h-8 w-8 text-emerald-600" />
               </div>
               <div class="ml-4">
-                <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-                <p class="text-2xl font-semibold text-gray-900">
+                <p class="text-sm font-medium text-primary-400">Total Revenue</p>
+                <p class="text-2xl font-semibold text-primary-500">
                   {CozyCheckoutWeb.CurrencyHelper.format_currency(@overall.total_revenue || Decimal.new("0"))}
                 </p>
               </div>
@@ -354,21 +354,21 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <!-- Most Popular Products -->
           <div class="bg-white shadow rounded-lg overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900">Most Popular Products</h3>
-              <p class="mt-1 text-sm text-gray-500">By quantity sold</p>
+            <div class="px-6 py-4 border-b border-secondary-200">
+              <h3 class="text-lg font-medium text-primary-500">Most Popular Products</h3>
+              <p class="mt-1 text-sm text-primary-400">By quantity sold</p>
             </div>
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-secondary-50">
                   <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                       Product
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                       Category
                     </th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                       Quantity
                     </th>
                   </tr>
@@ -376,13 +376,13 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                 <tbody class="bg-white divide-y divide-gray-200">
                   <%= for product <- @most_popular do %>
                     <tr>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
                         {product.product_name}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                         {product.category_name}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500 text-right font-medium">
                         {CozyCheckoutWeb.CurrencyHelper.format_number(product.total_quantity)}
                       </td>
                     </tr>
@@ -394,21 +394,21 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
 
           <!-- Top Revenue Products -->
           <div class="bg-white shadow rounded-lg overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h3 class="text-lg font-medium text-gray-900">Top Revenue Products</h3>
-              <p class="mt-1 text-sm text-gray-500">By total revenue</p>
+            <div class="px-6 py-4 border-b border-secondary-200">
+              <h3 class="text-lg font-medium text-primary-500">Top Revenue Products</h3>
+              <p class="mt-1 text-sm text-primary-400">By total revenue</p>
             </div>
             <div class="overflow-x-auto">
               <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+                <thead class="bg-secondary-50">
                   <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                       Product
                     </th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                       Category
                     </th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                       Revenue
                     </th>
                   </tr>
@@ -416,13 +416,13 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                 <tbody class="bg-white divide-y divide-gray-200">
                   <%= for product <- @top_revenue do %>
                     <tr>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
                         {product.product_name}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                         {product.category_name}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500 text-right font-medium">
                         {CozyCheckoutWeb.CurrencyHelper.format_currency(product.total_revenue)}
                       </td>
                     </tr>
@@ -435,35 +435,35 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
 
         <!-- Products by Category -->
         <div class="bg-white shadow rounded-lg overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200">
-            <h3 class="text-lg font-medium text-gray-900">All Products - Sales Details</h3>
-            <p class="mt-1 text-sm text-gray-500">Grouped by category</p>
+          <div class="px-6 py-4 border-b border-secondary-200">
+            <h3 class="text-lg font-medium text-primary-500">All Products - Sales Details</h3>
+            <p class="mt-1 text-sm text-primary-400">Grouped by category</p>
           </div>
 
           <%= for category <- @categories_with_products do %>
-            <div class="border-b border-gray-200 last:border-b-0">
-              <div class="px-6 py-3 bg-gray-50">
-                <h4 class="text-sm font-semibold text-gray-900 uppercase tracking-wider">
+            <div class="border-b border-secondary-200 last:border-b-0">
+              <div class="px-6 py-3 bg-secondary-50">
+                <h4 class="text-sm font-semibold text-primary-500 uppercase tracking-wider">
                   {category.category_name}
                 </h4>
               </div>
               <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
-                  <thead class="bg-gray-50">
+                  <thead class="bg-secondary-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Product
                       </th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Quantity Sold
                       </th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Total Amount
                       </th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Total Revenue
                       </th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Orders
                       </th>
                     </tr>
@@ -471,19 +471,19 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   <tbody class="bg-white divide-y divide-gray-200">
                     <%= for product <- category.products do %>
                       <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
                           {product.product_name}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500 text-right">
                           {CozyCheckoutWeb.CurrencyHelper.format_number(product.total_quantity)}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500 text-right">
                           {format_unit_display(product.total_amount, product.product_unit)}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500 text-right font-medium">
                           {CozyCheckoutWeb.CurrencyHelper.format_currency(product.total_revenue)}
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400 text-right">
                           {CozyCheckoutWeb.CurrencyHelper.format_number(product.order_count)}
                         </td>
                       </tr>

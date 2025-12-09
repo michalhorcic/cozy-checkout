@@ -46,7 +46,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
               >
                 <%= if @guest_suggestions == [] and String.length(@guest_search_text) >= 3 do %>
                   <div
-                    class="cursor-pointer select-none relative py-3 pl-3 pr-9 hover:bg-indigo-600 hover:text-white transition-colors"
+                    class="cursor-pointer select-none relative py-3 pl-3 pr-9 hover:bg-tertiary-600 hover:text-white transition-colors"
                     phx-click="show_create_guest_modal"
                     phx-target={@myself}
                   >
@@ -58,7 +58,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
                 <% else %>
                   <%= for guest <- @guest_suggestions do %>
                     <div
-                      class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-indigo-600 hover:text-white transition-colors"
+                      class="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-tertiary-600 hover:text-white transition-colors"
                       phx-click="select_guest"
                       phx-value-guest-id={guest.id}
                       phx-value-guest-name={guest.name}
@@ -74,7 +74,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
                   <% end %>
                   <%= if String.length(@guest_search_text) >= 3 do %>
                     <div
-                      class="cursor-pointer select-none relative py-3 pl-3 pr-9 hover:bg-indigo-600 hover:text-white transition-colors border-t"
+                      class="cursor-pointer select-none relative py-3 pl-3 pr-9 hover:bg-tertiary-600 hover:text-white transition-colors border-t"
                       phx-click="show_create_guest_modal"
                       phx-target={@myself}
                     >
@@ -89,13 +89,13 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
             <% end %>
 
             <%= if @selected_guest_name do %>
-              <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm">
+              <div class="mt-2 inline-flex items-center gap-2 px-3 py-1 bg-info-light text-tertiary-800 rounded-full text-sm">
                 <span>{@selected_guest_name}</span>
                 <button
                   type="button"
                   phx-click="clear_guest"
                   phx-target={@myself}
-                  class="hover:text-indigo-600"
+                  class="hover:text-tertiary-600"
                 >
                   <.icon name="hero-x-mark" class="w-4 h-4" />
                 </button>
@@ -116,7 +116,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
           </label>
           <div class="grid grid-cols-2 gap-2">
             <%= for room <- @rooms do %>
-              <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-secondary-50 transition-colors">
                 <input
                   type="checkbox"
                   name="room_ids[]"
@@ -125,14 +125,14 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
                   phx-target={@myself}
                   phx-click="toggle_room"
                   phx-value-room-id={room.id}
-                  class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  class="rounded border-secondary-300 text-tertiary-600 focus:ring-indigo-500"
                 />
-                <span class="ml-2 text-sm text-gray-900">
+                <span class="ml-2 text-sm text-primary-500">
                   {room.room_number}
                   <%= if room.name do %>
-                    <span class="text-gray-500">- {room.name}</span>
+                    <span class="text-primary-400">- {room.name}</span>
                   <% end %>
-                  <span class="text-gray-400 text-xs block">Capacity: {room.capacity}</span>
+                  <span class="text-primary-300 text-xs block">Capacity: {room.capacity}</span>
                 </span>
               </label>
             <% end %>

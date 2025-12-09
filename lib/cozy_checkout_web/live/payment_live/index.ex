@@ -54,78 +54,78 @@ defmodule CozyCheckoutWeb.PaymentLive.Index do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
           ← Back to Dashboard
         </.link>
-        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+        <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
       </div>
 
       <div class="bg-white shadow-lg rounded-lg overflow-hidden">
         <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
+          <thead class="bg-secondary-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                 Date
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                 Order #
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                 Guest
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                 Method
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                 Amount
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                 Notes
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
           <tbody id="payments" phx-update="stream" class="bg-white divide-y divide-gray-200">
-            <tr :for={{id, payment} <- @streams.payments} id={id} class="hover:bg-gray-50">
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+            <tr :for={{id, payment} <- @streams.payments} id={id} class="hover:bg-secondary-50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                 {Calendar.strftime(payment.payment_date, "%Y-%m-%d")}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <.link
                   navigate={~p"/admin/orders/#{payment.order}"}
-                  class="text-blue-600 hover:text-blue-800"
+                  class="text-tertiary-600 hover:text-tertiary-800"
                 >
                   {payment.order.order_number}
                 </.link>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                 <%= if payment.order.booking_id do %>
                   {if payment.order.guest, do: payment.order.guest.name, else: "Unknown"}
                 <% else %>
                   <span class="flex items-center gap-2">
-                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-info-light text-info-dark">
                       Standalone
                     </span>
                     <span>{payment.order.name}</span>
                   </span>
                 <% end %>
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                 {String.replace(payment.payment_method, "_", " ") |> String.capitalize()}
               </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-success-dark">
                 {format_currency(payment.amount)}
               </td>
-              <td class="px-6 py-4 text-sm text-gray-500">
+              <td class="px-6 py-4 text-sm text-primary-400">
                 {payment.notes || "—"}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <.link
                   phx-click={JS.push("delete", value: %{id: payment.id})}
                   data-confirm="Are you sure? This will update the order status."
-                  class="text-red-600 hover:text-red-900"
+                  class="text-error hover:text-error-dark"
                 >
                   Delete
                 </.link>

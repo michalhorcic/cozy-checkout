@@ -11,10 +11,10 @@ defmodule CozyCheckoutWeb.DashboardLive do
       <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center mb-12">
           <div>
-            <h1 class="text-5xl font-bold text-gray-900 mb-4">
+            <h1 class="text-5xl font-bold text-primary-500 mb-4">
               Admin Dashboard
             </h1>
-            <p class="text-xl text-gray-600">
+            <p class="text-xl text-primary-400">
               Manage your mountain cottage system
             </p>
           </div>
@@ -178,14 +178,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
           "p-4 rounded-full",
           "bg-#{@color}-100"
         ]}>
-          <.icon name={@icon} class="w-10 h-10 text-gray-700" />
+          <.icon name={@icon} class="w-10 h-10 text-primary-500" />
         </div>
 
         <div>
-          <h3 class="text-2xl font-bold text-gray-900 mb-2">
+          <h3 class="text-2xl font-bold text-primary-500 mb-2">
             {@title}
           </h3>
-          <p class="text-gray-600">
+          <p class="text-primary-400">
             {@description}
           </p>
         </div>

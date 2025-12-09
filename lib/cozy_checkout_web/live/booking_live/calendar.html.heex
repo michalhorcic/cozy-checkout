@@ -2,10 +2,10 @@
   <%!-- Header --%>
   <div class="flex justify-between items-center mb-8">
     <div>
-      <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+      <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
         ← Back to Dashboard
       </.link>
-      <h1 class="text-4xl font-bold text-gray-900">Booking Calendar</h1>
+      <h1 class="text-4xl font-bold text-primary-500">Booking Calendar</h1>
     </div>
     <.link navigate={~p"/admin/bookings"}>
       <.button>
@@ -19,18 +19,18 @@
     <div class="flex justify-between items-center">
       <button
         phx-click="prev_month"
-        class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        class="p-2 rounded-lg hover:bg-secondary-100 transition-colors"
       >
-        <.icon name="hero-chevron-left" class="w-6 h-6 text-gray-600" />
+        <.icon name="hero-chevron-left" class="w-6 h-6 text-primary-400" />
       </button>
 
       <div class="flex items-center gap-4">
-        <h2 class="text-2xl font-bold text-gray-900">
+        <h2 class="text-2xl font-bold text-primary-500">
           {CalendarHelpers.month_name(@month)} {@year}
         </h2>
         <button
           phx-click="today"
-          class="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          class="px-4 py-2 text-sm font-medium text-tertiary-600 hover:bg-tertiary-50 rounded-lg transition-colors"
         >
           Today
         </button>
@@ -38,9 +38,9 @@
 
       <button
         phx-click="next_month"
-        class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+        class="p-2 rounded-lg hover:bg-secondary-100 transition-colors"
       >
-        <.icon name="hero-chevron-right" class="w-6 h-6 text-gray-600" />
+        <.icon name="hero-chevron-right" class="w-6 h-6 text-primary-400" />
       </button>
     </div>
   </div>
@@ -48,34 +48,34 @@
   <%!-- Calendar Grid --%>
   <div class="bg-white shadow-lg rounded-lg overflow-hidden">
     <%!-- Capacity legend --%>
-    <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+    <div class="px-6 py-4 bg-secondary-50 border-b border-secondary-200">
       <div class="flex items-center gap-6 text-sm">
-        <span class="font-semibold text-gray-700">Capacity: {@capacity} people</span>
+        <span class="font-semibold text-primary-500">Capacity: {@capacity} people</span>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
-            <span class="inline-block w-4 h-4 rounded-full bg-green-500"></span>
-            <span class="text-gray-600">Low (0-29)</span>
+            <span class="inline-block w-4 h-4 rounded-full bg-success"></span>
+            <span class="text-primary-400">Low (0-29)</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="inline-block w-4 h-4 rounded-full bg-yellow-500"></span>
-            <span class="text-gray-600">Medium (30-39)</span>
+            <span class="inline-block w-4 h-4 rounded-full bg-warning"></span>
+            <span class="text-primary-400">Medium (30-39)</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="inline-block w-4 h-4 rounded-full bg-orange-500"></span>
-            <span class="text-gray-600">High (40-44)</span>
+            <span class="inline-block w-4 h-4 rounded-full bg-warning"></span>
+            <span class="text-primary-400">High (40-44)</span>
           </div>
           <div class="flex items-center gap-2">
-            <span class="inline-block w-4 h-4 rounded-full bg-red-500"></span>
-            <span class="text-gray-600">Full (45+)</span>
+            <span class="inline-block w-4 h-4 rounded-full bg-error"></span>
+            <span class="text-primary-400">Full (45+)</span>
           </div>
         </div>
       </div>
     </div>
 
     <%!-- Day Headers --%>
-    <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+    <div class="grid grid-cols-7 bg-secondary-50 border-b border-secondary-200">
       <%= for day <- 1..7 do %>
-        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+        <div class="px-2 py-3 text-center text-xs font-semibold text-primary-400 uppercase">
           {CalendarHelpers.day_name(day)}
         </div>
       <% end %>
@@ -94,7 +94,7 @@
               capacity={@capacity}
             />
           <% else %>
-            <div class="min-h-[120px] bg-gray-50 border-r border-b border-gray-100"></div>
+            <div class="min-h-[120px] bg-secondary-50 border-r border-b border-gray-100"></div>
           <% end %>
         <% end %>
       <% end %>
@@ -103,23 +103,23 @@
 
   <%!-- Legend --%>
   <div class="mt-6 bg-white shadow-lg rounded-lg p-6">
-    <h3 class="text-lg font-semibold text-gray-900 mb-4">Legend</h3>
+    <h3 class="text-lg font-semibold text-primary-500 mb-4">Legend</h3>
     <div class="flex flex-wrap gap-4">
       <div class="flex items-center gap-2">
-        <div class="w-4 h-4 rounded bg-blue-100 border-2 border-blue-300"></div>
-        <span class="text-sm text-gray-700">Upcoming</span>
+        <div class="w-4 h-4 rounded bg-tertiary-100 border-2 border-tertiary-300"></div>
+        <span class="text-sm text-primary-500">Upcoming</span>
       </div>
       <div class="flex items-center gap-2">
-        <div class="w-4 h-4 rounded bg-green-100 border-2 border-green-300"></div>
-        <span class="text-sm text-gray-700">Active</span>
+        <div class="w-4 h-4 rounded bg-success-light border-2 border-success"></div>
+        <span class="text-sm text-primary-500">Active</span>
       </div>
       <div class="flex items-center gap-2">
-        <div class="w-4 h-4 rounded bg-gray-100 border-2 border-gray-300"></div>
-        <span class="text-sm text-gray-700">Completed</span>
+        <div class="w-4 h-4 rounded bg-secondary-100 border-2 border-secondary-300"></div>
+        <span class="text-sm text-primary-500">Completed</span>
       </div>
       <div class="flex items-center gap-2">
-        <div class="w-4 h-4 rounded bg-red-100 border-2 border-red-300"></div>
-        <span class="text-sm text-gray-700">Cancelled</span>
+        <div class="w-4 h-4 rounded bg-error-light border-2 border-error"></div>
+        <span class="text-sm text-primary-500">Cancelled</span>
       </div>
     </div>
   </div>
@@ -132,10 +132,10 @@
     on_cancel={JS.push("close_modal")}
   >
     <div class="mb-6">
-      <h2 class="text-2xl font-bold text-gray-900">
+      <h2 class="text-2xl font-bold text-primary-500">
         Bookings for {Calendar.strftime(@modal_date, "%B %d, %Y")}
       </h2>
-      <p class="mt-1 text-sm text-gray-500">
+      <p class="mt-1 text-sm text-primary-400">
         {length(@modal_bookings)} {if length(@modal_bookings) == 1, do: "booking", else: "bookings"}
       </p>
     </div>
@@ -147,25 +147,25 @@
           class={[
             "block px-4 py-3 rounded-lg border-l-4 hover:shadow-md transition-all",
             case booking.status do
-              "upcoming" -> "bg-blue-50 border-blue-400 hover:bg-blue-100"
-              "active" -> "bg-green-50 border-green-400 hover:bg-green-100"
-              "completed" -> "bg-gray-50 border-gray-400 hover:bg-gray-100"
-              "cancelled" -> "bg-red-50 border-red-400 hover:bg-red-100"
-              _ -> "bg-gray-50 border-gray-400 hover:bg-gray-100"
+              "upcoming" -> "bg-tertiary-50 border-blue-400 hover:bg-tertiary-100"
+              "active" -> "bg-success-light border-green-400 hover:bg-success-light"
+              "completed" -> "bg-secondary-50 border-gray-400 hover:bg-secondary-100"
+              "cancelled" -> "bg-error-light border-red-400 hover:bg-error-light"
+              _ -> "bg-secondary-50 border-gray-400 hover:bg-secondary-100"
             end
           ]}
         >
           <div class="flex items-start justify-between">
             <div class="flex-1">
-              <div class="font-semibold text-gray-900 text-lg">
+              <div class="font-semibold text-primary-500 text-lg">
                 {booking.guest.name}
               </div>
               <%= if booking.room_number do %>
-                <div class="text-sm text-gray-600 mt-1">
+                <div class="text-sm text-primary-400 mt-1">
                   <.icon name="hero-home" class="w-4 h-4 inline-block" /> Room {booking.room_number}
                 </div>
               <% end %>
-              <div class="text-sm text-gray-500 mt-1">
+              <div class="text-sm text-primary-400 mt-1">
                 <.icon name="hero-calendar" class="w-4 h-4 inline-block" />
                 {Calendar.strftime(booking.check_in_date, "%b %d")}
                 <%= if booking.check_out_date do %>
@@ -179,11 +179,11 @@
               <span class={[
                 "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
                 case booking.status do
-                  "upcoming" -> "bg-blue-100 text-blue-800"
-                  "active" -> "bg-green-100 text-green-800"
-                  "completed" -> "bg-gray-100 text-gray-800"
-                  "cancelled" -> "bg-red-100 text-red-800"
-                  _ -> "bg-gray-100 text-gray-800"
+                  "upcoming" -> "bg-tertiary-100 text-tertiary-800"
+                  "active" -> "bg-success-light text-success-dark"
+                  "completed" -> "bg-secondary-100 text-primary-500"
+                  "cancelled" -> "bg-error-light text-error-dark"
+                  _ -> "bg-secondary-100 text-primary-500"
                 end
               ]}>
                 {String.capitalize(booking.status)}

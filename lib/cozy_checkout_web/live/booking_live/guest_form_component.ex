@@ -28,7 +28,7 @@ defmodule CozyCheckoutWeb.BookingLive.GuestFormComponent do
           <.button
             type="button"
             phx-click={JS.exec("data-cancel", to: "#guest-modal")}
-            class="bg-gray-300 hover:bg-gray-400 text-gray-800"
+            class="bg-secondary-300 hover:bg-secondary-400 text-primary-500"
           >
             Cancel
           </.button>

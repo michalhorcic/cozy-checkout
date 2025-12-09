@@ -125,9 +125,9 @@
   <div class="max-w-7xl mx-auto p-6">
     <%!-- Header --%>
     <div class="text-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-900 mb-1">Jindřichův dům</h1>
-      <h2 class="text-xl text-gray-600 mb-2">Ceník</h2>
-      <p class="text-xs text-gray-500">
+      <h1 class="text-3xl font-bold text-primary-500 mb-1">Jindřichův dům</h1>
+      <h2 class="text-xl text-primary-400 mb-2">Ceník</h2>
+      <p class="text-xs text-primary-400">
         Platný od {Calendar.strftime(@generated_at, "%d. %m. %Y")}
       </p>
     </div>
@@ -135,7 +135,7 @@
     <%!-- Categories and Products --%>
     <%= if @pricelists_by_category == [] do %>
       <div class="text-center py-12">
-        <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
+        <p class="text-primary-400 text-lg">Žádné aktivní produkty v ceníku.</p>
       </div>
     <% else %>
       <div class="pricelist-columns">
@@ -143,7 +143,7 @@
           <div class="category-section mb-4 break-inside-avoid">
             <%!-- Category Header --%>
             <div class="border-b-2 border-gray-900 pb-1 mb-3">
-              <h3 class="text-lg font-bold text-gray-900">
+              <h3 class="text-lg font-bold text-primary-500">
                 {if category, do: category.name, else: "Bez kategorie"}
               </h3>
             </div>
@@ -168,39 +168,39 @@
 
                     tier_amounts_str = Enum.join(tier_amounts, "/")
                     tier_prices_str = Enum.join(tier_prices, " / ") %>
-                    <tr class="border-b border-gray-200">
+                    <tr class="border-b border-secondary-200">
                       <td class="py-2 pr-2">
-                        <div class="font-semibold text-gray-900 text-sm">
+                        <div class="font-semibold text-primary-500 text-sm">
                           {product.name} ({tier_amounts_str} {product.unit})
                         </div>
                         <%= if product.description do %>
-                          <div class="text-xs text-gray-600 mt-0.5">
+                          <div class="text-xs text-primary-400 mt-0.5">
                             {product.description}
                           </div>
                         <% end %>
                       </td>
-                      <td class="py-2 text-right font-medium text-gray-900 whitespace-nowrap text-xs">
+                      <td class="py-2 text-right font-medium text-primary-500 whitespace-nowrap text-xs">
                         {tier_prices_str}
                       </td>
                     </tr>
                   <% else %>
                     <%!-- Product with single price --%>
-                    <tr class="border-b border-gray-200">
+                    <tr class="border-b border-secondary-200">
                       <td class="py-2 pr-2">
-                        <div class="font-semibold text-gray-900 text-sm">
+                        <div class="font-semibold text-primary-500 text-sm">
                           {product.name}
                         </div>
                         <%= if product.description do %>
-                          <div class="text-xs text-gray-600 mt-0.5">
+                          <div class="text-xs text-primary-400 mt-0.5">
                             {product.description}
                           </div>
                         <% end %>
                       </td>
-                      <td class="py-2 text-right font-medium text-gray-900 whitespace-nowrap text-xs">
+                      <td class="py-2 text-right font-medium text-primary-500 whitespace-nowrap text-xs">
                         <%= if pricelist.price do %>
                           {format_currency(pricelist.price)}
                         <% else %>
-                          <span class="text-gray-400">—</span>
+                          <span class="text-primary-300">—</span>
                         <% end %>
                       </td>
                     </tr>
@@ -214,10 +214,10 @@
     <% end %>
 
     <%!-- Footer --%>
-    <div class="mt-8 pt-4 border-t border-gray-300 text-center text-xs text-gray-600">
+    <div class="mt-8 pt-4 border-t border-secondary-300 text-center text-xs text-primary-400">
       <p>Moruška s.r.o.</p>
       <p>IČO: 23741457</p>
-      <p class="mt-1 text-xs text-gray-500">
+      <p class="mt-1 text-xs text-primary-400">
         Všechny ceny jsou uvedeny včetně DPH
       </p>
     </div>

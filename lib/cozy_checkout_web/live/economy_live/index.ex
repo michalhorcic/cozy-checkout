@@ -109,13 +109,13 @@ defmodule CozyCheckoutWeb.EconomyLive.Index do
   defp state_label("paid"), do: "Paid"
   defp state_label(state), do: String.capitalize(state)
 
-  defp state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
-  defp state_badge_class("personal"), do: "bg-purple-100 text-purple-800"
-  defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
-  defp state_badge_class("sent"), do: "bg-yellow-100 text-yellow-800"
+  defp state_badge_class("draft"), do: "bg-secondary-100 text-primary-500"
+  defp state_badge_class("personal"), do: "bg-info-light text-info-dark"
+  defp state_badge_class("generated"), do: "bg-tertiary-100 text-tertiary-800"
+  defp state_badge_class("sent"), do: "bg-warning-light text-warning-dark"
   defp state_badge_class("advance_paid"), do: "bg-orange-100 text-orange-800"
-  defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
-  defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
+  defp state_badge_class("paid"), do: "bg-success-light text-success-dark"
+  defp state_badge_class(_), do: "bg-secondary-100 text-primary-500"
 
   defp max_value(data, key) do
     data

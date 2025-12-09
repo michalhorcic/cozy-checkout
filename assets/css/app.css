@@ -61,29 +61,29 @@
   default: true;
   prefersdark: false;
   color-scheme: "light";
-  --color-base-100: oklch(98% 0 0);
-  --color-base-200: oklch(96% 0.001 286.375);
-  --color-base-300: oklch(92% 0.004 286.32);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: oklch(70% 0.213 47.604);
-  --color-primary-content: oklch(98% 0.016 73.684);
-  --color-secondary: oklch(55% 0.027 264.364);
-  --color-secondary-content: oklch(98% 0.002 247.839);
-  --color-accent: oklch(0% 0 0);
-  --color-accent-content: oklch(100% 0 0);
-  --color-neutral: oklch(44% 0.017 285.786);
-  --color-neutral-content: oklch(98% 0 0);
-  --color-info: oklch(62% 0.214 259.815);
-  --color-info-content: oklch(97% 0.014 254.604);
-  --color-success: oklch(70% 0.14 182.503);
-  --color-success-content: oklch(98% 0.014 180.72);
-  --color-warning: oklch(66% 0.179 58.318);
-  --color-warning-content: oklch(98% 0.022 95.277);
-  --color-error: oklch(58% 0.253 17.585);
-  --color-error-content: oklch(96% 0.015 12.422);
-  --radius-selector: 0.25rem;
-  --radius-field: 0.25rem;
-  --radius-box: 0.5rem;
+  --color-base-100: oklch(97% 0.01 150);           /* Secondary-50: Light sage background */
+  --color-base-200: oklch(94% 0.015 150);          /* Secondary-100: Slightly darker sage */
+  --color-base-300: oklch(90% 0.02 150);           /* Secondary-200: Border color */
+  --color-base-content: oklch(32% 0 0);            /* Primary-500: Dark gray text */
+  --color-primary: oklch(32% 0 0);                 /* Primary-500: Dark gray primary */
+  --color-primary-content: oklch(97% 0.01 150);    /* Light text on primary */
+  --color-secondary: oklch(85.5% 0.02 145);        /* Secondary-500: Sage green */
+  --color-secondary-content: oklch(32% 0 0);       /* Dark text on secondary */
+  --color-accent: oklch(64% 0.08 30);              /* Tertiary-500: Dusty rose for active states */
+  --color-accent-content: oklch(97% 0.01 150);     /* Light text on accent */
+  --color-neutral: oklch(50% 0 0);                 /* Primary-400: Medium gray */
+  --color-neutral-content: oklch(97% 0.01 150);    /* Light text on neutral */
+  --color-info: oklch(64% 0.08 30);                /* Tertiary-500: Dusty rose for info */
+  --color-info-content: oklch(32% 0 0);            /* Dark text on info */
+  --color-success: oklch(70% 0.14 145);            /* Success green */
+  --color-success-content: oklch(32% 0 0);         /* Dark text on success */
+  --color-warning: oklch(75% 0.15 70);             /* Warning yellow-orange */
+  --color-warning-content: oklch(32% 0 0);         /* Dark text on warning */
+  --color-error: oklch(58% 0.15 30);               /* Accent-500: Terracotta for errors */
+  --color-error-content: oklch(97% 0.01 150);      /* Light text on error */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
   --size-selector: 0.21875rem;
   --size-field: 0.21875rem;
   --border: 1.5px;
@@ -101,6 +101,76 @@
 
 /* Make LiveView wrapper divs transparent for layout */
 [data-phx-session], [data-phx-teleported-src] { display: contents }
+
+/* ============================================
+   Custom Color System - Centralized Colors
+   ============================================ */
+@theme {
+  /* Primary Color: #3a3a3a (Dark Gray) - Used for text, headers, primary actions */
+  --color-primary-50: oklch(95% 0 0);
+  --color-primary-100: oklch(90% 0 0);
+  --color-primary-200: oklch(80% 0 0);
+  --color-primary-300: oklch(65% 0 0);
+  --color-primary-400: oklch(50% 0 0);
+  --color-primary-500: oklch(32% 0 0);  /* #3a3a3a */
+  --color-primary-600: oklch(28% 0 0);
+  --color-primary-700: oklch(22% 0 0);
+  --color-primary-800: oklch(16% 0 0);
+  --color-primary-900: oklch(10% 0 0);
+  
+  /* Secondary Color: #c8d5c4 (Sage Green) - Used for backgrounds, accents */
+  --color-secondary-50: oklch(97% 0.01 150);
+  --color-secondary-100: oklch(94% 0.015 150);
+  --color-secondary-200: oklch(90% 0.02 150);
+  --color-secondary-300: oklch(85% 0.025 150);
+  --color-secondary-400: oklch(80% 0.03 150);
+  --color-secondary-500: oklch(85.5% 0.02 145);  /* #c8d5c4 */
+  --color-secondary-600: oklch(75% 0.025 145);
+  --color-secondary-700: oklch(65% 0.03 145);
+  --color-secondary-800: oklch(55% 0.035 145);
+  --color-secondary-900: oklch(45% 0.04 145);
+  
+  /* Accent Color 1: #c85a3a (Terracotta) - Used for warnings, delete actions */
+  --color-accent-50: oklch(97% 0.02 35);
+  --color-accent-100: oklch(94% 0.04 35);
+  --color-accent-200: oklch(88% 0.08 35);
+  --color-accent-300: oklch(78% 0.12 35);
+  --color-accent-400: oklch(68% 0.14 35);
+  --color-accent-500: oklch(58% 0.15 30);  /* #c85a3a */
+  --color-accent-600: oklch(52% 0.145 30);
+  --color-accent-700: oklch(45% 0.14 30);
+  --color-accent-800: oklch(38% 0.13 30);
+  --color-accent-900: oklch(30% 0.12 30);
+  
+  /* Accent Color 2: #b8826f (Dusty Rose) - Used for active states, info */
+  --color-tertiary-50: oklch(96% 0.015 35);
+  --color-tertiary-100: oklch(93% 0.025 35);
+  --color-tertiary-200: oklch(88% 0.04 35);
+  --color-tertiary-300: oklch(80% 0.06 35);
+  --color-tertiary-400: oklch(72% 0.075 35);
+  --color-tertiary-500: oklch(64% 0.08 30);  /* #b8826f */
+  --color-tertiary-600: oklch(58% 0.08 30);
+  --color-tertiary-700: oklch(50% 0.075 30);
+  --color-tertiary-800: oklch(42% 0.07 30);
+  --color-tertiary-900: oklch(34% 0.065 30);
+  
+  /* Semantic Colors - Status indicators */
+  --color-success-light: oklch(92% 0.08 150);
+  --color-success: oklch(70% 0.14 145);
+  --color-success-dark: oklch(55% 0.16 145);
+  
+  --color-warning-light: oklch(94% 0.06 70);
+  --color-warning: oklch(75% 0.15 70);
+  --color-warning-dark: oklch(60% 0.16 70);
+  
+  --color-error-light: oklch(94% 0.06 30);
+  --color-error: oklch(58% 0.15 30);
+  --color-error-dark: oklch(45% 0.14 30);
+  
+  --color-info-light: oklch(94% 0.03 35);
+  --color-info: oklch(64% 0.08 30);
+  --color-info-dark: oklch(50% 0.075 30);
+}
 
 /* This file is for your main application CSS */
 

@@ -181,7 +181,7 @@
       <div class="receipt-section" style="font-size: 12px;">
         <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
           <span>Sleva:</span>
-          <span class="text-red-600">-{format_currency(@order.discount_amount)}</span>
+          <span class="text-error">-{format_currency(@order.discount_amount)}</span>
         </div>
         <%= if @order.discount_reason && @order.discount_reason != "" do %>
           <div style="font-size: 11px; color: #666; font-style: italic;">
@@ -195,7 +195,7 @@
     <%= if Decimal.gt?(@order.tips_amount || Decimal.new("0"), 0) do %>
       <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
         <span>Spropitné:</span>
-        <span class="text-green-600">+{format_currency(@order.tips_amount)}</span>
+        <span class="text-success-dark">+{format_currency(@order.tips_amount)}</span>
       </div>
     <% end %>
 
