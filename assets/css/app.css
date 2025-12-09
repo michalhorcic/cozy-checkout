@@ -170,6 +170,10 @@
   --color-info-light: oklch(94% 0.03 35);
   --color-info: oklch(64% 0.08 30);
   --color-info-dark: oklch(50% 0.075 30);
+  
+  /* Font Families */
+  --font-serif: 'Libre Baskerville', Georgia, serif;
+  --font-sans: 'Open Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* This file is for your main application CSS */
@@ -221,4 +225,31 @@
 /* Prevent body scroll when modal is open */
 body:has(.fixed.inset-0) {
   overflow: hidden;
+}
+
+/* ============================================
+   Custom Font System
+   ============================================ */
+
+/* Base body font - Open Sans */
+body {
+  font-family: var(--font-sans);
+  font-weight: 400;
+}
+
+/* All headings use Libre Baskerville */
+h1, h2, h3, h4, h5, h6,
+.font-heading {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Override for specific utility classes if needed */
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.font-serif {
+  font-family: var(--font-serif);
 }
