@@ -118,6 +118,13 @@ defmodule CozyCheckout.Catalog do
   defp apply_product_name_filter(query, _params), do: query
 
   @doc """
+  Preload categories for a list of products.
+  """
+  def preload_categories(products) do
+    Repo.preload(products, :category)
+  end
+
+  @doc """
   Gets a single product.
   """
   def get_product!(id) do

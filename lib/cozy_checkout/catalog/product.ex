@@ -17,6 +17,7 @@ defmodule CozyCheckout.Catalog.Product do
     field :active, :boolean, default: true
     field :unit, :string
     field :default_unit_amounts, :string
+    field :low_stock_threshold, :integer, default: 0
     field :deleted_at, :utc_datetime
 
     belongs_to :category, CozyCheckout.Catalog.Category
@@ -29,9 +30,10 @@ defmodule CozyCheckout.Catalog.Product do
   @doc false
   def changeset(product, attrs) do
     product
-    |> cast(attrs, [:name, :description, :category_id, :active, :unit, :default_unit_amounts])
+    |> cast(attrs, [:name, :description, :category_id, :active, :unit, :default_unit_amounts, :low_stock_threshold])
     |> validate_required([:name])
     |> validate_inclusion(:unit, ["ml", "L", "pcs", nil], message: "must be ml, L, pcs, or empty")
+    |> validate_number(:low_stock_threshold, greater_than_or_equal_to: 0)
     |> validate_unit_amounts()
     |> foreign_key_constraint(:category_id)
   end

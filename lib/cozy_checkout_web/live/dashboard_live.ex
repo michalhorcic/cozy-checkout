@@ -68,6 +68,23 @@ defmodule CozyCheckoutWeb.DashboardLive do
             color="teal"
           />
 
+          <%!-- Inventory Management --%>
+          <.dashboard_card
+            title="Purchase Orders"
+            description="Manage stock purchases"
+            icon="hero-archive-box"
+            navigate={~p"/admin/purchase_orders"}
+            color="amber"
+          />
+
+          <.dashboard_card
+            title="Stock Overview"
+            description="View inventory levels & alerts"
+            icon="hero-chart-bar"
+            navigate={~p"/admin/stock"}
+            color="lime"
+          />
+
           <%!-- Guest Management --%>
           <.dashboard_card
             title="Guests"

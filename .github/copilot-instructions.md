@@ -96,7 +96,7 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   Add a `booking_rooms` join table to track rooms associated with each booking:
     *   `id` (binary_id, primary key)
     *   `booking_id` (binary_id, foreign key → bookings, on_delete: :delete_all)
-    *   `room_id` (binary_id, foreign key → rooms, on_delete: :delete_all)
+    *   `room_id` (binary_id (foreign key → rooms, on_delete: :delete_all)
     *   `inserted_at`, `updated_at`
 *   The system should prevent double-booking the same room for overlapping dates.
 *   The system should enforce that the number of guests in a booking doesn't exceed the total capacity of all booked rooms.
@@ -240,6 +240,16 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   **Additional Information:** Include the cottage name ("Jindřichův dům") and the company name and IČO in the footer ("Moruška s.r.o. - IČO: 23741457").
     *   **Format Preferences:** Use portrait orientation, multiple pages if needed, and include the generated date. Page numbers are not needed.
     *   When generating the printable pricelist, use `Date.utc_today()` for the generated date to avoid timezone conversion issues.
+    *   Implement category selection:
+        *   On the `/admin/pricelists/print` page, add a UI section (hidden on print) for category selection
+        *   Add checkboxes for each category
+        *   Allow multiple category selection
+        *   "Select All" as the default
+        *   Add a warning message when no categories are selected
+        *   Filter pricelists based on selected categories
+    *   Implement custom pricelist name:
+        *   Add a text input for custom pricelist name to the `/admin/pricelists/print` page
+        *   The custom name appears in the printed header. Defaults to "Ceník".
 *   **Printable Pricelist Display Format for Tiers:** When showing prices for tiers in the printable pricelist, display them in the following format: `name_of_product (tier1/tier2) tier prices separated by / in same order as tiers`. For example: `Product Name (300/500 ml) 45/70 CZK`.
 *   **Printable Pricelist Layout:** The printable pricelist layout should use a two-column layout with a masonry-like flow. This can be achieved using CSS columns (`columns-2`) instead of a grid. This creates a flowing two-column layout where:
     *   Categories automatically flow into two columns without rigid alignment.
@@ -250,6 +260,8 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   `column-count: 2 !important` - Ensures exactly 2 columns are maintained in print
         *   `column-gap: 1.5rem !important` - Maintains proper spacing between columns
         *   `display: table` - Ensures that CSS columns work in print.
+    *   Adjust the print layout to use A4 paper standards. The max-height is set to 900px, which accounts for A4 height (297mm), minus margins (1.5cm × 2 = 3cm): 267mm ≈ 1008px, minus header space (~100px): ~900px available for content.
+
 *   **Product Sorting in Printable Pricelist:** Products within each category should be sorted alphabetically using Czech collation rules. This means special Czech characters (á, č, ď, é, ě, í, ň, ó, ř, š, ť, ú, ů, ý, ž) are sorted correctly according to Czech alphabet ordering.
 *   **Category Ordering**:
     *   Add an integer `order` field to the `categories` table.
@@ -325,15 +337,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   Store prices and VAT.
         *   Have the recalculate functionality.
 *   **Handling Variable Stay Durations for Booking Invoices:**
-    *   Add a `nights` field to `booking_invoice_items` (defaults to the booking's total nights).
-    *   Update the price calculation to use `price_per_night × quantity × nights`.
-    *   In the invoice items UI, allow staff to:
-        *   Add multiple line items for the same person type.
-        *   Override the number of nights for each line item.
-*   **POS System - Order Creation for Multiple Guests:** The POS system allows creating multiple orders (one per guest) for bookings with multiple guests:
-    *   If a booking has **only 1 guest** (primary): automatically create order for that guest (no modal).
-    *   If a booking has **2+ guests**: show a modal to select which guest when clicking "Create New Order".
-    *   The modal only shows guests who don't already have an active order.
-    *   Staff can create multiple orders (one per guest) for the same booking.
-    *   The `guest_id` on the `orders` table should point to the specific guest from `booking_guests`, NOT always the primary guest.
-*   **
+    *   Add a `nights` field to `booking_invoice_items` (defaults to

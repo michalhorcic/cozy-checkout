@@ -43,6 +43,15 @@ defmodule CozyCheckoutWeb.Router do
     live "/pricelists/management", PricelistLive.Management
     live "/pricelists/print", PricelistLive.Printable
 
+    # Purchase Orders
+    live "/purchase_orders", PurchaseOrderLive.Index, :index
+    live "/purchase_orders/new", PurchaseOrderLive.Index, :new
+    live "/purchase_orders/:id/edit", PurchaseOrderLive.Index, :edit
+    live "/purchase_orders/:id", PurchaseOrderLive.Show
+
+    # Stock Overview
+    live "/stock", StockOverviewLive.Index
+
     # Guests
     live "/guests", GuestLive.Index, :index
     live "/guests/new", GuestLive.Index, :new

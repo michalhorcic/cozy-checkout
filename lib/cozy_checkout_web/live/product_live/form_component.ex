@@ -51,6 +51,20 @@ defmodule CozyCheckoutWeb.ProductLive.FormComponent do
           </p>
         </div>
 
+        <div>
+          <.input
+            field={@form[:low_stock_threshold]}
+            type="number"
+            label="Low Stock Threshold"
+            placeholder="0"
+            min="0"
+            step="1"
+          />
+          <p class="mt-1 text-sm text-primary-400">
+            Set the minimum stock quantity before showing a low stock alert. Set to 0 to disable alerts.
+          </p>
+        </div>
+
         <.input field={@form[:active]} type="checkbox" label="Active" />
 
         <div class="mt-6 flex items-center justify-end gap-x-6">

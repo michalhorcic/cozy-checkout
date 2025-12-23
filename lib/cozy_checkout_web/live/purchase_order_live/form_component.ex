@@ -1,0 +1,314 @@
+defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Inventory
+  alias CozyCheckout.Catalog
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div>
+      <.header>
+        {@title}
+      </.header>
+
+      <.form
+        for={@form}
+        id="purchase-order-form"
+        phx-target={@myself}
+        phx-change="validate"
+        phx-submit="save"
+      >
+        <.input
+          field={@form[:order_number]}
+          type="text"
+          label="Order Number"
+          required
+          readonly={@action == :edit}
+        />
+
+        <.input field={@form[:order_date]} type="date" label="Order Date" required />
+
+        <.input
+          field={@form[:supplier_note]}
+          type="text"
+          label="Supplier"
+          placeholder="e.g., Jan's Brewery, Makro"
+        />
+
+        <.input field={@form[:notes]} type="textarea" label="Notes" rows="3" />
+
+        <.input field={@form[:total_cost]} type="number" label="Total Cost" step="0.01" />
+
+        <div class="mt-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">Items</h3>
+            <button
+              type="button"
+              phx-click="add_item"
+              phx-target={@myself}
+              class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-tertiary-600 hover:bg-tertiary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-tertiary-500"
+            >
+              <.icon name="hero-plus" class="w-4 h-4 mr-1" /> Add Item
+            </button>
+          </div>
+
+          <%= if @items == [] do %>
+            <p class="text-sm text-gray-500 italic">No items yet. Click "Add Item" to add products.</p>
+          <% else %>
+            <div class="space-y-4">
+              <%= for {item, index} <- Enum.with_index(@items) do %>
+                <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div class="flex justify-between items-start mb-3">
+                    <h4 class="text-sm font-medium text-gray-700">Item #{index + 1}</h4>
+                    <button
+                      type="button"
+                      phx-click="remove_item"
+                      phx-value-index={index}
+                      phx-target={@myself}
+                      class="text-rose-600 hover:text-rose-800"
+                    >
+                      <.icon name="hero-trash" class="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Product <span class="text-rose-600">*</span>
+                      </label>
+                      <select
+                        name={"items[#{index}][product_id]"}
+                        required
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                      >
+                        <option value="">Select a product...</option>
+                        <%= for product <- @products do %>
+                          <option value={product.id} selected={item.product_id == product.id}>
+                            {product.name} - {product.category.name}
+                          </option>
+                        <% end %>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Quantity <span class="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name={"items[#{index}][quantity]"}
+                        value={item.quantity}
+                        required
+                        min="1"
+                        step="1"
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Unit Amount {get_unit_label(item, @products)}
+                      </label>
+                      <input
+                        type="number"
+                        name={"items[#{index}][unit_amount]"}
+                        value={item.unit_amount}
+                        step="0.01"
+                        placeholder="e.g., 500 for 500ml"
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Cost Price <span class="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name={"items[#{index}][cost_price]"}
+                        value={item.cost_price}
+                        required
+                        min="0"
+                        step="0.01"
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div class="md:col-span-2">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                      <input
+                        type="text"
+                        name={"items[#{index}][notes]"}
+                        value={item.notes}
+                        placeholder="Optional notes about this item"
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+
+        <div class="mt-6 flex items-center justify-end gap-x-6">
+          <.button type="submit" phx-disable-with="Saving...">Save Purchase Order</.button>
+        </div>
+      </.form>
+    </div>
+    """
+  end
+
+  @impl true
+  def update(%{purchase_order: purchase_order} = assigns, socket) do
+    # Load products with categories
+    products = Catalog.list_products() |> Catalog.preload_categories()
+
+    # Initialize items from existing purchase order items or empty list
+    items =
+      if purchase_order.id do
+        Enum.map(purchase_order.purchase_order_items || [], fn item ->
+          %{
+            id: item.id,
+            product_id: item.product_id,
+            quantity: item.quantity,
+            unit_amount: item.unit_amount,
+            cost_price: item.cost_price,
+            notes: item.notes
+          }
+        end)
+      else
+        []
+      end
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:products, products)
+     |> assign(:items, items)
+     |> assign_form(Inventory.change_purchase_order(purchase_order))}
+  end
+
+  @impl true
+  def handle_event("validate", %{"purchase_order" => purchase_order_params}, socket) do
+    changeset =
+      socket.assigns.purchase_order
+      |> Inventory.change_purchase_order(purchase_order_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  # IMPORTANT: handle_event must match the exact params structure sent by the client
+  # phx-click sends simple params, but phx-change sends the entire form structure
+  def handle_event("add_item", _params, socket) do
+    new_item = %{
+      product_id: nil,
+      quantity: 1,
+      unit_amount: nil,
+      cost_price: nil,
+      notes: nil
+    }
+
+    items = socket.assigns.items ++ [new_item]
+    {:noreply, assign(socket, :items, items)}
+  end
+
+  def handle_event("remove_item", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+    items = List.delete_at(socket.assigns.items, index)
+
+    {:noreply, assign(socket, :items, items)}
+  end
+
+  # This catches the save event with items
+  def handle_event("save", %{"purchase_order" => purchase_order_params, "items" => items_params}, socket) do
+    save_purchase_order(socket, socket.assigns.action, purchase_order_params, items_params)
+  end
+
+  # This catches the save event without items
+  def handle_event("save", %{"purchase_order" => purchase_order_params}, socket) do
+    save_purchase_order(socket, socket.assigns.action, purchase_order_params, %{})
+  end
+
+  # IMPORTANT: Catch-all for unmatched events to prevent crashes
+  # This helps debug what params are actually being sent
+  def handle_event(event, params, socket) do
+    require Logger
+    Logger.warning("Unhandled event in FormComponent: #{event}, params: #{inspect(params)}")
+    {:noreply, socket}
+  end
+
+  defp save_purchase_order(socket, :new, purchase_order_params, items_params) do
+    # Generate order number if not provided
+    purchase_order_params =
+      if purchase_order_params["order_number"] == "" do
+        Map.put(purchase_order_params, "order_number", Inventory.generate_purchase_order_number())
+      else
+        purchase_order_params
+      end
+
+    case Inventory.create_purchase_order(purchase_order_params) do
+      {:ok, purchase_order} ->
+        # Create items
+        create_items(purchase_order, items_params)
+
+        notify_parent({:saved, purchase_order})
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Purchase order created successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign_form(socket, changeset)}
+    end
+  end
+
+  defp save_purchase_order(socket, :edit, purchase_order_params, items_params) do
+    case Inventory.update_purchase_order(socket.assigns.purchase_order, purchase_order_params) do
+      {:ok, purchase_order} ->
+        # Update/create items
+        create_items(purchase_order, items_params)
+
+        notify_parent({:saved, purchase_order})
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Purchase order updated successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign_form(socket, changeset)}
+    end
+  end
+
+  defp create_items(purchase_order, items_params) do
+    items_params
+    |> Map.values()
+    |> Enum.each(fn item_params ->
+      if item_params["product_id"] && item_params["product_id"] != "" do
+        Inventory.create_purchase_order_item(purchase_order, item_params)
+      end
+    end)
+  end
+
+  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
+    assign(socket, :form, to_form(changeset))
+  end
+
+  defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
+
+  defp get_unit_label(item, products) do
+    case Enum.find(products, &(&1.id == item.product_id)) do
+      nil -> ""
+      product when product.unit -> "(#{product.unit})"
+      _ -> ""
+    end
+  end
+
+  defp change_purchase_order(purchase_order, attrs \\ %{}) do
+    Inventory.PurchaseOrder.changeset(purchase_order, attrs)
+  end
+end
