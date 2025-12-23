@@ -57,6 +57,9 @@ defmodule CozyCheckoutWeb.Router do
     live "/stock-adjustments/new", StockAdjustmentLive.Index, :new
     live "/stock-adjustments/:id/edit", StockAdjustmentLive.Index, :edit
 
+    # Inventory Reports
+    live "/inventory-reports", InventoryReportsLive.Index
+
     # Guests
     live "/guests", GuestLive.Index, :index
     live "/guests/new", GuestLive.Index, :new

@@ -93,6 +93,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
             color="orange"
           />
 
+          <.dashboard_card
+            title="Inventory Reports"
+            description="Profit analysis & stock movements"
+            icon="hero-chart-pie"
+            navigate={~p"/admin/inventory-reports"}
+            color="indigo"
+          />
+
           <%!-- Guest Management --%>
           <.dashboard_card
             title="Guests"

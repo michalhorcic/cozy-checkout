@@ -5032,7 +5032,7 @@ When adding an item to a purchase order:
 
 ---
 
-_**User (2025-12-23 22:36Z)**_
+_**User (2025-12-23 22:37Z)**_
 
 It is not doing anything right now. Please try to get inpsiration from current solution in booking form where I can search for guests.
 
@@ -5100,7 +5100,1008 @@ Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checko
 
 ---
 
-The user is saying the search isn't working and wants me to look at how guest search is implemented in the booking form. Let me check that implementation first.Let me check the booking form to see how guest search is implemented: Now I understand! The booking form uses a simpler approach with `phx-keyup` and tracks separate state for search text, suggestions, and selected items. Let me rewrite the purchase order product search to match this pattern: Let me look at the full product search section I added: The issue is I'm using `phx-change` on an input without a proper `name` attribute that matches the expected params. Let me rewrite this to use `phx-keyup` like the booking form does: 
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n id={\"product-search-#{index}\"}&gt;\n                          &lt;input\n                            type=\"text\"\n                            id={\"product-search-input-#{index}\"}\n                            value={get_in(@product_searches, [index]) || \"\"}\n                            placeholder=\"Type to search products...\"\n                            phx-keyup=\"search_products\"\n                            phx-value-index={index}\n                            phx-debounce=\"300\"\n                            phx-target={@myself}\n                            autocomplete=\"off\"\n                            class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n                          /&gt;\n                          \n                          &lt;%!-- Search results dropdown --%&gt;\n                          &lt;%= if get_in(@show_product_suggestions, [index]) do %&gt;\n                            &lt;% search_query = get_in(@product_searches, [index]) || \"\" %&gt;\n                            &lt;% filtered_products = @products\n                              |&gt; Enum.filter(fn p -&gt;\n                                query = String.downcase(search_query)\n                                String.contains?(String.downcase(p.name), query) ||\n                                String.contains?(String.downcase(p.category.name), query)\n                              end)\n                              |&gt; Enum.take(10) %&gt;\n                            \n                            &lt;div class=\"absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg overflow-auto border border-gray-200\"&gt;\n                              &lt;%= if filtered_products == [] do %&gt;\n                                &lt;div class=\"px-4 py-3 text-sm text-gray-500\"&gt;\n                                  No products found\n                                &lt;/div&gt;\n                              &lt;% else %&gt;\n                                &lt;%= for product &lt;- filtered_products do %&gt;\n                                  &lt;button\n                                    type=\"button\"\n                                    phx-click=\"select_product\"\n                                    phx-value-index={index}\n                                    phx-value-product-id={product.id}\n                                    phx-target={@myself}\n                                    class=\"w-full text-left px-4 py-2 hover:bg-tertiary-600 hover:text-white transition-colors\"\n                                  &gt;\n                                    &lt;div class=\"font-medium\"&gt;{product.name}&lt;/div&gt;\n                                    &lt;div class=\"text-sm opacity-75\"&gt;\n                                      {product.category.name}\n                                      &lt;%= if product.unit do %&gt;\n                                        &lt;span class=\"ml-2\"&gt;• {product.unit}&lt;/span&gt;\n                                      &lt;% end %&gt;\n                                    &lt;/div&gt;\n                                  &lt;/button&gt;\n                                &lt;% end %&gt;\n                              &lt;% end %&gt;\n                            &lt;/div\n&#96;&#96;&#96;\n\n",
+  "textEditContent": " id={\"product-search-#{index}\"}&gt;\n                          &lt;input\n                            type=\"text\"\n                            id={\"product-search-input-#{index}\"}\n                            value={get_in(@product_searches, [index]) || \"\"}\n                            placeholder=\"Type to search products...\"\n                            phx-keyup=\"search_products\"\n                            phx-value-index={index}\n                            phx-debounce=\"300\"\n                            phx-target={@myself}\n                            autocomplete=\"off\"\n                            class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n                          /&gt;\n                          \n                          &lt;%!-- Search results dropdown --%&gt;\n                          &lt;%= if get_in(@show_product_suggestions, [index]) do %&gt;\n                            &lt;% search_query = get_in(@product_searches, [index]) || \"\" %&gt;\n                            &lt;% filtered_products = @products\n                              |&gt; Enum.filter(fn p -&gt;\n                                query = String.downcase(search_query)\n                                String.contains?(String.downcase(p.name), query) ||\n                                String.contains?(String.downcase(p.category.name), query)\n                              end)\n                              |&gt; Enum.take(10) %&gt;\n                            \n                            &lt;div class=\"absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg overflow-auto border border-gray-200\"&gt;\n                              &lt;%= if filtered_products == [] do %&gt;\n                                &lt;div class=\"px-4 py-3 text-sm text-gray-500\"&gt;\n                                  No products found\n                                &lt;/div&gt;\n                              &lt;% else %&gt;\n                                &lt;%= for product &lt;- filtered_products do %&gt;\n                                  &lt;button\n                                    type=\"button\"\n                                    phx-click=\"select_product\"\n                                    phx-value-index={index}\n                                    phx-value-product-id={product.id}\n                                    phx-target={@myself}\n                                    class=\"w-full text-left px-4 py-2 hover:bg-tertiary-600 hover:text-white transition-colors\"\n                                  &gt;\n                                    &lt;div class=\"font-medium\"&gt;{product.name}&lt;/div&gt;\n                                    &lt;div class=\"text-sm opacity-75\"&gt;\n                                      {product.category.name}\n                                      &lt;%= if product.unit do %&gt;\n                                        &lt;span class=\"ml-2\"&gt;• {product.unit}&lt;/span&gt;\n                                      &lt;% end %&gt;\n                                    &lt;/div&gt;\n                                  &lt;/button&gt;\n                                &lt;% end %&gt;\n                              &lt;% end %&gt;\n                            &lt;/div",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n(:show_product_suggestions, %{})\n     |&gt; assign_form(Inventory.change_purchase_order(purchase_order))}\n  end\n\n  @impl true\n  def handle_event(\"search_products\", %{\"index\" =&gt; index, \"value\" =&gt; search_query}, socket) do\n    index = String.to_integer(index)\n    product_searches = Map.put(socket.assigns.product_searches, index, search_query)\n    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, String.length(search_query) &gt;= 2)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:product_searches, product_searches)\n     |&gt; assign(:show_product_suggestions, show_suggestions)}\n  end\n\n  @impl true\n  def handle_event(\"select_product\", %{\"index\" =&gt; index, \"product-id\" =&gt; product_id}, socket) do\n    index = String.to_integer(index)\n    \n    # Update the item with the selected product\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, product_id)\n    end)\n    \n    # Clear the search for this index\n    product_searches = Map.delete(socket.assigns.product_searches, index)\n    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:items, items)\n     |&gt; assign(:product_searches, product_searches)\n     |&gt; assign(:show_product_suggestions, show_suggestions)}\n  end\n\n  @impl true\n  def handle_event(\"clear_product\", %{\"index\" =&gt; index}, socket) do\n    index = String.to_integer(index)\n    \n    # Clear the product_id for this item\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, nil)\n    end)\n    \n    # Reset search state\n    product_searches = Map.delete(socket.assigns.product_searches, index)\n    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:items, items)\n     |&gt; assign(:product_searches, product_searches)\n     |&gt; assign(:show_product_suggestions, show_suggestion\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "(:show_product_suggestions, %{})\n     |&gt; assign_form(Inventory.change_purchase_order(purchase_order))}\n  end\n\n  @impl true\n  def handle_event(\"search_products\", %{\"index\" =&gt; index, \"value\" =&gt; search_query}, socket) do\n    index = String.to_integer(index)\n    product_searches = Map.put(socket.assigns.product_searches, index, search_query)\n    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, String.length(search_query) &gt;= 2)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:product_searches, product_searches)\n     |&gt; assign(:show_product_suggestions, show_suggestions)}\n  end\n\n  @impl true\n  def handle_event(\"select_product\", %{\"index\" =&gt; index, \"product-id\" =&gt; product_id}, socket) do\n    index = String.to_integer(index)\n    \n    # Update the item with the selected product\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, product_id)\n    end)\n    \n    # Clear the search for this index\n    product_searches = Map.delete(socket.assigns.product_searches, index)\n    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:items, items)\n     |&gt; assign(:product_searches, product_searches)\n     |&gt; assign(:show_product_suggestions, show_suggestions)}\n  end\n\n  @impl true\n  def handle_event(\"clear_product\", %{\"index\" =&gt; index}, socket) do\n    index = String.to_integer(index)\n    \n    # Clear the product_id for this item\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, nil)\n    end)\n    \n    # Reset search state\n    product_searches = Map.delete(socket.assigns.product_searches, index)\n    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:items, items)\n     |&gt; assign(:product_searches, product_searches)\n     |&gt; assign(:show_product_suggestions, show_suggestion",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The user is saying the search isn't working and wants me to look at how guest search is implemented in the booking form. Let me check that implementation first.Let me check the booking form to see how guest search is implemented: Now I understand! The booking form uses a simpler approach with `phx-keyup` and tracks separate state for search text, suggestions, and selected items. Let me rewrite the purchase order product search to match this pattern: Let me look at the full product search section I added: The issue is I'm using `phx-change` on an input without a proper `name` attribute that matches the expected params. Let me rewrite this to use `phx-keyup` like the booking form does: Now update the event handlers and socket assigns: Perfect! Now the product search should work properly. The key changes:
+
+1. **Using `phx-keyup`** instead of `phx-change` with the `value` parameter that Phoenix expects
+2. **Added `show_product_suggestions`** map to track when to show the dropdown (similar to booking form)
+3. **Shows suggestions after 2+ characters** are typed
+4. **Properly tracks search state per item index** so each item has its own independent search
+5. **Clears search state** when selecting or clearing a product
+6. **Better visual feedback** with hover states matching the booking form style
+
+The search will now work as you type, showing matching products after entering at least 2 characters!
+
+---
+
+_**User (2025-12-23 22:39Z)**_
+
+Now create Enhanced Reporting
+* Cost analysis (purchase vs sale prices)
+* Profit margin calculations
+* Stock movement history
+* Inventory valuation (total value of stock)
+Ask any additional questions
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+The user wants enhanced reporting for inventory management. Let me think about what would be useful:
+
+1. Cost analysis - comparing purchase costs vs sale prices
+2. Profit margin calculations - showing profit per product
+3. Stock movement history - tracking all purchases, sales, and adjustments over time
+4. Inventory valuation - current stock value based on cost prices
+
+Before implementing, I should ask some clarifying questions to make sure I build what they need:
+
+1. Time periods - do they want to filter by date ranges?
+2. Product filtering - by category, individual product?
+3. Export options - do they need to export reports (CSV, PDF)?
+4. Display format - tables, charts, summary cards?
+5. Cost basis - FIFO, LIFO, weighted average, or just simple average cost?
+6. Sale price source - should we use current pricelist prices or actual sold prices from orders?
+
+Let me ask these questions first before implementing.Before I implement the enhanced reporting, let me ask a few questions to make sure it meets your needs:
+
+**1. Time Period Filtering:**
+- Do you want to filter reports by date ranges (e.g., last 30 days, last quarter, custom date range)?
+- Or just show current/all-time data?
+
+**2. Cost Basis for Valuation:**
+- For inventory valuation, should I use:
+  - **Latest purchase price** (most recent cost)
+  - **Average cost** (average of all purchase prices)
+  - **FIFO** (First In, First Out - more complex)
+
+**3. Profit Margin Calculation:**
+- Should I compare:
+  - Purchase cost vs. **current pricelist prices**?
+  - Purchase cost vs. **actual sale prices from orders**?
+  - Both?
+
+**4. Report Format:**
+- Summary cards with key metrics at the top?
+- Detailed tables with sortable columns?
+- Do you need export functionality (CSV)?
+
+**5. Stock Movement History:**
+- Should this show all transactions (purchases, sales, adjustments) in one timeline?
+- Filterable by product, date range, transaction type?
+
+**6. Visual Elements:**
+- Just tables and numbers, or do you want simple visual indicators (colored badges, progress bars)?
+- Any specific metrics you want highlighted?
+
+Let me know your preferences and I'll build the reporting system accordingly!
+
+---
+
+_**User (2025-12-23 22:44Z)**_
+
+1. filter reports by date ranges
+2. use last purchase price
+3. purchase cost vs. actual sale prices from orders
+4. summary cards with key metrics
+5. filterable by product, date rage, transaction type
+6. simple visual indicators
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Created 3 todos**
+
+- [-] Add reporting functions to Inventory context
+  > Add functions to calculate inventory value, profit margins, and stock movements
+- [ ] Create inventory reports LiveView
+  > LiveView with summary cards and filterable tables
+- [ ] Add routes and navigation
+  > Add /admin/inventory-reports route and dashboard link
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#340-340), lines 340 to 340</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#340-340), lines 340 to 340
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#320-320), lines 320 to 340</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#320-320), lines 320 to 340
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n\n  ## Reporting Functions\n\n  @doc \"\"\"\n  Get total inventory valuation using latest purchase prices.\n  \"\"\"\n  def get_inventory_valuation do\n    products = CozyCheckout.Catalog.list_products()\n\n    products\n    |&gt; Enum.map(fn product -&gt;\n      stock = get_stock_level(product.id)\n      latest_cost = get_latest_purchase_cost(product.id)\n      \n      value = Decimal.mult(stock, latest_cost || Decimal.new(0))\n      \n      %{\n        product: product,\n        stock: stock,\n        unit_cost: latest_cost,\n        total_value: value\n      }\n    end)\n    |&gt; Enum.reject(fn item -&gt; Decimal.eq?(item.stock, 0) end)\n  end\n\n  @doc \"\"\"\n  Get profit analysis for products comparing purchase cost vs actual sales.\n  \"\"\"\n  def get_profit_analysis(filters \\\\ %{}) do\n    products = CozyCheckout.Catalog.list_products()\n    \n    products\n    |&gt; Enum.map(fn product -&gt;\n      stock = get_stock_level(product.id)\n      avg_purchase_cost = get_average_purchase_cost(product.id, filters)\n      avg_sale_price = get_average_sale_price(product.id, filters)\n      total_sold = get_total_sold_quantity(product.id, filters)\n      \n      profit_per_unit = \n        if avg_purchase_cost &amp;&amp; avg_sale_price do\n          Decimal.sub(avg_sale_price, avg_purchase_cost)\n        else\n          Decimal.new(0)\n        end\n      \n      profit_margin_percent =\n        if avg_sale_price &amp;&amp; Decimal.compare(avg_sale_price, 0) == :gt do\n          profit_per_unit\n          |&gt; Decimal.div(avg_sale_price)\n          |&gt; Decimal.mult(100)\n        else\n          Decimal.new(0)\n        end\n      \n      total_profit = Decimal.mult(profit_per_unit, total_sold || Decimal.new(0))\n      \n      %{\n        product: product,\n        stock: stock,\n        avg_purchase_cost: avg_purchase_cost,\n        avg_sale_price: avg_sale_price,\n        profit_per_unit: profit_per_unit,\n        profit_margin_percent: profit_margin_percent,\n        total_sold: total_sold,\n        total_profit: total_profit\n      }\n    end)\n    |&gt; Enum.reject(fn item -&gt; \n      is_nil(item.avg_purchase_cost) &amp;&amp; is_nil(item.avg_sale_price)\n    end)\n    |&gt; Enum.sort_by(&amp; &amp;1.total_profit, {:desc, Decimal})\n  end\n\n  @doc \"\"\"\n  Get stock movement history with all transactions.\n  \"\"\"\n  def get_stock_movements(filters \\\\ %{}) do\n    purchases = get_purchase_movements(filters)\n    sales = get_sale_movements(filters)\n    adjustments = get_adjustment_movements(filters)\n    \n    (purchases ++ sales ++ adjustments)\n    |&gt; Enum.sort_by(&amp; &amp;1.date, {:desc, Date})\n  end\n\n  defp get_latest_purchase_cost(product_id) do\n    query = from poi in PurchaseOrderItem,\n      join: po in PurchaseOrder,\n      on: poi.purchase_order_id == po.id,\n      where: poi.product_id == ^product_id \n        and is_nil(poi.deleted_at)\n        and is_nil(po.deleted_at),\n      order_by: [desc: po.order_date],\n      limit: 1,\n      select: poi.cost_price\n    \n    Repo.one(query)\n  end\n\n  defp get_average_purchase_cost(product_id, filters) do\n    query = from poi in PurchaseOrderItem,\n      join: po in PurchaseOrder,\n      on: poi.purchase_order_id == po.id,\n      where: poi.product_id == ^product_id \n        and is_nil(poi.deleted_at)\n        and is_nil(po.deleted_at)\n    \n    query = apply_date_filter(query, filters, :po)\n    \n    query = from [poi, po] in query,\n      select: avg(poi.cost_price)\n    \n    Repo.one(query)\n  end\n\n  defp get_average_sale_price(product_id, filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      where: oi.product_id == ^product_id \n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n    \n    query = apply_date_filter(query, filters, :o)\n    \n    query = from [oi, o] in query,\n      select: avg(oi.unit_price)\n    \n    Repo.one(query)\n  end\n\n  defp get_total_sold_quantity(product_id, filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      where: oi.product_id == ^product_id \n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n    \n    query = apply_date_filter(query, filters, :o)\n    \n    query = from [oi, o] in query,\n      select: coalesce(sum(oi.quantity), 0)\n    \n    Repo.one(query) || Decimal.new(0)\n  end\n\n  defp get_purchase_movements(filters) do\n    query = from poi in PurchaseOrderItem,\n      join: po in PurchaseOrder,\n      on: poi.purchase_order_id == po.id,\n      join: p in CozyCheckout.Catalog.Product,\n      on: poi.product_id == p.id,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(poi.deleted_at) and is_nil(po.deleted_at),\n      select: %{\n        type: \"purchase\",\n        date: po.order_date,\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: poi.quantity,\n        unit_amount: poi.unit_amount,\n        unit: p.unit,\n        price: poi.cost_price,\n        reference: po.order_number,\n        notes: poi.notes\n      }\n    \n    query = apply_date_filter(query, filters, :po)\n    query = apply_product_filter(query, filters, :p)\n    query = apply_type_filter(query, filters, \"purchase\")\n    \n    Repo.all(query)\n  end\n\n  defp get_sale_movements(filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      join: p in CozyCheckout.Catalog.Product,\n      on: oi.product_id == p.id,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(oi.deleted_at) \n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\",\n      select: %{\n        type: \"sale\",\n        date: fragment(\"DATE(?)\", o.inserted_at),\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: fragment(\"-?\", oi.quantity),\n        unit_amount: oi.unit_amount,\n        unit: p.unit,\n        price: oi.unit_price,\n        reference: o.order_number,\n        notes: type(^nil, :string)\n      }\n    \n    query = apply_date_filter(query, filters, :o)\n    query = apply_product_filter(query, filters, :p)\n    query = apply_type_filter(query, filters, \"sale\")\n    \n    Repo.all(query)\n  end\n\n  defp get_adjustment_movements(filters) do\n    query = from sa in StockAdjustment,\n      join: p in CozyCheckout.Catalog.Product,\n      on: sa.product_id == p.id,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(sa.deleted_at),\n      select: %{\n        type: fragment(\"CONCAT('adjustment-', ?)\", sa.adjustment_type),\n        date: fragment(\"DATE(?)\", sa.inserted_at),\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: sa.quantity,\n        unit_amount: sa.unit_amount,\n        unit: p.unit,\n        price: type(^nil, :decimal),\n        reference: sa.reason,\n        notes: sa.notes\n      }\n    \n    query = apply_date_filter(query, filters, :sa)\n    query = apply_product_filter(query, filters, :p)\n    query = apply_type_filter(query, filters, \"adjustment\")\n    \n    Repo.all(query)\n  end\n\n  defp apply_date_filter(query, %{start_date: start_date, end_date: end_date}, table_alias) \n       when not is_nil(start_date) and not is_nil(end_date) do\n    case table_alias do\n      :po -&gt; from [poi, po] in query, where: po.order_date &gt;= ^start_date and po.order_date &lt;= ^end_date\n      :o -&gt; from [oi, o] in query, where: fragment(\"DATE(?)\", o.inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", o.inserted_at) &lt;= ^end_date\n      :sa -&gt; from sa in query, where: fragment(\"DATE(?)\", sa.inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", sa.inserted_at) &lt;= ^end_date\n    end\n  end\n  defp apply_date_filter(query, _filters, _table_alias), do: query\n\n  defp apply_product_filter(query, %{product_id: product_id}, :p) when not is_nil(product_id) do\n    from [_first, _second, p | _rest] in query, where: p.id == ^product_id\n  end\n  defp apply_product_filter(query, _filters, _table_alias), do: query\n\n  defp apply_type_filter(query, %{transaction_type: type}, expected_type) when not is_nil(type) do\n    if String.starts_with?(type, expected_type), do: query, else: from(_ in query, where: false)\n  end\n  defp apply_type_filter(query, _filters, _expected_type), do: query\n\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "\n  ## Reporting Functions\n\n  @doc \"\"\"\n  Get total inventory valuation using latest purchase prices.\n  \"\"\"\n  def get_inventory_valuation do\n    products = CozyCheckout.Catalog.list_products()\n\n    products\n    |&gt; Enum.map(fn product -&gt;\n      stock = get_stock_level(product.id)\n      latest_cost = get_latest_purchase_cost(product.id)\n      \n      value = Decimal.mult(stock, latest_cost || Decimal.new(0))\n      \n      %{\n        product: product,\n        stock: stock,\n        unit_cost: latest_cost,\n        total_value: value\n      }\n    end)\n    |&gt; Enum.reject(fn item -&gt; Decimal.eq?(item.stock, 0) end)\n  end\n\n  @doc \"\"\"\n  Get profit analysis for products comparing purchase cost vs actual sales.\n  \"\"\"\n  def get_profit_analysis(filters \\\\ %{}) do\n    products = CozyCheckout.Catalog.list_products()\n    \n    products\n    |&gt; Enum.map(fn product -&gt;\n      stock = get_stock_level(product.id)\n      avg_purchase_cost = get_average_purchase_cost(product.id, filters)\n      avg_sale_price = get_average_sale_price(product.id, filters)\n      total_sold = get_total_sold_quantity(product.id, filters)\n      \n      profit_per_unit = \n        if avg_purchase_cost &amp;&amp; avg_sale_price do\n          Decimal.sub(avg_sale_price, avg_purchase_cost)\n        else\n          Decimal.new(0)\n        end\n      \n      profit_margin_percent =\n        if avg_sale_price &amp;&amp; Decimal.compare(avg_sale_price, 0) == :gt do\n          profit_per_unit\n          |&gt; Decimal.div(avg_sale_price)\n          |&gt; Decimal.mult(100)\n        else\n          Decimal.new(0)\n        end\n      \n      total_profit = Decimal.mult(profit_per_unit, total_sold || Decimal.new(0))\n      \n      %{\n        product: product,\n        stock: stock,\n        avg_purchase_cost: avg_purchase_cost,\n        avg_sale_price: avg_sale_price,\n        profit_per_unit: profit_per_unit,\n        profit_margin_percent: profit_margin_percent,\n        total_sold: total_sold,\n        total_profit: total_profit\n      }\n    end)\n    |&gt; Enum.reject(fn item -&gt; \n      is_nil(item.avg_purchase_cost) &amp;&amp; is_nil(item.avg_sale_price)\n    end)\n    |&gt; Enum.sort_by(&amp; &amp;1.total_profit, {:desc, Decimal})\n  end\n\n  @doc \"\"\"\n  Get stock movement history with all transactions.\n  \"\"\"\n  def get_stock_movements(filters \\\\ %{}) do\n    purchases = get_purchase_movements(filters)\n    sales = get_sale_movements(filters)\n    adjustments = get_adjustment_movements(filters)\n    \n    (purchases ++ sales ++ adjustments)\n    |&gt; Enum.sort_by(&amp; &amp;1.date, {:desc, Date})\n  end\n\n  defp get_latest_purchase_cost(product_id) do\n    query = from poi in PurchaseOrderItem,\n      join: po in PurchaseOrder,\n      on: poi.purchase_order_id == po.id,\n      where: poi.product_id == ^product_id \n        and is_nil(poi.deleted_at)\n        and is_nil(po.deleted_at),\n      order_by: [desc: po.order_date],\n      limit: 1,\n      select: poi.cost_price\n    \n    Repo.one(query)\n  end\n\n  defp get_average_purchase_cost(product_id, filters) do\n    query = from poi in PurchaseOrderItem,\n      join: po in PurchaseOrder,\n      on: poi.purchase_order_id == po.id,\n      where: poi.product_id == ^product_id \n        and is_nil(poi.deleted_at)\n        and is_nil(po.deleted_at)\n    \n    query = apply_date_filter(query, filters, :po)\n    \n    query = from [poi, po] in query,\n      select: avg(poi.cost_price)\n    \n    Repo.one(query)\n  end\n\n  defp get_average_sale_price(product_id, filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      where: oi.product_id == ^product_id \n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n    \n    query = apply_date_filter(query, filters, :o)\n    \n    query = from [oi, o] in query,\n      select: avg(oi.unit_price)\n    \n    Repo.one(query)\n  end\n\n  defp get_total_sold_quantity(product_id, filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      where: oi.product_id == ^product_id \n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n    \n    query = apply_date_filter(query, filters, :o)\n    \n    query = from [oi, o] in query,\n      select: coalesce(sum(oi.quantity), 0)\n    \n    Repo.one(query) || Decimal.new(0)\n  end\n\n  defp get_purchase_movements(filters) do\n    query = from poi in PurchaseOrderItem,\n      join: po in PurchaseOrder,\n      on: poi.purchase_order_id == po.id,\n      join: p in CozyCheckout.Catalog.Product,\n      on: poi.product_id == p.id,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(poi.deleted_at) and is_nil(po.deleted_at),\n      select: %{\n        type: \"purchase\",\n        date: po.order_date,\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: poi.quantity,\n        unit_amount: poi.unit_amount,\n        unit: p.unit,\n        price: poi.cost_price,\n        reference: po.order_number,\n        notes: poi.notes\n      }\n    \n    query = apply_date_filter(query, filters, :po)\n    query = apply_product_filter(query, filters, :p)\n    query = apply_type_filter(query, filters, \"purchase\")\n    \n    Repo.all(query)\n  end\n\n  defp get_sale_movements(filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      join: p in CozyCheckout.Catalog.Product,\n      on: oi.product_id == p.id,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(oi.deleted_at) \n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\",\n      select: %{\n        type: \"sale\",\n        date: fragment(\"DATE(?)\", o.inserted_at),\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: fragment(\"-?\", oi.quantity),\n        unit_amount: oi.unit_amount,\n        unit: p.unit,\n        price: oi.unit_price,\n        reference: o.order_number,\n        notes: type(^nil, :string)\n      }\n    \n    query = apply_date_filter(query, filters, :o)\n    query = apply_product_filter(query, filters, :p)\n    query = apply_type_filter(query, filters, \"sale\")\n    \n    Repo.all(query)\n  end\n\n  defp get_adjustment_movements(filters) do\n    query = from sa in StockAdjustment,\n      join: p in CozyCheckout.Catalog.Product,\n      on: sa.product_id == p.id,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(sa.deleted_at),\n      select: %{\n        type: fragment(\"CONCAT('adjustment-', ?)\", sa.adjustment_type),\n        date: fragment(\"DATE(?)\", sa.inserted_at),\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: sa.quantity,\n        unit_amount: sa.unit_amount,\n        unit: p.unit,\n        price: type(^nil, :decimal),\n        reference: sa.reason,\n        notes: sa.notes\n      }\n    \n    query = apply_date_filter(query, filters, :sa)\n    query = apply_product_filter(query, filters, :p)\n    query = apply_type_filter(query, filters, \"adjustment\")\n    \n    Repo.all(query)\n  end\n\n  defp apply_date_filter(query, %{start_date: start_date, end_date: end_date}, table_alias) \n       when not is_nil(start_date) and not is_nil(end_date) do\n    case table_alias do\n      :po -&gt; from [poi, po] in query, where: po.order_date &gt;= ^start_date and po.order_date &lt;= ^end_date\n      :o -&gt; from [oi, o] in query, where: fragment(\"DATE(?)\", o.inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", o.inserted_at) &lt;= ^end_date\n      :sa -&gt; from sa in query, where: fragment(\"DATE(?)\", sa.inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", sa.inserted_at) &lt;= ^end_date\n    end\n  end\n  defp apply_date_filter(query, _filters, _table_alias), do: query\n\n  defp apply_product_filter(query, %{product_id: product_id}, :p) when not is_nil(product_id) do\n    from [_first, _second, p | _rest] in query, where: p.id == ^product_id\n  end\n  defp apply_product_filter(query, _filters, _table_alias), do: query\n\n  defp apply_type_filter(query, %{transaction_type: type}, expected_type) when not is_nil(type) do\n    if String.starts_with?(type, expected_type), do: query, else: from(_ in query, where: false)\n  end\n  defp apply_type_filter(query, _filters, _expected_type), do: query\n",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Starting: *Create inventory reports LiveView* (2/3)**
+
+- [x] Add reporting functions to Inventory context
+  > Add functions to calculate inventory value, profit margins, and stock movements
+- [-] Create inventory reports LiveView
+  > LiveView with summary cards and filterable tables
+- [ ] Add routes and navigation
+  > Add /admin/inventory-reports route and dashboard link
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_createFile">
+<details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+
+Parameters:
+
+```json
+{
+  "file_path": "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/inventory_reports_live/index.ex",
+  "relativeWorkspacePath": "index.ex"
+}
+```
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_createFile",
+  "isHidden": false
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Creating [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/inventory_reports_live/index.ex)",
+  "pastTenseMessage": "Created [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/inventory_reports_live/index.ex)",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "",
+  "textEditContent": "defmodule CozyCheckoutWeb.InventoryReportsLive.Index do\n  use CozyCheckoutWeb, :live_view\n\n  alias CozyCheckout.Inventory\n  alias CozyCheckout.Catalog\n\n  import CozyCheckoutWeb.CurrencyHelper\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok,\n     socket\n     |&gt; assign(:page_title, \"Inventory Reports\")\n     |&gt; assign(:active_tab, \"valuation\")\n     |&gt; assign(:products, Catalog.list_products() |&gt; Catalog.preload_categories())\n     |&gt; assign_filters()\n     |&gt; load_reports()}\n  end\n\n  @impl true\n  def handle_params(_params, _url, socket) do\n    {:noreply, socket}\n  end\n\n  @impl true\n  def handle_event(\"change_tab\", %{\"tab\" =&gt; tab}, socket) do\n    {:noreply, assign(socket, :active_tab, tab)}\n  end\n\n  @impl true\n  def handle_event(\"filter\", params, socket) do\n    {:noreply,\n     socket\n     |&gt; assign_filters(params)\n     |&gt; load_reports()}\n  end\n\n  @impl true\n  def handle_event(\"clear_filters\", _params, socket) do\n    {:noreply,\n     socket\n     |&gt; assign_filters()\n     |&gt; load_reports()}\n  end\n\n  defp assign_filters(socket, params \\\\ %{}) do\n    socket\n    |&gt; assign(:start_date, params[\"start_date\"] || \"\")\n    |&gt; assign(:end_date, params[\"end_date\"] || \"\")\n    |&gt; assign(:product_id, params[\"product_id\"] || \"\")\n    |&gt; assign(:transaction_type, params[\"transaction_type\"] || \"\")\n  end\n\n  defp load_reports(socket) do\n    filters = build_filters(socket.assigns)\n    \n    valuation = Inventory.get_inventory_valuation()\n    profit_analysis = Inventory.get_profit_analysis(filters)\n    movements = Inventory.get_stock_movements(filters)\n    \n    # Calculate summary metrics\n    total_value = valuation\n      |&gt; Enum.map(&amp; &amp;1.total_value)\n      |&gt; Enum.reduce(Decimal.new(0), &amp;Decimal.add/2)\n    \n    total_profit = profit_analysis\n      |&gt; Enum.map(&amp; &amp;1.total_profit)\n      |&gt; Enum.reduce(Decimal.new(0), &amp;Decimal.add/2)\n    \n    avg_margin = if Enum.empty?(profit_analysis) do\n      Decimal.new(0)\n    else\n      profit_analysis\n      |&gt; Enum.map(&amp; &amp;1.profit_margin_percent)\n      |&gt; Enum.reduce(Decimal.new(0), &amp;Decimal.add/2)\n      |&gt; Decimal.div(length(profit_analysis))\n    end\n    \n    socket\n    |&gt; assign(:valuation_items, valuation)\n    |&gt; assign(:profit_items, profit_analysis)\n    |&gt; assign(:movements, movements)\n    |&gt; assign(:total_inventory_value, total_value)\n    |&gt; assign(:total_profit, total_profit)\n    |&gt; assign(:avg_profit_margin, avg_margin)\n    |&gt; assign(:movement_count, length(movements))\n  end\n\n  defp build_filters(assigns) do\n    filters = %{}\n    \n    filters = if assigns.start_date != \"\" &amp;&amp; assigns.end_date != \"\" do\n      Map.merge(filters, %{\n        start_date: Date.from_iso8601!(assigns.start_date),\n        end_date: Date.from_iso8601!(assigns.end_date)\n      })\n    else\n      filters\n    end\n    \n    filters = if assigns.product_id != \"\" do\n      Map.put(filters, :product_id, assigns.product_id)\n    else\n      filters\n    end\n    \n    filters = if assigns.transaction_type != \"\" do\n      Map.put(filters, :transaction_type, assigns.transaction_type)\n    else\n      filters\n    end\n    \n    filters\n  end\n\n  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    &lt;div class=\"max-w-7xl mx-auto px-4 py-8\"&gt;\n      &lt;div class=\"mb-8\"&gt;\n        &lt;.link navigate={~p\"/admin\"} class=\"text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block\"&gt;\n          ← Back to Dashboard\n        &lt;/.link&gt;\n        &lt;h1 class=\"text-4xl font-bold text-primary-500\"&gt;{@page_title}&lt;/h1&gt;\n      &lt;/div&gt;\n\n      &lt;%!-- Summary Cards --%&gt;\n      &lt;div class=\"grid grid-cols-1 md:grid-cols-3 gap-6 mb-8\"&gt;\n        &lt;div class=\"bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg p-6 text-white\"&gt;\n          &lt;div class=\"flex items-center justify-between\"&gt;\n            &lt;div&gt;\n              &lt;p class=\"text-emerald-100 text-sm font-medium\"&gt;Total Inventory Value&lt;/p&gt;\n              &lt;p class=\"text-3xl font-bold mt-1\"&gt;{format_currency(@total_inventory_value)}&lt;/p&gt;\n            &lt;/div&gt;\n            &lt;.icon name=\"hero-archive-box\" class=\"w-12 h-12 opacity-80\" /&gt;\n          &lt;/div&gt;\n        &lt;/div&gt;\n\n        &lt;div class=\"bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg p-6 text-white\"&gt;\n          &lt;div class=\"flex items-center justify-between\"&gt;\n            &lt;div&gt;\n              &lt;p class=\"text-blue-100 text-sm font-medium\"&gt;Total Profit&lt;/p&gt;\n              &lt;p class=\"text-3xl font-bold mt-1\"&gt;{format_currency(@total_profit)}&lt;/p&gt;\n            &lt;/div&gt;\n            &lt;.icon name=\"hero-currency-dollar\" class=\"w-12 h-12 opacity-80\" /&gt;\n          &lt;/div&gt;\n        &lt;/div&gt;\n\n        &lt;div class=\"bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-lg p-6 text-white\"&gt;\n          &lt;div class=\"flex items-center justify-between\"&gt;\n            &lt;div&gt;\n              &lt;p class=\"text-purple-100 text-sm font-medium\"&gt;Avg. Profit Margin&lt;/p&gt;\n              &lt;p class=\"text-3xl font-bold mt-1\"&gt;{Decimal.round(@avg_profit_margin, 1)}%&lt;/p&gt;\n            &lt;/div&gt;\n            &lt;.icon name=\"hero-chart-bar\" class=\"w-12 h-12 opacity-80\" /&gt;\n          &lt;/div&gt;\n        &lt;/div&gt;\n      &lt;/div&gt;\n\n      &lt;%!-- Filters --%&gt;\n      &lt;div class=\"bg-white shadow-lg rounded-lg p-6 mb-6\"&gt;\n        &lt;h3 class=\"text-lg font-semibold text-gray-900 mb-4\"&gt;Filters&lt;/h3&gt;\n        &lt;form phx-change=\"filter\"&gt;\n          &lt;div class=\"grid grid-cols-1 md:grid-cols-4 gap-4\"&gt;\n            &lt;div&gt;\n              &lt;label class=\"block text-sm font-medium text-gray-700 mb-1\"&gt;Start Date&lt;/label&gt;\n              &lt;input\n                type=\"date\"\n                name=\"start_date\"\n                value={@start_date}\n                class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n              /&gt;\n            &lt;/div&gt;\n\n            &lt;div&gt;\n              &lt;label class=\"block text-sm font-medium text-gray-700 mb-1\"&gt;End Date&lt;/label&gt;\n              &lt;input\n                type=\"date\"\n                name=\"end_date\"\n                value={@end_date}\n                class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n              /&gt;\n            &lt;/div&gt;\n\n            &lt;div&gt;\n              &lt;label class=\"block text-sm font-medium text-gray-700 mb-1\"&gt;Product&lt;/label&gt;\n              &lt;select\n                name=\"product_id\"\n                class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n              &gt;\n                &lt;option value=\"\"&gt;All Products&lt;/option&gt;\n                &lt;%= for product &lt;- @products do %&gt;\n                  &lt;option value={product.id} selected={@product_id == product.id}&gt;\n                    {product.name} - {product.category.name}\n                  &lt;/option&gt;\n                &lt;% end %&gt;\n              &lt;/select&gt;\n            &lt;/div&gt;\n\n            &lt;div&gt;\n              &lt;label class=\"block text-sm font-medium text-gray-700 mb-1\"&gt;Transaction Type&lt;/label&gt;\n              &lt;select\n                name=\"transaction_type\"\n                class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n              &gt;\n                &lt;option value=\"\"&gt;All Types&lt;/option&gt;\n                &lt;option value=\"purchase\" selected={@transaction_type == \"purchase\"}&gt;Purchases&lt;/option&gt;\n                &lt;option value=\"sale\" selected={@transaction_type == \"sale\"}&gt;Sales&lt;/option&gt;\n                &lt;option value=\"adjustment\" selected={@transaction_type == \"adjustment\"}&gt;Adjustments&lt;/option&gt;\n              &lt;/select&gt;\n            &lt;/div&gt;\n          &lt;/div&gt;\n          &lt;div class=\"mt-4\"&gt;\n            &lt;button\n              type=\"button\"\n              phx-click=\"clear_filters\"\n              class=\"px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors\"\n            &gt;\n              Clear Filters\n            &lt;/button&gt;\n          &lt;/div&gt;\n        &lt;/form&gt;\n      &lt;/div&gt;\n\n      &lt;%!-- Tabs --%&gt;\n      &lt;div class=\"bg-white shadow-lg rounded-lg overflow-hidden\"&gt;\n        &lt;div class=\"border-b border-gray-200\"&gt;\n          &lt;nav class=\"flex -mb-px\"&gt;\n            &lt;button\n              phx-click=\"change_tab\"\n              phx-value-tab=\"valuation\"\n              class={[\n                \"px-6 py-4 text-sm font-medium border-b-2 transition-colors\",\n                @active_tab == \"valuation\" &amp;&amp; \"border-tertiary-500 text-tertiary-600\",\n                @active_tab != \"valuation\" &amp;&amp; \"border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300\"\n              ]}\n            &gt;\n              Inventory Valuation\n            &lt;/button&gt;\n            &lt;button\n              phx-click=\"change_tab\"\n              phx-value-tab=\"profit\"\n              class={[\n                \"px-6 py-4 text-sm font-medium border-b-2 transition-colors\",\n                @active_tab == \"profit\" &amp;&amp; \"border-tertiary-500 text-tertiary-600\",\n                @active_tab != \"profit\" &amp;&amp; \"border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300\"\n              ]}\n            &gt;\n              Profit Analysis\n            &lt;/button&gt;\n            &lt;button\n              phx-click=\"change_tab\"\n              phx-value-tab=\"movements\"\n              class={[\n                \"px-6 py-4 text-sm font-medium border-b-2 transition-colors\",\n                @active_tab == \"movements\" &amp;&amp; \"border-tertiary-500 text-tertiary-600\",\n                @active_tab != \"movements\" &amp;&amp; \"border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300\"\n              ]}\n            &gt;\n              Stock Movements ({@movement_count})\n            &lt;/button&gt;\n          &lt;/nav&gt;\n        &lt;/div&gt;\n\n        &lt;%!-- Tab Content --%&gt;\n        &lt;div class=\"p-6\"&gt;\n          &lt;%= if @active_tab == \"valuation\" do %&gt;\n            &lt;.valuation_table items={@valuation_items} /&gt;\n          &lt;% end %&gt;\n\n          &lt;%= if @active_tab == \"profit\" do %&gt;\n            &lt;.profit_table items={@profit_items} /&gt;\n          &lt;% end %&gt;\n\n          &lt;%= if @active_tab == \"movements\" do %&gt;\n            &lt;.movements_table movements={@movements} /&gt;\n          &lt;% end %&gt;\n        &lt;/div&gt;\n      &lt;/div&gt;\n    &lt;/div&gt;\n    \"\"\"\n  end\n\n  defp valuation_table(assigns) do\n    ~H\"\"\"\n    &lt;div class=\"overflow-x-auto\"&gt;\n      &lt;table class=\"min-w-full divide-y divide-gray-200\"&gt;\n        &lt;thead&gt;\n          &lt;tr&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Product\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Current Stock\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Unit Cost\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Total Value\n            &lt;/th&gt;\n          &lt;/tr&gt;\n        &lt;/thead&gt;\n        &lt;tbody class=\"bg-white divide-y divide-gray-200\"&gt;\n          &lt;%= for item &lt;- @items do %&gt;\n            &lt;tr class=\"hover:bg-gray-50\"&gt;\n              &lt;td class=\"px-6 py-4\"&gt;\n                &lt;div class=\"text-sm font-medium text-gray-900\"&gt;{item.product.name}&lt;/div&gt;\n                &lt;div class=\"text-sm text-gray-500\"&gt;{item.product.category.name}&lt;/div&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-900\"&gt;\n                {Decimal.to_string(Decimal.round(item.stock, 2))} {item.product.unit || \"pcs\"}\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-900\"&gt;\n                &lt;%= if item.unit_cost do %&gt;\n                  {format_currency(item.unit_cost)}\n                &lt;% else %&gt;\n                  &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                &lt;% end %&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900\"&gt;\n                {format_currency(item.total_value)}\n              &lt;/td&gt;\n            &lt;/tr&gt;\n          &lt;% end %&gt;\n        &lt;/tbody&gt;\n      &lt;/table&gt;\n    &lt;/div&gt;\n    \"\"\"\n  end\n\n  defp profit_table(assigns) do\n    ~H\"\"\"\n    &lt;div class=\"overflow-x-auto\"&gt;\n      &lt;table class=\"min-w-full divide-y divide-gray-200\"&gt;\n        &lt;thead&gt;\n          &lt;tr&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Product\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Avg Cost\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Avg Sale Price\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Profit/Unit\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Margin %\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Total Sold\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Total Profit\n            &lt;/th&gt;\n          &lt;/tr&gt;\n        &lt;/thead&gt;\n        &lt;tbody class=\"bg-white divide-y divide-gray-200\"&gt;\n          &lt;%= for item &lt;- @items do %&gt;\n            &lt;tr class=\"hover:bg-gray-50\"&gt;\n              &lt;td class=\"px-6 py-4\"&gt;\n                &lt;div class=\"text-sm font-medium text-gray-900\"&gt;{item.product.name}&lt;/div&gt;\n                &lt;div class=\"text-sm text-gray-500\"&gt;{item.product.category.name}&lt;/div&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-900\"&gt;\n                &lt;%= if item.avg_purchase_cost do %&gt;\n                  {format_currency(item.avg_purchase_cost)}\n                &lt;% else %&gt;\n                  &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                &lt;% end %&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-900\"&gt;\n                &lt;%= if item.avg_sale_price do %&gt;\n                  {format_currency(item.avg_sale_price)}\n                &lt;% else %&gt;\n                  &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                &lt;% end %&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm\"&gt;\n                &lt;span class={[\n                  \"font-semibold\",\n                  Decimal.compare(item.profit_per_unit, 0) == :gt &amp;&amp; \"text-emerald-600\",\n                  Decimal.compare(item.profit_per_unit, 0) == :lt &amp;&amp; \"text-rose-600\",\n                  Decimal.compare(item.profit_per_unit, 0) == :eq &amp;&amp; \"text-gray-900\"\n                ]}&gt;\n                  {format_currency(item.profit_per_unit)}\n                &lt;/span&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap\"&gt;\n                &lt;span class={[\n                  \"px-2 inline-flex text-xs leading-5 font-semibold rounded-full\",\n                  Decimal.compare(item.profit_margin_percent, 30) != :lt &amp;&amp; \"bg-emerald-100 text-emerald-800\",\n                  Decimal.compare(item.profit_margin_percent, 30) == :lt &amp;&amp; Decimal.compare(item.profit_margin_percent, 15) != :lt &amp;&amp; \"bg-amber-100 text-amber-800\",\n                  Decimal.compare(item.profit_margin_percent, 15) == :lt &amp;&amp; Decimal.compare(item.profit_margin_percent, 0) == :gt &amp;&amp; \"bg-orange-100 text-orange-800\",\n                  Decimal.compare(item.profit_margin_percent, 0) != :gt &amp;&amp; \"bg-rose-100 text-rose-800\"\n                ]}&gt;\n                  {Decimal.round(item.profit_margin_percent, 1)}%\n                &lt;/span&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-900\"&gt;\n                {Decimal.to_string(item.total_sold)}\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm\"&gt;\n                &lt;span class={[\n                  \"font-bold\",\n                  Decimal.compare(item.total_profit, 0) == :gt &amp;&amp; \"text-emerald-600\",\n                  Decimal.compare(item.total_profit, 0) == :lt &amp;&amp; \"text-rose-600\",\n                  Decimal.compare(item.total_profit, 0) == :eq &amp;&amp; \"text-gray-900\"\n                ]}&gt;\n                  {format_currency(item.total_profit)}\n                &lt;/span&gt;\n              &lt;/td&gt;\n            &lt;/tr&gt;\n          &lt;% end %&gt;\n        &lt;/tbody&gt;\n      &lt;/table&gt;\n    &lt;/div&gt;\n    \"\"\"\n  end\n\n  defp movements_table(assigns) do\n    ~H\"\"\"\n    &lt;div class=\"overflow-x-auto\"&gt;\n      &lt;table class=\"min-w-full divide-y divide-gray-200\"&gt;\n        &lt;thead&gt;\n          &lt;tr&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Date\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Type\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Product\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Quantity\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Price\n            &lt;/th&gt;\n            &lt;th class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"&gt;\n              Reference\n            &lt;/th&gt;\n          &lt;/tr&gt;\n        &lt;/thead&gt;\n        &lt;tbody class=\"bg-white divide-y divide-gray-200\"&gt;\n          &lt;%= for movement &lt;- @movements do %&gt;\n            &lt;tr class=\"hover:bg-gray-50\"&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-900\"&gt;\n                {Calendar.strftime(movement.date, \"%b %d, %Y\")}\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap\"&gt;\n                &lt;span class={[\n                  \"px-2 inline-flex text-xs leading-5 font-semibold rounded-full\",\n                  movement.type == \"purchase\" &amp;&amp; \"bg-blue-100 text-blue-800\",\n                  movement.type == \"sale\" &amp;&amp; \"bg-rose-100 text-rose-800\",\n                  String.starts_with?(movement.type, \"adjustment\") &amp;&amp; \"bg-amber-100 text-amber-800\"\n                ]}&gt;\n                  {format_type(movement.type)}\n                &lt;/span&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4\"&gt;\n                &lt;div class=\"text-sm font-medium text-gray-900\"&gt;{movement.product_name}&lt;/div&gt;\n                &lt;div class=\"text-sm text-gray-500\"&gt;{movement.category_name}&lt;/div&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap\"&gt;\n                &lt;span class={[\n                  \"text-sm font-semibold\",\n                  Decimal.compare(movement.quantity, 0) == :gt &amp;&amp; \"text-emerald-600\",\n                  Decimal.compare(movement.quantity, 0) == :lt &amp;&amp; \"text-rose-600\"\n                ]}&gt;\n                  {format_quantity(movement.quantity, movement.unit_amount, movement.unit)}\n                &lt;/span&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4 whitespace-nowrap text-sm text-gray-900\"&gt;\n                &lt;%= if movement.price do %&gt;\n                  {format_currency(movement.price)}\n                &lt;% else %&gt;\n                  &lt;span class=\"text-gray-400\"&gt;—&lt;/span&gt;\n                &lt;% end %&gt;\n              &lt;/td&gt;\n              &lt;td class=\"px-6 py-4\"&gt;\n                &lt;div class=\"text-sm text-gray-900\"&gt;{movement.reference}&lt;/div&gt;\n                &lt;%= if movement.notes do %&gt;\n                  &lt;div class=\"text-xs text-gray-500\"&gt;{movement.notes}&lt;/div&gt;\n                &lt;% end %&gt;\n              &lt;/td&gt;\n            &lt;/tr&gt;\n          &lt;% end %&gt;\n        &lt;/tbody&gt;\n      &lt;/table&gt;\n    &lt;/div&gt;\n    \"\"\"\n  end\n\n  defp format_type(\"purchase\"), do: \"Purchase\"\n  defp format_type(\"sale\"), do: \"Sale\"\n  defp format_type(\"adjustment-\" &lt;&gt; type), do: \"Adj: #{type}\"\n  defp format_type(type), do: type\n\n  defp format_quantity(quantity, unit_amount, unit) do\n    base = if Decimal.compare(quantity, 0) == :gt, do: \"+\", else: \"\"\n    amount_str = if unit_amount, do: \" × #{unit_amount}\", else: \"\"\n    unit_str = if unit, do: \" #{unit}\", else: \"\"\n    \n    \"#{base}#{Decimal.to_string(quantity)}#{amount_str}#{unit_str}\"\n  end\nend\n",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Starting: *Add routes and navigation* (3/3)**
+
+- [x] Add reporting functions to Inventory context
+  > Add functions to calculate inventory value, profit margins, and stock movements
+- [x] Create inventory reports LiveView
+  > LiveView with summary cards and filterable tables
+- [-] Add routes and navigation
+  > Add /admin/inventory-reports route and dashboard link
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching for text `Stock Overview` (`**/lib/cozy_checkout_web/router.ex`)</summary>
+
+
+Searched for text `Stock Overview` (`**/lib/cozy_checkout_web/router.ex`), 1 result
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex#50-50), lines 50 to 60</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex#50-50), lines 50 to 60
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\nInventory Reports\n    live \"/inventory-reports\", InventoryReportsLive.Index\n\n    # \n&#96;&#96;&#96;\n\n",
+  "textEditContent": "Inventory Reports\n    live \"/inventory-reports\", InventoryReportsLive.Index\n\n    # ",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex#85-85), lines 85 to 100</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex#85-85), lines 85 to 100
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n.dashboard_card\n            title=\"Inventory Reports\"\n            description=\"Profit analysis &amp; stock movements\"\n            icon=\"hero-chart-pie\"\n            navigate={~p\"/admin/inventory-reports\"}\n            color=\"indigo\"\n          /&gt;\n\n          &lt;\n&#96;&#96;&#96;\n\n",
+  "textEditContent": ".dashboard_card\n            title=\"Inventory Reports\"\n            description=\"Profit analysis &amp; stock movements\"\n            icon=\"hero-chart-pie\"\n            navigate={~p\"/admin/inventory-reports\"}\n            color=\"indigo\"\n          /&gt;\n\n          &lt;",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Completed: *Add routes and navigation* (3/3)**
+
+- [x] Add reporting functions to Inventory context
+  > Add functions to calculate inventory value, profit margins, and stock movements
+- [x] Create inventory reports LiveView
+  > LiveView with summary cards and filterable tables
+- [x] Add routes and navigation
+  > Add /admin/inventory-reports route and dashboard link
+
+</details>
+</tool-use>
+
+---
+
+Perfect! Now I have clear requirements:
+
+1. Time period filtering with date ranges
+2. Inventory valuation using latest purchase price
+3. Profit margin: purchase cost vs actual sale prices from orders
+4. Summary cards with key metrics at top
+5. Stock movement history filterable by product, date range, transaction type
+6. Simple visual indicators (badges, colors, progress bars)
+
+Let me create a comprehensive reporting page with:
+- Summary cards showing:
+  - Total inventory value
+  - Total profit margins
+  - Stock movements count
+  - Low stock items count
+- Filterable stock movement history
+- Product-level profit analysis
+- Visual indicators with colors
+
+I'll need to:
+1. Create a new LiveView for reports
+2. Add context functions to calculate metrics
+3. Add routes
+4. Add dashboard link
+
+Let me start!Perfect! Let me create a comprehensive reporting system with all those features. First, let me add reporting functions to the Inventory context: Now let me create the reporting LiveView: Now let me add the route: Now add it to the dashboard: Perfect! The enhanced inventory reporting system is now complete. Here's what I've implemented:
+
+## **Summary Cards (Top of Page)**
+- 💚 **Total Inventory Value** - Sum of all stock × latest purchase cost
+- 💙 **Total Profit** - Cumulative profit from all sales
+- 💜 **Average Profit Margin** - Overall margin percentage
+
+## **Flexible Filters**
+- 📅 **Date Range** - Filter by start and end dates
+- 📦 **Product** - Filter by specific product
+- 🔄 **Transaction Type** - Purchases, Sales, or Adjustments
+
+## **Three Report Tabs**
+
+### **1. Inventory Valuation**
+Shows current stock value using latest purchase prices:
+- Product name & category
+- Current stock quantity
+- Unit cost (latest purchase)
+- Total value
+
+### **2. Profit Analysis**
+Detailed profit breakdown with color-coded margins:
+- 🟢 Green: >30% margin (excellent)
+- 🟡 Yellow: 15-30% margin (good)
+- 🟠 Orange: 0-15% margin (low)
+- 🔴 Red: <0% margin (loss)
+
+Shows:
+- Average purchase cost
+- Average sale price
+- Profit per unit
+- Margin percentage
+- Total units sold
+- Total profit
+
+### **3. Stock Movements**
+Complete transaction history with:
+- Date
+- Type badges (Purchase/Sale/Adjustment)
+- Product details
+- Quantity with +/- indicators
+- Price
+- Reference (order number, reason, etc.)
+
+All reports respect the date range and product filters, giving you complete flexibility to analyze specific periods or products!
+
+---
+
+_**User (2025-12-23 22:45Z)**_
+
+There are some compilation errors:  ompilation error in file lib/cozy_checkout/inventory.ex ==
+** (Ecto.Query.CompileError) binding list should contain only variables or `{as, var}` tuples, got: p | _rest
+    (ecto 3.13.3) expanding macro: Ecto.Query.from/2
+    lib/cozy_checkout/inventory.ex:590: CozyCheckout.Inventory.apply_product_filter/3
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#580-580), lines 580 to 599</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#580-580), lines 580 to 599
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#490-490), lines 490 to 560</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#490-490), lines 490 to 560
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\nas: :purchase_order,\n      join: p in CozyCheckout.Catalog.Product,\n      on: poi.product_id == p.id,\n      as: :product,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(poi.deleted_at) and is_nil(po.deleted_at),\n      select: %{\n        type: \"purchase\",\n        date: po.order_date,\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: poi.quantity,\n        unit_amount: poi.unit_amount,\n        unit: p.unit,\n        price: poi.cost_price,\n        reference: po.order_number,\n        notes: poi.notes\n      }\n    \n    query = apply_date_filter(query, filters, :purchase_order)\n    query = apply_product_filter(query, filters)\n    query = apply_type_filter(query, filters, \"purchase\")\n    \n    Repo.all(query)\n  end\n\n  defp get_sale_movements(filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      as: :order,\n      join: p in CozyCheckout.Catalog.Product,\n      on: oi.product_id == p.id,\n      as: :product,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(oi.deleted_at) \n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\",\n      select: %{\n        type: \"sale\",\n        date: fragment(\"DATE(?)\", o.inserted_at),\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: fragment(\"-?\", oi.quantity),\n        unit_amount: oi.unit_amount,\n        unit: p.unit,\n        price: oi.unit_price,\n        reference: o.order_number,\n        notes: type(^nil, :string)\n      }\n    \n    query = apply_date_filter(query, filters, :order)\n    query = apply_product_filter(query, filters)\n    query = apply_type_filter(query, filters, \"sale\")\n    \n    Repo.all(query)\n  end\n\n  defp get_adjustment_movements(filters) do\n    query = from sa in StockAdjustment,\n      join: p in CozyCheckout.Catalog.Product,\n      on: sa.product_id == p.id,\n      as: :product,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      as: :adjustment\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "as: :purchase_order,\n      join: p in CozyCheckout.Catalog.Product,\n      on: poi.product_id == p.id,\n      as: :product,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(poi.deleted_at) and is_nil(po.deleted_at),\n      select: %{\n        type: \"purchase\",\n        date: po.order_date,\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: poi.quantity,\n        unit_amount: poi.unit_amount,\n        unit: p.unit,\n        price: poi.cost_price,\n        reference: po.order_number,\n        notes: poi.notes\n      }\n    \n    query = apply_date_filter(query, filters, :purchase_order)\n    query = apply_product_filter(query, filters)\n    query = apply_type_filter(query, filters, \"purchase\")\n    \n    Repo.all(query)\n  end\n\n  defp get_sale_movements(filters) do\n    query = from oi in CozyCheckout.Sales.OrderItem,\n      join: o in CozyCheckout.Sales.Order,\n      on: oi.order_id == o.id,\n      as: :order,\n      join: p in CozyCheckout.Catalog.Product,\n      on: oi.product_id == p.id,\n      as: :product,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      where: is_nil(oi.deleted_at) \n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\",\n      select: %{\n        type: \"sale\",\n        date: fragment(\"DATE(?)\", o.inserted_at),\n        product_id: p.id,\n        product_name: p.name,\n        category_name: c.name,\n        quantity: fragment(\"-?\", oi.quantity),\n        unit_amount: oi.unit_amount,\n        unit: p.unit,\n        price: oi.unit_price,\n        reference: o.order_number,\n        notes: type(^nil, :string)\n      }\n    \n    query = apply_date_filter(query, filters, :order)\n    query = apply_product_filter(query, filters)\n    query = apply_type_filter(query, filters, \"sale\")\n    \n    Repo.all(query)\n  end\n\n  defp get_adjustment_movements(filters) do\n    query = from sa in StockAdjustment,\n      join: p in CozyCheckout.Catalog.Product,\n      on: sa.product_id == p.id,\n      as: :product,\n      join: c in CozyCheckout.Catalog.Category,\n      on: p.category_id == c.id,\n      as: :adjustment",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#560-560), lines 560 to 580</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#560-560), lines 560 to 580
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\nadjustment)\n    query = apply_product_filter(query, filters\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "adjustment)\n    query = apply_product_filter(query, filters",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\nurchase_order -&gt; \n        from [poi, po] in query, \n        where: as(:purchase_order).order_date &gt;= ^start_date and as(:purchase_order).order_date &lt;= ^end_date\n      :order -&gt; \n        from [oi, o] in query, \n        where: fragment(\"DATE(?)\", as(:order).inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", as(:order).inserted_at) &lt;= ^end_date\n      :adjustment -&gt; \n        from sa in query, \n        where: fragment(\"DATE(?)\", sa.inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", sa.inserted_at) &lt;= ^end_date\n    end\n  end\n  defp apply_date_filter(query, _filters, _table_alias), do: query\n\n  defp apply_product_filter(query, %{product_id: product_id}) when not is_nil(product_id) do\n    from q in query, where: as(:product).id == ^product_id\n  end\n  defp apply_product_filter(query, _filter\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "urchase_order -&gt; \n        from [poi, po] in query, \n        where: as(:purchase_order).order_date &gt;= ^start_date and as(:purchase_order).order_date &lt;= ^end_date\n      :order -&gt; \n        from [oi, o] in query, \n        where: fragment(\"DATE(?)\", as(:order).inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", as(:order).inserted_at) &lt;= ^end_date\n      :adjustment -&gt; \n        from sa in query, \n        where: fragment(\"DATE(?)\", sa.inserted_at) &gt;= ^start_date and fragment(\"DATE(?)\", sa.inserted_at) &lt;= ^end_date\n    end\n  end\n  defp apply_date_filter(query, _filters, _table_alias), do: query\n\n  defp apply_product_filter(query, %{product_id: product_id}) when not is_nil(product_id) do\n    from q in query, where: as(:product).id == ^product_id\n  end\n  defp apply_product_filter(query, _filter",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The error is in the `apply_product_filter` function. The issue is with the pattern matching in the `from` query. I'm trying to match `[_first, _second, p | _rest]` which isn't valid syntax for Ecto query bindings.
+
+I need to fix this. In Ecto queries, you can't use pattern matching like that in the `from` macro. Instead, I should use named bindings or positional access.
+
+Let me look at how the queries are structured. The query comes from different sources:
+- For purchases: `from poi in PurchaseOrderItem, join: po in PurchaseOrder, join: p in Product, join: c in Category`
+- For sales: `from oi in OrderItem, join: o in Order, join: p in Product, join: c in Category`
+- For adjustments: `from sa in StockAdjustment, join: p in Product, join: c in Category`
+
+So the bindings are:
+- Purchases: [poi, po, p, c] (4 bindings)
+- Sales: [oi, o, p, c] (4 bindings)
+- Adjustments: [sa, p, c] (3 bindings)
+
+The product is always the third binding in purchases and sales, but the second binding in adjustments.
+
+I should use named bindings (`:as`) in the original queries to make filtering easier, or I need to adjust the filter function to handle different query structures.
+
+Let me fix this by using positional references correctly in Ecto.The issue is with the pattern matching in the `apply_product_filter` function. Ecto doesn't support that kind of pattern matching in query bindings. Let me fix this: I see the issue. The problem is that I'm using invalid pattern matching syntax for Ecto query bindings. Let me rewrite these filter functions to use named bindings instead: Now I can see the full query structure. Let me rewrite the filter functions to use named bindings (as) which is the proper Ecto way: Now let me update the filter functions to use the named bindings: Perfect! I've fixed the compilation errors by using Ecto's named bindings (`as: :name`) instead of invalid pattern matching. The changes:
+
+1. **Added named bindings** to all joins:
+   - `:purchase_order` for purchase orders
+   - `:order` for sales orders
+   - `:adjustment` for stock adjustments
+   - `:product` for products (used in all three)
+
+2. **Updated filter functions** to use `as(:binding_name)` instead of trying to pattern match on binding positions
+
+3. **Simplified function signatures** - `apply_product_filter` now only takes 2 parameters instead of 3
+
+The code should now compile correctly!
+
+---
+
+_**User (2025-12-23 22:50Z)**_
+
+There is one problem. When there is an item in purchase order with amount (like a beer), the price is not per one ml (amount). But for the whole one item. For example. I buy a keg of 15000ml for a price of 1500CZK. Then price per unit is 1500/15000. Fix that in calculations please.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#440-440), lines 440 to 480</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#440-440), lines 440 to 480
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#410-410), lines 410 to 440</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#410-410), lines 410 to 440
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_multiReplaceString">
+<details>
+<summary>Tool use: **copilot_multiReplaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_multiReplaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Multi-Replace String in Files\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\nfragment(\"? / COALESCE(?, 1)\", poi.cost_price, poi.unit_amount)\nfragment(\"? / COALESCE(?, 1)\", poi.cost_price, poi.unit_amount)\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "fragment(\"? / COALESCE(?, 1)\", poi.cost_price, poi.unit_amount)fragment(\"? / COALESCE(?, 1)\", poi.cost_price, poi.unit_amount)",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The user is pointing out that in the inventory valuation and profit analysis, when a product has a unit_amount (like a 15L keg = 15000ml), the cost_price is for the entire keg (1500 CZK), not per milliliter. So when calculating costs, we need to divide the cost_price by the unit_amount to get the cost per base unit (per ml).
+
+Let me check the current calculations in the inventory.ex file:
+
+1. `get_latest_purchase_cost` - returns `poi.cost_price` directly
+2. `get_average_purchase_cost` - returns `avg(poi.cost_price)` directly
+3. `get_average_sale_price` - returns `avg(oi.unit_price)` directly
+
+The issue is that for purchase order items with unit_amount, the cost_price is for the whole item (e.g., 1500 CZK for 15000ml keg), but we're storing stock in base units (milliliters). So when we calculate inventory value, we're multiplying stock (in ml) by cost_price (for whole keg), which is wrong.
+
+We need to:
+1. In `get_latest_purchase_cost` - divide cost_price by unit_amount (or use 1 if unit_amount is nil)
+2. In `get_average_purchase_cost` - divide cost_price by unit_amount before averaging
+3. For sales, the unit_price is already per base unit, so that's fine
+
+Let me fix these functions.I see the issue! When you purchase a keg (15000ml for 1500 CZK), the `cost_price` is for the entire keg, but we're storing stock in base units (milliliters). We need to divide the cost by the unit_amount to get the cost per base unit.
+
+Let me find and fix the cost calculation functions: Now I can see the issue. Let me fix all the cost calculation functions to divide by unit_amount: Perfect! I've fixed the cost calculations. Now:
+
+- **For a 15L keg purchased for 1500 CZK:**
+  - `cost_price` = 1500
+  - `unit_amount` = 15000 (ml)
+  - **Cost per ml** = 1500 / 15000 = 0.10 CZK/ml
+
+- **For items without unit_amount** (like pieces):
+  - `unit_amount` = NULL
+  - `COALESCE(unit_amount, 1)` = 1
+  - **Cost per unit** = cost_price / 1 = cost_price
+
+The calculations now correctly:
+1. **Latest purchase cost** - Returns cost per base unit (per ml or per piece)
+2. **Average purchase cost** - Averages the cost per base unit across all purchases
+3. **Inventory valuation** - Stock (in ml) × cost per ml = correct total value
+4. **Profit analysis** - Compares cost per ml with sale price per ml for accurate margins
+
+This ensures your inventory valuation and profit reports show accurate numbers!
+
+---
+
+_**User (2025-12-23 22:53Z)**_
+
+when I try to access profit analysis I get this error: no function clause matching in Decimal.to_string/2
+    (decimal 2.3.0) lib/decimal.ex:1493: Decimal.to_string(3, :scientific)
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching for text `Decimal.to_string` (`**/lib/cozy_checkout_web/live/inventory_reports_live/index.ex`)</summary>
+
+
+Searched for text `Decimal.to_string` (`**/lib/cozy_checkout_web/live/inventory_reports_live/index.ex`), 3 results
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/inventory_reports_live/index.ex#400-400), lines 400 to 410</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/inventory_reports_live/index.ex#400-400), lines 400 to 410
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#465-465), lines 465 to 485</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#465-465), lines 465 to 485
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#435-435), lines 435 to 460</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#435-435), lines 435 to 460
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_multiReplaceString">
+<details>
+<summary>Tool use: **copilot_multiReplaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_multiReplaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Multi-Replace String in Files\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\nas: :order,\n      where: oi.product_id == ^product_id\n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n\n    query = apply_date_filter(query, filters, :order\nas: :order,\n      where: oi.product_id == ^product_id\n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n\n    query = apply_date_filter(query, filters, :order\nas: :purchase_order,\n      where: poi.product_id == ^product_id\n        and is_nil(poi.deleted_at)\n        and is_nil(po.deleted_at)\n\n    query = apply_date_filter(query, filters, :purchase_order\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "as: :order,\n      where: oi.product_id == ^product_id\n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n\n    query = apply_date_filter(query, filters, :orderas: :order,\n      where: oi.product_id == ^product_id\n        and is_nil(oi.deleted_at)\n        and is_nil(o.deleted_at)\n        and o.status != \"cancelled\"\n\n    query = apply_date_filter(query, filters, :orderas: :purchase_order,\n      where: poi.product_id == ^product_id\n        and is_nil(poi.deleted_at)\n        and is_nil(po.deleted_at)\n\n    query = apply_date_filter(query, filters, :purchase_order",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n&lt;%= if is_struct(item.total_sold, Decimal) do %&gt;\n                  {Decimal.to_string(item.total_sold)}\n                &lt;% else %&gt;\n                  {item.total_sold}\n                &lt;% end %&gt;\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "&lt;%= if is_struct(item.total_sold, Decimal) do %&gt;\n                  {Decimal.to_string(item.total_sold)}\n                &lt;% else %&gt;\n                  {item.total_sold}\n                &lt;% end %&gt;",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The error says `Decimal.to_string(3, :scientific)` is being called with an integer `3` instead of a `Decimal` struct. This means somewhere in the profit analysis code, an integer is being passed where a Decimal is expected.
+
+Let me check the profit analysis rendering code to see where `Decimal.to_string` is being called.The error indicates that somewhere in the profit analysis view, we're passing a plain integer instead of a Decimal to `Decimal.to_string`. Let me check the rendering code: The issue is `item.total_sold` - let me check what `get_total_sold_quantity` returns: I see - the issue is that `apply_date_filter` is being called with `:o` which is the old alias name. Let me check the current state of the file and fix all these issues: I see the problem - these old filter calls are using the old alias names (`:po`, `:o`) instead of named bindings. But more importantly, these queries don't have named bindings at all! Let me fix them: Good! Now the queries have proper named bindings. But the actual error about integer vs Decimal is likely because `total_sold` might be an integer in some cases. Let me ensure it's always converted to string properly in the view: Perfect! I've fixed the issues:
+
+1. **Added named bindings** (`:order` and `:purchase_order`) to all the cost/price calculation queries so they work with the filter functions
+2. **Fixed the filter calls** to use the correct binding names (`:order` instead of `:o`, `:purchase_order` instead of `:po`)
+3. **Added a guard** in the template to handle both Decimal and integer values for `total_sold`
+
+The profit analysis should now work correctly without the Decimal conversion error!
+
+---
+
+_**User (2025-12-23 22:53Z)**_
+
+same thing when accessing stock movements:no function clause matching in Decimal.to_string/2
+    (decimal 2.3.0) lib/decimal.ex:1493: Decimal.to_string(-1, :scientific)
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/inventory_reports_live/index.ex#500-500), lines 500 to 515</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/inventory_reports_live/index.ex#500-500), lines 500 to 515
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#505-505), lines 505 to 525</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#505-505), lines 505 to 525
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#525-525), lines 525 to 545</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex#525-525), lines 525 to 545
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n# Convert to Decimal if it's an integer\n    quantity = if is_integer(quantity), do: Decimal.new(quantity), else: quantity\n    \n    \n&#96;&#96;&#96;\n\n",
+  "textEditContent": "# Convert to Decimal if it's an integer\n    quantity = if is_integer(quantity), do: Decimal.new(quantity), else: quantity\n    \n    ",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The same issue in stock movements - it's trying to call `Decimal.to_string` on an integer instead of a Decimal. Let me find where this happens in the movements table.The issue is in the `format_quantity` function. The `quantity` might be an integer instead of a Decimal. Let me also check what the query returns for quantity in movements: I see - the issue is that `fragment("-?", oi.quantity)` returns an integer when `oi.quantity` is an integer. Let me fix the `format_quantity` function to handle both integers and Decimals: 
 
 ---
 
