@@ -111,14 +111,79 @@
     }
   </style>
 
-  <%!-- Print Button (Hidden on print) --%>
-  <div class="no-print fixed top-4 right-4 z-50">
-    <button
-      phx-click="print"
-      class="btn btn-primary gap-2"
-    >
-      <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout ceník
-    </button>
+  <%!-- Category Selection Panel (Hidden on print) --%>
+  <div class="no-print bg-white border-b border-secondary-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-start gap-6">
+        <%!-- Custom Name Input --%>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-primary-500 mb-2">
+            Název ceníku (volitelné)
+          </label>
+          <form phx-change="update_name">
+            <input
+              type="text"
+              name="pricelist_name"
+              value={@pricelist_name}
+              placeholder="např. Vinný lístek, Destiláty..."
+              class="w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:ring-2 focus:ring-tertiary-500 focus:border-tertiary-500"
+            />
+          </form>
+        </div>
+
+        <%!-- Category Selection --%>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-primary-500">
+              Vyberte kategorie
+            </label>
+            <button
+              type="button"
+              phx-click="toggle_all"
+              class="text-xs text-tertiary-600 hover:text-tertiary-800 font-medium"
+            >
+              <%= if length(@selected_category_ids) == length(@categories) do %>
+                Odznačit vše
+              <% else %>
+                Vybrat vše
+              <% end %>
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-secondary-200 rounded-md p-3 bg-secondary-50">
+            <%= for category <- @categories do %>
+              <label class="flex items-center gap-2 cursor-pointer hover:bg-secondary-100 p-1 rounded">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_category"
+                  phx-value-category-id={category.id}
+                  checked={category.id in @selected_category_ids}
+                  class="rounded border-secondary-300 text-tertiary-600 focus:ring-tertiary-500"
+                />
+                <span class="text-sm text-primary-500">{category.name}</span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <%!-- Print Button --%>
+        <div class="flex items-end">
+          <button
+            phx-click="print"
+            class="btn btn-primary gap-2 whitespace-nowrap"
+            disabled={@selected_category_ids == []}
+          >
+            <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout
+          </button>
+        </div>
+      </div>
+      
+      <%= if @selected_category_ids == [] do %>
+        <div class="mt-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <.icon name="hero-exclamation-triangle" class="h-4 w-4 inline mr-1" />
+          Vyberte alespoň jednu kategorii pro tisk ceníku
+        </div>
+      <% end %>
+    </div>
   </div>
 
   <%!-- Printable Content --%>
@@ -126,7 +191,7 @@
     <%!-- Header --%>
     <div class="text-center mb-8">
       <h1 class="text-3xl font-bold text-primary-500 mb-1">Jindřichův dům</h1>
-      <h2 class="text-xl text-primary-400 mb-2">Ceník</h2>
+      <h2 class="text-xl text-primary-400 mb-2">{@pricelist_name}</h2>
       <p class="text-xs text-primary-400">
         Platný od {Calendar.strftime(@generated_at, "%d. %m. %Y")}
       </p>

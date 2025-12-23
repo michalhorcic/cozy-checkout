@@ -336,4 +336,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   The modal only shows guests who don't already have an active order.
     *   Staff can create multiple orders (one per guest) for the same booking.
     *   The `guest_id` on the `orders` table should point to the specific guest from `booking_guests`, NOT always the primary guest.
-    *
+*   **
