@@ -5,7 +5,7 @@ defmodule CozyCheckout.Inventory do
 
   import Ecto.Query, warn: false
   alias CozyCheckout.Repo
-  alias CozyCheckout.Inventory.{PurchaseOrder, PurchaseOrderItem}
+  alias CozyCheckout.Inventory.{PurchaseOrder, PurchaseOrderItem, StockAdjustment}
   alias CozyCheckout.Catalog.Product
 
   ## Purchase Orders
@@ -119,6 +119,63 @@ defmodule CozyCheckout.Inventory do
     |> Repo.update()
   end
 
+  ## Stock Adjustments
+
+  @doc """
+  Returns the list of stock adjustments.
+  """
+  def list_stock_adjustments do
+    StockAdjustment
+    |> where([sa], is_nil(sa.deleted_at))
+    |> order_by([sa], desc: sa.inserted_at)
+    |> preload([product: :category])
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single stock adjustment.
+  """
+  def get_stock_adjustment!(id) do
+    StockAdjustment
+    |> where([sa], is_nil(sa.deleted_at))
+    |> preload([product: :category])
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a stock adjustment.
+  """
+  def create_stock_adjustment(attrs \\ %{}) do
+    %StockAdjustment{}
+    |> StockAdjustment.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a stock adjustment.
+  """
+  def update_stock_adjustment(%StockAdjustment{} = adjustment, attrs) do
+    adjustment
+    |> StockAdjustment.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a stock adjustment (soft delete).
+  """
+  def delete_stock_adjustment(%StockAdjustment{} = adjustment) do
+    adjustment
+    |> Ecto.Changeset.change(deleted_at: DateTime.truncate(DateTime.utc_now(), :second))
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking stock adjustment changes.
+  """
+  def change_stock_adjustment(%StockAdjustment{} = adjustment, attrs \\ %{}) do
+    StockAdjustment.changeset(adjustment, attrs)
+  end
+
   ## Stock Calculations
 
   @doc """
@@ -150,15 +207,21 @@ defmodule CozyCheckout.Inventory do
   defp get_total_volume(product_id) do
     purchased_volume = get_total_purchased_volume(product_id)
     sold_volume = get_total_sold_volume(product_id)
+    adjustment_volume = get_total_adjustment_volume(product_id)
 
-    Decimal.sub(purchased_volume, sold_volume)
+    purchased_volume
+    |> Decimal.sub(sold_volume)
+    |> Decimal.add(adjustment_volume)
   end
 
   defp get_total_quantity(product_id) do
     purchased = get_total_purchased(product_id, nil)
     sold = get_total_sold(product_id, nil)
+    adjustment = get_total_adjustment_quantity(product_id)
 
-    Decimal.sub(purchased, sold)
+    purchased
+    |> Decimal.sub(sold)
+    |> Decimal.add(adjustment)
   end
 
   # Calculate total purchased volume (quantity × unit_amount)
@@ -213,6 +276,24 @@ defmodule CozyCheckout.Inventory do
         and oi.unit_amount == ^unit_amount
         and is_nil(oi.deleted_at),
       select: coalesce(sum(oi.quantity), 0)
+
+    Repo.one(query) || Decimal.new(0)
+  end
+
+  # Get total adjustment volume for volume-based products
+  defp get_total_adjustment_volume(product_id) do
+    query = from sa in StockAdjustment,
+      where: sa.product_id == ^product_id and is_nil(sa.deleted_at),
+      select: coalesce(sum(fragment("? * COALESCE(?, 1)", sa.quantity, sa.unit_amount)), 0)
+
+    Repo.one(query) || Decimal.new(0)
+  end
+
+  # Get total adjustment quantity for piece-based products
+  defp get_total_adjustment_quantity(product_id) do
+    query = from sa in StockAdjustment,
+      where: sa.product_id == ^product_id and is_nil(sa.deleted_at),
+      select: coalesce(sum(sa.quantity), 0)
 
     Repo.one(query) || Decimal.new(0)
   end

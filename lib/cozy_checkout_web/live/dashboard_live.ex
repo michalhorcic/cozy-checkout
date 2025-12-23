@@ -85,6 +85,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
             color="lime"
           />
 
+          <.dashboard_card
+            title="Stock Adjustments"
+            description="Record spillage, breakage & corrections"
+            icon="hero-adjustments-horizontal"
+            navigate={~p"/admin/stock-adjustments"}
+            color="orange"
+          />
+
           <%!-- Guest Management --%>
           <.dashboard_card
             title="Guests"
