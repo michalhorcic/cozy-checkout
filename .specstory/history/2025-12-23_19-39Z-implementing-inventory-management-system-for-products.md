@@ -4842,3 +4842,265 @@ The stock overview will now automatically reflect this -1000ml adjustment in the
 
 ---
 
+_**User (2025-12-23 22:31Z)**_
+
+When editing stock adjustment, I choose type and then when I insert quantity or amount, select field resets 
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex#40-40), lines 40 to 65</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex#40-40), lines 40 to 65
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n selected={@form[:adjustment_type].value == \"increase\"}&gt;Increase (found/returned stock)&lt;/option&gt;\n              &lt;option value=\"decrease\" selected={@form[:adjustment_type].value == \"decrease\"}&gt;Decrease (general reduction)&lt;/option&gt;\n              &lt;option value=\"spillage\" selected={@form[:adjustment_type].value == \"spillage\"}&gt;Spillage&lt;/option&gt;\n              &lt;option value=\"breakage\" selected={@form[:adjustment_type].value == \"breakage\"}&gt;Breakage&lt;/option&gt;\n              &lt;option value=\"theft\" selected={@form[:adjustment_type].value == \"theft\"}&gt;Theft&lt;/option&gt;\n              &lt;option value=\"spoilage\" selected={@form[:adjustment_type].value == \"spoilage\"}&gt;Spoilage&lt;/option&gt;\n              &lt;option value=\"expired\" selected={@form[:adjustment_type].value == \"expired\"}&gt;Expired&lt;/option&gt;\n              &lt;option value=\"correction\" selected={@form[:adjustment_type].value == \"correction\"}&gt;Inventory Count Correction&lt;/option&gt;\n              &lt;option value=\"other\" selected={@form[:adjustment_type].value == \"other\"}\n&#96;&#96;&#96;\n\n",
+  "textEditContent": " selected={@form[:adjustment_type].value == \"increase\"}&gt;Increase (found/returned stock)&lt;/option&gt;\n              &lt;option value=\"decrease\" selected={@form[:adjustment_type].value == \"decrease\"}&gt;Decrease (general reduction)&lt;/option&gt;\n              &lt;option value=\"spillage\" selected={@form[:adjustment_type].value == \"spillage\"}&gt;Spillage&lt;/option&gt;\n              &lt;option value=\"breakage\" selected={@form[:adjustment_type].value == \"breakage\"}&gt;Breakage&lt;/option&gt;\n              &lt;option value=\"theft\" selected={@form[:adjustment_type].value == \"theft\"}&gt;Theft&lt;/option&gt;\n              &lt;option value=\"spoilage\" selected={@form[:adjustment_type].value == \"spoilage\"}&gt;Spoilage&lt;/option&gt;\n              &lt;option value=\"expired\" selected={@form[:adjustment_type].value == \"expired\"}&gt;Expired&lt;/option&gt;\n              &lt;option value=\"correction\" selected={@form[:adjustment_type].value == \"correction\"}&gt;Inventory Count Correction&lt;/option&gt;\n              &lt;option value=\"other\" selected={@form[:adjustment_type].value == \"other\"}",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The user is reporting that when editing a stock adjustment, after selecting the adjustment type, if they then insert quantity or amount, the select field resets. This is a common issue in LiveView when the form validation triggers a re-render and the selected value isn't being preserved properly.
+
+Looking at the form component, I can see that the adjustment_type select doesn't have a `selected` attribute set properly. The issue is likely that when `phx-change="validate"` fires on quantity or unit_amount input changes, it re-renders the form, and the adjustment_type select loses its value because we're not explicitly setting which option should be selected.
+
+Let me check the form component and fix the select field to properly maintain its selected value.The issue is that the adjustment type select field doesn't have its selected value properly set when the form re-renders during validation. Let me fix this: Fixed! The adjustment type select field will now maintain its selected value when the form re-renders during validation. Each option now checks if it matches `@form[:adjustment_type].value` and sets `selected` accordingly.
+
+---
+
+_**User (2025-12-23 22:35Z)**_
+
+Last thing, in purchase order when adding item I need better select field, I need to be able to search existing products. No need to create non existing one.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#80-80), lines 80 to 110</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#80-80), lines 80 to 110
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n\n                      &lt;%!-- Show selected product or search input --%&gt;\n                      &lt;%= if item.product_id do %&gt;\n                        &lt;div class=\"relative\"&gt;\n                          &lt;div class=\"flex items-center gap-2 p-3 bg-emerald-50 border-2 border-emerald-200 rounded-lg\"&gt;\n                            &lt;.icon name=\"hero-check-circle\" class=\"w-5 h-5 text-emerald-600 flex-shrink-0\" /&gt;\n                            &lt;div class=\"flex-1 min-w-0\"&gt;\n                              &lt;% selected_product = Enum.find(@products, &amp;(&amp;1.id == item.product_id)) %&gt;\n                              &lt;div class=\"font-medium text-gray-900\"&gt;{selected_product.name}&lt;/div&gt;\n                              &lt;div class=\"text-sm text-gray-600\"&gt;{selected_product.category.name}&lt;/div&gt;\n                            &lt;/div&gt;\n                            &lt;button\n                              type=\"button\"\n                              phx-click=\"clear_product\"\n                              phx-value-index={index}\n                              phx-target={@myself}\n                              class=\"p-1 hover:bg-emerald-100 rounded transition-colors\"\n                              title=\"Clear selection\"\n                            &gt;\n                              &lt;.icon name=\"hero-x-mark\" class=\"w-5 h-5 text-gray-500\" /&gt;\n                            &lt;/button&gt;\n                          &lt;/div&gt;\n                          &lt;input type=\"hidden\" name={\"items[#{index}][product_id]\"} value={item.product_id} /&gt;\n                        &lt;/div&gt;\n                      &lt;% else %&gt;\n                        &lt;div class=\"relative\"&gt;\n                          &lt;input\n                            type=\"text\"\n                            phx-change=\"search_products\"\n                            phx-value-index={index}\n                            phx-debounce=\"300\"\n                            phx-target={@myself}\n                            name=\"product_search\"\n                            value={get_in(@product_searches, [index]) || \"\"}\n                            placeholder=\"Type to search products...\"\n                            class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n                          /&gt;\n                          \n                          &lt;%!-- Search results dropdown --%&gt;\n                          &lt;%= if get_in(@product_searches, [index]) &amp;&amp; get_in(@product_searches, [index]) != \"\" do %&gt;\n                            &lt;% search_query = String.downcase(get_in(@product_searches, [index])) %&gt;\n                            &lt;% filtered_products = @products\n                              |&gt; Enum.filter(fn p -&gt;\n                                String.contains?(String.downcase(p.name), search_query) ||\n                                String.contains?(String.downcase(p.category.name), search_query)\n                              end)\n                              |&gt; Enum.take(10) %&gt;\n                            \n                            &lt;%= if filtered_products != [] do %&gt;\n                              &lt;div class=\"absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg overflow-auto border border-gray-200\"&gt;\n                                &lt;%= for product &lt;- filtered_products do %&gt;\n                                  &lt;button\n                                    type=\"button\"\n                                    phx-click=\"select_product\"\n                                    phx-value-index={index}\n                                    phx-value-product-id={product.id}\n                                    phx-target={@myself}\n                                    class=\"w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors\"\n                                  &gt;\n                                    &lt;div class=\"font-medium text-gray-900\"&gt;{product.name}&lt;/div&gt;\n                                    &lt;div class=\"text-sm text-gray-600\"&gt;\n                                      {product.category.name}\n                                      &lt;%= if product.unit do %&gt;\n                                        &lt;span class=\"ml-2 px-2 py-0.5 bg-gray-100 rounded text-xs\"&gt;{product.unit}&lt;/span&gt;\n                                      &lt;% end %&gt;\n                                    &lt;/div&gt;\n                                  &lt;/button&gt;\n                                &lt;% end %&gt;\n                              &lt;/div&gt;\n                            &lt;% end %&gt;\n                          &lt;% end %&gt;\n                        &lt;/div&gt;\n                      &lt;% end %\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "\n                      &lt;%!-- Show selected product or search input --%&gt;\n                      &lt;%= if item.product_id do %&gt;\n                        &lt;div class=\"relative\"&gt;\n                          &lt;div class=\"flex items-center gap-2 p-3 bg-emerald-50 border-2 border-emerald-200 rounded-lg\"&gt;\n                            &lt;.icon name=\"hero-check-circle\" class=\"w-5 h-5 text-emerald-600 flex-shrink-0\" /&gt;\n                            &lt;div class=\"flex-1 min-w-0\"&gt;\n                              &lt;% selected_product = Enum.find(@products, &amp;(&amp;1.id == item.product_id)) %&gt;\n                              &lt;div class=\"font-medium text-gray-900\"&gt;{selected_product.name}&lt;/div&gt;\n                              &lt;div class=\"text-sm text-gray-600\"&gt;{selected_product.category.name}&lt;/div&gt;\n                            &lt;/div&gt;\n                            &lt;button\n                              type=\"button\"\n                              phx-click=\"clear_product\"\n                              phx-value-index={index}\n                              phx-target={@myself}\n                              class=\"p-1 hover:bg-emerald-100 rounded transition-colors\"\n                              title=\"Clear selection\"\n                            &gt;\n                              &lt;.icon name=\"hero-x-mark\" class=\"w-5 h-5 text-gray-500\" /&gt;\n                            &lt;/button&gt;\n                          &lt;/div&gt;\n                          &lt;input type=\"hidden\" name={\"items[#{index}][product_id]\"} value={item.product_id} /&gt;\n                        &lt;/div&gt;\n                      &lt;% else %&gt;\n                        &lt;div class=\"relative\"&gt;\n                          &lt;input\n                            type=\"text\"\n                            phx-change=\"search_products\"\n                            phx-value-index={index}\n                            phx-debounce=\"300\"\n                            phx-target={@myself}\n                            name=\"product_search\"\n                            value={get_in(@product_searches, [index]) || \"\"}\n                            placeholder=\"Type to search products...\"\n                            class=\"block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm\"\n                          /&gt;\n                          \n                          &lt;%!-- Search results dropdown --%&gt;\n                          &lt;%= if get_in(@product_searches, [index]) &amp;&amp; get_in(@product_searches, [index]) != \"\" do %&gt;\n                            &lt;% search_query = String.downcase(get_in(@product_searches, [index])) %&gt;\n                            &lt;% filtered_products = @products\n                              |&gt; Enum.filter(fn p -&gt;\n                                String.contains?(String.downcase(p.name), search_query) ||\n                                String.contains?(String.downcase(p.category.name), search_query)\n                              end)\n                              |&gt; Enum.take(10) %&gt;\n                            \n                            &lt;%= if filtered_products != [] do %&gt;\n                              &lt;div class=\"absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg overflow-auto border border-gray-200\"&gt;\n                                &lt;%= for product &lt;- filtered_products do %&gt;\n                                  &lt;button\n                                    type=\"button\"\n                                    phx-click=\"select_product\"\n                                    phx-value-index={index}\n                                    phx-value-product-id={product.id}\n                                    phx-target={@myself}\n                                    class=\"w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors\"\n                                  &gt;\n                                    &lt;div class=\"font-medium text-gray-900\"&gt;{product.name}&lt;/div&gt;\n                                    &lt;div class=\"text-sm text-gray-600\"&gt;\n                                      {product.category.name}\n                                      &lt;%= if product.unit do %&gt;\n                                        &lt;span class=\"ml-2 px-2 py-0.5 bg-gray-100 rounded text-xs\"&gt;{product.unit}&lt;/span&gt;\n                                      &lt;% end %&gt;\n                                    &lt;/div&gt;\n                                  &lt;/button&gt;\n                                &lt;% end %&gt;\n                              &lt;/div&gt;\n                            &lt;% end %&gt;\n                          &lt;% end %&gt;\n                        &lt;/div&gt;\n                      &lt;% end %",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#200-200), lines 200 to 240</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#200-200), lines 200 to 240
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#240-240), lines 240 to 270</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#240-240), lines 240 to 270
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_replaceString">
+<details>
+<summary>Tool use: **copilot_replaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_replaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Replace String in File\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "&#96;&#96;&#96;elixir\n(:product_searches, %{})\n     |&gt; assign_form(Inventory.change_purchase_order(purchase_order))}\n  end\n\n  @impl true\n  def handle_event(\"search_products\", %{\"index\" =&gt; index, \"product_search\" =&gt; search_query}, socket) do\n    index = String.to_integer(index)\n    product_searches = Map.put(socket.assigns.product_searches, index, search_query)\n    \n    {:noreply, assign(socket, :product_searches, product_searches)}\n  end\n\n  @impl true\n  def handle_event(\"select_product\", %{\"index\" =&gt; index, \"product-id\" =&gt; product_id}, socket) do\n    index = String.to_integer(index)\n    \n    # Update the item with the selected product\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, product_id)\n    end)\n    \n    # Clear the search for this index\n    product_searches = Map.delete(socket.assigns.product_searches, index)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:items, items)\n     |&gt; assign(:product_searches, product_searches)}\n  end\n\n  @impl true\n  def handle_event(\"clear_product\", %{\"index\" =&gt; index}, socket) do\n    index = String.to_integer(index)\n    \n    # Clear the product_id for this item\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, nil)\n    end)\n    \n    {:noreply, assign(socket, :items, items\n&#96;&#96;&#96;\n\n",
+  "textEditContent": "(:product_searches, %{})\n     |&gt; assign_form(Inventory.change_purchase_order(purchase_order))}\n  end\n\n  @impl true\n  def handle_event(\"search_products\", %{\"index\" =&gt; index, \"product_search\" =&gt; search_query}, socket) do\n    index = String.to_integer(index)\n    product_searches = Map.put(socket.assigns.product_searches, index, search_query)\n    \n    {:noreply, assign(socket, :product_searches, product_searches)}\n  end\n\n  @impl true\n  def handle_event(\"select_product\", %{\"index\" =&gt; index, \"product-id\" =&gt; product_id}, socket) do\n    index = String.to_integer(index)\n    \n    # Update the item with the selected product\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, product_id)\n    end)\n    \n    # Clear the search for this index\n    product_searches = Map.delete(socket.assigns.product_searches, index)\n    \n    {:noreply,\n     socket\n     |&gt; assign(:items, items)\n     |&gt; assign(:product_searches, product_searches)}\n  end\n\n  @impl true\n  def handle_event(\"clear_product\", %{\"index\" =&gt; index}, socket) do\n    index = String.to_integer(index)\n    \n    # Clear the product_id for this item\n    items = List.update_at(socket.assigns.items, index, fn item -&gt;\n      Map.put(item, :product_id, nil)\n    end)\n    \n    {:noreply, assign(socket, :items, items",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The user wants to improve the product selection in the purchase order form. They want a searchable select field (autocomplete/search) for existing products. This is similar to what we did for the pricelist product selection.
+
+Let me check the current purchase order form component to see how product selection is currently implemented.Let me check the current product selection in the purchase order form: I'll implement a searchable product selection similar to what we did for pricelists. Let me update the form component: Now I need to update the LiveComponent to handle the search and selection logic: Perfect! Now the purchase order form has a searchable product selection with the following features:
+
+- **Search input** with 300ms debounce for real-time filtering
+- **Live dropdown** showing matching products (max 10 results)
+- **Search by** product name or category name
+- **Selected product display** as a card with product name, category, and a clear button
+- **Visual feedback** with icons and color coding
+- **Responsive design** that works well on mobile and desktop
+
+When adding an item to a purchase order:
+1. Type in the search field to filter products
+2. Click on a product from the dropdown to select it
+3. The selected product appears as a card with a check icon
+4. Click the X button to clear and search again if needed
+
+---
+
+_**User (2025-12-23 22:36Z)**_
+
+It is not doing anything right now. Please try to get inpsiration from current solution in booking form where I can search for guests.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="search" data-tool-name="copilot_findTextInFiles">
+<details>
+<summary>Tool use: **copilot_findTextInFiles** • Searching for text `search` (`**/lib/cozy_checkout_web/live/booking_live/form_component.ex`)</summary>
+
+
+Searched for text `search` (`**/lib/cozy_checkout_web/live/booking_live/form_component.ex`), 19 results
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex#20-20), lines 20 to 100</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex#20-20), lines 20 to 100
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex#260-260), lines 260 to 300</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex#260-260), lines 260 to 300
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#50-50), lines 50 to 90</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#50-50), lines 50 to 90
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#80-80), lines 80 to 170</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex#80-80), lines 80 to 170
+
+</details>
+</tool-use>
+
+---
+
+The user is saying the search isn't working and wants me to look at how guest search is implemented in the booking form. Let me check that implementation first.Let me check the booking form to see how guest search is implemented: Now I understand! The booking form uses a simpler approach with `phx-keyup` and tracks separate state for search text, suggestions, and selected items. Let me rewrite the purchase order product search to match this pattern: Let me look at the full product search section I added: The issue is I'm using `phx-change` on an input without a proper `name` attribute that matches the expected params. Let me rewrite this to use `phx-keyup` like the booking form does: 
+
+---
+

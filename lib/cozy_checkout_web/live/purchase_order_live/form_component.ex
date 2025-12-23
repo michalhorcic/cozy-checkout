@@ -82,18 +82,85 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
                       <label class="block text-sm font-medium text-gray-700 mb-1">
                         Product <span class="text-rose-600">*</span>
                       </label>
-                      <select
-                        name={"items[#{index}][product_id]"}
-                        required
-                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
-                      >
-                        <option value="">Select a product...</option>
-                        <%= for product <- @products do %>
-                          <option value={product.id} selected={item.product_id == product.id}>
-                            {product.name} - {product.category.name}
-                          </option>
-                        <% end %>
-                      </select>
+
+                      <%!-- Show selected product or search input --%>
+                      <%= if item.product_id do %>
+                        <div class="relative">
+                          <div class="flex items-center gap-2 p-3 bg-emerald-50 border-2 border-emerald-200 rounded-lg">
+                            <.icon name="hero-check-circle" class="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                            <div class="flex-1 min-w-0">
+                              <% selected_product = Enum.find(@products, &(&1.id == item.product_id)) %>
+                              <div class="font-medium text-gray-900">{selected_product.name}</div>
+                              <div class="text-sm text-gray-600">{selected_product.category.name}</div>
+                            </div>
+                            <button
+                              type="button"
+                              phx-click="clear_product"
+                              phx-value-index={index}
+                              phx-target={@myself}
+                              class="p-1 hover:bg-emerald-100 rounded transition-colors"
+                              title="Clear selection"
+                            >
+                              <.icon name="hero-x-mark" class="w-5 h-5 text-gray-500" />
+                            </button>
+                          </div>
+                          <input type="hidden" name={"items[#{index}][product_id]"} value={item.product_id} />
+                        </div>
+                      <% else %>
+                        <div class="relative" id={"product-search-#{index}"}>
+                          <input
+                            type="text"
+                            id={"product-search-input-#{index}"}
+                            value={get_in(@product_searches, [index]) || ""}
+                            placeholder="Type to search products..."
+                            phx-keyup="search_products"
+                            phx-value-index={index}
+                            phx-debounce="300"
+                            phx-target={@myself}
+                            autocomplete="off"
+                            class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                          />
+
+                          <%!-- Search results dropdown --%>
+                          <%= if get_in(@show_product_suggestions, [index]) do %>
+                            <% search_query = get_in(@product_searches, [index]) || "" %>
+                            <% filtered_products = @products
+                              |> Enum.filter(fn p ->
+                                query = String.downcase(search_query)
+                                String.contains?(String.downcase(p.name), query) ||
+                                String.contains?(String.downcase(p.category.name), query)
+                              end)
+                              |> Enum.take(10) %>
+
+                            <div class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-lg overflow-auto border border-gray-200">
+                              <%= if filtered_products == [] do %>
+                                <div class="px-4 py-3 text-sm text-gray-500">
+                                  No products found
+                                </div>
+                              <% else %>
+                                <%= for product <- filtered_products do %>
+                                  <button
+                                    type="button"
+                                    phx-click="select_product"
+                                    phx-value-index={index}
+                                    phx-value-product-id={product.id}
+                                    phx-target={@myself}
+                                    class="w-full text-left px-4 py-2 hover:bg-tertiary-600 hover:text-white transition-colors"
+                                  >
+                                    <div class="font-medium">{product.name}</div>
+                                    <div class="text-sm opacity-75">
+                                      {product.category.name}
+                                      <%= if product.unit do %>
+                                        <span class="ml-2">• {product.unit}</span>
+                                      <% end %>
+                                    </div>
+                                  </button>
+                                <% end %>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
                     </div>
 
                     <div>
@@ -193,7 +260,61 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
      |> assign(:products, products)
      |> assign(:items, items)
      |> assign(:deleted_item_ids, [])
+     |> assign(:product_searches, %{})
+     |> assign(:show_product_suggestions, %{})
      |> assign_form(Inventory.change_purchase_order(purchase_order))}
+  end
+
+  @impl true
+  def handle_event("search_products", %{"index" => index, "value" => search_query}, socket) do
+    index = String.to_integer(index)
+    product_searches = Map.put(socket.assigns.product_searches, index, search_query)
+    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, String.length(search_query) >= 2)
+
+    {:noreply,
+     socket
+     |> assign(:product_searches, product_searches)
+     |> assign(:show_product_suggestions, show_suggestions)}
+  end
+
+  @impl true
+  def handle_event("select_product", %{"index" => index, "product-id" => product_id}, socket) do
+    index = String.to_integer(index)
+
+    # Update the item with the selected product
+    items = List.update_at(socket.assigns.items, index, fn item ->
+      Map.put(item, :product_id, product_id)
+    end)
+
+    # Clear the search for this index
+    product_searches = Map.delete(socket.assigns.product_searches, index)
+    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign(:product_searches, product_searches)
+     |> assign(:show_product_suggestions, show_suggestions)}
+  end
+
+  @impl true
+  def handle_event("clear_product", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+
+    # Clear the product_id for this item
+    items = List.update_at(socket.assigns.items, index, fn item ->
+      Map.put(item, :product_id, nil)
+    end)
+
+    # Reset search state
+    product_searches = Map.delete(socket.assigns.product_searches, index)
+    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign(:product_searches, product_searches)
+     |> assign(:show_product_suggestions, show_suggestions)}
   end
 
   @impl true

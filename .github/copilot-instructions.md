@@ -261,7 +261,6 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   `column-gap: 1.5rem !important` - Maintains proper spacing between columns
         *   `display: table` - Ensures that CSS columns work in print.
     *   Adjust the print layout to use A4 paper standards. The max-height is set to 900px, which accounts for A4 height (297mm), minus margins (1.5cm × 2 = 3cm): 267mm ≈ 1008px, minus header space (~100px): ~900px available for content.
-
 *   **Product Sorting in Printable Pricelist:** Products within each category should be sorted alphabetically using Czech collation rules. This means special Czech characters (á, č, ď, é, ě, í, ň, ó, ř, š, ť, ú, ů, ý, ž) are sorted correctly according to Czech alphabet ordering.
 *   **Category Ordering**:
     *   Add an integer `order` field to the `categories` table.
