@@ -49,12 +49,14 @@
         display: table-header-group;
       }
       
-      /* Flexbox layout for 2 A4 pages in print */
+      /* Flexbox layout for 2 columns on A4 paper */
+      /* A4 height: 297mm - 3cm margins = 267mm ≈ 1008px at 96 DPI */
+      /* Account for header (~100px) = ~900px available for content */
       .pricelist-columns {
         display: flex !important;
         flex-direction: column !important;
         flex-wrap: wrap !important;
-        max-height: 1800px !important;
+        max-height: 900px !important;
         gap: 0.75rem !important;
       }
 
