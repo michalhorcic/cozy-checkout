@@ -122,22 +122,63 @@ defmodule CozyCheckout.Inventory do
   ## Stock Calculations
 
   @doc """
-  Get current stock level for a product with specific unit_amount.
-  Returns the quantity available.
+  Get current stock level for a product.
+  For volume-based products (ml, L, cl), returns total volume in base units (milliliters).
+  For piece-based products, returns quantity count.
 
   ## Examples
 
-      iex> get_stock_level(product_id, 500)
-      #Decimal<100>
+      iex> get_stock_level(product_id)  # Beer product with unit="ml"
+      #Decimal<25000>  # 25 liters total
 
-      iex> get_stock_level(product_id, nil)
-      #Decimal<250>
+      iex> get_stock_level(product_id)  # Glasses with unit="pcs"
+      #Decimal<24>  # 24 pieces
   """
-  def get_stock_level(product_id, unit_amount \\ nil) do
-    purchased = get_total_purchased(product_id, unit_amount)
-    sold = get_total_sold(product_id, unit_amount)
+  def get_stock_level(product_id) do
+    product = CozyCheckout.Catalog.get_product!(product_id)
+
+    # Check if this is a volume-based product
+    volume_based? = product.unit in ["ml", "L", "cl"]
+
+    if volume_based? do
+      get_total_volume(product_id)
+    else
+      get_total_quantity(product_id)
+    end
+  end
+
+  defp get_total_volume(product_id) do
+    purchased_volume = get_total_purchased_volume(product_id)
+    sold_volume = get_total_sold_volume(product_id)
+
+    Decimal.sub(purchased_volume, sold_volume)
+  end
+
+  defp get_total_quantity(product_id) do
+    purchased = get_total_purchased(product_id, nil)
+    sold = get_total_sold(product_id, nil)
 
     Decimal.sub(purchased, sold)
+  end
+
+  # Calculate total purchased volume (quantity × unit_amount)
+  defp get_total_purchased_volume(product_id) do
+    query =
+      from poi in PurchaseOrderItem,
+        where: poi.product_id == ^product_id and is_nil(poi.deleted_at),
+        select: coalesce(sum(fragment("? * COALESCE(?, 1)", poi.quantity, poi.unit_amount)), 0)
+
+    Repo.one(query) || Decimal.new(0)
+  end
+
+  # Calculate total sold volume (quantity × unit_amount)
+  defp get_total_sold_volume(product_id) do
+    query =
+      from oi in CozyCheckout.Sales.OrderItem,
+        where: oi.product_id == ^product_id and is_nil(oi.deleted_at),
+        select: coalesce(sum(fragment("? * COALESCE(?, 1)", oi.quantity, oi.unit_amount)), 0)
+
+    Repo.one(query) || Decimal.new(0)
   end
 
   defp get_total_purchased(product_id, nil) do
@@ -178,45 +219,40 @@ defmodule CozyCheckout.Inventory do
 
   @doc """
   Get stock overview for all products.
-  Returns list of maps with product, unit_amount, and stock quantity.
+  Returns list of %{product: product, stock: qty, display_unit: unit, raw_stock: raw_value}
 
   ## Examples
 
       iex> get_stock_overview()
       [
-        %{product: %Product{}, unit_amount: #Decimal<500>, stock: #Decimal<100>},
-        %{product: %Product{}, unit_amount: nil, stock: #Decimal<50>}
+        %{product: %Product{name: "Beer"}, stock: #Decimal<25>, display_unit: "L", raw_stock: #Decimal<25000>},
+        %{product: %Product{name: "Glasses"}, stock: #Decimal<24>, display_unit: "pcs", raw_stock: #Decimal<24>}
       ]
   """
   def get_stock_overview do
-    # Get all unique product+unit_amount combinations from both tables
-    purchased_items = from poi in PurchaseOrderItem,
-      where: is_nil(poi.deleted_at),
-      select: %{product_id: poi.product_id, unit_amount: poi.unit_amount},
-      distinct: true
-
-    sold_items = from oi in CozyCheckout.Sales.OrderItem,
-      where: is_nil(oi.deleted_at),
-      select: %{product_id: oi.product_id, unit_amount: oi.unit_amount},
-      distinct: true
-
-    all_combinations = Repo.all(purchased_items) ++ Repo.all(sold_items)
-    all_combinations = Enum.uniq_by(all_combinations, &{&1.product_id, &1.unit_amount})
-
     products = CozyCheckout.Catalog.list_products()
-    product_map = Map.new(products, &{&1.id, &1})
 
-    all_combinations
-    |> Enum.map(fn %{product_id: product_id, unit_amount: unit_amount} ->
-      stock = get_stock_level(product_id, unit_amount)
+    products
+    |> Enum.map(fn product ->
+      stock = get_stock_level(product.id)
+      volume_based? = product.unit in ["ml", "L", "cl"]
+
+      # For volume products, show in liters if >= 1000ml
+      {display_stock, display_unit} =
+        if volume_based? && Decimal.compare(stock, 1000) != :lt do
+          {Decimal.div(stock, 1000), "L"}
+        else
+          {stock, product.unit || "pcs"}
+        end
 
       %{
-        product: Map.get(product_map, product_id),
-        unit_amount: unit_amount,
-        stock: stock
+        product: product,
+        stock: display_stock,
+        display_unit: display_unit,
+        raw_stock: stock
       }
     end)
-    |> Enum.reject(&is_nil(&1.product))
-    |> Enum.sort_by(&{&1.product.name, &1.unit_amount || Decimal.new(0)})
+    |> Enum.reject(fn item -> Decimal.eq?(item.raw_stock, 0) end)
+    |> Enum.sort_by(& &1.product.name)
   end
 end

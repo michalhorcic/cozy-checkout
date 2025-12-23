@@ -88,7 +88,8 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
   end
 
   defp determine_stock_status(stock, threshold) do
-    stock_int = Decimal.to_integer(stock)
+    # Round down to get integer value for comparison
+    stock_int = stock |> Decimal.round(0, :down) |> Decimal.to_integer()
 
     cond do
       stock_int <= 0 -> :out_of_stock
@@ -194,9 +195,6 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
                   Category
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
-                  Unit Amount
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
                   Current Stock
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider">
@@ -226,22 +224,33 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.product.category.name}
                   </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    <%= if item.unit_amount do %>
-                      {format_number(item.unit_amount)} {item.product.unit || ""}
-                    <% else %>
-                      —
-                    <% end %>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <span class={[
+                  <td class="px-6 py-4">
+                    <div class={[
                       "text-sm font-semibold",
                       item.status == :out_of_stock && "text-rose-600",
                       item.status == :low_stock && "text-amber-600",
                       item.status == :in_stock && "text-emerald-600"
                     ]}>
-                      {format_number(item.stock)}
-                    </span>
+                      <%= if Decimal.compare(item.stock, 0) == :eq do %>
+                        <span class="text-gray-400">Out of stock</span>
+                      <% else %>
+                        {Decimal.to_string(Decimal.round(item.stock, 2))} {item.display_unit}
+                      <% end %>
+                    </div>
+
+                    <%!-- Show conversion hint for volume products --%>
+                    <%= if item.display_unit == "L" && item.product.default_unit_amounts && item.product.default_unit_amounts != "" && item.product.default_unit_amounts != "[]" do %>
+                      <div class="text-xs text-gray-500 mt-1 space-x-3">
+                        <%= for amount <- Jason.decode!(item.product.default_unit_amounts) do %>
+                          <% servings = item.raw_stock |> Decimal.div(amount) |> Decimal.round(0, :down) |> Decimal.to_integer() %>
+                          <%= if servings > 0 do %>
+                            <span class="inline-block">
+                              ≈ {servings} × {format_number(amount)}{item.product.unit}
+                            </span>
+                          <% end %>
+                        <% end %>
+                      </div>
+                    <% end %>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     <%= if item.product.low_stock_threshold > 0 do %>

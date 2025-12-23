@@ -72,6 +72,11 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
                     </button>
                   </div>
 
+                  <%!-- Hidden field to track existing items by ID --%>
+                  <%= if item[:id] do %>
+                    <input type="hidden" name={"items[#{index}][id]"} value={item.id} />
+                  <% end %>
+
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                       <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -187,6 +192,7 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
      |> assign(assigns)
      |> assign(:products, products)
      |> assign(:items, items)
+     |> assign(:deleted_item_ids, [])
      |> assign_form(Inventory.change_purchase_order(purchase_order))}
   end
 
@@ -217,9 +223,21 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
 
   def handle_event("remove_item", %{"index" => index}, socket) do
     index = String.to_integer(index)
+    item_to_remove = Enum.at(socket.assigns.items, index)
     items = List.delete_at(socket.assigns.items, index)
 
-    {:noreply, assign(socket, :items, items)}
+    # Track deleted item IDs if the item exists in database
+    deleted_item_ids =
+      if item_to_remove[:id] do
+        [item_to_remove.id | socket.assigns.deleted_item_ids]
+      else
+        socket.assigns.deleted_item_ids
+      end
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign(:deleted_item_ids, deleted_item_ids)}
   end
 
   # This catches the save event with items
@@ -269,6 +287,9 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
   defp save_purchase_order(socket, :edit, purchase_order_params, items_params) do
     case Inventory.update_purchase_order(socket.assigns.purchase_order, purchase_order_params) do
       {:ok, purchase_order} ->
+        # Delete removed items first
+        delete_items(socket.assigns.deleted_item_ids)
+
         # Update/create items
         create_items(purchase_order, items_params)
 
@@ -284,11 +305,27 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
     end
   end
 
+  defp delete_items(deleted_item_ids) do
+    # Delete items directly by ID using Repo
+    alias CozyCheckout.Repo
+    alias CozyCheckout.Inventory.PurchaseOrderItem
+
+    Enum.each(deleted_item_ids, fn item_id ->
+      Repo.get(PurchaseOrderItem, item_id)
+      |> case do
+        nil -> :ok
+        item -> Repo.delete(item)
+      end
+    end)
+  end
+
   defp create_items(purchase_order, items_params) do
     items_params
     |> Map.values()
     |> Enum.each(fn item_params ->
-      if item_params["product_id"] && item_params["product_id"] != "" do
+      # Only create items that don't have an ID (new items)
+      # Items with ID already exist in the database
+      if item_params["product_id"] && item_params["product_id"] != "" && !item_params["id"] do
         Inventory.create_purchase_order_item(purchase_order, item_params)
       end
     end)
