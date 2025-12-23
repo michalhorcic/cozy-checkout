@@ -32,6 +32,7 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   `email` (string, nullable, unique)
     *   `phone` (string, nullable)
     *   `notes` (text, nullable) - preferences, allergies, etc.
+    *   `dietary_restrictions` (text, nullable) - dedicated field for dietary notes
     *   `inserted_at`, `updated_at`
     *   `deleted_at` (soft delete)
 *   The `bookings` table (Stays/Visits) should have the following columns:
@@ -43,6 +44,7 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   `status` (string: "upcoming", "active", "completed", "cancelled")
     *   `notes` (text, nullable) - stay-specific notes
     *   `short_note` (string, nullable, max 30 characters) - for visually grouping bookings
+    *   `dietary_restrictions` (text, nullable) - Dietary restrictions are now stored per-booking instead of per-guest.
     *   `inserted_at`, `updated_at`
     *   `deleted_at` (soft delete)
 *   The `orders` table should:
@@ -334,5 +336,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
     *   The modal only shows guests who don't already have an active order.
     *   Staff can create multiple orders (one per guest) for the same booking.
     *   The `guest_id` on the `orders` table should point to the specific guest from `booking_guests`, NOT always the primary guest.
-    *   Save that `guest_id` to the `orders` table next to the `booking_id`.
-    *   In the order selection screen, show a badge indicating how many guests have orders (e.g., "2 / 3 guests
+    *

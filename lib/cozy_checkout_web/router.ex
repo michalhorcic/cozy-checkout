@@ -83,6 +83,13 @@ defmodule CozyCheckoutWeb.Router do
 
     # iCal Import
     live "/ical-import", IcalImportLive.Index, :index
+
+    # Meal Planner
+    live "/meal-planner", MealPlannerLive.Index
+    live "/meal-planner/templates", MealPlannerLive.Templates, :index
+    live "/meal-planner/templates/new", MealPlannerLive.Templates, :new
+    live "/meal-planner/templates/:id/edit", MealPlannerLive.Templates, :edit
+    live "/meal-planner/print", MealPlannerLive.Print
   end
 
   # Point of Sale (POS) - Touch-friendly interface for bar staff

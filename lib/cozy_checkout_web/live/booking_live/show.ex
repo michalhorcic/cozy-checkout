@@ -128,6 +128,12 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
             <p class="text-sm text-primary-400">Booking Notes</p>
             <p class="text-primary-500">{@booking.notes}</p>
           </div>
+          <div :if={@booking.dietary_restrictions} class="mt-4">
+            <p class="text-sm text-primary-400">Dietary Restrictions</p>
+            <div class="bg-error-light border-l-4 border-error px-4 py-3 rounded">
+              <p class="text-error whitespace-pre-line">{@booking.dietary_restrictions}</p>
+            </div>
+          </div>
         </div>
 
         <%!-- Associated Orders --%>

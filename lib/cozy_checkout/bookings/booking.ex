@@ -23,6 +23,7 @@ defmodule CozyCheckout.Bookings.Booking do
     field :status, :string, default: "upcoming"
     field :notes, :string
     field :short_note, :string
+    field :dietary_restrictions, :string
     field :deleted_at, :utc_datetime
 
     belongs_to :guest, CozyCheckout.Guests.Guest
@@ -46,7 +47,8 @@ defmodule CozyCheckout.Bookings.Booking do
       :check_out_date,
       :status,
       :notes,
-      :short_note
+      :short_note,
+      :dietary_restrictions
     ])
     |> validate_required([:guest_id, :check_in_date])
     |> validate_length(:short_note, max: 30)

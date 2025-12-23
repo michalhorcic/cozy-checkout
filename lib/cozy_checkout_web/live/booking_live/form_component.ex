@@ -169,6 +169,14 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
 
         <.input field={@form[:notes]} type="textarea" label="Notes" rows="3" />
 
+        <.input
+          field={@form[:dietary_restrictions]}
+          type="textarea"
+          label="Dietary Restrictions & Allergies"
+          rows="3"
+          placeholder="e.g., Gluten allergy, Vegetarian, No dairy"
+        />
+
         <div class="mt-6 flex items-center justify-end gap-x-6">
           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
         </div>

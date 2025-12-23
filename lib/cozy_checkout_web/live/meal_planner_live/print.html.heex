@@ -1,0 +1,100 @@
+<div class="print-container bg-white p-8 mx-auto" style="max-width: 210mm; min-height: 297mm;">
+  <%!-- Header --%>
+  <div class="text-center mb-8 border-b-2 border-gray-300 pb-6">
+    <h1 class="text-4xl font-bold text-gray-900 mb-2">Jindřichův dům</h1>
+    <h2 class="text-2xl font-semibold text-gray-700 mb-1">Weekly Menu</h2>
+    <p class="text-lg text-gray-600">{format_date(@week_start)} - {format_date(Date.add(@week_start, 6))}</p>
+    <p class="text-sm text-gray-500 mt-2">Generated: {format_date(@generated_date)}</p>
+  </div>
+
+  <%!-- Daily Meals --%>
+  <div class="space-y-6 mb-8">
+    <%= for day <- @week_days do %>
+      <div class="border-b border-gray-200 pb-4">
+        <div class="flex justify-between items-baseline mb-3">
+          <h3 class="text-xl font-bold text-gray-900 uppercase">{day_name(day.date)}, {Calendar.strftime(day.date, "%B %d")}</h3>
+          <span class="text-lg font-semibold text-gray-700">({day.guest_count} guests)</span>
+        </div>
+
+        <div class="space-y-2 ml-4">
+          <%= for meal_type <- ["breakfast", "lunch", "dinner"] do %>
+            <% meal = Map.get(day.meals, meal_type) %>
+            <%= if meal && meal.menu_text && meal.menu_text != "" do %>
+              <div class="mb-2">
+                <span class="font-semibold text-gray-800">{meal_type_label(meal_type)}:</span>
+                <span class="text-gray-700 ml-2">{meal.menu_text}</span>
+                <%= if meal.dietary_notes && meal.dietary_notes != "" do %>
+                  <div class="ml-6 text-sm text-red-700 mt-1">
+                    ⚠️ {meal.dietary_notes}
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%!-- Dietary Restrictions Summary --%>
+  <%= if @dietary_restrictions != [] do %>
+    <div class="border-t-2 border-gray-300 pt-6">
+      <h3 class="text-xl font-bold text-gray-900 mb-4">Dietary Restrictions Summary</h3>
+      <div class="space-y-2">
+        <%= for restriction <- @dietary_restrictions do %>
+          <div class="flex justify-between items-start text-sm">
+            <div class="flex-1">
+              <span class="font-semibold text-gray-800">{restriction.guest_name}</span>
+              <%= if restriction.room_number do %>
+                <span class="text-gray-600">(Room {restriction.room_number})</span>
+              <% end %>
+              <span class="text-gray-600">
+                — {Calendar.strftime(restriction.check_in_date, "%b %d")} to {Calendar.strftime(restriction.check_out_date || Date.utc_today(), "%b %d")}
+              </span>
+            </div>
+            <div class="text-red-700 font-medium ml-4">
+              {restriction.dietary_restrictions}
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <%!-- Footer --%>
+  <div class="mt-8 pt-6 border-t border-gray-300 text-center text-sm text-gray-600">
+    <p class="font-semibold">Moruška s.r.o. - IČO: 23741457</p>
+    <p class="mt-1">Pec pod Sněžkou 24</p>
+  </div>
+</div>
+
+<style>
+  @media print {
+    body {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
+    }
+
+    .print-container {
+      margin: 0;
+      padding: 20mm;
+      max-width: 100%;
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    /* Hide browser UI elements */
+    nav, header, footer, .no-print {
+      display: none !important;
+    }
+  }
+
+  @media screen {
+    .print-container {
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+  }
+</style>

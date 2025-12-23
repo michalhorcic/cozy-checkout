@@ -151,6 +151,15 @@ defmodule CozyCheckoutWeb.DashboardLive do
             navigate={~p"/admin/ical-import"}
             color="sky"
           />
+
+          <%!-- Meal Planner --%>
+          <.dashboard_card
+            title="Meal Planner"
+            description="Plan weekly meals & menus"
+            icon="hero-clipboard-document-list"
+            navigate={~p"/admin/meal-planner"}
+            color="amber"
+          />
         </div>
       </div>
     </div>

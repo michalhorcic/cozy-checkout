@@ -1,0 +1,341 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <%!-- Header --%>
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+        ← Back to Dashboard
+      </.link>
+      <h1 class="text-4xl font-bold text-primary-500 flex items-center gap-3">
+        <span>🍽️</span> Meal Planner
+      </h1>
+    </div>
+    <div class="flex gap-3">
+      <.link navigate={~p"/admin/meal-planner/templates"}>
+        <.button type="button">
+          <.icon name="hero-bookmark" class="w-5 h-5 mr-2" /> Templates
+        </.button>
+      </.link>
+      <.link navigate={~p"/admin/meal-planner/print?week=#{Date.to_iso8601(@week_start)}"}>
+        <.button type="button">
+          <.icon name="hero-printer" class="w-5 h-5 mr-2" /> Print Menu
+        </.button>
+      </.link>
+    </div>
+  </div>
+
+  <div class="flex gap-6">
+    <%!-- Main Content --%>
+    <div class="flex-1">
+      <%!-- Week Navigation --%>
+      <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+        <div class="flex justify-between items-center">
+          <button
+            phx-click="prev_week"
+            class="p-2 rounded-lg hover:bg-secondary-100 transition-colors"
+          >
+            <.icon name="hero-chevron-left" class="w-6 h-6 text-primary-400" />
+          </button>
+
+          <div class="flex items-center gap-4">
+            <h2 class="text-2xl font-bold text-primary-500">
+              Week of {format_date(@week_start)}
+            </h2>
+            <button
+              phx-click="today"
+              class="px-4 py-2 text-sm font-medium text-tertiary-600 hover:bg-tertiary-50 rounded-lg transition-colors"
+            >
+              This Week
+            </button>
+          </div>
+
+          <button
+            phx-click="next_week"
+            class="p-2 rounded-lg hover:bg-secondary-100 transition-colors"
+          >
+            <.icon name="hero-chevron-right" class="w-6 h-6 text-primary-400" />
+          </button>
+        </div>
+      </div>
+
+      <%!-- Desktop: Weekly Grid --%>
+      <div class="hidden lg:block bg-white shadow-lg rounded-lg overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-secondary-50">
+            <tr>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-primary-400 uppercase w-32">
+                Day
+              </th>
+              <th class="px-4 py-3 text-center text-xs font-semibold text-primary-400 uppercase w-24">
+                Guests
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-primary-400 uppercase">
+                Breakfast
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-primary-400 uppercase">
+                Lunch
+              </th>
+              <th class="px-4 py-3 text-left text-xs font-semibold text-primary-400 uppercase">
+                Dinner
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for day <- @week_days do %>
+              <tr class="border-t border-secondary-200 hover:bg-secondary-50">
+                <td class="px-4 py-4">
+                  <div class="font-semibold text-primary-500">{day_name(day.date)}</div>
+                  <div class="text-sm text-primary-400">{format_date(day.date)}</div>
+                </td>
+                <td class="px-4 py-4 text-center">
+                  <span class={guest_count_class(day.guest_count)}>
+                    {day.guest_count}
+                  </span>
+                </td>
+                <%= for meal_type <- ["breakfast", "lunch", "dinner"] do %>
+                  <% meal = Map.get(day.meals, meal_type) %>
+                  <td
+                    class="px-4 py-4 cursor-pointer hover:bg-tertiary-50 transition-colors"
+                    phx-click="open_edit_modal"
+                    phx-value-date={day.date}
+                    phx-value-type={meal_type}
+                  >
+                    <%= if meal && meal.menu_text && meal.menu_text != "" do %>
+                      <div class="space-y-1">
+                        <div class="text-sm text-primary-500 whitespace-pre-line">
+                          {meal.menu_text}
+                        </div>
+                        <%= if has_dietary_notes?(meal) do %>
+                          <div class="flex items-center gap-1 text-xs text-error">
+                            <span>🔴</span>
+                            <span>Dietary notes</span>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <div class="flex items-center gap-2 text-sm text-primary-300">
+                        <%= if needs_planning?(day.guest_count, meal) do %>
+                          <span class="text-warning">⚠️</span>
+                        <% end %>
+                        <span>Click to plan</span>
+                      </div>
+                    <% end %>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <%!-- Mobile: Accordion --%>
+      <div class="lg:hidden space-y-4">
+        <%= for day <- @week_days do %>
+          <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="bg-secondary-50 px-4 py-3 border-b border-secondary-200">
+              <div class="flex justify-between items-center">
+                <div>
+                  <div class="font-semibold text-primary-500">{day_name(day.date)}, {format_date(day.date)}</div>
+                </div>
+                <div class={guest_count_class(day.guest_count)}>
+                  {day.guest_count} guests
+                </div>
+              </div>
+            </div>
+            <div class="divide-y divide-secondary-200">
+              <%= for meal_type <- ["breakfast", "lunch", "dinner"] do %>
+                <% meal = Map.get(day.meals, meal_type) %>
+                <div
+                  class="px-4 py-4 cursor-pointer hover:bg-tertiary-50 transition-colors"
+                  phx-click="open_edit_modal"
+                  phx-value-date={day.date}
+                  phx-value-type={meal_type}
+                >
+                  <div class="flex items-start gap-3">
+                    <span class="text-2xl">{meal_type_emoji(meal_type)}</span>
+                    <div class="flex-1">
+                      <div class="font-medium text-primary-500 mb-1">{meal_type_label(meal_type)}</div>
+                      <%= if meal && meal.menu_text && meal.menu_text != "" do %>
+                        <div class="text-sm text-primary-400 whitespace-pre-line">
+                          {meal.menu_text}
+                        </div>
+                        <%= if has_dietary_notes?(meal) do %>
+                          <div class="flex items-center gap-1 text-xs text-error mt-2">
+                            <span>🔴</span>
+                            <span>Dietary notes</span>
+                          </div>
+                        <% end %>
+                      <% else %>
+                        <div class="flex items-center gap-2 text-sm text-primary-300">
+                          <%= if needs_planning?(day.guest_count, meal) do %>
+                            <span class="text-warning">⚠️</span>
+                          <% end %>
+                          <span>Tap to plan</span>
+                        </div>
+                      <% end %>
+                    </div>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+
+    <%!-- Dietary Restrictions Sidebar (Desktop only) --%>
+    <div class="hidden lg:block w-80">
+      <div class="bg-white shadow-lg rounded-lg overflow-hidden sticky top-8">
+        <div class="bg-secondary-50 px-4 py-3 border-b border-secondary-200 flex justify-between items-center">
+          <h3 class="font-semibold text-primary-500 flex items-center gap-2">
+            <span>🔴</span> Dietary Restrictions
+          </h3>
+          <button
+            phx-click="toggle_dietary_panel"
+            class="p-1 hover:bg-secondary-200 rounded transition-colors"
+          >
+            <.icon
+              name={if @dietary_panel_open, do: "hero-chevron-up", else: "hero-chevron-down"}
+              class="w-5 h-5 text-primary-400"
+            />
+          </button>
+        </div>
+        <%= if @dietary_panel_open do %>
+          <div class="p-4 max-h-[600px] overflow-y-auto">
+            <%= if @dietary_restrictions == [] do %>
+              <p class="text-sm text-primary-400 italic">No dietary restrictions this week</p>
+            <% else %>
+              <div class="space-y-4">
+                <%= for restriction <- @dietary_restrictions do %>
+                  <div class="border-b border-secondary-200 pb-3 last:border-b-0">
+                    <div class="font-medium text-primary-500 mb-1">{restriction.guest_name}</div>
+                    <div class="text-xs text-primary-400 mb-2">
+                      <%= if restriction.room_number do %>
+                        Room {restriction.room_number} •
+                      <% end %>
+                      {format_date(restriction.check_in_date)} - {format_date(restriction.check_out_date || Date.utc_today())}
+                    </div>
+                    <div class="text-sm text-error bg-error-light px-3 py-2 rounded">
+                      {restriction.dietary_restrictions}
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%!-- Edit Meal Modal --%>
+<%= if @edit_modal_open do %>
+  <div
+    class="fixed inset-0 bg-primary-500 bg-opacity-75 flex items-center justify-center z-50 p-4"
+    id="modal-backdrop"
+    phx-click="close_edit_modal"
+  >
+    <div
+      class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      phx-window-keydown="close_edit_modal"
+      phx-key="escape"
+      phx-click="noop"
+    >
+      <div class="px-6 py-4 border-b border-secondary-200">
+        <div class="flex justify-between items-start">
+          <div>
+            <h3 class="text-xl font-bold text-primary-500 flex items-center gap-2">
+              <span>{meal_type_emoji(@edit_meal_type)}</span>
+              <span>{meal_type_label(@edit_meal_type)}</span>
+            </h3>
+            <p class="text-sm text-primary-400 mt-1">
+              {day_name(@edit_date)}, {format_date(@edit_date)}
+            </p>
+          </div>
+          <button
+            phx-click="close_edit_modal"
+            class="text-primary-400 hover:text-primary-500 transition-colors"
+          >
+            <.icon name="hero-x-mark" class="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+
+      <.form for={%{}} phx-change="validate_meal" phx-submit="save_meal" id="meal-form">
+        <div class="px-6 py-4 space-y-4">
+          <%!-- Guest Count Info --%>
+          <% day = Enum.find(@week_days, &(&1.date == @edit_date)) %>
+          <div class="bg-secondary-50 px-4 py-3 rounded-lg">
+            <span class="text-sm text-primary-400">Cooking for: </span>
+            <span class={["text-lg font-semibold", guest_count_class(day.guest_count)]}>
+              {day.guest_count} guests
+            </span>
+          </div>
+
+          <%!-- Menu Text --%>
+          <div>
+            <label class="block text-sm font-medium text-primary-500 mb-2">
+              Menu
+            </label>
+            <textarea
+              name="meal[menu_text]"
+              rows="4"
+              placeholder="E.g., Svíčková with bread dumplings"
+              class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-tertiary-500 focus:border-transparent transition-all"
+            >{@edit_menu_text}</textarea>
+          </div>
+
+          <%!-- Dietary Notes --%>
+          <div>
+            <label class="block text-sm font-medium text-primary-500 mb-2">
+              Dietary Notes & Allergies
+            </label>
+            <textarea
+              name="meal[dietary_notes]"
+              rows="3"
+              placeholder="E.g., Room 3: No gluten (soup only)"
+              class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-tertiary-500 focus:border-transparent transition-all"
+            >{@edit_dietary_notes}</textarea>
+          </div>
+
+          <%!-- Quick Actions --%>
+          <div class="border-t border-secondary-200 pt-4">
+            <div class="text-sm font-medium text-primary-500 mb-3">Quick Actions</div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                phx-click="copy_from_yesterday"
+                class="px-4 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 text-primary-500 rounded-lg transition-colors"
+              >
+                Copy from Yesterday
+              </button>
+              <button
+                type="button"
+                phx-click="copy_to_week"
+                class="px-4 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 text-primary-500 rounded-lg transition-colors"
+              >
+                Copy to Rest of Week
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-secondary-50 border-t border-secondary-200 flex justify-end gap-3">
+          <button
+            type="button"
+            phx-click="close_edit_modal"
+            class="px-6 py-2 text-sm font-medium text-primary-400 hover:text-primary-500 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-6 py-2 text-sm font-medium bg-tertiary-600 hover:bg-tertiary-700 text-white rounded-lg transition-colors"
+          >
+            Save Meal
+          </button>
+        </div>
+      </.form>
+    </div>
+  </div>
+<% end %>

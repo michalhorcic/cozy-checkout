@@ -9,6 +9,7 @@ defmodule CozyCheckout.Guests.Guest do
     field :email, :string
     field :phone, :string
     field :notes, :string
+    field :dietary_restrictions, :string
     field :deleted_at, :utc_datetime
 
     has_many :bookings, CozyCheckout.Bookings.Booking
@@ -21,7 +22,7 @@ defmodule CozyCheckout.Guests.Guest do
   @doc false
   def changeset(guest, attrs) do
     guest
-    |> cast(attrs, [:name, :email, :phone, :notes])
+    |> cast(attrs, [:name, :email, :phone, :notes, :dietary_restrictions])
     |> validate_required([:name])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
     |> unique_constraint(:email)

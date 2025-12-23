@@ -66,7 +66,7 @@ config :flop, repo: CozyCheckout.Repo
 # POHODA Export Configuration
 config :cozy_checkout,
   # Your company ICO (tax ID) - CHANGE THIS
-  pohoda_ico: "12345678",
+  pohoda_ico: "23741457",
   # Default accounting account in POHODA - CHANGE THIS
   pohoda_default_account: "1",
   # Bank account for QR code payments - CHANGE THIS
