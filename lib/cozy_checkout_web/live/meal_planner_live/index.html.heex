@@ -87,9 +87,17 @@
                   <div class="text-sm text-primary-400">{format_date(day.date)}</div>
                 </td>
                 <td class="px-4 py-4 text-center">
-                  <span class={guest_count_class(day.guest_count)}>
+                  <button
+                    type="button"
+                    phx-click="show_guest_bookings"
+                    phx-value-date={day.date}
+                    class={[
+                      "cursor-pointer hover:underline transition-colors",
+                      guest_count_class(day.guest_count)
+                    ]}
+                  >
                     {day.guest_count}
-                  </span>
+                  </button>
                 </td>
                 <%= for meal_type <- ["breakfast", "lunch", "dinner"] do %>
                   <% meal = Map.get(day.meals, meal_type) %>
@@ -136,9 +144,17 @@
                 <div>
                   <div class="font-semibold text-primary-500">{day_name(day.date)}, {format_date(day.date)}</div>
                 </div>
-                <div class={guest_count_class(day.guest_count)}>
+                <button
+                  type="button"
+                  phx-click="show_guest_bookings"
+                  phx-value-date={day.date}
+                  class={[
+                    "cursor-pointer hover:underline transition-colors",
+                    guest_count_class(day.guest_count)
+                  ]}
+                >
                   {day.guest_count} guests
-                </div>
+                </button>
               </div>
             </div>
             <div class="divide-y divide-secondary-200">
@@ -339,3 +355,10 @@
     </div>
   </div>
 <% end %>
+
+<%!-- Bookings Modal --%>
+<.bookings_modal
+  date={@modal_date}
+  bookings={@modal_bookings}
+  on_close={JS.push("close_bookings_modal")}
+/>

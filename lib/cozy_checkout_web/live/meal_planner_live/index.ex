@@ -18,6 +18,8 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
       |> assign(:edit_menu_text, "")
       |> assign(:edit_dietary_notes, "")
       |> assign(:dietary_panel_open, true)
+      |> assign(:modal_date, nil)
+      |> assign(:modal_bookings, [])
       |> load_week_data()
 
     {:ok, socket}
@@ -187,6 +189,19 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     end
   end
 
+  @impl true
+  def handle_event("show_guest_bookings", %{"date" => date_string}, socket) do
+    date = Date.from_iso8601!(date_string)
+    bookings = bookings_for_date(socket.assigns.bookings, date)
+
+    {:noreply, assign(socket, modal_date: date, modal_bookings: bookings)}
+  end
+
+  @impl true
+  def handle_event("close_bookings_modal", _params, socket) do
+    {:noreply, assign(socket, modal_date: nil, modal_bookings: [])}
+  end
+
   defp load_week_data(socket) do
     week_start = socket.assigns.week_start
     week_end = Date.add(week_start, 6)
@@ -199,6 +214,9 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
 
     # Load dietary restrictions
     dietary_restrictions = Meals.get_dietary_restrictions_for_week(week_start)
+
+    # Load bookings for the week
+    bookings = Bookings.list_bookings_for_date_range(week_start, week_end)
 
     # Generate week days (Sunday to Saturday)
     week_days =
@@ -214,6 +232,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     socket
     |> assign(:week_days, week_days)
     |> assign(:dietary_restrictions, dietary_restrictions)
+    |> assign(:bookings, bookings)
     |> assign(:page_title, "Meal Planner - Week of #{Calendar.strftime(week_start, "%B %d, %Y")}")
   end
 
@@ -266,5 +285,20 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
 
   defp needs_planning?(guest_count, meal) do
     guest_count > 20 && (!meal || !meal.menu_text || meal.menu_text == "")
+  end
+
+  defp bookings_for_date(bookings, date) do
+    Enum.filter(bookings, fn booking ->
+      check_in_ok = Date.compare(date, booking.check_in_date) in [:eq, :gt]
+
+      check_out_ok =
+        if booking.check_out_date do
+          Date.compare(date, booking.check_out_date) in [:eq, :lt]
+        else
+          true
+        end
+
+      check_in_ok and check_out_ok
+    end)
   end
 end

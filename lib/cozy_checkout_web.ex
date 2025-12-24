@@ -86,6 +86,8 @@ defmodule CozyCheckoutWeb do
       import Phoenix.HTML
       # Core UI components
       import CozyCheckoutWeb.CoreComponents
+      # Booking UI components
+      import CozyCheckoutWeb.BookingComponents
 
       # Currency formatting helper
       import CozyCheckoutWeb.CurrencyHelper

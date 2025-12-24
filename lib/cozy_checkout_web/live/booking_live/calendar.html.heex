@@ -125,73 +125,9 @@
   </div>
 
   <%!-- Bookings Modal --%>
-  <.modal
-    :if={@modal_date}
-    id="day-bookings-modal"
-    show={@modal_date != nil}
-    on_cancel={JS.push("close_modal")}
-  >
-    <div class="mb-6">
-      <h2 class="text-2xl font-bold text-primary-500">
-        Bookings for {Calendar.strftime(@modal_date, "%B %d, %Y")}
-      </h2>
-      <p class="mt-1 text-sm text-primary-400">
-        {length(@modal_bookings)} {if length(@modal_bookings) == 1, do: "booking", else: "bookings"}
-      </p>
-    </div>
-
-    <div class="space-y-3 max-h-[60vh] overflow-y-auto">
-      <%= for booking <- @modal_bookings do %>
-        <.link
-          navigate={~p"/admin/bookings/#{booking}"}
-          class={[
-            "block px-4 py-3 rounded-lg border-l-4 hover:shadow-md transition-all",
-            case booking.status do
-              "upcoming" -> "bg-tertiary-50 border-blue-400 hover:bg-tertiary-100"
-              "active" -> "bg-success-light border-green-400 hover:bg-success-light"
-              "completed" -> "bg-secondary-50 border-gray-400 hover:bg-secondary-100"
-              "cancelled" -> "bg-error-light border-red-400 hover:bg-error-light"
-              _ -> "bg-secondary-50 border-gray-400 hover:bg-secondary-100"
-            end
-          ]}
-        >
-          <div class="flex items-start justify-between">
-            <div class="flex-1">
-              <div class="font-semibold text-primary-500 text-lg">
-                {booking.guest.name}
-              </div>
-              <%= if booking.room_number do %>
-                <div class="text-sm text-primary-400 mt-1">
-                  <.icon name="hero-home" class="w-4 h-4 inline-block" /> Room {booking.room_number}
-                </div>
-              <% end %>
-              <div class="text-sm text-primary-400 mt-1">
-                <.icon name="hero-calendar" class="w-4 h-4 inline-block" />
-                {Calendar.strftime(booking.check_in_date, "%b %d")}
-                <%= if booking.check_out_date do %>
-                  → {Calendar.strftime(booking.check_out_date, "%b %d")}
-                <% else %>
-                  → (ongoing)
-                <% end %>
-              </div>
-            </div>
-            <div class="ml-4">
-              <span class={[
-                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-                case booking.status do
-                  "upcoming" -> "bg-tertiary-100 text-tertiary-800"
-                  "active" -> "bg-success-light text-success-dark"
-                  "completed" -> "bg-secondary-100 text-primary-500"
-                  "cancelled" -> "bg-error-light text-error-dark"
-                  _ -> "bg-secondary-100 text-primary-500"
-                end
-              ]}>
-                {String.capitalize(booking.status)}
-              </span>
-            </div>
-          </div>
-        </.link>
-      <% end %>
-    </div>
-  </.modal>
+  <.bookings_modal
+    date={@modal_date}
+    bookings={@modal_bookings}
+    on_close={JS.push("close_modal")}
+  />
 </div>

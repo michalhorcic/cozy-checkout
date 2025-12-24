@@ -154,9 +154,14 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
       <%!-- Occupancy badge --%>
       <%= if occupancy = Map.get(@occupancy_map, @date, 0) do %>
         <%= if occupancy > 0 do %>
-          <div class={occupancy_badge_class(occupancy)}>
+          <button
+            type="button"
+            phx-click="show_day_bookings"
+            phx-value-date={@date}
+            class={[occupancy_badge_class(occupancy), "cursor-pointer hover:shadow-md transition-shadow"]}
+          >
             {occupancy}/{@capacity}
-          </div>
+          </button>
         <% end %>
       <% end %>
 
