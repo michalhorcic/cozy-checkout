@@ -92,6 +92,11 @@ defmodule CozyCheckout.Inventory do
   ## Purchase Order Items
 
   @doc """
+  Gets a single purchase order item.
+  """
+  def get_purchase_order_item(id), do: Repo.get(PurchaseOrderItem, id)
+
+  @doc """
   Creates a purchase order item.
   """
   def create_purchase_order_item(%PurchaseOrder{} = purchase_order, attrs) do

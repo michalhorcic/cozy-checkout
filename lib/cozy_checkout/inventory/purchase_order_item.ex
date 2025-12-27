@@ -20,13 +20,51 @@ defmodule CozyCheckout.Inventory.PurchaseOrderItem do
 
   @doc false
   def changeset(purchase_order_item, attrs) do
+    require Logger
+    Logger.debug("PurchaseOrderItem attrs: #{inspect(attrs)}")
+
     purchase_order_item
     |> cast(attrs, [:product_id, :quantity, :unit_amount, :cost_price, :notes])
     |> validate_required([:product_id, :quantity, :cost_price])
     |> validate_number(:quantity, greater_than: 0)
-    |> validate_number(:cost_price, greater_than_or_equal_to: 0)
+    |> validate_cost_price()
     |> foreign_key_constraint(:purchase_order_id)
     |> foreign_key_constraint(:product_id)
+  end
+
+  defp validate_cost_price(changeset) do
+    case get_change(changeset, :cost_price) do
+      nil ->
+        changeset
+
+      cost_price when is_binary(cost_price) ->
+        # Handle string input from forms
+        case Decimal.parse(cost_price) do
+          {decimal_value, _} ->
+            if Decimal.compare(decimal_value, Decimal.new("0")) in [:eq, :gt] do
+              put_change(changeset, :cost_price, decimal_value)
+            else
+              add_error(changeset, :cost_price, "must be greater than or equal to 0")
+            end
+
+          :error ->
+            add_error(changeset, :cost_price, "is not a valid number")
+        end
+
+      %Decimal{} = decimal_value ->
+        if Decimal.compare(decimal_value, Decimal.new("0")) in [:eq, :gt] do
+          changeset
+        else
+          add_error(changeset, :cost_price, "must be greater than or equal to 0")
+        end
+
+      numeric_value when is_number(numeric_value) ->
+        if numeric_value >= 0 do
+          changeset
+        else
+          add_error(changeset, :cost_price, "must be greater than or equal to 0")
+        end
+    end
   end
 
   @doc false

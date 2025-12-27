@@ -197,12 +197,13 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
                         Cost Price <span class="text-rose-600">*</span>
                       </label>
                       <input
-                        type="number"
+                        type="text"
+                        inputmode="decimal"
                         name={"items[#{index}][cost_price]"}
                         value={item.cost_price}
                         required
-                        min="0"
-                        step="0.01"
+                        pattern="^\d+\.?\d*$"
+                        placeholder="0.0000"
                         class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
                       />
                     </div>
@@ -444,10 +445,17 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
     items_params
     |> Map.values()
     |> Enum.each(fn item_params ->
-      # Only create items that don't have an ID (new items)
-      # Items with ID already exist in the database
-      if item_params["product_id"] && item_params["product_id"] != "" && !item_params["id"] do
-        Inventory.create_purchase_order_item(purchase_order, item_params)
+      if item_params["product_id"] && item_params["product_id"] != "" do
+        if item_params["id"] do
+          # Update existing item
+          case Inventory.get_purchase_order_item(item_params["id"]) do
+            nil -> :ok
+            item -> Inventory.update_purchase_order_item(item, item_params)
+          end
+        else
+          # Create new item
+          Inventory.create_purchase_order_item(purchase_order, item_params)
+        end
       end
     end)
   end
