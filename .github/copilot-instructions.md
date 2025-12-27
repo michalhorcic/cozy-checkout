@@ -328,12 +328,12 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 *   **Booking Invoice States - "Personal" State**: Add a "personal" state to booking invoices.
     *   The "personal" state should:
         *   Be a parallel state that can be set at any time.
-        *   Allow switching from "created" to "personal" and back.
-        *   Allow switching from "personal" to "generated".
+        *   Allow switching from "created" to "personal" to "generated".
         *   Not generate an invoice number.
         *   Count toward the 45-person cottage capacity.
         *   Store all invoice items (adults, kids, etc.).
         *   Store prices and VAT.
         *   Have the recalculate functionality.
 *   **Handling Variable Stay Durations for Booking Invoices:**
-    *   Add a `nights` field to `booking_invoice_items` (defaults to
+    *   Add a `nights` field to `booking_invoice_items` (defaults to 1).
+*   **Cost Price Validation:** When validating

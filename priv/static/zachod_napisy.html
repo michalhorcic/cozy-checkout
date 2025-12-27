@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nápis na záchod</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+        
+        .poster {
+            background: white;
+            width: 210mm;
+            height: 297mm;
+            padding: 30mm 25mm;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .header {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 34px;
+            font-weight: 700;
+            margin: 0 0 15px 0;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            font-weight: 400;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 30px;
+        }
+        
+        .allowed-section {
+            text-align: center;
+        }
+        
+        .allowed-section h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
+        .icon-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            position: relative;
+        }
+        
+        .icon-circle::before {
+            content: '';
+            width: 30px;
+            height: 50px;
+            background: white;
+            border: 4px solid #1a1a1a;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .icon-circle::after {
+            content: '';
+            width: 18px;
+            height: 18px;
+            background: white;
+            border: 4px solid #1a1a1a;
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .item-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 0 50px;
+        }
+        
+        .not-allowed-section h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 20px 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
+        .not-allowed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 550px;
+            margin: 0 auto;
+        }
+        
+        .not-allowed-item {
+            text-align: center;
+            opacity: 0.4;
+        }
+        
+        .icon-box {
+            width: 70px;
+            height: 70px;
+            border: 3px solid #1a1a1a;
+            border-radius: 10px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .icon-box::before,
+        .icon-box::after {
+            content: '';
+            position: absolute;
+            width: 58px;
+            height: 3px;
+            background: #1a1a1a;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .icon-box::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+        
+        .icon-wipes::before {
+            content: '';
+            width: 26px;
+            height: 36px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 5px 5px 10px 10px;
+        }
+        
+        .icon-hygiene::before {
+            content: '';
+            width: 34px;
+            height: 12px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 14px;
+        }
+        
+        .icon-trash::before {
+            content: '';
+            width: 28px;
+            height: 32px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 3px 3px 6px 6px;
+        }
+        
+        .not-allowed-item span {
+            font-size: 15px;
+            color: #1a1a1a;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        
+        .warning {
+            background: #f8f8f8;
+            border-left: 5px solid #1a1a1a;
+            padding: 22px 25px;
+            margin: 25px 0 0 0;
+        }
+        
+        .warning-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .warning-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .print-button:hover {
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">Vytisknout</button>
+    
+    <div class="poster">
+        <div class="header">
+            <h1>Prosíme o ohleduplnost / Bitte um Rücksichtnahme</h1>
+            <p class="subtitle">Pomozte nám udržet záchody funkční<br>Helfen Sie uns, die Toiletten funktionsfähig zu halten</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <h2>Do záchodu patří / In die Toilette gehört</h2>
+                <div class="icon-circle"></div>
+                <div class="item-name">Pouze toaletní papír / Nur Toilettenpapier</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <h2>Do záchodu nepatří / Nicht in die Toilette</h2>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Vlhčené ubrousky<br>Feuchte Tücher</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygienické potřeby<br>Hygieneartikel</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Jiný odpad<br>Sonstiger Abfall</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Důležité upozornění / Wichtiger Hinweis</div>
+                <p class="warning-text">
+                    Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům.
+                    <br><br>
+                    Eine Verstopfung führt zur Funktionsunfähigkeit aller Toiletten in der Hütte. In diesem Fall müssen wir den Aufenthalt aller Gäste beenden.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Děkujeme za pochopení / Vielen Dank für Ihr Verständnis
+        </div>
+    </div>
+</body>
+</html>
