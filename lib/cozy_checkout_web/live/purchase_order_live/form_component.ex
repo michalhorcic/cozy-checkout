@@ -319,13 +319,40 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
   end
 
   @impl true
-  def handle_event("validate", %{"purchase_order" => purchase_order_params}, socket) do
+  def handle_event("validate", %{"purchase_order" => purchase_order_params} = params, socket) do
     changeset =
       socket.assigns.purchase_order
       |> Inventory.change_purchase_order(purchase_order_params)
       |> Map.put(:action, :validate)
 
-    {:noreply, assign_form(socket, changeset)}
+    # Update items from form params to preserve user input
+    items =
+      case params do
+        %{"items" => items_params} ->
+          # Merge form params with existing items to preserve IDs and product_ids
+          items_params
+          |> Map.values()
+          |> Enum.with_index()
+          |> Enum.map(fn {item_params, index} ->
+            existing_item = Enum.at(socket.assigns.items, index) || %{}
+
+            %{
+              id: item_params["id"] || existing_item[:id],
+              product_id: item_params["product_id"] || existing_item[:product_id],
+              quantity: parse_integer(item_params["quantity"]),
+              unit_amount: parse_decimal(item_params["unit_amount"]),
+              cost_price: parse_decimal(item_params["cost_price"]),
+              notes: item_params["notes"]
+            }
+          end)
+        _ ->
+          socket.assigns.items
+      end
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign_form(changeset)}
   end
 
   # IMPORTANT: handle_event must match the exact params structure sent by the client
@@ -473,6 +500,26 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
       _ -> ""
     end
   end
+
+  defp parse_integer(nil), do: nil
+  defp parse_integer(""), do: nil
+  defp parse_integer(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {int, _} -> int
+      :error -> nil
+    end
+  end
+  defp parse_integer(value) when is_integer(value), do: value
+
+  defp parse_decimal(nil), do: nil
+  defp parse_decimal(""), do: nil
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {decimal, _} -> decimal
+      :error -> value  # Keep as string if can't parse, for error display
+    end
+  end
+  defp parse_decimal(value), do: value
 
   defp change_purchase_order(purchase_order, attrs \\ %{}) do
     Inventory.PurchaseOrder.changeset(purchase_order, attrs)
