@@ -15,7 +15,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
       |> preload([:guest, booking: :guest, order_items: [], payments: []])
-      |> order_by([o], desc: o.inserted_at)
+      |> order_by([o], asc: o.name)
       |> Repo.all()
 
     # Get all booking guests to show count
@@ -111,7 +111,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
       |> preload([:guest, booking: :guest, order_items: [], payments: []])
-      |> order_by([o], desc: o.inserted_at)
+      |> order_by([o], asc: o.name)
       |> Repo.all()
 
     {:noreply,

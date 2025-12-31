@@ -99,7 +99,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
       |> where([o], is_nil(o.booking_id))
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
-      |> order_by([o], desc: o.inserted_at)
+      |> order_by([o], asc: o.name)
       |> Repo.all()
 
     assign(socket, :standalone_orders, standalone_orders)

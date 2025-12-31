@@ -2,7 +2,7 @@
 
 <!-- vscode Session 400ba937-6ab1-4cf1-83e7-c7db0c7cd0d7 (2025-12-27 01:12Z) -->
 
-# When I am editing purchase order and when I am adding new items into it, it resets unit amount and unit price of already added fields. Please check it out and fix it (2025-12-27 01:12Z)
+# Fixing purchase order item reset issue (2025-12-27 01:12Z)
 
 _**User (2025-12-27 01:13Z)**_
 
@@ -185,7 +185,17 @@ The fix is to update the `validate` handler to also update the items from the fo
 2. Browser updates the HTML input values
 3. You click "Add Item" button
 4. The `validate` event fires automatically
-5. The old `validate` handler only updated the 
+5. The old `validate` handler only updated the changeset, not the `@items` list
+6. Template re-renders with the old `@items` values, resetting your inputs
+
+## The fix:
+
+1. Updated the `validate` event handler to also process the `items` params from the form
+2. It now merges the form input values with the existing items structure (preserving IDs and product_ids)
+3. Added helper functions `parse_integer/1` and `parse_decimal/1` to safely parse the string values from form inputs into proper types
+4. The items state now stays synchronized with what's actually in the form
+
+Now when you add a new item, all the existing items will retain their values because they're being properly synchronized from the form params during validation.
 
 ---
 

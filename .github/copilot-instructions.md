@@ -336,4 +336,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   Have the recalculate functionality.
 *   **Handling Variable Stay Durations for Booking Invoices:**
     *   Add a `nights` field to `booking_invoice_items` (defaults to 1).
-*   **Cost Price Validation:** When validating
+*   **POS System - Order Sorting:**
