@@ -519,6 +519,23 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     !Decimal.equal?(order.total_amount, items_total)
   end
 
+  defp format_item_timestamp(datetime) do
+    if is_nil(datetime), do: "", else: do_format_timestamp(datetime)
+  end
+
+  defp do_format_timestamp(datetime) do
+    today = Date.utc_today()
+    item_date = DateTime.to_date(datetime)
+
+    if Date.compare(item_date, today) == :eq do
+      # Today: show just time
+      Calendar.strftime(datetime, "%H:%M")
+    else
+      # Other day: show date and time
+      Calendar.strftime(datetime, "%b %-d, %H:%M")
+    end
+  end
+
   defp get_price_for_amount(product, amount) do
     if product.pricing_info && product.pricing_info.type == :tiers do
       tier =
