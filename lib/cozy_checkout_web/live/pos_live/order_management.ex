@@ -25,6 +25,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:recalculated_total, nil)
        |> assign(:show_delete_confirm, false)
        |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
        |> load_order()
        |> load_products()
        |> assign(:show_success, false)}
@@ -46,6 +48,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:recalculated_total, nil)
        |> assign(:show_delete_confirm, false)
        |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
        |> assign(:order, nil)
        |> assign(:grouped_items, [])
        |> assign(:categories, [])
@@ -66,45 +70,61 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
-  def handle_event("add_product", %{"product-id" => product_id}, socket) do
+  def handle_event("add_product", %{"product-id" => product_id} = params, socket) do
     product =
       Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
         Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
 
-    if product && product.unit do
-      # Show modal for unit amount selection
-      {:noreply,
-       socket
-       |> assign(:show_unit_modal, true)
-       |> assign(:selected_product, product)}
-    else
-      # Add directly without unit amount
-      add_item_to_order(socket, product_id, nil)
+    quantity = parse_quantity(params["quantity"])
+
+    cond do
+      # If 5+ button clicked, show quantity modal
+      params["custom"] == "true" ->
+        {:noreply,
+         socket
+         |> assign(:show_quantity_modal, true)
+         |> assign(:quantity_product, product)}
+
+      # If product has unit amounts, show unit modal
+      product && product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      # Otherwise add directly
+      true ->
+        add_multiple_items_to_order(socket, product_id, nil, quantity)
     end
   end
 
   @impl true
   def handle_event("quick_add_unit_amount", %{"unit_amount" => unit_amount}, socket) do
     product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
 
     socket =
       socket
       |> assign(:show_unit_modal, false)
       |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
 
-    add_item_to_order(socket, product_id, unit_amount)
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
   end
 
   @impl true
   def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
     product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
 
     socket =
       socket
       |> assign(:show_unit_modal, false)
       |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
 
-    add_item_to_order(socket, product_id, unit_amount)
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
   end
 
   @impl true
@@ -112,7 +132,49 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     {:noreply,
      socket
      |> assign(:show_unit_modal, false)
-     |> assign(:selected_product, nil)}
+     |> assign(:selected_product, nil)
+     |> assign(:pending_quantity, nil)}
+  end
+
+  @impl true
+  def handle_event("show_custom_quantity", %{"product-id" => product_id}, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, true)
+     |> assign(:quantity_product, product)}
+  end
+
+  @impl true
+  def handle_event("cancel_quantity_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, false)
+     |> assign(:quantity_product, nil)}
+  end
+
+  @impl true
+  def handle_event("add_with_quantity", %{"quantity" => quantity_str}, socket) do
+    quantity = parse_quantity(quantity_str)
+    product = socket.assigns.quantity_product
+
+    socket =
+      socket
+      |> assign(:show_quantity_modal, false)
+      |> assign(:quantity_product, nil)
+
+    if product && product.unit do
+      {:noreply,
+       socket
+       |> assign(:show_unit_modal, true)
+       |> assign(:selected_product, product)
+       |> assign(:pending_quantity, quantity)}
+    else
+      add_multiple_items_to_order(socket, product.id, nil, quantity)
+    end
   end
 
   @impl true
@@ -508,6 +570,33 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   defp parse_decimal(_), do: Decimal.new("0")
+
+  defp parse_quantity(nil), do: 1
+  defp parse_quantity(""), do: 1
+
+  defp parse_quantity(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {qty, _} when qty > 0 -> qty
+      _ -> 1
+    end
+  end
+
+  defp parse_quantity(value) when is_integer(value) and value > 0, do: value
+  defp parse_quantity(_), do: 1
+
+  defp add_multiple_items_to_order(socket, product_id, unit_amount, quantity) do
+    # Add items one by one (could be optimized with bulk insert later)
+    results =
+      Enum.reduce(1..quantity, {:ok, socket}, fn _i, {:ok, acc_socket} ->
+        add_item_to_order(acc_socket, product_id, unit_amount)
+        |> then(fn {:noreply, updated_socket} -> {:ok, updated_socket} end)
+      end)
+
+    case results do
+      {:ok, updated_socket} -> {:noreply, updated_socket}
+      error -> error
+    end
+  end
 
   defp total_out_of_sync?(order) do
     items_total =

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vepřové koleno - 290 Kč</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .flyer {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            padding: 60px 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .flyer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 8px;
+            background: linear-gradient(90deg, #d4af37 0%, #f4d03f 50%, #d4af37 100%);
+        }
+
+        .header {
+            margin-bottom: 40px;
+        }
+
+        .restaurant-name {
+            font-size: 28px;
+            color: #8b4513;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .main-title {
+            font-size: 72px;
+            font-weight: bold;
+            color: #8b4513;
+            margin: 30px 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 32px;
+            color: #666;
+            margin: 20px 0;
+            font-style: italic;
+        }
+
+        .description {
+            font-size: 24px;
+            color: #555;
+            margin: 30px auto;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+
+        .price-section {
+            margin: 50px 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #8b4513 0%, #a0522d 100%);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(139, 69, 19, 0.3);
+        }
+
+        .price {
+            font-size: 96px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.3);
+            margin: 20px 0;
+            display: block;
+        }
+
+        .price-label {
+            font-size: 28px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 40px 0;
+        }
+
+        .feature {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #8b4513;
+        }
+
+        .feature-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #8b4513;
+            margin-bottom: 8px;
+        }
+
+        .feature-text {
+            font-size: 16px;
+            color: #666;
+        }
+
+        .footer {
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #8b4513;
+            font-size: 20px;
+            color: #666;
+        }
+
+        .location {
+            font-weight: bold;
+            color: #8b4513;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .flyer {
+                box-shadow: none;
+                border-radius: 0;
+                max-width: none;
+                page-break-inside: avoid;
+            }
+        }
+
+        @page {
+            margin: 1cm;
+        }
+    </style>
+</head>
+<body>
+    <div class="flyer">
+        <div class="header">
+            <div class="restaurant-name">🏔️ JINDŘICHŮV DŮM 🏔️</div>
+        </div>
+
+        <h1 class="main-title">Pečené<br>Vepřové Koleno</h1>
+        
+        <p class="subtitle">Jednomužná porce</p>
+
+        <div class="description">
+            Tradiční české jídlo, pečené do křupava,<br>
+            podávané s chlebem, hořčicí a okurkami
+        </div>
+
+        <div class="price-section">
+            <div class="price-label">Cena</div>
+            <span class="price">290 Kč</span>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-title">🔥 Čerstvě pečené</div>
+                <div class="feature-text">Připravujeme každý den</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">🍖 Šťavnaté maso</div>
+                <div class="feature-text">Pomalu pečené do zlatova</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">👨 Pro jednu osobu</div>
+                <div class="feature-text">Ideální velikost porce</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Ochutnejte!</p>
+            <p class="location">Jindřichův dům, Pec pod Sněžkou 24</p>
+        </div>
+    </div>
+</body>
+</html>

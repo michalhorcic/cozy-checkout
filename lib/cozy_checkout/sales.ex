@@ -423,6 +423,26 @@ defmodule CozyCheckout.Sales do
   end
 
   @doc """
+  Updates an order item and recalculates the subtotal.
+  """
+  def update_order_item(%OrderItem{} = order_item, attrs) do
+    changeset = OrderItem.changeset(order_item, attrs)
+
+    # If quantity changed, recalculate subtotal
+    changeset =
+      if Ecto.Changeset.changed?(changeset, :quantity) do
+        quantity = Ecto.Changeset.get_field(changeset, :quantity)
+        unit_price = Ecto.Changeset.get_field(changeset, :unit_price)
+        subtotal = Decimal.mult(Decimal.new(quantity), unit_price)
+        Ecto.Changeset.put_change(changeset, :subtotal, subtotal)
+      else
+        changeset
+      end
+
+    Repo.update(changeset)
+  end
+
+  @doc """
   Recalculates order total based on items and discount.
   """
   def recalculate_order_total(%Order{} = order) do

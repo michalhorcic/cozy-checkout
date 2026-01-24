@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nabídka panáků</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .flyer {
+            background: white;
+            width: 100%;
+            max-width: 800px;
+            padding: 60px 40px;
+            border: 5px solid #000;
+            text-align: center;
+            position: relative;
+        }
+
+        .flyer::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 2px solid #000;
+            pointer-events: none;
+        }
+
+        .header {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #000;
+        }
+
+        .restaurant-name {
+            font-size: 28px;
+            color: #000;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        .main-title {
+            font-size: 56px;
+            font-weight: bold;
+            color: #000;
+            margin: 30px 0;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 28px;
+            color: #333;
+            margin: 20px 0;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .decorative-line {
+            height: 3px;
+            background: #000;
+            margin: 20px auto;
+            width: 200px;
+        }
+
+        .drinks-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .drink-category {
+            border: 4px solid #000;
+            padding: 30px 20px;
+        }
+
+        .drink-category.premium {
+            background: #000;
+            color: #fff;
+        }
+
+        .category-title {
+            font-size: 36px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .category-subtitle {
+            font-size: 18px;
+            font-style: italic;
+            margin-bottom: 25px;
+            opacity: 0.8;
+        }
+
+        .price-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 15px 0;
+        }
+
+        .price-item {
+            text-align: center;
+        }
+
+        .amount {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .price {
+            font-size: 42px;
+            font-weight: bold;
+        }
+
+        .currency {
+            font-size: 24px;
+        }
+
+        .info-section {
+            margin: 50px 0 30px;
+            padding: 30px;
+            border: 3px dashed #000;
+            background: #f5f5f5;
+        }
+
+        .info-icon {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        .info-text {
+            font-size: 24px;
+            font-weight: 600;
+            color: #000;
+            line-height: 1.5;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 3px solid #000;
+            font-size: 20px;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .location {
+            font-weight: bold;
+            color: #000;
+            font-size: 24px;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .flyer {
+                border: 5px solid #000;
+                max-width: none;
+                page-break-inside: avoid;
+            }
+
+            .drink-category.premium {
+                background: #000 !important;
+                color: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .info-section {
+                background: #f5f5f5 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        @page {
+            margin: 1cm;
+        }
+    </style>
+</head>
+<body>
+    <div class="flyer">
+        <div class="header">
+            <div class="restaurant-name">★ JINDŘICHŮV DŮM ★</div>
+        </div>
+
+        <h1 class="main-title">Nabídka Panáků</h1>
+        
+        <div class="decorative-line"></div>
+        
+        <p class="subtitle">Dva druhy – jednoduchý výběr</p>
+
+        <div class="drinks-container">
+            <div class="drink-category">
+                <div class="category-title">Levný</div>
+                <div class="category-subtitle">Standardní nabídka</div>
+                <div class="price-row">
+                    <div class="price-item">
+                        <div class="amount">2 cl</div>
+                        <div class="price">30 <span class="currency">Kč</span></div>
+                    </div>
+                    <div class="price-item">
+                        <div class="amount">4 cl</div>
+                        <div class="price">60 <span class="currency">Kč</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="drink-category premium">
+                <div class="category-title">Lepší</div>
+                <div class="category-subtitle">Prémiová nabídka</div>
+                <div class="price-row">
+                    <div class="price-item">
+                        <div class="amount">2 cl</div>
+                        <div class="price">45 <span class="currency">Kč</span></div>
+                    </div>
+                    <div class="price-item">
+                        <div class="amount">4 cl</div>
+                        <div class="price">90 <span class="currency">Kč</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <div class="info-icon">☞</div>
+            <div class="info-text">
+                Kompletní nabídka alkoholu<br>
+                je vidět na poličce baru
+            </div>
+        </div>
+
+        <div class="decorative-line"></div>
+
+        <div class="footer">
+            <p class="location">Jindřichův dům, Pec pod Sněžkou 24</p>
+        </div>
+    </div>
+</body>
+</html>

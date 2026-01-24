@@ -3,10 +3,6 @@ description: AI rules derived by SpecStory from the project AI interaction histo
 globs: *
 ---
 
----
-description: AI rules derived by SpecStory from the project AI interaction history
----
-
 ## PROJECT RULES & CODING STANDARDS
 
 *   When designing databases, implement soft deletes using a `deleted_at` column of type `:utc_datetime` and create an index on this column. When setting the `deleted_at` timestamp, use `DateTime.truncate(utc_datetime, :second)` (available in Elixir v1.6+) to remove microseconds.
@@ -336,4 +332,4 @@ description: AI rules derived by SpecStory from the project AI interaction histo
         *   Have the recalculate functionality.
 *   **Handling Variable Stay Durations for Booking Invoices:**
     *   Add a `nights` field to `booking_invoice_items` (defaults to 1).
-*   **POS System - Order Sorting:**
+*   **POS System - Order Sorting:** Implement the following combined approach for adding multiple items to the cart in the POS system:

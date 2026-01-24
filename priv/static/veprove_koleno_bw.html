@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vepřové koleno - 290 Kč</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10mm;
+        }
+
+        .flyer {
+            background: white;
+            /* A4 rozměry: 210mm x 297mm, minus okraje */
+            width: 190mm;
+            height: auto;
+            max-height: 277mm;
+            padding: 10mm 15mm;
+            border: 4px solid #000;
+            text-align: center;
+            position: relative;
+        }
+
+        .flyer::before {
+            content: '';
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            right: 6px;
+            bottom: 6px;
+            border: 2px solid #000;
+            pointer-events: none;
+        }
+
+        .header {
+            margin-bottom: 5mm;
+            padding-bottom: 3mm;
+            border-bottom: 2px solid #000;
+        }
+
+        .restaurant-name {
+            font-size: 7mm;
+            color: #000;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .main-title {
+            font-size: 16mm;
+            font-weight: bold;
+            color: #000;
+            margin: 5mm 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            line-height: 1.1;
+        }
+
+        .subtitle {
+            font-size: 8mm;
+            color: #333;
+            margin: 3mm 0;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .description {
+            font-size: 5.5mm;
+            color: #000;
+            margin: 4mm auto;
+            line-height: 1.4;
+            font-weight: 500;
+        }
+
+        .price-section {
+            margin: 6mm 0;
+            padding: 6mm 5mm;
+            background: #000;
+            border: 4px double #000;
+        }
+
+        .price {
+            font-size: 22mm;
+            font-weight: bold;
+            color: #fff;
+            margin: 3mm 0;
+            display: block;
+        }
+
+        .price-label {
+            font-size: 6mm;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4mm;
+            margin: 5mm 0;
+        }
+
+        .feature {
+            background: white;
+            padding: 3mm;
+            border: 2px solid #000;
+        }
+
+        .feature-title {
+            font-size: 4.5mm;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 1.5mm;
+            text-transform: uppercase;
+        }
+
+        .feature-text {
+            font-size: 3.5mm;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .footer {
+            margin-top: 5mm;
+            padding-top: 4mm;
+            border-top: 2px solid #000;
+            font-size: 4.5mm;
+            color: #000;
+            font-weight: 600;
+        }
+
+        .location {
+            font-weight: bold;
+            color: #000;
+            font-size: 5.5mm;
+            margin-top: 2mm;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .decorative-line {
+            height: 2px;
+            background: #000;
+            margin: 3mm auto;
+            width: 40mm;
+        }
+
+        /* Print styles for A4 */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+                min-height: auto;
+            }
+
+            .flyer {
+                border: 4px solid #000;
+                width: 100%;
+                height: 100%;
+                max-width: none;
+                max-height: none;
+                page-break-inside: avoid;
+            }
+
+            /* Ensure black stays black in print */
+            .price-section {
+                background: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .price {
+                color: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .price-label {
+                color: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+    </style>
+</head>
+<body>
+    <div class="flyer">
+        <div class="header">
+            <div class="restaurant-name">★ JINDŘICHŮV DŮM ★</div>
+        </div>
+
+        <h1 class="main-title">Pečené<br>Vepřové Koleno</h1>
+        
+        <div class="decorative-line"></div>
+        
+        <p class="subtitle">Jednomužná porce</p>
+
+        <div class="description">
+            Tradiční české jídlo, pečené do křupava,<br>
+            podávané s chlebem, hořčicí a okurkami
+        </div>
+
+        <div class="price-section">
+            <div class="price-label">Cena</div>
+            <span class="price">290 Kč</span>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <div class="feature-title">★ Čerstvě pečené</div>
+                <div class="feature-text">Připravujeme každý den</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">★ Šťavnaté maso</div>
+                <div class="feature-text">Pomalu pečené do zlatova</div>
+            </div>
+            <div class="feature">
+                <div class="feature-title">★ Pro jednu osobu</div>
+                <div class="feature-text">Ideální velikost porce</div>
+            </div>
+        </div>
+
+        <div class="decorative-line"></div>
+
+        <div class="footer">
+            <p>Přijďte ochutnat!</p>
+            <p class="location">Jindřichův dům, Pec pod Sněžkou 24</p>
+        </div>
+    </div>
+</body>
+</html>
