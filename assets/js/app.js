@@ -183,19 +183,6 @@ const Hooks = {
     destroyed() {
       this.el.removeEventListener('change', this.handleProductChange)
     }
-  },
-
-  // Keep-alive hook to prevent socket disconnects during idle periods
-  KeepAlive: {
-    mounted() {
-      // Send a heartbeat every 25 seconds to keep connection alive
-      this.interval = setInterval(() => {
-        this.pushEvent("heartbeat", {})
-      }, 25000)
-    },
-    destroyed() {
-      clearInterval(this.interval)
-    }
   }
 }
 
@@ -203,8 +190,16 @@ const liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
   hooks: {...colocatedHooks, ...Hooks},
-  heartbeatIntervalMs: 15000,  // Send heartbeat every 15 seconds (default: 30s)
-  timeout: 20000                // Wait 20s for server response (default: 10s)
+  heartbeatIntervalMs: 30000,  // Send heartbeat every 30 seconds
+  timeout: 60000,              // Wait 60s for server response
+  reconnectAfterMs: function(tries) {
+    // Reconnect immediately for first 3 tries, then exponential backoff
+    if (tries < 3) {
+      return 100
+    } else {
+      return [1000, 2000, 5000, 10000][tries - 3] || 10000
+    }
+  }
 })
 
 // Show progress bar on live navigation and form submits
