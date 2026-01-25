@@ -66,10 +66,7 @@ if config_env() == :prod do
       # See the documentation on https://hexdocs.pm/bandit/Bandit.html#t:options/0
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
-      port: port,
-      protocol_options: [
-        idle_timeout: :infinity
-      ]
+      port: port
     ],
     check_origin: [
       "//#{host}",
@@ -80,11 +77,6 @@ if config_env() == :prod do
     secret_key_base: secret_key_base,
     live_view: [
       signing_salt: secret_key_base
-    ],
-    # Keep websocket connections alive longer
-    websocket: [
-      timeout: :infinity,
-      compress: true
     ]
 
   # ## SSL Support
