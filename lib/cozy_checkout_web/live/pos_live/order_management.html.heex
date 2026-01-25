@@ -27,7 +27,22 @@
               </span>
             </div>
           <% end %>
-          <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
+          <div class="flex items-center gap-3">
+            <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
+            <%= if @order.is_service_order do %>
+              <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                Service Order
+              </span>
+            <% end %>
+            <%= if @order.status != "paid" do %>
+              <button
+                phx-click="toggle_service_order"
+                class="text-xs text-purple-600 hover:text-purple-800 underline"
+              >
+                {if @order.is_service_order, do: "Convert to Standard", else: "Convert to Service"}
+              </button>
+            <% end %>
+          </div>
         </div>
       </div>
       

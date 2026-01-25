@@ -6,14 +6,16 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
   alias CozyCheckout.{Sales, Bookings, Repo}
 
   @impl true
-  def mount(%{"booking_id" => booking_id}, _session, socket) do
+  def mount(%{"booking_id" => booking_id} = params, _session, socket) do
     booking = Bookings.get_booking!(booking_id)
+    service_mode = Map.get(params, "service_mode", "false") == "true"
 
     orders =
       CozyCheckout.Sales.Order
       |> where([o], o.booking_id == ^booking_id)
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
+      |> where([o], o.is_service_order == ^service_mode)
       |> preload([:guest, booking: :guest, order_items: [], payments: []])
       |> order_by([o], asc: o.name)
       |> Repo.all()
@@ -28,7 +30,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
      |> assign(:orders, orders)
      |> assign(:show_guest_modal, false)
      |> assign(:booking_guests, [])
-     |> assign(:total_guests, length(all_booking_guests))}
+     |> assign(:total_guests, length(all_booking_guests))
+     |> assign(:service_mode, service_mode)}
   end
 
   @impl true
@@ -45,6 +48,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
   def handle_event("create_new", _params, socket) do
     booking = socket.assigns.booking
     existing_orders = socket.assigns.orders
+    service_mode = socket.assigns.service_mode
 
     # Get all guests for this booking
     all_booking_guests = Bookings.list_booking_guests(booking.id)
@@ -75,7 +79,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
 
       [single_guest] ->
         # Only one guest available - auto-create order
-        {:ok, order} = Sales.create_booking_order_for_guest(booking.id, single_guest.guest_id)
+        {:ok, order} = Sales.create_booking_order_for_guest(booking.id, single_guest.guest_id, service_mode)
         {:noreply, push_navigate(socket, to: ~p"/pos/orders/#{order.id}")}
 
       multiple_guests when length(multiple_guests) > 1 ->
@@ -101,8 +105,9 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
   @impl true
   def handle_event("select_guest", %{"guest-id" => guest_id}, socket) do
     booking = socket.assigns.booking
+    service_mode = socket.assigns.service_mode
 
-    {:ok, order} = Sales.create_booking_order_for_guest(booking.id, guest_id)
+    {:ok, order} = Sales.create_booking_order_for_guest(booking.id, guest_id, service_mode)
 
     # Reload orders to show the new one
     orders =
@@ -110,6 +115,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
       |> where([o], o.booking_id == ^booking.id)
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
+      |> where([o], o.is_service_order == ^service_mode)
       |> preload([:guest, booking: :guest, order_items: [], payments: []])
       |> order_by([o], asc: o.name)
       |> Repo.all()

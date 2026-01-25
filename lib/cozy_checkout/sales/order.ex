@@ -4,7 +4,7 @@ defmodule CozyCheckout.Sales.Order do
 
   @derive {
     Flop.Schema,
-    filterable: [:status, :name, :order_number, :guest_id],
+    filterable: [:status, :name, :order_number, :guest_id, :is_service_order],
     sortable: [:inserted_at, :status, :order_number, :total_amount],
     default_limit: 20,
     max_limit: 100
@@ -21,6 +21,7 @@ defmodule CozyCheckout.Sales.Order do
     field :tips_amount, :decimal, default: Decimal.new("0")
     field :discount_reason, :string
     field :notes, :string
+    field :is_service_order, :boolean, default: false
     field :deleted_at, :utc_datetime
 
     belongs_to :guest, CozyCheckout.Guests.Guest
@@ -44,7 +45,8 @@ defmodule CozyCheckout.Sales.Order do
       :discount_amount,
       :tips_amount,
       :discount_reason,
-      :notes
+      :notes,
+      :is_service_order
     ])
     |> validate_required([:order_number])
     |> validate_order_reference()

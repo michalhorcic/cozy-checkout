@@ -248,6 +248,23 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
+  def handle_event("toggle_service_order", _params, socket) do
+    case Sales.toggle_service_order(socket.assigns.order) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> load_order()
+         |> put_flash(:info, "Order type updated successfully")}
+
+      {:error, :cannot_convert_paid_order} ->
+        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order type")}
+    end
+  end
+
+  @impl true
   def handle_event("back_to_guests", _params, socket) do
     {:noreply, push_navigate(socket, to: ~p"/pos")}
   end

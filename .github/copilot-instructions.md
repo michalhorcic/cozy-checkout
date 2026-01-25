@@ -333,3 +333,4 @@ globs: *
 *   **Handling Variable Stay Durations for Booking Invoices:**
     *   Add a `nights` field to `booking_invoice_items` (defaults to 1).
 *   **POS System - Order Sorting:** Implement the following combined approach for adding multiple items to the cart in the POS system:
+*

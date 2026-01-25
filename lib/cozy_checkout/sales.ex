@@ -36,12 +36,13 @@ defmodule CozyCheckout.Sales do
   Returns {:multiple, orders} if multiple open orders exist (requires manual order selection).
   Returns {:ok, order} if a single order exists or was created.
   """
-  def get_or_create_booking_order(booking_id) do
+  def get_or_create_booking_order(booking_id, is_service_order \\ false) do
     open_orders =
       Order
       |> where([o], o.booking_id == ^booking_id)
       |> where([o], is_nil(o.deleted_at))
       |> where([o], o.status in ["open", "partially_paid"])
+      |> where([o], o.is_service_order == ^is_service_order)
       |> preload([:guest, booking: :guest, order_items: :product, payments: []])
       |> order_by([o], desc: o.inserted_at)
       |> Repo.all()
@@ -64,7 +65,8 @@ defmodule CozyCheckout.Sales do
               create_order(%{
                 "booking_id" => booking_id,
                 "guest_id" => guest_id,
-                "status" => "open"
+                "status" => "open",
+                "is_service_order" => is_service_order
               })
 
             {:ok, get_order!(order.id)}
@@ -94,12 +96,13 @@ defmodule CozyCheckout.Sales do
   @doc """
   Creates an order for a specific guest in a booking.
   """
-  def create_booking_order_for_guest(booking_id, guest_id) do
+  def create_booking_order_for_guest(booking_id, guest_id, is_service_order \\ false) do
     {:ok, order} =
       create_order(%{
         "booking_id" => booking_id,
         "guest_id" => guest_id,
-        "status" => "open"
+        "status" => "open",
+        "is_service_order" => is_service_order
       })
 
     {:ok, get_order!(order.id)}
@@ -298,6 +301,18 @@ defmodule CozyCheckout.Sales do
     order
     |> Order.changeset(attrs)
     |> Repo.update()
+  end
+
+  @doc """
+  Toggles an order between service and standard mode.
+  Can only convert unpaid orders.
+  """
+  def toggle_service_order(%Order{} = order) do
+    if order.status == "paid" do
+      {:error, :cannot_convert_paid_order}
+    else
+      update_order(order, %{"is_service_order" => !order.is_service_order})
+    end
   end
 
   @doc """
