@@ -126,20 +126,19 @@
                 </div>
                 
                 <!-- Quick Quantity Selector -->
-                <div class="grid grid-cols-5 gap-2">
+                <div class="grid grid-cols-3 gap-3">
                   <button
-                    :for={qty <- [1, 2, 3, 4]}
                     phx-click="add_product"
                     phx-value-product-id={product.id}
-                    phx-value-quantity={qty}
-                    class="bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-3 rounded-lg active:scale-95 transition-all"
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
                   >
-                    {qty}×
+                    Add 1×
                   </button>
                   <button
                     phx-click="show_custom_quantity"
                     phx-value-product-id={product.id}
-                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 rounded-lg active:scale-95 transition-all"
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
                   >
                     5+
                   </button>
@@ -175,20 +174,19 @@
                 </div>
                 
                 <!-- Quick Quantity Selector -->
-                <div class="grid grid-cols-5 gap-2">
+                <div class="grid grid-cols-3 gap-3">
                   <button
-                    :for={qty <- [1, 2, 3, 4]}
                     phx-click="add_product"
                     phx-value-product-id={product.id}
-                    phx-value-quantity={qty}
-                    class="bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-3 rounded-lg active:scale-95 transition-all"
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
                   >
-                    {qty}×
+                    Add 1×
                   </button>
                   <button
                     phx-click="show_custom_quantity"
                     phx-value-product-id={product.id}
-                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-3 rounded-lg active:scale-95 transition-all"
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
                   >
                     5+
                   </button>
