@@ -183,6 +183,25 @@ const Hooks = {
     destroyed() {
       this.el.removeEventListener('change', this.handleProductChange)
     }
+  },
+
+  // Keep-alive hook for Fully Kiosk Browser (JavaScript stays active)
+  KeepAlive: {
+    mounted() {
+      console.log('[KeepAlive] Mounted - starting heartbeat')
+      // Send a heartbeat every 20 seconds
+      this.interval = setInterval(() => {
+        console.log('[KeepAlive] Sending heartbeat...')
+        this.pushEvent("heartbeat", {})
+      }, 20000)
+      
+      // Send initial heartbeat immediately
+      this.pushEvent("heartbeat", {})
+    },
+    destroyed() {
+      console.log('[KeepAlive] Destroyed - stopping heartbeat')
+      clearInterval(this.interval)
+    }
   }
 }
 

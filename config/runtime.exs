@@ -76,7 +76,10 @@ if config_env() == :prod do
     ],
     secret_key_base: secret_key_base,
     live_view: [
-      signing_salt: secret_key_base
+      signing_salt: secret_key_base,
+      # Increase timeout to prevent LiveView process cleanup
+      # This works with the client-side heartbeat to keep connections alive
+      timeout: :infinity
     ]
 
   # ## SSL Support
