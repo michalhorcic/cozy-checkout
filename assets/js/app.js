@@ -183,6 +183,19 @@ const Hooks = {
     destroyed() {
       this.el.removeEventListener('change', this.handleProductChange)
     }
+  },
+
+  // Keep-alive hook to prevent socket disconnects during idle periods
+  KeepAlive: {
+    mounted() {
+      // Send a heartbeat every 25 seconds to keep connection alive
+      this.interval = setInterval(() => {
+        this.pushEvent("heartbeat", {})
+      }, 25000)
+    },
+    destroyed() {
+      clearInterval(this.interval)
+    }
   }
 }
 

@@ -60,6 +60,12 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
+  def handle_event("heartbeat", _params, socket) do
+    # Just acknowledge to keep connection alive
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_event("select_category", %{"category-id" => "all"}, socket) do
     {:noreply, assign(socket, :selected_category_id, nil)}
   end
