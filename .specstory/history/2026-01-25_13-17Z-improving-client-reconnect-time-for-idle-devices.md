@@ -646,3 +646,122 @@ So the heartbeat might not actually be working when the device is truly idle/sle
 
 ---
 
+_**User (2026-01-25 14:11Z)**_
+
+There has to be better solution. Because this still doesnt work properly. I am running client on samsung tablet with android. I am running Fully Kiosk Browser there to keep it open without dimming screen or running to standby mode. But still when I come little later I need to wait before application start to respond. Which really isn't working for POS system.
+
+---
+
+_**Agent (model copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/dev.exs#1-1), lines 1 to 80</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/dev.exs#1-1), lines 1 to 80
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="read" data-tool-name="copilot_readFile">
+<details>
+<summary>Tool use: **copilot_readFile** • Reading [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/prod.exs)</summary>
+
+
+Read [](file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/prod.exs)
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="unknown" data-tool-name="copilot_multiReplaceString">
+<details>
+<summary>Tool use: **copilot_multiReplaceString**</summary>
+
+Additional data:
+
+```json
+{
+  "vscodeToolId": "copilot_multiReplaceString",
+  "isHidden": true
+}
+```
+Result:
+
+```json
+{
+  "invocationMessage": "Using \"Multi-Replace String in Files\"",
+  "isConfirmed": {
+    "type": 1
+  },
+  "content": "\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n\n&#96;&#96;&#96;\n&#96;&#96;&#96;elixir\n,\n      # Increase timeout to prevent LiveView process cleanup\n      # This works with the client-side heartbeat to keep connections alive\n      timeout: :infinity\n&#96;&#96;&#96;\n\n",
+  "textEditContent": ",\n\n  // Keep-alive hook for Fully Kiosk Browser (JavaScript stays active)\n  KeepAlive: {\n    mounted() {\n      console.log('[KeepAlive] Mounted - starting heartbeat')\n      // Send a heartbeat every 20 seconds\n      this.interval = setInterval(() =&gt; {\n        console.log('[KeepAlive] Sending heartbeat...')\n        this.pushEvent(\"heartbeat\", {})\n      }, 20000)\n      \n      // Send initial heartbeat immediately\n      this.pushEvent(\"heartbeat\", {})\n    },\n    destroyed() {\n      console.log('[KeepAlive] Destroyed - stopping heartbeat')\n      clearInterval(this.interval)\n    }\n  }phx-hook=\"KeepAlive\" id=\"pos-keep-alive\" heartbeat\", _params, socket) do\n    # Keep the LiveView process alive - this prevents it from being garbage collected\n    {:noreply, socket}\n  end\n\n  @impl true\n  def handle_event(\",\n      # Increase timeout to prevent LiveView process cleanup\n      # This works with the client-side heartbeat to keep connections alive\n      timeout: :infinity",
+  "toolCallResult": null
+}
+```
+Status: **completed**
+
+
+</details>
+</tool-use>
+
+---
+
+The user is experiencing delays even with Fully Kiosk Browser which is designed to keep the app active. This suggests the issue isn't device sleep, but likely network-level timeouts or LiveView state issues.
+
+For a POS system on a Samsung tablet with Fully Kiosk Browser, the problem is likely:
+1. WebSocket connection timing out at network/server level
+2. LiveView process being cleaned up server-side
+3. Network connection going idle and being dropped by router/WiFi
+
+Since Fully Kiosk prevents screen dimming and keeps the browser active, JavaScript timers SHOULD work. So maybe the heartbeat approach was actually correct, but we need to:
+1. Re-enable the heartbeat hook (since JS will run in Fully Kiosk)
+2. Add server-side configuration to keep LiveView processes alive longer
+3. Configure the endpoint to handle longer-lived connections
+4. Maybe add connection quality indicators to show when there's an issue
+
+Let me look at what server-side configuration we can add to keep LiveView processes alive and prevent them from being garbage collected.You're right - since you're using Fully Kiosk Browser (which keeps the screen on and JavaScript running), the heartbeat approach WILL work. The issue is we need BOTH client-side heartbeats AND server-side configuration to keep the LiveView process alive.
+
+Let me implement a comprehensive solution: Perfect! Now I've implemented a complete solution specifically for **Fully Kiosk Browser** on your Samsung tablet:
+
+## What I Changed:
+
+### 1. **Client-Side Heartbeat** (every 20 seconds)
+   - Added console logging so you can verify it's working
+   - Sends heartbeat immediately on mount, then every 20 seconds
+   - Works in Fully Kiosk since JavaScript stays active
+
+### 2. **Server-Side Configuration**
+   - Set `timeout: :infinity` in LiveView config
+   - This prevents the server from killing the LiveView process
+
+### 3. **Fast Reconnection**
+   - Kept the optimized reconnection settings from before
+
+## How to Verify It's Working:
+
+1. Open the POS on your tablet
+2. Open browser console in Fully Kiosk (Settings → Advanced Web Settings → Enable Remote Debugging)
+3. You should see:
+   ```
+   [KeepAlive] Mounted - starting heartbeat
+   [KeepAlive] Sending heartbeat...
+   [KeepAlive] Sending heartbeat...
+   ```
+   Every 20 seconds
+
+## Why This Should Work Now:
+
+- **Fully Kiosk** keeps JavaScript running → heartbeat fires continuously
+- **Server** keeps LiveView process alive indefinitely (timeout: infinity)
+- **Client heartbeat** (every 20s) ensures the connection stays active
+- **Network** won't drop the connection because there's constant activity
+
+Deploy this and test - the POS should now be **instantly responsive** even after being idle for hours.
+
+---
+

@@ -14,6 +14,7 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
       |> assign(:date_from, date_from)
       |> assign(:date_to, date_to)
       |> assign(:status_filter, ["paid", "open"])
+      |> assign(:service_filter, "all")
       |> assign(:preset, "last_30_days")
       |> load_statistics()
 
@@ -84,21 +85,32 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_event("update_service_filter", %{"service_filter" => service_filter}, socket) do
+    socket =
+      socket
+      |> assign(:service_filter, service_filter)
+      |> load_statistics()
+
+    {:noreply, socket}
+  end
+
   defp load_statistics(socket) do
     date_from = socket.assigns.date_from
     date_to = socket.assigns.date_to
     status_filter = socket.assigns.status_filter
+    service_filter = socket.assigns.service_filter
 
     # Convert dates to datetime for database queries
     datetime_from = DateTime.new!(date_from, ~T[00:00:00])
     datetime_to = DateTime.new!(date_to, ~T[23:59:59])
 
     categories_with_products =
-      Sales.get_product_statistics(datetime_from, datetime_to, status_filter)
+      Sales.get_product_statistics(datetime_from, datetime_to, status_filter, service_filter)
 
-    most_popular = Sales.get_most_popular_products(datetime_from, datetime_to, status_filter, 10)
-    top_revenue = Sales.get_top_revenue_products(datetime_from, datetime_to, status_filter, 10)
-    overall = Sales.get_overall_statistics(datetime_from, datetime_to, status_filter)
+    most_popular = Sales.get_most_popular_products(datetime_from, datetime_to, status_filter, service_filter, 10)
+    top_revenue = Sales.get_top_revenue_products(datetime_from, datetime_to, status_filter, service_filter, 10)
+    overall = Sales.get_overall_statistics(datetime_from, datetime_to, status_filter, service_filter)
 
     socket
     |> assign(:categories_with_products, categories_with_products)
@@ -152,7 +164,19 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
         <div class="mb-8">
           <div class="flex items-center justify-between">
             <div>
-              <h1 class="text-3xl font-bold text-primary-500">Sales Statistics</h1>
+              <div class="flex items-center gap-3">
+                <h1 class="text-3xl font-bold text-primary-500">Sales Statistics</h1>
+                <%= if @service_filter == "service" do %>
+                  <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                    <.icon name="hero-wrench-screwdriver" class="w-4 h-4 mr-1" /> Service Orders Only
+                  </span>
+                <% end %>
+                <%= if @service_filter == "standard" do %>
+                  <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                    Standard Orders Only
+                  </span>
+                <% end %>
+              </div>
               <p class="mt-2 text-sm text-primary-400">
                 Product sales analysis and reports
               </p>
@@ -273,48 +297,102 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
 
             <!-- Status Filter -->
             <div>
-              <h3 class="text-lg font-medium text-primary-500 mb-4">Order Status Filter</h3>
-              <form phx-change="update_status_filter" class="space-y-2">
-                <div class="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="status_paid"
-                    name="status[paid]"
-                    value="true"
-                    checked={@status_filter && "paid" in @status_filter}
-                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
-                  />
-                  <label for="status_paid" class="ml-2 block text-sm text-primary-500">
-                    Paid orders
-                  </label>
-                </div>
-                <div class="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="status_open"
-                    name="status[open]"
-                    value="true"
-                    checked={@status_filter && "open" in @status_filter}
-                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
-                  />
-                  <label for="status_open" class="ml-2 block text-sm text-primary-500">
-                    Open orders
-                  </label>
-                </div>
-                <div class="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="status_partially_paid"
-                    name="status[partially_paid]"
-                    value="true"
-                    checked={@status_filter && "partially_paid" in @status_filter}
-                    class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
-                  />
-                  <label for="status_partially_paid" class="ml-2 block text-sm text-primary-500">
-                    Partially paid orders
-                  </label>
-                </div>
-              </form>
+              <h3 class="text-lg font-medium text-primary-500 mb-4">Filters</h3>
+
+              <!-- Order Status -->
+              <div class="mb-4">
+                <h4 class="text-sm font-medium text-primary-500 mb-2">Order Status</h4>
+                <form phx-change="update_status_filter" class="space-y-2">
+                  <div class="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="status_paid"
+                      name="status[paid]"
+                      value="true"
+                      checked={@status_filter && "paid" in @status_filter}
+                      class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
+                    />
+                    <label for="status_paid" class="ml-2 block text-sm text-primary-500">
+                      Paid orders
+                    </label>
+                  </div>
+                  <div class="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="status_open"
+                      name="status[open]"
+                      value="true"
+                      checked={@status_filter && "open" in @status_filter}
+                      class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
+                    />
+                    <label for="status_open" class="ml-2 block text-sm text-primary-500">
+                      Open orders
+                    </label>
+                  </div>
+                  <div class="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="status_partially_paid"
+                      name="status[partially_paid]"
+                      value="true"
+                      checked={@status_filter && "partially_paid" in @status_filter}
+                      class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300 rounded"
+                    />
+                    <label for="status_partially_paid" class="ml-2 block text-sm text-primary-500">
+                      Partially paid orders
+                    </label>
+                  </div>
+                </form>
+              </div>
+
+              <!-- Service Order Filter -->
+              <div class="border-t border-secondary-200 pt-4">
+                <h4 class="text-sm font-medium text-primary-500 mb-2">Order Type</h4>
+                <form phx-change="update_service_filter" class="space-y-2">
+                  <div class="flex items-center">
+                    <input
+                      type="radio"
+                      id="service_all"
+                      name="service_filter"
+                      value="all"
+                      checked={@service_filter == "all"}
+                      class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300"
+                    />
+                    <label for="service_all" class="ml-2 block text-sm text-primary-500">
+                      All Orders
+                    </label>
+                  </div>
+                  <div class="flex items-center">
+                    <input
+                      type="radio"
+                      id="service_standard"
+                      name="service_filter"
+                      value="standard"
+                      checked={@service_filter == "standard"}
+                      class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300"
+                    />
+                    <label for="service_standard" class="ml-2 block text-sm text-primary-500">
+                      Standard Only
+                    </label>
+                  </div>
+                  <div class="flex items-center">
+                    <input
+                      type="radio"
+                      id="service_service"
+                      name="service_filter"
+                      value="service"
+                      checked={@service_filter == "service"}
+                      class="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-secondary-300"
+                    />
+                    <label for="service_service" class="ml-2 block text-sm text-primary-500">
+                      <span>Service Only</span>
+                      <span class="ml-1 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                        Service
+                      </span>
+                    </label>
+                  </div>
+                </form>
+              </div>
             </div>
           </div>
         </div>
