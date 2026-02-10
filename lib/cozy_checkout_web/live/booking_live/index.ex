@@ -11,10 +11,32 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     {:ok, socket}
   end
 
+  # Apply default filter to show only current and future bookings
+  defp apply_default_filters(params) do
+    # Only apply default if no "show_all" param and no existing filter on check_out_date
+    if Map.get(params, "show_all") == "true" || has_custom_filters?(params) do
+      params
+    else
+      # Add default filter: show_current_and_future = true
+      Map.put(params, "show_current_and_future", "true")
+    end
+  end
+
+  # Check if user has applied custom filters
+  defp has_custom_filters?(params) do
+    # If there are any filters in params, don't apply default
+    Map.has_key?(params, "filters") ||
+    Map.has_key?(params, "invoice_state") ||
+    Map.has_key?(params, "guest_search")
+  end
+
   @impl true
   def handle_params(params, _url, socket) do
+    # Apply default filter to show only current and future bookings if no filters are set
+    params_with_defaults = apply_default_filters(params)
+
     # Normalize params: convert indexed maps to arrays for Flop
-    normalized_params = normalize_flop_params(params)
+    normalized_params = normalize_flop_params(params_with_defaults)
 
     socket =
       case Bookings.list_bookings_with_flop(normalized_params) do
@@ -91,12 +113,13 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   @impl true
   def handle_event("filter", params, socket) do
-    # Push patch to update URL with filter params
-    {:noreply, push_patch(socket, to: ~p"/admin/bookings?#{build_filter_params(params)}")}
+    # Preserve show_all parameter when filtering
+    filter_params = build_filter_params(params, socket.assigns.current_params)
+    {:noreply, push_patch(socket, to: ~p"/admin/bookings?#{filter_params}")}
   end
 
   # Helper to build filter params from form
-  defp build_filter_params(params) do
+  defp build_filter_params(params, current_params) do
     filters =
       case params["filters"] do
         nil ->
@@ -124,7 +147,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       end
 
     # Preserve existing params including custom filters
-    %{
+    result = %{
       "filters" => filters,
       "page" => params["page"],
       "page_size" => params["page_size"],
@@ -133,6 +156,13 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} || v == "" end)
     |> Map.new()
+
+    # Preserve show_all from current params if it exists
+    if Map.get(current_params, "show_all") == "true" do
+      Map.put(result, "show_all", "true")
+    else
+      result
+    end
   end
 
   @impl true
@@ -146,11 +176,23 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           </.link>
           <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
         </div>
-        <.link patch={build_path_with_params(~p"/admin/bookings/new", @current_params)}>
-          <.button>
-            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Booking
-          </.button>
-        </.link>
+        <div class="flex gap-2">
+          <.link navigate={~p"/admin/bookings/calendar"}>
+            <.button>
+              <.icon name="hero-calendar" class="w-5 h-5 mr-2" /> Calendar
+            </.button>
+          </.link>
+          <.link navigate={~p"/admin/bookings/timeline"}>
+            <.button>
+              <.icon name="hero-bars-3" class="w-5 h-5 mr-2" /> Timeline
+            </.button>
+          </.link>
+          <.link patch={build_path_with_params(~p"/admin/bookings/new", @current_params)}>
+            <.button>
+              <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Booking
+            </.button>
+          </.link>
+        </div>
       </div>
 
       <div class="bg-white shadow-lg rounded-lg overflow-hidden">
@@ -232,6 +274,36 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             />
           </:filter>
         </.filter_form>
+
+        <!-- View toggle -->
+        <div class="px-6 py-3 bg-secondary-50 border-t border-secondary-200 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <%= if Map.get(@current_params, "show_all") == "true" do %>
+              <span class="text-sm text-primary-500">
+                <.icon name="hero-eye" class="w-4 h-4 inline-block" />
+                Showing all bookings (including past)
+              </span>
+              <.link
+                navigate={~p"/admin/bookings"}
+                class="text-sm text-tertiary-600 hover:text-tertiary-800 underline"
+              >
+                Show only current & future
+              </.link>
+            <% else %>
+              <span class="text-sm text-primary-500">
+                <.icon name="hero-eye" class="w-4 h-4 inline-block" />
+                Showing current and future bookings
+              </span>
+              <.link
+                navigate={~p"/admin/bookings?show_all=true"}
+                class="text-sm text-tertiary-600 hover:text-tertiary-800 underline"
+              >
+                Show all bookings
+              </.link>
+            <% end %>
+          </div>
+        </div>
+
         <!-- Table -->
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">

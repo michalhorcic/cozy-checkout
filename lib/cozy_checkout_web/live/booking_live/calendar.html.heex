@@ -7,11 +7,18 @@
       </.link>
       <h1 class="text-4xl font-bold text-primary-500">Booking Calendar</h1>
     </div>
-    <.link navigate={~p"/admin/bookings"}>
-      <.button>
-        <.icon name="hero-list-bullet" class="w-5 h-5 mr-2" /> List View
-      </.button>
-    </.link>
+    <div class="flex gap-2">
+      <.link navigate={~p"/admin/bookings/timeline"}>
+        <.button>
+          <.icon name="hero-bars-3" class="w-5 h-5 mr-2" /> Timeline View
+        </.button>
+      </.link>
+      <.link navigate={~p"/admin/bookings"}>
+        <.button>
+          <.icon name="hero-list-bullet" class="w-5 h-5 mr-2" /> List View
+        </.button>
+      </.link>
+    </div>
   </div>
 
   <%!-- Calendar Navigation --%>
@@ -91,6 +98,7 @@
               bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
               is_today={CalendarHelpers.today?(day)}
               occupancy_map={@occupancy_map}
+              arrivals_departures_map={@arrivals_departures_map}
               capacity={@capacity}
             />
           <% else %>
@@ -128,6 +136,7 @@
   <.bookings_modal
     date={@modal_date}
     bookings={@modal_bookings}
+    categorized={@modal_categorized}
     on_close={JS.push("close_modal")}
   />
 </div>

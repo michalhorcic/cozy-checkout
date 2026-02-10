@@ -121,4 +121,46 @@ defmodule CozyCheckoutWeb.BookingLive.CalendarHelpers do
   def today?(date) do
     Date.compare(date, Date.utc_today()) == :eq
   end
+
+  @doc """
+  Categorizes bookings for a specific date into arriving, staying, and leaving.
+  Returns a map with keys: :arriving, :staying, :leaving
+  """
+  def categorize_bookings_for_date(bookings, date) do
+    bookings
+    |> Enum.filter(&date_in_range?(date, &1.check_in_date, &1.check_out_date))
+    |> Enum.group_by(&booking_status_for_date(&1, date))
+    |> then(fn grouped ->
+      %{
+        arriving: Map.get(grouped, :arriving, []),
+        staying: Map.get(grouped, :staying, []),
+        leaving: Map.get(grouped, :leaving, [])
+      }
+    end)
+  end
+
+  @doc """
+  Determines if a booking is arriving, staying, or leaving on a specific date.
+  """
+  def booking_status_for_date(booking, date) do
+    is_check_in = Date.compare(date, booking.check_in_date) == :eq
+    is_check_out = booking.check_out_date && Date.compare(date, booking.check_out_date) == :eq
+
+    cond do
+      is_check_in -> :arriving
+      is_check_out -> :leaving
+      true -> :staying
+    end
+  end
+
+  @doc """
+  Returns the icon for a booking based on its status for a date.
+  """
+  def booking_icon_for_date(booking, date) do
+    case booking_status_for_date(booking, date) do
+      :arriving -> "▶"
+      :leaving -> "◀"
+      :staying -> "→"
+    end
+  end
 end

@@ -74,6 +74,7 @@ defmodule CozyCheckoutWeb.Router do
     live "/bookings", BookingLive.Index, :index
     live "/bookings/new", BookingLive.Index, :new
     live "/bookings/calendar", BookingLive.Calendar
+    live "/bookings/timeline", BookingLive.Timeline
     live "/bookings/:id", BookingLive.Show
     live "/bookings/:id/edit", BookingLive.Index, :edit
     live "/bookings/:booking_id/guests", BookingLive.ManageGuests

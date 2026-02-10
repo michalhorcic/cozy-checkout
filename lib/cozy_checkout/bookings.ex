@@ -48,9 +48,23 @@ defmodule CozyCheckout.Bookings do
   # Apply custom filters that aren't supported by Flop directly
   defp apply_custom_filters(query, params) do
     query
+    |> apply_current_and_future_filter(params)
     |> apply_invoice_state_filter(params)
     |> apply_guest_search_filter(params)
   end
+
+  # Filter to show only current and future bookings (check_out_date >= today or null)
+  defp apply_current_and_future_filter(query, %{"show_current_and_future" => "true"}) do
+    today = Date.utc_today()
+
+    where(
+      query,
+      [b],
+      is_nil(b.check_out_date) or b.check_out_date >= ^today
+    )
+  end
+
+  defp apply_current_and_future_filter(query, _params), do: query
 
   # Filter by invoice state
   defp apply_invoice_state_filter(query, %{"invoice_state" => state}) when state != "" do
@@ -390,6 +404,23 @@ defmodule CozyCheckout.Bookings do
     BookingInvoice
     |> preload(items: ^items_query)
     |> Repo.get!(id)
+  end
+
+  @doc """
+  Gets the total number of people from invoice items (where item_type == "person").
+  Returns 0 if invoice has no items or no person items.
+  """
+  def get_invoice_people_count(invoice_id) do
+    from(i in BookingInvoiceItem,
+      where: i.booking_invoice_id == ^invoice_id,
+      where: i.item_type == "person",
+      select: sum(i.quantity)
+    )
+    |> Repo.one()
+    |> case do
+      nil -> 0
+      count -> count
+    end
   end
 
   @doc """
@@ -795,6 +826,42 @@ defmodule CozyCheckout.Bookings do
       count >= 30 -> :medium
       true -> :low
     end
+  end
+
+  @doc """
+  Returns arrival and departure counts for a date range (for calendar view).
+  Returns a map: %{~D[2025-10-22] => %{arrivals: 3, departures: 2}, ...}
+  """
+  def get_arrivals_departures_for_range(start_date, end_date) do
+    bookings =
+      from(b in Booking,
+        where: b.status in ["upcoming", "active"],
+        where:
+          (b.check_in_date >= ^start_date and b.check_in_date <= ^end_date) or
+            (b.check_out_date >= ^start_date and b.check_out_date <= ^end_date),
+        select: %{
+          check_in: b.check_in_date,
+          check_out: b.check_out_date
+        }
+      )
+      |> Repo.all()
+
+    # Calculate arrivals and departures for each day
+    Date.range(start_date, end_date)
+    |> Enum.map(fn date ->
+      arrivals =
+        bookings
+        |> Enum.count(fn b -> Date.compare(b.check_in, date) == :eq end)
+
+      departures =
+        bookings
+        |> Enum.count(fn b ->
+          b.check_out && Date.compare(b.check_out, date) == :eq
+        end)
+
+      {date, %{arrivals: arrivals, departures: departures}}
+    end)
+    |> Map.new()
   end
 
   # Economy Management
