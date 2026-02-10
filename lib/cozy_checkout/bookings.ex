@@ -492,6 +492,15 @@ defmodule CozyCheckout.Bookings do
   end
 
   @doc """
+  Updates the state of a booking invoice.
+  """
+  def update_invoice_state(%BookingInvoice{} = invoice, state) do
+    invoice
+    |> BookingInvoice.changeset(%{state: state})
+    |> Repo.update()
+  end
+
+  @doc """
   Deletes a booking invoice and all its items.
   """
   def delete_booking_invoice(%BookingInvoice{} = invoice) do

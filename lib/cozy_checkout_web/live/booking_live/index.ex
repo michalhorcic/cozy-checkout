@@ -112,6 +112,38 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   end
 
   @impl true
+  def handle_event("update_booking_status", %{"id" => id, "status" => status}, socket) do
+    booking = Bookings.get_booking!(id)
+
+    case Bookings.update_booking(booking, %{status: status}) do
+      {:ok, _booking} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Booking status updated successfully")
+         |> push_patch(to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update booking status")}
+    end
+  end
+
+  @impl true
+  def handle_event("update_invoice_status", %{"id" => id, "state" => state}, socket) do
+    invoice = Bookings.get_booking_invoice!(id)
+
+    case Bookings.update_invoice_state(invoice, state) do
+      {:ok, _invoice} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Invoice status updated successfully")
+         |> push_patch(to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update invoice status")}
+    end
+  end
+
+  @impl true
   def handle_event("filter", params, socket) do
     # Preserve show_all parameter when filtering
     filter_params = build_filter_params(params, socket.assigns.current_params)
@@ -367,21 +399,165 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                       else: "—"}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <span class={[
-                      "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                      status_badge_class(booking.status)
-                    ]}>
-                      {String.capitalize(booking.status)}
-                    </span>
+                    <div class="relative" id={"booking-status-#{booking.id}"} phx-click-away={JS.hide(to: "#status-menu-#{booking.id}")}>
+                      <button
+                        type="button"
+                        phx-click={JS.toggle(to: "#status-menu-#{booking.id}")}
+                        class="w-full text-left inline-flex items-center justify-between gap-2 hover:opacity-80 transition-opacity"
+                      >
+                        <span class={[
+                          "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                          status_badge_class(booking.status)
+                        ]}>
+                          {String.capitalize(booking.status)}
+                        </span>
+                        <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
+                      </button>
+
+                      <div
+                        id={"status-menu-#{booking.id}"}
+                        class="hidden absolute z-10 mt-1 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                      >
+                        <div class="py-1" role="menu">
+                          <button
+                            type="button"
+                            phx-click="update_booking_status"
+                            phx-value-id={booking.id}
+                            phx-value-status="upcoming"
+                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                          >
+                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("upcoming")]}>
+                              Upcoming
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="update_booking_status"
+                            phx-value-id={booking.id}
+                            phx-value-status="active"
+                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                          >
+                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("active")]}>
+                              Active
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="update_booking_status"
+                            phx-value-id={booking.id}
+                            phx-value-status="completed"
+                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                          >
+                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("completed")]}>
+                              Completed
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="update_booking_status"
+                            phx-value-id={booking.id}
+                            phx-value-status="cancelled"
+                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                          >
+                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("cancelled")]}>
+                              Cancelled
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <%= if Map.get(booking, :invoice) do %>
-                      <span class={[
-                        "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                        invoice_state_badge_class(booking.invoice.state)
-                      ]}>
-                        {invoice_state_label(booking.invoice.state)}
-                      </span>
+                      <div class="relative" id={"invoice-status-#{booking.id}"} phx-click-away={JS.hide(to: "#invoice-menu-#{booking.id}")}>
+                        <button
+                          type="button"
+                          phx-click={JS.toggle(to: "#invoice-menu-#{booking.id}")}
+                          class="w-full text-left inline-flex items-center justify-between gap-2 hover:opacity-80 transition-opacity"
+                        >
+                          <span class={[
+                            "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                            invoice_state_badge_class(booking.invoice.state)
+                          ]}>
+                            {invoice_state_label(booking.invoice.state)}
+                          </span>
+                          <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
+                        </button>
+
+                        <div
+                          id={"invoice-menu-#{booking.id}"}
+                          class="hidden absolute z-10 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                        >
+                          <div class="py-1" role="menu">
+                            <button
+                              type="button"
+                              phx-click="update_invoice_status"
+                              phx-value-id={booking.invoice.id}
+                              phx-value-state="draft"
+                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                            >
+                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("draft")]}>
+                                Draft
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="update_invoice_status"
+                              phx-value-id={booking.invoice.id}
+                              phx-value-state="personal"
+                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                            >
+                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("personal")]}>
+                                Personal
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="update_invoice_status"
+                              phx-value-id={booking.invoice.id}
+                              phx-value-state="generated"
+                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                            >
+                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("generated")]}>
+                                Generated
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="update_invoice_status"
+                              phx-value-id={booking.invoice.id}
+                              phx-value-state="sent"
+                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                            >
+                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("sent")]}>
+                                Sent
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="update_invoice_status"
+                              phx-value-id={booking.invoice.id}
+                              phx-value-state="advance_paid"
+                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                            >
+                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("advance_paid")]}>
+                                Advance Paid (50%)
+                              </span>
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="update_invoice_status"
+                              phx-value-id={booking.invoice.id}
+                              phx-value-state="paid"
+                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                            >
+                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("paid")]}>
+                                Paid
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     <% else %>
                       <span class="text-primary-300 text-sm">—</span>
                     <% end %>
