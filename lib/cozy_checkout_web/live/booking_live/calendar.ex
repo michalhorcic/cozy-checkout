@@ -98,6 +98,7 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
     calendar_end = Date.end_of_week(last_day, :monday)
 
     occupancy_map = Bookings.get_occupancy_for_range(calendar_start, calendar_end)
+    occupancy_breakdown_map = Bookings.get_occupancy_breakdown_for_range(calendar_start, calendar_end)
     arrivals_departures_map = Bookings.get_arrivals_departures_for_range(calendar_start, calendar_end)
     capacity = Bookings.cottage_capacity()
 
@@ -105,6 +106,7 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
     |> assign(:bookings, bookings)
     |> assign(:weeks, weeks)
     |> assign(:occupancy_map, occupancy_map)
+    |> assign(:occupancy_breakdown_map, occupancy_breakdown_map)
     |> assign(:arrivals_departures_map, arrivals_departures_map)
     |> assign(:capacity, capacity)
     |> assign(:page_title, "Calendar - #{CalendarHelpers.month_name(month)} #{year}")
@@ -164,7 +166,23 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
             phx-value-date={@date}
             class={[occupancy_badge_class(occupancy), "cursor-pointer hover:shadow-md transition-shadow"]}
           >
-            {occupancy}/{@capacity}
+            <span>{occupancy}/{@capacity}</span>
+            <%!-- Breakdown rows --%>
+            <%= if breakdown = Map.get(@occupancy_breakdown_map, @date) do %>
+              <div class="mt-0.5 space-y-0.5 text-[10px] font-normal leading-tight">
+                <%= if breakdown.adults > 0 do %>
+                  <div>👤 {breakdown.adults}</div>
+                <% end %>
+                <%= if breakdown.kids_under_12 > 0 or breakdown.kids_under_2 > 0 do %>
+                  <div>
+                    🧒 {breakdown.kids_under_12 + breakdown.kids_under_2}
+                    <%= if breakdown.kids_under_2 > 0 do %>
+                      <span class="opacity-75">(👶{breakdown.kids_under_2})</span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
           </button>
         <% end %>
       <% end %>

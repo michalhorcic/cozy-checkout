@@ -56,7 +56,7 @@
   <div class="bg-white shadow-lg rounded-lg overflow-hidden">
     <%!-- Capacity legend --%>
     <div class="px-6 py-4 bg-secondary-50 border-b border-secondary-200">
-      <div class="flex items-center gap-6 text-sm">
+      <div class="flex flex-wrap items-center gap-6 text-sm">
         <span class="font-semibold text-primary-500">Capacity: {@capacity} people</span>
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
@@ -74,6 +74,20 @@
           <div class="flex items-center gap-2">
             <span class="inline-block w-4 h-4 rounded-full bg-error"></span>
             <span class="text-primary-400">Full (45+)</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 border-l border-secondary-300 pl-4">
+          <div class="flex items-center gap-1">
+            <span>👤</span>
+            <span class="text-primary-400">Adults</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span>🧒</span>
+            <span class="text-primary-400">Kids &lt;12</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span>👶</span>
+            <span class="text-primary-400">Kids &lt;2</span>
           </div>
         </div>
       </div>
@@ -98,6 +112,7 @@
               bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
               is_today={CalendarHelpers.today?(day)}
               occupancy_map={@occupancy_map}
+              occupancy_breakdown_map={@occupancy_breakdown_map}
               arrivals_departures_map={@arrivals_departures_map}
               capacity={@capacity}
             />

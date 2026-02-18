@@ -93,6 +93,7 @@ defmodule CozyCheckoutWeb.BookingLive.Timeline do
     dates = Date.range(start_date, end_date) |> Enum.to_list()
     capacity = Bookings.cottage_capacity()
     occupancy_map = Bookings.get_occupancy_for_range(start_date, end_date)
+    occupancy_breakdown_map = Bookings.get_occupancy_breakdown_for_range(start_date, end_date)
 
     socket
     |> assign(:bookings, bookings)
@@ -100,6 +101,7 @@ defmodule CozyCheckoutWeb.BookingLive.Timeline do
     |> assign(:end_date, end_date)
     |> assign(:capacity, capacity)
     |> assign(:occupancy_map, occupancy_map)
+    |> assign(:occupancy_breakdown_map, occupancy_breakdown_map)
     |> assign(:page_title, "Timeline - Week of #{Calendar.strftime(start_date, "%b %d, %Y")}")
   end
 

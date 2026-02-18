@@ -824,6 +824,75 @@ defmodule CozyCheckout.Bookings do
     |> Map.new()
   end
 
+  # Names used to identify person sub-types in invoice items (exact match).
+  @adults_item_name "Dospělí"
+  @kids_under_2_item_name "Děti do 2 let"
+  @kids_under_12_item_name "Děti do 12 let"
+
+  @doc """
+  Returns a breakdown of person types per day for a date range.
+  Returns a map: %{~D[2025-10-22] => %{adults: 8, kids_under_2: 2, kids_under_12: 3}, ...}
+  Matches invoice item names exactly: "#{@adults_item_name}", "#{@kids_under_2_item_name}", "#{@kids_under_12_item_name}".
+  Days with no data are omitted from the map.
+  """
+  def get_occupancy_breakdown_for_range(start_date, end_date) do
+    bookings =
+      from(b in Booking,
+        join: bi in BookingInvoice,
+        on: bi.booking_id == b.id,
+        join: bii in BookingInvoiceItem,
+        on: bii.booking_invoice_id == bi.id,
+        where: b.status in ["upcoming", "active"],
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,
+        where: bii.item_type == "person",
+        select: %{
+          check_in: b.check_in_date,
+          check_out: b.check_out_date,
+          quantity: bii.quantity,
+          name: bii.name
+        }
+      )
+      |> Repo.all()
+
+    Date.range(start_date, end_date)
+    |> Enum.reduce(%{}, fn date, acc ->
+      relevant =
+        Enum.filter(bookings, fn b ->
+          Date.compare(b.check_in, date) != :gt and
+            (is_nil(b.check_out) or Date.compare(b.check_out, date) == :gt)
+        end)
+
+      adults =
+        relevant
+        |> Enum.filter(&(&1.name == @adults_item_name))
+        |> Enum.map(& &1.quantity)
+        |> Enum.sum()
+
+      kids_under_2 =
+        relevant
+        |> Enum.filter(&(&1.name == @kids_under_2_item_name))
+        |> Enum.map(& &1.quantity)
+        |> Enum.sum()
+
+      kids_under_12 =
+        relevant
+        |> Enum.filter(&(&1.name == @kids_under_12_item_name))
+        |> Enum.map(& &1.quantity)
+        |> Enum.sum()
+
+      if adults > 0 or kids_under_2 > 0 or kids_under_12 > 0 do
+        Map.put(acc, date, %{
+          adults: adults,
+          kids_under_2: kids_under_2,
+          kids_under_12: kids_under_12
+        })
+      else
+        acc
+      end
+    end)
+  end
+
   @doc """
   Returns the occupancy level for display purposes.
   Returns: :low (0-29), :medium (30-39), :high (40-44), :full (45+)

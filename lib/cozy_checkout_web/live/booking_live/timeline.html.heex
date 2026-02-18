@@ -80,6 +80,22 @@
                     occupancy_color(occupancy, @capacity)
                   ]}>
                     {occupancy}
+                    <%!-- Breakdown --%>
+                    <%= if breakdown = Map.get(@occupancy_breakdown_map, date) do %>
+                      <div class="mt-0.5 space-y-0.5 text-[10px] font-normal leading-tight">
+                        <%= if breakdown.adults > 0 do %>
+                          <div>👤 {breakdown.adults}</div>
+                        <% end %>
+                        <%= if breakdown.kids_under_12 > 0 or breakdown.kids_under_2 > 0 do %>
+                          <div>
+                            🧒 {breakdown.kids_under_12 + breakdown.kids_under_2}
+                            <%= if breakdown.kids_under_2 > 0 do %>
+                              <span class="opacity-75">(👶{breakdown.kids_under_2})</span>
+                            <% end %>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% end %>
                   </div>
                 <% end %>
               <% end %>
