@@ -18,6 +18,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:payment_method, nil)
        |> assign(:payment_qr_svg, nil)
        |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
        |> assign(:tips_amount, "0")
        |> assign(:discount_amount, "0")
        |> assign(:discount_reason, "")
@@ -41,6 +42,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:payment_method, nil)
        |> assign(:payment_qr_svg, nil)
        |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
        |> assign(:tips_amount, "0")
        |> assign(:discount_amount, "0")
        |> assign(:discount_reason, "")
@@ -288,6 +290,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
      |> assign(:payment_method, nil)
      |> assign(:payment_qr_svg, nil)
      |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)
      |> assign(:tips_amount, Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0")))
      |> assign(:discount_amount, Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0")))
      |> assign(:discount_reason, socket.assigns.order.discount_reason || "")}
@@ -300,7 +303,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
      |> assign(:show_payment_modal, false)
      |> assign(:payment_method, nil)
      |> assign(:payment_qr_svg, nil)
-     |> assign(:payment_invoice_number, nil)}
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
   end
 
   @impl true
@@ -406,17 +410,20 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
-    # Update order with tips and discount first
+    # Update order with tips and discount first, then show a QR code preview
+    # (payment is NOT created yet — staff confirms after customer scans)
     tips = parse_decimal(socket.assigns.tips_amount)
     discount = parse_decimal(socket.assigns.discount_amount)
 
     # Calculate new total: items_total - discount + tips
-    items_total = socket.assigns.order.order_items
+    items_total =
+      socket.assigns.order.order_items
       |> Enum.reduce(Decimal.new("0"), fn item, acc ->
         Decimal.add(acc, item.subtotal)
       end)
 
-    new_total = items_total
+    new_total =
+      items_total
       |> Decimal.sub(discount)
       |> Decimal.add(tips)
 
@@ -429,41 +436,50 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
     case Sales.update_order(socket.assigns.order, order_update_attrs) do
       {:ok, updated_order} ->
-        # Create payment and generate QR code
-        payment_attrs = %{
-          "order_id" => socket.assigns.order_id,
-          "amount" => Decimal.to_string(updated_order.total_amount),
-          "payment_method" => "qr_code",
-          "payment_date" => Date.utc_today()
-        }
+        # Generate a preview QR code — no payment record created yet
+        bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
 
-        case Sales.create_payment(payment_attrs) do
-          {:ok, payment} ->
-            # Generate QR code SVG
-            bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+        qr_svg =
+          QrCode.generate_qr_svg(%{
+            account_number: bank_account,
+            amount: updated_order.total_amount,
+            currency: "CZK",
+            variable_symbol: updated_order.order_number,
+            message: "Order #{updated_order.order_number}"
+          })
 
-            qr_svg =
-              QrCode.generate_qr_svg(%{
-                account_number: bank_account,
-                amount: payment.amount,
-                currency: "CZK",
-                variable_symbol: payment.invoice_number,
-                message: "Order #{socket.assigns.order.order_number}"
-              })
-
-            {:noreply,
-             socket
-             |> assign(:payment_method, "qr_code")
-             |> assign(:payment_qr_svg, qr_svg)
-             |> assign(:payment_invoice_number, payment.invoice_number)
-             |> load_order()}
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to create payment")}
-        end
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_preview")
+         |> assign(:payment_qr_svg, qr_svg)
+         |> assign(:payment_preview_amount, updated_order.total_amount)
+         |> load_order()}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to update order")}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    # Create the actual payment record once staff confirms customer has paid
+    payment_attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(socket.assigns.order.total_amount),
+      "payment_method" => "qr_code",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(payment_attrs) do
+      {:ok, payment} ->
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_success")
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> load_order()}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to record payment")}
     end
   end
 

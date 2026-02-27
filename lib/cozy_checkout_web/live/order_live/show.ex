@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.Sales
+  alias CozyCheckout.Payments.QrCode
   alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
@@ -27,7 +28,9 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
      |> assign(:grouped_items, grouped_items)
      |> assign(:payments, payments)
      |> assign(:total_paid, total_paid)
-     |> assign(:amount_due, Decimal.sub(order.total_amount, total_paid))}
+     |> assign(:amount_due, Decimal.sub(order.total_amount, total_paid))
+     |> assign(:show_qr_modal, false)
+     |> assign(:admin_qr_svg, nil)}
   end
 
   @impl true
@@ -54,6 +57,34 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
       OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
 
     {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("generate_qr_code", _params, socket) do
+    order = socket.assigns.order
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+    qr_svg =
+      QrCode.generate_qr_svg(%{
+        account_number: bank_account,
+        amount: order.total_amount,
+        currency: "CZK",
+        variable_symbol: order.order_number,
+        message: "Order #{order.order_number}"
+      })
+
+    {:noreply,
+     socket
+     |> assign(:show_qr_modal, true)
+     |> assign(:admin_qr_svg, qr_svg)}
+  end
+
+  @impl true
+  def handle_event("close_qr_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_qr_modal, false)
+     |> assign(:admin_qr_svg, nil)}
   end
 
   defp parse_unit_amount(""), do: nil
@@ -92,6 +123,13 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                 <.icon name="hero-printer" class="w-5 h-5 mr-2" /> Print Receipt
               </.button>
             </.link>
+            <button
+              :if={@order.status in ["open", "partially_paid"]}
+              phx-click="generate_qr_code"
+              class="inline-flex items-center px-4 py-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-semibold rounded-lg transition-all"
+            >
+              <.icon name="hero-qr-code" class="w-5 h-5 mr-2" /> Generate QR Code
+            </button>
             <.link :if={@order.status != "paid"} navigate={~p"/admin/orders/#{@order}/edit"}>
               <.button>
                 <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> Edit Order
@@ -374,6 +412,54 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
         </div>
       </div>
     </div>
+
+    <%!-- QR Code Modal --%>
+    <%= if @show_qr_modal do %>
+      <div
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        phx-click="close_qr_modal"
+      >
+        <div
+          class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center"
+          phx-click={JS.exec("phx:stop-propagation")}
+        >
+          <h2 class="text-2xl font-bold text-primary-500 mb-1">Payment QR Code</h2>
+          <p class="text-sm text-primary-400 mb-4">
+            Order {@order.order_number}
+          </p>
+
+          <div class="bg-white p-4 rounded-xl border-2 border-secondary-200 mb-5 inline-block">
+            <%= if @admin_qr_svg do %>
+              <img
+                src={"data:image/svg+xml;base64,#{@admin_qr_svg}"}
+                alt="Payment QR Code"
+                class="w-56 h-56"
+              />
+            <% else %>
+              <p class="text-error">Failed to generate QR code</p>
+            <% end %>
+          </div>
+
+          <div class="bg-secondary-50 rounded-xl p-4 mb-5">
+            <p class="text-sm text-primary-400 mb-1">Amount Due</p>
+            <p class="text-3xl font-bold text-success-dark">{format_currency(@amount_due)}</p>
+          </div>
+
+          <div class="text-left text-sm text-primary-400 space-y-1 mb-5">
+            <p>• Open your banking app</p>
+            <p>• Scan the QR code above</p>
+            <p>• Verify the amount and order number</p>
+          </div>
+
+          <button
+            phx-click="close_qr_modal"
+            class="w-full bg-secondary-100 hover:bg-secondary-200 text-primary-500 font-semibold py-3 px-6 rounded-xl transition-all"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    <% end %>
     """
   end
 end

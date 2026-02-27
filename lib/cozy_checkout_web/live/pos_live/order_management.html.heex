@@ -769,15 +769,15 @@
             </button>
           </div>
         <% else %>
-          <%= if @payment_method == "qr_code" do %>
-            <!-- QR Code Display -->
+          <%= if @payment_method == "qr_preview" do %>
+            <!-- QR Code Preview — payment not yet recorded -->
             <div class="text-center">
-              <h2 class="text-3xl font-bold text-slate-900 mb-2">Scan to Pay</h2>
-              <p class="text-lg text-slate-600 mb-6">
-                Invoice: {@payment_invoice_number}
+              <h2 class="text-3xl font-bold text-slate-900 mb-1">Scan to Pay</h2>
+              <p class="text-sm text-slate-500 mb-5">
+                Show this QR code to the customer. Confirm once the bank transfer is complete.
               </p>
 
-              <div class="bg-white p-6 rounded-2xl border-4 border-slate-200 mb-6 inline-block">
+              <div class="bg-white p-6 rounded-2xl border-4 border-blue-300 mb-5 inline-block">
                 <%= if @payment_qr_svg do %>
                   <img
                     src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
@@ -789,31 +789,69 @@
                 <% end %>
               </div>
 
-              <div class="bg-tertiary-50 border-2 border-blue-200 rounded-xl p-4 mb-6">
-                <p class="text-slate-700 font-semibold mb-2">Amount to Pay</p>
+              <div class="bg-tertiary-50 border-2 border-blue-200 rounded-xl p-4 mb-5">
+                <p class="text-slate-700 font-semibold mb-1">Amount to Pay</p>
+                <p class="text-4xl font-bold text-success-dark">
+                  {format_currency(@payment_preview_amount || @order.total_amount)}
+                </p>
+              </div>
+
+              <div class="text-left space-y-1 text-sm text-slate-600 mb-6">
+                <p>• Open your banking app</p>
+                <p>• Scan the QR code above</p>
+                <p>• Verify the amount</p>
+                <p>• Complete the payment, then tap "Mark as Paid" below</p>
+              </div>
+
+              <button
+                phx-click="confirm_qr_payment"
+                class="w-full bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
+              >
+                <.icon name="hero-check-circle" class="w-6 h-6" /> Mark as Paid
+              </button>
+
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          <% else %>
+          <%= if @payment_method == "qr_success" do %>
+            <!-- QR Payment Success -->
+            <div class="text-center">
+              <div class="mb-5">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                  <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+                </div>
+                <h2 class="text-3xl font-bold text-slate-900 mb-2">Payment Recorded!</h2>
+                <p class="text-lg text-slate-600 mb-1">
+                  Invoice: {@payment_invoice_number}
+                </p>
+              </div>
+
+              <div class="bg-white p-4 rounded-2xl border-4 border-slate-200 mb-5 inline-block">
+                <%= if @payment_qr_svg do %>
+                  <img
+                    src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                    alt="Payment QR Code"
+                    class="w-48 h-48"
+                  />
+                <% end %>
+              </div>
+
+              <div class="bg-success-light border-2 border-green-200 rounded-xl p-4 mb-5">
+                <p class="text-slate-700 font-semibold mb-1">QR Code Payment Recorded</p>
                 <p class="text-4xl font-bold text-success-dark">
                   {format_currency(@order.total_amount)}
                 </p>
               </div>
 
-              <div class="text-left space-y-2 text-sm text-slate-600 mb-6">
-                <p>• Open your banking app</p>
-                <p>• Scan the QR code above</p>
-                <p>• Verify the amount and invoice number</p>
-                <p>• Complete the payment</p>
-              </div>
-
-              <button
-                phx-click="close_payment_modal"
-                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
-              >
-                Done
-              </button>
-
               <.link
                 navigate={~p"/admin/orders/#{@order}/receipt"}
                 target="_blank"
-                class="block mt-3"
+                class="block mb-3"
               >
                 <button
                   type="button"
@@ -822,6 +860,13 @@
                   <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
                 </button>
               </.link>
+
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+              >
+                Done
+              </button>
             </div>
           <% else %>
             <!-- Payment Method Selection -->
@@ -969,6 +1014,7 @@
             >
               Cancel
             </button>
+          <% end %>
           <% end %>
         <% end %>
       </div>
