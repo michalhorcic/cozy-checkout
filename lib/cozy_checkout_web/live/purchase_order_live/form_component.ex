@@ -330,8 +330,10 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
       case params do
         %{"items" => items_params} ->
           # Merge form params with existing items to preserve IDs and product_ids
+          # NOTE: Must sort by integer key, not lexicographically — "10" < "2" lexicographically
           items_params
-          |> Map.values()
+          |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+          |> Enum.map(fn {_k, v} -> v end)
           |> Enum.with_index()
           |> Enum.map(fn {item_params, index} ->
             existing_item = Enum.at(socket.assigns.items, index) || %{}
@@ -470,7 +472,8 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
 
   defp create_items(purchase_order, items_params) do
     items_params
-    |> Map.values()
+    |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+    |> Enum.map(fn {_k, v} -> v end)
     |> Enum.each(fn item_params ->
       if item_params["product_id"] && item_params["product_id"] != "" do
         if item_params["id"] do
