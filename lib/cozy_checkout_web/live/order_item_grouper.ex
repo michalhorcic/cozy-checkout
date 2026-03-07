@@ -39,6 +39,8 @@ defmodule CozyCheckoutWeb.OrderItemGrouper do
           Decimal.add(acc, item.subtotal)
         end)
 
+      sorted_items = Enum.sort_by(items, & &1.inserted_at, DateTime)
+
       %{
         product: first.product,
         unit_amount: first.unit_amount,
@@ -47,8 +49,8 @@ defmodule CozyCheckoutWeb.OrderItemGrouper do
         vat_rate: first.vat_rate,
         total_quantity: total_quantity,
         total_price: total_price,
-        item_ids: Enum.map(items, & &1.id),
-        items: items,
+        item_ids: Enum.map(sorted_items, & &1.id),
+        items: sorted_items,
         grouped?: length(items) > 1,
         expanded?: false
       }
