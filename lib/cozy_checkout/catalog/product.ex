@@ -4,9 +4,7 @@ defmodule CozyCheckout.Catalog.Product do
 
   @derive {
     Flop.Schema,
-    filterable: [:name, :category_id, :active],
-    sortable: [],
-    default_limit: 20
+    filterable: [:name, :category_id, :active], sortable: [], default_limit: 20
   }
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -30,7 +28,15 @@ defmodule CozyCheckout.Catalog.Product do
   @doc false
   def changeset(product, attrs) do
     product
-    |> cast(attrs, [:name, :description, :category_id, :active, :unit, :default_unit_amounts, :low_stock_threshold])
+    |> cast(attrs, [
+      :name,
+      :description,
+      :category_id,
+      :active,
+      :unit,
+      :default_unit_amounts,
+      :low_stock_threshold
+    ])
     |> validate_required([:name])
     |> validate_inclusion(:unit, ["ml", "L", "pcs", nil], message: "must be ml, L, pcs, or empty")
     |> validate_number(:low_stock_threshold, greater_than_or_equal_to: 0)

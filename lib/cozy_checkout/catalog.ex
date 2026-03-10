@@ -110,7 +110,8 @@ defmodule CozyCheckout.Catalog do
   end
 
   # Filter by product name (partial match, case-insensitive)
-  defp apply_product_name_filter(query, %{"product_name" => name}) when is_binary(name) and name != "" do
+  defp apply_product_name_filter(query, %{"product_name" => name})
+       when is_binary(name) and name != "" do
     search_pattern = "%#{name}%"
     where(query, [p], ilike(p.name, ^search_pattern))
   end
@@ -204,7 +205,8 @@ defmodule CozyCheckout.Catalog do
   end
 
   # Filter by product name (partial match, case-insensitive)
-  defp apply_pricelist_product_name_filter(query, %{"product_name" => name}) when is_binary(name) and name != "" do
+  defp apply_pricelist_product_name_filter(query, %{"product_name" => name})
+       when is_binary(name) and name != "" do
     search_pattern = "%#{name}%"
     where(query, [pl, product: p], ilike(p.name, ^search_pattern))
   end
@@ -212,7 +214,8 @@ defmodule CozyCheckout.Catalog do
   defp apply_pricelist_product_name_filter(query, _params), do: query
 
   # Filter by category
-  defp apply_pricelist_category_filter(query, %{"category_id" => category_id}) when is_binary(category_id) and category_id != "" do
+  defp apply_pricelist_category_filter(query, %{"category_id" => category_id})
+       when is_binary(category_id) and category_id != "" do
     where(query, [pl, product: p], p.category_id == ^category_id)
   end
 

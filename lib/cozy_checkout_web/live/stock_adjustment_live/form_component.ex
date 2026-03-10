@@ -10,7 +10,9 @@ defmodule CozyCheckoutWeb.StockAdjustmentLive.FormComponent do
     <div>
       <.header>
         {@title}
-        <:subtitle>Record inventory adjustments for spillage, breakage, theft, or corrections</:subtitle>
+        <:subtitle>
+          Record inventory adjustments for spillage, breakage, theft, or corrections
+        </:subtitle>
       </.header>
 
       <.form
@@ -51,14 +53,28 @@ defmodule CozyCheckoutWeb.StockAdjustmentLive.FormComponent do
               class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
             >
               <option value="">Select type...</option>
-              <option value="increase" selected={@form[:adjustment_type].value == "increase"}>Increase (found/returned stock)</option>
-              <option value="decrease" selected={@form[:adjustment_type].value == "decrease"}>Decrease (general reduction)</option>
-              <option value="spillage" selected={@form[:adjustment_type].value == "spillage"}>Spillage</option>
-              <option value="breakage" selected={@form[:adjustment_type].value == "breakage"}>Breakage</option>
+              <option value="increase" selected={@form[:adjustment_type].value == "increase"}>
+                Increase (found/returned stock)
+              </option>
+              <option value="decrease" selected={@form[:adjustment_type].value == "decrease"}>
+                Decrease (general reduction)
+              </option>
+              <option value="spillage" selected={@form[:adjustment_type].value == "spillage"}>
+                Spillage
+              </option>
+              <option value="breakage" selected={@form[:adjustment_type].value == "breakage"}>
+                Breakage
+              </option>
               <option value="theft" selected={@form[:adjustment_type].value == "theft"}>Theft</option>
-              <option value="spoilage" selected={@form[:adjustment_type].value == "spoilage"}>Spoilage</option>
-              <option value="expired" selected={@form[:adjustment_type].value == "expired"}>Expired</option>
-              <option value="correction" selected={@form[:adjustment_type].value == "correction"}>Inventory Count Correction</option>
+              <option value="spoilage" selected={@form[:adjustment_type].value == "spoilage"}>
+                Spoilage
+              </option>
+              <option value="expired" selected={@form[:adjustment_type].value == "expired"}>
+                Expired
+              </option>
+              <option value="correction" selected={@form[:adjustment_type].value == "correction"}>
+                Inventory Count Correction
+              </option>
               <option value="other" selected={@form[:adjustment_type].value == "other"}>Other</option>
             </select>
             <p class="mt-1 text-xs text-gray-500">
@@ -144,7 +160,11 @@ defmodule CozyCheckoutWeb.StockAdjustmentLive.FormComponent do
   end
 
   @impl true
-  def handle_event("select_product", %{"stock_adjustment" => %{"product_id" => product_id}}, socket) do
+  def handle_event(
+        "select_product",
+        %{"stock_adjustment" => %{"product_id" => product_id}},
+        socket
+      ) do
     selected_product =
       if product_id != "" do
         Enum.find(socket.assigns.products, &(&1.id == product_id))
@@ -187,7 +207,10 @@ defmodule CozyCheckoutWeb.StockAdjustmentLive.FormComponent do
   end
 
   defp save_stock_adjustment(socket, :edit, stock_adjustment_params) do
-    case Inventory.update_stock_adjustment(socket.assigns.stock_adjustment, stock_adjustment_params) do
+    case Inventory.update_stock_adjustment(
+           socket.assigns.stock_adjustment,
+           stock_adjustment_params
+         ) do
       {:ok, stock_adjustment} ->
         # Reload with preloaded associations
         stock_adjustment = Inventory.get_stock_adjustment!(stock_adjustment.id)

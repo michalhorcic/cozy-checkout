@@ -108,9 +108,26 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
     categories_with_products =
       Sales.get_product_statistics(datetime_from, datetime_to, status_filter, service_filter)
 
-    most_popular = Sales.get_most_popular_products(datetime_from, datetime_to, status_filter, service_filter, 10)
-    top_revenue = Sales.get_top_revenue_products(datetime_from, datetime_to, status_filter, service_filter, 10)
-    overall = Sales.get_overall_statistics(datetime_from, datetime_to, status_filter, service_filter)
+    most_popular =
+      Sales.get_most_popular_products(
+        datetime_from,
+        datetime_to,
+        status_filter,
+        service_filter,
+        10
+      )
+
+    top_revenue =
+      Sales.get_top_revenue_products(
+        datetime_from,
+        datetime_to,
+        status_filter,
+        service_filter,
+        10
+      )
+
+    overall =
+      Sales.get_overall_statistics(datetime_from, datetime_to, status_filter, service_filter)
 
     socket
     |> assign(:categories_with_products, categories_with_products)
@@ -189,8 +206,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             </.link>
           </div>
         </div>
-
-        <!-- Date Range & Filters -->
+        
+    <!-- Date Range & Filters -->
         <div class="bg-white shadow rounded-lg p-6 mb-6">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Date Range Selection -->
@@ -204,7 +221,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_7_days" && "bg-emerald-600 text-white",
-                    @preset != "last_7_days" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                    @preset != "last_7_days" &&
+                      "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last 7 days
@@ -215,7 +233,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_30_days" && "bg-emerald-600 text-white",
-                    @preset != "last_30_days" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                    @preset != "last_30_days" &&
+                      "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last 30 days
@@ -226,7 +245,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_90_days" && "bg-emerald-600 text-white",
-                    @preset != "last_90_days" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                    @preset != "last_90_days" &&
+                      "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last 90 days
@@ -237,7 +257,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "this_month" && "bg-emerald-600 text-white",
-                    @preset != "this_month" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                    @preset != "this_month" &&
+                      "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   This month
@@ -248,7 +269,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "last_month" && "bg-emerald-600 text-white",
-                    @preset != "last_month" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                    @preset != "last_month" &&
+                      "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   Last month
@@ -259,14 +281,15 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   class={[
                     "px-3 py-2 text-sm font-medium rounded-md",
                     @preset == "this_year" && "bg-emerald-600 text-white",
-                    @preset != "this_year" && "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                    @preset != "this_year" &&
+                      "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
                   ]}
                 >
                   This year
                 </button>
               </div>
-
-              <!-- Custom Date Range -->
+              
+    <!-- Custom Date Range -->
               <form phx-submit="update_dates" class="flex gap-3 items-end">
                 <div class="flex-1">
                   <label class="block text-sm font-medium text-primary-500 mb-1">From</label>
@@ -294,12 +317,12 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                 </button>
               </form>
             </div>
-
-            <!-- Status Filter -->
+            
+    <!-- Status Filter -->
             <div>
               <h3 class="text-lg font-medium text-primary-500 mb-4">Filters</h3>
-
-              <!-- Order Status -->
+              
+    <!-- Order Status -->
               <div class="mb-4">
                 <h4 class="text-sm font-medium text-primary-500 mb-2">Order Status</h4>
                 <form phx-change="update_status_filter" class="space-y-2">
@@ -344,8 +367,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   </div>
                 </form>
               </div>
-
-              <!-- Service Order Filter -->
+              
+    <!-- Service Order Filter -->
               <div class="border-t border-secondary-200 pt-4">
                 <h4 class="text-sm font-medium text-primary-500 mb-2">Order Type</h4>
                 <form phx-change="update_service_filter" class="space-y-2">
@@ -396,8 +419,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             </div>
           </div>
         </div>
-
-        <!-- Overall Statistics -->
+        
+    <!-- Overall Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div class="bg-white shadow rounded-lg p-6">
             <div class="flex items-center">
@@ -421,14 +444,16 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
               <div class="ml-4">
                 <p class="text-sm font-medium text-primary-400">Total Revenue</p>
                 <p class="text-2xl font-semibold text-primary-500">
-                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@overall.total_revenue || Decimal.new("0"))}
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(
+                    @overall.total_revenue || Decimal.new("0")
+                  )}
                 </p>
               </div>
             </div>
           </div>
         </div>
-
-        <!-- Top Products -->
+        
+    <!-- Top Products -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <!-- Most Popular Products -->
           <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -469,8 +494,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
               </table>
             </div>
           </div>
-
-          <!-- Top Revenue Products -->
+          
+    <!-- Top Revenue Products -->
           <div class="bg-white shadow rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-secondary-200">
               <h3 class="text-lg font-medium text-primary-500">Top Revenue Products</h3>
@@ -510,8 +535,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             </div>
           </div>
         </div>
-
-        <!-- Products by Category -->
+        
+    <!-- Products by Category -->
         <div class="bg-white shadow rounded-lg overflow-hidden">
           <div class="px-6 py-4 border-b border-secondary-200">
             <h3 class="text-lg font-medium text-primary-500">All Products - Sales Details</h3>

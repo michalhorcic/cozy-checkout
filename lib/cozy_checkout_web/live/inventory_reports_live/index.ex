@@ -59,22 +59,25 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
     movements = Inventory.get_stock_movements(filters)
 
     # Calculate summary metrics
-    total_value = valuation
+    total_value =
+      valuation
       |> Enum.map(& &1.total_value)
       |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-    total_profit = profit_analysis
+    total_profit =
+      profit_analysis
       |> Enum.map(& &1.total_profit)
       |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-    avg_margin = if Enum.empty?(profit_analysis) do
-      Decimal.new(0)
-    else
-      profit_analysis
-      |> Enum.map(& &1.profit_margin_percent)
-      |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
-      |> Decimal.div(length(profit_analysis))
-    end
+    avg_margin =
+      if Enum.empty?(profit_analysis) do
+        Decimal.new(0)
+      else
+        profit_analysis
+        |> Enum.map(& &1.profit_margin_percent)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+        |> Decimal.div(length(profit_analysis))
+      end
 
     socket
     |> assign(:valuation_items, valuation)
@@ -89,26 +92,29 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
   defp build_filters(assigns) do
     filters = %{}
 
-    filters = if assigns.start_date != "" && assigns.end_date != "" do
-      Map.merge(filters, %{
-        start_date: Date.from_iso8601!(assigns.start_date),
-        end_date: Date.from_iso8601!(assigns.end_date)
-      })
-    else
-      filters
-    end
+    filters =
+      if assigns.start_date != "" && assigns.end_date != "" do
+        Map.merge(filters, %{
+          start_date: Date.from_iso8601!(assigns.start_date),
+          end_date: Date.from_iso8601!(assigns.end_date)
+        })
+      else
+        filters
+      end
 
-    filters = if assigns.product_id != "" do
-      Map.put(filters, :product_id, assigns.product_id)
-    else
-      filters
-    end
+    filters =
+      if assigns.product_id != "" do
+        Map.put(filters, :product_id, assigns.product_id)
+      else
+        filters
+      end
 
-    filters = if assigns.transaction_type != "" do
-      Map.put(filters, :transaction_type, assigns.transaction_type)
-    else
-      filters
-    end
+    filters =
+      if assigns.transaction_type != "" do
+        Map.put(filters, :transaction_type, assigns.transaction_type)
+      else
+        filters
+      end
 
     filters
   end
@@ -118,7 +124,10 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+        <.link
+          navigate={~p"/admin"}
+          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+        >
           ← Back to Dashboard
         </.link>
         <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
@@ -206,7 +215,9 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
                 <option value="">All Types</option>
                 <option value="purchase" selected={@transaction_type == "purchase"}>Purchases</option>
                 <option value="sale" selected={@transaction_type == "sale"}>Sales</option>
-                <option value="adjustment" selected={@transaction_type == "adjustment"}>Adjustments</option>
+                <option value="adjustment" selected={@transaction_type == "adjustment"}>
+                  Adjustments
+                </option>
               </select>
             </div>
           </div>
@@ -232,7 +243,8 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
               class={[
                 "px-6 py-4 text-sm font-medium border-b-2 transition-colors",
                 @active_tab == "valuation" && "border-tertiary-500 text-tertiary-600",
-                @active_tab != "valuation" && "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                @active_tab != "valuation" &&
+                  "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               ]}
             >
               Inventory Valuation
@@ -243,7 +255,8 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
               class={[
                 "px-6 py-4 text-sm font-medium border-b-2 transition-colors",
                 @active_tab == "profit" && "border-tertiary-500 text-tertiary-600",
-                @active_tab != "profit" && "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                @active_tab != "profit" &&
+                  "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               ]}
             >
               Profit Analysis
@@ -254,7 +267,8 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
               class={[
                 "px-6 py-4 text-sm font-medium border-b-2 transition-colors",
                 @active_tab == "movements" && "border-tertiary-500 text-tertiary-600",
-                @active_tab != "movements" && "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                @active_tab != "movements" &&
+                  "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               ]}
             >
               Stock Movements ({@movement_count})
@@ -392,9 +406,14 @@ defmodule CozyCheckoutWeb.InventoryReportsLive.Index do
               <td class="px-6 py-4 whitespace-nowrap">
                 <span class={[
                   "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                  Decimal.compare(item.profit_margin_percent, 30) != :lt && "bg-emerald-100 text-emerald-800",
-                  Decimal.compare(item.profit_margin_percent, 30) == :lt && Decimal.compare(item.profit_margin_percent, 15) != :lt && "bg-amber-100 text-amber-800",
-                  Decimal.compare(item.profit_margin_percent, 15) == :lt && Decimal.compare(item.profit_margin_percent, 0) == :gt && "bg-orange-100 text-orange-800",
+                  Decimal.compare(item.profit_margin_percent, 30) != :lt &&
+                    "bg-emerald-100 text-emerald-800",
+                  Decimal.compare(item.profit_margin_percent, 30) == :lt &&
+                    Decimal.compare(item.profit_margin_percent, 15) != :lt &&
+                    "bg-amber-100 text-amber-800",
+                  Decimal.compare(item.profit_margin_percent, 15) == :lt &&
+                    Decimal.compare(item.profit_margin_percent, 0) == :gt &&
+                    "bg-orange-100 text-orange-800",
                   Decimal.compare(item.profit_margin_percent, 0) != :gt && "bg-rose-100 text-rose-800"
                 ]}>
                   {Decimal.round(item.profit_margin_percent, 1)}%

@@ -4,9 +4,7 @@ defmodule CozyCheckout.Catalog.Pricelist do
 
   @derive {
     Flop.Schema,
-    filterable: [:active, :product_id],
-    sortable: [],
-    default_limit: 20
+    filterable: [:active, :product_id], sortable: [], default_limit: 20
   }
 
   @primary_key {:id, :binary_id, autogenerate: true}

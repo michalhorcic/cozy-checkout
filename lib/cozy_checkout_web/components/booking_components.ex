@@ -24,7 +24,11 @@ defmodule CozyCheckoutWeb.BookingComponents do
   """
   attr :date, :any, required: true, doc: "The date to display bookings for"
   attr :bookings, :list, required: true, doc: "List of bookings for the date"
-  attr :categorized, :map, default: %{arriving: [], staying: [], leaving: []}, doc: "Categorized bookings"
+
+  attr :categorized, :map,
+    default: %{arriving: [], staying: [], leaving: []},
+    doc: "Categorized bookings"
+
   attr :on_close, :any, required: true, doc: "JS command to execute on modal close"
 
   def bookings_modal(assigns) do
@@ -49,12 +53,15 @@ defmodule CozyCheckoutWeb.BookingComponents do
         <%= if length(@categorized.arriving) > 0 do %>
           <div>
             <h3 class="text-lg font-semibold text-success-dark mb-3 flex items-center gap-2">
-              <span class="text-xl">▶</span>
-              Checking In ({length(@categorized.arriving)})
+              <span class="text-xl">▶</span> Checking In ({length(@categorized.arriving)})
             </h3>
             <div class="space-y-2">
               <%= for booking <- @categorized.arriving do %>
-                <.booking_card booking={booking} badge_text="Arriving" badge_class="bg-success text-white" />
+                <.booking_card
+                  booking={booking}
+                  badge_text="Arriving"
+                  badge_class="bg-success text-white"
+                />
               <% end %>
             </div>
           </div>
@@ -64,12 +71,15 @@ defmodule CozyCheckoutWeb.BookingComponents do
         <%= if length(@categorized.staying) > 0 do %>
           <div>
             <h3 class="text-lg font-semibold text-tertiary-600 mb-3 flex items-center gap-2">
-              <span class="text-xl">→</span>
-              Staying ({length(@categorized.staying)})
+              <span class="text-xl">→</span> Staying ({length(@categorized.staying)})
             </h3>
             <div class="space-y-2">
               <%= for booking <- @categorized.staying do %>
-                <.booking_card booking={booking} badge_text="Staying" badge_class="bg-tertiary-100 text-tertiary-800" />
+                <.booking_card
+                  booking={booking}
+                  badge_text="Staying"
+                  badge_class="bg-tertiary-100 text-tertiary-800"
+                />
               <% end %>
             </div>
           </div>
@@ -79,12 +89,15 @@ defmodule CozyCheckoutWeb.BookingComponents do
         <%= if length(@categorized.leaving) > 0 do %>
           <div>
             <h3 class="text-lg font-semibold text-error mb-3 flex items-center gap-2">
-              <span class="text-xl">◀</span>
-              Checking Out ({length(@categorized.leaving)})
+              <span class="text-xl">◀</span> Checking Out ({length(@categorized.leaving)})
             </h3>
             <div class="space-y-2">
               <%= for booking <- @categorized.leaving do %>
-                <.booking_card booking={booking} badge_text="Leaving" badge_class="bg-error text-white" />
+                <.booking_card
+                  booking={booking}
+                  badge_text="Leaving"
+                  badge_class="bg-error text-white"
+                />
               <% end %>
             </div>
           </div>
@@ -128,7 +141,10 @@ defmodule CozyCheckoutWeb.BookingComponents do
           </div>
         </div>
         <div class="ml-4 flex flex-col gap-2 items-end">
-          <span class={["inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium", @badge_class]}>
+          <span class={[
+            "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
+            @badge_class
+          ]}>
             {@badge_text}
           </span>
           <span class={booking_status_badge_class(@booking.status)}>

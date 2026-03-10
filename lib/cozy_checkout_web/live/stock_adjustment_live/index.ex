@@ -32,7 +32,10 @@ defmodule CozyCheckoutWeb.StockAdjustmentLive.Index do
   end
 
   @impl true
-  def handle_info({CozyCheckoutWeb.StockAdjustmentLive.FormComponent, {:saved, stock_adjustment}}, socket) do
+  def handle_info(
+        {CozyCheckoutWeb.StockAdjustmentLive.FormComponent, {:saved, stock_adjustment}},
+        socket
+      ) do
     {:noreply, stream_insert(socket, :stock_adjustments, stock_adjustment, at: 0)}
   end
 
@@ -49,15 +52,17 @@ defmodule CozyCheckoutWeb.StockAdjustmentLive.Index do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+        <.link
+          navigate={~p"/admin"}
+          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+        >
           ← Back to Dashboard
         </.link>
         <div class="flex justify-between items-center">
           <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
           <.link patch={~p"/admin/stock-adjustments/new"}>
             <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-tertiary-500 to-secondary-600 hover:from-tertiary-600 hover:to-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-tertiary-500 transition-all shadow-lg">
-              <.icon name="hero-plus" class="w-5 h-5 mr-2" />
-              New Adjustment
+              <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Adjustment
             </button>
           </.link>
         </div>
@@ -113,7 +118,8 @@ defmodule CozyCheckoutWeb.StockAdjustmentLive.Index do
                   "text-sm font-semibold",
                   quantity_color(adjustment.quantity)
                 ]}>
-                  {format_quantity(adjustment.quantity)} {adjustment.unit_amount && "× #{adjustment.unit_amount}"} {adjustment.product.unit || "pcs"}
+                  {format_quantity(adjustment.quantity)} {adjustment.unit_amount &&
+                    "× #{adjustment.unit_amount}"} {adjustment.product.unit || "pcs"}
                 </span>
               </td>
               <td class="px-6 py-4">

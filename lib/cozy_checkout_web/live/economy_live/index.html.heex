@@ -1,7 +1,10 @@
 <div class="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
   <!-- Header -->
   <div class="mb-8">
-    <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+    <.link
+      navigate={~p"/admin"}
+      class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+    >
       ← Back to Dashboard
     </.link>
     <h1 class="text-3xl font-bold text-primary-500">Economy Management</h1>
@@ -9,11 +12,11 @@
       View and analyze booking revenue and statistics
     </p>
   </div>
-
-  <!-- Filters -->
+  
+<!-- Filters -->
   <div class="bg-white rounded-lg shadow p-6 mb-8">
     <h2 class="text-lg font-semibold text-primary-500 mb-4">Filters</h2>
-    
+
     <.form for={%{}} phx-change="filter" id="filter-form" class="space-y-6">
       <!-- Date Range -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -42,8 +45,8 @@
           />
         </div>
       </div>
-
-      <!-- Invoice States -->
+      
+<!-- Invoice States -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <label class="block text-sm font-medium text-primary-500">
@@ -67,7 +70,7 @@
             </button>
           </div>
         </div>
-        
+
         <div class="flex flex-wrap gap-3">
           <%= for state <- @all_states do %>
             <label class="inline-flex items-center cursor-pointer group">
@@ -83,7 +86,8 @@
                 "border-2",
                 if(state in @selected_states,
                   do: "#{state_badge_class(state)} border-current",
-                  else: "bg-secondary-50 text-primary-300 border-secondary-200 hover:bg-secondary-100"
+                  else:
+                    "bg-secondary-50 text-primary-300 border-secondary-200 hover:bg-secondary-100"
                 )
               ]}>
                 {state_label(state)}
@@ -94,8 +98,8 @@
       </div>
     </.form>
   </div>
-
-  <!-- Summary Cards -->
+  
+<!-- Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Total Revenue -->
     <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg p-6 text-white">
@@ -111,8 +115,8 @@
         </div>
       </div>
     </div>
-
-    <!-- Total Bookings -->
+    
+<!-- Total Bookings -->
     <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
       <div class="flex items-center justify-between">
         <div>
@@ -124,15 +128,17 @@
         </div>
       </div>
     </div>
-
-    <!-- Average per Booking -->
+    
+<!-- Average per Booking -->
     <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-lg p-6 text-white">
       <div class="flex items-center justify-between">
         <div>
           <p class="text-purple-100 text-sm font-medium">Average per Booking</p>
           <p class="text-3xl font-bold mt-2 whitespace-nowrap">
             <%= if @stats.booking_count > 0 do %>
-              {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.div(@stats.total_revenue, @stats.booking_count))}
+              {CozyCheckoutWeb.CurrencyHelper.format_currency(
+                Decimal.div(@stats.total_revenue, @stats.booking_count)
+              )}
             <% else %>
               {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.new(0))}
             <% end %>
@@ -144,8 +150,8 @@
       </div>
     </div>
   </div>
-
-  <!-- State Breakdown -->
+  
+<!-- State Breakdown -->
   <%= if map_size(@stats.state_breakdown) > 0 do %>
     <div class="bg-white rounded-lg shadow p-6 mb-8">
       <h2 class="text-lg font-semibold text-primary-500 mb-4">Breakdown by State</h2>
@@ -159,7 +165,9 @@
               ]}>
                 {state_label(state)}
               </span>
-              <span class="text-sm text-primary-400 whitespace-nowrap">{data.count} bookings</span>
+              <span class="text-sm text-primary-400 whitespace-nowrap">
+                {data.count} bookings
+              </span>
             </div>
             <p class="text-2xl font-bold text-primary-500 mt-2 whitespace-nowrap">
               {CozyCheckoutWeb.CurrencyHelper.format_currency(data.total)}
@@ -169,8 +177,8 @@
       </div>
     </div>
   <% end %>
-
-  <!-- Monthly Charts -->
+  
+<!-- Monthly Charts -->
   <%= if @monthly_stats != [] do %>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Revenue Chart -->
@@ -199,8 +207,8 @@
           <% end %>
         </div>
       </div>
-
-      <!-- Bookings Count Chart -->
+      
+<!-- Bookings Count Chart -->
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-primary-500 mb-6">Monthly Bookings</h2>
         <div class="h-64 flex items-end justify-around gap-2">

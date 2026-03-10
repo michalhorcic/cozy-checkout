@@ -18,7 +18,13 @@ defmodule CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent do
         phx-change="validate"
         phx-submit="save"
       >
-        <.input field={@form[:name]} type="text" label="Template Name" required placeholder="E.g., Continental Breakfast" />
+        <.input
+          field={@form[:name]}
+          type="text"
+          label="Template Name"
+          required
+          placeholder="E.g., Continental Breakfast"
+        />
 
         <.input
           field={@form[:category]}

@@ -28,7 +28,7 @@ defmodule CozyCheckout.Inventory do
   def get_purchase_order!(id) do
     PurchaseOrder
     |> where([po], is_nil(po.deleted_at))
-    |> preload([purchase_order_items: [product: :category]])
+    |> preload(purchase_order_items: [product: :category])
     |> Repo.get!(id)
   end
 
@@ -74,15 +74,17 @@ defmodule CozyCheckout.Inventory do
     year = today.year |> Integer.to_string() |> String.slice(-2..-1//1)
 
     # Get the highest order number for this year
-    query = from po in PurchaseOrder,
-      where: fragment("LEFT(?, 2) = ?", po.order_number, ^year),
-      select: po.order_number,
-      order_by: [desc: po.order_number],
-      limit: 1
+    query =
+      from po in PurchaseOrder,
+        where: fragment("LEFT(?, 2) = ?", po.order_number, ^year),
+        select: po.order_number,
+        order_by: [desc: po.order_number],
+        limit: 1
 
     case Repo.one(query) do
       nil ->
         "#{year}PO00001"
+
       last_number ->
         sequence = String.slice(last_number, 4..-1//1) |> String.to_integer()
         "#{year}PO#{String.pad_leading(Integer.to_string(sequence + 1), 5, "0")}"
@@ -133,7 +135,7 @@ defmodule CozyCheckout.Inventory do
     StockAdjustment
     |> where([sa], is_nil(sa.deleted_at))
     |> order_by([sa], desc: sa.inserted_at)
-    |> preload([product: :category])
+    |> preload(product: :category)
     |> Repo.all()
   end
 
@@ -143,7 +145,7 @@ defmodule CozyCheckout.Inventory do
   def get_stock_adjustment!(id) do
     StockAdjustment
     |> where([sa], is_nil(sa.deleted_at))
-    |> preload([product: :category])
+    |> preload(product: :category)
     |> Repo.get!(id)
   end
 
@@ -250,55 +252,63 @@ defmodule CozyCheckout.Inventory do
   end
 
   defp get_total_purchased(product_id, nil) do
-    query = from poi in PurchaseOrderItem,
-      where: poi.product_id == ^product_id and is_nil(poi.deleted_at),
-      select: coalesce(sum(poi.quantity), 0)
+    query =
+      from poi in PurchaseOrderItem,
+        where: poi.product_id == ^product_id and is_nil(poi.deleted_at),
+        select: coalesce(sum(poi.quantity), 0)
 
     Repo.one(query) || Decimal.new(0)
   end
 
   defp get_total_purchased(product_id, unit_amount) do
-    query = from poi in PurchaseOrderItem,
-      where: poi.product_id == ^product_id
-        and poi.unit_amount == ^unit_amount
-        and is_nil(poi.deleted_at),
-      select: coalesce(sum(poi.quantity), 0)
+    query =
+      from poi in PurchaseOrderItem,
+        where:
+          poi.product_id == ^product_id and
+            poi.unit_amount == ^unit_amount and
+            is_nil(poi.deleted_at),
+        select: coalesce(sum(poi.quantity), 0)
 
     Repo.one(query) || Decimal.new(0)
   end
 
   defp get_total_sold(product_id, nil) do
-    query = from oi in CozyCheckout.Sales.OrderItem,
-      where: oi.product_id == ^product_id and is_nil(oi.deleted_at),
-      select: coalesce(sum(oi.quantity), 0)
+    query =
+      from oi in CozyCheckout.Sales.OrderItem,
+        where: oi.product_id == ^product_id and is_nil(oi.deleted_at),
+        select: coalesce(sum(oi.quantity), 0)
 
     Repo.one(query) || Decimal.new(0)
   end
 
   defp get_total_sold(product_id, unit_amount) do
-    query = from oi in CozyCheckout.Sales.OrderItem,
-      where: oi.product_id == ^product_id
-        and oi.unit_amount == ^unit_amount
-        and is_nil(oi.deleted_at),
-      select: coalesce(sum(oi.quantity), 0)
+    query =
+      from oi in CozyCheckout.Sales.OrderItem,
+        where:
+          oi.product_id == ^product_id and
+            oi.unit_amount == ^unit_amount and
+            is_nil(oi.deleted_at),
+        select: coalesce(sum(oi.quantity), 0)
 
     Repo.one(query) || Decimal.new(0)
   end
 
   # Get total adjustment volume for volume-based products
   defp get_total_adjustment_volume(product_id) do
-    query = from sa in StockAdjustment,
-      where: sa.product_id == ^product_id and is_nil(sa.deleted_at),
-      select: coalesce(sum(fragment("? * COALESCE(?, 1)", sa.quantity, sa.unit_amount)), 0)
+    query =
+      from sa in StockAdjustment,
+        where: sa.product_id == ^product_id and is_nil(sa.deleted_at),
+        select: coalesce(sum(fragment("? * COALESCE(?, 1)", sa.quantity, sa.unit_amount)), 0)
 
     Repo.one(query) || Decimal.new(0)
   end
 
   # Get total adjustment quantity for piece-based products
   defp get_total_adjustment_quantity(product_id) do
-    query = from sa in StockAdjustment,
-      where: sa.product_id == ^product_id and is_nil(sa.deleted_at),
-      select: coalesce(sum(sa.quantity), 0)
+    query =
+      from sa in StockAdjustment,
+        where: sa.product_id == ^product_id and is_nil(sa.deleted_at),
+        select: coalesce(sum(sa.quantity), 0)
 
     Repo.one(query) || Decimal.new(0)
   end
@@ -428,96 +438,108 @@ defmodule CozyCheckout.Inventory do
   end
 
   defp get_latest_purchase_cost(product_id) do
-    query = from poi in PurchaseOrderItem,
-      join: po in PurchaseOrder,
-      on: poi.purchase_order_id == po.id,
-      where: poi.product_id == ^product_id
-        and is_nil(poi.deleted_at)
-        and is_nil(po.deleted_at),
-      order_by: [desc: po.order_date],
-      limit: 1,
-      select: fragment("? / COALESCE(?, 1)", poi.cost_price, poi.unit_amount)
+    query =
+      from poi in PurchaseOrderItem,
+        join: po in PurchaseOrder,
+        on: poi.purchase_order_id == po.id,
+        where:
+          poi.product_id == ^product_id and
+            is_nil(poi.deleted_at) and
+            is_nil(po.deleted_at),
+        order_by: [desc: po.order_date],
+        limit: 1,
+        select: fragment("? / COALESCE(?, 1)", poi.cost_price, poi.unit_amount)
 
     Repo.one(query)
   end
 
   defp get_average_purchase_cost(product_id, filters) do
-    query = from poi in PurchaseOrderItem,
-      join: po in PurchaseOrder,
-      on: poi.purchase_order_id == po.id,
-      as: :purchase_order,
-      where: poi.product_id == ^product_id
-        and is_nil(poi.deleted_at)
-        and is_nil(po.deleted_at)
+    query =
+      from poi in PurchaseOrderItem,
+        join: po in PurchaseOrder,
+        on: poi.purchase_order_id == po.id,
+        as: :purchase_order,
+        where:
+          poi.product_id == ^product_id and
+            is_nil(poi.deleted_at) and
+            is_nil(po.deleted_at)
 
     query = apply_date_filter(query, filters, :purchase_order)
 
-    query = from [poi, po] in query,
-      select: avg(fragment("? / COALESCE(?, 1)", poi.cost_price, poi.unit_amount))
+    query =
+      from [poi, po] in query,
+        select: avg(fragment("? / COALESCE(?, 1)", poi.cost_price, poi.unit_amount))
 
     Repo.one(query)
   end
 
   defp get_average_sale_price(product_id, filters) do
-    query = from oi in CozyCheckout.Sales.OrderItem,
-      join: o in CozyCheckout.Sales.Order,
-      on: oi.order_id == o.id,
-      as: :order,
-      where: oi.product_id == ^product_id
-        and is_nil(oi.deleted_at)
-        and is_nil(o.deleted_at)
-        and o.status != "cancelled"
+    query =
+      from oi in CozyCheckout.Sales.OrderItem,
+        join: o in CozyCheckout.Sales.Order,
+        on: oi.order_id == o.id,
+        as: :order,
+        where:
+          oi.product_id == ^product_id and
+            is_nil(oi.deleted_at) and
+            is_nil(o.deleted_at) and
+            o.status != "cancelled"
 
     query = apply_date_filter(query, filters, :order)
 
-    query = from [oi, o] in query,
-      select: avg(oi.unit_price)
+    query =
+      from [oi, o] in query,
+        select: avg(oi.unit_price)
 
     Repo.one(query)
   end
 
   defp get_total_sold_quantity(product_id, filters) do
-    query = from oi in CozyCheckout.Sales.OrderItem,
-      join: o in CozyCheckout.Sales.Order,
-      on: oi.order_id == o.id,
-      as: :order,
-      where: oi.product_id == ^product_id
-        and is_nil(oi.deleted_at)
-        and is_nil(o.deleted_at)
-        and o.status != "cancelled"
+    query =
+      from oi in CozyCheckout.Sales.OrderItem,
+        join: o in CozyCheckout.Sales.Order,
+        on: oi.order_id == o.id,
+        as: :order,
+        where:
+          oi.product_id == ^product_id and
+            is_nil(oi.deleted_at) and
+            is_nil(o.deleted_at) and
+            o.status != "cancelled"
 
     query = apply_date_filter(query, filters, :order)
 
-    query = from [oi, o] in query,
-      select: coalesce(sum(oi.quantity), 0)
+    query =
+      from [oi, o] in query,
+        select: coalesce(sum(oi.quantity), 0)
 
     Repo.one(query) || Decimal.new(0)
   end
 
   defp get_purchase_movements(filters) do
-    query = from poi in PurchaseOrderItem,
-      join: po in PurchaseOrder,
-      on: poi.purchase_order_id == po.id,
-      as: :purchase_order,
-      join: p in CozyCheckout.Catalog.Product,
-      on: poi.product_id == p.id,
-      as: :product,
-      join: c in CozyCheckout.Catalog.Category,
-      on: p.category_id == c.id,
-      where: is_nil(poi.deleted_at) and is_nil(po.deleted_at),
-      select: %{
-        type: "purchase",
-        date: po.order_date,
-        product_id: p.id,
-        product_name: p.name,
-        category_name: c.name,
-        quantity: poi.quantity,
-        unit_amount: poi.unit_amount,
-        unit: p.unit,
-        price: poi.cost_price,
-        reference: po.order_number,
-        notes: poi.notes
-      }
+    query =
+      from poi in PurchaseOrderItem,
+        join: po in PurchaseOrder,
+        on: poi.purchase_order_id == po.id,
+        as: :purchase_order,
+        join: p in CozyCheckout.Catalog.Product,
+        on: poi.product_id == p.id,
+        as: :product,
+        join: c in CozyCheckout.Catalog.Category,
+        on: p.category_id == c.id,
+        where: is_nil(poi.deleted_at) and is_nil(po.deleted_at),
+        select: %{
+          type: "purchase",
+          date: po.order_date,
+          product_id: p.id,
+          product_name: p.name,
+          category_name: c.name,
+          quantity: poi.quantity,
+          unit_amount: poi.unit_amount,
+          unit: p.unit,
+          price: poi.cost_price,
+          reference: po.order_number,
+          notes: poi.notes
+        }
 
     query = apply_date_filter(query, filters, :purchase_order)
     query = apply_product_filter(query, filters)
@@ -527,31 +549,33 @@ defmodule CozyCheckout.Inventory do
   end
 
   defp get_sale_movements(filters) do
-    query = from oi in CozyCheckout.Sales.OrderItem,
-      join: o in CozyCheckout.Sales.Order,
-      on: oi.order_id == o.id,
-      as: :order,
-      join: p in CozyCheckout.Catalog.Product,
-      on: oi.product_id == p.id,
-      as: :product,
-      join: c in CozyCheckout.Catalog.Category,
-      on: p.category_id == c.id,
-      where: is_nil(oi.deleted_at)
-        and is_nil(o.deleted_at)
-        and o.status != "cancelled",
-      select: %{
-        type: "sale",
-        date: fragment("DATE(?)", o.inserted_at),
-        product_id: p.id,
-        product_name: p.name,
-        category_name: c.name,
-        quantity: fragment("-?", oi.quantity),
-        unit_amount: oi.unit_amount,
-        unit: p.unit,
-        price: oi.unit_price,
-        reference: o.order_number,
-        notes: type(^nil, :string)
-      }
+    query =
+      from oi in CozyCheckout.Sales.OrderItem,
+        join: o in CozyCheckout.Sales.Order,
+        on: oi.order_id == o.id,
+        as: :order,
+        join: p in CozyCheckout.Catalog.Product,
+        on: oi.product_id == p.id,
+        as: :product,
+        join: c in CozyCheckout.Catalog.Category,
+        on: p.category_id == c.id,
+        where:
+          is_nil(oi.deleted_at) and
+            is_nil(o.deleted_at) and
+            o.status != "cancelled",
+        select: %{
+          type: "sale",
+          date: fragment("DATE(?)", o.inserted_at),
+          product_id: p.id,
+          product_name: p.name,
+          category_name: c.name,
+          quantity: fragment("-?", oi.quantity),
+          unit_amount: oi.unit_amount,
+          unit: p.unit,
+          price: oi.unit_price,
+          reference: o.order_number,
+          notes: type(^nil, :string)
+        }
 
     query = apply_date_filter(query, filters, :order)
     query = apply_product_filter(query, filters)
@@ -561,27 +585,28 @@ defmodule CozyCheckout.Inventory do
   end
 
   defp get_adjustment_movements(filters) do
-    query = from sa in StockAdjustment,
-      join: p in CozyCheckout.Catalog.Product,
-      on: sa.product_id == p.id,
-      as: :product,
-      join: c in CozyCheckout.Catalog.Category,
-      on: p.category_id == c.id,
-      as: :adjustment,
-      where: is_nil(sa.deleted_at),
-      select: %{
-        type: fragment("CONCAT('adjustment-', ?)", sa.adjustment_type),
-        date: fragment("DATE(?)", sa.inserted_at),
-        product_id: p.id,
-        product_name: p.name,
-        category_name: c.name,
-        quantity: sa.quantity,
-        unit_amount: sa.unit_amount,
-        unit: p.unit,
-        price: type(^nil, :decimal),
-        reference: sa.reason,
-        notes: sa.notes
-      }
+    query =
+      from sa in StockAdjustment,
+        join: p in CozyCheckout.Catalog.Product,
+        on: sa.product_id == p.id,
+        as: :product,
+        join: c in CozyCheckout.Catalog.Category,
+        on: p.category_id == c.id,
+        as: :adjustment,
+        where: is_nil(sa.deleted_at),
+        select: %{
+          type: fragment("CONCAT('adjustment-', ?)", sa.adjustment_type),
+          date: fragment("DATE(?)", sa.inserted_at),
+          product_id: p.id,
+          product_name: p.name,
+          category_name: c.name,
+          quantity: sa.quantity,
+          unit_amount: sa.unit_amount,
+          unit: p.unit,
+          price: type(^nil, :decimal),
+          reference: sa.reason,
+          notes: sa.notes
+        }
 
     query = apply_date_filter(query, filters, :adjustment)
     query = apply_product_filter(query, filters)
@@ -595,24 +620,35 @@ defmodule CozyCheckout.Inventory do
     case table_alias do
       :purchase_order ->
         from [poi, po] in query,
-        where: as(:purchase_order).order_date >= ^start_date and as(:purchase_order).order_date <= ^end_date
+          where:
+            as(:purchase_order).order_date >= ^start_date and
+              as(:purchase_order).order_date <= ^end_date
+
       :order ->
         from [oi, o] in query,
-        where: fragment("DATE(?)", as(:order).inserted_at) >= ^start_date and fragment("DATE(?)", as(:order).inserted_at) <= ^end_date
+          where:
+            fragment("DATE(?)", as(:order).inserted_at) >= ^start_date and
+              fragment("DATE(?)", as(:order).inserted_at) <= ^end_date
+
       :adjustment ->
         from sa in query,
-        where: fragment("DATE(?)", sa.inserted_at) >= ^start_date and fragment("DATE(?)", sa.inserted_at) <= ^end_date
+          where:
+            fragment("DATE(?)", sa.inserted_at) >= ^start_date and
+              fragment("DATE(?)", sa.inserted_at) <= ^end_date
     end
   end
+
   defp apply_date_filter(query, _filters, _table_alias), do: query
 
   defp apply_product_filter(query, %{product_id: product_id}) when not is_nil(product_id) do
     from q in query, where: as(:product).id == ^product_id
   end
+
   defp apply_product_filter(query, _filters), do: query
 
   defp apply_type_filter(query, %{transaction_type: type}, expected_type) when not is_nil(type) do
     if String.starts_with?(type, expected_type), do: query, else: from(_ in query, where: false)
   end
+
   defp apply_type_filter(query, _filters, _expected_type), do: query
 end

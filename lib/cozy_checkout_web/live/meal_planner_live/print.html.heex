@@ -3,7 +3,9 @@
   <div class="text-center mb-8 border-b-2 border-gray-300 pb-6">
     <h1 class="text-4xl font-bold text-gray-900 mb-2">Jindřichův dům</h1>
     <h2 class="text-2xl font-semibold text-gray-700 mb-1">Weekly Menu</h2>
-    <p class="text-lg text-gray-600">{format_date(@week_start)} - {format_date(Date.add(@week_start, 6))}</p>
+    <p class="text-lg text-gray-600">
+      {format_date(@week_start)} - {format_date(Date.add(@week_start, 6))}
+    </p>
     <p class="text-sm text-gray-500 mt-2">Generated: {format_date(@generated_date)}</p>
   </div>
 
@@ -12,7 +14,9 @@
     <%= for day <- @week_days do %>
       <div class="border-b border-gray-200 pb-4">
         <div class="flex justify-between items-baseline mb-3">
-          <h3 class="text-xl font-bold text-gray-900 uppercase">{day_name(day.date)}, {Calendar.strftime(day.date, "%B %d")}</h3>
+          <h3 class="text-xl font-bold text-gray-900 uppercase">
+            {day_name(day.date)}, {Calendar.strftime(day.date, "%B %d")}
+          </h3>
           <span class="text-lg font-semibold text-gray-700">({day.guest_count} guests)</span>
         </div>
 
@@ -49,7 +53,10 @@
                 <span class="text-gray-600">(Room {restriction.room_number})</span>
               <% end %>
               <span class="text-gray-600">
-                — {Calendar.strftime(restriction.check_in_date, "%b %d")} to {Calendar.strftime(restriction.check_out_date || Date.utc_today(), "%b %d")}
+                — {Calendar.strftime(restriction.check_in_date, "%b %d")} to {Calendar.strftime(
+                  restriction.check_out_date || Date.utc_today(),
+                  "%b %d"
+                )}
               </span>
             </div>
             <div class="text-red-700 font-medium ml-4">

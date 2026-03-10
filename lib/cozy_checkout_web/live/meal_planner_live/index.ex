@@ -82,8 +82,8 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
       |> assign(:edit_modal_open, true)
       |> assign(:edit_date, date)
       |> assign(:edit_meal_type, meal_type)
-      |> assign(:edit_menu_text, meal && meal.menu_text || "")
-      |> assign(:edit_dietary_notes, meal && meal.dietary_notes || "")
+      |> assign(:edit_menu_text, (meal && meal.menu_text) || "")
+      |> assign(:edit_dietary_notes, (meal && meal.dietary_notes) || "")
 
     {:noreply, socket}
   end
@@ -107,7 +107,10 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     socket =
       socket
       |> assign(:edit_menu_text, Map.get(meal_params, "menu_text", socket.assigns.edit_menu_text))
-      |> assign(:edit_dietary_notes, Map.get(meal_params, "dietary_notes", socket.assigns.edit_dietary_notes))
+      |> assign(
+        :edit_dietary_notes,
+        Map.get(meal_params, "dietary_notes", socket.assigns.edit_dietary_notes)
+      )
 
     {:noreply, socket}
   end

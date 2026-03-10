@@ -26,8 +26,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp has_custom_filters?(params) do
     # If there are any filters in params, don't apply default
     Map.has_key?(params, "filters") ||
-    Map.has_key?(params, "invoice_state") ||
-    Map.has_key?(params, "guest_search")
+      Map.has_key?(params, "invoice_state") ||
+      Map.has_key?(params, "guest_search")
   end
 
   @impl true
@@ -88,7 +88,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   @impl true
   def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, _booking}}, socket) do
     # Re-fetch bookings to show updated data, preserving current filters
-    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
+    {:noreply,
+     push_patch(socket,
+       to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params)
+     )}
   end
 
   @impl true
@@ -108,7 +111,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     {:ok, _} = Bookings.delete_booking(booking)
 
     # Re-fetch bookings after delete, preserving current filters
-    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
+    {:noreply,
+     push_patch(socket,
+       to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params)
+     )}
   end
 
   @impl true
@@ -120,7 +126,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         {:noreply,
          socket
          |> put_flash(:info, "Booking status updated successfully")
-         |> push_patch(to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
+         |> push_patch(
+           to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params)
+         )}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to update booking status")}
@@ -136,7 +144,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         {:noreply,
          socket
          |> put_flash(:info, "Invoice status updated successfully")
-         |> push_patch(to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
+         |> push_patch(
+           to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params)
+         )}
 
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to update invoice status")}
@@ -179,15 +189,16 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       end
 
     # Preserve existing params including custom filters
-    result = %{
-      "filters" => filters,
-      "page" => params["page"],
-      "page_size" => params["page_size"],
-      "invoice_state" => params["invoice_state"],
-      "guest_search" => params["guest_search"]
-    }
-    |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} || v == "" end)
-    |> Map.new()
+    result =
+      %{
+        "filters" => filters,
+        "page" => params["page"],
+        "page_size" => params["page_size"],
+        "invoice_state" => params["invoice_state"],
+        "guest_search" => params["guest_search"]
+      }
+      |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} || v == "" end)
+      |> Map.new()
 
     # Preserve show_all from current params if it exists
     if Map.get(current_params, "show_all") == "true" do
@@ -203,7 +214,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+          <.link
+            navigate={~p"/admin"}
+            class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+          >
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
@@ -306,8 +320,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             />
           </:filter>
         </.filter_form>
-
-        <!-- View toggle -->
+        
+    <!-- View toggle -->
         <div class="px-6 py-3 bg-secondary-50 border-t border-secondary-200 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <%= if Map.get(@current_params, "show_all") == "true" do %>
@@ -335,8 +349,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             <% end %>
           </div>
         </div>
-
-        <!-- Table -->
+        
+    <!-- Table -->
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-secondary-50">
@@ -399,7 +413,11 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                       else: "—"}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="relative" id={"booking-status-#{booking.id}"} phx-click-away={JS.hide(to: "#status-menu-#{booking.id}")}>
+                    <div
+                      class="relative"
+                      id={"booking-status-#{booking.id}"}
+                      phx-click-away={JS.hide(to: "#status-menu-#{booking.id}")}
+                    >
                       <button
                         type="button"
                         phx-click={JS.toggle(to: "#status-menu-#{booking.id}")}
@@ -426,7 +444,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                             phx-value-status="upcoming"
                             class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                           >
-                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("upcoming")]}>
+                            <span class={[
+                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                              status_badge_class("upcoming")
+                            ]}>
                               Upcoming
                             </span>
                           </button>
@@ -437,7 +458,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                             phx-value-status="active"
                             class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                           >
-                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("active")]}>
+                            <span class={[
+                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                              status_badge_class("active")
+                            ]}>
                               Active
                             </span>
                           </button>
@@ -448,7 +472,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                             phx-value-status="completed"
                             class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                           >
-                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("completed")]}>
+                            <span class={[
+                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                              status_badge_class("completed")
+                            ]}>
                               Completed
                             </span>
                           </button>
@@ -459,7 +486,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                             phx-value-status="cancelled"
                             class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                           >
-                            <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", status_badge_class("cancelled")]}>
+                            <span class={[
+                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                              status_badge_class("cancelled")
+                            ]}>
                               Cancelled
                             </span>
                           </button>
@@ -469,7 +499,11 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <%= if Map.get(booking, :invoice) do %>
-                      <div class="relative" id={"invoice-status-#{booking.id}"} phx-click-away={JS.hide(to: "#invoice-menu-#{booking.id}")}>
+                      <div
+                        class="relative"
+                        id={"invoice-status-#{booking.id}"}
+                        phx-click-away={JS.hide(to: "#invoice-menu-#{booking.id}")}
+                      >
                         <button
                           type="button"
                           phx-click={JS.toggle(to: "#invoice-menu-#{booking.id}")}
@@ -496,7 +530,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                               phx-value-state="draft"
                               class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                             >
-                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("draft")]}>
+                              <span class={[
+                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                invoice_state_badge_class("draft")
+                              ]}>
                                 Draft
                               </span>
                             </button>
@@ -507,7 +544,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                               phx-value-state="personal"
                               class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                             >
-                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("personal")]}>
+                              <span class={[
+                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                invoice_state_badge_class("personal")
+                              ]}>
                                 Personal
                               </span>
                             </button>
@@ -518,7 +558,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                               phx-value-state="generated"
                               class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                             >
-                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("generated")]}>
+                              <span class={[
+                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                invoice_state_badge_class("generated")
+                              ]}>
                                 Generated
                               </span>
                             </button>
@@ -529,7 +572,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                               phx-value-state="sent"
                               class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                             >
-                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("sent")]}>
+                              <span class={[
+                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                invoice_state_badge_class("sent")
+                              ]}>
                                 Sent
                               </span>
                             </button>
@@ -540,7 +586,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                               phx-value-state="advance_paid"
                               class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                             >
-                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("advance_paid")]}>
+                              <span class={[
+                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                invoice_state_badge_class("advance_paid")
+                              ]}>
                                 Advance Paid (50%)
                               </span>
                             </button>
@@ -551,7 +600,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                               phx-value-state="paid"
                               class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
                             >
-                              <span class={["px-2 inline-flex text-xs leading-5 font-semibold rounded-full", invoice_state_badge_class("paid")]}>
+                              <span class={[
+                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                                invoice_state_badge_class("paid")
+                              ]}>
                                 Paid
                               </span>
                             </button>
@@ -564,13 +616,17 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
-                      navigate={build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)}
+                      navigate={
+                        build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
+                      }
                       class="text-tertiary-600 hover:text-blue-900 mr-4"
                     >
                       View
                     </.link>
                     <.link
-                      patch={build_path_with_params(~p"/admin/bookings/#{booking}/edit", @current_params)}
+                      patch={
+                        build_path_with_params(~p"/admin/bookings/#{booking}/edit", @current_params)
+                      }
                       class="text-tertiary-600 hover:text-white-900 mr-4"
                     >
                       Edit

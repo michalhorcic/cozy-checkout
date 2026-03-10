@@ -27,7 +27,9 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.Index do
     socket
     |> assign(:page_title, "New Purchase Order")
     |> assign(:purchase_orders, Inventory.list_purchase_orders())
-    |> assign(:purchase_order, %PurchaseOrder{order_number: Inventory.generate_purchase_order_number()})
+    |> assign(:purchase_order, %PurchaseOrder{
+      order_number: Inventory.generate_purchase_order_number()
+    })
   end
 
   defp apply_action(socket, :edit, %{"id" => id}) do
@@ -49,7 +51,10 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.Index do
   end
 
   @impl true
-  def handle_info({CozyCheckoutWeb.PurchaseOrderLive.FormComponent, {:saved, _purchase_order}}, socket) do
+  def handle_info(
+        {CozyCheckoutWeb.PurchaseOrderLive.FormComponent, {:saved, _purchase_order}},
+        socket
+      ) do
     {:noreply,
      socket
      |> assign(:purchase_orders, Inventory.list_purchase_orders())
@@ -62,7 +67,10 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+          <.link
+            navigate={~p"/admin"}
+            class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+          >
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>

@@ -341,7 +341,9 @@ defmodule CozyCheckoutWeb.OrderLive.New do
                   </div>
                 </div>
                 <div class="flex items-center space-x-4">
-                  <div class="text-lg font-bold text-primary-500">{format_currency(item.subtotal)}</div>
+                  <div class="text-lg font-bold text-primary-500">
+                    {format_currency(item.subtotal)}
+                  </div>
                   <button
                     type="button"
                     phx-click="remove_item"

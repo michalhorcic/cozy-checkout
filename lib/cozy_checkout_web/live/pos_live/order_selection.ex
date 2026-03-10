@@ -79,7 +79,9 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
 
       [single_guest] ->
         # Only one guest available - auto-create order
-        {:ok, order} = Sales.create_booking_order_for_guest(booking.id, single_guest.guest_id, service_mode)
+        {:ok, order} =
+          Sales.create_booking_order_for_guest(booking.id, single_guest.guest_id, service_mode)
+
         {:noreply, push_navigate(socket, to: ~p"/pos/orders/#{order.id}")}
 
       multiple_guests when length(multiple_guests) > 1 ->

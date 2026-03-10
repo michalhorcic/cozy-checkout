@@ -430,7 +430,9 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
               <div class="flex justify-between text-sm mt-2">
                 <span class="text-primary-400 font-medium">Advance Payment (50%)</span>
                 <span class="font-semibold text-yellow-600">
-                  {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.div(@invoice.total_price, 2))}
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(
+                    Decimal.div(@invoice.total_price, 2)
+                  )}
                 </span>
               </div>
             <% else %>

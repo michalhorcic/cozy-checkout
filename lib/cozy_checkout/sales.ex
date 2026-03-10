@@ -634,7 +634,12 @@ defmodule CozyCheckout.Sales do
   Gets product sales statistics for a date range and optional status filter.
   Returns a list of maps with product details and sales metrics.
   """
-  def get_product_statistics(date_from, date_to, status_filter \\ ["paid", "open"], service_filter \\ "all") do
+  def get_product_statistics(
+        date_from,
+        date_to,
+        status_filter \\ ["paid", "open"],
+        service_filter \\ "all"
+      ) do
     # Query to get aggregated order item data
     query =
       from(oi in OrderItem,
@@ -698,7 +703,13 @@ defmodule CozyCheckout.Sales do
   @doc """
   Gets the most popular products by quantity sold.
   """
-  def get_most_popular_products(date_from, date_to, status_filter \\ ["paid", "open"], service_filter \\ "all", limit \\ 10) do
+  def get_most_popular_products(
+        date_from,
+        date_to,
+        status_filter \\ ["paid", "open"],
+        service_filter \\ "all",
+        limit \\ 10
+      ) do
     query =
       from(oi in OrderItem,
         join: o in Order,
@@ -740,7 +751,13 @@ defmodule CozyCheckout.Sales do
   @doc """
   Gets the products with highest revenue.
   """
-  def get_top_revenue_products(date_from, date_to, status_filter \\ ["paid", "open"], service_filter \\ "all", limit \\ 10) do
+  def get_top_revenue_products(
+        date_from,
+        date_to,
+        status_filter \\ ["paid", "open"],
+        service_filter \\ "all",
+        limit \\ 10
+      ) do
     query =
       from(oi in OrderItem,
         join: o in Order,
@@ -782,7 +799,12 @@ defmodule CozyCheckout.Sales do
   @doc """
   Gets overall statistics for a date range.
   """
-  def get_overall_statistics(date_from, date_to, status_filter \\ ["paid", "open"], service_filter \\ "all") do
+  def get_overall_statistics(
+        date_from,
+        date_to,
+        status_filter \\ ["paid", "open"],
+        service_filter \\ "all"
+      ) do
     query =
       from(o in Order,
         where: is_nil(o.deleted_at),

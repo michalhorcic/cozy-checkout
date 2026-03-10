@@ -54,7 +54,9 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
           </div>
 
           <%= if @items == [] do %>
-            <p class="text-sm text-gray-500 italic">No items yet. Click "Add Item" to add products.</p>
+            <p class="text-sm text-gray-500 italic">
+              No items yet. Click "Add Item" to add products.
+            </p>
           <% else %>
             <div class="space-y-4">
               <%= for {item, index} <- Enum.with_index(@items) do %>
@@ -87,11 +89,16 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
                       <%= if item.product_id do %>
                         <div class="relative">
                           <div class="flex items-center gap-2 p-3 bg-emerald-50 border-2 border-emerald-200 rounded-lg">
-                            <.icon name="hero-check-circle" class="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                            <.icon
+                              name="hero-check-circle"
+                              class="w-5 h-5 text-emerald-600 flex-shrink-0"
+                            />
                             <div class="flex-1 min-w-0">
                               <% selected_product = Enum.find(@products, &(&1.id == item.product_id)) %>
                               <div class="font-medium text-gray-900">{selected_product.name}</div>
-                              <div class="text-sm text-gray-600">{selected_product.category.name}</div>
+                              <div class="text-sm text-gray-600">
+                                {selected_product.category.name}
+                              </div>
                             </div>
                             <button
                               type="button"
@@ -104,7 +111,11 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
                               <.icon name="hero-x-mark" class="w-5 h-5 text-gray-500" />
                             </button>
                           </div>
-                          <input type="hidden" name={"items[#{index}][product_id]"} value={item.product_id} />
+                          <input
+                            type="hidden"
+                            name={"items[#{index}][product_id]"}
+                            value={item.product_id}
+                          />
                         </div>
                       <% else %>
                         <div class="relative" id={"product-search-#{index}"}>
@@ -124,11 +135,13 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
                           <%!-- Search results dropdown --%>
                           <%= if get_in(@show_product_suggestions, [index]) do %>
                             <% search_query = get_in(@product_searches, [index]) || "" %>
-                            <% filtered_products = @products
+                            <% filtered_products =
+                              @products
                               |> Enum.filter(fn p ->
                                 query = String.downcase(search_query)
+
                                 String.contains?(String.downcase(p.name), query) ||
-                                String.contains?(String.downcase(p.category.name), query)
+                                  String.contains?(String.downcase(p.category.name), query)
                               end)
                               |> Enum.take(10) %>
 
@@ -270,7 +283,9 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
   def handle_event("search_products", %{"index" => index, "value" => search_query}, socket) do
     index = String.to_integer(index)
     product_searches = Map.put(socket.assigns.product_searches, index, search_query)
-    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, String.length(search_query) >= 2)
+
+    show_suggestions =
+      Map.put(socket.assigns.show_product_suggestions, index, String.length(search_query) >= 2)
 
     {:noreply,
      socket
@@ -283,9 +298,10 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
     index = String.to_integer(index)
 
     # Update the item with the selected product
-    items = List.update_at(socket.assigns.items, index, fn item ->
-      Map.put(item, :product_id, product_id)
-    end)
+    items =
+      List.update_at(socket.assigns.items, index, fn item ->
+        Map.put(item, :product_id, product_id)
+      end)
 
     # Clear the search for this index
     product_searches = Map.delete(socket.assigns.product_searches, index)
@@ -303,9 +319,10 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
     index = String.to_integer(index)
 
     # Clear the product_id for this item
-    items = List.update_at(socket.assigns.items, index, fn item ->
-      Map.put(item, :product_id, nil)
-    end)
+    items =
+      List.update_at(socket.assigns.items, index, fn item ->
+        Map.put(item, :product_id, nil)
+      end)
 
     # Reset search state
     product_searches = Map.delete(socket.assigns.product_searches, index)
@@ -347,6 +364,7 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
               notes: item_params["notes"]
             }
           end)
+
         _ ->
           socket.assigns.items
       end
@@ -392,7 +410,11 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
   end
 
   # This catches the save event with items
-  def handle_event("save", %{"purchase_order" => purchase_order_params, "items" => items_params}, socket) do
+  def handle_event(
+        "save",
+        %{"purchase_order" => purchase_order_params, "items" => items_params},
+        socket
+      ) do
     save_purchase_order(socket, socket.assigns.action, purchase_order_params, items_params)
   end
 
@@ -506,22 +528,27 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
 
   defp parse_integer(nil), do: nil
   defp parse_integer(""), do: nil
+
   defp parse_integer(value) when is_binary(value) do
     case Integer.parse(value) do
       {int, _} -> int
       :error -> nil
     end
   end
+
   defp parse_integer(value) when is_integer(value), do: value
 
   defp parse_decimal(nil), do: nil
   defp parse_decimal(""), do: nil
+
   defp parse_decimal(value) when is_binary(value) do
     case Decimal.parse(value) do
       {decimal, _} -> decimal
-      :error -> value  # Keep as string if can't parse, for error display
+      # Keep as string if can't parse, for error display
+      :error -> value
     end
   end
+
   defp parse_decimal(value), do: value
 
   defp change_purchase_order(purchase_order, attrs \\ %{}) do

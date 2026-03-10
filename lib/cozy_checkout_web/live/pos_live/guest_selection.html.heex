@@ -11,7 +11,7 @@
         <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 shadow-md">
           <span class={[
             "text-sm font-semibold transition-colors duration-200",
-            @service_mode && "text-gray-400" || "text-primary-600"
+            (@service_mode && "text-gray-400") || "text-primary-600"
           ]}>
             Standard
           </span>
@@ -19,18 +19,18 @@
             phx-click="toggle_service_mode"
             class={[
               "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
-              @service_mode && "bg-purple-600" || "bg-gray-300"
+              (@service_mode && "bg-purple-600") || "bg-gray-300"
             ]}
           >
             <span class={[
               "inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out",
-              @service_mode && "translate-x-8" || "translate-x-1"
+              (@service_mode && "translate-x-8") || "translate-x-1"
             ]}>
             </span>
           </button>
           <span class={[
             "text-sm font-semibold transition-colors duration-200",
-            @service_mode && "text-purple-600" || "text-gray-400"
+            (@service_mode && "text-purple-600") || "text-gray-400"
           ]}>
             Service
           </span>
@@ -94,7 +94,9 @@
     </div>
     
 <!-- Bookings Section -->
-    <h2 :if={@bookings != []} class="text-2xl font-bold text-primary-500 mb-3">Active Bookings</h2>
+    <h2 :if={@bookings != []} class="text-2xl font-bold text-primary-500 mb-3">
+      Active Bookings
+    </h2>
     
 <!-- Bookings Grid -->
     <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">

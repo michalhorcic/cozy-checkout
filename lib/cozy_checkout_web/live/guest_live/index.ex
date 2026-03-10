@@ -51,7 +51,10 @@ defmodule CozyCheckoutWeb.GuestLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+          <.link
+            navigate={~p"/admin"}
+            class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+          >
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>

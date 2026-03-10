@@ -76,12 +76,18 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
     bookings = CalendarHelpers.bookings_for_date(socket.assigns.bookings, date)
     categorized = CalendarHelpers.categorize_bookings_for_date(socket.assigns.bookings, date)
 
-    {:noreply, assign(socket, modal_date: date, modal_bookings: bookings, modal_categorized: categorized)}
+    {:noreply,
+     assign(socket, modal_date: date, modal_bookings: bookings, modal_categorized: categorized)}
   end
 
   @impl true
   def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, modal_date: nil, modal_bookings: [], modal_categorized: %{arriving: [], staying: [], leaving: []})}
+    {:noreply,
+     assign(socket,
+       modal_date: nil,
+       modal_bookings: [],
+       modal_categorized: %{arriving: [], staying: [], leaving: []}
+     )}
   end
 
   defp load_calendar_data(socket) do
@@ -98,8 +104,13 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
     calendar_end = Date.end_of_week(last_day, :monday)
 
     occupancy_map = Bookings.get_occupancy_for_range(calendar_start, calendar_end)
-    occupancy_breakdown_map = Bookings.get_occupancy_breakdown_for_range(calendar_start, calendar_end)
-    arrivals_departures_map = Bookings.get_arrivals_departures_for_range(calendar_start, calendar_end)
+
+    occupancy_breakdown_map =
+      Bookings.get_occupancy_breakdown_for_range(calendar_start, calendar_end)
+
+    arrivals_departures_map =
+      Bookings.get_arrivals_departures_for_range(calendar_start, calendar_end)
+
     capacity = Bookings.cottage_capacity()
 
     socket
@@ -164,7 +175,10 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
             type="button"
             phx-click="show_day_bookings"
             phx-value-date={@date}
-            class={[occupancy_badge_class(occupancy), "cursor-pointer hover:shadow-md transition-shadow"]}
+            class={[
+              occupancy_badge_class(occupancy),
+              "cursor-pointer hover:shadow-md transition-shadow"
+            ]}
           >
             <span>{occupancy}/{@capacity}</span>
             <%!-- Breakdown rows --%>

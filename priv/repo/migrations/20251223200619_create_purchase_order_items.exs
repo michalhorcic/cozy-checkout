@@ -4,7 +4,10 @@ defmodule CozyCheckout.Repo.Migrations.CreatePurchaseOrderItems do
   def change do
     create table(:purchase_order_items, primary_key: false) do
       add :id, :binary_id, primary_key: true
-      add :purchase_order_id, references(:purchase_orders, on_delete: :delete_all, type: :binary_id), null: false
+
+      add :purchase_order_id,
+          references(:purchase_orders, on_delete: :delete_all, type: :binary_id), null: false
+
       add :product_id, references(:products, on_delete: :restrict, type: :binary_id), null: false
       add :quantity, :integer, null: false
       add :unit_amount, :decimal, precision: 10, scale: 2

@@ -7,7 +7,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
   @impl true
   def mount(%{"week" => week_string}, _session, socket) do
     week_start = Date.from_iso8601!(week_string)
-    
+
     socket =
       socket
       |> assign(:week_start, week_start)

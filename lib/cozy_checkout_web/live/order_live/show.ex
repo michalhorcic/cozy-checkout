@@ -246,7 +246,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                       {format_currency(group.total_price)}
                     </div>
                   </div>
-
+                  
     <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
@@ -264,7 +264,7 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                     </button>
                   <% end %>
                 </div>
-
+                
     <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-secondary-200">
@@ -315,7 +315,9 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                     {payment.notes}
                   </div>
                 </div>
-                <div class="text-lg font-bold text-success-dark">+{format_currency(payment.amount)}</div>
+                <div class="text-lg font-bold text-success-dark">
+                  +{format_currency(payment.amount)}
+                </div>
               </div>
             </div>
 
@@ -342,15 +344,14 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
             <h2 class="text-2xl font-bold text-primary-500 mb-4">Summary</h2>
 
             <div class="space-y-3">
-              <%
-                items_subtotal = Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
+              <% items_subtotal =
+                Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
                   if is_nil(item.deleted_at) do
                     Decimal.add(acc, item.subtotal)
                   else
                     acc
                   end
-                end)
-              %>
+                end) %>
 
               <div class="flex justify-between text-primary-400">
                 <span>Subtotal (Items):</span>

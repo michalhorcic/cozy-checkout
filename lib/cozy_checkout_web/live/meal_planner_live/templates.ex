@@ -33,7 +33,10 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Templates do
   end
 
   @impl true
-  def handle_info({CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent, {:saved, template}}, socket) do
+  def handle_info(
+        {CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent, {:saved, template}},
+        socket
+      ) do
     {:noreply, stream_insert(socket, :meal_templates, template)}
   end
 

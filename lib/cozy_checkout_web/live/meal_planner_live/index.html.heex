@@ -2,7 +2,10 @@
   <%!-- Header --%>
   <div class="flex justify-between items-center mb-8">
     <div>
-      <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+      <.link
+        navigate={~p"/admin"}
+        class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+      >
         ← Back to Dashboard
       </.link>
       <h1 class="text-4xl font-bold text-primary-500 flex items-center gap-3">
@@ -142,7 +145,9 @@
             <div class="bg-secondary-50 px-4 py-3 border-b border-secondary-200">
               <div class="flex justify-between items-center">
                 <div>
-                  <div class="font-semibold text-primary-500">{day_name(day.date)}, {format_date(day.date)}</div>
+                  <div class="font-semibold text-primary-500">
+                    {day_name(day.date)}, {format_date(day.date)}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -169,7 +174,9 @@
                   <div class="flex items-start gap-3">
                     <span class="text-2xl">{meal_type_emoji(meal_type)}</span>
                     <div class="flex-1">
-                      <div class="font-medium text-primary-500 mb-1">{meal_type_label(meal_type)}</div>
+                      <div class="font-medium text-primary-500 mb-1">
+                        {meal_type_label(meal_type)}
+                      </div>
                       <%= if meal && meal.menu_text && meal.menu_text != "" do %>
                         <div class="text-sm text-primary-400 whitespace-pre-line">
                           {meal.menu_text}
@@ -228,7 +235,9 @@
                       <%= if restriction.room_number do %>
                         Room {restriction.room_number} •
                       <% end %>
-                      {format_date(restriction.check_in_date)} - {format_date(restriction.check_out_date || Date.utc_today())}
+                      {format_date(restriction.check_in_date)} - {format_date(
+                        restriction.check_out_date || Date.utc_today()
+                      )}
                     </div>
                     <div class="text-sm text-error bg-error-light px-3 py-2 rounded whitespace-pre-line">
                       {restriction.dietary_restrictions}

@@ -14,7 +14,8 @@ defmodule CozyCheckoutWeb.Endpoint do
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [
       connect_info: [session: @session_options],
-      timeout: :infinity  # Never timeout the WebSocket connection
+      # Never timeout the WebSocket connection
+      timeout: :infinity
     ],
     longpoll: [connect_info: [session: @session_options]]
 

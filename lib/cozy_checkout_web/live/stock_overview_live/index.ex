@@ -22,7 +22,11 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
   end
 
   @impl true
-  def handle_event("filters_changed", %{"category_id" => category_id, "search" => search_query}, socket) do
+  def handle_event(
+        "filters_changed",
+        %{"category_id" => category_id, "search" => search_query},
+        socket
+      ) do
     category_id = if category_id == "", do: nil, else: category_id
 
     {:noreply,
@@ -96,7 +100,10 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
     ~H"""
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8">
-        <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+        <.link
+          navigate={~p"/admin"}
+          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+        >
           ← Back to Dashboard
         </.link>
         <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
@@ -235,7 +242,11 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
                     <%= if item.display_unit == "L" && item.product.default_unit_amounts && item.product.default_unit_amounts != "" && item.product.default_unit_amounts != "[]" do %>
                       <div class="text-xs text-gray-500 mt-1 space-x-3">
                         <%= for amount <- Jason.decode!(item.product.default_unit_amounts) do %>
-                          <% servings = item.raw_stock |> Decimal.div(amount) |> Decimal.round(0, :down) |> Decimal.to_integer() %>
+                          <% servings =
+                            item.raw_stock
+                            |> Decimal.div(amount)
+                            |> Decimal.round(0, :down)
+                            |> Decimal.to_integer() %>
                           <%= if servings > 0 do %>
                             <span class="inline-block">
                               ≈ {servings} × {format_number(amount)}{item.product.unit}

@@ -165,7 +165,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
           </span>
         <% end %>
       </div>
-
+      
     <!-- Desktop pagination -->
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>

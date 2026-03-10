@@ -55,7 +55,10 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
   @impl true
   def handle_info({CozyCheckoutWeb.ProductLive.FormComponent, {:saved, _product}}, socket) do
     # Re-fetch products to show updated data, preserving current filters
-    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/products", socket.assigns.current_params))}
+    {:noreply,
+     push_patch(socket,
+       to: build_path_with_params(~p"/admin/products", socket.assigns.current_params)
+     )}
   end
 
   @impl true
@@ -64,7 +67,10 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
     {:ok, _} = Catalog.delete_product(product)
 
     # Re-fetch products after delete, preserving current filters
-    {:noreply, push_patch(socket, to: build_path_with_params(~p"/admin/products", socket.assigns.current_params))}
+    {:noreply,
+     push_patch(socket,
+       to: build_path_with_params(~p"/admin/products", socket.assigns.current_params)
+     )}
   end
 
   @impl true
@@ -118,7 +124,10 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
     <div class="max-w-7xl mx-auto px-4 py-8">
       <div class="mb-8 flex items-center justify-between">
         <div>
-          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+          <.link
+            navigate={~p"/admin"}
+            class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+          >
             ← Back to Dashboard
           </.link>
           <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
@@ -228,7 +237,9 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
-                      patch={build_path_with_params(~p"/admin/products/#{product}/edit", @current_params)}
+                      patch={
+                        build_path_with_params(~p"/admin/products/#{product}/edit", @current_params)
+                      }
                       class="text-tertiary-600 hover:text-white-900 mr-4"
                     >
                       Edit

@@ -83,7 +83,8 @@ defmodule CozyCheckout.Bookings do
   defp apply_invoice_state_filter(query, _params), do: query
 
   # Filter by guest name or email (partial match, case-insensitive)
-  defp apply_guest_search_filter(query, %{"guest_search" => search}) when is_binary(search) and search != "" do
+  defp apply_guest_search_filter(query, %{"guest_search" => search})
+       when is_binary(search) and search != "" do
     search_pattern = "%#{search}%"
 
     where(
