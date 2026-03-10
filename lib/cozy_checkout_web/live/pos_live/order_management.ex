@@ -28,6 +28,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:item_to_delete, nil)
        |> assign(:show_quantity_modal, false)
        |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
        |> load_order()
        |> load_products()
        |> assign(:show_success, false)}
@@ -52,6 +57,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:item_to_delete, nil)
        |> assign(:show_quantity_modal, false)
        |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
        |> assign(:order, nil)
        |> assign(:grouped_items, [])
        |> assign(:categories, [])
@@ -283,6 +293,71 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
+  def handle_event("enter_split_mode", _params, socket) do
+    # Reset selection only — keep allocated so previously-paid quantities can't be double-paid
+    {:noreply,
+     socket
+     |> assign(:split_mode, true)
+     |> assign(:split_selection, %{})}
+  end
+
+  @impl true
+  def handle_event("exit_split_mode", _params, socket) do
+    # Keep split_allocated alive so re-entering split mode still respects past payments
+    {:noreply,
+     socket
+     |> assign(:split_mode, false)
+     |> assign(:split_selection, %{})
+     |> assign(:split_payment_amount, nil)
+     |> assign(:last_payment_amount, nil)
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "split_adjust",
+        %{"product-id" => product_id, "unit-amount" => unit_amount_str, "delta" => delta_str},
+        socket
+      ) do
+    unit_amount = parse_unit_amount(unit_amount_str)
+    key = {product_id, unit_amount}
+
+    group =
+      Enum.find(socket.assigns.grouped_items, fn g ->
+        g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+      end)
+
+    if group do
+      allocated_qty = Map.get(socket.assigns.split_allocated, key, 0)
+      total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+      max_available = max(0, total_qty - allocated_qty)
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    {:noreply,
+     socket
+     |> assign(:split_payment_amount, split_amount)
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
   def handle_event("open_payment_modal", _params, socket) do
     {:noreply,
      socket
@@ -291,8 +366,14 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
      |> assign(:payment_qr_svg, nil)
      |> assign(:payment_invoice_number, nil)
      |> assign(:payment_preview_amount, nil)
-     |> assign(:tips_amount, Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0")))
-     |> assign(:discount_amount, Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0")))
+     |> assign(
+       :tips_amount,
+       Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0"))
+     )
+     |> assign(
+       :discount_amount,
+       Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+     )
      |> assign(:discount_reason, socket.assigns.order.discount_reason || "")}
   end
 
@@ -313,57 +394,91 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
      socket
      |> assign(:tips_amount, params["tips_amount"] || "0")
      |> assign(:discount_amount, params["discount_amount"] || "0")
-     |> assign(:discount_reason, params["discount_reason"] || "")
-    }
+     |> assign(:discount_reason, params["discount_reason"] || "")}
   end
 
   @impl true
   def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
-    # Update order with tips and discount first
-    tips = parse_decimal(socket.assigns.tips_amount)
-    discount = parse_decimal(socket.assigns.discount_amount)
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: apply tips & discount, then pay the new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
 
-    # Calculate new total: items_total - discount + tips
-    items_total = socket.assigns.order.order_items
-      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
-        Decimal.add(acc, item.subtotal)
-      end)
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
 
-    new_total = items_total
-      |> Decimal.sub(discount)
-      |> Decimal.add(tips)
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
 
-    order_update_attrs = %{
-      "tips_amount" => Decimal.to_string(tips),
-      "discount_amount" => Decimal.to_string(discount),
-      "discount_reason" => socket.assigns.discount_reason,
-      "total_amount" => Decimal.to_string(new_total)
-    }
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
 
-    case Sales.update_order(socket.assigns.order, order_update_attrs) do
-      {:ok, updated_order} ->
-        # Create payment for the updated total
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            payment_attrs = %{
+              "order_id" => socket.assigns.order_id,
+              "amount" => Decimal.to_string(updated_order.total_amount),
+              "payment_method" => "cash",
+              "payment_date" => Date.utc_today()
+            }
+
+            case Sales.create_payment(payment_attrs) do
+              {:ok, payment} ->
+                {:noreply,
+                 socket
+                 |> assign(:payment_method, "cash_success")
+                 |> assign(:payment_invoice_number, payment.invoice_number)
+                 |> assign(:last_payment_amount, updated_order.total_amount)
+                 |> load_order()}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            end
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: pay only the selected amount, no tips/discount changes
         payment_attrs = %{
           "order_id" => socket.assigns.order_id,
-          "amount" => Decimal.to_string(updated_order.total_amount),
+          "amount" => Decimal.to_string(split_amount),
           "payment_method" => "cash",
           "payment_date" => Date.utc_today()
         }
 
         case Sales.create_payment(payment_attrs) do
           {:ok, payment} ->
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
             {:noreply,
              socket
              |> assign(:payment_method, "cash_success")
              |> assign(:payment_invoice_number, payment.invoice_number)
+             |> assign(:last_payment_amount, split_amount)
+             |> assign(:split_selection, %{})
+             |> assign(:split_allocated, new_allocated)
+             |> assign(:split_payment_amount, nil)
              |> load_order()}
 
           {:error, _changeset} ->
             {:noreply, put_flash(socket, :error, "Failed to create payment")}
         end
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update order")}
     end
   end
 
@@ -410,72 +525,109 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
-    # Update order with tips and discount first, then show a QR code preview
-    # (payment is NOT created yet — staff confirms after customer scans)
-    tips = parse_decimal(socket.assigns.tips_amount)
-    discount = parse_decimal(socket.assigns.discount_amount)
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
 
-    # Calculate new total: items_total - discount + tips
-    items_total =
-      socket.assigns.order.order_items
-      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
-        Decimal.add(acc, item.subtotal)
-      end)
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: update tips/discount, then show QR for new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
 
-    new_total =
-      items_total
-      |> Decimal.sub(discount)
-      |> Decimal.add(tips)
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
 
-    order_update_attrs = %{
-      "tips_amount" => Decimal.to_string(tips),
-      "discount_amount" => Decimal.to_string(discount),
-      "discount_reason" => socket.assigns.discount_reason,
-      "total_amount" => Decimal.to_string(new_total)
-    }
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
 
-    case Sales.update_order(socket.assigns.order, order_update_attrs) do
-      {:ok, updated_order} ->
-        # Generate a preview QR code — no payment record created yet
-        bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            qr_svg =
+              QrCode.generate_qr_svg(%{
+                account_number: bank_account,
+                amount: updated_order.total_amount,
+                currency: "CZK",
+                variable_symbol: updated_order.order_number,
+                message: "Order #{updated_order.order_number}"
+              })
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "qr_preview")
+             |> assign(:payment_qr_svg, qr_svg)
+             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: show QR for split amount only, no order update
+        order = socket.assigns.order
 
         qr_svg =
           QrCode.generate_qr_svg(%{
             account_number: bank_account,
-            amount: updated_order.total_amount,
+            amount: split_amount,
             currency: "CZK",
-            variable_symbol: updated_order.order_number,
-            message: "Order #{updated_order.order_number}"
+            variable_symbol: order.order_number,
+            message: "Order #{order.order_number}"
           })
 
         {:noreply,
          socket
          |> assign(:payment_method, "qr_preview")
          |> assign(:payment_qr_svg, qr_svg)
-         |> assign(:payment_preview_amount, updated_order.total_amount)
-         |> load_order()}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update order")}
+         |> assign(:payment_preview_amount, split_amount)}
     end
   end
 
   @impl true
   def handle_event("confirm_qr_payment", _params, socket) do
-    # Create the actual payment record once staff confirms customer has paid
+    amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
+
     payment_attrs = %{
       "order_id" => socket.assigns.order_id,
-      "amount" => Decimal.to_string(socket.assigns.order.total_amount),
+      "amount" => Decimal.to_string(amount),
       "payment_method" => "qr_code",
       "payment_date" => Date.utc_today()
     }
 
     case Sales.create_payment(payment_attrs) do
       {:ok, payment} ->
+        socket =
+          if socket.assigns.split_payment_amount do
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            socket
+            |> assign(:split_selection, %{})
+            |> assign(:split_allocated, new_allocated)
+            |> assign(:split_payment_amount, nil)
+          else
+            socket
+          end
+
         {:noreply,
          socket
          |> assign(:payment_method, "qr_success")
          |> assign(:payment_invoice_number, payment.invoice_number)
+         |> assign(:last_payment_amount, amount)
          |> load_order()}
 
       {:error, _changeset} ->
@@ -682,4 +834,39 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
     end
   end
+
+  # --- Split bill helpers ---
+
+  defp calc_split_total(grouped_items, selection) do
+    Enum.reduce(selection, Decimal.new("0"), fn {{product_id, unit_amount}, qty}, acc ->
+      if qty > 0 do
+        group =
+          Enum.find(grouped_items, fn g ->
+            g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+          end)
+
+        if group && Decimal.gt?(group.total_quantity, 0) do
+          price_per_qty = Decimal.div(group.total_price, group.total_quantity)
+          item_total = Decimal.mult(price_per_qty, Decimal.new(qty))
+          Decimal.add(acc, item_total)
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  defp merge_selection_into_allocated(allocated, selection) do
+    Enum.reduce(selection, allocated, fn {key, qty}, acc ->
+      current = Map.get(acc, key, 0)
+      Map.put(acc, key, current + qty)
+    end)
+  end
+
+  defp decimals_equal?(nil, nil), do: true
+  defp decimals_equal?(nil, _), do: false
+  defp decimals_equal?(_, nil), do: false
+  defp decimals_equal?(a, b), do: Decimal.equal?(a, b)
 end
