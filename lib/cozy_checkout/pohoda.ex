@@ -32,7 +32,7 @@ defmodule CozyCheckout.Pohoda do
     date = format_date(order.inserted_at)
     {account_no, bank_code} = parse_bank_account()
     {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
-    items = active_order_items(order)
+    items = order |> active_order_items() |> group_items()
     {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)
 
     """
@@ -134,6 +134,35 @@ defmodule CozyCheckout.Pohoda do
               </inv:homeCurrency>
             </inv:invoiceItem>
     """
+  end
+
+  defp group_items(order_items) do
+    order_items
+    |> Enum.group_by(fn item ->
+      {item.product_id, item.unit_amount, item.unit_price}
+    end)
+    |> Enum.map(fn {{_product_id, _unit_amount, _unit_price}, items} ->
+      first = hd(items)
+
+      total_quantity =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, Decimal.new(item.quantity))
+        end)
+
+      total_subtotal =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.subtotal)
+        end)
+
+      %{
+        product: first.product,
+        unit_amount: first.unit_amount,
+        unit_price: first.unit_price,
+        vat_rate: first.vat_rate,
+        quantity: total_quantity,
+        subtotal: total_subtotal
+      }
+    end)
   end
 
   defp active_order_items(order) do

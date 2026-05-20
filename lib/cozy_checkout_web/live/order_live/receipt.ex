@@ -2,11 +2,14 @@ defmodule CozyCheckoutWeb.OrderLive.Receipt do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.Sales
+  alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
     order = Sales.get_order!(id)
     payments = Sales.list_payments_for_order(id)
+
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
     # Group items by VAT rate for VAT breakdown
     vat_breakdown = calculate_vat_breakdown(order.order_items)
@@ -21,6 +24,7 @@ defmodule CozyCheckoutWeb.OrderLive.Receipt do
       |> assign(:page_title, "Receipt - Order #{order.order_number}")
       |> assign(:order, order)
       |> assign(:payments, payments)
+      |> assign(:grouped_items, grouped_items)
       |> assign(:vat_breakdown, vat_breakdown)
       |> assign(:total_paid, total_paid)
       |> assign(:generated_at, DateTime.utc_now())

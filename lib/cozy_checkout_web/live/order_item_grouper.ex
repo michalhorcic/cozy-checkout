@@ -24,9 +24,9 @@ defmodule CozyCheckoutWeb.OrderItemGrouper do
     order_items
     |> Enum.reject(&(!is_nil(&1.deleted_at)))
     |> Enum.group_by(fn item ->
-      {item.product_id, item.unit_amount}
+      {item.product_id, item.unit_amount, item.unit_price}
     end)
-    |> Enum.map(fn {{_product_id, _unit_amount}, items} ->
+    |> Enum.map(fn {{_product_id, _unit_amount, _unit_price}, items} ->
       first = hd(items)
 
       total_quantity =

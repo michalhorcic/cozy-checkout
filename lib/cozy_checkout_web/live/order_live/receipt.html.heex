@@ -137,23 +137,23 @@
     <%!-- Order Items --%>
     <div class="receipt-section receipt-items">
       <div style="font-weight: bold; margin-bottom: 8px;">POLOŽKY:</div>
-      <%= for item <- Enum.filter(@order.order_items, &is_nil(&1.deleted_at)) do %>
+      <%= for group <- @grouped_items do %>
         <div class="receipt-item">
           <div style="margin-bottom: 2px;">
-            <strong>{item.product.name}</strong>
-            <%= if item.unit_amount do %>
+            <strong>{group.product.name}</strong>
+            <%= if group.unit_amount do %>
               <span style="font-size: 11px;">
-                ({item.quantity} × {item.unit_amount}{item.product.unit})
+                ({format_number(group.unit_amount)}{group.unit} × {Decimal.to_integer(Decimal.round(group.total_quantity, 0))})
               </span>
             <% else %>
               <span style="font-size: 11px;">
-                (ks: {item.quantity})
+                (ks: {Decimal.to_integer(Decimal.round(group.total_quantity, 0))})
               </span>
             <% end %>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 11px;">
-            <span>{format_currency(item.unit_price)} × {item.quantity}</span>
-            <span><strong>{format_currency(item.subtotal)}</strong></span>
+            <span>{format_currency(group.price_per_unit)} × {Decimal.to_integer(Decimal.round(group.total_quantity, 0))}</span>
+            <span><strong>{format_currency(group.total_price)}</strong></span>
           </div>
         </div>
       <% end %>
