@@ -18,6 +18,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
   attr :field, :atom, required: true
   attr :path, :string, required: true
   attr :class, :string, default: nil
+  attr :raw_params, :map, default: %{}
   slot :inner_block, required: true
 
   def sortable_header(assigns) do
@@ -27,7 +28,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
       @class
     ]}>
       <.link
-        patch={build_path(@path, @meta, :order, @field)}
+        patch={build_path(@path, @meta, :order, @field, @raw_params)}
         class="flex items-center gap-2 no-underline"
       >
         <span>{render_slot(@inner_block)}</span>
@@ -133,6 +134,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
   attr :meta, Flop.Meta, required: true
   attr :path, :string, required: true
   attr :class, :string, default: nil
+  attr :raw_params, :map, default: %{}
 
   def pagination(assigns) do
     ~H"""
@@ -141,7 +143,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
       <div class="flex-1 flex justify-between sm:hidden">
         <%= if @meta.has_previous_page? do %>
           <.link
-            patch={build_path(@path, @meta, :previous)}
+            patch={build_path(@path, @meta, :previous, nil, @raw_params)}
             class="relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-primary-500 bg-white hover:bg-secondary-50"
           >
             Previous
@@ -154,7 +156,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
 
         <%= if @meta.has_next_page? do %>
           <.link
-            patch={build_path(@path, @meta, :next)}
+            patch={build_path(@path, @meta, :next, nil, @raw_params)}
             class="ml-3 relative inline-flex items-center px-4 py-2 border border-secondary-300 text-sm font-medium rounded-md text-primary-500 bg-white hover:bg-secondary-50"
           >
             Next
@@ -165,7 +167,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
           </span>
         <% end %>
       </div>
-      
+
     <!-- Desktop pagination -->
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
@@ -185,7 +187,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
             <!-- Previous button -->
             <%= if @meta.has_previous_page? do %>
               <.link
-                patch={build_path(@path, @meta, :previous)}
+                patch={build_path(@path, @meta, :previous, nil, @raw_params)}
                 class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-secondary-300 bg-white text-sm font-medium text-primary-400 hover:bg-secondary-50"
               >
                 <.icon name="hero-chevron-left" class="w-5 h-5" />
@@ -203,7 +205,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
                 </span>
               <% else %>
                 <.link
-                  patch={build_path(@path, @meta, :page, page)}
+                  patch={build_path(@path, @meta, :page, page, @raw_params)}
                   class="relative inline-flex items-center px-4 py-2 border border-secondary-300 bg-white text-sm font-medium text-primary-500 hover:bg-secondary-50"
                 >
                   {page}
@@ -213,7 +215,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
             <!-- Next button -->
             <%= if @meta.has_next_page? do %>
               <.link
-                patch={build_path(@path, @meta, :next)}
+                patch={build_path(@path, @meta, :next, nil, @raw_params)}
                 class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-secondary-300 bg-white text-sm font-medium text-primary-400 hover:bg-secondary-50"
               >
                 <.icon name="hero-chevron-right" class="w-5 h-5" />
@@ -235,31 +237,53 @@ defmodule CozyCheckoutWeb.FlopComponents do
   @doc """
   Builds a URL path with Flop parameters for pagination and sorting.
   """
-  def build_path(base_path, %Flop.Meta{flop: flop} = meta, action, field_or_page \\ nil) do
-    params =
+  def build_path(base_path, %Flop.Meta{flop: flop} = meta, action, field_or_page \\ nil, raw_params \\ %{}) do
+    new_flop =
       case action do
-        :order ->
-          # Toggle sort order
-          new_flop = Flop.push_order(flop, field_or_page)
-          flop_to_params(new_flop)
+        :order -> Flop.push_order(flop, field_or_page)
+        :page -> Flop.set_page(flop, field_or_page)
+        :next -> Flop.to_next_page(flop, meta.total_pages)
+        :previous -> Flop.to_previous_page(flop)
+      end
 
-        :page ->
-          # Set specific page
-          new_flop = Flop.set_page(flop, field_or_page)
-          flop_to_params(new_flop)
-
-        :next ->
-          # Next page
-          new_flop = Flop.to_next_page(flop, meta.total_pages)
-          flop_to_params(new_flop)
-
-        :previous ->
-          # Previous page
-          new_flop = Flop.to_previous_page(flop)
-          flop_to_params(new_flop)
+    params =
+      if map_size(raw_params) > 0 do
+        # When raw_params are provided (contains all filters including custom ones),
+        # only update the navigation-relevant keys (page, page_size, order_by, order_directions)
+        # so custom filters (dates, guest_name, payment_method) are preserved.
+        Map.merge(raw_params, flop_nav_params(new_flop))
+      else
+        # Fallback: build full params from Flop (used by pages with only Flop-native filters)
+        flop_to_params(new_flop)
       end
 
     "#{base_path}?#{Plug.Conn.Query.encode(params)}"
+  end
+
+  # Extracts only navigation params (page, page_size, order) from a Flop struct.
+  # Used when raw_params provides the filter base.
+  defp flop_nav_params(%Flop{} = flop) do
+    params = %{"page" => flop.page || 1}
+
+    params =
+      if flop.page_size || flop.limit do
+        Map.put(params, "page_size", flop.page_size || flop.limit)
+      else
+        params
+      end
+
+    params =
+      if flop.order_by && flop.order_by != [] do
+        Map.put(params, "order_by", Enum.map(flop.order_by, &to_string/1))
+      else
+        params
+      end
+
+    if flop.order_directions && flop.order_directions != [] do
+      Map.put(params, "order_directions", Enum.map(flop.order_directions, &to_string/1))
+    else
+      params
+    end
   end
 
   @doc """

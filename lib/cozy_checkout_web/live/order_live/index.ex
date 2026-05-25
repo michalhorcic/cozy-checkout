@@ -35,6 +35,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
      socket
      |> assign(:total_sum, total_sum)
      |> assign(:raw_filter_values, raw_filter_values)
+     |> assign(:current_params, params)
      |> apply_action(socket.assigns.live_action, params)}
   end
 
@@ -261,10 +262,10 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Total
                 </th>
-                <.sortable_header meta={@meta} field={:status} path={~p"/admin/orders"}>
+                <.sortable_header meta={@meta} field={:status} path={~p"/admin/orders"} raw_params={@current_params}>
                   Status
                 </.sortable_header>
-                <.sortable_header meta={@meta} field={:inserted_at} path={~p"/admin/orders"}>
+                <.sortable_header meta={@meta} field={:inserted_at} path={~p"/admin/orders"} raw_params={@current_params}>
                   Date
                 </.sortable_header>
                 <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
@@ -356,7 +357,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
           </div>
         </div>
         <!-- Pagination -->
-        <.pagination meta={@meta} path={~p"/admin/orders"} />
+        <.pagination meta={@meta} path={~p"/admin/orders"} raw_params={@current_params} />
       </div>
     </div>
     """

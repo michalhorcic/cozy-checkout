@@ -6,7 +6,7 @@ defmodule CozyCheckout.Sales.Order do
     Flop.Schema,
     filterable: [:status, :name, :order_number, :guest_id, :is_service_order],
     sortable: [:inserted_at, :status, :order_number, :total_amount],
-    default_limit: 20,
+    default_limit: 100,
     max_limit: 100
   }
 
