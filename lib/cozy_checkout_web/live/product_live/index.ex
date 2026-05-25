@@ -62,6 +62,17 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
   end
 
   @impl true
+  def handle_event("toggle_active", %{"id" => id}, socket) do
+    product = Catalog.get_product!(id)
+    {:ok, _} = Catalog.update_product(product, %{active: !product.active})
+
+    {:noreply,
+     push_patch(socket,
+       to: build_path_with_params(~p"/admin/products", socket.assigns.current_params)
+     )}
+  end
+
+  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     product = Catalog.get_product!(id)
     {:ok, _} = Catalog.delete_product(product)
@@ -236,6 +247,18 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
                     </span>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <.link
+                      phx-click={JS.push("toggle_active", value: %{id: product.id})}
+                      class={[
+                        "mr-4 text-xs font-semibold px-2 py-1 rounded transition-colors",
+                        if(product.active,
+                          do: "bg-secondary-100 text-primary-500 hover:bg-secondary-200",
+                          else: "bg-success-light text-success-dark hover:bg-green-200"
+                        )
+                      ]}
+                    >
+                      {if product.active, do: "Deactivate", else: "Activate"}
+                    </.link>
                     <.link
                       patch={
                         build_path_with_params(~p"/admin/products/#{product}/edit", @current_params)

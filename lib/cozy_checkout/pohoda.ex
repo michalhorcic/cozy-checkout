@@ -82,7 +82,7 @@ defmodule CozyCheckout.Pohoda do
               <typ:paymentType>#{payment_type}</typ:paymentType>
             </inv:paymentType>
             <inv:account>
-              <typ:ids>KB</typ:ids>
+              <typ:ids>Fio</typ:ids>
               <typ:accountNo>#{account_no}</typ:accountNo>
               <typ:bankCode>#{bank_code}</typ:bankCode>
             </inv:account>
