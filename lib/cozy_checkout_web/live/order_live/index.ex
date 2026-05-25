@@ -29,10 +29,12 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
       end
 
     total_sum = Sales.sum_orders_total(normalized_params)
+    raw_filter_values = parse_raw_filter_values(params)
 
     {:noreply,
      socket
      |> assign(:total_sum, total_sum)
+     |> assign(:raw_filter_values, raw_filter_values)
      |> apply_action(socket.assigns.live_action, params)}
   end
 
@@ -98,6 +100,20 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) || v == %{} end)
     |> Map.new()
+  end
+
+  # Extracts raw filter values keyed by "field_op" so non-Flop filters (dates, guest_name,
+  # payment_method) can repopulate their inputs after a re-render without relying on
+  # @meta.flop.filters (which never contains those fields).
+  defp parse_raw_filter_values(params) do
+    filters = params["filters"] || %{}
+
+    Enum.reduce(filters, %{}, fn {_idx, filter}, acc ->
+      field = filter["field"] || ""
+      op = filter["op"] || "=="
+      value = filter["value"] || ""
+      Map.put(acc, "#{field}_#{op}", value)
+    end)
   end
 
   # Convert Phoenix indexed map params (e.g., %{"0" => "value"}) to arrays for Flop
@@ -172,7 +188,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
               type="date"
               name="filters[1][value]"
               label="Date From"
-              value={get_filter_value(@meta, :inserted_at)}
+              value={Map.get(@raw_filter_values, "inserted_at_>=", "")}
             />
           </:filter>
           <:filter>
@@ -182,7 +198,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
               type="date"
               name="filters[2][value]"
               label="Date To"
-              value={get_filter_value(@meta, :inserted_at)}
+              value={Map.get(@raw_filter_values, "inserted_at_<=", "")}
             />
           </:filter>
           <:filter>
@@ -212,7 +228,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
               type="text"
               name="filters[5][value]"
               label="Guest Name"
-              value={get_filter_value(@meta, :guest_name)}
+              value={Map.get(@raw_filter_values, "guest_name_ilike_and", "")}
             />
           </:filter>
           <:filter>
@@ -227,7 +243,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 {"Cash", "cash"},
                 {"QR Code", "qr_code"}
               ]}
-              value={get_filter_value(@meta, :payment_method)}
+              value={Map.get(@raw_filter_values, "payment_method_==", "")}
             />
           </:filter>
         </.filter_form>
