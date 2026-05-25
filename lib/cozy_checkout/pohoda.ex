@@ -252,8 +252,8 @@ defmodule CozyCheckout.Pohoda do
 
   defp payment_type_to_pohoda(payments) when is_list(payments) do
     case List.first(payments) do
-      %{method: "qr_code"} -> {"Příkazem", "bank"}
-      %{method: "cash"} -> {"Hotově", "cash"}
+      %{payment_method: "qr_code"} -> {"Příkazem", "bank"}
+      %{payment_method: "cash"} -> {"Hotově", "cash"}
       _ -> {"Hotově", "cash"}
     end
   end

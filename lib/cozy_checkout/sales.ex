@@ -130,18 +130,40 @@ defmodule CozyCheckout.Sales do
   Returns paginated, filtered, and sorted orders with Flop.
   """
   def list_orders_with_flop(params \\ %{}) do
-    # Extract and handle date and guest_name filters separately
+    # Extract and handle date, guest_name, and payment_method filters separately
     {date_filters, params_without_dates} = extract_date_filters(params)
-    {guest_name_filter, other_params} = extract_guest_name_filter(params_without_dates)
+    {guest_name_filter, params_without_guest} = extract_guest_name_filter(params_without_dates)
+    {payment_method_filter, other_params} = extract_payment_method_filter(params_without_guest)
 
     query =
       Order
       |> where([o], is_nil(o.deleted_at))
       |> apply_date_filters(date_filters)
       |> apply_guest_name_filter(guest_name_filter)
+      |> apply_payment_method_filter(payment_method_filter)
       |> preload([:guest, booking: :guest, order_items: [], payments: []])
 
     Flop.validate_and_run(query, other_params, for: Order)
+  end
+
+  def sum_orders_total(params \\ %{}) do
+    {date_filters, params_without_dates} = extract_date_filters(params)
+    {guest_name_filter, params_without_guest} = extract_guest_name_filter(params_without_dates)
+    {payment_method_filter, other_params} = extract_payment_method_filter(params_without_guest)
+
+    filters = other_params["filters"] || %{}
+
+    result =
+      Order
+      |> where([o], is_nil(o.deleted_at))
+      |> apply_date_filters(date_filters)
+      |> apply_guest_name_filter(guest_name_filter)
+      |> apply_payment_method_filter(payment_method_filter)
+      |> apply_simple_flop_filters(filters)
+      |> select([o], sum(o.total_amount))
+      |> Repo.one()
+
+    result || Decimal.new(0)
   end
 
   defp extract_date_filters(params) do
@@ -241,6 +263,71 @@ defmodule CozyCheckout.Sales do
     |> join(:left, [o], b in assoc(o, :booking))
     |> join(:left, [o, b], g in assoc(b, :guest))
     |> where([o, b, g], ilike(g.name, ^pattern))
+  end
+
+  defp extract_payment_method_filter(params) do
+    filters = params["filters"] || %{}
+
+    {pm_filters, other_filters} =
+      filters
+      |> Enum.split_with(fn {_idx, filter} ->
+        filter["field"] == "payment_method"
+      end)
+
+    payment_method =
+      case pm_filters do
+        [{_idx, filter}] when is_map(filter) ->
+          case filter["value"] do
+            value when value != nil and value != "" -> value
+            _ -> nil
+          end
+
+        _ ->
+          nil
+      end
+
+    other_params = Map.put(params, "filters", Map.new(other_filters))
+
+    {payment_method, other_params}
+  end
+
+  defp apply_payment_method_filter(query, nil), do: query
+
+  defp apply_payment_method_filter(query, payment_method) do
+    payment_ids_subquery =
+      from(p in Payment,
+        where: p.payment_method == ^payment_method and is_nil(p.deleted_at),
+        select: p.order_id,
+        distinct: true
+      )
+
+    where(query, [o], o.id in subquery(payment_ids_subquery))
+  end
+
+  defp apply_simple_flop_filters(query, filters) when map_size(filters) == 0, do: query
+
+  defp apply_simple_flop_filters(query, filters) do
+    Enum.reduce(filters, query, fn {_idx, filter}, q ->
+      field = filter["field"]
+      op = filter["op"]
+      value = filter["value"]
+
+      cond do
+        field == "status" and op == "==" and value not in [nil, ""] ->
+          where(q, [o], o.status == ^value)
+
+        field == "order_number" and value not in [nil, ""] ->
+          pattern = "%#{value}%"
+          where(q, [o], ilike(o.order_number, ^pattern))
+
+        field == "name" and value not in [nil, ""] ->
+          pattern = "%#{value}%"
+          where(q, [o], ilike(o.name, ^pattern))
+
+        true ->
+          q
+      end
+    end)
   end
 
   @doc """

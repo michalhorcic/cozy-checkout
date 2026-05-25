@@ -28,7 +28,12 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
           |> assign(:meta, meta)
       end
 
-    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+    total_sum = Sales.sum_orders_total(normalized_params)
+
+    {:noreply,
+     socket
+     |> assign(:total_sum, total_sum)
+     |> apply_action(socket.assigns.live_action, params)}
   end
 
   defp apply_action(socket, :index, _params) do
@@ -210,6 +215,21 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
               value={get_filter_value(@meta, :guest_name)}
             />
           </:filter>
+          <:filter>
+            <input type="hidden" name="filters[6][field]" value="payment_method" />
+            <input type="hidden" name="filters[6][op]" value="==" />
+            <.input
+              type="select"
+              name="filters[6][value]"
+              label="Payment Method"
+              options={[
+                {"All", ""},
+                {"Cash", "cash"},
+                {"QR Code", "qr_code"}
+              ]}
+              value={get_filter_value(@meta, :payment_method)}
+            />
+          </:filter>
         </.filter_form>
         <!-- Table -->
         <div class="overflow-x-auto">
@@ -308,6 +328,16 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
               <% end %>
             </tbody>
           </table>
+        </div>
+        <!-- Summary Bar -->
+        <div class="px-6 py-3 bg-secondary-50 border-t border-gray-200 flex items-center justify-between">
+          <span class="text-sm text-primary-400">
+            {if @meta.total_count, do: "#{@meta.total_count} orders", else: "#{length(@orders)} orders"}
+          </span>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-primary-400">Total (all filtered):</span>
+            <span class="text-base font-bold text-primary-600">{format_currency(@total_sum)}</span>
+          </div>
         </div>
         <!-- Pagination -->
         <.pagination meta={@meta} path={~p"/admin/orders"} />
