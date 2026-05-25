@@ -681,8 +681,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   defp load_products(socket) do
     categories = Catalog.list_categories()
-    all_products = Catalog.list_products()
-    popular_products = Sales.get_popular_products(20)
+    all_products = Catalog.list_products() |> Enum.filter(& &1.active)
+    popular_products = Sales.get_popular_products(20) |> Enum.filter(& &1.active)
 
     # Enrich products with pricing information
     products_with_prices = enrich_products_with_prices(all_products)
