@@ -43,7 +43,7 @@ defmodule CozyCheckout.Pohoda do
             <inv:number>
               <typ:numberRequested>#{order.order_number}</typ:numberRequested>
             </inv:number>
-            <inv:symVar>#{order.order_number}</inv:symVar>
+            <inv:symVar>#{sanitize_sym_var(order.order_number)}</inv:symVar>
             <inv:date>#{date}</inv:date>
             <inv:dateTax>#{date}</inv:dateTax>
             <inv:dateAccounting>#{date}</inv:dateAccounting>
@@ -252,7 +252,7 @@ defmodule CozyCheckout.Pohoda do
 
   defp payment_type_to_pohoda(payments) when is_list(payments) do
     case List.first(payments) do
-      %{method: "card"} -> {"Kartou", "card"}
+      %{method: "qr_code"} -> {"Příkazem", "bank"}
       %{method: "cash"} -> {"Hotově", "cash"}
       _ -> {"Hotově", "cash"}
     end
@@ -269,5 +269,13 @@ defmodule CozyCheckout.Pohoda do
 
   defp ico do
     Application.get_env(:cozy_checkout, :pohoda_ico, "12345678")
+  end
+
+  # Mirrors the QR code sanitize_variable_symbol logic:
+  # strips non-digits and takes the last 10 characters.
+  defp sanitize_sym_var(value) when is_binary(value) do
+    value
+    |> String.replace(~r/\D/, "")
+    |> String.slice(-10..-1//1)
   end
 end
