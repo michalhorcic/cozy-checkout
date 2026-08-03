@@ -12,9 +12,371 @@ Check my application and recommend me a way to install it on proxmox server with
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-The user wants to deploy their Phoenix application to a Proxmox server with minimal effort. Let me first explore the project structure to understand what we're working with, then provide deployment recommendations.
+<think><details><summary>Thought Process</summary>
+Now I have a clear picture. The project already has `PHX_HOST=cozy.jd.local` in [rel/env.sh.eex](rel/env.sh.eex). Let me check one more thing:
+</details></think>
 
-Let me look at the key configuration files first.
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+**Input:**
+
+- endLine: `80`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs`
+- startLine: `1`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":80,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"defmodule CozyCheckout.MixProject do\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":80},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":79,"references":[],"text":"  use Mix.Project\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":79},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":78,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":78},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":77,"references":[],"text":"  def project do\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":77},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":76,"references":[],"text":"    [\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":76},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":75,"references":[],"text":"      app: :cozy_checkout,\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":75},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":74,"references":[],"text":"      version: \"0.1.0\",\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":74},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":73,"references":[],"text":"      elixir: \"~\u003e 1.15\",\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":73},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":72,"references":[],"text":"      elixirc_paths: elixirc_paths(Mix.env()),\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":72},"references":[]
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs`
+- startLine: `1`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"import Config\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":99,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":99},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":98,"references":[],"text":"# config/runtime.exs is executed for all environments, including\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":98},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":97,"references":[],"text":"# during releases. It is executed after compilation and before the\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":97},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":96,"references":[],"text":"# system starts, so it is typically used to load production configuration\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":96},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":95,"references":[],"text":"# and secrets from environment variables or elsewhere. Do not define\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":95},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":94,"references":[],"text":"# any compile-time configuration in here, as it won't be applied.\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":94},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":93,"references":[],"text":"# The block below contains prod specific runtime configuration.\
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+**Input:**
+
+- endLine: `60`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/prod.exs`
+- startLine: `1`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":22,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/prod.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/prod.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/prod.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"import Config\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"# Note we also include the path to a cache manifest\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":19,"references":[],"text":"# containing the digested version of static files. This\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":19},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":18,"references":[],"text":"# manifest is generated by the `mix assets.deploy` task,\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":18},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":17,"references":[],"text":"# which you should run after static files are built and\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":17},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":16,"references":[],"text":"# before starting your production server.\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":16},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":15,"references":[],"text":"config :cozy_checkout, CozyCheckoutWeb.Endpoint,\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":15},"references":[],"type":1},{"children":[{
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+**Input:**
+
+- path: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"env.sh.eex","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"overlays/","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Van","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs`
+- startLine: `100`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":21,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"  # latest and more secure SSL ciphers. This means old browsers\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"  # and clients may not be supported. You can set it to\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":19,"references":[],"text":"  # `:compatible` for wider support.\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":19},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":18,"references":[],"text":"  #\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":18},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":17,"references":[],"text":"  # `:keyfile` and `:certfile` expect an absolute path to the key\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":17},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":16,"references":[],"text":"  # and cert in disk or a relative path inside priv, for example\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":16},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":15,"references":[],"text":"  # \"priv/ssl/server.key\". For all supported SSL configuration\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":15},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":14,"references":[],"text":"  # options, see https://hexdocs.pm/plug/Plug.SSL.html#configure/
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+**Input:**
+
+- path: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/overlays`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"bin/","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Van","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="file_search"><details>
+<summary>Tool use: **file_search**</summary>
+
+**Input:**
+
+- query: `Dockerfile*`
+
+**Result:**
+
+```
+{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No files found","type":2}],"ctor":2,"ctorName":"OLe","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+**Input:**
+
+- path: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/overlays/bin`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"migrate","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"migrate.bat","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"server","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"server.bat","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Van","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="file_search"><details>
+<summary>Tool use: **file_search**</summary>
+
+**Input:**
+
+- query: `docker-compose*`
+
+**Result:**
+
+```
+{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No files found","type":2}],"ctor":2,"ctorName":"OLe","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+**Input:**
+
+- endLine: `50`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/env.sh.eex`
+- startLine: `1`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":8,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/env.sh.eex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/env.sh.eex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/env.sh.eex","scheme":"file"},"options":{"isFromTool":true}}],"text":"#!/bin/sh\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":8},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":7,"references":[],"text":"export DATABASE_URL=\"${DATABASE_URL:-ecto://elixir:elixir@localhost/cozy_checkout}\"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":7},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":6,"references":[],"text":"export SECRET_KEY_BASE=\"${SECRET_KEY_BASE:-9jBTsAo/hgHt7KpzrDLUT2j47i7SMr8UyG+3BQ2toI5UbL91tMUmku+Nj6js2FrD}\"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":6},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":5,"references":[],"text":"export PORT=\"${PORT:-4000}\"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":5},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":4,"references":[],"text":"export RELEASE_DISTRIBUTION=sname\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":4},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":3,"references":[],"text":"export RELEASE_NODE=cozy_checkout\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":3},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":2,"references":[],"text":"export PHX_HOST=cozy.jd.local\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":2},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":8,"references":[],"text":"","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":8},"references":[],"type":1}],"ctor":2,"ctorName":"yn"
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+**Input:**
+
+- endLine: `20`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/overlays/bin/server`
+- startLine: `1`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":6,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/overlays/bin/server","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/overlays/bin/server","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/rel/overlays/bin/server","scheme":"file"},"options":{"isFromTool":true}}],"text":"#!/bin/sh\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":6},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":5,"references":[],"text":"set -eu\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":5},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":4,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":4},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":3,"references":[],"text":"cd -P -- \"$(dirname -- \"$0\")\"\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":3},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":2,"references":[],"text":"PHX_SERVER=true exec ./cozy_checkout start\n","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":2},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":6,"references":[],"text":"","type":2}],"ctor":2,"ctorName":"l6e","props":{"priority":6},"references":[],"type":1}],"ctor":2,"ctorName":"yn","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"uMe","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="list_dir"><details>
+<summary>Tool use: **list_dir**</summary>
+
+**Input:**
+
+- path: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"migrations/","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"seeds.exs","type":2}],"ctor":2,"ctorName":"l6e","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Van","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Now I have a clear picture. The project already has `PHX_HOST=cozy.jd.local` in `rel/env.sh.eex`. Let me check one more thing: Here's my recommended approach — **Docker on an LXC container** on Proxmox. This is the least effort path since Phoenix Here's my recommended approach — **Docker on an LXC container** on Proxmox. This is the least effort path since Phoenix ships with a production-ready `Dockerfile` via `mix phx.gen.release --docker`.
+
+---
+
+## Recommended Setup: Docker in a Proxmox LXC
+
+### Why this approach?
+- No need to install Elixir/Erlang on the server
+- Self-contained: app + deps in one image
+- Easy to rebuild and redeploy
+- PostgreSQL runs as a separate container via Docker Compose
+
+---
+
+## Step 1: Generate the Dockerfile (on your Mac)
+
+Since no `Dockerfile` exists yet, run:
+
+```bash
+mix phx.gen.release --docker
+```
+
+This creates a production-ready multi-stage `Dockerfile` and a `docker-compose.yml` (or you write one manually — see below).
+
+---
+
+## Step 2: Required Environment Variables
+
+Based on `config/runtime.exs` and `rel/env.sh.eex`, you need these:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | `ecto://cozy:YOUR_PASS@postgres/cozy_checkout` |
+| `SECRET_KEY_BASE` | Generate with `mix phx.gen.secret` |
+| `PHX_HOST` | `cozy.jd.local` ← already set in `env.sh.eex` |
+| `PHX_SERVER` | `true` |
+| `PORT` | `4000` (or any port you want) |
+
+---
+
+## Step 3: `docker-compose.yml` (create in project root)
+
+```yaml
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      DATABASE_URL: "ecto://cozy:YOUR_PASS@postgres/cozy_checkout"
+      SECRET_KEY_BASE: "GENERATE_WITH_mix_phx.gen.secret"
+      PHX_HOST: "cozy.jd.local"
+      PHX_SERVER: "true"
+      PORT: "4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cozy
+      POSTGRES_PASSWORD: YOUR_PASS
+      POSTGRES_DB: cozy_checkout
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cozy -d cozy_checkout"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+```
+
+---
+
+## Step 4: Proxmox Setup (minimal)
+
+1. **Create an LXC container** (Ubuntu 22.04 or Debian 12 template)
+2. **Install Docker** inside the LXC:
+   ```bash
+   curl -fsSL https://get.docker.com | sh
+   ```
+3. **Set the LXC hostname** to `cozy-server` and add DNS entry for `cozy.jd.local` pointing to the LXC IP (on your router or `hosts` on client machines)
+4. **Copy your project** to the LXC (or clone from git) and run:
+   ```bash
+   docker compose up -d
+   ```
+
+---
+
+## Step 5: Run Database Migrations
+
+The generated `Dockerfile` includes a `migrate` script. After the container starts:
+
+```bash
+docker compose exec app bin/migrate
+```
+
+---
+
+## Step 6: Importing Existing PostgreSQL Database
+
+**Option A — dump on source, restore in container:**
+
+```bash
+# On your current machine (where the DB lives):
+pg_dump -U postgres -d cozy_checkout -F c -f cozy_checkout.dump
+
+# Copy to Proxmox LXC:
+scp cozy_checkout.dump user@proxmox-lxc:/tmp/
+
+# On Proxmox, restore into the Docker postgres container:
+docker compose cp /tmp/cozy_checkout.dump postgres:/tmp/
+docker compose exec postgres pg_restore -U cozy -d cozy_checkout /tmp/cozy_checkout.dump
+```
+
+**Option B — plain SQL dump (simpler):**
+
+```bash
+pg_dump -U postgres cozy_checkout > cozy_checkout.sql
+# ... copy file ...
+docker compose exec -T postgres psql -U cozy -d cozy_checkout < cozy_checkout.sql
+```
+
+---
+
+## DNS for `cozy.jd.local`
+
+Add to your router/DNS server (or on every client in `hosts`):
+
+```
+192.168.X.X  cozy.jd.local
+```
+
+Where `192.168.X.X` is the LXC container's IP. The app's `check_origin` in `config/runtime.exs#L75` already includes `//cozy-server.local` — you'll want to add `//cozy.jd.local` there too (or it's already covered since the `PHX_HOST` is set to that).
+
+---
+
+## Summary of things to do
+
+1. `mix phx.gen.release --docker` — generates the Dockerfile
+2. Create `docker-compose.yml` as above
+3. `mix phx.gen.secret` — generate a `SECRET_KEY_BASE`
+4. Set up LXC on Proxmox, install Docker
+5. Deploy, run migrations, import DB dump
 
 ---
 
