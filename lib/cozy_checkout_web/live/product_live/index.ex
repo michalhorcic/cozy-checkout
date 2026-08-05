@@ -87,6 +87,28 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
   end
 
   @impl true
+  def handle_event("toggle_visible_in_pos", %{"id" => id}, socket) do
+    product = Catalog.get_product!(id)
+    {:ok, _} = Catalog.update_product(product, %{visible_in_pos: !product.visible_in_pos})
+
+    {:noreply,
+     push_patch(socket,
+       to: build_path_with_params(~p"/admin/products", socket.assigns.current_params)
+     )}
+  end
+
+  @impl true
+  def handle_event("toggle_track_stock", %{"id" => id}, socket) do
+    product = Catalog.get_product!(id)
+    {:ok, _} = Catalog.update_product(product, %{track_stock: !product.track_stock})
+
+    {:noreply,
+     push_patch(socket,
+       to: build_path_with_params(~p"/admin/products", socket.assigns.current_params)
+     )}
+  end
+
+  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     product = Catalog.get_product!(id)
     {:ok, _} = Catalog.delete_product(product)
@@ -221,6 +243,12 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
                   Description
                 </th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
+                  POS Visible
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
+                  Track Stock
+                </th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Status
                 </th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
@@ -231,7 +259,7 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
             <tbody class="bg-white divide-y divide-gray-200">
               <%= if @products == [] do %>
                 <tr>
-                  <td colspan="6" class="px-6 py-12 text-center text-primary-400">
+                  <td colspan="8" class="px-6 py-12 text-center text-primary-400">
                     No products found.
                   </td>
                 </tr>
@@ -248,6 +276,34 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
                   </td>
                   <td class="px-6 py-4 text-sm text-primary-400">
                     {product.description}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <.link
+                      phx-click={JS.push("toggle_visible_in_pos", value: %{id: product.id})}
+                      class={[
+                        "text-xs font-semibold px-2 py-1 rounded transition-colors",
+                        if(product.visible_in_pos,
+                          do: "bg-success-light text-success-dark hover:bg-green-200",
+                          else: "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                        )
+                      ]}
+                    >
+                      {if product.visible_in_pos, do: "In POS", else: "Hidden"}
+                    </.link>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <.link
+                      phx-click={JS.push("toggle_track_stock", value: %{id: product.id})}
+                      class={[
+                        "text-xs font-semibold px-2 py-1 rounded transition-colors",
+                        if(product.track_stock,
+                          do: "bg-success-light text-success-dark hover:bg-green-200",
+                          else: "bg-secondary-100 text-primary-500 hover:bg-secondary-200"
+                        )
+                      ]}
+                    >
+                      {if product.track_stock, do: "Tracked", else: "Untracked"}
+                    </.link>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class={[
