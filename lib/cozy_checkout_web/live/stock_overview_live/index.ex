@@ -13,6 +13,7 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
      |> assign(:categories, Catalog.list_categories())
      |> assign(:selected_category_id, nil)
      |> assign(:search_query, "")
+     |> assign(:show_inactive, false)
      |> assign(:restock_modal_open, false)
      |> assign(:restock_product, nil)
      |> assign(:restock_unit_amounts, [])
@@ -26,17 +27,15 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
   end
 
   @impl true
-  def handle_event(
-        "filters_changed",
-        %{"category_id" => category_id, "search" => search_query},
-        socket
-      ) do
-    category_id = if category_id == "", do: nil, else: category_id
+  def handle_event("filters_changed", params, socket) do
+    category_id = if params["category_id"] == "", do: nil, else: params["category_id"]
+    show_inactive = Map.has_key?(params, "show_inactive")
 
     {:noreply,
      socket
      |> assign(:selected_category_id, category_id)
-     |> assign(:search_query, search_query)
+     |> assign(:search_query, params["search"] || "")
+     |> assign(:show_inactive, show_inactive)
      |> load_stock_overview()}
   end
 
@@ -46,6 +45,7 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
      socket
      |> assign(:selected_category_id, nil)
      |> assign(:search_query, "")
+     |> assign(:show_inactive, false)
      |> load_stock_overview()}
   end
 
@@ -126,11 +126,18 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
     # Apply filters
     stock_items =
       stock_items
+      |> filter_by_active(socket.assigns.show_inactive)
       |> filter_by_category(socket.assigns.selected_category_id)
       |> filter_by_search(socket.assigns.search_query)
       |> add_stock_status()
 
     assign(socket, :stock_items, stock_items)
+  end
+
+  defp filter_by_active(items, true), do: items
+
+  defp filter_by_active(items, false) do
+    Enum.filter(items, fn item -> item.product.active end)
   end
 
   defp filter_by_category(items, nil), do: items
@@ -232,6 +239,18 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
                 Clear Filters
               </button>
             </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-gray-100">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                name="show_inactive"
+                value="true"
+                checked={@show_inactive}
+                class="rounded border-gray-300 text-tertiary-600 focus:ring-tertiary-500"
+              />
+              <span class="text-sm text-gray-600">Show inactive products</span>
+            </label>
           </div>
         </form>
       </div>
