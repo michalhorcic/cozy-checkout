@@ -25,6 +25,7 @@ defmodule CozyCheckoutWeb.CategoryLive.FormComponent do
           type="number"
           label="Order (lower numbers appear first)"
         />
+        <.input field={@form[:visible_in_pos]} type="checkbox" label="Visible in POS" />
 
         <div class="mt-6 flex items-center justify-end gap-x-6">
           <.button type="submit" phx-disable-with="Saving...">Save Category</.button>

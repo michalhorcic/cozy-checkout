@@ -90,7 +90,12 @@ defmodule CozyCheckoutWeb.CategoryLive.Index do
                 {category.order}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
-                {category.name}
+                <div class="flex items-center gap-2">
+                  {category.name}
+                  <%= if !category.visible_in_pos do %>
+                    <span class="px-1.5 py-0.5 text-xs font-semibold bg-violet-100 text-violet-700 rounded">Hidden from POS</span>
+                  <% end %>
+                </div>
               </td>
               <td class="px-6 py-4 text-sm text-primary-400">
                 {category.description}

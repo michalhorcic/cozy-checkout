@@ -5,7 +5,7 @@ defmodule CozyCheckoutWeb.StockRestockLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    all_combos = build_product_combos(Catalog.list_products())
+    all_combos = build_product_combos(Catalog.list_trackable_products())
 
     {:ok,
      socket

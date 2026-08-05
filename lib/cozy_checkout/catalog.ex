@@ -91,6 +91,29 @@ defmodule CozyCheckout.Catalog do
     |> Repo.all()
   end
 
+  def list_pos_products do
+    Product
+    |> where([p], is_nil(p.deleted_at) and p.active == true and p.visible_in_pos == true)
+    |> preload(:category)
+    |> order_by([p], p.name)
+    |> Repo.all()
+  end
+
+  def list_trackable_products do
+    Product
+    |> where([p], is_nil(p.deleted_at) and p.track_stock == true)
+    |> preload(:category)
+    |> order_by([p], p.name)
+    |> Repo.all()
+  end
+
+  def list_pos_categories do
+    Category
+    |> where([c], is_nil(c.deleted_at) and c.visible_in_pos == true)
+    |> order_by([c], asc: c.order, asc: c.name)
+    |> Repo.all()
+  end
+
   @doc """
   Returns paginated, filtered products with Flop.
   Supports custom filters for product name search.

@@ -14,6 +14,7 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
      |> assign(:selected_category_id, nil)
      |> assign(:search_query, "")
      |> assign(:show_inactive, false)
+     |> assign(:show_stock_only, false)
      |> assign(:restock_modal_open, false)
      |> assign(:restock_product, nil)
      |> assign(:restock_unit_amounts, [])
@@ -30,12 +31,14 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
   def handle_event("filters_changed", params, socket) do
     category_id = if params["category_id"] == "", do: nil, else: params["category_id"]
     show_inactive = Map.has_key?(params, "show_inactive")
+    show_stock_only = Map.has_key?(params, "show_stock_only")
 
     {:noreply,
      socket
      |> assign(:selected_category_id, category_id)
      |> assign(:search_query, params["search"] || "")
      |> assign(:show_inactive, show_inactive)
+     |> assign(:show_stock_only, show_stock_only)
      |> load_stock_overview()}
   end
 
@@ -46,6 +49,7 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
      |> assign(:selected_category_id, nil)
      |> assign(:search_query, "")
      |> assign(:show_inactive, false)
+     |> assign(:show_stock_only, false)
      |> load_stock_overview()}
   end
 
@@ -127,6 +131,7 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
     stock_items =
       stock_items
       |> filter_by_active(socket.assigns.show_inactive)
+      |> filter_by_stock_only(socket.assigns.show_stock_only)
       |> filter_by_category(socket.assigns.selected_category_id)
       |> filter_by_search(socket.assigns.search_query)
       |> add_stock_status()
@@ -138,6 +143,12 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
 
   defp filter_by_active(items, false) do
     Enum.filter(items, fn item -> item.product.active end)
+  end
+
+  defp filter_by_stock_only(items, false), do: items
+
+  defp filter_by_stock_only(items, true) do
+    Enum.filter(items, fn item -> !item.product.visible_in_pos end)
   end
 
   defp filter_by_category(items, nil), do: items
@@ -240,7 +251,7 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
               </button>
             </div>
           </div>
-          <div class="mt-3 pt-3 border-t border-gray-100">
+          <div class="mt-3 pt-3 border-t border-gray-100 flex flex-wrap gap-x-6 gap-y-2">
             <label class="inline-flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -250,6 +261,16 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
                 class="rounded border-gray-300 text-tertiary-600 focus:ring-tertiary-500"
               />
               <span class="text-sm text-gray-600">Show inactive products</span>
+            </label>
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                name="show_stock_only"
+                value="true"
+                checked={@show_stock_only}
+                class="rounded border-gray-300 text-tertiary-600 focus:ring-tertiary-500"
+              />
+              <span class="text-sm text-gray-600">Stock-only products</span>
             </label>
           </div>
         </form>
@@ -324,7 +345,12 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
                     </div>
                   </td>
                   <td class="px-6 py-4">
-                    <div class="text-sm font-medium text-gray-900">{item.product.name}</div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-medium text-gray-900">{item.product.name}</span>
+                      <%= if !item.product.visible_in_pos do %>
+                        <span class="px-1.5 py-0.5 text-xs font-semibold bg-violet-100 text-violet-700 rounded">Stock only</span>
+                      <% end %>
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {item.product.category.name}

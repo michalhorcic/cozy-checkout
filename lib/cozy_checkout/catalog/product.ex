@@ -13,6 +13,8 @@ defmodule CozyCheckout.Catalog.Product do
     field :name, :string
     field :description, :string
     field :active, :boolean, default: true
+    field :track_stock, :boolean, default: true
+    field :visible_in_pos, :boolean, default: true
     field :unit, :string
     field :default_unit_amounts, :string
     field :low_stock_threshold, :integer, default: 0
@@ -33,6 +35,8 @@ defmodule CozyCheckout.Catalog.Product do
       :description,
       :category_id,
       :active,
+      :track_stock,
+      :visible_in_pos,
       :unit,
       :default_unit_amounts,
       :low_stock_threshold

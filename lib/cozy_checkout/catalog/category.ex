@@ -8,6 +8,7 @@ defmodule CozyCheckout.Catalog.Category do
     field :name, :string
     field :description, :string
     field :order, :integer, default: 0
+    field :visible_in_pos, :boolean, default: true
     field :deleted_at, :utc_datetime
 
     has_many :products, CozyCheckout.Catalog.Product
@@ -18,7 +19,7 @@ defmodule CozyCheckout.Catalog.Category do
   @doc false
   def changeset(category, attrs) do
     category
-    |> cast(attrs, [:name, :description, :order])
+    |> cast(attrs, [:name, :description, :order, :visible_in_pos])
     |> validate_required([:name])
     |> validate_number(:order, greater_than_or_equal_to: 0)
     |> unique_constraint(:name)

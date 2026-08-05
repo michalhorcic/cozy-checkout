@@ -391,7 +391,7 @@ defmodule CozyCheckout.Inventory do
       ]
   """
   def get_stock_overview do
-    products = CozyCheckout.Catalog.list_products()
+    products = CozyCheckout.Catalog.list_trackable_products()
 
     products
     |> Enum.map(fn product ->

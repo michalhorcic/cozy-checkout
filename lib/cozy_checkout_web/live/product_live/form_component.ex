@@ -66,6 +66,8 @@ defmodule CozyCheckoutWeb.ProductLive.FormComponent do
         </div>
 
         <.input field={@form[:active]} type="checkbox" label="Active" />
+        <.input field={@form[:visible_in_pos]} type="checkbox" label="Visible in POS" />
+        <.input field={@form[:track_stock]} type="checkbox" label="Track stock" />
 
         <div class="mt-6 flex items-center justify-end gap-x-6">
           <.button type="submit" phx-disable-with="Saving...">Save Product</.button>
