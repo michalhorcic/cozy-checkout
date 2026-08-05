@@ -36,7 +36,7 @@ defmodule CozyCheckoutWeb.BookingComponents do
     <.modal
       :if={@date}
       id="day-bookings-modal"
-      show={@date != nil}
+      show={true}
       on_cancel={@on_close}
     >
       <div class="mb-6">

@@ -316,6 +316,10 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
+  def handle_event("save", %{"booking" => booking_params}, socket) do
+    save_booking(socket, socket.assigns.action, booking_params)
+  end
+
   defp maybe_update_checkout_date(booking_params, booking) do
     with %{"check_in_date" => check_in_str} when is_binary(check_in_str) <- booking_params,
          {:ok, check_in_date} <- Date.from_iso8601(check_in_str) do
@@ -332,10 +336,6 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
     else
       _ -> booking_params
     end
-  end
-
-  def handle_event("save", %{"booking" => booking_params}, socket) do
-    save_booking(socket, socket.assigns.action, booking_params)
   end
 
   defp save_booking(socket, :edit, booking_params) do

@@ -3,7 +3,7 @@ defmodule CozyCheckout.IcalImporter do
   Imports iCal files to create guests and bookings.
   """
 
-  import Ecto.Query
+  require Ecto.Query
 
   alias CozyCheckout.{Guests, Bookings, Repo}
   alias CozyCheckout.Guests.Guest

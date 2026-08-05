@@ -6,7 +6,6 @@ defmodule CozyCheckout.Inventory do
   import Ecto.Query, warn: false
   alias CozyCheckout.Repo
   alias CozyCheckout.Inventory.{PurchaseOrder, PurchaseOrderItem, StockAdjustment}
-  alias CozyCheckout.Catalog.Product
 
   ## Purchase Orders
 
@@ -325,18 +324,6 @@ defmodule CozyCheckout.Inventory do
     Repo.one(query) || Decimal.new(0)
   end
 
-  defp get_total_purchased(product_id, unit_amount) do
-    query =
-      from poi in PurchaseOrderItem,
-        where:
-          poi.product_id == ^product_id and
-            poi.unit_amount == ^unit_amount and
-            is_nil(poi.deleted_at),
-        select: coalesce(sum(poi.quantity), 0)
-
-    Repo.one(query) || Decimal.new(0)
-  end
-
   defp get_total_sold(product_id, nil) do
     query =
       from oi in CozyCheckout.Sales.OrderItem,
@@ -346,17 +333,6 @@ defmodule CozyCheckout.Inventory do
     Repo.one(query) || Decimal.new(0)
   end
 
-  defp get_total_sold(product_id, unit_amount) do
-    query =
-      from oi in CozyCheckout.Sales.OrderItem,
-        where:
-          oi.product_id == ^product_id and
-            oi.unit_amount == ^unit_amount and
-            is_nil(oi.deleted_at),
-        select: coalesce(sum(oi.quantity), 0)
-
-    Repo.one(query) || Decimal.new(0)
-  end
 
   # Get total adjustment volume for volume-based products
   defp get_total_adjustment_volume(product_id) do

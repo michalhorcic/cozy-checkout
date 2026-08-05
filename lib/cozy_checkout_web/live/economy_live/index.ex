@@ -97,10 +97,6 @@ defmodule CozyCheckoutWeb.EconomyLive.Index do
     end
   end
 
-  defp format_date(date) do
-    Calendar.strftime(date, "%d. %m. %Y")
-  end
-
   defp state_label("draft"), do: "Draft"
   defp state_label("personal"), do: "Personal"
   defp state_label("generated"), do: "Generated"

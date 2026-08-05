@@ -551,7 +551,5 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
 
   defp parse_decimal(value), do: value
 
-  defp change_purchase_order(purchase_order, attrs \\ %{}) do
-    Inventory.PurchaseOrder.changeset(purchase_order, attrs)
-  end
+
 end

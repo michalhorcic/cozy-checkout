@@ -718,18 +718,15 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     end)
   end
 
-  defp filter_products(products, nil), do: products
-
   defp filter_products(products, category_id) do
-    Enum.filter(products, fn product ->
-      product.category_id == category_id
-    end)
+    if is_nil(category_id) do
+      products
+    else
+      Enum.filter(products, fn product -> product.category_id == category_id end)
+    end
   end
 
-  defp parse_default_amounts(nil), do: []
-  defp parse_default_amounts(""), do: []
-
-  defp parse_default_amounts(amounts_str) when is_binary(amounts_str) do
+  defp parse_default_amounts(amounts_str) when is_binary(amounts_str) and amounts_str != "" do
     case Jason.decode(amounts_str) do
       {:ok, amounts} when is_list(amounts) -> amounts
       _ -> []
