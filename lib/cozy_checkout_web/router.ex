@@ -51,6 +51,7 @@ defmodule CozyCheckoutWeb.Router do
 
     # Stock Overview
     live "/stock", StockOverviewLive.Index
+    live "/stock/restock", StockRestockLive
 
     # Stock Adjustments
     live "/stock-adjustments", StockAdjustmentLive.Index, :index

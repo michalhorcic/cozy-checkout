@@ -183,6 +183,71 @@ defmodule CozyCheckout.Inventory do
     StockAdjustment.changeset(adjustment, attrs)
   end
 
+  @doc """
+  Creates a single purchase order with multiple items for a batch shopping trip.
+  """
+  def batch_restock(attrs) do
+    Repo.transaction(fn ->
+      order_number = generate_purchase_order_number()
+
+      {:ok, po} =
+        create_purchase_order(%{
+          order_number: order_number,
+          order_date: Date.utc_today(),
+          supplier_note: attrs[:supplier]
+        })
+
+      Enum.each(attrs.items, fn item ->
+        item_attrs =
+          %{
+            product_id: item.product_id,
+            quantity: item.quantity,
+            cost_price: "0"
+          }
+          |> maybe_put_unit_amount(item[:unit_amount])
+
+        case create_purchase_order_item(po, item_attrs) do
+          {:ok, _} -> :ok
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+
+      po
+    end)
+  end
+
+  @doc """
+  Creates a purchase order with a single item for quick restocking from the UI.
+  Silently generates the order number and uses today as the order date.
+  """
+  def quick_restock(product_id, attrs) do
+    Repo.transaction(fn ->
+      order_number = generate_purchase_order_number()
+
+      {:ok, po} =
+        create_purchase_order(%{
+          order_number: order_number,
+          order_date: Date.utc_today()
+        })
+
+      item_attrs =
+        %{
+          product_id: product_id,
+          quantity: attrs.quantity,
+          cost_price: attrs[:cost_price] || "0"
+        }
+        |> maybe_put_unit_amount(attrs[:unit_amount])
+
+      case create_purchase_order_item(po, item_attrs) do
+        {:ok, item} -> item
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  defp maybe_put_unit_amount(attrs, v) when v in [nil, ""], do: attrs
+  defp maybe_put_unit_amount(attrs, unit_amount), do: Map.put(attrs, :unit_amount, unit_amount)
+
   ## Stock Calculations
 
   @doc """
@@ -348,7 +413,6 @@ defmodule CozyCheckout.Inventory do
         raw_stock: stock
       }
     end)
-    |> Enum.reject(fn item -> Decimal.eq?(item.raw_stock, 0) end)
     |> Enum.sort_by(& &1.product.name)
   end
 
