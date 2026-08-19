@@ -15,10 +15,12 @@ defmodule CozyCheckout.Workers.AbraSyncWorker do
 
     case Abra.sync_order(order_id) do
       {:ok, _abra_id} ->
+        Phoenix.PubSub.broadcast(CozyCheckout.PubSub, "abra_sync", {:abra_sync_updated, order_id})
         :ok
 
       {:error, reason} when attempt >= max ->
         Sales.mark_order_abra_failed(order_id, reason)
+        Phoenix.PubSub.broadcast(CozyCheckout.PubSub, "abra_sync", {:abra_sync_updated, order_id})
         {:cancel, reason}
 
       {:error, reason} ->

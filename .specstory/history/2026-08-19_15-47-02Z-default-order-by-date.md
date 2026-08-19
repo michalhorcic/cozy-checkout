@@ -723,3 +723,169 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 Created 2 todos
 </details></tool-use>
+
+---
+
+_**User (2026-08-19 15:52:10Z)**_
+
+How would you implement possibility to show success automatically in index page. Now it needs refresh of page
+
+---
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+The cleanest approach is **PubSub + optimistic UI update** in two parts:
+
+### 1. Optimistic update on click (immediate feedback)
+
+In `handle_event("retry_abra_sync", ...)`, instead of `push_patch`, update just that order in `@orders` in-place:
+
+```elixir
+def handle_event("retry_abra_sync", %{"id" => id}, socket) do
+  order = Sales.get_order!(id)
+
+  case Sales.retry_abra_sync(order) do
+    {:ok, _job} ->
+      # Optimistically mark as pending in the UI
+      updated_orders =
+        Enum.map(socket.assigns.orders, fn o ->
+          if o.id == id, do: %{o | abra_sync_status: nil}, else: o
+        end)
+
+      {:noreply,
+       socket
+       |> assign(:orders, updated_orders)
+       |> put_flash(:info, "Sync to Abra queued.")}
+
+    {:error, _reason} ->
+      {:noreply, put_flash(socket, :error, "Failed to queue Abra sync.")}
+  end
+end
+```
+
+### 2. PubSub broadcast when the job finishes
+
+Subscribe in `mount/3`:
+The cleanest approach is **PubSub + optimistic UI update** in two parts:
+
+### 1. Optimistic update on click (immediate feedback)
+
+In `handle_event("retry_abra_sync", ...)`, instead of `push_patch`, update just that order in `@orders` in-place:
+
+```elixir
+def handle_event("retry_abra_sync", %{"id" => id}, socket) do
+  order = Sales.get_order!(id)
+
+  case Sales.retry_abra_sync(order) do
+    {:ok, _job} ->
+      # Optimistically mark as pending in the UI
+      updated_orders =
+        Enum.map(socket.assigns.orders, fn o ->
+          if o.id == id, do: %{o | abra_sync_status: nil}, else: o
+        end)
+
+      {:noreply,
+       socket
+       |> assign(:orders, updated_orders)
+       |> put_flash(:info, "Sync to Abra queued.")}
+
+    {:error, _reason} ->
+      {:noreply, put_flash(socket, :error, "Failed to queue Abra sync.")}
+  end
+end
+```
+
+### 2. PubSub broadcast when the job finishes
+
+Subscribe in `mount/3`:
+```elixir
+def mount(_params, _session, socket) do
+  if connected?(socket),
+    do: Phoenix.PubSub.subscribe(CozyCheckout.PubSub, "abra_sync")
+  {:ok, socket}
+end
+```
+
+Broadcast from `AbraSyncWorker` after success/failure:
+```elixir
+# in perform/1, after Abra.sync_order/1 resolves:
+Phoenix.PubSub.broadcast(CozyCheckout.PubSub, "abra_sync", {:abra_sync_updated, order_id})
+```
+
+Handle the message in the index to refresh just that one row:
+```elixir
+def handle_info({:abra_sync_updated, order_id}, socket) do
+  orders =
+    Enum.map(socket.assigns.orders, fn o ->
+      if o.id == order_id, do: Sales.get_order!(order_id), else: o
+    end)
+
+  {:noreply, assign(socket, :orders, orders)}
+end
+```
+
+### Why this works well
+
+| Event | What happens |
+|---|---|
+| User clicks Sync | Row instantly shows "Pending" badge, button disappears |
+| Oban job succeeds | Row updates to "Synced" badge automatically |
+| Oban job fails | Row updates to "Failed" badge automatically |
+
+No full page reload at any point. The `Sales.get_order!/1` call in `handle_info` is the only DB hit and only runs for the single affected order.
+
+---
+
+_**User (2026-08-19 15:53:15Z)**_
+
+perfect, sounds good, please implement this solution. Ask any additional questions you would need
+
+---
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Let me check the worker and sales module to understand what's already there.  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `retry_abra_sync` (`**/lib/cozy_checkout/sales.ex`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `abra_sync_worker.ex`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `sales.ex`, lines 793 to 815
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched for text `PubSub` (`**/lib/cozy_checkout/application.ex`), 1 result
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+All clear. Three files to change: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_multiReplaceString"><details>
+<summary>Tool use: **copilot_multiReplaceString**</summary>
+
+Multi-Replace String in Files
+</details></tool-use>

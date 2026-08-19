@@ -7,6 +7,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
+    if connected?(socket), do: Phoenix.PubSub.subscribe(CozyCheckout.PubSub, "abra_sync")
     {:ok, socket}
   end
 
@@ -50,14 +51,29 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
 
     case Sales.retry_abra_sync(order) do
       {:ok, _job} ->
+        updated_orders =
+          Enum.map(socket.assigns.orders, fn o ->
+            if o.id == id, do: %{o | abra_sync_status: nil}, else: o
+          end)
+
         {:noreply,
          socket
-         |> put_flash(:info, "Sync to Abra queued.")
-         |> push_patch(to: ~p"/admin/orders")}
+         |> assign(:orders, updated_orders)
+         |> put_flash(:info, "Sync to Abra queued.")}
 
       {:error, _reason} ->
         {:noreply, put_flash(socket, :error, "Failed to queue Abra sync.")}
     end
+  end
+
+  @impl true
+  def handle_info({:abra_sync_updated, order_id}, socket) do
+    updated_orders =
+      Enum.map(socket.assigns.orders, fn o ->
+        if o.id == order_id, do: Sales.get_order!(order_id), else: o
+      end)
+
+    {:noreply, assign(socket, :orders, updated_orders)}
   end
 
   @impl true
