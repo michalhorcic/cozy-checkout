@@ -8156,3 +8156,35 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 Created 2 todos
 </details></tool-use>
+
+---
+
+_**User (2026-08-19 13:35:18Z)**_
+
+Má použitý oban balíček rovnou nějaké admin rozhraní? Nebo lze snadno dopsat?
+
+---
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Oban má dvě možnosti:
+
+### 1. `oban_live_dashboard` — zdarma, doporučeno
+Přidá Oban panel přímo do existujícího Phoenix LiveDashboard (který už máš v projektu). Zobrazí fronty, joby, umožní cancel/retry/pause.
+
+```elixir
+{:oban_live_dashboard, "~> 0.2"}
+```
+
+V routeru (kde je `live_dashboard`):
+```elixir
+live_dashboard "/dashboard",
+  additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+```
+
+### 2. Oban Web — placené
+Plnohodnotné admin rozhraní na [oban.pro](https://oban.pro). Licence ~$150/rok. Má pokročilé filtrování, metriky, real-time updates.
+
+---
+
+Vzhledem k tomu, že `phoenix_live_dashboard` je v projektu, **`oban_live_dashboard` je nejrychlejší cesta** — jedna závislost, pár řádků konfigurace, hotovo. Pro správu barových účtenek to plně postačí.

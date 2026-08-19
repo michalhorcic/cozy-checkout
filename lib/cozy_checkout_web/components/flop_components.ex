@@ -168,7 +168,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
         <% end %>
       </div>
 
-    <!-- Desktop pagination -->
+      <!-- Desktop pagination -->
       <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
         <div>
           <p class="text-sm text-primary-500">
@@ -237,7 +237,13 @@ defmodule CozyCheckoutWeb.FlopComponents do
   @doc """
   Builds a URL path with Flop parameters for pagination and sorting.
   """
-  def build_path(base_path, %Flop.Meta{flop: flop} = meta, action, field_or_page \\ nil, raw_params \\ %{}) do
+  def build_path(
+        base_path,
+        %Flop.Meta{flop: flop} = meta,
+        action,
+        field_or_page \\ nil,
+        raw_params \\ %{}
+      ) do
     new_flop =
       case action do
         :order -> Flop.push_order(flop, field_or_page)

@@ -34,6 +34,22 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
   end
 
   @impl true
+  def handle_event("retry_abra_sync", _params, socket) do
+    case Sales.retry_abra_sync(socket.assigns.order) do
+      {:ok, _job} ->
+        order = Sales.get_order!(socket.assigns.order.id)
+
+        {:noreply,
+         socket
+         |> assign(:order, order)
+         |> put_flash(:info, "Sync do Abry byl zařazen do fronty.")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Nepodařilo se zařadit sync do fronty.")}
+    end
+  end
+
+  @impl true
   def handle_event("expand_group", params, socket) do
     product_id = params["product-id"] || params["product_id"]
     unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
@@ -246,8 +262,8 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                       {format_currency(group.total_price)}
                     </div>
                   </div>
-                  
-    <!-- Expand/Collapse Button for Grouped Items -->
+
+                  <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
                       phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
@@ -264,8 +280,8 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
                     </button>
                   <% end %>
                 </div>
-                
-    <!-- Individual Items (when expanded) -->
+
+                <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-secondary-200">
                     <div
@@ -410,6 +426,52 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
               </div>
             </div>
           </div>
+        </div>
+
+        <%!-- Abra Sync Status --%>
+        <div :if={@order.status == "paid"} class="bg-white shadow-lg rounded-lg p-6 mt-6">
+          <h3 class="text-lg font-bold text-primary-500 mb-3">Abra Flexi</h3>
+          <%= cond do %>
+            <% @order.abra_sync_status == "synced" -> %>
+              <div class="flex items-center gap-2 text-green-700">
+                <.icon name="hero-check-circle" class="w-5 h-5" />
+                <span class="font-medium">Synced</span>
+              </div>
+              <div :if={@order.abra_document_id} class="text-sm text-primary-400 mt-1">
+                ID: {@order.abra_document_id}
+              </div>
+              <div :if={@order.abra_synced_at} class="text-sm text-primary-400">
+                {Calendar.strftime(@order.abra_synced_at, "%d.%m.%Y %H:%M")}
+              </div>
+            <% @order.abra_sync_status == "failed" -> %>
+              <div class="flex items-center gap-2 text-red-700">
+                <.icon name="hero-x-circle" class="w-5 h-5" />
+                <span class="font-medium">Sync selhal</span>
+              </div>
+              <div :if={@order.abra_sync_error} class="text-sm text-red-600 mt-1 break-words">
+                {@order.abra_sync_error}
+              </div>
+              <div class="text-sm text-primary-400 mt-1">
+                Pokusů: {@order.abra_sync_attempts}
+              </div>
+              <button
+                phx-click="retry_abra_sync"
+                class="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-all text-sm"
+              >
+                <.icon name="hero-arrow-path" class="w-4 h-4" /> Opakovat sync
+              </button>
+            <% true -> %>
+              <div class="flex items-center gap-2 text-amber-600">
+                <.icon name="hero-clock" class="w-5 h-5" />
+                <span class="font-medium">Čeká na sync</span>
+              </div>
+              <button
+                phx-click="retry_abra_sync"
+                class="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-lg transition-all text-sm"
+              >
+                <.icon name="hero-arrow-path" class="w-4 h-4" /> Spustit sync
+              </button>
+          <% end %>
         </div>
       </div>
     </div>

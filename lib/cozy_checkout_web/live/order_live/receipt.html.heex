@@ -143,7 +143,9 @@
             <strong>{group.product.name}</strong>
             <%= if group.unit_amount do %>
               <span style="font-size: 11px;">
-                ({format_number(group.unit_amount)}{group.unit} × {Decimal.to_integer(Decimal.round(group.total_quantity, 0))})
+                ({format_number(group.unit_amount)}{group.unit} × {Decimal.to_integer(
+                  Decimal.round(group.total_quantity, 0)
+                )})
               </span>
             <% else %>
               <span style="font-size: 11px;">
@@ -152,7 +154,9 @@
             <% end %>
           </div>
           <div style="display: flex; justify-content: space-between; font-size: 11px;">
-            <span>{format_currency(group.price_per_unit)} × {Decimal.to_integer(Decimal.round(group.total_quantity, 0))}</span>
+            <span>{format_currency(group.price_per_unit)} × {Decimal.to_integer(
+              Decimal.round(group.total_quantity, 0)
+            )}</span>
             <span><strong>{format_currency(group.total_price)}</strong></span>
           </div>
         </div>

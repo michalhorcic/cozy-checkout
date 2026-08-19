@@ -33,7 +33,9 @@ defmodule CozyCheckout.Pohoda do
     {account_no, bank_code} = parse_bank_account()
     {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
     items = order |> active_order_items() |> group_items()
-    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)
+
+    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat,
+     price_high_sum} = calculate_vat_totals(items)
 
     """
       <dat:dataPackItem id="#{order.order_number}" version="2.0">
@@ -191,7 +193,8 @@ defmodule CozyCheckout.Pohoda do
     zero = Decimal.new(0)
 
     {price_none, price_low, price_low_sum, price_high, price_high_sum} =
-      Enum.reduce(items, {zero, zero, zero, zero, zero}, fn item, {none, low, low_sum, high, high_sum} ->
+      Enum.reduce(items, {zero, zero, zero, zero, zero}, fn item,
+                                                            {none, low, low_sum, high, high_sum} ->
         subtotal = item.subtotal || Decimal.mult(item.unit_price, item.quantity)
         rate = item.vat_rate
 

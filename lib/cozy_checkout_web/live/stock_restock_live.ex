@@ -343,58 +343,58 @@ defmodule CozyCheckoutWeb.StockRestockLive do
               autocomplete="off"
               class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 pr-10"
             />
-          <%= if @search_query != "" do %>
-            <button
-              type="button"
-              phx-click="close_results"
-              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <.icon name="hero-x-mark" class="w-4 h-4" />
-            </button>
-          <% end %>
+            <%= if @search_query != "" do %>
+              <button
+                type="button"
+                phx-click="close_results"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <.icon name="hero-x-mark" class="w-4 h-4" />
+              </button>
+            <% end %>
 
-          <%!-- Results dropdown --%>
-          <%= if @show_results do %>
-            <div class="absolute z-20 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-80 overflow-y-auto">
-              <%= if @search_results == [] do %>
-                <div class="px-4 py-6 text-center text-sm text-gray-400">
-                  No products found for "{@search_query}"
-                </div>
-              <% else %>
-                <ul>
-                  <%= for combo <- @search_results do %>
-                    <li class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0">
-                      <div class="min-w-0 flex-1">
-                        <div class="text-sm font-medium text-gray-900 truncate">
-                          {combo.product_name}
+            <%!-- Results dropdown --%>
+            <%= if @show_results do %>
+              <div class="absolute z-20 mt-1 w-full bg-white rounded-xl border border-gray-200 shadow-xl max-h-80 overflow-y-auto">
+                <%= if @search_results == [] do %>
+                  <div class="px-4 py-6 text-center text-sm text-gray-400">
+                    No products found for "{@search_query}"
+                  </div>
+                <% else %>
+                  <ul>
+                    <%= for combo <- @search_results do %>
+                      <li class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0">
+                        <div class="min-w-0 flex-1">
+                          <div class="text-sm font-medium text-gray-900 truncate">
+                            {combo.product_name}
+                          </div>
+                          <div class="flex items-center gap-2 mt-0.5">
+                            <%= if combo.category_name do %>
+                              <span class="text-xs text-gray-400">{combo.category_name}</span>
+                            <% end %>
+                            <%= if combo.unit_amount do %>
+                              <span class="px-1.5 py-0.5 text-xs font-semibold bg-tertiary-100 text-tertiary-800 rounded">
+                                {combo.unit_amount}{combo.unit}
+                              </span>
+                            <% end %>
+                          </div>
                         </div>
-                        <div class="flex items-center gap-2 mt-0.5">
-                          <%= if combo.category_name do %>
-                            <span class="text-xs text-gray-400">{combo.category_name}</span>
-                          <% end %>
-                          <%= if combo.unit_amount do %>
-                            <span class="px-1.5 py-0.5 text-xs font-semibold bg-tertiary-100 text-tertiary-800 rounded">
-                              {combo.unit_amount}{combo.unit}
-                            </span>
-                          <% end %>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        phx-click="add_to_cart"
-                        phx-value-product-id={combo.product_id}
-                        phx-value-unit-amount={unit_amount_param(combo.unit_amount)}
-                        class="ml-4 flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg transition-colors"
-                      >
-                        <.icon name="hero-plus" class="w-3.5 h-3.5" /> Add
-                      </button>
-                    </li>
-                  <% end %>
-                </ul>
-              <% end %>
-            </div>
-          <% end %>
-        </div>
+                        <button
+                          type="button"
+                          phx-click="add_to_cart"
+                          phx-value-product-id={combo.product_id}
+                          phx-value-unit-amount={unit_amount_param(combo.unit_amount)}
+                          class="ml-4 flex-shrink-0 inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-semibold rounded-lg transition-colors"
+                        >
+                          <.icon name="hero-plus" class="w-3.5 h-3.5" /> Add
+                        </button>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
         </form>
       </div>
 
@@ -402,8 +402,7 @@ defmodule CozyCheckoutWeb.StockRestockLive do
       <div class="bg-white shadow-lg rounded-xl overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <.icon name="hero-shopping-cart" class="w-5 h-5 text-gray-400" />
-            Items to Restock
+            <.icon name="hero-shopping-cart" class="w-5 h-5 text-gray-400" /> Items to Restock
             <%= if @cart != [] do %>
               <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2 py-0.5 rounded-full">
                 {length(@cart)}
@@ -518,8 +517,7 @@ defmodule CozyCheckoutWeb.StockRestockLive do
             )
           ]}
         >
-          <.icon name="hero-check" class="w-4 h-4" />
-          Save Shopping Trip
+          <.icon name="hero-check" class="w-4 h-4" /> Save Shopping Trip
           <%= if @cart != [] do %>
             <span class="opacity-75">({cart_total_units(@cart)} units)</span>
           <% end %>

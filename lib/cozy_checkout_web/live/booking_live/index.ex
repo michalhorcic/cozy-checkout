@@ -320,8 +320,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             />
           </:filter>
         </.filter_form>
-        
-    <!-- View toggle -->
+
+        <!-- View toggle -->
         <div class="px-6 py-3 bg-secondary-50 border-t border-secondary-200 flex items-center justify-between">
           <div class="flex items-center gap-2">
             <%= if Map.get(@current_params, "show_all") == "true" do %>
@@ -349,8 +349,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             <% end %>
           </div>
         </div>
-        
-    <!-- Table -->
+
+        <!-- Table -->
         <div class="overflow-x-auto">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-secondary-50">

@@ -45,8 +45,8 @@
           </div>
         </div>
       </div>
-      
-<!-- Order Total -->
+
+      <!-- Order Total -->
       <div class="text-right">
         <div class="flex items-center justify-end gap-2 mb-1">
           <p class="text-sm text-slate-600">Total</p>
@@ -67,8 +67,8 @@
         </button>
       </div>
     </div>
-    
-<!-- Main Content Area with Two Columns -->
+
+    <!-- Main Content Area with Two Columns -->
     <div class="flex-1 flex overflow-hidden">
       <!-- Left Column: Products -->
       <div class="flex-1 flex flex-col overflow-hidden">
@@ -104,8 +104,8 @@
             </button>
           </div>
         </div>
-        
-<!-- Product Grid -->
+
+        <!-- Product Grid -->
         <div class="flex-1 overflow-y-auto p-6">
           <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <%= if is_nil(@selected_category_id) do %>
@@ -139,8 +139,8 @@
                     </span>
                   </div>
                 </div>
-                
-<!-- Quick Quantity Selector -->
+
+                <!-- Quick Quantity Selector -->
                 <div class="grid grid-cols-3 gap-3">
                   <button
                     phx-click="add_product"
@@ -187,8 +187,8 @@
                     </span>
                   </div>
                 </div>
-                
-<!-- Quick Quantity Selector -->
+
+                <!-- Quick Quantity Selector -->
                 <div class="grid grid-cols-3 gap-3">
                   <button
                     phx-click="add_product"
@@ -211,8 +211,8 @@
           </div>
         </div>
       </div>
-      
-<!-- Right Column: Order Cart -->
+
+      <!-- Right Column: Order Cart -->
       <div class="w-[450px] bg-white border-l border-slate-200 flex flex-col">
         <div class={["px-6 py-4 border-b border-slate-200", @split_mode && "bg-amber-50"]}>
           <div class="flex items-center justify-between">
@@ -240,8 +240,8 @@
             <% end %>
           </div>
         </div>
-        
-<!-- Cart Items / Split Mode -->
+
+        <!-- Cart Items / Split Mode -->
         <%= if @split_mode do %>
           <div class="flex-1 overflow-y-auto p-4">
             <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide px-1 mb-3">
@@ -358,8 +358,8 @@
                           </p>
                         </div>
                       </div>
-                      
-<!-- Expand/Collapse Button for Grouped Items -->
+
+                      <!-- Expand/Collapse Button for Grouped Items -->
                       <button
                         phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
                         phx-value-product-id={group.product.id}
@@ -386,8 +386,8 @@
                       <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
                         <.icon name="hero-trash" class="w-6 h-6 text-white" />
                       </div>
-                      
-<!-- Item Content -->
+
+                      <!-- Item Content -->
                       <div class="swipe-content relative bg-slate-50 p-4">
                         <div class="flex justify-between items-start">
                           <div class="flex-1">
@@ -424,8 +424,8 @@
                       </div>
                     </div>
                   <% end %>
-                  
-<!-- Individual Items (when expanded) -->
+
+                  <!-- Individual Items (when expanded) -->
                   <%= if group.expanded? do %>
                     <div class="border-t border-slate-200 bg-white">
                       <div
@@ -439,8 +439,8 @@
                         <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
                           <.icon name="hero-trash" class="w-6 h-6 text-white" />
                         </div>
-                        
-<!-- Item Content -->
+
+                        <!-- Item Content -->
                         <div class="swipe-content relative bg-white p-3 border-b border-slate-100 last:border-b-0">
                           <div class="flex justify-between items-start text-sm">
                             <div class="flex-1">
@@ -478,17 +478,17 @@
           </div>
         <% end %>
         <%!-- end @split_mode --%>
-        
-<!-- Cart Summary -->
+
+        <!-- Cart Summary -->
         <div class="border-t border-slate-200 p-6 bg-slate-50">
-          <%
-            order_total = @order.total_amount || Decimal.new("0")
-            total_paid =
-              Enum.reduce(@order.payments || [], Decimal.new("0"), fn p, acc ->
-                if is_nil(p.deleted_at), do: Decimal.add(acc, p.amount), else: acc
-              end)
-            remaining = Decimal.sub(order_total, total_paid)
-          %>
+          <% order_total = @order.total_amount || Decimal.new("0")
+
+          total_paid =
+            Enum.reduce(@order.payments || [], Decimal.new("0"), fn p, acc ->
+              if is_nil(p.deleted_at), do: Decimal.add(acc, p.amount), else: acc
+            end)
+
+          remaining = Decimal.sub(order_total, total_paid) %>
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-slate-700">
               <span>Order total</span>
@@ -509,7 +509,7 @@
             <% end %>
           </div>
           <div class={[
-            "flex justify-between items-center text-xl font-bold text-slate-900 pt-4 border-t border-slate-300 mb-4",
+            "flex justify-between items-center text-xl font-bold text-slate-900 pt-4 border-t border-slate-300 mb-4"
           ]}>
             <span>{if Decimal.gt?(total_paid, 0), do: "Remaining", else: "Total"}</span>
             <span class={[
@@ -520,7 +520,7 @@
             </span>
           </div>
 
-<!-- Payment Button -->
+          <!-- Payment Button -->
           <%= cond do %>
             <% @split_mode -> %>
               <% split_amount = calc_split_total(@grouped_items, @split_selection)
@@ -557,8 +557,8 @@
         </div>
       </div>
     </div>
-    
-<!-- Unit Amount Modal -->
+
+    <!-- Unit Amount Modal -->
     <div
       :if={@show_unit_modal && @selected_product}
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -576,8 +576,8 @@
         <p class="text-lg text-slate-600 mb-6">
           Select amount ({@selected_product.unit})
         </p>
-        
-<!-- Quick Select Buttons -->
+
+        <!-- Quick Select Buttons -->
         <%= if @selected_product.default_unit_amounts do %>
           <div class="mb-6">
             <p class="text-sm font-semibold text-slate-700 mb-3">Select Amount</p>
@@ -614,8 +614,8 @@
             </button>
           </div>
         <% end %>
-        
-<!-- Cancel Button -->
+
+        <!-- Cancel Button -->
         <div class="pt-4">
           <button
             type="button"
@@ -627,8 +627,8 @@
         </div>
       </div>
     </div>
-    
-<!-- Custom Quantity Modal -->
+
+    <!-- Custom Quantity Modal -->
     <div
       :if={@show_quantity_modal && @quantity_product}
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -679,8 +679,8 @@
         </form>
       </div>
     </div>
-    
-<!-- Success Toast -->
+
+    <!-- Success Toast -->
     <div
       :if={@show_success}
       phx-click="hide_success"
@@ -691,8 +691,8 @@
         <span class="font-semibold text-lg">Item added!</span>
       </div>
     </div>
-    
-<!-- Delete Confirmation Modal -->
+
+    <!-- Delete Confirmation Modal -->
     <div
       :if={@show_delete_confirm && @item_to_delete}
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -743,8 +743,8 @@
         </div>
       </div>
     </div>
-    
-<!-- Recalculation Modal -->
+
+    <!-- Recalculation Modal -->
     <div
       :if={@show_recalculate_modal}
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -764,8 +764,8 @@
               {format_currency(@order.total_amount || Decimal.new("0"))}
             </p>
           </div>
-          
-<!-- Recalculated Total -->
+
+          <!-- Recalculated Total -->
           <div class={[
             "rounded-xl p-4",
             if(Decimal.equal?(@recalculated_total, @order.total_amount),
@@ -778,8 +778,8 @@
               {format_currency(@recalculated_total || Decimal.new("0"))}
             </p>
           </div>
-          
-<!-- Difference -->
+
+          <!-- Difference -->
           <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
             <div class="bg-error-light border-2 border-red-200 rounded-xl p-4">
               <p class="text-sm text-error mb-1 font-semibold">Difference</p>
@@ -800,8 +800,8 @@
               </div>
             </div>
           <% end %>
-          
-<!-- Item Breakdown -->
+
+          <!-- Item Breakdown -->
           <div class="bg-slate-50 rounded-xl p-4">
             <p class="text-sm font-semibold text-slate-700 mb-3">Items Breakdown</p>
             <div class="space-y-2 text-sm">
@@ -825,8 +825,8 @@
             </div>
           </div>
         </div>
-        
-<!-- Action Buttons -->
+
+        <!-- Action Buttons -->
         <div class="space-y-3">
           <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
             <button
@@ -845,8 +845,8 @@
         </div>
       </div>
     </div>
-    
-<!-- Payment Modal -->
+
+    <!-- Payment Modal -->
     <div
       :if={@show_payment_modal}
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -1089,151 +1089,151 @@
                 <%!-- Normal full-order payment: tips/discount form + full total --%>
                 <!-- Payment Method Selection -->
                 <h2 class="text-3xl font-bold text-slate-900 mb-6">Payment Details</h2>
-              
-<!-- Tips and Discount Form -->
-              <div class="space-y-4 mb-6 bg-slate-50 p-6 rounded-2xl">
-                <form phx-change="update_payment_fields">
-                  <div class="grid grid-cols-2 gap-4">
-                    <!-- Discount Amount -->
-                    <div>
+
+                <!-- Tips and Discount Form -->
+                <div class="space-y-4 mb-6 bg-slate-50 p-6 rounded-2xl">
+                  <form phx-change="update_payment_fields">
+                    <div class="grid grid-cols-2 gap-4">
+                      <!-- Discount Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Discount Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="discount_amount"
+                          value={@discount_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <!-- Tips Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Tips Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="tips_amount"
+                          value={@tips_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Discount Reason -->
+                    <div class="mt-4">
                       <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        Discount Amount
+                        Discount Reason (optional)
                       </label>
                       <input
-                        type="number"
-                        name="discount_amount"
-                        value={@discount_amount}
-                        step="0.01"
-                        min="0"
+                        type="text"
+                        name="discount_reason"
+                        value={@discount_reason}
                         class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
-                        placeholder="0.00"
+                        placeholder="e.g., Staff discount, Promotional offer"
                       />
                     </div>
-                    
-<!-- Tips Amount -->
-                    <div>
-                      <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        Tips Amount
-                      </label>
-                      <input
-                        type="number"
-                        name="tips_amount"
-                        value={@tips_amount}
-                        step="0.01"
-                        min="0"
-                        class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  
-<!-- Discount Reason -->
-                  <div class="mt-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                      Discount Reason (optional)
-                    </label>
-                    <input
-                      type="text"
-                      name="discount_reason"
-                      value={@discount_reason}
-                      class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
-                      placeholder="e.g., Staff discount, Promotional offer"
-                    />
-                  </div>
-                </form>
-                
-<!-- Total Calculation Preview -->
-                <% items_subtotal =
-                  Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
-                    Decimal.add(acc, item.subtotal)
-                  end)
+                  </form>
 
-                discount_dec =
-                  case Decimal.parse(@discount_amount || "0") do
-                    {amount, _} -> amount
-                    :error -> Decimal.new("0")
-                  end
+                  <!-- Total Calculation Preview -->
+                  <% items_subtotal =
+                    Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
+                      Decimal.add(acc, item.subtotal)
+                    end)
 
-                tips_dec =
-                  case Decimal.parse(@tips_amount || "0") do
-                    {amount, _} -> amount
-                    :error -> Decimal.new("0")
-                  end
+                  discount_dec =
+                    case Decimal.parse(@discount_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
 
-                final_total =
-                  items_subtotal
-                  |> Decimal.sub(discount_dec)
-                  |> Decimal.add(tips_dec) %>
-                <div class="border-t-2 border-slate-200 pt-4 mt-4 space-y-2">
-                  <div class="flex justify-between text-slate-700">
-                    <span>Subtotal (Items):</span>
-                    <span class="font-semibold">
-                      {format_currency(items_subtotal)}
-                    </span>
-                  </div>
-                  <%= if Decimal.gt?(discount_dec, 0) do %>
-                    <div class="flex justify-between text-error">
-                      <span>Discount:</span>
-                      <span class="font-semibold">-{format_currency(discount_dec)}</span>
+                  tips_dec =
+                    case Decimal.parse(@tips_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
+
+                  final_total =
+                    items_subtotal
+                    |> Decimal.sub(discount_dec)
+                    |> Decimal.add(tips_dec) %>
+                  <div class="border-t-2 border-slate-200 pt-4 mt-4 space-y-2">
+                    <div class="flex justify-between text-slate-700">
+                      <span>Subtotal (Items):</span>
+                      <span class="font-semibold">
+                        {format_currency(items_subtotal)}
+                      </span>
                     </div>
-                  <% end %>
-                  <%= if Decimal.gt?(tips_dec, 0) do %>
-                    <div class="flex justify-between text-success-dark">
-                      <span>Tips:</span>
-                      <span class="font-semibold">+{format_currency(tips_dec)}</span>
+                    <%= if Decimal.gt?(discount_dec, 0) do %>
+                      <div class="flex justify-between text-error">
+                        <span>Discount:</span>
+                        <span class="font-semibold">-{format_currency(discount_dec)}</span>
+                      </div>
+                    <% end %>
+                    <%= if Decimal.gt?(tips_dec, 0) do %>
+                      <div class="flex justify-between text-success-dark">
+                        <span>Tips:</span>
+                        <span class="font-semibold">+{format_currency(tips_dec)}</span>
+                      </div>
+                    <% end %>
+                    <div class="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t-2 border-slate-300">
+                      <span>Final Total:</span>
+                      <span class="text-success-dark">
+                        {format_currency(final_total)}
+                      </span>
                     </div>
-                  <% end %>
-                  <div class="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t-2 border-slate-300">
-                    <span>Final Total:</span>
-                    <span class="text-success-dark">
-                      {format_currency(final_total)}
-                    </span>
                   </div>
                 </div>
-              </div>
 
-              <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
 
-              <div class="grid grid-cols-1 gap-4 mb-6">
-                <!-- Cash Payment -->
-                <button
-                  phx-click="select_payment_method"
-                  phx-value-method="cash"
-                  class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
-                >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
-                      <div class="text-2xl font-bold">Cash</div>
-                      <div class="text-sm font-normal mt-1">Record cash payment</div>
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                  <!-- Cash Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="cash"
+                    class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">Cash</div>
+                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
                     </div>
-                    <.icon name="hero-arrow-right" class="w-8 h-8" />
-                  </div>
-                </button>
-                
-<!-- QR Code Payment -->
-                <button
-                  phx-click="select_payment_method"
-                  phx-value-method="qr_code"
-                  class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
-                >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
-                      <div class="text-2xl font-bold">QR Code</div>
-                      <div class="text-sm font-normal mt-1">Generate payment QR code</div>
-                    </div>
-                    <.icon name="hero-arrow-right" class="w-8 h-8" />
-                  </div>
-                </button>
-              </div>
+                  </button>
 
-              <button
-                phx-click="close_payment_modal"
-                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
-              >
-                Cancel
-              </button>
+                  <!-- QR Code Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="qr_code"
+                    class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">QR Code</div>
+                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  phx-click="close_payment_modal"
+                  class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
               <% end %>
               <%!-- end split_payment_amount conditional --%>
             <% end %>

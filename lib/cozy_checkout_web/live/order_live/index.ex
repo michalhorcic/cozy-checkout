@@ -262,12 +262,25 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                 <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Total
                 </th>
-                <.sortable_header meta={@meta} field={:status} path={~p"/admin/orders"} raw_params={@current_params}>
+                <.sortable_header
+                  meta={@meta}
+                  field={:status}
+                  path={~p"/admin/orders"}
+                  raw_params={@current_params}
+                >
                   Status
                 </.sortable_header>
-                <.sortable_header meta={@meta} field={:inserted_at} path={~p"/admin/orders"} raw_params={@current_params}>
+                <.sortable_header
+                  meta={@meta}
+                  field={:inserted_at}
+                  path={~p"/admin/orders"}
+                  raw_params={@current_params}
+                >
                   Date
                 </.sortable_header>
+                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
+                  Abra
+                </th>
                 <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                   Actions
                 </th>
@@ -276,7 +289,7 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
             <tbody class="bg-white divide-y divide-gray-200">
               <%= if @orders == [] do %>
                 <tr>
-                  <td colspan="6" class="px-6 py-12 text-center text-primary-400">
+                  <td colspan="7" class="px-6 py-12 text-center text-primary-400">
                     No orders found.
                   </td>
                 </tr>
@@ -317,6 +330,24 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
                     {Calendar.strftime(order.inserted_at, "%Y-%m-%d %H:%M")}
                   </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm">
+                    <%= cond do %>
+                      <% order.abra_sync_status == "synced" -> %>
+                        <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                          <.icon name="hero-check-circle" class="w-3 h-3" /> Synced
+                        </span>
+                      <% order.abra_sync_status == "failed" -> %>
+                        <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                          <.icon name="hero-x-circle" class="w-3 h-3" /> Failed
+                        </span>
+                      <% order.status == "paid" -> %>
+                        <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                          <.icon name="hero-clock" class="w-3 h-3" /> Pending
+                        </span>
+                      <% true -> %>
+                        <span class="text-primary-300">—</span>
+                    <% end %>
+                  </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link
                       navigate={~p"/admin/orders/#{order}"}
@@ -349,7 +380,9 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
         <!-- Summary Bar -->
         <div class="px-6 py-3 bg-secondary-50 border-t border-gray-200 flex items-center justify-between">
           <span class="text-sm text-primary-400">
-            {if @meta.total_count, do: "#{@meta.total_count} orders", else: "#{length(@orders)} orders"}
+            {if @meta.total_count,
+              do: "#{@meta.total_count} orders",
+              else: "#{length(@orders)} orders"}
           </span>
           <div class="flex items-center gap-2">
             <span class="text-sm font-medium text-primary-400">Total (all filtered):</span>

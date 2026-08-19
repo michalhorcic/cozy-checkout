@@ -1,0 +1,737 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<winstrom version="1.0" source="FlexiBee">
+  <!-- Doklady faktur -->
+  <faktura-vydana>
+    <!-- ID (celé číslo) - -->
+    <id>key:86ef4de40946461944761a91d3492025c7814cff</id>
+    <!-- Poslední změna (datum a čas) - -->
+    <lastUpdate>2026-08-19T11:23:50.422+02:00</lastUpdate>
+    <!-- Upravil (objekt) - max. délka: 254 -->
+    <updatedBy showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</updatedBy>
+    <!-- Vytvořil (objekt) - max. délka: 254 -->
+    <createdBy showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</createdBy>
+    <!-- Datum vytvoření (datum a čas) - -->
+    <createdDate>2026-08-19T11:18:49.413+02:00</createdDate>
+    <!-- Interní číslo (řetězec) - max. délka: 20 -->
+    <kod>BAR00001/2627</kod>
+    <!-- Zámek 
+      Otevřeno - zamek.otevreno
+      Prohlédnuto - zamek.prohlednuto
+      Zamknuto mimo účetní - zamek.polozamceno
+      Zamknuto - zamek.zamceno -->
+    <zamekK showAs="Otevřeno">zamek.otevreno</zamekK>
+    <!-- Číslo došlé (řetězec) - max. délka: 40 -->
+    <cisDosle></cisDosle>
+    <!-- Variabilní symbol (řetězec) - max. délka: 30 -->
+    <varSym>12627</varSym>
+    <!-- Číslo smlouvy (řetězec) - max. délka: 30 -->
+    <cisSml></cisSml>
+    <!-- Číslo objednávky (řetězec) - max. délka: 2000 -->
+    <cisObj></cisObj>
+    <!-- Objednáno (datum) - -->
+    <datObj></datObj>
+    <!-- Dodací list (řetězec) - max. délka: 30 -->
+    <cisDodak></cisDodak>
+    <!-- Doprava a vyskladnění (řetězec) - -->
+    <doprava></doprava>
+    <!-- Vystaveno (datum) - -->
+    <datVyst>2026-08-19+02:00</datVyst>
+    <!-- Datum zdaň. plnění (datum) - -->
+    <duzpPuv>2026-08-19+02:00</duzpPuv>
+    <!-- Uplatnit zdaň. plnění (datum) - -->
+    <duzpUcto>2026-08-19+02:00</duzpUcto>
+    <!-- Splatnost (datum) - -->
+    <datSplat>2026-09-02+02:00</datSplat>
+    <!-- Datum úhrady (datum) - -->
+    <datUhr></datUhr>
+    <!-- Termín (datum) - -->
+    <datTermin></datTermin>
+    <!-- Realizace (datum) - -->
+    <datReal></datReal>
+    <!-- Datum sazeb DPH (datum) - -->
+    <datSazbyDph>2026-08-19+02:00</datSazbyDph>
+    <!-- Popis (řetězec) - max. délka: 255 -->
+    <popis>Bar popis</popis>
+    <!-- Poznámka (řetězec) - -->
+    <poznam></poznam>
+    <!-- Úvodní text (tiskne se před položkami) (řetězec) - -->
+    <uvodTxt></uvodTxt>
+    <!-- Závěrečný text (tiskne se za položkami) (řetězec) - -->
+    <zavTxt></zavTxt>
+    <!-- Osvob., bez DPH [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumOsv>0.0</sumOsv>
+    <!-- Základ DPH sníž. [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklSniz>0.0</sumZklSniz>
+    <!-- Základ DPH 2. sníž. [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklSniz2>0.0</sumZklSniz2>
+    <!-- Základ DPH zákl. [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklZakl>272.72</sumZklZakl>
+    <!-- Základ celkem [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklCelkem>272.72</sumZklCelkem>
+    <!-- DPH snížená [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphSniz>0.0</sumDphSniz>
+    <!-- DPH 2. snížená [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphSniz2>0.0</sumDphSniz2>
+    <!-- DPH základní [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphZakl>57.28</sumDphZakl>
+    <!-- DPH celkem [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphCelkem>57.28</sumDphCelkem>
+    <!-- Celkem vč. DPH - sníž. [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkSniz>0.0</sumCelkSniz>
+    <!-- Celkem vč. DPH - 2. sníž. [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkSniz2>0.0</sumCelkSniz2>
+    <!-- Celkem vč. DPH - zákl. [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkZakl>330.0</sumCelkZakl>
+    <!-- Celkem [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkem>330.0</sumCelkem>
+    <!-- Osvob., bez DPH [měna] (desetinné číslo) - -->
+    <sumOsvMen>0.0</sumOsvMen>
+    <!-- Základ DPH sníž. [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklSnizMen>0.0</sumZklSnizMen>
+    <!-- Základ DPH 2. sníž. [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklSniz2Men>0.0</sumZklSniz2Men>
+    <!-- Základ DPH zákl. [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklZaklMen>0.0</sumZklZaklMen>
+    <!-- Základ celkem [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumZklCelkemMen>0.0</sumZklCelkemMen>
+    <!-- DPH základní [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphZaklMen>0.0</sumDphZaklMen>
+    <!-- DPH snížená [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphSnizMen>0.0</sumDphSnizMen>
+    <!-- DPH 2. snížená [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphSniz2Men>0.0</sumDphSniz2Men>
+    <!-- DPH celkem [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumDphCelkemMen>0.0</sumDphCelkemMen>
+    <!-- Celkem vč. DPH - sníž. [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkSnizMen>0.0</sumCelkSnizMen>
+    <!-- Celkem vč. DPH - 2. sníž. [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkSniz2Men>0.0</sumCelkSniz2Men>
+    <!-- Celkem vč. DPH - zákl. [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkZaklMen>0.0</sumCelkZaklMen>
+    <!-- Celkem [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkemMen>0.0</sumCelkemMen>
+    <!-- Náklady (desetinné číslo) - počet číslic: 15 -->
+    <sumNaklady>158.58</sumNaklady>
+    <!-- Sleva [%] (desetinné číslo) - min. hodnota: -100.0 max.hodnota: 100.0 počet číslic: 6 -->
+    <slevaDokl>0.0</slevaDokl>
+    <!-- Kurz (desetinné číslo) - počet číslic: 19 -->
+    <kurz>0.0</kurz>
+    <!-- Kurz. množství (desetinné číslo) - min. hodnota: 0.0 počet číslic: 19 -->
+    <kurzMnozstvi>0.0</kurzMnozstvi>
+    <!-- V příkazu ? 
+      Bez příkazu - stavUziv.bezPrikazu
+      Obsažen v příkazu - stavUziv.obsaPrikaz
+      Odeslán částečný příkaz - stavUziv.castPrikaz
+      Odeslán příkaz - stavUziv.celPrikaz
+      Načteno elektronicky - stavUziv.nactenoEl
+      Naposledy načteno elektronicky - stavUziv.nactenoElPosledni
+      Vygenerován z kasy - stavUziv.genKasa
+      Zaúčtováno do pokladny - stavUziv.zauctovano
+      Změněno po zaúčtování - stavUziv.zaucZmena -->
+    <stavUzivK></stavUzivK>
+    <!-- Název firmy nebo jméno osoby (řetězec) - max. délka: 255 -->
+    <nazFirmy>TEST-BAR</nazFirmy>
+    <!-- Ulice (řetězec) - max. délka: 255 -->
+    <ulice></ulice>
+    <!-- Město (řetězec) - max. délka: 255 -->
+    <mesto></mesto>
+    <!-- PSČ (řetězec) - max. délka: 255 -->
+    <psc></psc>
+    <!-- EAN (řetězec) - max. délka: 20 -->
+    <eanKod></eanKod>
+    <!-- IČO (řetězec) - max. délka: 20 -->
+    <ic></ic>
+    <!-- DIČ (řetězec) - max. délka: 20 -->
+    <dic></dic>
+    <!-- Přílohy (celé číslo) - -->
+    <pocetPriloh>0</pocetPriloh>
+    <!-- Poštovní adresa je shodná se sídlem (logická hodnota) - -->
+    <postovniShodna>true</postovniShodna>
+    <!-- Pošt. jméno firmy (řetězec) - max. délka: 255 -->
+    <faNazev></faNazev>
+    <!-- Název firmy - druhá řádka (řetězec) - max. délka: 255 -->
+    <faNazev2></faNazev2>
+    <!-- Pošt. ulice (řetězec) - max. délka: 255 -->
+    <faUlice></faUlice>
+    <!-- Pošt. město (řetězec) - max. délka: 255 -->
+    <faMesto></faMesto>
+    <!-- Pošt. PSČ (řetězec) - max. délka: 255 -->
+    <faPsc></faPsc>
+    <!-- Pošt. EAN (řetězec) - max. délka: 20 -->
+    <faEanKod></faEanKod>
+    <!-- Číslo bank. účtu (řetězec) - max. délka: 255 -->
+    <buc></buc>
+    <!-- IBAN (řetězec) - max. délka: 255 -->
+    <iban></iban>
+    <!-- BIC (řetězec) - max. délka: 255 -->
+    <bic></bic>
+    <!-- Specifický symbol (řetězec) - max. délka: 255 -->
+    <specSym></specSym>
+    <!-- Bezpoložkový doklad (logická hodnota) - -->
+    <bezPolozek>false</bezPolozek>
+    <!-- Je účetní (logická hodnota) - -->
+    <ucetni>true</ucetni>
+    <!-- Snížená sazba DPH (desetinné číslo) - počet číslic: 6 -->
+    <szbDphSniz>12.0</szbDphSniz>
+    <!-- 2. snížená sazba DPH (desetinné číslo) - počet číslic: 6 -->
+    <szbDphSniz2>0.0</szbDphSniz2>
+    <!-- Základní sazba DPH (desetinné číslo) - počet číslic: 6 -->
+    <szbDphZakl>21.0</szbDphZakl>
+    <!-- Místo plnění tuzemsko (logická hodnota) - -->
+    <uzpTuzemsko>false</uzpTuzemsko>
+    <!-- Zaúčtováno (logická hodnota) - -->
+    <zuctovano>true</zuctovano>
+    <!-- Datum zaúčtování (datum) - -->
+    <datUcto>2026-08-19+02:00</datUcto>
+    <!-- Vynechat ze salda (logická hodnota) - -->
+    <vyloucitSaldo>false</vyloucitSaldo>
+    <!-- Storno (logická hodnota) - -->
+    <storno>false</storno>
+    <!-- Způsob zaokrouhlení - Celkem 
+      nahoru - zaokrJak.nahoru
+      dolů - zaokrJak.dolu
+      matematicky - zaokrJak.matem -->
+    <zaokrJakSumK></zaokrJakSumK>
+    <!-- Řád zaokrouhlení - Celkem 
+      nezaokrouhlovat - zaokrNa.zadne
+      0.001 - zaokrNa.tisiciny
+      0.01 - zaokrNa.setiny
+      0.05 - zaokrNa.5setiny
+      0.1 - zaokrNa.desetiny
+      0.5 - zaokrNa.5desetiny
+      1 - zaokrNa.jednotky
+      5 - zaokrNa.5jednotky
+      10 - zaokrNa.desitky
+      100 - zaokrNa.stovky
+      1000 - zaokrNa.tisice -->
+    <zaokrNaSumK></zaokrNaSumK>
+    <!-- Způsob zaokrouhlení - DPH 
+      nahoru - zaokrJak.nahoru
+      dolů - zaokrJak.dolu
+      matematicky - zaokrJak.matem -->
+    <zaokrJakDphK></zaokrJakDphK>
+    <!-- Řád zaokrouhlení - DPH 
+      nezaokrouhlovat - zaokrNa.zadne
+      0.001 - zaokrNa.tisiciny
+      0.01 - zaokrNa.setiny
+      0.05 - zaokrNa.5setiny
+      0.1 - zaokrNa.desetiny
+      0.5 - zaokrNa.5desetiny
+      1 - zaokrNa.jednotky
+      5 - zaokrNa.5jednotky
+      10 - zaokrNa.desitky
+      100 - zaokrNa.stovky
+      1000 - zaokrNa.tisice -->
+    <zaokrNaDphK></zaokrNaDphK>
+    <!-- Metoda zaokrouhlení 
+      do základu a DPH - metodaZaokr.zklDph
+      do 0 sazby - metodaZaokr.0sazba
+      individuálně - metodaZaokr.individ -->
+    <metodaZaokrDoklK showAs="do základu a DPH">metodaZaokr.zklDph</metodaZaokrDoklK>
+    <!-- Korekce DPH (logická hodnota) - -->
+    <vytvaretKorPol>false</vytvaretKorPol>
+    <!-- Štítky (řetězec) - -->
+    <stitky></stitky>
+    <!-- Typ faktury (objekt) - max. délka: 20 -->
+    <typDokl showAs="BAR: Bar">code:BAR</typDokl>
+    <!-- Měna (objekt) - max. délka: 20 -->
+    <mena showAs="CZK: Česká koruna">code:CZK</mena>
+    <!-- Konst. sym. (objekt) - max. délka: 20 -->
+    <konSym></konSym>
+    <!-- Firma (objekt) - max. délka: 20 -->
+    <firma></firma>
+    <!-- Stát (objekt) - max. délka: 3 -->
+    <stat></stat>
+    <!-- Pošt. stát (objekt) - max. délka: 3 -->
+    <faStat></faStat>
+    <!-- Kraj (objekt) - max. délka: 20 -->
+    <region></region>
+    <!-- Pošt. kraj (objekt) - max. délka: 20 -->
+    <faRegion></faRegion>
+    <!-- Místo určení (objekt) - max. délka: 20 -->
+    <mistUrc></mistUrc>
+    <!-- Účet odběratele (objekt) - max. délka: 20 -->
+    <banSpojDod if-not-found="null"></banSpojDod>
+    <!-- Bankovní účet (objekt) - max. délka: 20 -->
+    <bankovniUcet showAs="BANKOVNÍ ÚČET (2903322739/2010)">code:BANKOVNÍ ÚČET</bankovniUcet>
+    <!-- DEPRECATED, use "bankovniUcet" -->
+    <typDoklBan showAs="BANKOVNÍ ÚČET (2903322739/2010)">code:BANKOVNÍ ÚČET</typDoklBan>
+    <!-- Předpis zaúčtování (objekt) - max. délka: 20 -->
+    <typUcOp showAs="TRŽBA ZBOŽÍ: Tržba za prodané zboží">code:TRŽBA ZBOŽÍ</typUcOp>
+    <!-- Účet MD (objekt) - max. délka: 6 -->
+    <primUcet showAs="311100: Pohledávky z obchodních vztahů - bar">code:311100</primUcet>
+    <!-- Účet DAL (objekt) - max. délka: 6 -->
+    <protiUcet showAs="604001: Tržby za zboží">code:604001</protiUcet>
+    <!-- Účet DPH základní sazba (objekt) - max. délka: 6 -->
+    <dphZaklUcet showAs="343100: Daň z přidané hodnoty - základní sazba">code:343100</dphZaklUcet>
+    <!-- Účet DPH snížená sazba (objekt) - max. délka: 6 -->
+    <dphSnizUcet showAs="343200: Daň z přidané hodnoty - snížená sazba">code:343200</dphSnizUcet>
+    <!-- Účet DPH 2. snížená sazba (objekt) - max. délka: 6 -->
+    <dphSniz2Ucet showAs="343300: Daň z přidané hodnoty - 2. snížená sazba">code:343300</dphSniz2Ucet>
+    <!-- Směr.kód (objekt) - max. délka: 20 -->
+    <smerKod></smerKod>
+    <!-- Stát DPH (objekt) - max. délka: 3 -->
+    <statDph showAs="Česká republika">code:CZ</statDph>
+    <!-- Řádky DPH (objekt) - max. délka: 20 -->
+    <clenDph showAs="01-02: Dodání zboží nebo poskytnutí služby s místem plnění v tuzemsku">code:01-02</clenDph>
+    <!-- Středisko (objekt) - max. délka: 20 -->
+    <stredisko showAs="C: Centrála">code:C</stredisko>
+    <!-- Činnost (objekt) - max. délka: 20 -->
+    <cinnost></cinnost>
+    <!-- Zakázka (objekt) - max. délka: 30 -->
+    <zakazka></zakazka>
+    <!-- Uživatel (objekt) - max. délka: 254 -->
+    <uzivatel showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</uzivatel>
+    <!-- Zodpovědná osoba (objekt) - max. délka: 254 -->
+    <zodpOsoba showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</zodpOsoba>
+    <!-- Kontaktní osoba (objekt) - max. délka: 20 -->
+    <kontaktOsoba></kontaktOsoba>
+    <!-- Kontaktní jméno (řetězec) - max. délka: 255 -->
+    <kontaktJmeno></kontaktJmeno>
+    <!-- Kontaktní e-mail (řetězec) - max. délka: 255 -->
+    <kontaktEmail></kontaktEmail>
+    <!-- Kontaktní telefon (řetězec) - max. délka: 255 -->
+    <kontaktTel></kontaktTel>
+    <!-- Čís. řada (objekt) - max. délka: 20 -->
+    <rada showAs="FAKTURA-BAR: Faktura bar" if-not-found="null">code:FAKTURA-BAR</rada>
+    <!-- Osvobozená sazba DPH (objekt) - max. délka: 20 -->
+    <sazbaDphOsv showAs="0 %">key:CZ_0_1993</sazbaDphOsv>
+    <!-- Snížená sazba DPH (objekt) - max. délka: 20 -->
+    <sazbaDphSniz showAs="12 %">key:CZ_1200_2024</sazbaDphSniz>
+    <!-- 2. snížená sazba DPH (objekt) - max. délka: 20 -->
+    <sazbaDphSniz2></sazbaDphSniz2>
+    <!-- Základní sazba DPH (objekt) - max. délka: 20 -->
+    <sazbaDphZakl showAs="21 %">key:CZ_21_2013</sazbaDphZakl>
+    <!-- Forma dopravy (objekt) - max. délka: 20 -->
+    <formaDopravy></formaDopravy>
+    <!-- Uuid (řetězec) - max. délka: 50 -->
+    <uuid>86ef4de40946461944761a91d3492025c7814cff</uuid>
+    <!-- Zdroj (řetězec) - max. délka: 50 -->
+    <source></source>
+    <!-- Řádek kontrolního hlášení DPH (objekt) - max. délka: 20 -->
+    <clenKonVykDph showAs="(CZ) A.4-5.AUTO: Uskutečněná zdanitelná plnění skupiny A.4. nebo A.5. (automaticky)">code:A.4-5.AUTO</clenKonVykDph>
+    <!-- Datum upomínky 1 (datum) - -->
+    <datUp1></datUp1>
+    <!-- Datum upomínky 2 (datum) - -->
+    <datUp2></datUp2>
+    <!-- Datum smíru (datum) - -->
+    <datSmir></datSmir>
+    <!-- Datum penalizace (datum) - -->
+    <datPenale></datPenale>
+    <!-- Podpis příkazu (logická hodnota) - -->
+    <podpisPrik>false</podpisPrik>
+    <!-- Příkazy [Kč] (desetinné číslo) - -->
+    <prikazSum>0.0</prikazSum>
+    <!-- Příkazy [měna] (desetinné číslo) - -->
+    <prikazSumMen>0.0</prikazSumMen>
+    <!-- Již uhrazeno [Kč] (desetinné číslo) - -->
+    <juhSum>0.0</juhSum>
+    <!-- Již uhrazeno [měna] (desetinné číslo) - -->
+    <juhSumMen>0.0</juhSumMen>
+    <!-- Uhr. k datu [Kč] (desetinné číslo) - -->
+    <juhDat>0.0</juhDat>
+    <!-- Uhr. k datu [měna] (desetinné číslo) - -->
+    <juhDatMen>0.0</juhDatMen>
+    <!-- Zbývá uhradit [Kč] (desetinné číslo) - -->
+    <zbyvaUhradit>330.0</zbyvaUhradit>
+    <!-- Zbývá uhradit [měna] (desetinné číslo) - -->
+    <zbyvaUhraditMen>0.0</zbyvaUhraditMen>
+    <!-- Forma úhrady (objekt) - max. délka: 20 -->
+    <formaUhradyCis></formaUhradyCis>
+    <!-- Stav úhrady dokladu 
+      Částečně uhrazeno - stavUhr.castUhr
+      Uhrazeno - stavUhr.uhrazeno
+      Uhrazeno (ručně) - stavUhr.uhrazenoRucne -->
+    <stavUhrK import="ignore"></stavUhrK>
+    <!-- Již uhrazeno přeplatky [Kč] (desetinné číslo) - -->
+    <juhSumPp>0.0</juhSumPp>
+    <!-- Již uhrazeno přeplatky [měna] (desetinné číslo) - -->
+    <juhSumPpMen>0.0</juhSumPpMen>
+    <!-- Přeplaceno [Kč] (desetinné číslo) - -->
+    <sumPrepl>0.0</sumPrepl>
+    <!-- Přeplaceno [měna] (desetinné číslo) - -->
+    <sumPreplMen>0.0</sumPreplMen>
+    <!-- Zálohy (desetinné číslo) - -->
+    <sumZalohy>0.0</sumZalohy>
+    <!-- Zálohy [měna] (desetinné číslo) - -->
+    <sumZalohyMen>0.0</sumZalohyMen>
+    <!-- Odpočet zál. 
+      Částečně odpočteno - stavOdp.cast
+      Odpočteno - stavOdp.komplet
+      Vytvořen ZDD - stavOdp.vytvZdd -->
+    <stavOdpocetK></stavOdpocetK>
+    <!-- Generovat sklad. doklady (logická hodnota) - -->
+    <generovatSkl>true</generovatSkl>
+    <!-- Zaokrouhlit po odpočtu (logická hodnota) - -->
+    <zaokrouhlitPoOdpoctu>false</zaokrouhlitPoOdpoctu>
+    <!-- Hrom. fakturace (logická hodnota) - -->
+    <hromFakt>false</hromFakt>
+    <!-- Zdroj pro sklad. doklady (logická hodnota) - -->
+    <zdrojProSkl>true</zdrojProSkl>
+    <!-- Prodejka (logická hodnota) - -->
+    <prodejka>false</prodejka>
+    <!-- Stav mailu 
+      Neodesílat - stavMail.neodesilat
+      Odeslat - stavMail.odeslat
+      Odesláno - stavMail.odeslano -->
+    <stavMailK></stavMailK>
+    <!-- Dobropisováno (logická hodnota) - -->
+    <dobropisovano>false</dobropisovano>
+    <!-- Celkem bez záloh [Kč] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkemBezZaloh>330.0</sumCelkemBezZaloh>
+    <!-- Celkem bez záloh [měna] (desetinné číslo) - počet číslic: 15 -->
+    <sumCelkemBezZalohMen>0.0</sumCelkemBezZalohMen>
+    <!-- Automaticky odpočítávat (logická hodnota) - -->
+    <odpocAuto>false</odpocAuto>
+    <polozkyFaktury>
+      <!-- Položky faktur -->
+      <faktura-vydana-polozka>
+        <!-- ID (celé číslo) - -->
+        <id>ws:d5f84e59-1997-4cc3-a492-f553a21644bd:117</id>
+        <!-- Poslední změna (datum a čas) - -->
+        <lastUpdate>2026-08-19T11:23:18.432+02:00</lastUpdate>
+        <!-- Upravil (objekt) - max. délka: 254 -->
+        <updatedBy showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</updatedBy>
+        <!-- Vytvořil (objekt) - max. délka: 254 -->
+        <createdBy showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</createdBy>
+        <!-- Datum vytvoření (datum a čas) - -->
+        <createdDate>2026-08-19T11:22:44.415+02:00</createdDate>
+        <!-- Úč. pol. (logická hodnota) - -->
+        <ucetni>true</ucetni>
+        <!-- Označení (řetězec) - max. délka: 64 -->
+        <kod></kod>
+        <!-- EAN (řetězec) - max. délka: 20 -->
+        <eanKod></eanKod>
+        <!-- Název (řetězec) - max. délka: 255 -->
+        <nazev>Pilsner Urquell 0,5 l</nazev>
+        <!-- Název EN (řetězec) - max. délka: 255 -->
+        <nazevA></nazevA>
+        <!-- Název DE (řetězec) - max. délka: 255 -->
+        <nazevB></nazevB>
+        <!-- Název FR (řetězec) - max. délka: 255 -->
+        <nazevC></nazevC>
+        <!-- Pořadí (celé číslo) - -->
+        <cisRad>1</cisRad>
+        <!-- Typ položky 
+      Položka s cenou a množstvím - typPolozky.obecny
+      Položka z ceníku - typPolozky.katalog
+      Položka pro zaúčtování - typPolozky.ucetni
+      Textový řádek - typPolozky.text
+      Odpočet ZDD - typPolozky.odpocetZdd
+      Odpočet zálohy - typPolozky.odpocetZalohy
+      Korekce odpočtu zálohy/ZDD - typPolozky.korekceOdpoctu
+      Korekce rekapitulace DPH - typPolozky.korekceRekapitulace
+      Položka zaokrouhlení po odpočtu záloh - typPolozky.zaokrPoOdpoctu -->
+        <typPolozkyK showAs="Položka s cenou a množstvím">typPolozky.obecny</typPolozkyK>
+        <!-- Balení (celé číslo) - min. hodnota: 1 max.hodnota: 5.0 počet číslic: 1 -->
+        <baleniId>0</baleniId>
+        <!-- Počet balení (desetinné číslo) - počet číslic: 19 -->
+        <mnozBaleni>0.0</mnozBaleni>
+        <!-- Množství (desetinné číslo) - počet číslic: 19 -->
+        <mnozMj>3.0</mnozMj>
+        <!-- Typ ceny 
+      bez DPH - typCeny.bezDph
+      včetně DPH - typCeny.sDph -->
+        <typCenyDphK showAs="včetně DPH">typCeny.sDph</typCenyDphK>
+        <!-- Typ sazby DPH 
+      osvobozeno - typSzbDph.dphOsv
+      snížená - typSzbDph.dphSniz
+      2. snížená - typSzbDph.dphSniz2
+      základní - typSzbDph.dphZakl -->
+        <typSzbDphK showAs="základní">typSzbDph.dphZakl</typSzbDphK>
+        <!-- DPH [%] (desetinné číslo) - počet číslic: 6 -->
+        <szbDph>21.0</szbDph>
+        <!-- Cena za MJ (desetinné číslo) - počet číslic: 19 -->
+        <cenaMj>70.0</cenaMj>
+        <!-- Sleva položky[%] (desetinné číslo) - min. hodnota: -100.0 max.hodnota: 100.0 počet číslic: 6 -->
+        <slevaPol>0.0</slevaPol>
+        <!-- Uplatnit slevu z dokladu (logická hodnota) - -->
+        <uplSlevaDokl>true</uplSlevaDokl>
+        <!-- Základ [Kč] (desetinné číslo) - počet číslic: 15 -->
+        <sumZkl>173.55</sumZkl>
+        <!-- DPH [Kč] (desetinné číslo) - počet číslic: 15 -->
+        <sumDph>36.45</sumDph>
+        <!-- Celkem [Kč] (desetinné číslo) - počet číslic: 15 -->
+        <sumCelkem>210.0</sumCelkem>
+        <!-- Základ [měna] (desetinné číslo) - počet číslic: 15 -->
+        <sumZklMen>0.0</sumZklMen>
+        <!-- DPH [měna] (desetinné číslo) - počet číslic: 15 -->
+        <sumDphMen>0.0</sumDphMen>
+        <!-- Celkem [měna] (desetinné číslo) - počet číslic: 15 -->
+        <sumCelkemMen>0.0</sumCelkemMen>
+        <!-- Objem (desetinné číslo) - počet číslic: 19 -->
+        <objem>0.0</objem>
+        <!-- Cen. jednotka (desetinné číslo) - počet číslic: 19 -->
+        <cenJednotka>0.0</cenJednotka>
+        <!-- Způsob výpočtu 
+      marže - typVypCeny.marze
+      přirážka - typVypCeny.prirazka
+      rabat - typVypCeny.rabat
+      sleva - typVypCeny.sleva
+      neuveden - typVypCeny.neuveden -->
+        <typVypCenyK showAs="přirážka">typVypCeny.prirazka</typVypCenyK>
+        <!-- Nákupní cena za MJ z ceníku (desetinné číslo) - počet číslic: 19 -->
+        <cenaMjNakup>52.859467</cenaMjNakup>
+        <!-- Prodejní cena za MJ z ceníku (desetinné číslo) - počet číslic: 19 -->
+        <cenaMjProdej>0.0</cenaMjProdej>
+        <!-- Ceníková cena [Kč] (desetinné číslo) - počet číslic: 19 -->
+        <cenaMjCenikTuz>0.0</cenaMjCenikTuz>
+        <!-- Marže / Přirážka / Rabat / Sleva [%] (desetinné číslo) - počet číslic: 6 -->
+        <procZakl>0.0</procZakl>
+        <!-- Množstevní sleva [%] (desetinné číslo) - min. hodnota: 0.0 max.hodnota: 100.0 počet číslic: 6 -->
+        <slevaMnoz>0.0</slevaMnoz>
+        <!-- Způsob zaokrouhlení - Cena 
+      nahoru - zaokrJak.nahoru
+      dolů - zaokrJak.dolu
+      matematicky - zaokrJak.matem -->
+        <zaokrJakK showAs="matematicky">zaokrJak.matem</zaokrJakK>
+        <!-- Řád zaokrouhlení - Cena 
+      nezaokrouhlovat - zaokrNa.zadne
+      0.001 - zaokrNa.tisiciny
+      0.01 - zaokrNa.setiny
+      0.05 - zaokrNa.5setiny
+      0.1 - zaokrNa.desetiny
+      0.5 - zaokrNa.5desetiny
+      1 - zaokrNa.jednotky
+      5 - zaokrNa.5jednotky
+      10 - zaokrNa.desitky
+      100 - zaokrNa.stovky
+      1000 - zaokrNa.tisice -->
+        <zaokrNaK showAs="0.01">zaokrNa.setiny</zaokrNaK>
+        <!-- Šarže (řetězec) - max. délka: 100 -->
+        <sarze></sarze>
+        <!-- Expirace (datum) - -->
+        <expirace></expirace>
+        <!-- Trvanlivost (datum) - -->
+        <datTrvan></datTrvan>
+        <!-- Datum výroby (datum) - -->
+        <datVyroby></datVyroby>
+        <!-- Uživatelský stav 
+      Bez příkazu - stavUziv.bezPrikazu
+      Obsažen v příkazu - stavUziv.obsaPrikaz
+      Odeslán částečný příkaz - stavUziv.castPrikaz
+      Odeslán příkaz - stavUziv.celPrikaz
+      Načteno elektronicky - stavUziv.nactenoEl
+      Naposledy načteno elektronicky - stavUziv.nactenoElPosledni
+      Vygenerován z kasy - stavUziv.genKasa
+      Zaúčtováno do pokladny - stavUziv.zauctovano
+      Změněno po zaúčtování - stavUziv.zaucZmena -->
+        <stavUzivK></stavUzivK>
+        <!-- Plán MJ (desetinné číslo) - počet číslic: 19 -->
+        <mnozMjPlan>0.0</mnozMjPlan>
+        <!-- Real. MJ (desetinné číslo) - počet číslic: 19 -->
+        <mnozMjReal>0.0</mnozMjReal>
+        <!-- Zaokr. pol. (logická hodnota) - -->
+        <autoZaokr>false</autoZaokr>
+        <!-- Auto. pol. (logická hodnota) - -->
+        <autogen>false</autogen>
+        <!-- Poznámka (řetězec) - -->
+        <poznam></poznam>
+        <!-- Sleva dokladu [%] (desetinné číslo) - min. hodnota: -100.0 max.hodnota: 100.0 počet číslic: 6 -->
+        <slevaDokl>0.0</slevaDokl>
+        <!-- Datum vyst. (datum) - -->
+        <datVyst>2026-08-19+02:00</datVyst>
+        <!-- Kopírovat MD účet základu (logická hodnota) - -->
+        <kopZklMdUcet>true</kopZklMdUcet>
+        <!-- Kopírovat D účet základu (logická hodnota) - -->
+        <kopZklDalUcet>false</kopZklDalUcet>
+        <!-- Kopírovat MD účet DPH (logická hodnota) - -->
+        <kopDphMdUcet>true</kopDphMdUcet>
+        <!-- Kopírovat D účet DPH (logická hodnota) - -->
+        <kopDphDalUcet>true</kopDphDalUcet>
+        <!-- Kopírovat předpis zaúčtování (logická hodnota) - -->
+        <kopTypUcOp>true</kopTypUcOp>
+        <!-- Kopírovat zakázku (logická hodnota) - -->
+        <kopZakazku>true</kopZakazku>
+        <!-- Kopírovat středisko (logická hodnota) - -->
+        <kopStred>true</kopStred>
+        <!-- Kopírovat činnost (logická hodnota) - -->
+        <kopCinnost>true</kopCinnost>
+        <!-- Kopírovat štítky (logická hodnota) - -->
+        <kopKlice>true</kopKlice>
+        <!-- Kopírovat řádek DPH (logická hodnota) - -->
+        <kopClenDph>true</kopClenDph>
+        <!-- Kopírovat dat. zaúčt. (logická hodnota) - -->
+        <kopDatUcto>true</kopDatUcto>
+        <!-- Datum zaúčtování (datum) - -->
+        <datUcto>2026-08-19+02:00</datUcto>
+        <!-- Storno (logická hodnota) - -->
+        <storno>false</storno>
+        <!-- Storno položky (logická hodnota) - -->
+        <stornoPol>false</stornoPol>
+        <!-- Sklad (objekt) - max. délka: 20 -->
+        <sklad></sklad>
+        <!-- Středisko (objekt) - max. délka: 20 -->
+        <stredisko showAs="C: Centrála">code:C</stredisko>
+        <!-- Činnost (objekt) - max. délka: 20 -->
+        <cinnost></cinnost>
+        <!-- Měna (objekt) - max. délka: 20 -->
+        <mena showAs="CZK: Česká koruna">code:CZK</mena>
+        <!-- Předpis zaúčtování (objekt) - max. délka: 20 -->
+        <typUcOp showAs="TRŽBA ZBOŽÍ: Tržba za prodané zboží">code:TRŽBA ZBOŽÍ</typUcOp>
+        <!-- Účet MD základ (objekt) - max. délka: 6 -->
+        <zklMdUcet showAs="311100: Pohledávky z obchodních vztahů - bar">code:311100</zklMdUcet>
+        <!-- Účet Dal základ (objekt) - max. délka: 6 -->
+        <zklDalUcet showAs="604001: Tržby za zboží">code:604001</zklDalUcet>
+        <!-- Účet MD DPH (objekt) - max. délka: 6 -->
+        <dphMdUcet showAs="311100: Pohledávky z obchodních vztahů - bar">code:311100</dphMdUcet>
+        <!-- Účet Dal DPH (objekt) - max. délka: 6 -->
+        <dphDalUcet showAs="343100: Daň z přidané hodnoty - základní sazba">code:343100</dphDalUcet>
+        <!-- Zakázka (objekt) - max. délka: 30 -->
+        <zakazka></zakazka>
+        <!-- Dodavatel (objekt) - max. délka: 20 -->
+        <dodavatel></dodavatel>
+        <!-- Řádky DPH (objekt) - max. délka: 20 -->
+        <clenDph showAs="01-02: Dodání zboží nebo poskytnutí služby s místem plnění v tuzemsku">code:01-02</clenDph>
+        <!-- Kód přenesení DPH (objekt) - max. délka: 20 -->
+        <dphPren></dphPren>
+        <!-- Kód z ceníku (objekt) - max. délka: 64 -->
+        <cenik></cenik>
+        <!-- Cenová úroveň (objekt) - max. délka: 20 -->
+        <cenHlad></cenHlad>
+        <!-- MJ (objekt) - max. délka: 20 -->
+        <mj showAs="KS: kus">code:KS</mj>
+        <!-- MJ objemu (objekt) - max. délka: 20 -->
+        <mjObjem></mjObjem>
+        <!-- Sazba DPH (objekt) - max. délka: 20 -->
+        <sazbaDph showAs="21 %" if-not-found="null">key:CZ_21_2013</sazbaDph>
+        <!-- Původní sazba DPH (objekt) - max. délka: 20 -->
+        <sazbaDphPuv showAs="21 %" if-not-found="null">key:CZ_21_2013</sazbaDphPuv>
+        <!-- Výr. čísla OK (logická hodnota) - -->
+        <vyrobniCislaOk>false</vyrobniCislaOk>
+        <!-- Zdrojová položka objednávky (celé číslo) - -->
+        <idPolObchZdroj></idPolObchZdroj>
+        <!-- Skupina plnění (objekt) - max. délka: 20 -->
+        <skupPlneni></skupPlneni>
+        <!-- Štítky (řetězec) - -->
+        <stitky></stitky>
+        <!-- Zdroj (řetězec) - max. délka: 50 -->
+        <source></source>
+        <!-- Řádek kontrolního hlášení DPH (objekt) - max. délka: 20 -->
+        <clenKonVykDph showAs="(CZ) A.4-5.AUTO: Uskutečněná zdanitelná plnění skupiny A.4. nebo A.5. (automaticky)">code:A.4-5.AUTO</clenKonVykDph>
+        <!-- Kopírovat řádek kon. hl. DPH (logická hodnota) - -->
+        <kopClenKonVykDph>true</kopClenKonVykDph>
+        <!-- Číselný kód zboží (řetězec) - max. délka: 255 -->
+        <ciselnyKodZbozi></ciselnyKodZbozi>
+        <!-- Druh zboží (řetězec) - max. délka: 255 -->
+        <druhZbozi></druhZbozi>
+        <!-- Doklad (objekt) - max. délka: 20 -->
+        <doklFak showAs="BAR00001/2627">code:BAR00001/2627</doklFak>
+        <!-- Poplatek k položce (objekt) - max. délka: 20 -->
+        <poplatekParentPolFak></poplatekParentPolFak>
+        <!-- Zdroj pro sklad. doklady (logická hodnota) - -->
+        <zdrojProSkl>true</zdrojProSkl>
+        <!-- Zálohová položka (logická hodnota) - -->
+        <zaloha>false</zaloha>
+        <!-- Prodejka (logická hodnota) - -->
+        <prodejka>false</prodejka>
+        <vyrobniCislaPrijata></vyrobniCislaPrijata>
+        <vyrobniCislaVydana></vyrobniCislaVydana>
+      </faktura-vydana-polozka>
+      <faktura-vydana-polozka>
+        <id>ws:d5f84e59-1997-4cc3-a492-f553a21644bd:118</id>
+        <lastUpdate>2026-08-19T11:23:50.412+02:00</lastUpdate>
+        <updatedBy showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</updatedBy>
+        <createdBy showAs="info@jindrichuvdum.cz">code:info@jindrichuvdum.cz</createdBy>
+        <createdDate>2026-08-19T11:23:50.412+02:00</createdDate>
+        <ucetni>true</ucetni>
+        <kod></kod>
+        <eanKod></eanKod>
+        <nazev>Pilsner Urquell 0,3 l</nazev>
+        <nazevA></nazevA>
+        <nazevB></nazevB>
+        <nazevC></nazevC>
+        <cisRad>2</cisRad>
+        <typPolozkyK showAs="Položka s cenou a množstvím">typPolozky.obecny</typPolozkyK>
+        <baleniId>0</baleniId>
+        <mnozBaleni>0.0</mnozBaleni>
+        <mnozMj>2.0</mnozMj>
+        <typCenyDphK showAs="včetně DPH">typCeny.sDph</typCenyDphK>
+        <typSzbDphK showAs="základní">typSzbDph.dphZakl</typSzbDphK>
+        <szbDph>21.0</szbDph>
+        <cenaMj>60.0</cenaMj>
+        <slevaPol>0.0</slevaPol>
+        <uplSlevaDokl>true</uplSlevaDokl>
+        <sumZkl>99.17</sumZkl>
+        <sumDph>20.83</sumDph>
+        <sumCelkem>120.0</sumCelkem>
+        <sumZklMen>0.0</sumZklMen>
+        <sumDphMen>0.0</sumDphMen>
+        <sumCelkemMen>0.0</sumCelkemMen>
+        <objem>0.0</objem>
+        <cenJednotka>0.0</cenJednotka>
+        <typVypCenyK></typVypCenyK>
+        <cenaMjNakup>0.0</cenaMjNakup>
+        <cenaMjProdej>0.0</cenaMjProdej>
+        <cenaMjCenikTuz>0.0</cenaMjCenikTuz>
+        <procZakl>0.0</procZakl>
+        <slevaMnoz>0.0</slevaMnoz>
+        <zaokrJakK></zaokrJakK>
+        <zaokrNaK></zaokrNaK>
+        <sarze></sarze>
+        <expirace></expirace>
+        <datTrvan></datTrvan>
+        <datVyroby></datVyroby>
+        <stavUzivK></stavUzivK>
+        <mnozMjPlan>0.0</mnozMjPlan>
+        <mnozMjReal>0.0</mnozMjReal>
+        <autoZaokr>false</autoZaokr>
+        <autogen>false</autogen>
+        <poznam></poznam>
+        <slevaDokl>0.0</slevaDokl>
+        <datVyst>2026-08-19+02:00</datVyst>
+        <kopZklMdUcet>true</kopZklMdUcet>
+        <kopZklDalUcet>true</kopZklDalUcet>
+        <kopDphMdUcet>true</kopDphMdUcet>
+        <kopDphDalUcet>true</kopDphDalUcet>
+        <kopTypUcOp>true</kopTypUcOp>
+        <kopZakazku>true</kopZakazku>
+        <kopStred>true</kopStred>
+        <kopCinnost>true</kopCinnost>
+        <kopKlice>true</kopKlice>
+        <kopClenDph>true</kopClenDph>
+        <kopDatUcto>true</kopDatUcto>
+        <datUcto>2026-08-19+02:00</datUcto>
+        <storno>false</storno>
+        <stornoPol>false</stornoPol>
+        <sklad></sklad>
+        <stredisko showAs="C: Centrála">code:C</stredisko>
+        <cinnost></cinnost>
+        <mena showAs="CZK: Česká koruna">code:CZK</mena>
+        <typUcOp showAs="TRŽBA ZBOŽÍ: Tržba za prodané zboží">code:TRŽBA ZBOŽÍ</typUcOp>
+        <zklMdUcet showAs="311100: Pohledávky z obchodních vztahů - bar">code:311100</zklMdUcet>
+        <zklDalUcet showAs="604001: Tržby za zboží">code:604001</zklDalUcet>
+        <dphMdUcet showAs="311100: Pohledávky z obchodních vztahů - bar">code:311100</dphMdUcet>
+        <dphDalUcet showAs="343100: Daň z přidané hodnoty - základní sazba">code:343100</dphDalUcet>
+        <zakazka></zakazka>
+        <dodavatel></dodavatel>
+        <clenDph showAs="01-02: Dodání zboží nebo poskytnutí služby s místem plnění v tuzemsku">code:01-02</clenDph>
+        <dphPren></dphPren>
+        <cenik></cenik>
+        <cenHlad></cenHlad>
+        <mj></mj>
+        <mjObjem></mjObjem>
+        <sazbaDph showAs="21 %" if-not-found="null">key:CZ_21_2013</sazbaDph>
+        <sazbaDphPuv if-not-found="null"></sazbaDphPuv>
+        <vyrobniCislaOk>false</vyrobniCislaOk>
+        <idPolObchZdroj></idPolObchZdroj>
+        <skupPlneni></skupPlneni>
+        <stitky></stitky>
+        <source></source>
+        <clenKonVykDph showAs="(CZ) A.4-5.AUTO: Uskutečněná zdanitelná plnění skupiny A.4. nebo A.5. (automaticky)">code:A.4-5.AUTO</clenKonVykDph>
+        <kopClenKonVykDph>true</kopClenKonVykDph>
+        <ciselnyKodZbozi></ciselnyKodZbozi>
+        <druhZbozi></druhZbozi>
+        <doklFak showAs="BAR00001/2627">code:BAR00001/2627</doklFak>
+        <poplatekParentPolFak></poplatekParentPolFak>
+        <zdrojProSkl>true</zdrojProSkl>
+        <zaloha>false</zaloha>
+        <prodejka>false</prodejka>
+        <vyrobniCislaPrijata></vyrobniCislaPrijata>
+        <vyrobniCislaVydana></vyrobniCislaVydana>
+      </faktura-vydana-polozka>
+    </polozkyFaktury>
+    <prilohy></prilohy>
+  </faktura-vydana>
+</winstrom>

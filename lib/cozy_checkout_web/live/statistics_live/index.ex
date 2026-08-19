@@ -206,8 +206,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             </.link>
           </div>
         </div>
-        
-    <!-- Date Range & Filters -->
+
+        <!-- Date Range & Filters -->
         <div class="bg-white shadow rounded-lg p-6 mb-6">
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Date Range Selection -->
@@ -288,8 +288,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   This year
                 </button>
               </div>
-              
-    <!-- Custom Date Range -->
+
+              <!-- Custom Date Range -->
               <form phx-submit="update_dates" class="flex gap-3 items-end">
                 <div class="flex-1">
                   <label class="block text-sm font-medium text-primary-500 mb-1">From</label>
@@ -317,12 +317,12 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                 </button>
               </form>
             </div>
-            
-    <!-- Status Filter -->
+
+            <!-- Status Filter -->
             <div>
               <h3 class="text-lg font-medium text-primary-500 mb-4">Filters</h3>
-              
-    <!-- Order Status -->
+
+              <!-- Order Status -->
               <div class="mb-4">
                 <h4 class="text-sm font-medium text-primary-500 mb-2">Order Status</h4>
                 <form phx-change="update_status_filter" class="space-y-2">
@@ -367,8 +367,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
                   </div>
                 </form>
               </div>
-              
-    <!-- Service Order Filter -->
+
+              <!-- Service Order Filter -->
               <div class="border-t border-secondary-200 pt-4">
                 <h4 class="text-sm font-medium text-primary-500 mb-2">Order Type</h4>
                 <form phx-change="update_service_filter" class="space-y-2">
@@ -419,8 +419,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             </div>
           </div>
         </div>
-        
-    <!-- Overall Statistics -->
+
+        <!-- Overall Statistics -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div class="bg-white shadow rounded-lg p-6">
             <div class="flex items-center">
@@ -452,8 +452,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             </div>
           </div>
         </div>
-        
-    <!-- Top Products -->
+
+        <!-- Top Products -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <!-- Most Popular Products -->
           <div class="bg-white shadow rounded-lg overflow-hidden">
@@ -494,8 +494,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
               </table>
             </div>
           </div>
-          
-    <!-- Top Revenue Products -->
+
+          <!-- Top Revenue Products -->
           <div class="bg-white shadow rounded-lg overflow-hidden">
             <div class="px-6 py-4 border-b border-secondary-200">
               <h3 class="text-lg font-medium text-primary-500">Top Revenue Products</h3>
@@ -535,8 +535,8 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             </div>
           </div>
         </div>
-        
-    <!-- Products by Category -->
+
+        <!-- Products by Category -->
         <div class="bg-white shadow rounded-lg overflow-hidden">
           <div class="px-6 py-4 border-b border-secondary-200">
             <h3 class="text-lg font-medium text-primary-500">All Products - Sales Details</h3>

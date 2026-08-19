@@ -12,8 +12,8 @@
       View and analyze booking revenue and statistics
     </p>
   </div>
-  
-<!-- Filters -->
+
+  <!-- Filters -->
   <div class="bg-white rounded-lg shadow p-6 mb-8">
     <h2 class="text-lg font-semibold text-primary-500 mb-4">Filters</h2>
 
@@ -45,8 +45,8 @@
           />
         </div>
       </div>
-      
-<!-- Invoice States -->
+
+      <!-- Invoice States -->
       <div>
         <div class="flex items-center justify-between mb-3">
           <label class="block text-sm font-medium text-primary-500">
@@ -98,8 +98,8 @@
       </div>
     </.form>
   </div>
-  
-<!-- Summary Cards -->
+
+  <!-- Summary Cards -->
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
     <!-- Total Revenue -->
     <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg shadow-lg p-6 text-white">
@@ -115,8 +115,8 @@
         </div>
       </div>
     </div>
-    
-<!-- Total Bookings -->
+
+    <!-- Total Bookings -->
     <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg p-6 text-white">
       <div class="flex items-center justify-between">
         <div>
@@ -128,8 +128,8 @@
         </div>
       </div>
     </div>
-    
-<!-- Average per Booking -->
+
+    <!-- Average per Booking -->
     <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg shadow-lg p-6 text-white">
       <div class="flex items-center justify-between">
         <div>
@@ -150,8 +150,8 @@
       </div>
     </div>
   </div>
-  
-<!-- State Breakdown -->
+
+  <!-- State Breakdown -->
   <%= if map_size(@stats.state_breakdown) > 0 do %>
     <div class="bg-white rounded-lg shadow p-6 mb-8">
       <h2 class="text-lg font-semibold text-primary-500 mb-4">Breakdown by State</h2>
@@ -177,8 +177,8 @@
       </div>
     </div>
   <% end %>
-  
-<!-- Monthly Charts -->
+
+  <!-- Monthly Charts -->
   <%= if @monthly_stats != [] do %>
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Revenue Chart -->
@@ -207,8 +207,8 @@
           <% end %>
         </div>
       </div>
-      
-<!-- Bookings Count Chart -->
+
+      <!-- Bookings Count Chart -->
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold text-primary-500 mb-6">Monthly Bookings</h2>
         <div class="h-64 flex items-end justify-around gap-2">

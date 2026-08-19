@@ -550,6 +550,4 @@ defmodule CozyCheckoutWeb.PurchaseOrderLive.FormComponent do
   end
 
   defp parse_decimal(value), do: value
-
-
 end

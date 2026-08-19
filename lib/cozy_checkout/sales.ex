@@ -9,6 +9,7 @@ defmodule CozyCheckout.Sales do
   alias CozyCheckout.Sales.{Order, OrderItem, Payment}
   alias CozyCheckout.Catalog
   alias CozyCheckout.Bookings
+  alias CozyCheckout.Workers.AbraSyncWorker
 
   ## Orders
 
@@ -598,6 +599,7 @@ defmodule CozyCheckout.Sales do
 
   @doc """
   Creates a payment and updates order status.
+  Enqueues an Abra sync job when the order transitions to "paid".
   """
   def create_payment(attrs \\ %{}) do
     # Generate invoice number if not provided
@@ -605,16 +607,28 @@ defmodule CozyCheckout.Sales do
 
     case Repo.transaction(fn ->
            with {:ok, payment} <- do_create_payment(attrs),
-                {:ok, _order} <- update_order_payment_status(payment.order_id) do
-             payment
+                {:ok, order} <- update_order_payment_status(payment.order_id) do
+             {payment, order}
            else
              {:error, changeset} -> Repo.rollback(changeset)
            end
          end) do
-      {:ok, payment} -> {:ok, payment}
-      {:error, changeset} -> {:error, changeset}
+      {:ok, {payment, order}} ->
+        maybe_enqueue_abra_sync(order)
+        {:ok, payment}
+
+      {:error, changeset} ->
+        {:error, changeset}
     end
   end
+
+  defp maybe_enqueue_abra_sync(%Order{status: "paid", id: order_id}) do
+    %{order_id: order_id}
+    |> AbraSyncWorker.new()
+    |> Oban.insert()
+  end
+
+  defp maybe_enqueue_abra_sync(_order), do: :ok
 
   defp do_create_payment(attrs) do
     %Payment{}
@@ -713,6 +727,78 @@ defmodule CozyCheckout.Sales do
       order_items = Enum.reject(order.order_items, & &1.deleted_at)
       %{order | order_items: order_items}
     end)
+  end
+
+  ## ABRA Flexi Sync
+
+  @doc """
+  Loads an order with all associations needed for ABRA Flexi invoice building.
+  """
+  def get_order_for_abra_sync!(order_id) do
+    order =
+      Order
+      |> where([o], is_nil(o.deleted_at))
+      |> preload([:guest, booking: :guest, order_items: :product, payments: []])
+      |> Repo.get!(order_id)
+
+    order_items = Enum.reject(order.order_items, & &1.deleted_at)
+    %{order | order_items: order_items}
+  end
+
+  @doc """
+  Marks an order as successfully synced to ABRA Flexi.
+  """
+  def mark_order_abra_synced(%Order{} = order, abra_id) do
+    order
+    |> Ecto.Changeset.change(
+      abra_sync_status: "synced",
+      abra_document_id: abra_id,
+      abra_synced_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      abra_sync_error: nil
+    )
+    |> Repo.update()
+  end
+
+  @doc """
+  Marks an order sync as failed with the error reason.
+  """
+  def mark_order_abra_failed(order_id, reason) when is_binary(order_id) do
+    order = Repo.get!(Order, order_id)
+    mark_order_abra_failed(order, reason)
+  end
+
+  def mark_order_abra_failed(%Order{} = order, reason) do
+    order
+    |> Ecto.Changeset.change(
+      abra_sync_status: "failed",
+      abra_sync_error: to_string(reason)
+    )
+    |> Repo.update()
+  end
+
+  @doc """
+  Increments the Abra sync attempt counter on an order.
+  """
+  def increment_abra_sync_attempts(order_id) when is_binary(order_id) do
+    Repo.update_all(
+      from(o in Order, where: o.id == ^order_id),
+      inc: [abra_sync_attempts: 1]
+    )
+  end
+
+  @doc """
+  Enqueues a manual Abra sync job for an order (for admin retry).
+  Resets the failed status so UI reflects pending state.
+  """
+  def retry_abra_sync(%Order{} = order) do
+    with {:ok, _} <-
+           order
+           |> Ecto.Changeset.change(abra_sync_status: nil, abra_sync_error: nil)
+           |> Repo.update() do
+      %{order_id: order.id}
+      |> AbraSyncWorker.new()
+      |> Oban.insert()
+    end
   end
 
   ## Statistics

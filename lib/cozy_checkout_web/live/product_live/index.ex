@@ -14,7 +14,10 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
   @impl true
   def handle_params(params, _url, socket) do
     if socket.assigns.live_action == :index and not has_active_filter?(params) do
-      default_params = %{"filters" => %{"1" => %{"field" => "active", "op" => "==", "value" => "true"}}}
+      default_params = %{
+        "filters" => %{"1" => %{"field" => "active", "op" => "==", "value" => "true"}}
+      }
+
       {:noreply, push_patch(socket, to: ~p"/admin/products?#{default_params}")}
     else
       # Normalize params: convert indexed maps to arrays for Flop
@@ -41,10 +44,14 @@ defmodule CozyCheckoutWeb.ProductLive.Index do
 
   defp has_active_filter?(params) do
     case Map.get(params, "filters") do
-      nil -> false
+      nil ->
+        false
+
       filters when is_map(filters) ->
         Enum.any?(filters, fn {_, filter} -> filter["field"] == "active" end)
-      _ -> false
+
+      _ ->
+        false
     end
   end
 

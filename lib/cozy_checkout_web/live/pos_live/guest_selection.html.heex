@@ -25,8 +25,7 @@
             <span class={[
               "inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out",
               (@service_mode && "translate-x-8") || "translate-x-1"
-            ]}>
-            </span>
+            ]}></span>
           </button>
           <span class={[
             "text-sm font-semibold transition-colors duration-200",
@@ -43,8 +42,8 @@
         </.link>
       </div>
     </div>
-    
-<!-- Quick Order Button -->
+
+    <!-- Quick Order Button -->
     <div class="mb-6">
       <button
         phx-click="show_quick_order_modal"
@@ -54,8 +53,8 @@
         <span class="text-xl font-bold">Quick Order (No Booking)</span>
       </button>
     </div>
-    
-<!-- Standalone Orders Section -->
+
+    <!-- Standalone Orders Section -->
     <div :if={@standalone_orders != []} class="mb-6">
       <h2 class="text-2xl font-bold text-primary-500 mb-3">Standalone Orders</h2>
       <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
@@ -92,13 +91,13 @@
         </div>
       </div>
     </div>
-    
-<!-- Bookings Section -->
+
+    <!-- Bookings Section -->
     <h2 :if={@bookings != []} class="text-2xl font-bold text-primary-500 mb-3">
       Active Bookings
     </h2>
-    
-<!-- Bookings Grid -->
+
+    <!-- Bookings Grid -->
     <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       <div
         :for={booking <- @bookings}
@@ -115,14 +114,14 @@
           <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
             {booking.guest.name}
           </h2>
-          
-<!-- Room Number -->
+
+          <!-- Room Number -->
           <div :if={booking.room_number} class="flex items-center gap-1.5 mt-1">
             <.icon name="hero-home" class="w-4 h-4 text-primary-300" />
             <span class="text-sm text-primary-400">Room {booking.room_number}</span>
           </div>
-          
-<!-- Check-in Period -->
+
+          <!-- Check-in Period -->
           <div
             :if={booking.check_in_date}
             class="flex items-center gap-1.5 text-xs text-primary-300"
@@ -136,8 +135,8 @@
             </span>
           </div>
         </div>
-        
-<!-- Open Orders Badge -->
+
+        <!-- Open Orders Badge -->
         <div :if={booking.open_orders_count > 0} class="mt-2 pt-2 border-t border-secondary-200">
           <div class="inline-flex items-center gap-1.5 bg-success-light text-success-dark px-2.5 py-1 rounded-full text-xs font-semibold">
             <.icon name="hero-shopping-cart" class="w-3.5 h-3.5" />
@@ -150,15 +149,15 @@
         </div>
       </div>
     </div>
-    
-<!-- Empty State -->
+
+    <!-- Empty State -->
     <div :if={@bookings == []} class="text-center py-20">
       <.icon name="hero-calendar-days" class="w-24 h-24 text-secondary-300 mx-auto mb-6" />
       <h2 class="text-3xl font-bold text-primary-300 mb-2">No Active Bookings</h2>
       <p class="text-xl text-primary-300">Check in guests to start taking orders</p>
     </div>
-    
-<!-- Quick Order Modal -->
+
+    <!-- Quick Order Modal -->
     <%= if @show_quick_order_modal do %>
       <div class="fixed inset-0 bg-primary-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-in fade-in zoom-in duration-200">

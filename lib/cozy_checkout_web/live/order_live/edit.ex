@@ -442,8 +442,8 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                       </button>
                     </div>
                   </div>
-                  
-    <!-- Expand/Collapse Button for Grouped Items -->
+
+                  <!-- Expand/Collapse Button for Grouped Items -->
                   <%= if group.grouped? do %>
                     <button
                       phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
@@ -460,8 +460,8 @@ defmodule CozyCheckoutWeb.OrderLive.Edit do
                     </button>
                   <% end %>
                 </div>
-                
-    <!-- Individual Items (when expanded) -->
+
+                <!-- Individual Items (when expanded) -->
                 <%= if group.expanded? do %>
                   <div class="border-t border-secondary-200">
                     <div

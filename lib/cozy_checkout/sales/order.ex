@@ -24,6 +24,12 @@ defmodule CozyCheckout.Sales.Order do
     field :is_service_order, :boolean, default: false
     field :deleted_at, :utc_datetime
 
+    field :abra_sync_status, :string
+    field :abra_sync_attempts, :integer, default: 0
+    field :abra_document_id, :string
+    field :abra_synced_at, :utc_datetime
+    field :abra_sync_error, :string
+
     belongs_to :guest, CozyCheckout.Guests.Guest
     belongs_to :booking, CozyCheckout.Bookings.Booking
     has_many :order_items, CozyCheckout.Sales.OrderItem

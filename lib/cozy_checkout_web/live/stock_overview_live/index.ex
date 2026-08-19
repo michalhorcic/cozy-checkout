@@ -543,8 +543,7 @@ defmodule CozyCheckoutWeb.StockOverviewLive.Index do
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                  Cost per item
-                  <span class="text-gray-400 font-normal">(optional)</span>
+                  Cost per item <span class="text-gray-400 font-normal">(optional)</span>
                 </label>
                 <div class="relative">
                   <input

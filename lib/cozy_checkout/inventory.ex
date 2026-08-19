@@ -333,7 +333,6 @@ defmodule CozyCheckout.Inventory do
     Repo.one(query) || Decimal.new(0)
   end
 
-
   # Get total adjustment volume for volume-based products
   defp get_total_adjustment_volume(product_id) do
     query =
