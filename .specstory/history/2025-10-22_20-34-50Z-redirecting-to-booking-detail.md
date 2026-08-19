@@ -12,20 +12,14 @@ Now after booking creation, redirect me to booking detail instead of booking ind
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you redirect to the booking detail page after creation instead of the index. Let me first check the current booking form LiveView to see where the redirect happens. 
-
-Now let me check the index LiveView to see how it handles the saved message and where it's currently redirecting: 
-
-Perfect! I can see the issue. In the `form_component.ex`, when a booking is saved (both for `:new` and `:edit` actions), it's using `push_patch(to: socket.assigns.patch)`, which is set to `~p"/admin/bookings"` in the index page.
-
-For the `:new` action, I need to change it to navigate to the booking show page instead. Let me update the `save_booking/3` function for the `:new` action:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/bookings/*_form*.ex`, no matches
 
 **Input:**
 
@@ -34,7 +28,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No files found","type":2}],"ctor":2,"ctorName":"Ore","props":{},"references":[],"type":1}}
+No files found
 ```
 </details></tool-use>
 
@@ -43,6 +37,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/booking_live/*.ex`, 16 matches
+
 **Input:**
 
 - query: `**/booking_live/*.ex`
@@ -50,8 +46,23 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"16 total results","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/liv
-… (output truncated)
+16 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/guest_form_component.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex
 ```
 </details></tool-use>
 
@@ -59,6 +70,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`
 
 **Input:**
 
@@ -67,15 +80,71 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":367,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":367},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":366,"references":[],"text":"defmodule CozyCheckoutWeb.BookingLive.FormComponent do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":366},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":365,"references":[],"text":"  use CozyCheckoutWeb, :live_component\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":365},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":364,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":364},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":363,"references":[],"text":"  alias CozyCheckout.Bookings\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":363},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":362,"references":[],"text":"  alias CozyCheckout.Guests\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":362},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":361,"references":[],"text":"  alias CozyCheckout.Rooms\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":361},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":360,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":360},"references":[],"type":1},{"childr
+```elixir
+defmodule CozyCheckoutWeb.BookingLive.FormComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckout.Guests
+  alias CozyCheckout.Rooms
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div>
+      <.header>
+        {@title}
+      </.header>
+
+      <.form
+        for={@form}
+        id="booking-form"
+        phx-target={@myself}
+        phx-change="validate"
+        phx-submit="save"
+      >
+        <div class="mb-4">
+          <label class="block text-sm font-semibold leading-6 text-zinc-800 mb-2">
+            Guest <span class="text-rose-600">*</span>
+          </label>
+          <div class="relative" phx-click-away={JS.hide(to: "#guest-suggestions")}>
+            <input
+              type="text"
+              id="guest-search"
+              name="guest_search"
+              value={@guest_search_text}
+              placeholder="Type at least 3 characters to search..."
+              phx-target={@myself}
+              phx-keyup="search_guest"
+              phx-debounce="300"
+              autocomplete="off"
+              class="mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6 phx-no-feedback:border-zinc-300 phx-no-feedback:focus:border-zinc-400 border-zinc-300 focus:border-zinc-400"
+            />
+            <input type="hidden" name="booking[guest_id]" value={@selected_guest_id} />
+
+            <%= if @show_suggestions do %>
+              <div
+                id="guest-suggestions"
+                class="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm"
+              >
+                <%= if @guest_suggestions == [] and String.length(@guest_search_text) >= 3 do %>
+                  <div
+                    class="cursor-pointer select-none relative py-3 pl-3 pr-9 hover:bg-indigo-600 hover:text-white transition-colors"
+                    phx-click="show_create_guest_modal
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the index LiveView to see how it handles the saved message and where it's currently redirecting: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `index.ex`
 
 **Input:**
 
@@ -84,19 +153,133 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":193,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":193},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":192,"references":[],"text":"defmodule CozyCheckoutWeb.BookingLive.Index do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":192},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":191,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":191},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":190,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":190},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":189,"references":[],"text":"  alias CozyCheckout.Bookings\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":189},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":188,"references":[],"text":"  alias CozyCheckout.Bookings.Booking\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":188},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":187,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":187},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":186,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":186},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":185,
+```elixir
+defmodule CozyCheckoutWeb.BookingLive.Index do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckout.Bookings.Booking
+
+  @impl true
+  def mount(_params, _session, socket) do
+    bookings =
+      Bookings.list_bookings()
+      |> Enum.map(fn booking ->
+        rooms = Bookings.list_booking_rooms(booking.id)
+        Map.put(booking, :rooms_list, rooms)
+      end)
+
+    {:ok, stream(socket, :bookings, bookings)}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :edit, %{"id" => id}) do
+    socket
+    |> assign(:page_title, "Edit Booking")
+    |> assign(:booking, Bookings.get_booking!(id))
+  end
+
+  defp apply_action(socket, :new, _params) do
+    socket
+    |> assign(:page_title, "New Booking")
+    |> assign(:booking, %Booking{})
+  end
+
+  defp apply_action(socket, :index, _params) do
+    socket
+    |> assign(:page_title, "Bookings")
+    |> assign(:booking, nil)
+  end
+
+  @impl true
+  def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, booking}}, socket) do
+    updated_booking = Bookings.get_booking!(booking.id)
+    rooms = Bookings.list_booking_rooms(updated_booking.id)
+    updated_booking = Map.put(updated_booking, :rooms_list, rooms)
+
+    {:noreply, stream_insert(socket, :bookings, updated_booking)}
+  end
+
+  @impl true
+  def handle_info({:guest_created, guest}, socket) do
+    # Forward the message to the FormComponent
+    send_update(CozyCheckoutWeb.BookingLive.FormComponent,
+      id: socket.assigns.booking.id || :new,
+      guest_created: guest
+    )
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("delete", %{"id" => id}, socket) do
+    booking = Bookings.get_booking!(id)
+    {:ok, _} = Bookings.delete_booking(booking)
+
+    {:noreply, stream_delete(socket, :bookings, booking)}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-7xl mx-auto px-4 py-8">
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you redirect to the booking detail page after creation instead of the index. Let me first check the current booking form LiveView to see where the redirect happens. Now let me check the index LiveView to see how it handles the saved message and where it's currently redirecting: Perfect! I can see the issue. In the `form_component.ex`, when a booking is saved (both for `:new` and `:edit` actions), it's using `push_patch(to: socket.assigns.patch)`, which is set to `~p"/admin/bookings"` in the index page.
+Perfect! I can see the issue. In the `form_component.ex`, when a booking is saved (both for `:new` and `:edit` actions), it's using `push_patch(to: socket.assigns.patch)`, which is set to `~p"/admin/bookings"` in the index page.
 
 For the `:new` action, I need to change it to navigate to the booking show page instead. Let me update the `save_booking/3` function for the `:new` action: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 332-361 @@
 
 ```
+  defp save_booking(socket, :new, booking_params) do
+    # Ensure guest_id is set from the autocomplete selection
+    booking_params = Map.put(booking_params, "guest_id", socket.assigns.selected_guest_id)
+
+    case Bookings.create_booking(booking_params) do
+      {:ok, booking} ->
+        # Add room associations
+        case Bookings.set_booking_rooms(booking.id, socket.assigns.selected_room_ids) do
+          {:ok, _} ->
+            notify_parent({:saved, booking})
+
+            {:noreply,
+             socket
+             |> put_flash(:info, "Booking created successfully")
+             |> push_navigate(to: ~p"/admin/bookings/#{booking}")}
+
+          {:error, {:rooms_not_available, _unavailable_rooms}} ->
+            # Rollback the booking creation
+            Bookings.delete_booking(booking)
+
+            {:noreply,
+             assign(socket,
+               room_error: "One or more selected rooms are not available for these dates"
+             )}
+        end
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, form: to_form(changeset))}
+    end
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've updated the booking form component so that after creating a new booking, it will redirect you to the booking detail page (`/admin/bookings/:id`) instead of going back to the booking index. This way you can immediately add invoice items to the newly created booking.
 
 The change:

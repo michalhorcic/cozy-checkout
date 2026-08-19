@@ -25,10 +25,9 @@ Yes, this is a well-known behavior with Phoenix LiveView! The LiveView connectio
 
 ### 1. **Keep the Connection Alive (Recommended for POS)**
 
-Add this to your LiveSocket configuration in [`assets/js/app.js`](assets/js/app.js):
+Add this to your LiveSocket configuration in `app.js`:
 
 ````javascript
-// filepath: assets/js/app.js
 // ...existing code...
 
 const liveSocket = new LiveSocket("/live", Socket, {
@@ -46,7 +45,6 @@ const liveSocket = new LiveSocket("/live", Socket, {
 For tablets used as POS terminals, add a keepalive mechanism. Add this JavaScript to maintain activity:
 
 ````javascript
-// filepath: assets/js/app.js
 // ...existing code after liveSocket.connect()...
 
 // For POS tablets - prevent sleep and maintain connection
@@ -89,10 +87,9 @@ if (/pos/.test(window.location.pathname)) {
 
 ### 3. **Configure Server-Side Timeout**
 
-In [`lib/cozy_checkout_web/endpoint.ex`](lib/cozy_checkout_web/endpoint.ex):
+In `endpoint.ex`:
 
 ````elixir
-# filepath: lib/cozy_checkout_web/endpoint.ex
 // ...existing code...
 
 socket "/live", Phoenix.LiveView.Socket,
@@ -142,9 +139,13 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Created 5 todos
 
-- todoList: `[map[description:Read the assets/js/app.js file to understand the current LiveSocket configuration id:1 status:in-progress title:Read current app.js file] map[description:Add heartbeatIntervalMs and timeout settings to LiveSocket configuration id:2 status:not-started title:Update LiveSocket heartbeat configuration] map[description:Add JavaScript code to prevent tab sleeping and maintain connection for POS routes id:3 status:not-started title:Add POS keepalive mechanism] map[description:Read the lib/cozy_checkout_web/endpoint.ex file to see current socket configuration id:4 status:not-started title:Read endpoint.ex file] map[description:Configure WebSocket timeout in endpoint.ex id:5 status:not-started title:Update server-side timeout]]`
+- [ ] Read current app.js file _(in progress)_
+- [ ] Update LiveSocket heartbeat configuration
+- [ ] Add POS keepalive mechanism
+- [ ] Read endpoint.ex file
+- [ ] Update server-side timeout
 
 **Result:**
 
@@ -160,6 +161,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `app.js`, lines 1 to 100
+
 **Input:**
 
 - endLine: `100`
@@ -169,7 +172,64 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"100","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"244","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":102,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js","scheme":"file"},"options":{"isFromTool":true}}],"text":"```javascript\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"// If you want to use Phoenix channels, run `mix help phx.gen.channel`\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"// to get started and then uncomment the line below.\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":99,"references":[],"text":"// import \"./user_socket.js\"\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":99},"refere
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js`. Lines 1 to 100 (244 lines total): 
+```javascript
+// If you want to use Phoenix channels, run `mix help phx.gen.channel`
+// to get started and then uncomment the line below.
+// import "./user_socket.js"
+
+// You can include dependencies in two ways.
+//
+// The simplest option is to put them in assets/vendor and
+// import them using relative paths:
+//
+//     import "../vendor/some-package.js"
+//
+// Alternatively, you can `npm install some-package --prefix assets` and import
+// them using a path starting with the package name:
+//
+//     import "some-package"
+//
+// If you have dependencies that try to import CSS, esbuild will generate a separate `app.css` file.
+// To load it, simply add a second `<link>` to your `root.html.heex` file.
+
+// Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
+import "phoenix_html"
+// Establish Phoenix Socket and LiveView configuration.
+import {Socket} from "phoenix"
+import {LiveSocket} from "phoenix_live_view"
+import {hooks as colocatedHooks} from "phoenix-colocated/cozy_checkout"
+import topbar from "../vendor/topbar"
+
+const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+
+// Custom hooks
+const Hooks = {
+  SwipeToDelete: {
+    mounted() {
+      let startX = 0
+      let currentX = 0
+      let isDragging = false
+      const threshold = 100 // pixels to swipe before deleting
+      
+      const content = this.el.querySelector('.swipe-content')
+      const deleteButton = this.el.querySelector('.swipe-delete-bg')
+      
+      if (!content || !deleteButton) return
+      
+      const handleTouchStart = (e) => {
+        startX = e.touches[0].clientX
+        isDragging = true
+        content.style.transition = 'none'
+      }
+      
+      const handleTouchMove = (e) => {
+        if (!isDragging) return
+        
+        currentX = e.touches[0].clientX
+        const diffX = startX - currentX
+        
+        // Only allow l
 … (output truncated)
 ````
 </details></tool-use>
@@ -178,6 +238,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `endpoint.ex`
 
 **Input:**
 
@@ -188,8 +250,63 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":57,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/endpoint.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/endpoint.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/endpoint.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":57},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":56,"references":[],"text":"defmodule CozyCheckoutWeb.Endpoint do\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":56},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":55,"references":[],"text":"  use Phoenix.Endpoint, otp_app: :cozy_checkout\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":54},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":53,"references":[],"text":"  # The session will be stored in the cookie and signed,\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"  # this means its contents can be read but not tampered with.\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"  # Set :encryption_salt if you would also like to encrypt it.\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  @session_options [\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":50},"references"
-… (output truncated)
+```elixir
+defmodule CozyCheckoutWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :cozy_checkout
+
+  # The session will be stored in the cookie and signed,
+  # this means its contents can be read but not tampered with.
+  # Set :encryption_salt if you would also like to encrypt it.
+  @session_options [
+    store: :cookie,
+    key: "_cozy_checkout_key",
+    signing_salt: "jmdiDYpD",
+    same_site: "Lax"
+  ]
+
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [connect_info: [session: @session_options]],
+    longpoll: [connect_info: [session: @session_options]]
+
+  # Serve at "/" the static files from "priv/static" directory.
+  #
+  # When code reloading is disabled (e.g., in production),
+  # the `gzip` option is enabled to serve compressed
+  # static files generated by running `phx.digest`.
+  plug Plug.Static,
+    at: "/",
+    from: :cozy_checkout,
+    gzip: not code_reloading?,
+    only: CozyCheckoutWeb.static_paths()
+
+  # Code reloading can be explicitly enabled under the
+  # :code_reloader configuration of your endpoint.
+  if code_reloading? do
+    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+    plug Phoenix.LiveReloader
+    plug Phoenix.CodeReloader
+    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :cozy_checkout
+  end
+
+  plug Phoenix.LiveDashboard.RequestLogger,
+    param_key: "request_logger",
+    cookie_key: "request_logger"
+
+  plug Plug.RequestId
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+
+  plug Plug.MethodOverride
+  plug Plug.Head
+  plug Plug.Session, @session_options
+  plug CozyCheckoutWeb.Router
+end
+
+```
 ````
 </details></tool-use>
 
@@ -197,6 +314,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `app.js`, lines 100 to 244
 
 **Input:**
 
@@ -207,7 +326,62 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":147,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/assets/js/app.js","scheme":"file"},"options":{"isFromTool":true}}],"text":"```javascript\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":147},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":146,"references":[],"text":"      this.el.addEventListener('touchstart', handleTouchStart, {passive: true})\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":146},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":145,"references":[],"text":"      this.el.addEventListener('touchmove', handleTouchMove, {passive: true})\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":145},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":144,"references":[],"text":"      this.el.addEventListener('touchend', handleTouchEnd)\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":144},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":143,"references":[],"text":"      \n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":143},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":142,"references":[],"text":"      this.handleTouchStart = handleTouchStart\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":142},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":141,"references":[],"text":"      this.handleTouchMove = handleTouchMove\n","type":2}],"ctor":2,"ctorName":"Yfe","props":{"priority":141},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":140,"references":[],"text":"      this.handleTouchEnd = handleTouchEnd\n","type":2}],"ctor":2,"ctorName":"Yfe",
+```javascript
+      this.el.addEventListener('touchstart', handleTouchStart, {passive: true})
+      this.el.addEventListener('touchmove', handleTouchMove, {passive: true})
+      this.el.addEventListener('touchend', handleTouchEnd)
+      
+      this.handleTouchStart = handleTouchStart
+      this.handleTouchMove = handleTouchMove
+      this.handleTouchEnd = handleTouchEnd
+    },
+    
+    destroyed() {
+      if (this.handleTouchStart) {
+        this.el.removeEventListener('touchstart', this.handleTouchStart)
+        this.el.removeEventListener('touchmove', this.handleTouchMove)
+        this.el.removeEventListener('touchend', this.handleTouchEnd)
+      }
+    }
+  },
+
+  UnitAmountSelector: {
+    mounted() {
+      // Add click handlers to quick select buttons
+      const buttons = this.el.querySelectorAll('[data-unit-amount]')
+      const input = this.el.querySelector('#unit-amount-input')
+      
+      if (!input) return
+      
+      buttons.forEach(button => {
+        button.addEventListener('click', (e) => {
+          const amount = e.currentTarget.dataset.unitAmount
+          // Directly add the item with this amount
+          this.pushEvent("quick_add_unit_amount", {unit_amount: amount})
+        })
+      })
+    }
+  },
+  
+  ProductUnitTracker: {
+    mounted() {
+      this.handleProductChange = () => {
+        const productId = this.el.value
+        const products = JSON.parse(this.el.dataset.products || '[]')
+        const product = products.find(p => p.id === productId)
+        
+        const container = document.getElementById('unit-amount-container')
+        const input = document.getElementById('unit-amount-input')
+        const label = document.getElementById('unit-label')
+        const helpText = document.getElementById('unit-help-text')
+        
+        if (product && product.unit) {
+          container.classList.remove('hidden')
+          label.textContent = `(${product.unit})`
+          input.required = true
+          
+          // Handle default amounts
+      
 … (output truncated)
 ````
 </details></tool-use>
@@ -217,14 +391,108 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting: *Update LiveSocket heartbeat configuration* (2/5)
 
-- todoList: `[map[description:Read the assets/js/app.js file to understand the current LiveSocket configuration id:1 status:completed title:Read current app.js file] map[description:Add heartbeatIntervalMs and timeout settings to LiveSocket configuration id:2 status:in-progress title:Update LiveSocket heartbeat configuration] map[description:Add JavaScript code to prevent tab sleeping and maintain connection for POS routes id:3 status:not-started title:Add POS keepalive mechanism] map[description:Read the lib/cozy_checkout_web/endpoint.ex file to see current socket configuration id:4 status:completed title:Read endpoint.ex file] map[description:Configure WebSocket timeout in endpoint.ex id:5 status:not-started title:Update server-side timeout]]`
+- [x] Read current app.js file
+- [ ] Update LiveSocket heartbeat configuration _(in progress)_
+- [ ] Add POS keepalive mechanism
+- [x] Read endpoint.ex file
+- [ ] Update server-side timeout
 
 **Result:**
 
 ```
 Successfully wrote todo list
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **app.js**</summary>
+
+@@ lines 200-203 @@
+
+```
+// connect if there are any LiveViews on the page
+liveSocket.connect()
+
+// For POS tablets - prevent sleep and maintain connection
+if (/pos/.test(window.location.pathname)) {
+  // Send a ping every 30 seconds to keep connection alive
+  setInterval(() => {
+    if (liveSocket.isConnected()) {
+      // Touch a DOM element to prevent sleep
+      document.body.style.transform = 'translateZ(0)'
+      setTimeout(() => {
+        document.body.style.transform = ''
+      }, 100)
+    }
+  }, 30000)
+  
+  // Request wake lock API (keeps screen on)
+  if ('wakeLock' in navigator) {
+    let wakeLock = null
+    const requestWakeLock = async () => {
+      try {
+        wakeLock = await navigator.wakeLock.request('screen')
+        wakeLock.addEventListener('release', () => {
+          console.log('Screen Wake Lock released')
+        })
+        console.log('Screen Wake Lock acquired')
+      } catch (err) {
+        console.error('Wake Lock error:', err)
+      }
+    }
+    requestWakeLock()
+    
+    // Re-acquire wake lock if page becomes visible again
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock()
+      }
+    })
+  }
+}
+
+// expose liveSocket on window for web console debug logs and latency simulation:
+```
+
+@@ lines 189-193 @@
+
+```
+const liveSocket = new LiveSocket("/live", Socket, {
+  longPollFallbackMs: 2500,
+  params: {_csrf_token: csrfToken},
+  hooks: {...colocatedHooks, ...Hooks},
+  heartbeatIntervalMs: 15000,  // Send heartbeat every 15 seconds (default: 30s)
+  timeout: 20000                // Wait 20s for server response (default: 10s)
+})
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **endpoint.ex**</summary>
+
+@@ lines 14-16 @@
+
+```
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [
+      connect_info: [session: @session_options],
+      timeout: :infinity  # Never timeout the WebSocket connection
+    ],
+    longpoll: [connect_info: [session: @session_options]]
 ```
 </details></tool-use>
 
@@ -233,9 +501,13 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Completed: *Update LiveSocket heartbeat configuration* (2/5)
 
-- todoList: `[map[description:Read the assets/js/app.js file to understand the current LiveSocket configuration id:1 status:completed title:Read current app.js file] map[description:Add heartbeatIntervalMs and timeout settings to LiveSocket configuration id:2 status:completed title:Update LiveSocket heartbeat configuration] map[description:Add JavaScript code to prevent tab sleeping and maintain connection for POS routes id:3 status:completed title:Add POS keepalive mechanism] map[description:Read the lib/cozy_checkout_web/endpoint.ex file to see current socket configuration id:4 status:completed title:Read endpoint.ex file] map[description:Configure WebSocket timeout in endpoint.ex id:5 status:completed title:Update server-side timeout]]`
+- [x] Read current app.js file
+- [x] Update LiveSocket heartbeat configuration
+- [x] Add POS keepalive mechanism
+- [x] Read endpoint.ex file
+- [x] Update server-side timeout
 
 **Result:**
 
@@ -246,14 +518,6 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-
-```
-
-```
-
-```
-
-```
 Perfect! I've implemented all the WebSocket keepalive improvements:
 
 ## Changes Made

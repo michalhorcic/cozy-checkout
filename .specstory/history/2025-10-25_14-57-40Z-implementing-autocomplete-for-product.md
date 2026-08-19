@@ -12,40 +12,14 @@ Now when I am adding prices in pricelists, I would need to have better way to fi
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you implement a user-friendly autocomplete select for products in the pricelist form. Let me first examine the current implementation and then research best practices for autocomplete with daisyUI. 
-
-Now let me search for best practices on autocomplete with daisyUI and LiveView: 
-
-Let me check if there are any existing autocomplete implementations in the codebase: 
-
-Now let me create a custom autocomplete component based on best practices. I'll implement a LiveView-based autocomplete that uses daisyUI styling with a dropdown approach: 
-
-Now I need to add the rest of the file with the save functions: 
-
-Let me read the complete file to see what happened: 
-
-I see the issue - there's duplication. Let me fix it: 
-
-Now let's test if the code compiles: 
-
-I need to fix these errors. Let me update the function: 
-
-Now let's compile again: 
-
-Great! The code compiles successfully. Now let's check if we need to ensure the products are preloaded with their categories in the Catalog module: 
-
-Perfect! The `list_products` function already preloads the category. Now let's start the server and test the autocomplete: 
-
-Great! The server is running. Let me create a quick documentation file to explain the new autocomplete feature: 
-
-Perfect! Now let me check the terminal to see if the server is running properly:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`
 
 **Input:**
 
@@ -54,7 +28,76 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"defmodule CozyCheckoutWeb.PricelistLive.FormComponent do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"  use CozyCheckoutWeb, :live_component\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":99,"references":[],"text":"  alias CozyCheckout.Catalog\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":99},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":98,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":98},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":97,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":97},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":96,"references":[],"text":"  def render(assigns) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":96},"references":[],"type":1},{"children":[{"lineBreakBe
+```elixir
+defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Catalog
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div>
+      <.header>
+        {@title}
+      </.header>
+
+      <.form
+        for={@form}
+        id="pricelist-form"
+        phx-target={@myself}
+        phx-change="validate"
+        phx-submit="save"
+      >
+        <.input
+          field={@form[:product_id]}
+          type="select"
+          label="Product"
+          prompt="Select a product"
+          options={Enum.map(@products, &{&1.name, &1.id})}
+          required
+        />
+
+        <.input field={@form[:price]} type="number" label="Price" step="0.01" required />
+
+        <.input field={@form[:vat_rate]} type="number" label="VAT Rate (%)" step="0.01" required />
+
+        <.input field={@form[:valid_from]} type="date" label="Valid From" required />
+
+        <.input field={@form[:valid_to]} type="date" label="Valid To" />
+
+        <.input field={@form[:active]} type="checkbox" label="Active" />
+
+        <div class="mt-6 flex items-center justify-end gap-x-6">
+          <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+        </div>
+      </.form>
+    </div>
+    """
+  end
+
+  @impl true
+  def update(%{pricelist: pricelist} = assigns, socket) do
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:products, Catalog.list_products())
+     |> assign_new(:form, fn ->
+       to_form(Catalog.change_pricelist(pricelist))
+     end)}
+  end
+
+  @impl true
+  def handle_event("validate", %{"pricelist" => pricelist_params}, socket) do
+    changeset = Catalog.change_pricelist(socket.assigns.pricelist, pricelist_params)
+    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+  end
+
+  def handle_event("save", %{"pricelist" => pricelist_params}, socket) do
+    save_pricelist(socket, socket.assigns.action, pricelist_params)
+  end
+
+  defp save_pricelist(socket, :edit, pricelist_params) do
 … (output truncated)
 ````
 </details></tool-use>
@@ -63,6 +106,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `pricelist` (`**/*.ex`), 20 results
 
 **Input:**
 
@@ -73,15 +118,57 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex\" line=205\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":7355,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  Creates an order item with price from current pricelist.","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":48,"line":204},{"character":57,"line":204}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":7355,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex\" line=212\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWit
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=205>
+  Creates an order item with price from current pricelist.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=212>
+        pricelist = Catalog.get_active_pricelist_for_product(product_id)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=212>
+        pricelist = Catalog.get_active_pricelist_for_product(product_id)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=214>
+        if pricelist do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=230>
+          unit_price = pricelist.price
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=231>
+          vat_rate = pricelist.vat_rate
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=205>
+  Creates an order item with price from current pricelist.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=212>
+        pricelist = Catalog.get_active_pricelist_for_product(product_id)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=212>
+        pricelist = Catalog.get_active_pricelist_for_product(product_id)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=214>
+        if pricelist do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=230>
+          unit_price = pricelist.price
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=231>
+          vat_rate = pricelist.vat_rate
+</match>
+<match path="/Users/micha
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me search for best practices on autocomplete with daisyUI and LiveView: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Fetched 2 resources
 
 **Input:**
 
@@ -92,15 +179,54 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex\" line=84\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":7527,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    # Filter out deleted order items from each order","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":6,"line":83},{"character":12,"line":83}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":7527,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex\" line=101\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":7528,
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=84>
+    # Filter out deleted order items from each order
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=101>
+    # Filter out deleted order items
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=268>
+      |> Enum.filter(&is_nil(&1.deleted_at))
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex" line=47>
+        <!-- Category Filter Tabs -->
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex" line=113>
+                :for={product <- filter_products(@products, @selected_category_id)}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex" line=289>
+  defp filter_products(products, nil), do: products
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex" line=291>
+  defp filter_products(products, category_id) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex" line=292>
+    Enum.filter(products, fn product ->
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=84>
+    # Filter out deleted order items from each order
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=101>
+    # Filter out deleted order items
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=268>
+      |> Enum.filter(&is_nil(&1.deleted_at))
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me check if there are any existing autocomplete implementations in the codebase: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Searched text for `phx-change|phx-debounce|search|filter` (`**/*.{ex,heex}`), 20 results
 
 **Input:**
 
@@ -111,7 +237,54 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/core_components.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"101","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"566","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/core_components.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/core_components.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/core_components.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"defmodule CozyCheckoutWeb.CoreComponents do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"  Provides core UI compon
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/core_components.ex`. Lines 1 to 101 (566 lines total): 
+```elixir
+defmodule CozyCheckoutWeb.CoreComponents do
+  @moduledoc """
+  Provides core UI components.
+
+  At first glance, this module may seem daunting, but its goal is to provide
+  core building blocks for your application, such as tables, forms, and
+  inputs. The components consist mostly of markup and are well-documented
+  with doc strings and declarative assigns. You may customize and style
+  them in any way you want, based on your application growth and needs.
+
+  The foundation for styling is Tailwind CSS, a utility-first CSS framework,
+  augmented with daisyUI, a Tailwind CSS plugin that provides UI components
+  and themes. Here are useful references:
+
+    * [daisyUI](https://daisyui.com/docs/intro/) - a good place to get
+      started and see the available components.
+
+    * [Tailwind CSS](https://tailwindcss.com) - the foundational framework
+      we build on. You will use it for layout, sizing, flexbox, grid, and
+      spacing.
+
+    * [Heroicons](https://heroicons.com) - see `icon/1` for usage.
+
+    * [Phoenix.Component](https://hexdocs.pm/phoenix_live_view/Phoenix.Component.html) -
+      the component system used by Phoenix. Some components, such as `<.link>`
+      and `<.form>`, are defined there.
+
+  """
+  use Phoenix.Component
+  use Gettext, backend: CozyCheckoutWeb.Gettext
+
+  alias Phoenix.LiveView.JS
+
+  @doc """
+  Renders flash notices.
+
+  ## Examples
+
+      <.flash kind={:info} flash={@flash} />
+      <.flash kind={:info} phx-mounted={show("#flash")}>Welcome Back!</.flash>
+  """
+  attr :id, :string, doc: "the optional id of flash container"
+  attr :flash, :map, default: %{}, doc: "the map of flash messages to display"
+  attr :title, :string, default: nil
+  attr :kind, :atom, values: [:info, :error], doc: "used for styling and flash lookup"
+  attr :rest, :global, doc: "the arbitrary HTML attributes to add to 
 … (output truncated)
 ````
 </details></tool-use>
@@ -120,6 +293,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `core_components.ex`, lines 1 to 101
 
 **Input:**
 
@@ -436,14 +611,342 @@ defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me create a custom autocomplete component based on best practices. I'll implement a LiveView-based autocomplete that uses daisyUI styling with a dropdown approach: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 1-63 @@
+
+```
+defmodule CozyCheckoutWeb.PricelistLive.FormComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Catalog
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div>
+      <.header>
+        {@title}
+      </.header>
+
+      <.form
+        for={@form}
+        id="pricelist-form"
+        phx-target={@myself}
+        phx-change="validate"
+        phx-submit="save"
+      >
+        <.product_autocomplete
+          form={@form}
+          field={:product_id}
+          label="Product"
+          products={@filtered_products}
+          selected_product={@selected_product}
+          search_query={@search_query}
+          show_dropdown={@show_dropdown}
+          target={@myself}
+        />
+
+        <.input field={@form[:price]} type="number" label="Price" step="0.01" required />
+
+        <.input field={@form[:vat_rate]} type="number" label="VAT Rate (%)" step="0.01" required />
+
+        <.input field={@form[:valid_from]} type="date" label="Valid From" required />
+
+        <.input field={@form[:valid_to]} type="date" label="Valid To" />
+
+        <.input field={@form[:active]} type="checkbox" label="Active" />
+
+        <div class="mt-6 flex items-center justify-end gap-x-6">
+          <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+        </div>
+      </.form>
+    </div>
+    """
+  end
+
+  attr :form, Phoenix.HTML.Form, required: true
+  attr :field, :atom, required: true
+  attr :label, :string, required: true
+  attr :products, :list, required: true
+  attr :selected_product, :map, default: nil
+  attr :search_query, :string, default: ""
+  attr :show_dropdown, :boolean, default: false
+  attr :target, :any, required: true
+
+  defp product_autocomplete(assigns) do
+    ~H"""
+    <div class="form-control w-full mb-4">
+      <label class="label">
+        <span class="label-text font-medium">{@label}</span>
+        <span class="label-text-alt text-error">*</span>
+      </label>
+
+      <div class="relative">
+        <!-- Hidden input to store the actual product_id -->
+        <input type="hidden" name={"#{@form.name}[#{@field}]"} value={@form[@field].value} />
+
+        <!-- Search input -->
+        <div class="relative">
+          <input
+            type="text"
+            id={"#{@form.id}_#{@field}_search"}
+            class="input input-bordered w-full pr-10"
+            placeholder="Search products..."
+            value={@search_query}
+            phx-change="search_product"
+            phx-target={@target}
+            phx-debounce="300"
+            autocomplete="off"
+          />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
+          />
+        </div>
+
+        <!-- Selected product display -->
+        <div
+          :if={@selected_product}
+          class="mt-2 flex items-center justify-between p-3 bg-base-200 rounded-lg"
+        >
+          <div class="flex items-center gap-2">
+            <.icon name="hero-check-circle" class="w-5 h-5 text-success" />
+            <div>
+              <p class="font-medium">{@selected_product.name}</p>
+              <p :if={@selected_product.category} class="text-sm text-base-content/60">
+                {@selected_product.category.name}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn btn-ghost btn-sm btn-circle"
+            phx-click="clear_product"
+            phx-target={@target}
+          >
+            <.icon name="hero-x-mark" class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Dropdown with results -->
+        <div
+          :if={@show_dropdown && @products != []}
+          class="absolute z-50 w-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg max-h-96 overflow-y-auto"
+        >
+          <ul class="menu p-2">
+            <li :for={product <- @products}>
+              <button
+                type="button"
+                class="flex flex-col items-start gap-1 hover:bg-base-200 active:bg-base-300"
+                phx-click="select_product"
+                phx-value-id={product.id}
+                phx-target={@target}
+              >
+                <span class="font-medium">{product.name}</span>
+                <div class="flex items-center gap-2 text-sm text-base-content/60">
+                  <span :if={product.category}>{product.category.name}</span>
+                  <span :if={product.unit} class="badge badge-sm">
+                    {product.unit}
+                  </span>
+                </div>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- No results message -->
+        <div
+          :if={@show_dropdown && @products == [] && @search_query != ""}
+          class="absolute z-50 w-full mt-2 bg-base-100 border border-base-300 rounded-lg shadow-lg p-4"
+        >
+          <p class="text-center text-base-content/60">No products found</p>
+        </div>
+      </div>
+
+      <label :if={@form[@field].errors != []} class="label">
+        <span class="label-text-alt text-error">
+          {translate_error(@form[@field].errors)}
+        </span>
+      </label>
+    </div>
+    """
+  end
+
+  defp translate_error([{msg, _opts} | _]), do: msg
+  defp translate_error([msg | _]) when is_binary(msg), do: msg
+  defp translate_error(_), do: ""
+
+  @impl true
+  def update(%{pricelist: pricelist} = assigns, socket) do
+    all_products = Catalog.list_products()
+    selected_product = get_selected_product(pricelist, all_products)
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:all_products, all_products)
+     |> assign(:filtered_products, [])
+     |> assign(:selected_product, selected_product)
+     |> assign(:search_query, selected_product && selected_product.name || "")
+     |> assign(:show_dropdown, false)
+     |> assign_new(:form, fn ->
+       to_form(Catalog.change_pricelist(pricelist))
+     end)}
+  end
+
+  defp get_selected_product(%{product: %Ecto.Association.NotLoaded{}}, _products), do: nil
+  defp get_selected_product(%{product: product}, _products) when not is_nil(product), do: product
+
+  defp get_selected_product(%{product_id: product_id}, products) when not is_nil(product_id) do
+    Enum.find(products, &(&1.id == product_id))
+  end
+
+  defp get_selected_product(_, _), do: nil
+
+  @impl true
+  def handle_event("search_product", %{"value" => query}, socket) do
+    filtered_products = filter_products(socket.assigns.all_products, query)
+
+    {:noreply,
+     socket
+     |> assign(:search_query, query)
+     |> assign(:filtered_products, filtered_products)
+     |> assign(:show_dropdown, true)}
+  end
+
+  @impl true
+  def handle_event("select_product", %{"id" => product_id}, socket) do
+    product = Enum.find(socket.assigns.all_products, &(&1.id == product_id))
+
+    if product do
+      changeset =
+        Catalog.change_pricelist(socket.assigns.pricelist, %{"product_id" => product_id})
+
+      {:noreply,
+       socket
+       |> assign(:selected_product, product)
+       |> assign(:search_query, product.name)
+       |> assign(:show_dropdown, false)
+       |> assign(:form, to_form(changeset))}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("clear_product", _params, socket) do
+    changeset = Catalog.change_pricelist(socket.assigns.pricelist, %{"product_id" => nil})
+
+    {:noreply,
+     socket
+     |> assign(:selected_product, nil)
+     |> assign(:search_query, "")
+     |> assign(:show_dropdown, false)
+     |> assign(:form, to_form(changeset))}
+  end
+
+  @impl true
+  def handle_event("validate", %{"pricelist" => pricelist_params}, socket) do
+    changeset = Catalog.change_pricelist(socket.assigns.pricelist, pricelist_params)
+    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now I need to add the rest of the file with the save functions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 231-235 @@
+
+```
+  @impl true
+  def handle_event("validate", %{"pricelist" => pricelist_params}, socket) do
+    changeset = Catalog.change_pricelist(socket.assigns.pricelist, pricelist_params)
+    {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
+  end
+
+  def handle_event("save", %{"pricelist" => pricelist_params}, socket) do
+    save_pricelist(socket, socket.assigns.action, pricelist_params)
+  end
+
+  defp filter_products(products, query) when query == "", do: []
+
+  defp filter_products(products, query) do
+    query_lower = String.downcase(query)
+
+    products
+    |> Enum.filter(fn product ->
+      String.contains?(String.downcase(product.name), query_lower) ||
+        (product.category && String.contains?(String.downcase(product.category.name), query_lower))
+    end)
+    |> Enum.take(10)
+  end
+
+  defp save_pricelist(socket, :edit, pricelist_params) do
+    case Catalog.update_pricelist(socket.assigns.pricelist, pricelist_params) do
+      {:ok, pricelist} ->
+        notify_parent({:saved, pricelist})
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Pricelist updated successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, form: to_form(changeset))}
+    end
+  end
+
+  defp save_pricelist(socket, :new, pricelist_params) do
+    case Catalog.create_pricelist(pricelist_params) do
+      {:ok, pricelist} ->
+        notify_parent({:saved, pricelist})
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Pricelist created successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, form: to_form(changeset))}
+    end
+  end
+
+  defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Let me read the complete file to see what happened: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `form_component.ex`
 
 **Input:**
 
@@ -506,14 +1009,39 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+I see the issue - there's duplication. Let me fix it: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 284-324 @@
+
+```
+  defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's test if the code compiles: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
 **Input:**
 
@@ -556,14 +1084,62 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+I need to fix these errors. Let me update the function: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 149-160 @@
+
+```
+      <label :if={@form[@field].errors != []} class="label">
+        <span class="label-text-alt text-error">
+          {translate_errors(@form[@field].errors)}
+        </span>
+      </label>
+    </div>
+    """
+  end
+
+  defp translate_errors([{msg, _opts} | _]), do: msg
+  defp translate_errors([msg | _]) when is_binary(msg), do: msg
+  defp translate_errors(_), do: ""
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 241-243 @@
+
+```
+  defp filter_products(_products, query) when query == "", do: []
+
+  defp filter_products(products, query) do
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's compile again: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
 **Input:**
 
@@ -574,14 +1150,22 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex\" line=71\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":8376,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def list_products do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":6,"line":70},{"character":19,"line":70}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":8376,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex" line=71>
+  def list_products do
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Great! The code compiles successfully. Now let's check if we need to ensure the products are preloaded with their categories in the Catalog module: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Searched text for `list_products` (`**/lib/cozy_checkout/catalog.ex`), 1 result
 
 **Input:**
 
@@ -592,8 +1176,20 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"70","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"80","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"195","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":13,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":13},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":12,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":12},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":11,"references":[],"text":"  def list_products do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":11},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[],"text":"    Product\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9,"ref
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex`. Lines 70 to 80 (195 lines total): 
+```elixir
+  """
+  def list_products do
+    Product
+    |> where([p], is_nil(p.deleted_at))
+    |> preload(:category)
+    |> order_by([p], p.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single product.
+```
 ````
 </details></tool-use>
 
@@ -602,11 +1198,13 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Read `catalog.ex`, lines 70 to 80
 
-- command: `mix phx.server`
-- explanation: `Starting the Phoenix server to test the autocomplete functionality`
-- isBackground: `true`
+Starting the Phoenix server to test the autocomplete functionality
+
+```bash
+mix phx.server
+```
 
 **Result:**
 
@@ -629,8 +1227,14 @@ Since there are no errors, the return value is `undefined`.
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! The `list_products` function already preloads the category. Now let's start the server and test the autocomplete: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
 **Input:**
 
@@ -737,14 +1341,21 @@ Potential improvements:
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/AUTOCOMPLETE_FEATURE.md","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/AUTOCOMPLETE_FEATURE.md
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Great! The server is running. Let me create a quick documentation file to explain the new autocomplete feature: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
 <summary>Tool use: **get_terminal_output**</summary>
+
+Created `AUTOCOMPLETE_FEATURE.md`
 
 **Input:**
 
@@ -790,33 +1401,680 @@ t:4000/assets/js/app.js"}, "vsn" => "2.0.0"}
   Parameters: %{}
   Session: %{"_csrf_token" => "UNK89USVIoZdJo2Rmnii2nB2"}
 [debug] Replied in 4ms
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **AUTOCOMPLETE_FEATURE.md**</summary>
+
+@@ lines 1-1 @@
+
+```
+# Product Autocomplete Feature
+```
+
+@@ lines 2-2 @@
+
+```
+
+
+```
+
+@@ lines 3-3 @@
+
+```
+
+## Overview
+```
+
+@@ lines 4-4 @@
+
+```
+
+
+```
+
+@@ lines 5-5 @@
+
+```
+
+The pricelist form now includes a user-friendly autocomplete search for products instead of a traditional dropdown select. This makes it much easier to find products when you have many items in your catalog.
+```
+
+@@ lines 6-6 @@
+
+```
+
+
+```
+
+@@ lines 7-7 @@
+
+```
+
+## Features
+```
+
+@@ lines 8-8 @@
+
+```
+
+
+```
+
+@@ lines 9-9 @@
+
+```
+
+### 🔍 Smart Search
+```
+
+@@ lines 10-10 @@
+
+```
+
+- **Real-time filtering**: As you type, products are filtered instantly
+```
+
+@@ lines 11-11 @@
+
+```
+
+- **Debounced input**: 300ms debounce prevents excessive filtering
+```
+
+@@ lines 12-12 @@
+
+```
+
+- **Multi-field search**: Searches both product name and category name
+```
+
+@@ lines 13-13 @@
+
+```
+
+- **Limit results**: Shows top 10 matches to keep the UI clean
+```
+
+@@ lines 14-14 @@
+
+```
+
+
+```
+
+@@ lines 15-15 @@
+
+```
+
+### 🎨 Visual Design
+```
+
+@@ lines 16-16 @@
+
+```
+
+- **daisyUI styling**: Consistent with the rest of the application
+```
+
+@@ lines 17-17 @@
+
+```
+
+- **Search icon**: Visual indicator in the input field
+```
+
+@@ lines 18-18 @@
+
+```
+
+- **Selected product card**: Clear display of the selected product with:
+```
+
+@@ lines 19-19 @@
+
+```
+
+  - Check icon for confirmation
+```
+
+@@ lines 20-20 @@
+
+```
+
+  - Product name
+```
+
+@@ lines 21-21 @@
+
+```
+
+  - Category name (if available)
+```
+
+@@ lines 22-22 @@
+
+```
+
+  - Clear button to deselect
+```
+
+@@ lines 23-23 @@
+
+```
+
+
+```
+
+@@ lines 24-24 @@
+
+```
+
+### 📱 User Experience
+```
+
+@@ lines 25-25 @@
+
+```
+
+- **Dropdown results**: Shows filtered products in a clean dropdown
+```
+
+@@ lines 26-26 @@
+
+```
+
+  - Product name prominently displayed
+```
+
+@@ lines 27-27 @@
+
+```
+
+  - Category shown as secondary information
+```
+
+@@ lines 28-28 @@
+
+```
+
+  - Unit badge displayed if the product has a unit
+```
+
+@@ lines 29-29 @@
+
+```
+
+- **No results message**: Clear feedback when no products match
+```
+
+@@ lines 30-30 @@
+
+```
+
+- **Keyboard friendly**: Standard input navigation works
+```
+
+@@ lines 31-31 @@
+
+```
+
+- **Touch friendly**: Large touch targets for mobile/tablet use
+```
+
+@@ lines 32-32 @@
+
+```
+
+
+```
+
+@@ lines 33-33 @@
+
+```
+
+### 🔧 Technical Implementation
+```
+
+@@ lines 34-34 @@
+
+```
+
+
+```
+
+@@ lines 35-35 @@
+
+```
+
+#### Component Structure
+```
+
+@@ lines 36-36 @@
+
+````
+
+```elixir
+````
+
+@@ lines 37-37 @@
+
+```
+
+# Private function component
+```
+
+@@ lines 38-38 @@
+
+```
+
+defp product_autocomplete(assigns) do
+```
+
+@@ lines 39-39 @@
+
+```
+
+  # Renders the autocomplete UI
+```
+
+@@ lines 40-40 @@
+
+```
+
+end
+```
+
+@@ lines 41-41 @@
+
+````
+
+```
+````
+
+@@ lines 42-42 @@
+
+```
+
+
+```
+
+@@ lines 43-43 @@
+
+```
+
+#### State Management
+```
+
+@@ lines 44-44 @@
+
+```
+
+The component tracks:
+```
+
+@@ lines 45-45 @@
+
+```
+
+- `all_products`: Full list of products from the database
+```
+
+@@ lines 46-46 @@
+
+```
+
+- `filtered_products`: Subset based on search query
+```
+
+@@ lines 47-47 @@
+
+```
+
+- `selected_product`: Currently selected product (if any)
+```
+
+@@ lines 48-48 @@
+
+```
+
+- `search_query`: Current search input value
+```
+
+@@ lines 49-49 @@
+
+```
+
+- `show_dropdown`: Whether to display the dropdown
+```
+
+@@ lines 50-50 @@
+
+```
+
+
+```
+
+@@ lines 51-51 @@
+
+```
+
+#### Event Handlers
+```
+
+@@ lines 52-52 @@
+
+```
+
+1. **search_product**: Filters products as user types
+```
+
+@@ lines 53-53 @@
+
+```
+
+2. **select_product**: Sets the selected product and updates the form
+```
+
+@@ lines 54-54 @@
+
+```
+
+3. **clear_product**: Removes the selected product
+```
+
+@@ lines 55-55 @@
+
+```
+
+
+```
+
+@@ lines 56-56 @@
+
+```
+
+#### Search Logic
+```
+
+@@ lines 57-57 @@
+
+````
+
+```elixir
+````
+
+@@ lines 58-58 @@
+
+```
+
+defp filter_products(products, query) do
+```
+
+@@ lines 59-59 @@
+
+```
+
+  query_lower = String.downcase(query)
+```
+
+@@ lines 60-60 @@
+
+```
+
+  
+```
+
+@@ lines 61-61 @@
+
+```
+
+  products
+```
+
+@@ lines 62-62 @@
+
+```
+
+  |> Enum.filter(fn product ->
+```
+
+@@ lines 63-63 @@
+
+```
+
+    String.contains?(String.downcase(product.name), query_lower) ||
+```
+
+@@ lines 64-64 @@
+
+```
+
+      (product.category && String.contains?(String.downcase(product.category.name), query_lower))
+```
+
+@@ lines 65-65 @@
+
+```
+
+  end)
+```
+
+@@ lines 66-66 @@
+
+```
+
+  |> Enum.take(10)
+```
+
+@@ lines 67-67 @@
+
+```
+
+end
+```
+
+@@ lines 68-68 @@
+
+````
+
+```
+````
+
+@@ lines 69-69 @@
+
+```
+
+
+```
+
+@@ lines 70-70 @@
+
+```
+
+## Usage
+```
+
+@@ lines 71-71 @@
+
+```
+
+
+```
+
+@@ lines 72-72 @@
+
+```
+
+1. Navigate to Admin → Pricelists → New Pricelist (or edit an existing one)
+```
+
+@@ lines 73-73 @@
+
+```
+
+2. In the Product field, start typing the product name or category
+```
+
+@@ lines 74-74 @@
+
+```
+
+3. Select from the filtered results
+```
+
+@@ lines 75-75 @@
+
+```
+
+4. The selected product appears as a card below the input
+```
+
+@@ lines 76-76 @@
+
+```
+
+5. Click the X button to clear and search again if needed
+```
+
+@@ lines 77-77 @@
+
+```
+
+
+```
+
+@@ lines 78-78 @@
+
+```
+
+## Benefits
+```
+
+@@ lines 79-79 @@
+
+```
+
+
+```
+
+@@ lines 80-80 @@
+
+```
+
+- **Faster product selection** when you have many products
+```
+
+@@ lines 81-81 @@
+
+```
+
+- **Better UX** compared to scrolling through long dropdowns
+```
+
+@@ lines 82-82 @@
+
+```
+
+- **Visual confirmation** of the selected product
+```
+
+@@ lines 83-83 @@
+
+```
+
+- **Reduced errors** by showing category information
+```
+
+@@ lines 84-84 @@
+
+```
+
+
+```
+
+@@ lines 85-85 @@
+
+```
+
+## Future Enhancements
+```
+
+@@ lines 86-86 @@
+
+```
+
+
+```
+
+@@ lines 87-87 @@
+
+```
+
+Potential improvements:
+```
+
+@@ lines 88-88 @@
+
+```
+
+- Add recent selections
+```
+
+@@ lines 89-89 @@
+
+```
+
+- Highlight matching text in results
+```
+
+@@ lines 90-90 @@
+
+```
+
+- Add keyboard navigation (arrow keys, Enter to select)
+```
+
+@@ lines 91-91 @@
+
+```
+
+- Show product image thumbnails
+```
+
+@@ lines 92-92 @@
+
+```
+
+- Add barcode scanning capability
+```
+
+@@ lines 93-93 @@
+
+```
+
 
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you implement a user-friendly autocomplete select for products in the pricelist form. Let me first examine the current implementation and then research best practices for autocomplete with daisyUI. Now let me search for best practices on autocomplete with daisyUI and LiveView: Let me check if there are any existing autocomplete implementations in the codebase: Now let me create a custom autocomplete component based on best practices. I'll implement a LiveView-based autocomplete that uses daisyUI styling with a dropdown approach: 
-```
+Perfect! Now let me check the terminal to see if the server is running properly: 
 
-```
-Now I need to add the rest of the file with the save functions: 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
-Let me read the complete file to see what happened: I see the issue - there's duplication. Let me fix it: 
-```
+<tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
+<summary>Tool use: **get_terminal_output**</summary>
 
-```
-Now let's test if the code compiles: I need to fix these errors. Let me update the function: 
-```
+Checked background terminal output
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
-
-```
-Now let's compile again: Great! The code compiles successfully. Now let's check if we need to ensure the products are preloaded with their categories in the Catalog module: Perfect! The `list_products` function already preloads the category. Now let's start the server and test the autocomplete: Great! The server is running. Let me create a quick documentation file to explain the new autocomplete feature: Perfect! Now let me check the terminal to see if the server is running properly: Great! The server is running. Let me now create a summary comment about the implementation:
+Great! The server is running. Let me now create a summary comment about the implementation:
 
 ## Summary
 
@@ -874,15 +2132,102 @@ check your handle events. When I write something I get this error: (FunctionClau
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me check the handle_event functions to see what's wrong: I see the issue! The `search_product` event is being sent with a different parameter structure. When using `phx-change` on an input, Phoenix sends the params differently. Let me check the input element: The issue is that the input needs a `name` attribute for `phx-change` to work properly. The event handler is expecting `%{"value" => query}` but it's likely receiving a nested structure. Let me fix this: 
-```
+Let me check the handle_event functions to see what's wrong: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `form_component.ex`, lines 185 to 235
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+I see the issue! The `search_product` event is being sent with a different parameter structure. When using `phx-change` on an input, Phoenix sends the params differently. Let me check the input element: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `form_component.ex`, lines 70 to 110
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+The issue is that the input needs a `name` attribute for `phx-change` to work properly. The event handler is expecting `%{"value" => query}` but it's likely receiving a nested structure. Let me fix this: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 71-88 @@
 
 ```
+        <!-- Search input -->
+        <div class="relative">
+          <input
+            type="text"
+            name="search_query"
+            id={"#{@form.id}_#{@field}_search"}
+            class="input input-bordered w-full pr-10"
+            placeholder="Search products..."
+            value={@search_query}
+            phx-change="search_product"
+            phx-target={@target}
+            phx-debounce="300"
+            autocomplete="off"
+          />
+          <.icon
+            name="hero-magnifying-glass"
+            class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-base-content/40"
+          />
+        </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Now I need to update the handle_event to match the params structure that Phoenix sends: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 188-201 @@
 
 ```
+  defp get_selected_product(_, _), do: nil
+
+  @impl true
+  def handle_event("search_product", %{"search_query" => query}, socket) do
+    filtered_products = filter_products(socket.assigns.all_products, query)
+
+    {:noreply,
+     socket
+     |> assign(:search_query, query)
+     |> assign(:filtered_products, filtered_products)
+     |> assign(:show_dropdown, true)}
+  end
+
+  @impl true
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Now let's check if the code compiles: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Using "Run in Terminal"
+</details></tool-use>
 
 ---
 
@@ -897,6 +2242,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `form_component.ex`, lines 165 to 195
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex`
@@ -906,15 +2253,74 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"165","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"195","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"287","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":33,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"    all_products = Catalog.list_products()\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":31,"references":[],"text":"    selected_product = get_selected_product(pricelist, all_products)\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakB
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex`. Lines 165 to 195 (287 lines total): 
+```elixir
+    all_products = Catalog.list_products()
+    selected_product = get_selected_product(pricelist, all_products)
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:all_products, all_products)
+     |> assign(:filtered_products, [])
+     |> assign(:selected_product, selected_product)
+     |> assign(:search_query, selected_product && selected_product.name || "")
+     |> assign(:show_dropdown, false)
+     |> assign_new(:form, fn ->
+       to_form(Catalog.change_pricelist(pricelist))
+     end)}
+  end
+
+  defp get_selected_product(%{product: %Ecto.Association.NotLoaded{}}, _products), do: nil
+  defp get_selected_product(%{product: product}, _products) when not is_nil(product), do: product
+
+  defp get_selected_product(%{product_id: product_id}, products) when not is_nil(product_id) do
+    Enum.find(products, &(&1.id == product_id))
+  end
+
+  defp get_selected_product(_, _), do: nil
+
+  @impl true
+  def handle_event("search_product", %{"search_query" => query}, socket) do
+    filtered_products = filter_products(socket.assigns.all_products, query)
+
+    {:noreply,
+     socket
+```
 ````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 165-178 @@
+
+```
+    all_products = Catalog.list_products()
+    selected_product = get_selected_product(pricelist, all_products)
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:all_products, all_products)
+     |> assign(:filtered_products, Enum.take(all_products, 20))
+     |> assign(:selected_product, selected_product)
+     |> assign(:search_query, selected_product && selected_product.name || "")
+     |> assign(:show_dropdown, true)
+     |> assign_new(:form, fn ->
+       to_form(Catalog.change_pricelist(pricelist))
+     end)}
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 238 to 258
 
 **Input:**
 
@@ -925,19 +2331,59 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"238","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"258","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"287","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":23,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"  def handle_event(\"save\", %{\"pricelist\" =\u003e pricelist_params}, socket) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"    save_pricelist(socket, socket.assigns.action, pricelist_params)\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":21},"references"
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/form_component.ex`. Lines 238 to 258 (287 lines total): 
+```elixir
+  def handle_event("save", %{"pricelist" => pricelist_params}, socket) do
+    save_pricelist(socket, socket.assigns.action, pricelist_params)
+  end
+
+  defp filter_products(_products, query) when query == "", do: []
+
+  defp filter_products(products, query) do
+    query_lower = String.downcase(query)
+
+    products
+    |> Enum.filter(fn product ->
+      String.contains?(String.downcase(product.name), query_lower) ||
+        (product.category && String.contains?(String.downcase(product.category.name), query_lower))
+    end)
+    |> Enum.take(10)
+  end
+
+  defp save_pricelist(socket, :edit, pricelist_params) do
+    case Catalog.update_pricelist(socket.assigns.pricelist, pricelist_params) do
+      {:ok, pricelist} ->
+        notify_parent({:saved, pricelist})
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 242-253 @@
 
 ```
+  defp filter_products(_products, query) when query == "" do
+    # Show first 20 products when no search query
+    _products |> Enum.take(20)
+  end
 
-```
+  defp filter_products(products, query) do
+    query_lower = String.downcase(query)
 
+    products
+    |> Enum.filter(fn product ->
+      String.contains?(String.downcase(product.name), query_lower) ||
+        (product.category && String.contains?(String.downcase(product.category.name), query_lower))
+    end)
+    |> Enum.take(10)
+  end
 ```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! Now the autocomplete will show the first 20 products by default when the form loads, and when users search, it will filter to the top 10 matching results. This gives a good balance between discoverability and keeping the UI manageable.

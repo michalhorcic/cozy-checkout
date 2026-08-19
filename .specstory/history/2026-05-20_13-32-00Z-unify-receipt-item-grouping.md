@@ -12,40 +12,10 @@ Check how receipt is made and how order items are grouped by product in POS view
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<think><details><summary>Thought Process</summary>
-Now I have a clear picture. Let me read the full `OrderItemGrouper` module before asking: 
-
-Now I have everything I need. Let me implement: 
-
-Also update the map function signature to match the new 3-element key: 
-
-Now update the receipt template. The current items section (lines ~148–165) needs replacing: 
-
-Now I need to remove the leftover old template fragment (the closing of the old loop): 
-
-There's leftover old code after the new block. Let me remove it: 
-
-Now update `pohoda.ex` to group items before XML generation:  
-
-Now update `order_item_to_xml/1` to handle the grouped map (which uses `quantity` as a Decimal), and add the `group_items/1` private function: 
-
-Now I need to make sure the `calculate_vat_totals/1` in `pohoda.ex` still works with the grouped map (which has `:subtotal` as a Decimal). Let me check it handles missing `subtotal` gracefully: 
-
-`calculate_vat_totals` accesses `item.subtotal` (which our grouped map always has as a Decimal) — it's compatible. Let me verify the Pohoda module has `Decimal` available: 
-
-Good — `Decimal` is used directly throughout `pohoda.ex` without aliasing; that's fine. Now check that `format_number/1` is available in the receipt template:  
-
-Good — `CurrencyHelper` (including `format_number/1`) is imported globally via `cozy_checkout_web.ex`. Let me verify the final receipt template looks correct:  
-
-Good. Now let me also verify the Pohoda module looks correct end-to-end:  
-
-Now let me do a quick compile check:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `receipt.ex`
 
 **Input:**
 
@@ -56,8 +26,70 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":65,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"defmodule CozyCheckoutWeb.OrderLive.Receipt do\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":65},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":64,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":64},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":63,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":63},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":62,"references":[],"text":"  alias CozyCheckout.Sales\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":62},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":61,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":61},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":60,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":60},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":59,"references":[],"text":"  def mount(%{\"id\" =\u003e id}, _session, socket) do\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":59},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":58,"references":[],"text":"    order = Sales.get_order!(id)\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":58},"references":[],"type":1},{"children":[{"lineBreakBefore"
-… (output truncated)
+defmodule CozyCheckoutWeb.OrderLive.Receipt do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Sales
+
+  @impl true
+  def mount(%{"id" => id}, _session, socket) do
+    order = Sales.get_order!(id)
+    payments = Sales.list_payments_for_order(id)
+
+    # Group items by VAT rate for VAT breakdown
+    vat_breakdown = calculate_vat_breakdown(order.order_items)
+
+    total_paid =
+      Enum.reduce(payments, Decimal.new("0"), fn payment, acc ->
+        Decimal.add(acc, payment.amount)
+      end)
+
+    socket =
+      socket
+      |> assign(:page_title, "Receipt - Order #{order.order_number}")
+      |> assign(:order, order)
+      |> assign(:payments, payments)
+      |> assign(:vat_breakdown, vat_breakdown)
+      |> assign(:total_paid, total_paid)
+      |> assign(:generated_at, DateTime.utc_now())
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("print", _params, socket) do
+    {:noreply, push_event(socket, "print", %{})}
+  end
+
+  defp calculate_vat_breakdown(order_items) do
+    active_items = Enum.filter(order_items, &is_nil(&1.deleted_at))
+
+    active_items
+    |> Enum.group_by(& &1.vat_rate)
+    |> Enum.map(fn {vat_rate, items} ->
+      # Calculate total for this VAT rate group
+      total_incl_vat =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.subtotal)
+        end)
+
+      # Calculate base (without VAT) and VAT amount
+      # Formula: base = total / (1 + vat_rate/100)
+      # vat_amount = total - base
+      divisor = Decimal.add(Decimal.new("1"), Decimal.div(vat_rate, 100))
+      base = Decimal.div(total_incl_vat, divisor)
+      vat_amount = Decimal.sub(total_incl_vat, base)
+
+      %{
+        vat_rate: vat_rate,
+        base: Decimal.round(base, 2),
+        vat_amount: Decimal.round(vat_amount, 2),
+        total_incl_vat: total_incl_vat
+      }
+    end)
+    |> Enum.sort_by(& &1.vat_rate)
+  end
+end
 ```
 </details></tool-use>
 
@@ -66,6 +98,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/order_live/**`, 6 matches
+
 **Input:**
 
 - query: `**/order_live/**`
@@ -73,8 +107,33 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"6 total results","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/new.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/new.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/new.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/new.ex","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/mich
-… (output truncated)
+6 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/new.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/index.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/show.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/edit.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="file_search"><details>
+<summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/pohoda*`, 2 matches
+
+**Input:**
+
+- query: `**/pohoda*`
+
+**Result:**
+
+```
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/POHODA_EXPORT.md
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex
 ```
 </details></tool-use>
 
@@ -82,6 +141,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `receipt.html.heex`, lines 1 to 150
 
 **Input:**
 
@@ -92,24 +153,100 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":150,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"\u003cdiv class=\"min-h-screen bg-white\"\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":150},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":149,"references":[],"text":"  \u003c%!-- Print Styles --%\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":149},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":148,"references":[],"text":"  \u003cstyle\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":148},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":147,"references":[],"text":"    @media print {\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":147},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":146,"references":[],"text":"      body {\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":146},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":145,"references":[],"text":"        margin: 0;\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":145},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":144,"references":[],"text":"        padding: 0;\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":144},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":143,"references":[],"text":"      }\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":143},"references":[],"type":1},{"children":[{"lineBre
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      /* Thermal receipt printer format: 80mm width, auto height */
+      @page {
+        size: 80mm auto;
+        margin: 0;
+      }
+      
+      html, body {
+        width: 80mm;
+        margin: 0;
+        padding: 0;
+      }
+    }
+
+    /* Receipt styling for thermal printer format */
+    .receipt-container {
+      width: 80mm;
+      margin: 0 auto;
+      padding: 10mm;
+      font-family: 'Courier New', monospace;
+      background: white;
+    }
+
+    .receipt-header {
+      text-align: center;
+      margin-bottom: 15px;
+      border-bottom: 2px dashed #000;
+      padding-bottom: 10px;
+    }
+
+    .receipt-section {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #999;
+    }
+
+    .receipt-items {
+      font-size: 12px;
+    }
+
+    .receipt-item {
+      margin-bottom: 8px;
+    }
+
+    .receipt-total {
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .receipt-footer {
+      text-align: center;
+      font-size: 11px;
+      margin-top: 15px;
+      padding-top: 10px;
+      border-top: 2px dashed #000;
+    }
+  </style>
+
+  <%!-- Print Button (Hidden on print) --%>
+  <div class="no-print fixed top-4 right-4 z-50">
+    <button
+      phx-click="print"
+      class="btn btn-primary gap-2"
+    >
+      <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout účtenku
+    </button>
+  </div>
+
+  <%!-- Receipt Content --%>
+  <div class="receipt-container">
+    <%!-- Header with Company Info --%>
+    <div class="receipt-header">
+      <div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">
+        Jindřichův dům
+      </div>
+      <div style="font-size: 13px; margin-bottom: 3px;">
+        Pec pod Sněžkou 24
+      </div>
+      <div style="font-size: 13px; margin-bottom: 3px;">
+      
 … (output truncated)
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="search" data-tool-name="file_search"><details>
-<summary>Tool use: **file_search**</summary>
-
-**Input:**
-
-- query: `**/pohoda*`
-
-**Result:**
-
-```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/POHODA_EXPORT.md","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/POHODA_EXPORT.md","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/POHODA_EXPORT.md","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/POHODA_EXPORT.md","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"zNe","props":{},"references":[],"type":1}}
 ```
 </details></tool-use>
 
@@ -117,6 +254,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `receipt.html.heex`, lines 150 to 258
 
 **Input:**
 
@@ -127,7 +266,54 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":109,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"                (ks: {item.quantity})\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":109},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":108,"references":[],"text":"              \u003c/span\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":108},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":107,"references":[],"text":"            \u003c% end %\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":107},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":106,"references":[],"text":"          \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":106},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":105,"references":[],"text":"          \u003cdiv style=\"display: flex; justify-content: space-between; font-size: 11px;\"\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":105},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":104,"references":[],"text":"            \u003cspan\u003e{format_currency(item.unit_price)} × {item.quantity}\u003c/span\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":104},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":103,"references":[],"text":"            \u003cspan\u003e\u003cstrong\u003e{format_currency(item.subtotal)}\u003c/strong\u003e\u003c/span\u003e\n","type":2}],"ctor":
+                (ks: {item.quantity})
+              </span>
+            <% end %>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>{format_currency(item.unit_price)} × {item.quantity}</span>
+            <span><strong>{format_currency(item.subtotal)}</strong></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- VAT Breakdown --%>
+    <%= if @vat_breakdown != [] do %>
+      <div class="receipt-section" style="font-size: 11px;">
+        <div style="font-weight: bold; margin-bottom: 5px;">REKAPITULACE DPH:</div>
+        <%= for vat <- @vat_breakdown do %>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Základ DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.base)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.vat_amount)}</span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%!-- Discount (if any) --%>
+    <%= if Decimal.gt?(@order.discount_amount || Decimal.new("0"), 0) do %>
+      <div class="receipt-section" style="font-size: 12px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 3px;">
+          <span>Sleva:</span>
+          <span class="text-error">-{format_currency(@order.discount_amount)}</span>
+        </div>
+        <%= if @order.discount_reason && @order.discount_reason != "" do %>
+          <div style="font-size: 11px; color: #666; font-style: italic;">
+            Důvod: {@order.discount_reason}
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <%!-- Tips (if any) --%>
+    <%= if Decimal.gt?(@order.tips_amount || Decimal.new("0"), 0) do %>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px;">
+        <span>Spropi
 … (output truncated)
 ```
 </details></tool-use>
@@ -136,6 +322,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `pohoda.ex`, lines 1 to 200
 
 **Input:**
 
@@ -146,15 +334,135 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":200,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"defmodule CozyCheckout.Pohoda do\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":200},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":199,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":199},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":198,"references":[],"text":"  Handles export of paid orders to POHODA accounting software XML format.\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":198},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":197,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":197},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":196,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":196},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":195,"references":[],"text":"  alias CozyCheckout.Sales\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":195},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":194,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":194},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":193,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":193},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":192,"references":[],"text":"  Exports paid orders to POHODA XM
+defmodule CozyCheckout.Pohoda do
+  @moduledoc """
+  Handles export of paid orders to POHODA accounting software XML format.
+  """
+
+  alias CozyCheckout.Sales
+
+  @doc """
+  Exports paid orders to POHODA XML format.
+  Returns XML string that can be saved to file or sent to POHODA mServer.
+  """
+  def export_orders(order_ids) when is_list(order_ids) do
+    orders = Sales.list_orders_for_pohoda_export(order_ids)
+    generate_xml(orders)
+  end
+
+  def export_orders(date_from, date_to) do
+    orders = Sales.list_paid_orders_by_date(date_from, date_to)
+    generate_xml(orders)
+  end
+
+  defp generate_xml(orders) do
+    """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <dat:dataPack version="2.0" id="Export" ico="#{ico()}" application="CozyCheckout" note="Export paid orders" xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd">
+    #{Enum.map_join(orders, "\n", &order_to_xml/1)}
+    </dat:dataPack>
+    """
+  end
+
+  defp order_to_xml(order) do
+    date = format_date(order.inserted_at)
+    {account_no, bank_code} = parse_bank_account()
+    {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
+    items = active_order_items(order)
+    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)
+
+    """
+      <dat:dataPackItem id="#{order.order_number}" version="2.0">
+        <inv:invoice version="2.0" xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd">
+          <inv:invoiceHeader xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+            <inv:invoiceType>receivable</inv:invoiceType>
+            <inv:number>
+              <typ:numberRequested>#{order.order_number}</typ:numberRequested>
+            </inv:number>
+            <inv:symVar>#{order.order_number}</inv:symVar>
+            <inv:date>#{date}</inv:date>
+            <inv:dateTax>#{date}</inv:dateTax>
+            <inv:dateAccounting>#{date}</inv:dateAccounting>
+            <inv:dateDue>#{date}</inv:dateD
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+<tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
+<summary>Tool use: **semantic_search**</summary>
+
+Searched codebase for "group order items by product unit_amount POS view cart", 19 results
+
+**Input:**
+
+- query: `group order items by product unit_amount POS view cart`
+
+**Result:**
+
+`````
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/VISUAL_GROUPING.md` starting at line 26:
+````md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/VISUAL_GROUPING.md
+# Visual Grouping Feature
+...
+## Implementation
+
+### Core Module
+
+`CozyCheckoutWeb.OrderItemGrouper` provides the grouping logic:
+
+```elixir
+# Group items for display
+grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+# Each group contains:
+%{
+  product: %Product{},           # The product struct
+  unit_amount: Decimal.t(),      # Unit amount (if applicable)
+  total_quantity: Decimal.t(),   # Sum of all quantities
+  total_price: Decimal.t(),      # Sum of all prices
+  item_ids: [binary()],          # List of order_item IDs
+  items: [%OrderItem{}],         # List of actual order_items
+  grouped?: boolean(),           # True if multiple items
+  expanded?: boolean()           # Current expansion state
+}
+```
+
+### Functions
+
+- `group_order_items/1` - Groups items by product and unit amount
+- `expand_group/3` - Shows individual items within a group
+- `collapse_group/3` - Hides individual items within a group
+
+...
+````
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_13-31-41Z-designing-a-touchfriendly-pos-interface-for-staff.md` starting at line 2296:
+````md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_13-31-41Z-designing-a-touchfriendly-pos-interface-for-staff.md
+...
+# 2025-10-16 13:36:37Z
+...
+## Architecture Notes
+...
+                    <%= if item.unit_amount do %>
+                      {item.quantity} × {item.unit_amount}{item.product.unit} = {Decimal.mult(item.quantity, item.unit_amount)}{item.product.unit}
+                      <span class="text-gray-400">|</span>
+                    <% else %>
+                      Quantity: {item.quantity}
+                      <span class="text-gray-400">|</sp
+… (output truncated)
+`````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `pohoda.ex`, lines 200 to 245
 
 **Input:**
 
@@ -165,32 +473,64 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":46,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"    |\u003e Date.to_iso8601()\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":46},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":45,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":45},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":44,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":44},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":43,"references":[],"text":"  defp escape_xml(text) when is_binary(text) do\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":43},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":42,"references":[],"text":"    text\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":42},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":41,"references":[],"text":"    |\u003e String.replace(\"\u0026\", \"\u0026amp;\")\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":41},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":40,"references":[],"text":"    |\u003e String.replace(\"\u003c\", \"\u0026lt;\")\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":40},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":39,"references":[],"text":"    |\u003e String.replace(\"\u003e\", \"\u0026gt;\")\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":39},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":
-… (output truncated)
+    |> Date.to_iso8601()
+  end
+
+  defp escape_xml(text) when is_binary(text) do
+    text
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
+    |> String.replace("'", "&apos;")
+  end
+
+  defp vat_rate_to_pohoda(rate) when is_struct(rate, Decimal) do
+    cond do
+      Decimal.equal?(rate, Decimal.new(12)) -> "low"
+      Decimal.equal?(rate, Decimal.new(21)) -> "high"
+      true -> "none"
+    end
+  end
+
+  defp vat_pay?(rate) when is_struct(rate, Decimal) do
+    if Decimal.equal?(rate, Decimal.new(0)), do: "false", else: "true"
+  end
+
+  defp payment_type_to_pohoda(payments) when is_list(payments) do
+    case List.first(payments) do
+      %{method: "card"} -> {"Kartou", "card"}
+      %{method: "cash"} -> {"Hotově", "cash"}
+      _ -> {"Hotově", "cash"}
+    end
+  end
+
+  defp parse_bank_account do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "0/0000")
+
+    case String.split(bank_account, "/") do
+      [account_no, bank_code] -> {account_no, bank_code}
+      _ -> {"0", "0000"}
+    end
+  end
+
+  defp ico do
+    Application.get_env(:cozy_checkout, :pohoda_ico, "12345678")
+  end
+end
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
-<summary>Tool use: **semantic_search**</summary>
-
-**Input:**
-
-- query: `group order items by product unit_amount POS view cart`
-
-**Result:**
-
-`````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/VISUAL_GROUPING.md` starting at line 26:\n````md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/VISUAL_GROUPING.md\n# Visual Grouping Feature\n...\n## Implementation\n\n### Core Module\n\n`CozyCheckoutWeb.OrderItemGrouper` provides the grouping logic:\n\n```elixir\n# Group items for display\ngrouped_items = OrderItemGrouper.group_order_items(order.order_items)\n\n# Each group contains:\n%{\n  product: %Product{},           # The product struct\n  unit_amount: Decimal.t(),      # Unit amount (if applicable)\n  total_quantity: Decimal.t(),   # Sum of all quantities\n  total_price: Decimal.t(),      # Sum of all prices\n  item_ids: [binary()],          # List of order_item IDs\n  items: [%OrderItem{}],         # List of actual order_items\n  grouped?: boolean(),           # True if multiple items\n  expanded?: boolean()           # Current expansion state\n}\n```\n\n### Functions\n\n- `group_order_items/1` - Groups items by product and unit amount\n- `expand_group/3` - Shows individual items within a group\n- `collapse_group/3` - Hides individual items within a group\n\n...\n````\n\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_13-31-41Z-designing-a-touchfriendly-pos-interface-for-staff.md` starting at line 2296:\n````md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_13-31-41Z-designing-a-touchfriendly-pos-interface-for-staff.md\n...\n# 2025-10-16 13:36:37Z\n...\n## Architecture Notes\n...\n                    \u00
-… (output truncated)
-`````
-</details></tool-use>
+Now I have a clear picture. Let me read the full `OrderItemGrouper` module before asking: 
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `order_item_grouper.ex`, lines 1 to 80
 
 **Input:**
 
@@ -201,7 +541,70 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":80,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"defmodule CozyCheckoutWeb.OrderItemGrouper do\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":80},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":79,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":79},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":78,"references":[],"text":"  Helper module for grouping order items by product and unit amount for display purposes.\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":78},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":77,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":77},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":76,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":76},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":75,"references":[],"text":"  alias Decimal\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":75},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":74,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":74},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":73,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":73},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priorit
+defmodule CozyCheckoutWeb.OrderItemGrouper do
+  @moduledoc """
+  Helper module for grouping order items by product and unit amount for display purposes.
+  """
+
+  alias Decimal
+
+  @doc """
+  Groups order items by product_id and unit_amount for cleaner display.
+  Returns a list of grouped items with aggregated quantities and totals.
+
+  Each group contains:
+  - product: the product struct
+  - unit_amount: the unit amount (if applicable)
+  - unit: the unit string (e.g., "ml", "L")
+  - price_per_unit: the price per single unit
+  - total_quantity: sum of all quantities in the group
+  - total_price: total price for all items in the group
+  - item_ids: list of all order_item ids in this group
+  - items: list of actual order_item structs
+  - grouped?: boolean indicating if multiple items were grouped
+  """
+  def group_order_items(order_items) do
+    order_items
+    |> Enum.reject(&(!is_nil(&1.deleted_at)))
+    |> Enum.group_by(fn item ->
+      {item.product_id, item.unit_amount}
+    end)
+    |> Enum.map(fn {{_product_id, _unit_amount}, items} ->
+      first = hd(items)
+
+      total_quantity =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.quantity)
+        end)
+
+      total_price =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.subtotal)
+        end)
+
+      sorted_items = Enum.sort_by(items, & &1.inserted_at, DateTime)
+
+      %{
+        product: first.product,
+        unit_amount: first.unit_amount,
+        unit: first.product.unit,
+        price_per_unit: first.unit_price,
+        vat_rate: first.vat_rate,
+        total_quantity: total_quantity,
+        total_price: total_price,
+        item_ids: Enum.map(sorted_items, & &1.id),
+        items: sorted_items,
+        grouped?: length(items) > 1,
+        expanded?: false
+      }
+    end)
+    |> Enum.sort_by(& &1.product.name)
+  end
+
+  @doc """
+  Expands a specific group to show individual items.
+  """
+  def expand_group(grouped_items, p
 … (output truncated)
 ```
 </details></tool-use>
@@ -211,9 +614,59 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="generic" data-tool-name="vscode_askQuestions"><details>
 <summary>Tool use: **vscode_askQuestions**</summary>
 
+Analyzing your answers...
+
 **Input:**
 
-- questions: `[map[header:price_adjustments options:[map[label:Keep them as separate lines (only group items with identical prices) recommended:true] map[label:Merge them anyway, sum the total, and show combined line]] question:Items can have individual price adjustments (actual_price override). If two beers of the same size have different prices, how should they appear on the receipt and in Pohoda XML?] map[header:receipt_format options:[map[label:Radegast (500ml × 3) — 150 CZK recommended:true] map[label:Radegast 500ml — 50 CZK × 3 = 150 CZK] map[label:Other — I'll describe below]] question:How should a grouped line look on the thermal receipt? e.g. for 3× Radegast 500ml at 50 CZK each:] map[header:pohoda_quantity options:[map[label:Yes — quantity = total glasses, unit = unit_amount (e.g. ml) recommended:true] map[label:Collapse to one line with total volume (quantity=1, unit=total ml)]] question:In Pohoda XML, the unit field currently stores the unit_amount (e.g. 500). When grouped, should the quantity become the total number of glasses (e.g. 3) and the unit remain 500ml?]]`
+- questions:
+
+```
+[
+  {
+    "header": "price_adjustments",
+    "options": [
+      {
+        "label": "Keep them as separate lines (only group items with identical prices)",
+        "recommended": true
+      },
+      {
+        "label": "Merge them anyway, sum the total, and show combined line"
+      }
+    ],
+    "question": "Items can have individual price adjustments (actual_price override). If two beers of the same size have different prices, how should they appear on the receipt and in Pohoda XML?"
+  },
+  {
+    "header": "receipt_format",
+    "options": [
+      {
+        "label": "Radegast (500ml × 3) — 150 CZK",
+        "recommended": true
+      },
+      {
+        "label": "Radegast 500ml — 50 CZK × 3 = 150 CZK"
+      },
+      {
+        "label": "Other — I'll describe below"
+      }
+    ],
+    "question": "How should a grouped line look on the thermal receipt? e.g. for 3× Radegast 500ml at 50 CZK each:"
+  },
+  {
+    "header": "pohoda_quantity",
+    "options": [
+      {
+        "label": "Yes — quantity = total glasses, unit = unit_amount (e.g. ml)",
+        "recommended": true
+      },
+      {
+        "label": "Collapse to one line with total volume (quantity=1, unit=total ml)"
+      }
+    ],
+    "question": "In Pohoda XML, the unit field currently stores the unit_amount (e.g. 500). When grouped, should the quantity become the total number of glasses (e.g. 3) and the unit remain 500ml?"
+  }
+]
+```
+
 
 **Result:**
 
@@ -227,6 +680,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
 
+Searched codebase for "order_items schema actual_price original_price subtotal", 30 results
+
 **Input:**
 
 - query: `order_items schema actual_price original_price subtotal`
@@ -234,19 +689,51 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07-36Z-updating-price-tier-display-format-in-pricelist.md` starting at line 430:\n```md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07-36Z-updating-price-tier-display-format-in-pricelist.md\n...\n# 2025-10-25 17:50:39Z\n...\n- todoList: `[map[description:Add integer :order field to categories table, set existing categories order based on inserted_at, add index id:1 status:completed title:Create migration to add order field] map[description:Add :order field to schema in lib/cozy_checkout/catalog/category.ex id:2 status:completed title:Update Category schema] map[description:Add :order to cast fields and add validation for it id:3 status:completed title:Update Category changeset] map[description:Change ordering from c.name to c.order, c.name in lib/cozy_checkout/catalog.ex id:4 status:in-progress title:Update Catalog.list_categories/0] map[description:Add logic to default new category order to max + 1 id:5 status:not-started title:Update Catalog.create_category/1] map[description:Add order input field to the form in form_component.ex id:6 status:not-started title:Update category form...\n```\n\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_12-06Z-database-design-for-guest-checkout-application.md` starting at line 72:\n```md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_12-06Z-database-design-for-guest-checkout-application.md\n...\n# Database des
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07-36Z-updating-price-tier-display-format-in-pricelist.md` starting at line 430:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07-36Z-updating-price-tier-display-format-in-pricelist.md
+...
+# 2025-10-25 17:50:39Z
+...
+- todoList: `[map[description:Add integer :order field to categories table, set existing categories order based on inserted_at, add index id:1 status:completed title:Create migration to add order field] map[description:Add :order field to schema in lib/cozy_checkout/catalog/category.ex id:2 status:completed title:Update Category schema] map[description:Add :order to cast fields and add validation for it id:3 status:completed title:Update Category changeset] map[description:Change ordering from c.name to c.order, c.name in lib/cozy_checkout/catalog.ex id:4 status:in-progress title:Update Catalog.list_categories/0] map[description:Add logic to default new category order to max + 1 id:5 status:not-started title:Update Catalog.create_category/1] map[description:Add order input field to the form in form_component.ex id:6 status:not-started title:Update category form...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_12-06Z-database-design-for-guest-checkout-application.md` starting at line 72:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_12-06Z-database-design-for-guest-checkout-application.md
+...
+# Database design for guest checkout application (2025-10-16 12:06Z)
+...
+## Proposed Initial Schema:
+...
+  - inserted_at, updated_at
+
+orders
+  - id (uuid, pk)
+  - guest_id (uuid, fk -> guests)
+  - order_number (string, unique, auto-generated)
+  - status (string: "open", "paid", "cancelled")
+  - total_amount (decimal, calculated)
+  - notes (text, 
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+Now I have everything I need. Let me implement: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Created 4 todos
 
-- todoList: `[map[id:1 status:not-started title:Update OrderItemGrouper key to include unit_price] map[id:2 status:not-started title:Update receipt.ex to use grouped items] map[id:3 status:not-started title:Update receipt.html.heex to render groups] map[id:4 status:not-started title:Update pohoda.ex to group before XML generation]]`
+- [ ] Update OrderItemGrouper key to include unit_price
+- [ ] Update receipt.ex to use grouped items
+- [ ] Update receipt.html.heex to render groups
+- [ ] Update pohoda.ex to group before XML generation
 
 **Result:**
 
@@ -262,9 +749,12 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting: *Update OrderItemGrouper key to include unit_price* (1/4)
 
-- todoList: `[map[id:1 status:in-progress title:Update OrderItemGrouper key to include unit_price] map[id:2 status:not-started title:Update receipt.ex to use grouped items] map[id:3 status:not-started title:Update receipt.html.heex to render groups] map[id:4 status:not-started title:Update pohoda.ex to group before XML generation]]`
+- [ ] Update OrderItemGrouper key to include unit_price _(in progress)_
+- [ ] Update receipt.ex to use grouped items
+- [ ] Update receipt.html.heex to render groups
+- [ ] Update pohoda.ex to group before XML generation
 
 **Result:**
 
@@ -275,55 +765,29 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_item_grouper.ex**</summary>
 
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex`
-- newString:
+@@ lines 27-27 @@
 
 ```
-    order_items
-    |> Enum.reject(&(!is_nil(&1.deleted_at)))
-    |> Enum.group_by(fn item ->
-      {item.product_id, item.unit_amount, item.unit_price}
-    end)
-```
-
-- oldString:
-
-```
-    order_items
-    |> Enum.reject(&(!is_nil(&1.deleted_at)))
-    |> Enum.group_by(fn item ->
-      {item.product_id, item.unit_amount}
-    end)
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"KI","props":{},"references":[],"type":1}}
+, item.unit_price
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
+Also update the map function signature to match the new 3-element key: 
 
-**Input:**
+_**Agent (copilot/claude-sonnet-4.6)**_
 
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex`
-- newString: `    |> Enum.map(fn {{_product_id, _unit_amount, _unit_price}, items} ->`
-- oldString: `    |> Enum.map(fn {{_product_id, _unit_amount}, items} ->`
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_item_grouper.ex**</summary>
 
-**Result:**
+@@ lines 29-29 @@
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"KI","props":{},"references":[],"type":1}}
+, _unit_price
 ```
 </details></tool-use>
 
@@ -332,9 +796,12 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting: *Update receipt.ex to use grouped items* (2/4)
 
-- todoList: `[map[id:1 status:completed title:Update OrderItemGrouper key to include unit_price] map[id:2 status:in-progress title:Update receipt.ex to use grouped items] map[id:3 status:not-started title:Update receipt.html.heex to render groups] map[id:4 status:not-started title:Update pohoda.ex to group before XML generation]]`
+- [x] Update OrderItemGrouper key to include unit_price
+- [ ] Update receipt.ex to use grouped items _(in progress)_
+- [ ] Update receipt.html.heex to render groups
+- [ ] Update pohoda.ex to group before XML generation
 
 **Result:**
 
@@ -345,19 +812,12 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **receipt.ex**</summary>
 
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex`
-- newString:
+@@ lines 5-9 @@
 
 ```
-defmodule CozyCheckoutWeb.OrderLive.Receipt do
-  use CozyCheckoutWeb, :live_view
-
-  alias CozyCheckout.Sales
   alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
@@ -365,48 +825,434 @@ defmodule CozyCheckoutWeb.OrderLive.Receipt do
     order = Sales.get_order!(id)
     payments = Sales.list_payments_for_order(id)
 
-    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
-
-    # Group items by VAT rate for VAT breakdown
-    vat_breakdown = calculate_vat_breakdown(order.order_items)
-```
-
-- oldString:
-
-```
-defmodule CozyCheckoutWeb.OrderLive.Receipt do
-  use CozyCheckoutWeb, :live_view
-
-  alias CozyCheckout.Sales
-
-  @impl true
-  def mount(%{"id" => id}, _session, socket) do
-    order = Sales.get_order!(id)
-    payments = Sales.list_payments_for_order(id)
-
-    # Group items by VAT rate for VAT breakdown
-    vat_breakdown = calculate_vat_breakdown(order.order_items)
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"KI","props":{},"references":[],"type":1}}
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **receipt.ex**</summary>
+
+@@ lines 27-27 @@
+
+```
+grouped_items, grouped_items)
+      |> assign(:
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Update receipt.html.heex to render groups* (3/4)
+
+- [x] Update OrderItemGrouper key to include unit_price
+- [x] Update receipt.ex to use grouped items
+- [ ] Update receipt.html.heex to render groups _(in progress)_
+- [ ] Update pohoda.ex to group before XML generation
+
+**Result:**
+
+```
+Successfully wrote todo list
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Now update the receipt template. The current items section (lines ~148–165) needs replacing: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **receipt.html.heex**</summary>
+
+@@ lines 140-150 @@
+
+```
+group <- @grouped_items do %>
+        <div class="receipt-item">
+          <div style="margin-bottom: 2px;">
+            <strong>{group.product.name}</strong>
+            <%= if group.unit_amount do %>
+              <span style="font-size: 11px;">
+                ({format_number(group.unit_amount)}{group.unit} × {Decimal.to_integer(Decimal.round(group.total_quantity, 0))})
+              </span>
+            <% else %>
+              <span style="font-size: 11px;">
+                (ks: {Decimal.to_integer(Decimal.round(group.total_quantity, 0))})
+              </span>
+            <% end %>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>{format_currency(group.price_per_unit)} × {Decimal.to_integer(Decimal.round(group.total_quantity, 0))}</span>
+            <span><strong>{format_currency(group.total_price)}</strong></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Now I need to remove the leftover old template fragment (the closing of the old loop): 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `receipt.html.heex`, lines 148 to 185
 
 **Input:**
 
+- endLine: `185`
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex`
-- newString:
+- startLine: `148`
+
+**Result:**
 
 ```
+            <% else %>
+              <span style="font-size: 11px;">
+                (ks: {Decimal.to_integer(Decimal.round(group.total_quantity, 0))})
+              </span>
+            <% end %>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>{format_currency(group.price_per_unit)} × {Decimal.to_integer(Decimal.round(group.total_quantity, 0))}</span>
+            <span><strong>{format_currency(group.total_price)}</strong></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+              </span>
+            <% end %>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11px;">
+            <span>{format_currency(item.unit_price)} × {item.quantity}</span>
+            <span><strong>{format_currency(item.subtotal)}</strong></span>
+          </div>
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- VAT Breakdown --%>
+    <%= if @vat_breakdown != [] do %>
+      <div class="receipt-section" style="font-size: 11px;">
+        <div style="font-weight: bold; margin-bottom: 5px;">REKAPITULACE DPH:</div>
+        <%= for vat <- @vat_breakdown do %>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Základ DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.base)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.vat_amount)}</span>
+          </div>
+        <% end %>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+There's leftover old code after the new block. Let me remove it: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **receipt.html.heex**</summary>
+
+@@ lines 161-171 @@ (deleted)
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Update pohoda.ex to group before XML generation* (4/4)
+
+- [x] Update OrderItemGrouper key to include unit_price
+- [x] Update receipt.ex to use grouped items
+- [x] Update receipt.html.heex to render groups
+- [ ] Update pohoda.ex to group before XML generation _(in progress)_
+
+**Result:**
+
+```
+Successfully wrote todo list
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Now update `pohoda.ex` to group items before XML generation:  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **pohoda.ex**</summary>
+
+@@ lines 35-35 @@
+
+```
+order |> active_order_items() |> group_items(
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Now update `order_item_to_xml/1` to handle the grouped map (which uses `quantity` as a Decimal), and add the `group_items/1` private function: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **pohoda.ex**</summary>
+
+@@ lines 137-137 @@
+
+```
+
+
+  defp group_items(order_items) do
+    order_items
+    |> Enum.group_by(fn item ->
+      {item.product_id, item.unit_amount, item.unit_price}
+    end)
+    |> Enum.map(fn {{_product_id, _unit_amount, _unit_price}, items} ->
+      first = hd(items)
+
+      total_quantity =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, Decimal.new(item.quantity))
+        end)
+
+      total_subtotal =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.subtotal)
+        end)
+
+      %{
+        product: first.product,
+        unit_amount: first.unit_amount,
+        unit_price: first.unit_price,
+        vat_rate: first.vat_rate,
+        quantity: total_quantity,
+        subtotal: total_subtotal
+      }
+    end)
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Now I need to make sure the `calculate_vat_totals/1` in `pohoda.ex` still works with the grouped map (which has `:subtotal` as a Decimal). Let me check it handles missing `subtotal` gracefully: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `calculate_vat_totals` (`**/lib/cozy_checkout/pohoda.ex`), 2 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout/pohoda.ex`
+- isRegexp: `false`
+- query: `calculate_vat_totals`
+
+**Result:**
+
+```
+2 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=36>
+    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=190>
+  defp calculate_vat_totals(items) do
+</match>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `pohoda.ex`, lines 190 to 225
+
+**Input:**
+
+- endLine: `225`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex`
+- startLine: `190`
+
+**Result:**
+
+```
+  defp calculate_vat_totals(items) do
+    zero = Decimal.new(0)
+
+    {price_none, price_low, price_low_sum, price_high, price_high_sum} =
+      Enum.reduce(items, {zero, zero, zero, zero, zero}, fn item, {none, low, low_sum, high, high_sum} ->
+        subtotal = item.subtotal || Decimal.mult(item.unit_price, item.quantity)
+        rate = item.vat_rate
+
+        cond do
+          Decimal.equal?(rate, Decimal.new(12)) ->
+            base = Decimal.div(Decimal.mult(subtotal, 100), Decimal.new(112)) |> Decimal.round(2)
+            {none, Decimal.add(low, base), Decimal.add(low_sum, subtotal), high, high_sum}
+
+          Decimal.equal?(rate, Decimal.new(21)) ->
+            base = Decimal.div(Decimal.mult(subtotal, 100), Decimal.new(121)) |> Decimal.round(2)
+            {none, low, low_sum, Decimal.add(high, base), Decimal.add(high_sum, subtotal)}
+
+          true ->
+            {Decimal.add(none, subtotal), low, low_sum, high, high_sum}
+        end
+      end)
+
+    price_low_vat = Decimal.sub(price_low_sum, price_low) |> Decimal.round(2)
+    price_high_vat = Decimal.sub(price_high_sum, price_high) |> Decimal.round(2)
+
+    {
+      Decimal.round(price_none, 2),
+      Decimal.round(price_low, 2),
+      price_low_vat,
+      Decimal.round(price_low_sum, 2),
+      Decimal.round(price_high, 2),
+      price_high_vat,
+      Decimal.round(price_high_sum, 2)
+    }
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+`calculate_vat_totals` accesses `item.subtotal` (which our grouped map always has as a Decimal) — it's compatible. Let me verify the Pohoda module has `Decimal` available: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `pohoda.ex`, lines 1 to 10
+
+**Input:**
+
+- endLine: `10`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckout.Pohoda do
+  @moduledoc """
+  Handles export of paid orders to POHODA accounting software XML format.
+  """
+
+  alias CozyCheckout.Sales
+
+  @doc """
+  Exports paid orders to POHODA XML format.
+  Returns XML string that can be saved to file or sent to POHODA mServer.
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Good — `Decimal` is used directly throughout `pohoda.ex` without aliasing; that's fine. Now check that `format_number/1` is available in the receipt template:  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `format_number` (`**/lib/cozy_checkout_web.ex`), no results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web.ex`
+- isRegexp: `false`
+- query: `format_number`
+
+**Result:**
+
+```
+No matches found.Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `import CozyCheckoutWeb.CurrencyHelper`, 18 results
+
+**Input:**
+
+- isRegexp: `false`
+- query: `import CozyCheckoutWeb.CurrencyHelper`
+
+**Result:**
+
+```
+18 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_14-34-00Z-configuring-currency-symbols-in-codebase.md" line=155>
+      import CozyCheckoutWeb.CurrencyHelper
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web.ex" line=93>
+      import CozyCheckoutWeb.CurrencyHelper
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-12-23_19-39-33Z-implementing-inventory-management-system-for-products.md" line=1316>
+  import CozyCheckoutWeb.CurrencyHelper
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-12-23_19-39-33Z-implementing-inventory-management-system-for-products.md" line=2437>
+  import CozyCheckoutWeb.CurrencyHelper
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-12-23_19-39-33Z-implementing-inventory-management-system-for-products.md" line=5016>
+  import CozyCheckoutWeb.CurrencyHelper
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_14-49-50Z-exporting-paid-orders-to-pohoda-accounting-software.md" line=820>
+  import CozyCheckoutWeb.CurrencyHelper
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-12-23_19-39Z-implementing-inventory-management-system-for-products.md" line=1439>
+  "textEditContent": "defmodule CozyCheckoutWeb.PurchaseOrderLive.Show do\n  use CozyCheckoutWeb, :live_view\n\n  alias CozyCheckout.Inventory\n\n  import CozyCheckoutWeb.CurrencyHelper\n\n  @impl true\n  def mount(_params, _session, socket) do\n    {:ok, socket}\n  end\n\n  @impl true\n  def handle_params(%{\"id\" =&gt; id}, _, socket) do\n    purchase_order = Inventory.get_purchase_order!(id)\n\n    {:noreply,\n     socket\n     |&gt; assign(:page_title, \"Purchase Order #{purchase_order.order_number}\")\n     |&gt; assign(:purchase_order, purchase_order)}\n  end\n\n  @
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Good — `CurrencyHelper` (including `format_number/1`) is imported globally via `cozy_checkout_web.ex`. Let me verify the final receipt template looks correct:  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `receipt.html.heex`, lines 135 to 180
+
+**Input:**
+
+- endLine: `180`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex`
+- startLine: `135`
+
+**Result:**
+
+```
+    </div>
+
     <%!-- Order Items --%>
     <div class="receipt-section receipt-items">
       <div style="font-weight: bold; margin-bottom: 8px;">POLOŽKY:</div>
@@ -431,153 +1277,39 @@ _**Agent (copilot/claude-sonnet-4.6)**_
         </div>
       <% end %>
     </div>
-```
 
-- oldString:
+    <%!-- VAT Breakdown --%>
+    <%= if @vat_breakdown != [] do %>
+      <div class="receipt-section" style="font-size: 11px;">
+        <div style="font-weight: bold; margin-bottom: 5px;">REKAPITULACE DPH:</div>
+        <%= for vat <- @vat_breakdown do %>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+            <span>Základ DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.base)}</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <span>DPH {vat.vat_rate}%:</span>
+            <span>{format_currency(vat.vat_amount)}</span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
 
-```
-    <%!-- Order Items --%>
-    <div class="receipt-section receipt-items">
-      <div style="font-weight: bold; margin-bottom: 8px;">POLOŽKY:</div>
-      <%= for item <- Enum.filter(@order.order_items, &is_nil(&1.deleted_at)) do %>
-        <div class="receipt-item">
-          <div style="margin-bottom: 2px;">
-            <strong>{item.product.name}</strong>
-            <%= if item.unit_amount do %>
-              <span style="font-size: 11px;">
-                ({item.quantity} × {item.unit_amount}{item.product.unit})
-              </span>
-            <% else %>
-              <span style="font-size: 11px;">
-                (ks: {item.quantity})
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"KI","props":{},"references":[],"type":1}}
+    <%!-- Discount (if any) --%>
+    <%= if Decimal.gt?(@order.discount_amount || Decimal.new("0"), 0) do %>
 ```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Good. Now let me also verify the Pohoda module looks correct end-to-end:  
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
-**Input:**
-
-- endLine: `185`
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex`
-- startLine: `148`
-
-**Result:**
-
-```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":38,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"            \u003c% else %\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":38},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":37,"references":[],"text":"              \u003cspan style=\"font-size: 11px;\"\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":37},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":36,"references":[],"text":"                (ks: {Decimal.to_integer(Decimal.round(group.total_quantity, 0))})\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":36},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":35,"references":[],"text":"              \u003c/span\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":35},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":34,"references":[],"text":"            \u003c% end %\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":34},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":33,"references":[],"text":"          \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"          \u003cdiv style=\"display: flex; justify-content: space-between; font-size: 11px;\"\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBr
-… (output truncated)
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
-
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex`
-- newString:
-
-```
-  defp order_to_xml(order) do
-    date = format_date(order.inserted_at)
-    {account_no, bank_code} = parse_bank_account()
-    {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
-    items = order |> active_order_items() |> group_items()
-    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)
-```
-
-- oldString:
-
-```
-  defp order_to_xml(order) do
-    date = format_date(order.inserted_at)
-    {account_no, bank_code} = parse_bank_account()
-    {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
-    items = active_order_items(order)
-    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"KI","props":{},"references":[],"type":1}}
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
-<summary>Tool use: **grep_search**</summary>
-
-**Input:**
-
-- includePattern: `lib/cozy_checkout/pohoda.ex`
-- isRegexp: `false`
-- query: `calculate_vat_totals`
-
-**Result:**
-
-```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 matches","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex\" line=36\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":804,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"LIt","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":104,"line":35},{"character":124,"line":35}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":804,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"JNe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex\" line=190\u003e\
-… (output truncated)
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="read" data-tool-name="read_file"><details>
-<summary>Tool use: **read_file**</summary>
-
-**Input:**
-
-- endLine: `10`
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex`
-- startLine: `1`
-
-**Result:**
-
-```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"defmodule CozyCheckout.Pohoda do\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":9},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":8,"references":[],"text":"  Handles export of paid orders to POHODA accounting software XML format.\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":8},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":7,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":7},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":6,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":6},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":5,"references":[],"text":"  alias CozyCheckout.Sales\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":5},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":4,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":4},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":3,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":3},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":2,"references":[],"text":"  Exports paid orders to POHODA XML format.\n","type":2}],"ctor":2
-… (output truncated)
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="read" data-tool-name="read_file"><details>
-<summary>Tool use: **read_file**</summary>
-
-**Input:**
-
-- endLine: `180`
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex`
-- startLine: `135`
-
-**Result:**
-
-```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":46,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"    \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":46},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":45,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":45},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":44,"references":[],"text":"    \u003c%!-- Order Items --%\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":44},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":43,"references":[],"text":"    \u003cdiv class=\"receipt-section receipt-items\"\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":43},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":42,"references":[],"text":"      \u003cdiv style=\"font-weight: bold; margin-bottom: 8px;\"\u003ePOLOŽKY:\u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":42},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":41,"references":[],"text":"      \u003c%= for group \u003c- @grouped_items do %\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":41},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":40,"references":[],"text":"        \u003cdiv class=\"receipt-item\"\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":40},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":39,"references":[]
-… (output truncated)
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="read" data-tool-name="read_file"><details>
-<summary>Tool use: **read_file**</summary>
+Read `pohoda.ex`, lines 130 to 190
 
 **Input:**
 
@@ -588,8 +1320,67 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":61,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"              \u003cinv:payVAT\u003e#{vat_pay?(item.vat_rate)}\u003c/inv:payVAT\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":61},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":60,"references":[],"text":"              \u003cinv:rateVAT\u003e#{vat_rate_to_pohoda(item.vat_rate)}\u003c/inv:rateVAT\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":60},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":59,"references":[],"text":"              \u003cinv:homeCurrency\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":59},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":58,"references":[],"text":"                \u003ctyp:unitPrice\u003e#{item.unit_price}\u003c/typ:unitPrice\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":58},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":57,"references":[],"text":"              \u003c/inv:homeCurrency\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":57},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":56,"references":[],"text":"            \u003c/inv:invoiceItem\u003e\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":56},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":55,"references":[],"text":"    \"\"\"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"reference
-… (output truncated)
+              <inv:payVAT>#{vat_pay?(item.vat_rate)}</inv:payVAT>
+              <inv:rateVAT>#{vat_rate_to_pohoda(item.vat_rate)}</inv:rateVAT>
+              <inv:homeCurrency>
+                <typ:unitPrice>#{item.unit_price}</typ:unitPrice>
+              </inv:homeCurrency>
+            </inv:invoiceItem>
+    """
+  end
+
+  defp group_items(order_items) do
+    order_items
+    |> Enum.group_by(fn item ->
+      {item.product_id, item.unit_amount, item.unit_price}
+    end)
+    |> Enum.map(fn {{_product_id, _unit_amount, _unit_price}, items} ->
+      first = hd(items)
+
+      total_quantity =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, Decimal.new(item.quantity))
+        end)
+
+      total_subtotal =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.subtotal)
+        end)
+
+      %{
+        product: first.product,
+        unit_amount: first.unit_amount,
+        unit_price: first.unit_price,
+        vat_rate: first.vat_rate,
+        quantity: total_quantity,
+        subtotal: total_subtotal
+      }
+    end)
+  end
+
+  defp active_order_items(order) do
+    Enum.filter(order.order_items, &is_nil(&1.deleted_at))
+  end
+
+  defp get_customer_name(order) do
+    cond do
+      order.guest ->
+        order.guest.name
+
+      order.name ->
+        order.name
+
+      true ->
+        "Unknown Customer"
+    end
+  end
+
+  # Calculates VAT breakdown for the invoice summary.
+  # Returns {priceNone, priceLow, priceLowVAT, priceLowSum, priceHigh, priceHighVAT, priceHighSum}
+  # priceNone = base amount for 0% VAT items
+  # priceLow  = base amount for 12% VAT items; priceLowVAT = VAT portion; priceLowSum = base + VAT
+  # priceHigh = base amount for 21% VAT items; priceHighVAT = VAT portion; priceHighSum = base + VAT
+  defp calculate_vat_totals(items) do
 ```
 </details></tool-use>
 
@@ -598,9 +1389,12 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Completed: *Update pohoda.ex to group before XML generation* (4/4)
 
-- todoList: `[map[id:1 status:completed title:Update OrderItemGrouper key to include unit_price] map[id:2 status:completed title:Update receipt.ex to use grouped items] map[id:3 status:completed title:Update receipt.html.heex to render groups] map[id:4 status:completed title:Update pohoda.ex to group before XML generation]]`
+- [x] Update OrderItemGrouper key to include unit_price
+- [x] Update receipt.ex to use grouped items
+- [x] Update receipt.html.heex to render groups
+- [x] Update pohoda.ex to group before XML generation
 
 **Result:**
 
@@ -611,56 +1405,50 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+Now let me do a quick compile check:  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
 <summary>Tool use: **get_errors**</summary>
 
+Checked `order_item_grouper.ex`, `receipt.ex`, `receipt.html.heex`, `pohoda.ex`, no problems found
+
 **Input:**
 
-- filePaths: `[/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex]`
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex"
+]
+```
+
 
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cerrors path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex\"\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":1336,"props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":1,"text":"No errors found","type":2},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"LIt","props":{"flexGrow":1,"priority":1},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/errors\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":1336,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cerrors path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex\"\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":1337,"props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":1,"text":"No errors found","type":2},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"LIt","props":{"flexGrow":1,"priority":1},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/errors\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":1337,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cerrors path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex\"\u003e\n","type":2}],"ctor":2,"ctorName":
-… (output truncated)
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_item_grouper.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.html.heex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex">
+No errors found
+</errors>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-Now I have a clear picture. Let me read the full `OrderItemGrouper` module before asking: Now I have everything I need. Let me implement: 
-```
-
-```
-Also update the map function signature to match the new 3-element key: 
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-Now update the receipt template. The current items section (lines ~148–165) needs replacing: 
-```
-
-```
-Now I need to remove the leftover old template fragment (the closing of the old loop): There's leftover old code after the new block. Let me remove it: 
-```
-
-```
-Now update `pohoda.ex` to group items before XML generation:  
-```
-
-```
-Now update `order_item_to_xml/1` to handle the grouped map (which uses `quantity` as a Decimal), and add the `group_items/1` private function: 
-```
-
-```
-Now I need to make sure the `calculate_vat_totals/1` in `pohoda.ex` still works with the grouped map (which has `:subtotal` as a Decimal). Let me check it handles missing `subtotal` gracefully: `calculate_vat_totals` accesses `item.subtotal` (which our grouped map always has as a Decimal) — it's compatible. Let me verify the Pohoda module has `Decimal` available: Good — `Decimal` is used directly throughout `pohoda.ex` without aliasing; that's fine. Now check that `format_number/1` is available in the receipt template:  Good — `CurrencyHelper` (including `format_number/1`) is imported globally via `cozy_checkout_web.ex`. Let me verify the final receipt template looks correct:  Good. Now let me also verify the Pohoda module looks correct end-to-end:  Now let me do a quick compile check:  All clean. Here's a summary of the changes made:
+All clean. Here's a summary of the changes made:
 
 **`OrderItemGrouper`** — grouping key changed from `{product_id, unit_amount}` to `{product_id, unit_amount, unit_price}`. This ensures items with different prices (price-adjusted items) remain as separate lines everywhere.
 

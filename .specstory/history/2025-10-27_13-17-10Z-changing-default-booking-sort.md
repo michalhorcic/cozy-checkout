@@ -13,27 +13,19 @@ Change default sort of bookings. Sort it by check in date from earliest to lates
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <think><details><summary>Thought Process</summary>
-I'll help you change the default sort of bookings to sort by check-in date from earliest to latest. Let me first find where the bookings are currently being sorted. 
-
-Let me read the bookings.ex file to see the current implementation: 
-
-Now let me check the Booking schema to see if there's a default order defined in Flop: 
-
-Perfect! I can see that the Booking schema uses Flop.Schema and there's no `default_order` specified. I also see that in the `list_bookings` function, it's currently ordered by `desc: b.check_in_date` (newest first). 
-
-I need to:
-1. Add a `default_order` to the Flop.Schema configuration in the Booking schema (for the paginated list with Flop)
-2. Change the order in the `list_bookings` function (for the non-paginated list)
-
-Let me make these changes: 
-
-Now let me also update the `list_bookings_for_guest` function to match this default order:
+Let me read the bookings.ex file to see the current implementation:
 </details></think>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+I'll help you change the default sort of bookings to sort by check-in date from earliest to latest. Let me first find where the bookings are currently being sorted. 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `def list_bookings|Flop\.validate` (`**/lib/cozy_checkout/bookings.ex`), 12 results
 
 **Input:**
 
@@ -44,8 +36,42 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"12 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=22\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":54277,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def list_bookings do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":21},{"character":19,"line":21}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":54277,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=33\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":54278,"props":{},"references":[],"type":1},{"chi
-… (output truncated)
+12 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=22>
+  def list_bookings do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=33>
+  def list_bookings_with_flop(params \\ %{}) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=37>
+    |> Flop.validate_and_run(params, for: Booking)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=59>
+  def list_bookings_for_guest(guest_id) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=164>
+  def list_bookings_for_month(year, month) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=185>
+  def list_bookings_for_date_range(start_date, end_date) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=22>
+  def list_bookings do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=33>
+  def list_bookings_with_flop(params \\ %{}) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=37>
+    |> Flop.validate_and_run(params, for: Booking)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=59>
+  def list_bookings_for_guest(guest_id) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=164>
+  def list_bookings_for_month(year, month) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=185>
+  def list_bookings_for_date_range(start_date, end_date) do
+</match>
 ```
 </details></tool-use>
 
@@ -53,6 +79,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `default_order|order_by|check_in_date` (`**/lib/cozy_checkout/bookings.ex`), 20 results
 
 **Input:**
 
@@ -63,15 +91,55 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=26\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":54313,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    |\u003e order_by([b], desc: b.check_in_date)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":7,"line":25},{"character":15,"line":25}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":54313,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=26\u003e\n","type":2}],"ctor":2,"ctorName":"","keepW
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=26>
+    |> order_by([b], desc: b.check_in_date)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=26>
+    |> order_by([b], desc: b.check_in_date)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=49>
+    |> where([b], b.check_in_date <= ^today)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=52>
+    |> order_by([b], [b.check_in_date, b.room_number])
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=52>
+    |> order_by([b], [b.check_in_date, b.room_number])
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=63>
+    |> order_by([b], desc: b.check_in_date)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=63>
+    |> order_by([b], desc: b.check_in_date)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=141>
+        Date.compare(booking.check_in_date, today) == :gt ->
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=172>
+      (b.check_in_date >= ^start_date and b.check_in_date <= ^end_date) or
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=172>
+      (b.check_in_date >= ^start_date and b.check_in_date <= ^end_date) or
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=174>
+        (b.check_in_date < ^start_date and
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=178>
+    |> order_by([b], [b.check_in_dat
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me read the `bookings.ex` file to see the current implementation: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 1 to 61
 
 **Input:**
 
@@ -81,15 +149,83 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"61","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"717","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":63,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":63},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":62,"references":[],"text":"defmodule CozyCheckout.Bookings do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":62},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":61,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":61},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":60,"references":[],"text":"  The Bookings context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":60},"references":[],"type":1},{"children":[{"l
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 1 to 61 (717 lines total): 
+```elixir
+defmodule CozyCheckout.Bookings do
+  @moduledoc """
+  The Bookings context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Bookings.BookingInvoiceItem
+  alias CozyCheckout.Sales.InvoiceCounter
+  alias CozyCheckout.Rooms
+
+  @cottage_capacity 45
+
+  @doc """
+  Returns the list of bookings.
+  """
+  def list_bookings do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns paginated, filtered, and sorted bookings with Flop.
+  """
+  def list_bookings_with_flop(params \\ %{}) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> Flop.validate_and_run(params, for: Booking)
+  end
+
+  @doc """
+  Returns the list of active bookings (currently checked in).
+  """
+  def list_active_bookings do
+    today = Date.utc_today()
+
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.status == "active")
+    |> where([b], b.check_in_date <= ^today)
+    |> where([b], is_nil(b.check_out_date) or b.check_out_date >= ^today)
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.room_number])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of bookings for a specific guest.
+  """
+  def list_bookings_for_guest(guest_id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the Booking schema to see if there's a default order defined in Flop: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `@derive|Flop\.Schema|default_order` (`**/lib/cozy_checkout/bookings/booking.ex`), 2 results
 
 **Input:**
 
@@ -100,8 +236,12 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex\" line=5\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":54526,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  @derive {","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":4},{"character":9,"line":4}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":54526,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex\" line=6\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":54527,"props":{},"referen
-… (output truncated)
+2 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=5>
+  @derive {
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=6>
+    Flop.Schema,
+</match>
 ```
 </details></tool-use>
 
@@ -110,6 +250,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `booking.ex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex`
@@ -117,15 +259,127 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":58,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":58},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":57,"references":[],"text":"defmodule CozyCheckout.Bookings.Booking do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":57},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":56,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":56},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":55,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":54},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":53,"references":[],"text":"  @derive {\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"    Flop.Schema,\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"    filterable: [:status, :check_in_date, :check_out_date],\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"    sortable: [
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Bookings.Booking do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @derive {
+    Flop.Schema,
+    filterable: [:status, :check_in_date, :check_out_date],
+    sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
+    default_limit: 20,
+    max_limit: 100
+  }
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "bookings" do
+    field :room_number, :string
+    field :check_in_date, :date
+    field :check_out_date, :date
+    field :status, :string, default: "upcoming"
+    field :notes, :string
+    field :deleted_at, :utc_datetime
+
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
+    has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
+    has_many :rooms, through: [:booking_rooms, :room]
+    has_one :invoice, CozyCheckout.Bookings.BookingInvoice
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(booking, attrs) do
+    booking
+    |> cast(attrs, [:guest_id, :room_number, :check_in_date, :check_out_date, :status, :notes])
+    |> validate_required([:guest_id, :check_in_date])
+    |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])
+    |> validate_date_range()
+    |> foreign_key_constraint(:guest_id)
+    |> unique_constraint([:guest_id, :check_in_date])
+  end
+
+  defp validate_date_range(changeset) do
+    check_in = get_field(changeset, :check_in_date)
+    check_out = get_field(changeset, :check_out_date)
+
+    if check_in && check_out && Date.compare(check_in, check_out) == :gt do
+      add_error(changeset, :check_out_date, "must be after check-in date")
+    else
+      changeset
+    end
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! I can see that the Booking schema uses Flop.Schema and there's no `default_order` specified. I also see that in the `list_bookings` function, it's currently ordered by `desc: b.check_in_date` (newest first). 
+
+I need to:
+1. Add a `default_order` to the Flop.Schema configuration in the Booking schema (for the paginated list with Flop)
+2. Change the order in the `list_bookings` function (for the non-paginated list)
+
+Let me make these changes: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking.ex**</summary>
+
+@@ lines 5-11 @@
+
+```
+  @derive {
+    Flop.Schema,
+    filterable: [:status, :check_in_date, :check_out_date],
+    sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
+    default_order: %{
+      order_by: [:check_in_date],
+      order_directions: [:asc]
+    },
+    default_limit: 20,
+    max_limit: 100
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 22-28 @@
+
+```
+  def list_bookings do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> order_by([b], asc: b.check_in_date)
+    |> Repo.all()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me also update the `list_bookings_for_guest` function to match this default order: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 57 to 67
 
 **Input:**
 
@@ -136,31 +390,43 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"57","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"67","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"717","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":13,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":13},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":12,"references":[],"text":"  Returns the list of bookings for a specific guest.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":12},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":11,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":11},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[],"text":"  def list_bookings_for_guest(guest_id) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[]
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 57 to 67 (717 lines total): 
+```elixir
+  Returns the list of bookings for a specific guest.
+  """
+  def list_bookings_for_guest(guest_id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.guest_id == ^guest_id)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you change the default sort of bookings to sort by check-in date from earliest to latest. Let me first find where the bookings are currently being sorted. Let me read the `bookings.ex` file to see the current implementation: Now let me check the Booking schema to see if there's a default order defined in Flop: Perfect! I can see that the Booking schema uses Flop.Schema and there's no `default_order` specified. I also see that in the `list_bookings` function, it's currently ordered by `desc: b.check_in_date` (newest first). 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
 
-I need to:
-1. Add a `default_order` to the Flop.Schema configuration in the Booking schema (for the paginated list with Flop)
-2. Change the order in the `list_bookings` function (for the non-paginated list)
-
-Let me make these changes: 
-```
+@@ lines 59-65 @@
 
 ```
+  def list_bookings_for_guest(guest_id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.guest_id == ^guest_id)
+    |> order_by([b], asc: b.check_in_date)
+    |> Repo.all()
+  end
+```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
-Now let me also update the `list_bookings_for_guest` function to match this default order: 
-```
-
-```
 Perfect! I've successfully changed the default sort of bookings to sort by check-in date from earliest to latest. Here's what I changed:
 
 1. **In `booking.ex`**: Added `default_order` configuration to the Flop.Schema derive, which sets the default ordering to ascending by `check_in_date`. This affects the paginated bookings list that uses Flop.

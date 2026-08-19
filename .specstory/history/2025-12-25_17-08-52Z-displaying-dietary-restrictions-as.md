@@ -12,30 +12,14 @@ When adding dietary restrictions from bookings table to meal planner, please rea
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you display dietary restrictions as a list in the meal planner by preserving line breaks. Let me first check how dietary restrictions are currently being displayed. 
-
-Now let me check the template file to see how dietary restrictions are displayed: 
-
-Perfect! I can see that dietary restrictions are displayed at line 234. Currently, they're shown as plain text. To make line breaks visible, I need to:
-
-1. Use CSS `white-space: pre-line` to preserve line breaks
-2. Or convert newlines to `<br>` tags
-
-Let me also check how dietary restrictions are displayed in the bookings modal: 
-
-Now let me check the bookings_modal component: 
-
-I can see the dietary restrictions are displayed in the sidebar panel. Now I'll update the template to preserve line breaks by using the `white-space: pre-line` CSS style, which will:
-- Preserve newlines from the text
-- Allow text to wrap normally
-- Collapse multiple spaces into one
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `index.ex`, lines 1 to 200
 
 **Input:**
 
@@ -46,7 +30,85 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"200","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"305","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":202,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":202},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":201,"references":[],"text":"defmodule CozyCheckoutWeb.MealPlannerLive.Index do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":201},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":200,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":200},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":199,"references":[],"tex
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex`. Lines 1 to 200 (305 lines total): 
+```elixir
+defmodule CozyCheckoutWeb.MealPlannerLive.Index do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Meals
+  alias CozyCheckout.Bookings
+
+  @impl true
+  def mount(_params, _session, socket) do
+    today = Date.utc_today()
+    week_start = Meals.start_of_week(today)
+
+    socket =
+      socket
+      |> assign(:week_start, week_start)
+      |> assign(:edit_modal_open, false)
+      |> assign(:edit_date, nil)
+      |> assign(:edit_meal_type, nil)
+      |> assign(:edit_menu_text, "")
+      |> assign(:edit_dietary_notes, "")
+      |> assign(:dietary_panel_open, true)
+      |> assign(:modal_date, nil)
+      |> assign(:modal_bookings, [])
+      |> load_week_data()
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(_params, _url, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("prev_week", _params, socket) do
+    week_start = Date.add(socket.assigns.week_start, -7)
+
+    socket =
+      socket
+      |> assign(:week_start, week_start)
+      |> load_week_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("next_week", _params, socket) do
+    week_start = Date.add(socket.assigns.week_start, 7)
+
+    socket =
+      socket
+      |> assign(:week_start, week_start)
+      |> load_week_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("today", _params, socket) do
+    today = Date.utc_today()
+    week_start = Meals.start_of_week(today)
+
+    socket =
+      socket
+      |> assign(:week_start, week_start)
+      |> load_week_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_dietary_panel", _params, socket) do
+    {:noreply, assign(socket, :dietary_panel_open, !socket.assigns.dietary_panel_open)}
+  end
+
+  @impl true
+  def handle_event("open_edit_modal", %{"date" => date_string, "type" => meal_type}, socket) do
+    date = Date.from_iso8
 … (output truncated)
 ````
 </details></tool-use>
@@ -55,6 +117,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `index.ex`, lines 200 to 305
 
 **Input:**
 
@@ -65,15 +129,98 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":108,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":108},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":107,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":107},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":106,"references":[],"text":"  def handle_event(\"close_bookings_modal\", _params, socket) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":106},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":105,"references":[],"text":"    {:noreply, assign(socket, modal_date: nil, modal_bookings: [])}\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":105},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":104,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":104},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":103,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"  defp load_week_data(socket) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"    week_start = socket.assigns.week_start\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":101
+```elixir
+  @impl true
+  def handle_event("close_bookings_modal", _params, socket) do
+    {:noreply, assign(socket, modal_date: nil, modal_bookings: [])}
+  end
+
+  defp load_week_data(socket) do
+    week_start = socket.assigns.week_start
+    week_end = Date.add(week_start, 6)
+
+    # Load meals for the week
+    meals_by_date = Meals.get_meals_for_week(week_start)
+
+    # Load guest counts for the week
+    occupancy_map = Bookings.get_occupancy_for_range(week_start, week_end)
+
+    # Load dietary restrictions
+    dietary_restrictions = Meals.get_dietary_restrictions_for_week(week_start)
+
+    # Load bookings for the week
+    bookings = Bookings.list_bookings_for_date_range(week_start, week_end)
+
+    # Generate week days (Sunday to Saturday)
+    week_days =
+      Date.range(week_start, week_end)
+      |> Enum.map(fn date ->
+        %{
+          date: date,
+          guest_count: Map.get(occupancy_map, date, 0),
+          meals: Map.get(meals_by_date, date, []) |> meals_to_map()
+        }
+      end)
+
+    socket
+    |> assign(:week_days, week_days)
+    |> assign(:dietary_restrictions, dietary_restrictions)
+    |> assign(:bookings, bookings)
+    |> assign(:page_title, "Meal Planner - Week of #{Calendar.strftime(week_start, "%B %d, %Y")}")
+  end
+
+  defp meals_to_map(meals) do
+    Enum.reduce(meals, %{}, fn meal, acc ->
+      Map.put(acc, meal.meal_type, meal)
+    end)
+  end
+
+  defp day_name(date) do
+    Calendar.strftime(date, "%A")
+  end
+
+  defp format_date(date) do
+    Calendar.strftime(date, "%b %d")
+  end
+
+  defp meal_type_emoji(type) do
+    case type do
+      "breakfast" -> "🌅"
+      "lunch" -> "🌞"
+      "dinner" -> "🌙"
+      _ -> "🍽️"
+    end
+  end
+
+  defp meal_type_label(type) do
+    case type do
+      "breakfast" -> "Breakfast"
+      "lunch" -> "Lunch"
+      "dinner" -> "Dinner"
+      _ -> type
+    end
+  end
+
+  defp guest_count_class(count) do
+    level = Bookings.occupancy_level(count)
+
+    case level do
+      :full -> "text-error font-bold"
+      :high -> "text-warni
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the template file to see how dietary restrictions are displayed: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/meal_planner_live/index.html.heex`, 1 match
 
 **Input:**
 
@@ -82,7 +229,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 total result","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Wge","props":{},"references":[],"type":1}}
+1 total result
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex
 ```
 </details></tool-use>
 
@@ -90,6 +238,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `index.html.heex`, lines 1 to 100
 
 **Input:**
 
@@ -100,7 +250,60 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"100","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"365","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":102,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"\u003cdiv class=\"max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"  \u003c%!-- Header --%\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBrea
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex`. Lines 1 to 100 (365 lines total): 
+```phoenix-heex
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <%!-- Header --%>
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <.link navigate={~p"/admin"} class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block">
+        ← Back to Dashboard
+      </.link>
+      <h1 class="text-4xl font-bold text-primary-500 flex items-center gap-3">
+        <span>🍽️</span> Meal Planner
+      </h1>
+    </div>
+    <div class="flex gap-3">
+      <.link navigate={~p"/admin/meal-planner/templates"}>
+        <.button type="button">
+          <.icon name="hero-bookmark" class="w-5 h-5 mr-2" /> Templates
+        </.button>
+      </.link>
+      <.link navigate={~p"/admin/meal-planner/print?week=#{Date.to_iso8601(@week_start)}"}>
+        <.button type="button">
+          <.icon name="hero-printer" class="w-5 h-5 mr-2" /> Print Menu
+        </.button>
+      </.link>
+    </div>
+  </div>
+
+  <div class="flex gap-6">
+    <%!-- Main Content --%>
+    <div class="flex-1">
+      <%!-- Week Navigation --%>
+      <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+        <div class="flex justify-between items-center">
+          <button
+            phx-click="prev_week"
+            class="p-2 rounded-lg hover:bg-secondary-100 transition-colors"
+          >
+            <.icon name="hero-chevron-left" class="w-6 h-6 text-primary-400" />
+          </button>
+
+          <div class="flex items-center gap-4">
+            <h2 class="text-2xl font-bold text-primary-500">
+              Week of {format_date(@week_start)}
+            </h2>
+            <button
+              phx-click="today"
+              class="px-4 py-2 text-sm font-medium text-tertiary-600 hover:bg-tertiary-50 rounded-lg transition-colors"
+            >
+              This Week
+            </button>
+          </div>
+
+          <button
+          
 … (output truncated)
 ````
 </details></tool-use>
@@ -109,6 +312,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for text `dietary_restrictions` (`**/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex`), 3 results
 
 **Input:**
 
@@ -119,8 +324,15 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"3 matches","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex\" line=220\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":31623,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"            \u003c%= if @dietary_restrictions == [] do %\u003e","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Kje","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":20,"line":219},{"character":40,"line":219}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":31623,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"nfe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/project
-… (output truncated)
+3 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex" line=220>
+            <%= if @dietary_restrictions == [] do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex" line=224>
+                <%= for restriction <- @dietary_restrictions do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex" line=234>
+                      {restriction.dietary_restrictions}
+</match>
 ```
 </details></tool-use>
 
@@ -128,6 +340,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `index.html.heex`, lines 210 to 250
 
 **Input:**
 
@@ -138,15 +352,68 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"210","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"250","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"365","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":43,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":43},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":42,"references":[],"text":"            class=\"p-1 hover:bg-secondary-200 rounded transition-colors\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":42},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":41,"references":[],"text":"          \u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":41},"references":[],"type":1},{"children":[{"lineBreakBefore":tru
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex`. Lines 210 to 250 (365 lines total): 
+```phoenix-heex
+            class="p-1 hover:bg-secondary-200 rounded transition-colors"
+          >
+            <.icon
+              name={if @dietary_panel_open, do: "hero-chevron-up", else: "hero-chevron-down"}
+              class="w-5 h-5 text-primary-400"
+            />
+          </button>
+        </div>
+        <%= if @dietary_panel_open do %>
+          <div class="p-4 max-h-[600px] overflow-y-auto">
+            <%= if @dietary_restrictions == [] do %>
+              <p class="text-sm text-primary-400 italic">No dietary restrictions this week</p>
+            <% else %>
+              <div class="space-y-4">
+                <%= for restriction <- @dietary_restrictions do %>
+                  <div class="border-b border-secondary-200 pb-3 last:border-b-0">
+                    <div class="font-medium text-primary-500 mb-1">{restriction.guest_name}</div>
+                    <div class="text-xs text-primary-400 mb-2">
+                      <%= if restriction.room_number do %>
+                        Room {restriction.room_number} •
+                      <% end %>
+                      {format_date(restriction.check_in_date)} - {format_date(restriction.check_out_date || Date.utc_today())}
+                    </div>
+                    <div class="text-sm text-error bg-error-light px-3 py-2 rounded">
+                      {restriction.dietary_restrictions}
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%!-- Edit Meal Modal --%>
+<%= if @edit_modal_open do %>
+  <div
+    class="fixed inset-0 bg-primary-500 bg-opacity-75 flex items-center justify-center z-50 p-4"
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! I can see that dietary restrictions are displayed at line 234. Currently, they're shown as plain text. To make line breaks visible, I need to:
+
+1. Use CSS `white-space: pre-line` to preserve line breaks
+2. Or convert newlines to `<br>` tags
+
+Let me also check how dietary restrictions are displayed in the bookings modal: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `index.html.heex`, lines 310 to 365
 
 **Input:**
 
@@ -157,15 +424,75 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":58,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/meal_planner_live/index.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":58},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":57,"references":[],"text":"              name=\"meal[dietary_notes]\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":57},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":56,"references":[],"text":"              rows=\"3\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":56},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":55,"references":[],"text":"              placeholder=\"E.g., Room 3: No gluten (soup only)\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"references":[],"text":"              class=\"w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-tertiary-500 focus:border-transparent transition-all\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":54},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":53,"references":[],"text":"            \u003e{@edit_dietary_notes}\u003c/textarea\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"          \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":52},"r
+```phoenix-heex
+              name="meal[dietary_notes]"
+              rows="3"
+              placeholder="E.g., Room 3: No gluten (soup only)"
+              class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-tertiary-500 focus:border-transparent transition-all"
+            >{@edit_dietary_notes}</textarea>
+          </div>
+
+          <%!-- Quick Actions --%>
+          <div class="border-t border-secondary-200 pt-4">
+            <div class="text-sm font-medium text-primary-500 mb-3">Quick Actions</div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                type="button"
+                phx-click="copy_from_yesterday"
+                class="px-4 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 text-primary-500 rounded-lg transition-colors"
+              >
+                Copy from Yesterday
+              </button>
+              <button
+                type="button"
+                phx-click="copy_to_week"
+                class="px-4 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 text-primary-500 rounded-lg transition-colors"
+              >
+                Copy to Rest of Week
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="px-6 py-4 bg-secondary-50 border-t border-secondary-200 flex justify-end gap-3">
+          <button
+            type="button"
+            phx-click="close_edit_modal"
+            class="px-6 py-2 text-sm font-medium text-primary-400 hover:text-primary-500 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-6 py-2 text-sm font-medium bg-tertiary-600 hover:bg-tertiary-700 text-white rounded-lg transition-colors"
+          >
+            Save Meal
+          </button>
+        </div>
+      </.form>
+    </div>
+  </div>
+<% end %>
+
+<%!-- Bookings Modal --%>
+<.bookings_modal
+  date={@modal_date}
+  bookings={@modal_bookings}
+  on_close={JS.push("close_boo
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the bookings_modal component: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for text `def bookings_modal` (`**/lib/cozy_checkout_web/**/*.ex`), 1 result
 
 **Input:**
 
@@ -176,7 +503,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex\" line=28\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":31698,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def bookings_modal(assigns) do","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Kje","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":27},{"character":20,"line":27}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":31698,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"nfe","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"W0t","props":{},"references":[],"type":1}}
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex" line=28>
+  def bookings_modal(assigns) do
+</match>
 ```
 </details></tool-use>
 
@@ -184,6 +513,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `booking_components.ex`, lines 28 to 100
 
 **Input:**
 
@@ -194,25 +525,80 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"28","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"100","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"112","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":75,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":75},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":74,"references":[],"text":"  def bookings_modal(assigns) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":74},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":73,"references":[],"text":"    ~H\"\"\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":73},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":72,"references":[],"text":"    \u003c.modal\n","type":2}],"ctor"
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/booking_components.ex`. Lines 28 to 100 (112 lines total): 
+```elixir
+  def bookings_modal(assigns) do
+    ~H"""
+    <.modal
+      :if={@date}
+      id="day-bookings-modal"
+      show={@date != nil}
+      on_cancel={@on_close}
+    >
+      <div class="mb-6">
+        <h2 class="text-2xl font-bold text-primary-500">
+          Bookings for {Calendar.strftime(@date, "%B %d, %Y")}
+        </h2>
+        <p class="mt-1 text-sm text-primary-400">
+          {length(@bookings)} {if length(@bookings) == 1, do: "booking", else: "bookings"}
+        </p>
+      </div>
+
+      <div class="space-y-3 max-h-[60vh] overflow-y-auto">
+        <%= for booking <- @bookings do %>
+          <.link
+            navigate={~p"/admin/bookings/#{booking}"}
+            class={[
+              "block px-4 py-3 rounded-lg border-l-4 hover:shadow-md transition-all",
+              booking_status_class(booking.status)
+            ]}
+          >
+            <div class="flex items-start justify-between">
+              <div class="flex-1">
+                <div class="font-semibold text-primary-500 text-lg">
+                  {booking.guest.name}
+                </div>
+                <%= if booking.room_number do %>
+                  <div class="text-sm text-primary-400 mt-1">
+                    <.icon name="hero-home" class="w-4 h-4 inline-block" /> Room {booking.room_number}
+                  </div>
+                <% end %>
+                <div class="text-sm text-primary-400 mt-1">
+                  <.icon name="hero-calendar" class="w-4 h-4 inline-block" />
+                  {Calendar.strftime(booking.check_in_date, "%b %d")}
+                  <%= if booking.check_out_date do %>
+                    → {Calendar.strftime(booking.check_out_date, "%b %d")}
+                  <% else %>
+                    → (ongoing)
+                  <% end %>
+                </div>
+              </div>
+              <div class="ml-4">
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you display dietary restrictions as a list in the meal planner by preserving line breaks. Let me first check how dietary restrictions are currently being displayed. Now let me check the template file to see how dietary restrictions are displayed: Perfect! I can see that dietary restrictions are displayed at line 234. Currently, they're shown as plain text. To make line breaks visible, I need to:
-
-1. Use CSS `white-space: pre-line` to preserve line breaks
-2. Or convert newlines to `<br>` tags
-
-Let me also check how dietary restrictions are displayed in the bookings modal: Now let me check the bookings_modal component: I can see the dietary restrictions are displayed in the sidebar panel. Now I'll update the template to preserve line breaks by using the `white-space: pre-line` CSS style, which will:
+I can see the dietary restrictions are displayed in the sidebar panel. Now I'll update the template to preserve line breaks by using the `white-space: pre-line` CSS style, which will:
 - Preserve newlines from the text
 - Allow text to wrap normally
 - Collapse multiple spaces into one 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.html.heex**</summary>
+
+@@ lines 233-233 @@
 
 ```
+ whitespace-pre-line
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've added the `whitespace-pre-line` class to the dietary restrictions display. This will:
 
 ✅ **Preserve line breaks** - When someone enters:

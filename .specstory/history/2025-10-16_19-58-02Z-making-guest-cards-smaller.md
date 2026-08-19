@@ -12,18 +12,14 @@ When selecting a guest in POS view, I would like to see more cards. Try to make 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you make the guest cards smaller in the POS view so more can fit on the screen. Let me first examine the current implementation. 
-
-Now let me check the template file: 
-
-Now I can see the guest cards. Let me make them more compact so more cards can fit on the screen. I'll reduce padding, font sizes, spacing, and minimum height while maintaining readability and touch-friendliness.
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/pos_live/guest_selection.ex`, 2 matches
 
 **Input:**
 
@@ -32,7 +28,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Ore","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex
 ```
 </details></tool-use>
 
@@ -40,6 +38,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `guest_selection.ex`
 
 **Input:**
 
@@ -48,15 +48,55 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":36,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":36},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":35,"references":[],"text":"defmodule CozyCheckoutWeb.PosLive.GuestSelection do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":35},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":34,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":34},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":33,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"  alias CozyCheckout.Sales\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":31,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":30,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":30},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":29,"references":[],"text":"  def mount(_params, _session, socket) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":29},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priori
-… (output truncated)
+```elixir
+defmodule CozyCheckoutWeb.PosLive.GuestSelection do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Sales
+
+  @impl true
+  def mount(_params, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:page_title, "Select Guest")
+       |> load_guests()}
+    else
+      {:ok, assign(socket, page_title: "Select Guest", guests: [])}
+    end
+  end
+
+  @impl true
+  def handle_event("select_guest", %{"guest-id" => guest_id}, socket) do
+    case Sales.get_or_create_guest_order(guest_id) do
+      {:ok, order} ->
+        {:noreply, push_navigate(socket, to: ~p"/pos/orders/#{order.id}")}
+
+      {:multiple, _orders} ->
+        {:noreply, push_navigate(socket, to: ~p"/pos/guests/#{guest_id}/orders")}
+    end
+  end
+
+  defp load_guests(socket) do
+    guests = Sales.list_active_guests_with_orders()
+    assign(socket, :guests, guests)
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the template file: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/pos_live/guest_selection.html.heex`, 2 matches
 
 **Input:**
 
@@ -65,7 +105,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Ore","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex
 ```
 </details></tool-use>
 
@@ -74,6 +116,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `guest_selection.html.heex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex`
@@ -81,17 +125,141 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":78,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":78},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":77,"references":[],"text":"\u003cLayouts.pos page_title={@page_title}\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":77},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":76,"references":[],"text":"  \u003cdiv class=\"min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6\"\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":76},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":75,"references":[],"text":"    \u003c!-- Header --\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":75},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":74,"references":[],"text":"    \u003cdiv class=\"mb-8 flex justify-between items-center\"\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":74},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":73,"references":[],"text":"      \u003cdiv\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":73},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":72,"references":[],"text":"        \u003ch1 class=\"text-4xl font-bold text-slate-900 mb-2\"\u003eSelect Guest\u003c/h1\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":72},"references":[],"ty
+```phoenix-heex
+<Layouts.pos page_title={@page_title}>
+  <div class="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <!-- Header -->
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-4xl font-bold text-slate-900 mb-2">Select Guest</h1>
+        <p class="text-lg text-slate-600">Tap a guest to manage their order</p>
+      </div>
+      <.link
+        navigate={~p"/"}
+        class="px-6 py-3 bg-slate-700 text-white rounded-xl hover:bg-slate-600 transition-colors duration-200 flex items-center gap-2"
+      >
+        <.icon name="hero-arrow-left" class="w-5 h-5" />
+        Menu
+      </.link>
+    </div>
+    
+<!-- Guest Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div
+        :for={guest <- @guests}
+        phx-click="select_guest"
+        phx-value-guest-id={guest.id}
+        class={[
+          "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-200",
+          "p-8 cursor-pointer active:scale-95 border-4 border-transparent hover:border-blue-500",
+          "min-h-[180px] flex flex-col justify-between"
+        ]}
+      >
+        <div>
+          <!-- Guest Name -->
+          <h2 class="text-2xl font-bold text-slate-900 mb-3 break-words">
+            {guest.name}
+          </h2>
+          
+<!-- Room Number -->
+          <div :if={guest.room_number} class="flex items-center gap-2 mb-2">
+            <.icon name="hero-home" class="w-5 h-5 text-slate-500" />
+            <span class="text-lg text-slate-600">Room {guest.room_number}</span>
+          </div>
+          
+<!-- Check-in Period -->
+          <div :if={guest.check_in_date} class="flex items-center gap-2 text-sm text-slate-500">
+            <.icon name="hero-calendar" class="w-4 h-4" />
+            <span>
+              {Calendar.strftime(guest.check_in_date, "%b %d")}
+              {if guest.check_out_date,
+                do: " - #{Calendar.strftime(guest.check_out_date, "%b %d")}",
+             
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you make the guest cards smaller in the POS view so more can fit on the screen. Let me first examine the current implementation. Now let me check the template file: Now I can see the guest cards. Let me make them more compact so more cards can fit on the screen. I'll reduce padding, font sizes, spacing, and minimum height while maintaining readability and touch-friendliness. 
-```
+Now I can see the guest cards. Let me make them more compact so more cards can fit on the screen. I'll reduce padding, font sizes, spacing, and minimum height while maintaining readability and touch-friendliness. 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **guest_selection.html.heex**</summary>
+
+@@ lines 3-66 @@
 
 ```
+    <!-- Header -->
+    <div class="mb-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-slate-900 mb-1">Select Guest</h1>
+        <p class="text-base text-slate-600">Tap a guest to manage their order</p>
+      </div>
+      <.link
+        navigate={~p"/"}
+        class="px-5 py-2.5 bg-slate-700 text-white rounded-xl hover:bg-slate-600 transition-colors duration-200 flex items-center gap-2"
+      >
+        <.icon name="hero-arrow-left" class="w-5 h-5" />
+        Menu
+      </.link>
+    </div>
+    
+<!-- Guest Grid -->
+    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+      <div
+        :for={guest <- @guests}
+        phx-click="select_guest"
+        phx-value-guest-id={guest.id}
+        class={[
+          "bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
+          "p-4 cursor-pointer active:scale-95 border-2 border-transparent hover:border-blue-500",
+          "min-h-[120px] flex flex-col justify-between"
+        ]}
+      >
+        <div>
+          <!-- Guest Name -->
+          <h2 class="text-lg font-bold text-slate-900 mb-2 break-words leading-tight">
+            {guest.name}
+          </h2>
+          
+<!-- Room Number -->
+          <div :if={guest.room_number} class="flex items-center gap-1.5 mb-1.5">
+            <.icon name="hero-home" class="w-4 h-4 text-slate-500" />
+            <span class="text-sm text-slate-600">Room {guest.room_number}</span>
+          </div>
+          
+<!-- Check-in Period -->
+          <div :if={guest.check_in_date} class="flex items-center gap-1.5 text-xs text-slate-500">
+            <.icon name="hero-calendar" class="w-3.5 h-3.5" />
+            <span>
+              {Calendar.strftime(guest.check_in_date, "%b %d")}
+              {if guest.check_out_date,
+                do: " - #{Calendar.strftime(guest.check_out_date, "%b %d")}",
+                else: ""}
+            </span>
+          </div>
+        </div>
+        
+<!-- Open Orders Badge -->
+        <div :if={guest.open_orders_count > 0} class="mt-2 pt-2 border-t border-slate-200">
+          <div class="inline-flex items-center gap-1.5 bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-semibold">
+            <.icon name="hero-shopping-cart" class="w-3.5 h-3.5" />
+            <span>
+              {guest.open_orders_count} {if guest.open_orders_count == 1,
+                do: "order",
+                else: "orders"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've made the guest cards significantly more compact. Here's what I changed:
 
 ## Key improvements:

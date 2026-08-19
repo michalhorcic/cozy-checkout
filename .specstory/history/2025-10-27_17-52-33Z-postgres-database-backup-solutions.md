@@ -201,7 +201,6 @@ psql -d cozy_checkout_dev -c "SELECT * FROM bookings" > /tmp/bookings_export.txt
 For your use case (backing up the entire database to iCloud), the original solution with `pg_dump` is the correct approach:
 
 ```bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -264,7 +263,6 @@ TablePlus should accept the `.sql` file from `pg_dump`. To restore in TablePlus:
 Try generating the backup with explicit format flags:
 
 ```bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -310,7 +308,6 @@ The issue is likely that TablePlus is having trouble with PostgreSQL's UUID form
 Try this updated backup script:
 
 ````bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -354,7 +351,6 @@ The key changes:
 If TablePlus still has issues, try the custom format which is more portable:
 
 ````bash
-# filepath: ~/backup_cozy_checkout_custom.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -411,7 +407,6 @@ The `|restrict` marks in your SQL backup are **Postgres-specific comments** that
 Here's the solution - add the `--no-comments` flag to your backup script:
 
 ````bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -463,7 +458,6 @@ The `\restrict` mark at the beginning of SQL files is actually part of PostgreSQ
 To completely avoid this issue, use the **plain SQL format** which produces clean, standard SQL:
 
 ````bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -518,7 +512,6 @@ Here are the solutions:
 ## Solution 1: Use `--no-sync` flag (Most reliable)
 
 ````bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -549,7 +542,6 @@ echo "Backup completed: backup_${DATE}.sql"
 If the issue persists, add a post-processing step:
 
 ````bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -617,7 +609,6 @@ The `\restrict` marker issue is known to occur even in PostgreSQL 17.x versions.
 Try this **updated backup script** that uses a different approach:
 
 ````bash
-# filepath: ~/backup_cozy_checkout.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -663,7 +654,6 @@ The key changes:
 **Alternative: Use directory format** (most reliable):
 
 ````bash
-# filepath: ~/backup_cozy_checkout_directory.sh
 #!/bin/bash
 
 BACKUP_DIR="$HOME/Library/Mobile Documents/com~apple~CloudDocs/cozy_backups"
@@ -715,7 +705,7 @@ To allow connections by username and password on your local network in PostgreSQ
 The file location varies by system:
 - **Linux (Debian/Ubuntu)**: `/etc/postgresql/17/main/pg_hba.conf`
 - **Linux (Red Hat/CentOS)**: `/var/lib/pgsql/17/data/pg_hba.conf`
-- **macOS (Homebrew)**: `/opt/homebrew/var/postgresql@17/pg_hba.conf` or `/usr/local/var/postgresql@17/pg_hba.conf`
+- **macOS (Homebrew)**: `pg_hba.conf` or `/usr/local/var/postgresql@17/pg_hba.conf`
 - **Docker**: Inside the container at `/var/lib/postgresql/data/pg_hba.conf`
 
 ### 2. **Add Configuration for Local Network**

@@ -12,45 +12,10 @@ Check how calendar works, I can see number of people staying at the cottage at t
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<think><details><summary>Thought Process</summary>
-Now I have a clear picture. Let me ask the clarifying questions before implementing: 
-
-One follow-up on the detection approach — since you chose keyword matching, I need to know what keywords to look for: 
-
-Got it. To summarize what I'll implement:
-
-- **All 3 groups shown separately**: Adults / Kids <2 / Kids <12
-- **Stacked badge** on each calendar day cell showing the breakdown
-- **Exact name matching**: `"Dospělí"` → adults, `"Děti do 2 let"` → kids<2, `"Děti do 12 let"` → kids<12
-- The existing total count + color coding stays as-is
-
-Let me now look at the relevant code to build the implementation plan: 
-
-Now I'll add a `get_occupancy_breakdown_for_range/2` function that returns per-day maps with counts per name category: 
-
-Now load the breakdown map in the calendar LiveView `load_calendar_data/1` and pass it to the template: 
-
-Now pass the new assign to the `day_cell` component and update the badge rendering: 
-
-The template lives in the `.html.heex` file, not the `.ex`. Let me update it there: 
-
-Now update the `day_cell` component in `calendar.ex` to accept and use the new assign:  
-
-Now I need to verify the `day_cell` function signature accepts the new attribute. Since it uses `assigns`, it will automatically pick up `@occupancy_breakdown_map` from `assigns` without needing any explicit declaration for function components that use `~H`. Let me check if there's an `attr` declaration:  
-
-Good — no `attr` declarations, so Phoenix will pass all assigns through without issue. Now let me update the legend in the template to explain the new breakdown icons: 
-
-Now let's check the timeline view to add the breakdown there too:   
-
-Now update the timeline's `load_timeline_data` to also fetch the breakdown map, and update the template to show the breakdown:  
-
-Let me verify there are no compile errors:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
+
+Searched codebase for "calendar occupancy map booking invoice items person type", 11 results
 
 **Input:**
 
@@ -59,7 +24,63 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ``````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex` starting at line 86:\n```heex\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex\n...\n          {CalendarHelpers.day_name(day)}\n        \u003c/div\u003e\n      \u003c% end %\u003e\n    \u003c/div\u003e\n\n    \u003c%!-- Calendar Days --%\u003e\n    \u003cdiv class=\"grid grid-cols-7\"\u003e\n      \u003c%= for week \u003c- @weeks do %\u003e\n        \u003c%= for day \u003c- week do %\u003e\n          \u003c%= if day do %\u003e\n            \u003c.day_cell\n              date={day}\n              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}\n              is_today={CalendarHelpers.today?(day)}\n              occupancy_map={@occupancy_map}\n              arrivals_departures_map={@arrivals_departures_map}\n              capacity={@capacity}\n            /\u003e\n          \u003c% else %\u003e\n            \u003cdiv class=\"min-h-[120px] bg-secondary-50 border-r border-b border-gray-100\"\u003e\u003c/div\u003e\n          \u003c% end %\u003e\n        \u003c% end %\u003e\n      \u003c% end %\u003e\n    \u003c/div\u003e\n  \u003c/div\u003e\n\n  \u003c%!-- Legend --%\u003e\n  \u003cdiv class=\"mt-6 bg-white shadow-lg rounded-lg p-6\"\u003e\n...\n```\n\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-22_19-29Z-tracking-occupancy-for-booking-dates-in-calendar.md` starting at line 130:\n`````md\n// filepath: /Users/michalhorcic/projects/ELIXIR
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex` starting at line 86:
+```heex
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex
+...
+          {CalendarHelpers.day_name(day)}
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Calendar Days --%>
+    <div class="grid grid-cols-7">
+      <%= for week <- @weeks do %>
+        <%= for day <- week do %>
+          <%= if day do %>
+            <.day_cell
+              date={day}
+              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
+              is_today={CalendarHelpers.today?(day)}
+              occupancy_map={@occupancy_map}
+              arrivals_departures_map={@arrivals_departures_map}
+              capacity={@capacity}
+            />
+          <% else %>
+            <div class="min-h-[120px] bg-secondary-50 border-r border-b border-gray-100"></div>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Legend --%>
+  <div class="mt-6 bg-white shadow-lg rounded-lg p-6">
+...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-22_19-29Z-tracking-occupancy-for-booking-dates-in-calendar.md` starting at line 130:
+`````md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-22_19-29Z-tracking-occupancy-for-booking-dates-in-calendar.md
+...
+# Tracking occupancy for booking dates in calendar (2025-10-22 19:29Z)
+...
+## Suggested Approach:
+...
+    |> Enum.filter(fn b ->
+      Date.compare(b.check_in, date) != :gt and
+      (is_nil(b.check_out) or Date.compare(b.check_out, date) == :gt)
+    end)
+    |> Enum.map(& &1.quantity)
+    |> Enum.sum()
+
+    {date, count}
+  end)
+  |> Map.new()
+end
+````
+
+Please answer the questions above so I can provide a complete, tailored solution for your calendar v
 … (output truncated)
 ``````
 </details></tool-use>
@@ -69,6 +90,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/calendar_live.ex`, no matches
+
 **Input:**
 
 - query: `calendar_live.ex`
@@ -76,7 +99,7 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No files found","type":2}],"ctor":2,"ctorName":"Twe","props":{},"references":[],"type":1}}
+No files found
 ```
 </details></tool-use>
 
@@ -85,6 +108,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/booking_live/calendar*.ex`, 2 matches
+
 **Input:**
 
 - query: `**/booking_live/calendar*.ex`
@@ -92,7 +117,9 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Twe","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex
 ```
 </details></tool-use>
 
@@ -100,6 +127,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for regex `def get_occupancy_for_range|def get_occupancy_breakdown|item_type.*person|children|kids_under` (`**/lib/cozy_checkout/bookings.ex`), 10 results
 
 **Input:**
 
@@ -110,8 +139,36 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"10 matches","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=410\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":52,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  Gets the total number of people from invoice items (where item_type == \"person\").","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Hrt","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":60,"line":409},{"character":80,"line":409}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":52,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Fwe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=416\u003e\n","type":2}],"ctor":2,"ctorName":""
-… (output truncated)
+10 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=410>
+  Gets the total number of people from invoice items (where item_type == "person").
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=416>
+      where: i.item_type == "person",
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=450>
+          item_type: "person"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=460>
+          item_type: "person"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=470>
+          item_type: "person"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=764>
+  Only counts invoice items with item_type == "person".
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=775>
+      where: bii.item_type == "person",
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=788>
+  Only counts invoice items with item_type == "person".
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=790>
+  def get_occupancy_for_range(start_date, end_date) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=801>
+        where: bii.item_type == "person",
+</match>
 ```
 </details></tool-use>
 
@@ -119,6 +176,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 430 to 480
 
 **Input:**
 
@@ -129,8 +188,60 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"430","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"480","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1000","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"    Repo.transaction(fn -\u003e\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"      # Create invoice header\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"      invoice =\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":50},"references":[],"type":1},{"children":[
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 430 to 480 (1000 lines total): 
+```elixir
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice =
+        %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Calculate actual nights from booking
+      nights = BookingInvoice.calculate_nights(booking)
+
+      # Create default line items
+      default_items = [
+        %{
+          name: "Dospělí",
+          quantity: 2,
+          nights: nights,
+          price_per_night: Decimal.new("950.00"),
+          vat_rate: Decimal.new("0"),
+          position: 1,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 2 let",
+          quantity: 0,
+          nights: nights,
+          price_per_night: Decimal.new("210.00"),
+          vat_rate: Decimal.new("0"),
+          position: 2,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 12 let",
+          quantity: 0,
+          nights: nights,
+          price_per_night: Decimal.new("880.00"),
+          vat_rate: Decimal.new("0"),
+          position: 3,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        }
+      ]
+
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(item_attrs)
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+```
 ````
 </details></tool-use>
 
@@ -138,6 +249,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `calendar.ex`, lines 1 to 80
 
 **Input:**
 
@@ -148,7 +261,84 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"80","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"236","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":82,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":82},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":81,"references":[],"text":"defmodule CozyCheckoutWeb.BookingLive.Calendar do\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":81},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":80,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":80},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":79,"references":[],"text":"\n","type":2}
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex`. Lines 1 to 80 (236 lines total): 
+```elixir
+defmodule CozyCheckoutWeb.BookingLive.Calendar do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckoutWeb.BookingLive.CalendarHelpers
+
+  # Make CalendarHelpers available in templates
+  defp assign_helpers(socket) do
+    assign(socket, :CalendarHelpers, CalendarHelpers)
+  end
+
+  @impl true
+  def mount(_params, _session, socket) do
+    today = Date.utc_today()
+
+    socket =
+      socket
+      |> assign(:year, today.year)
+      |> assign(:month, today.month)
+      |> assign(:modal_date, nil)
+      |> assign(:modal_bookings, [])
+      |> assign(:modal_categorized, %{arriving: [], staying: [], leaving: []})
+      |> assign_helpers()
+      |> load_calendar_data()
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(_params, _url, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("prev_month", _params, socket) do
+    {year, month} = CalendarHelpers.previous_month(socket.assigns.year, socket.assigns.month)
+
+    socket =
+      socket
+      |> assign(:year, year)
+      |> assign(:month, month)
+      |> load_calendar_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("next_month", _params, socket) do
+    {year, month} = CalendarHelpers.next_month(socket.assigns.year, socket.assigns.month)
+
+    socket =
+      socket
+      |> assign(:year, year)
+      |> assign(:month, month)
+      |> load_calendar_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("today", _params, socket) do
+    today = Date.utc_today()
+
+    socket =
+      socket
+      |> assign(:year, today.year)
+      |> assign(:month, today.month)
+      |> load_calendar_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("show_day_bookings", %{"date" => date_string}, socket) do
+    date = Date.from_iso8601!(date_string)
+    bookings = CalendarHelpers.booki
 … (output truncated)
 ````
 </details></tool-use>
@@ -157,6 +347,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `calendar.ex`, lines 80 to 236
 
 **Input:**
 
@@ -167,7 +359,61 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":159,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":159},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":158,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":158},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":157,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":157},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":156,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":156},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":155,"references":[],"text":"  def handle_event(\"close_modal\", _params, socket) do\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":155},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":154,"references":[],"text":"    {:noreply, assign(socket, modal_date: nil, modal_bookings: [], modal_categorized: %{arriving: [], staying: [], leaving: []})}\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":154},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":153,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":153},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":152,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":152},"references":[],"typ
+```elixir
+  end
+
+  @impl true
+  def handle_event("close_modal", _params, socket) do
+    {:noreply, assign(socket, modal_date: nil, modal_bookings: [], modal_categorized: %{arriving: [], staying: [], leaving: []})}
+  end
+
+  defp load_calendar_data(socket) do
+    year = socket.assigns.year
+    month = socket.assigns.month
+
+    bookings = Bookings.list_bookings_for_month(year, month)
+    weeks = CalendarHelpers.generate_calendar_grid(year, month)
+
+    # Get occupancy data for the entire calendar range
+    first_day = Date.new!(year, month, 1)
+    last_day = Date.end_of_month(first_day)
+    calendar_start = Date.beginning_of_week(first_day, :monday)
+    calendar_end = Date.end_of_week(last_day, :monday)
+
+    occupancy_map = Bookings.get_occupancy_for_range(calendar_start, calendar_end)
+    arrivals_departures_map = Bookings.get_arrivals_departures_for_range(calendar_start, calendar_end)
+    capacity = Bookings.cottage_capacity()
+
+    socket
+    |> assign(:bookings, bookings)
+    |> assign(:weeks, weeks)
+    |> assign(:occupancy_map, occupancy_map)
+    |> assign(:arrivals_departures_map, arrivals_departures_map)
+    |> assign(:capacity, capacity)
+    |> assign(:page_title, "Calendar - #{CalendarHelpers.month_name(month)} #{year}")
+  end
+
+  defp status_color(status) do
+    case status do
+      "upcoming" -> "bg-tertiary-100 border-tertiary-300 text-tertiary-800"
+      "active" -> "bg-success-light border-success text-success-dark"
+      "completed" -> "bg-secondary-100 border-secondary-300 text-primary-400"
+      "cancelled" -> "bg-error-light border-error text-error"
+      _ -> "bg-secondary-100 border-secondary-300 text-primary-400"
+    end
+  end
+
+  defp occupancy_badge_class(count) do
+    level = Bookings.occupancy_level(count)
+
+    base_classes =
+      "absolute top-1 left-1 text-xs font-semibold px-2 py-0.5 rounded-full shadow-sm"
+
+    color_classes =
+      case level do
+        :full -> "bg-error text-white"
+        :high -> "bg-warning text-white"
+        :medium -
 … (output truncated)
 ````
 </details></tool-use>
@@ -176,6 +422,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 760 to 840
 
 **Input:**
 
@@ -186,27 +434,130 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"760","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"840","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1000","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":83,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":83},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":82,"references":[],"text":"  def cottage_capacity, do: @cottage_capacity\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":82},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":81,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":81},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":80,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":80},"references":[],"type":1},{"children":[{"lineBreakBefore
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 760 to 840 (1000 lines total): 
+```elixir
+  def cottage_capacity, do: @cottage_capacity
+
+  @doc """
+  Returns the total number of people booked for a specific date.
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_date(date) do
+    from(b in Booking,
+      join: bi in BookingInvoice,
+      on: bi.booking_id == b.id,
+      join: bii in BookingInvoiceItem,
+      on: bii.booking_invoice_id == bi.id,
+      where: b.status in ["upcoming", "active"],
+      where: b.check_in_date <= ^date,
+      where: is_nil(b.check_out_date) or b.check_out_date > ^date,
+      where: bii.item_type == "person",
+      select: sum(bii.quantity)
+    )
+    |> Repo.one()
+    |> case do
+      nil -> 0
+      count -> count
+    end
+  end
+
+  @doc """
+  Returns daily occupancy for a date range (for calendar view).
+  Returns a map: %{~D[2025-10-22] => 12, ~D[2025-10-23] => 15, ...}
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_range(start_date, end_date) do
+    # Get all bookings that overlap with the date range
+    bookings =
+      from(b in Booking,
+        join: bi in BookingInvoice,
+        on: bi.booking_id == b.id,
+        join: bii in BookingInvoiceItem,
+        on: bii.booking_invoice_id == bi.id,
+        where: b.status in ["upcoming", "active"],
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,
+        where: bii.item_type == "person",
+        select: %{
+          check_in: b.check_in_date,
+          check_out: b.check_out_date,
+          quantity: bii.quantity
+        }
+      )
+      |> Repo.all()
+
+    # Calculate occupancy for each day
+    Date.range(start_date, end_date)
+    |> Enum.map(fn date ->
+      count =
+        bookings
+        |> Enum.filter(fn b ->
+          Date.compare(b.check_in, date) != :gt and
+            (is_nil(b.check_out) or Date.
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+Now I have a clear picture. Let me ask the clarifying questions before implementing: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="generic" data-tool-name="ask_questions"><details>
 <summary>Tool use: **ask_questions**</summary>
+
+Asked 3 questions (Age groups, Display, Detection)
 
 **Input:**
 
 - questions:
 
 ```
-[map[header:Item names options:[map[label:Show all three separately: Adults / Kids <2 / Kids <12 recommended:true] map[label:Show two groups: Adults / Kids (both kid types combined)]] question:The invoice items use Czech names. Which items should be treated as "adults" and which as "younger than 12"? Currently the defaults are:
-• "Dospělí" (Adults)
-• "Děti do 2 let" (Kids under 2)
-• "Děti do 12 let" (Kids under 12)
-
-Should ALL three be shown separately, or group kids under 2 and kids under 12 together as one "kids" number?] map[header:Badge display options:[map[label:Stacked rows: 👤 8 adults / 👶 2 <2y / 🧒 2 <12y recommended:true] map[label:Inline: 8A + 4K = 12/45] map[label:Tooltip on hover (main badge stays total only)]] question:How should the breakdown be displayed in the day cell badge on the calendar? Currently it shows e.g. "12/45". What format do you prefer?] map[header:Name matching options:[map[label:Add a sub-type field to invoice items (most reliable, needs migration) recommended:true] map[label:Match by item name / keyword heuristic (no migration needed, fragile)]] question:Invoice item names are free-text (staff can rename them). Should the breakdown detection use the item name (e.g. contains "Dospělí", "Děti"), or should we add a dedicated sub-type field (e.g. "adult", "kids_under_2", "kids_under_12") to the invoice items schema?]]
+[
+  {
+    "header": "Item names",
+    "options": [
+      {
+        "label": "Show all three separately: Adults / Kids \u003c2 / Kids \u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Show two groups: Adults / Kids (both kid types combined)"
+      }
+    ],
+    "question": "The invoice items use Czech names. Which items should be treated as \"adults\" and which as \"younger than 12\"? Currently the defaults are:\n• \"Dospělí\" (Adults)\n• \"Děti do 2 let\" (Kids under 2)\n• \"Děti do 12 let\" (Kids under 12)\n\nShould ALL three be shown separately, or group kids under 2 and kids under 12 together as one \"kids\" number?"
+  },
+  {
+    "header": "Badge display",
+    "options": [
+      {
+        "label": "Stacked rows: 👤 8 adults / 👶 2 \u003c2y / 🧒 2 \u003c12y",
+        "recommended": true
+      },
+      {
+        "label": "Inline: 8A + 4K = 12/45"
+      },
+      {
+        "label": "Tooltip on hover (main badge stays total only)"
+      }
+    ],
+    "question": "How should the breakdown be displayed in the day cell badge on the calendar? Currently it shows e.g. \"12/45\". What format do you prefer?"
+  },
+  {
+    "header": "Name matching",
+    "options": [
+      {
+        "label": "Add a sub-type field to invoice items (most reliable, needs migration)",
+        "recommended": true
+      },
+      {
+        "label": "Match by item name / keyword heuristic (no migration needed, fragile)"
+      }
+    ],
+    "question": "Invoice item names are free-text (staff can rename them). Should the breakdown detection use the item name (e.g. contains \"Dospělí\", \"Děti\"), or should we add a dedicated sub-type field (e.g. \"adult\", \"kids_under_2\", \"kids_under_12\") to the invoice items schema?"
+  }
+]
 ```
 
 
@@ -220,20 +571,142 @@ Please check your input and try again.
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+One follow-up on the detection approach — since you chose keyword matching, I need to know what keywords to look for: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="generic" data-tool-name="ask_questions"><details>
 <summary>Tool use: **ask_questions**</summary>
+
+Asked a question (Keywords)
 
 **Input:**
 
 - questions:
 
 ```
-[map[header:Kids groups options:[map[label:Show all three separately: Adults / Kids <2 / Kids <12 recommended:true] map[label:Two groups: Adults / Kids (both kid types combined)]] question:The default invoice items are:
-• "Dospělí" (Adults)
-• "Děti do 2 let" (Kids under 2)
-• "Děti do 12 let" (Kids under 12)
+[
+  {
+    "header": "Kids groups",
+    "options": [
+      {
+        "label": "Show all three separately: Adults / Kids \u003c2 / Kids \u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Two groups: Adults / Kids (both kid types combined)"
+      }
+    ],
+    "question": "The default invoice items are:\n• \"Dospělí\" (Adults)\n• \"Děti do 2 let\" (Kids under 2)\n• \"Děti do 12 let\" (Kids under 12)\n\nShould all three be shown separately, or group both kid types together as one \"kids\" count?"
+  },
+  {
+    "header": "Badge format",
+    "options": [
+      {
+        "label": "Stacked rows in badge: 8 adults / 2 kids\u003c2 / 3 kids\u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Inline compact: 8A + 5K = 13/45"
+      },
+      {
+        "label": "Tooltip on hover; main badge stays total-only"
+      }
+    ],
+    "question": "How should the breakdown appear on the calendar day cell? Currently it shows a single badge like \"12/45\"."
+  },
+  {
+    "header": "Name matching",
+    "options": [
+      {
+        "label": "Add a sub-type field (adult / kids_under_2 / kids_under_12) — reliable, needs a migration",
+        "recommended": true
+      },
+      {
+        "label": "Match by item name keyword — no migration, but fragile if staff rename items"
+      }
+    ],
+    "question": "Invoice item names are free-text editable by staff. How should the system know which items are adults vs. kids?"
+  }
+]
+```
 
-Should all three be shown separately, or group both kid types together as one "kids" count?] map[header:Badge format options:[map[label:Stacked rows in badge: 8 adults / 2 kids<2 / 3 kids<12 recommended:true] map[label:Inline compact: 8A + 5K = 13/45] map[label:Tooltip on hover; main badge stays total-only]] question:How should the breakdown appear on the calendar day cell? Currently it shows a single badge like "12/45".] map[header:Name matching options:[map[label:Add a sub-type field (adult / kids_under_2 / kids_under_12) — reliable, needs a migration recommended:true] map[label:Match by item name keyword — no migration, but fragile if staff rename items]] question:Invoice item names are free-text editable by staff. How should the system know which items are adults vs. kids?]]
+
+**Result:**
+
+```
+ERROR: Your input to the tool was invalid (must NOT have more than 12 characters)
+Please check your input and try again.
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Got it. To summarize what I'll implement:
+
+- **All 3 groups shown separately**: Adults / Kids <2 / Kids <12
+- **Stacked badge** on each calendar day cell showing the breakdown
+- **Exact name matching**: `"Dospělí"` → adults, `"Děti do 2 let"` → kids<2, `"Děti do 12 let"` → kids<12
+- The existing total count + color coding stays as-is
+
+Let me now look at the relevant code to build the implementation plan: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="ask_questions"><details>
+<summary>Tool use: **ask_questions**</summary>
+
+Read `bookings.ex`, lines 760 to 785
+
+**Input:**
+
+- questions:
+
+```
+[
+  {
+    "header": "Age groups",
+    "options": [
+      {
+        "label": "All 3 separately: Adults / Kids\u003c2 / Kids\u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Two: Adults / Kids (both kid groups combined)"
+      }
+    ],
+    "question": "Default invoice items are: Adults, Kids under 2, Kids under 12. Show all 3 separately or merge both kid groups into one 'kids' count?"
+  },
+  {
+    "header": "Display style",
+    "options": [
+      {
+        "label": "Stacked rows in the badge: 8a / 2k\u003c2 / 3k\u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Inline compact: 8A+5K=13/45"
+      },
+      {
+        "label": "Tooltip on hover; badge stays total-only"
+      }
+    ],
+    "question": "How should the age breakdown be shown on the calendar day cell? Currently just one badge like '12/45'."
+  },
+  {
+    "header": "Sub-type field",
+    "options": [
+      {
+        "label": "Add sub-type field to schema (adult/kids_under_2/kids_under_12) - needs migration",
+        "recommended": true
+      },
+      {
+        "label": "Match by item name keyword - no migration but fragile"
+      }
+    ],
+    "question": "Invoice item names are editable free-text. Should the system use a dedicated sub-type field, or keyword-match item names to detect adults vs kids?"
+  }
+]
 ```
 
 
@@ -250,26 +723,59 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="generic" data-tool-name="ask_questions"><details>
 <summary>Tool use: **ask_questions**</summary>
 
-**Input:**
-
-- questions: `[map[header:Age groups options:[map[label:All 3 separately: Adults / Kids<2 / Kids<12 recommended:true] map[label:Two: Adults / Kids (both kid groups combined)]] question:Default invoice items are: Adults, Kids under 2, Kids under 12. Show all 3 separately or merge both kid groups into one 'kids' count?] map[header:Display style options:[map[label:Stacked rows in the badge: 8a / 2k<2 / 3k<12 recommended:true] map[label:Inline compact: 8A+5K=13/45] map[label:Tooltip on hover; badge stays total-only]] question:How should the age breakdown be shown on the calendar day cell? Currently just one badge like '12/45'.] map[header:Sub-type field options:[map[label:Add sub-type field to schema (adult/kids_under_2/kids_under_12) - needs migration recommended:true] map[label:Match by item name keyword - no migration but fragile]] question:Invoice item names are editable free-text. Should the system use a dedicated sub-type field, or keyword-match item names to detect adults vs kids?]]`
-
-**Result:**
-
-```
-ERROR: Your input to the tool was invalid (must NOT have more than 12 characters)
-Please check your input and try again.
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="generic" data-tool-name="ask_questions"><details>
-<summary>Tool use: **ask_questions**</summary>
+Read `bookings.ex`, lines 785 to 845
 
 **Input:**
 
-- questions: `[map[header:Age groups options:[map[label:All 3: Adults / Kids<2 / Kids<12 recommended:true] map[label:Two: Adults / Kids (merged)]] question:Default invoice items: Adults, Kids under 2, Kids under 12. Show all 3 separately or merge both kid groups into one 'kids' count?] map[header:Display options:[map[label:Stacked in badge: 8a / 2k<2 / 3k<12 recommended:true] map[label:Inline: 8A+5K=13/45] map[label:Tooltip on hover only]] question:How to show breakdown on calendar day cell? Currently just '12/45'.] map[header:Detection options:[map[label:Sub-type field on item (migration needed) recommended:true] map[label:Match by item name keyword (fragile)]] question:Invoice names are editable free-text. Use a sub-type field to detect adults vs kids, or match by name keywords?]]`
+- questions:
+
+```
+[
+  {
+    "header": "Age groups",
+    "options": [
+      {
+        "label": "All 3: Adults / Kids\u003c2 / Kids\u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Two: Adults / Kids (merged)"
+      }
+    ],
+    "question": "Default invoice items: Adults, Kids under 2, Kids under 12. Show all 3 separately or merge both kid groups into one 'kids' count?"
+  },
+  {
+    "header": "Display",
+    "options": [
+      {
+        "label": "Stacked in badge: 8a / 2k\u003c2 / 3k\u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Inline: 8A+5K=13/45"
+      },
+      {
+        "label": "Tooltip on hover only"
+      }
+    ],
+    "question": "How to show breakdown on calendar day cell? Currently just '12/45'."
+  },
+  {
+    "header": "Detection",
+    "options": [
+      {
+        "label": "Sub-type field on item (migration needed)",
+        "recommended": true
+      },
+      {
+        "label": "Match by item name keyword (fragile)"
+      }
+    ],
+    "question": "Invoice names are editable free-text. Use a sub-type field to detect adults vs kids, or match by name keywords?"
+  }
+]
+```
+
 
 **Result:**
 
@@ -283,9 +789,42 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="generic" data-tool-name="ask_questions"><details>
 <summary>Tool use: **ask_questions**</summary>
 
+Created 4 todos
+
 **Input:**
 
-- questions: `[map[allowFreeformInput:true header:Adult keyword options:[map[label:Match items containing 'Dospělí' recommended:true]] question:What keyword(s) identify an 'adult' invoice item? Default is 'Dospělí'. Should I match any item containing that word, or something else?] map[allowFreeformInput:true header:Kids keyword options:[map[label:Any item containing 'Děti do 2' → kids<2, 'Děti do 12' → kids<12 recommended:true] map[label:Any item with 'Děti' → all kids combined]] question:For kids: the defaults are 'Děti do 2 let' and 'Děti do 12 let'. Should both be treated as 'any item containing Děti'? Or match the specific strings?]]`
+- questions:
+
+```
+[
+  {
+    "allowFreeformInput": true,
+    "header": "Adult keyword",
+    "options": [
+      {
+        "label": "Match items containing 'Dospělí'",
+        "recommended": true
+      }
+    ],
+    "question": "What keyword(s) identify an 'adult' invoice item? Default is 'Dospělí'. Should I match any item containing that word, or something else?"
+  },
+  {
+    "allowFreeformInput": true,
+    "header": "Kids keyword",
+    "options": [
+      {
+        "label": "Any item containing 'Děti do 2' → kids\u003c2, 'Děti do 12' → kids\u003c12",
+        "recommended": true
+      },
+      {
+        "label": "Any item with 'Děti' → all kids combined"
+      }
+    ],
+    "question": "For kids: the defaults are 'Děti do 2 let' and 'Děti do 12 let'. Should both be treated as 'any item containing Děti'? Or match the specific strings?"
+  }
+]
+```
+
 
 **Result:**
 
@@ -300,9 +839,31 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="generic" data-tool-name="ask_questions"><details>
 <summary>Tool use: **ask_questions**</summary>
 
+Starting: *Add breakdown query in bookings.ex* (1/4)
+
 **Input:**
 
-- questions: `[map[allowFreeformInput:true header:Keywords options:[map[label:Adults = contains 'Dosp', kids<2 = contains '2 let', kids<12 = contains '12 let' recommended:true] map[label:Adults = 'Dospělí', kids<2 = 'Děti do 2 let', kids<12 = 'Děti do 12 let' (exact match)]] question:What keywords/strategy should be used to detect adults vs kids under 2 vs kids under 12 from invoice item names? Default names are 'Dospělí', 'Děti do 2 let', 'Děti do 12 let'.]]`
+- questions:
+
+```
+[
+  {
+    "allowFreeformInput": true,
+    "header": "Keywords",
+    "options": [
+      {
+        "label": "Adults = contains 'Dosp', kids\u003c2 = contains '2 let', kids\u003c12 = contains '12 let'",
+        "recommended": true
+      },
+      {
+        "label": "Adults = 'Dospělí', kids\u003c2 = 'Děti do 2 let', kids\u003c12 = 'Děti do 12 let' (exact match)"
+      }
+    ],
+    "question": "What keywords/strategy should be used to detect adults vs kids under 2 vs kids under 12 from invoice item names? Default names are 'Dospělí', 'Děti do 2 let', 'Děti do 12 let'."
+  }
+]
+```
+
 
 **Result:**
 
@@ -313,88 +874,17 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="read" data-tool-name="read_file"><details>
-<summary>Tool use: **read_file**</summary>
-
-**Input:**
-
-- endLine: `760`
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`
-- startLine: `785`
-
-**Result:**
-
-````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"760","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"785","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1000","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":28,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":28},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":27,"references":[],"text":"  def cottage_capacity, do: @cottage_capacity\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":27},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":26,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":26},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":25,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":25},"references":[],"type":1},{"children":[{"lineBreakBefore
-… (output truncated)
-````
-</details></tool-use>
+Now I'll add a `get_occupancy_breakdown_for_range/2` function that returns per-day maps with counts per name category: 
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="read" data-tool-name="read_file"><details>
-<summary>Tool use: **read_file**</summary>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
 
-**Input:**
-
-- endLine: `845`
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`
-- startLine: `785`
-
-**Result:**
-
-````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"785","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"845","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1000","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":63,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":63},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":62,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":62},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":61,"references":[],"text":"  Returns daily occupancy for a date range (for calendar view).\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":61},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":60,"references":[],"text":"  Returns a map: %{~D[2025-10-22] =\u003e 12, ~D[2025-10-23] =\u003e 15, ...}\n","type":2}],"ctor":2,"c
-… (output truncated)
-````
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
-<summary>Tool use: **manage_todo_list**</summary>
-
-**Input:**
-
-- todoList: `[map[id:1 status:not-started title:Add breakdown query in bookings.ex] map[id:2 status:not-started title:Load breakdown map in calendar.ex] map[id:3 status:not-started title:Update day_cell badge in calendar.ex] map[id:4 status:not-started title:Update timeline occupancy badge]]`
-
-**Result:**
+@@ lines 827-827 @@
 
 ```
-Successfully wrote todo list
-
-Warning: Did you mean to update so many todos at the same time? Consider working on them one by one.
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
-<summary>Tool use: **manage_todo_list**</summary>
-
-**Input:**
-
-- todoList: `[map[id:1 status:in-progress title:Add breakdown query in bookings.ex] map[id:2 status:not-started title:Load breakdown map in calendar.ex] map[id:3 status:not-started title:Update day_cell badge in calendar.ex] map[id:4 status:not-started title:Update timeline occupancy badge]]`
-
-**Result:**
-
-```
-Successfully wrote todo list
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
-
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`
-- newString:
-
-```
-  # Names used to identify person sub-types in invoice items (exact match).
+# Names used to identify person sub-types in invoice items (exact match).
   @adults_item_name "Dospělí"
   @kids_under_2_item_name "Děti do 2 let"
   @kids_under_12_item_name "Děti do 12 let"
@@ -463,60 +953,71 @@ _**Agent (copilot/claude-sonnet-4.6)**_
     end)
   end
 
-  @doc """
-  Returns the occupancy level for display purposes.
-  Returns: :low (0-29), :medium (30-39), :high (40-44), :full (45+)
-  """
-  def occupancy_level(count) do
-```
-
-- oldString:
-
-```
-  @doc """
-  Returns the occupancy level for display purposes.
-  Returns: :low (0-29), :medium (30-39), :high (40-44), :full (45+)
-  """
-  def occupancy_level(count) do
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"sw","props":{},"references":[],"type":1}}
+  
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
-<summary>Tool use: **manage_todo_list**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Starting: *Load breakdown map in calendar.ex* (2/4)
 
 **Input:**
 
-- todoList: `[map[id:1 status:completed title:Add breakdown query in bookings.ex] map[id:2 status:in-progress title:Load breakdown map in calendar.ex] map[id:3 status:not-started title:Update day_cell badge in calendar.ex] map[id:4 status:not-started title:Update timeline occupancy badge]]`
+- endLine: `760`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`
+- startLine: `785`
 
 **Result:**
 
+````
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 760 to 785 (1000 lines total): 
+```elixir
+  def cottage_capacity, do: @cottage_capacity
+
+  @doc """
+  Returns the total number of people booked for a specific date.
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_date(date) do
+    from(b in Booking,
+      join: bi in BookingInvoice,
+      on: bi.booking_id == b.id,
+      join: bii in BookingInvoiceItem,
+      on: bii.booking_invoice_id == bi.id,
+      where: b.status in ["upcoming", "active"],
+      where: b.check_in_date <= ^date,
+      where: is_nil(b.check_out_date) or b.check_out_date > ^date,
+      where: bii.item_type == "person",
+      select: sum(bii.quantity)
+    )
+    |> Repo.one()
+    |> case do
+      nil -> 0
+      count -> count
+    end
+  end
+
+  @doc """
 ```
-Successfully wrote todo list
-```
+````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
+Now load the breakdown map in the calendar LiveView `load_calendar_data/1` and pass it to the template: 
 
-**Input:**
+_**Agent (copilot/claude-sonnet-4.6)**_
 
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex`
-- newString:
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.ex**</summary>
+
+@@ lines 101-107 @@
 
 ```
-    occupancy_map = Bookings.get_occupancy_for_range(calendar_start, calendar_end)
-    occupancy_breakdown_map = Bookings.get_occupancy_breakdown_for_range(calendar_start, calendar_end)
+occupancy_breakdown_map = Bookings.get_occupancy_breakdown_for_range(calendar_start, calendar_end)
     arrivals_departures_map = Bookings.get_arrivals_departures_for_range(calendar_start, calendar_end)
     capacity = Bookings.cottage_capacity()
 
@@ -524,175 +1025,127 @@ _**Agent (copilot/claude-sonnet-4.6)**_
     |> assign(:bookings, bookings)
     |> assign(:weeks, weeks)
     |> assign(:occupancy_map, occupancy_map)
-    |> assign(:occupancy_breakdown_map, occupancy_breakdown_map)
-    |> assign(:arrivals_departures_map, arrivals_departures_map)
-    |> assign(:capacity, capacity)
-```
-
-- oldString:
-
-```
-    occupancy_map = Bookings.get_occupancy_for_range(calendar_start, calendar_end)
-    arrivals_departures_map = Bookings.get_arrivals_departures_for_range(calendar_start, calendar_end)
-    capacity = Bookings.cottage_capacity()
-
-    socket
-    |> assign(:bookings, bookings)
-    |> assign(:weeks, weeks)
-    |> assign(:occupancy_map, occupancy_map)
-    |> assign(:arrivals_departures_map, arrivals_departures_map)
-    |> assign(:capacity, capacity)
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"sw","props":{},"references":[],"type":1}}
+    |> assign(:occupancy_breakdown_map, occupancy_breakdown
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
-<summary>Tool use: **manage_todo_list**</summary>
+Now pass the new assign to the `day_cell` component and update the badge rendering: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Starting: *Update day_cell badge in calendar.ex* (3/4)
 
 **Input:**
 
-- todoList: `[map[id:1 status:completed title:Add breakdown query in bookings.ex] map[id:2 status:completed title:Load breakdown map in calendar.ex] map[id:3 status:in-progress title:Update day_cell badge in calendar.ex] map[id:4 status:not-started title:Update timeline occupancy badge]]`
+- endLine: `845`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`
+- startLine: `785`
 
 **Result:**
 
+````
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 785 to 845 (1000 lines total): 
+```elixir
+  @doc """
+  Returns daily occupancy for a date range (for calendar view).
+  Returns a map: %{~D[2025-10-22] => 12, ~D[2025-10-23] => 15, ...}
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_range(start_date, end_date) do
+    # Get all bookings that overlap with the date range
+    bookings =
+      from(b in Booking,
+        join: bi in BookingInvoice,
+        on: bi.booking_id == b.id,
+        join: bii in BookingInvoiceItem,
+        on: bii.booking_invoice_id == bi.id,
+        where: b.status in ["upcoming", "active"],
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,
+        where: bii.item_type == "person",
+        select: %{
+          check_in: b.check_in_date,
+          check_out: b.check_out_date,
+          quantity: bii.quantity
+        }
+      )
+      |> Repo.all()
+
+    # Calculate occupancy for each day
+    Date.range(start_date, end_date)
+    |> Enum.map(fn date ->
+      count =
+        bookings
+        |> Enum.filter(fn b ->
+          Date.compare(b.check_in, date) != :gt and
+            (is_nil(b.check_out) or Date.compare(b.check_out, date) == :gt)
+        end)
+        |> Enum.map(& &1.quantity)
+        |> Enum.sum()
+
+      {date, count}
+    end)
+    |> Map.new()
+  end
+
+  @doc """
+  Returns the occupancy level for display purposes.
+  Returns: :low (0-29), :medium (30-39), :high (40-44), :full (45+)
+  """
+  def occupancy_level(count) do
+    cond do
+      count >= @cottage_capacity -> :full
+      count >= 40 -> :high
+      count >= 30 -> :medium
+      true -> :low
+    end
+  end
+
+  @doc """
+  Returns arrival and departure counts for a date range (for calendar view).
+  Returns a map: %{~D[2025-10-22] => %{arrivals: 3, departures: 2}, ...}
+  """
+  def get_arrivals_departures_for_range(start_date, end_date) do
+    book
+… (output truncated)
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+The template lives in the `.html.heex` file, not the `.ex`. Let me update it there: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.html.heex**</summary>
+
+@@ lines 101-101 @@
+
 ```
-Successfully wrote todo list
+occupancy_breakdown_map={@occupancy_breakdown_map}
+              
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
-
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex`
-- newString:
-
-```
-            <.day_cell
-              date={day}
-              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
-              is_today={CalendarHelpers.today?(day)}
-              occupancy_map={@occupancy_map}
-              occupancy_breakdown_map={@occupancy_breakdown_map}
-              arrivals_departures_map={@arrivals_departures_map}
-              capacity={@capacity}
-            />
-```
-
-- oldString:
-
-```
-            <.day_cell
-              date={day}
-              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
-              is_today={CalendarHelpers.today?(day)}
-              occupancy_map={@occupancy_map}
-              arrivals_departures_map={@arrivals_departures_map}
-              capacity={@capacity}
-            />
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"String replacement failed: Could not find matching text to replace. Try making your search string more specific or checking for whitespace/formatting differences.","type":2}],"ctor":2,"ctorName":"sw","props":{},"references":[],"type":1}}
-```
-</details></tool-use>
+Now update the `day_cell` component in `calendar.ex` to accept and use the new assign:  
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.ex**</summary>
 
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex`
-- newString:
+@@ lines 169-169 @@
 
 ```
-            <.day_cell
-              date={day}
-              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
-              is_today={CalendarHelpers.today?(day)}
-              occupancy_map={@occupancy_map}
-              occupancy_breakdown_map={@occupancy_breakdown_map}
-              arrivals_departures_map={@arrivals_departures_map}
-              capacity={@capacity}
-            />
-```
-
-- oldString:
-
-```
-            <.day_cell
-              date={day}
-              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
-              is_today={CalendarHelpers.today?(day)}
-              occupancy_map={@occupancy_map}
-              arrivals_departures_map={@arrivals_departures_map}
-              capacity={@capacity}
-            />
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"sw","props":{},"references":[],"type":1}}
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
-
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex`
-- newString:
-
-```
-  defp day_cell(assigns) do
-    ~H"""
-    <div class={[
-      "min-h-[120px] border-r border-b border-secondary-200 p-2 relative",
-      @is_today && "bg-tertiary-50"
-    ]}>
-      <%!-- Day number --%>
-      <div class="text-right mb-1">
-        <span class={[
-          "text-sm font-semibold",
-          @is_today &&
-            "inline-flex items-center justify-center w-7 h-7 rounded-full bg-tertiary-600 text-white",
-          !@is_today && "text-primary-500"
-        ]}>
-          {@date.day}
-        </span>
-      </div>
-
-      <%!-- Occupancy badge (top-left) --%>
-      <%= if occupancy = Map.get(@occupancy_map, @date, 0) do %>
-        <%= if occupancy > 0 do %>
-          <button
-            type="button"
-            phx-click="show_day_bookings"
-            phx-value-date={@date}
-            class={[occupancy_badge_class(occupancy), "cursor-pointer hover:shadow-md transition-shadow"]}
-          >
-            <span>{occupancy}/{@capacity}</span>
+<span>{occupancy}/{@capacity}</span>
             <%!-- Breakdown rows --%>
             <%= if breakdown = Map.get(@occupancy_breakdown_map, @date) do %>
               <div class="mt-0.5 space-y-0.5 text-[10px] font-normal leading-tight">
@@ -707,70 +1160,78 @@ _**Agent (copilot/claude-sonnet-4.6)**_
                 <% end %>
               </div>
             <% end %>
-          </button>
-        <% end %>
-      <% end %>
-```
-
-- oldString:
-
-```
-  defp day_cell(assigns) do
-    ~H"""
-    <div class={[
-      "min-h-[120px] border-r border-b border-secondary-200 p-2 relative",
-      @is_today && "bg-tertiary-50"
-    ]}>
-      <%!-- Day number --%>
-      <div class="text-right mb-1">
-        <span class={[
-          "text-sm font-semibold",
-          @is_today &&
-            "inline-flex items-center justify-center w-7 h-7 rounded-full bg-tertiary-600 text-white",
-          !@is_today && "text-primary-500"
-        ]}>
-          {@date.day}
-        </span>
-      </div>
-
-      <%!-- Occupancy badge (top-left) --%>
-      <%= if occupancy = Map.get(@occupancy_map, @date, 0) do %>
-        <%= if occupancy > 0 do %>
-          <button
-            type="button"
-            phx-click="show_day_bookings"
-            phx-value-date={@date}
-            class={[occupancy_badge_class(occupancy), "cursor-pointer hover:shadow-md transition-shadow"]}
-          >
-            {occupancy}/{@capacity}
-          </button>
-        <% end %>
-      <% end %>
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"sw","props":{},"references":[],"type":1}}
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
-<summary>Tool use: **grep_search**</summary>
+Now I need to verify the `day_cell` function signature accepts the new attribute. Since it uses `assigns`, it will automatically pick up `@occupancy_breakdown_map` from `assigns` without needing any explicit declaration for function components that use `~H`. Let me check if there's an `attr` declaration:  
 
-**Input:**
+_**Agent (copilot/claude-sonnet-4.6)**_
 
-- includePattern: `lib/cozy_checkout_web/live/booking_live/calendar.ex`
-- isRegexp: `false`
-- query: `attr :occupancy_map`
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Searched for text `attr :occupancy_map` (`**/lib/cozy_checkout_web/live/booking_live/calendar.ex`), no results
+
+- [ ] Add breakdown query in bookings.ex
+- [ ] Load breakdown map in calendar.ex
+- [ ] Update day_cell badge in calendar.ex
+- [ ] Update timeline occupancy badge
 
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found.","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.\nIf you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).\nThen if you want to include those files you can call the tool again by setting \"includeIgnoredFiles\" to true.","type":2}],"ctor":2,"ctorName":"rFt","props":{},"references":[],"type":1}}
+Successfully wrote todo list
+
+Warning: Did you mean to update so many todos at the same time? Consider working on them one by one.
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Good — no `attr` declarations, so Phoenix will pass all assigns through without issue. Now let me update the legend in the template to explain the new breakdown icons: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.html.heex**</summary>
+
+@@ lines 59-76 @@
+
+```
+flex-wrap items-center gap-6 text-sm">
+        <span class="font-semibold text-primary-500">Capacity: {@capacity} people</span>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-success"></span>
+            <span class="text-primary-400">Low (0-29)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-warning"></span>
+            <span class="text-primary-400">Medium (30-39)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-warning"></span>
+            <span class="text-primary-400">High (40-44)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded-full bg-error"></span>
+            <span class="text-primary-400">Full (45+)</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 border-l border-secondary-300 pl-4">
+          <div class="flex items-center gap-1">
+            <span>👤</span>
+            <span class="text-primary-400">Adults</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span>🧒</span>
+            <span class="text-primary-400">Kids &lt;12</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span>👶</span>
+            <span class="text-primary-400">Kids &lt;2
 ```
 </details></tool-use>
 
@@ -779,9 +1240,12 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting: *Update timeline occupancy badge* (4/4)
 
-- todoList: `[map[id:1 status:completed title:Add breakdown query in bookings.ex] map[id:2 status:completed title:Load breakdown map in calendar.ex] map[id:3 status:completed title:Update day_cell badge in calendar.ex] map[id:4 status:in-progress title:Update timeline occupancy badge]]`
+- [ ] Add breakdown query in bookings.ex _(in progress)_
+- [ ] Load breakdown map in calendar.ex
+- [ ] Update day_cell badge in calendar.ex
+- [ ] Update timeline occupancy badge
 
 **Result:**
 
@@ -792,61 +1256,150 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="read" data-tool-name="read_file"><details>
-<summary>Tool use: **read_file**</summary>
+Now let's check the timeline view to add the breakdown there too:   
 
-**Input:**
+_**Agent (copilot/claude-sonnet-4.6)**_
 
-- endLine: `110`
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex`
-- startLine: `60`
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Read `timeline.ex`, lines 60 to 120
+
+- [x] Add breakdown query in bookings.ex
+- [ ] Load breakdown map in calendar.ex _(in progress)_
+- [ ] Update day_cell badge in calendar.ex
+- [ ] Update timeline occupancy badge
 
 **Result:**
 
-````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"60","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"110","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"176","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"          \u003cth class=\"sticky left-0 z-20 bg-secondary-50 px-4 py-3 text-left text-sm font-semibold text-primary-500 border-r border-secondary-200 min-w-[240px]\"\u003e\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"            Guest / Rooms / People\n","type":2}],"cto
-… (output truncated)
-````
+```
+Successfully wrote todo list
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-Now I have a clear picture. Let me ask the clarifying questions before implementing: One follow-up on the detection approach — since you chose keyword matching, I need to know what keywords to look for: Got it. To summarize what I'll implement:
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
 
-- **All 3 groups shown separately**: Adults / Kids <2 / Kids <12
-- **Stacked badge** on each calendar day cell showing the breakdown
-- **Exact name matching**: `"Dospělí"` → adults, `"Děti do 2 let"` → kids<2, `"Děti do 12 let"` → kids<12
-- The existing total count + color coding stays as-is
+Read `timeline.html.heex`, lines 60 to 110
 
-Let me now look at the relevant code to build the implementation plan: Now I'll add a `get_occupancy_breakdown_for_range/2` function that returns per-day maps with counts per name category: 
-```
+- [x] Add breakdown query in bookings.ex
+- [x] Load breakdown map in calendar.ex
+- [ ] Update day_cell badge in calendar.ex _(in progress)_
+- [ ] Update timeline occupancy badge
 
-```
-Now load the breakdown map in the calendar LiveView `load_calendar_data/1` and pass it to the template: 
-```
+**Result:**
 
 ```
-Now pass the new assign to the `day_cell` component and update the badge rendering: The template lives in the `.html.heex` file, not the `.ex`. Let me update it there: 
+Successfully wrote todo list
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Now update the timeline's `load_timeline_data` to also fetch the breakdown map, and update the template to show the breakdown:  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **timeline.ex**</summary>
+
+@@ lines 96-102 @@
+
+```
+    occupancy_breakdown_map = Bookings.get_occupancy_breakdown_for_range(start_date, end_date)
+
+    socket
+    |> assign(:bookings, bookings)
+    |> assign(:dates, dates)
+    |> assign(:end_date, end_date)
+    |> assign(:capacity, capacity)
+    |> assign(:occupancy_map, occupancy_map)
+    |> assign(:occupancy_breakdown_map, occupancy_breakdown
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+
 ```
 
 ```
-Now update the `day_cell` component in `calendar.ex` to accept and use the new assign:  
-```
+
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **timeline.html.heex**</summary>
+
+@@ lines 83-83 @@
 
 ```
-Now I need to verify the `day_cell` function signature accepts the new attribute. Since it uses `assigns`, it will automatically pick up `@occupancy_breakdown_map` from `assigns` without needing any explicit declaration for function components that use `~H`. Let me check if there's an `attr` declaration:  Good — no `attr` declarations, so Phoenix will pass all assigns through without issue. Now let me update the legend in the template to explain the new breakdown icons: 
+  <%!-- Breakdown --%>
+                    <%= if breakdown = Map.get(@occupancy_breakdown_map, date) do %>
+                      <div class="mt-0.5 space-y-0.5 text-[10px] font-normal leading-tight">
+                        <%= if breakdown.adults > 0 do %>
+                          <div>👤 {breakdown.adults}</div>
+                        <% end %>
+                        <%= if breakdown.kids_under_12 > 0 do %>
+                          <div>🧒 {breakdown.kids_under_12}</div>
+                        <% end %>
+                        <%= if breakdown.kids_under_2 > 0 do %>
+                          <div>👶 {breakdown.kids_under_2}</div>
+                        <% end %>
+                      </div>
+                    <% end %>
+                  
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Completed: *Update timeline occupancy badge* (4/4)
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/booking_live/calendar.ex`
+- isRegexp: `false`
+- query: `attr :occupancy_map`
+
+**Result:**
 
 ```
-Now let's check the timeline view to add the breakdown there too:   Now update the timeline's `load_timeline_data` to also fetch the breakdown map, and update the template to show the breakdown:  
+No matches found.Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Let me verify there are no compile errors:  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+- [x] Add breakdown query in bookings.ex
+- [x] Load breakdown map in calendar.ex
+- [x] Update day_cell badge in calendar.ex
+- [ ] Update timeline occupancy badge _(in progress)_
+
+**Result:**
 
 ```
-
+Successfully wrote todo list
 ```
+</details></tool-use>
 
-```
-Let me verify there are no compile errors:  Clean compile — only pre-existing warnings, no new errors. Here's a summary of what was implemented:
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Clean compile — only pre-existing warnings, no new errors. Here's a summary of what was implemented:
 
 **New Bookings context function** (`bookings.ex`):
 - `get_occupancy_breakdown_for_range/2` — queries all active/upcoming bookings, then for each day in the range counts adults (`"Dospělí"`), kids<2 (`"Děti do 2 let"`), and kids<12 (`"Děti do 12 let"`) separately using exact name matching.
@@ -869,14 +1422,28 @@ Pretty good. Just when there are all three categories it looks ugly and it overf
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<think><details><summary>Thought Process</summary>
-The timeline already got the new format applied correctly. Only the calendar needs the update:
-</details></think>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **timeline.html.heex**</summary>
+
+@@ lines 89-93 @@
+
+```
+or breakdown.kids_under_2 > 0 do %>
+                          <div>
+                            🧒 {breakdown.kids_under_12 + breakdown.kids_under_2}
+                            <%= if breakdown.kids_under_2 > 0 do %>
+                              <span class="opacity-75">(👶{breakdown.kids_under_2})</span>
+                            <% end %>
+                          
+```
+</details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for text `Breakdown rows` (`**/lib/cozy_checkout_web/live/booking_live/calendar.ex`), 1 result
 
 **Input:**
 
@@ -887,7 +1454,9 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex\" line=170\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":1324,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"            \u003c%!-- Breakdown rows --%\u003e","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Hrt","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":18,"line":169},{"character":32,"line":169}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":1324,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Fwe","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"rFt","props":{},"references":[],"type":1}}
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex" line=170>
+            <%!-- Breakdown rows --%>
+</match>
 ```
 </details></tool-use>
 
@@ -895,6 +1464,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `calendar.ex`, lines 165 to 195
 
 **Input:**
 
@@ -905,62 +1476,13 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"165","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"195","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"252","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":33,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"            phx-click=\"show_day_bookings\"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":31,"references":[],"text":"            phx-value-date={@date}\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":30,"references":[],"text":"            cla
-… (output truncated)
-````
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
-<summary>Tool use: **grep_search**</summary>
-
-**Input:**
-
-- includePattern: `lib/cozy_checkout_web/live/booking_live/timeline.html.heex`
-- isRegexp: `false`
-- query: `Breakdown`
-
-**Result:**
-
-```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"11 matches","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex\" line=83\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":1388,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"                    \u003c%!-- Breakdown --%\u003e","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Hrt","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":26,"line":82},{"character":35,"line":82}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":1388,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Fwe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/l
-… (output truncated)
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
-
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex`
-- newString:
-
-```
-            <%!-- Breakdown rows --%>
-            <%= if breakdown = Map.get(@occupancy_breakdown_map, @date) do %>
-              <div class="mt-0.5 space-y-0.5 text-[10px] font-normal leading-tight">
-                <%= if breakdown.adults > 0 do %>
-                  <div>👤 {breakdown.adults}</div>
-                <% end %>
-                <%= if breakdown.kids_under_12 > 0 or breakdown.kids_under_2 > 0 do %>
-                  <div>
-                    🧒 {breakdown.kids_under_12 + breakdown.kids_under_2}
-                    <%= if breakdown.kids_under_2 > 0 do %>
-                      <span class="opacity-75">(👶{breakdown.kids_under_2})</span>
-                    <% end %>
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
-```
-
-- oldString:
-
-```
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex`. Lines 165 to 195 (252 lines total): 
+```elixir
+            phx-click="show_day_bookings"
+            phx-value-date={@date}
+            class={[occupancy_badge_class(occupancy), "cursor-pointer hover:shadow-md transition-shadow"]}
+          >
+            <span>{occupancy}/{@capacity}</span>
             <%!-- Breakdown rows --%>
             <%= if breakdown = Map.get(@occupancy_breakdown_map, @date) do %>
               <div class="mt-0.5 space-y-0.5 text-[10px] font-normal leading-tight">
@@ -975,26 +1497,94 @@ _**Agent (copilot/claude-sonnet-4.6)**_
                 <% end %>
               </div>
             <% end %>
-```
+          </button>
+        <% end %>
+      <% end %>
 
+      <%!-- Activity badges (right side) --%>
+      <%= if stats = Map.get(@arrivals_departures_map, @date) do %>
+        <div class="absolute top-1 right-1 flex flex-col gap-1 items-end">
+          <%= if stats.arrivals > 0 do %>
+            <button
+              type="button"
+              phx-click="show_day_bookings"
+              phx-value-date={@date}
+```
+````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `Breakdown` (`**/lib/cozy_checkout_web/live/booking_live/timeline.html.heex`), 11 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/booking_live/timeline.html.heex`
+- isRegexp: `false`
+- query: `Breakdown`
 
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"sw","props":{},"references":[],"type":1}}
+11 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=83>
+                    <%!-- Breakdown --%>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=84>
+                    <%= if breakdown = Map.get(@occupancy_breakdown_map, date) do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=84>
+                    <%= if breakdown = Map.get(@occupancy_breakdown_map, date) do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=86>
+                        <%= if breakdown.adults > 0 do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=87>
+                          <div>👤 {breakdown.adults}</div>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=89>
+                        <%= if breakdown.kids_under_12 > 0 or breakdown.kids_under_2 > 0 do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=89>
+                        <%= if breakdown.kids_under_12 > 0 or breakdown.kids_under_2 > 0 do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=91>
+                            🧒 {breakdown.kids_under_12 + breakdown.kids_under_2}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/timeline.html.heex" line=91>
+                            🧒 {breakdown.kids_under_12 + breakdown.kids_under_2}
+</match>
+<match path="/Users/michalhorcic/projects/
+… (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-
-```
-
-```
 The timeline already got the new format applied correctly. Only the calendar needs the update: 
-```
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.ex**</summary>
+
+@@ lines 176-180 @@
 
 ```
+or breakdown.kids_under_2 > 0 do %>
+                  <div>
+                    🧒 {breakdown.kids_under_12 + breakdown.kids_under_2}
+                    <%= if breakdown.kids_under_2 > 0 do %>
+                      <span class="opacity-75">(👶{breakdown.kids_under_2})</span>
+                    <% end %>
+                  
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 Done. Both views now show at most two rows in the breakdown:
 - `👤 8` — adults
 - `🧒 5 (👶2)` — total kids, with the under-2 count in parentheses when present

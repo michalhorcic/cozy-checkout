@@ -12,16 +12,14 @@ Check bookings states how they work right now. And add possibility to set state:
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll analyze the current booking states implementation and help you add a "personal" state. Let me start by examining the relevant code. 
-
-Now let me check the invoice component to understand the state transition UI better:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`
 
 **Input:**
 
@@ -30,7 +28,89 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":719,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":719},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":718,"references":[],"text":"defmodule CozyCheckout.Bookings do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":718},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":717,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":717},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":716,"references":[],"text":"  The Bookings context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":716},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":715,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":715},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":714,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":714},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":713,"references":[],"text":"  import Ecto.Query, warn: false\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":713},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":712,"references":[],"text":"  alias CozyCheckout.Repo\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":712},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":711,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":
+```elixir
+defmodule CozyCheckout.Bookings do
+  @moduledoc """
+  The Bookings context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Bookings.BookingInvoiceItem
+  alias CozyCheckout.Sales.InvoiceCounter
+  alias CozyCheckout.Rooms
+
+  @cottage_capacity 45
+
+  @doc """
+  Returns the list of bookings.
+  """
+  def list_bookings do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> order_by([b], asc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns paginated, filtered, and sorted bookings with Flop.
+  """
+  def list_bookings_with_flop(params \\ %{}) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> Flop.validate_and_run(params, for: Booking)
+  end
+
+  @doc """
+  Returns the list of active bookings (currently checked in).
+  """
+  def list_active_bookings do
+    today = Date.utc_today()
+
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.status == "active")
+    |> where([b], b.check_in_date <= ^today)
+    |> where([b], is_nil(b.check_out_date) or b.check_out_date >= ^today)
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.room_number])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of bookings for a specific guest.
+  """
+  def list_bookings_for_guest(guest_id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.guest_id == ^guest_id)
+    |> order_by([b], asc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single booking.
+  """
+  def get_booking!(id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload([:guest, :orders])
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a booking.
+  Automatically creates a booking_guest record for the primary guest.
+  """
+  def create_booking(attrs \\ %{}) do
+    
 … (output truncated)
 ````
 </details></tool-use>
@@ -39,6 +119,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `state|invoice_state` (`**/lib/cozy_checkout/bookings/**/*.ex`), 10 results
 
 **Input:**
 
@@ -49,8 +131,36 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"10 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex\" line=15\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":55000,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    field :state, :string, default: \"draft\"","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":11,"line":14},{"character":16,"line":14}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":55000,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex\" line=23\
-… (output truncated)
+10 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=15>
+    field :state, :string, default: "draft"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=23>
+  @valid_states ~w(draft generated sent paid)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=35>
+      :state
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=38>
+    |> validate_inclusion(:state, @valid_states)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=38>
+    |> validate_inclusion(:state, @valid_states)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=15>
+    field :state, :string, default: "draft"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=23>
+  @valid_states ~w(draft generated sent paid)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=35>
+      :state
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=38>
+    |> validate_inclusion(:state, @valid_states)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=38>
+    |> validate_inclusion(:state, @valid_states)
+</match>
 ```
 </details></tool-use>
 
@@ -59,6 +169,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `booking_invoice.ex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex`
@@ -66,8 +178,61 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":55,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"references":[],"text":"defmodule CozyCheckout.Bookings.BookingInvoice do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":54},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":53,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":49,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":49},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":48,"references":[],"text":"  schema \"booking_invoices\" do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":48},"references":[],"type":1},{"children":[{"lineBreakBefore"
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Bookings.BookingInvoice do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "booking_invoices" do
+    # Cached calculations
+    field :subtotal, :decimal
+    field :vat_amount, :decimal
+    field :total_price, :decimal
+
+    field :invoice_number, :string
+    field :invoice_generated_at, :utc_datetime
+    field :state, :string, default: "draft"
+
+    belongs_to :booking, CozyCheckout.Bookings.Booking
+    has_many :items, CozyCheckout.Bookings.BookingInvoiceItem, foreign_key: :booking_invoice_id
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @valid_states ~w(draft generated sent paid)
+
+  @doc false
+  def changeset(booking_invoice, attrs) do
+    booking_invoice
+    |> cast(attrs, [
+      :booking_id,
+      :subtotal,
+      :vat_amount,
+      :total_price,
+      :invoice_number,
+      :invoice_generated_at,
+      :state
+    ])
+    |> validate_required([:booking_id])
+    |> validate_inclusion(:state, @valid_states)
+    |> unique_constraint(:booking_id)
+    |> unique_constraint(:invoice_number)
+  end
+
+  @doc """
+  Calculate the number of nights between check-in and check-out dates.
+  Returns 1 if check_out_date is nil (open-ended booking).
+  """
+  def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+
+  def calculate_nights(%{check_in_date: check_in, check_out_date: check_out}) do
+    Date.diff(check_out, check_in)
+  end
+end
+
+```
 ````
 </details></tool-use>
 
@@ -75,6 +240,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `transition_to_|invoice.*state` (`**/lib/cozy_checkout_web/**/*.ex`), 20 results
 
 **Input:**
 
@@ -85,15 +252,50 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex\" line=22\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":55047,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"              state_badge_class(@invoice.state)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":33,"line":21},{"character":46,"line":21}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":55047,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalho
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=22>
+              state_badge_class(@invoice.state)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=24>
+              {state_label(@invoice.state)}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=41>
+          <%= if @invoice.state == "draft" do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=44>
+              phx-click="transition_to_generated"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=51>
+          <%= if @invoice.state in ["generated", "sent"] do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=52>
+            <%= if @invoice.state == "generated" do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=55>
+                phx-click="transition_to_sent"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=64>
+              phx-click="transition_to_paid"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=544>
+  def handle_event("transition_to_generated", _params, socket) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=545>
+    case Bookings.transition_to_generated(socket.assigns.invoice) do
+</
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the invoice component to understand the state transition UI better: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 1 to 101
 
 **Input:**
 
@@ -104,14 +306,63 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"101","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"610","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"  use CozyCheckoutWeb, :live_component\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`. Lines 1 to 101 (610 lines total): 
+```elixir
+defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckout.Bookings.{BookingInvoice, BookingInvoiceItem}
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+          <div class="bg-white shadow-lg rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-gray-900">Invoice Details</h2>
+        <div class="flex space-x-2">
+          <%= if @invoice && @invoice.invoice_number do %>
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              {@invoice.invoice_number}
+            </span>
+          <% end %>
+          <%= if @invoice do %>
+            <span class={[
+              "px-3 py-1 rounded-full text-sm font-semibold",
+              state_badge_class(@invoice.state)
+            ]}>
+              {state_label(@invoice.state)}
+            </span>
+            <button
+              type="button"
+              phx-click="recalculate"
+              phx-target={@myself}
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-calculator" class="w-4 h-4 inline mr-1" /> Recalculate
+            </button>
+          <% end %>
+        </div>
+      </div>
+
+      <%= if @invoice do %>
+        <%!-- State Transition Buttons --%>
+        <div class="mb-6 flex items-center justify-end space-x-2">
+          <%= if @invoice.state == "draft" do %>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+   
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll analyze the current booking states implementation and help you add a "personal" state. Let me start by examining the relevant code. Now let me check the invoice component to understand the state transition UI better: Perfect! Now I understand how the booking invoice states work. Let me summarize what I found and ask clarifying questions:
+Perfect! Now I understand how the booking invoice states work. Let me summarize what I found and ask clarifying questions:
 
 ## Current State System
 
@@ -173,52 +424,26 @@ _**User (2025-10-27 13:26:32Z)**_
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <think><details><summary>Thought Process</summary>
-Perfect! Now I understand the requirements. Let me implement the "personal" state as a parallel state. I'll create a todo list to track the changes. 
-
-Now let me start implementing: 
-
-Now let me add the transition_to_personal function in the Bookings context: 
-
-Now let me read more of the invoice_component to see the state transition buttons section: 
-
-Now let me update the state transition buttons section to include the personal state: 
-
-Now let me find the event handlers section and add the new handlers: 
-
-Perfect! Now I need to add the new event handlers and update the badge styling. Let me add the transition handlers: 
-
-Now let me update the badge styling functions: 
-
-Now let me update the index.ex file to add the personal state badge styling: 
-
-Now let me check the occupancy functions to verify they include personal state. Looking at the code I read earlier, I can see that the occupancy functions filter by booking status: 
-
-Let me read the occupancy functions more carefully to see if they filter by invoice state: 
-
-Perfect! I can see that the occupancy functions correctly:
-1. Join with `BookingInvoice` and `BookingInvoiceItem` 
-2. Filter by booking status (`upcoming`, `active`)
-3. Count only `item_type == "person"`
-4. **Do NOT filter by invoice state**
-
-This means that personal invoices will already be counted in the occupancy! The functions only care about booking status and invoice items, not the invoice state. So personal invoices will count toward capacity as required. 
-
-Perfect! Now let me update the project guidelines with the new personal state information: 
-
-Good! I can see the personal state documentation is already there. Now let me verify the implementation is complete by checking if there are any errors: 
-
-The errors are just compilation issues with dependencies and documentation formatting - not related to our changes. Let me create a quick test to verify the implementation works. Let me run the Phoenix server to see if everything compiles:
+Now let me update the index.ex file to add the personal state badge styling:
 </details></think>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Now I understand the requirements. Let me implement the "personal" state as a parallel state. I'll create a todo list to track the changes. 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Created 6 todos
 
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list and default value in booking_invoice.ex id:1 status:not-started title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:not-started title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:not-started title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:not-started title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:not-started title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:not-started title:Verify occupancy counting includes personal state]]`
+- [ ] Add 'personal' to valid states in BookingInvoice schema
+- [ ] Add transition_to_personal function in Bookings context
+- [ ] Update UI state buttons in InvoiceComponent
+- [ ] Add event handler for personal state transition
+- [ ] Update state badge styling for 'personal' state
+- [ ] Verify occupancy counting includes personal state
 
 **Result:**
 
@@ -234,27 +459,14 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting (1/6) *Add 'personal' to valid states in BookingInvoice schema*
 
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list in booking_invoice.ex to include 'personal' state id:1 status:in-progress title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:not-started title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:not-started title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:not-started title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:not-started title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:not-started title:Verify occupancy counting includes personal state]]`
-
-**Result:**
-
-```
-Successfully wrote todo list
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
-<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
-<summary>Tool use: **manage_todo_list**</summary>
-
-**Input:**
-
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list in booking_invoice.ex to include 'personal' state id:1 status:completed title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:in-progress title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:not-started title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:not-started title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:not-started title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:not-started title:Verify occupancy counting includes personal state]]`
+- [ ] Add 'personal' to valid states in BookingInvoice schema _(in progress)_
+- [ ] Add transition_to_personal function in Bookings context
+- [ ] Update UI state buttons in InvoiceComponent
+- [ ] Add event handler for personal state transition
+- [ ] Update state badge styling for 'personal' state
+- [ ] Verify occupancy counting includes personal state
 
 **Result:**
 
@@ -265,13 +477,39 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me start implementing: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice.ex**</summary>
+
+@@ lines 20-26 @@
+
+```
+    timestamps(type: :utc_datetime)
+  end
+
+  @valid_states ~w(draft personal generated sent paid)
+
+  @doc false
+  def changeset(booking_invoice, attrs) do
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting (2/6) *Add transition_to_personal function in Bookings context*
 
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list in booking_invoice.ex to include 'personal' state id:1 status:completed title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:completed title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:in-progress title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:not-started title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:not-started title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:not-started title:Verify occupancy counting includes personal state]]`
+- [x] Add 'personal' to valid states in BookingInvoice schema
+- [ ] Add transition_to_personal function in Bookings context _(in progress)_
+- [ ] Update UI state buttons in InvoiceComponent
+- [ ] Add event handler for personal state transition
+- [ ] Update state badge styling for 'personal' state
+- [ ] Verify occupancy counting includes personal state
 
 **Result:**
 
@@ -279,11 +517,84 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 Successfully wrote todo list
 ```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me add the transition_to_personal function in the Bookings context: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 597-612 @@
+
+```
+  @doc """
+  Transitions the invoice to "paid" state.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_paid(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "paid"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Transitions the invoice to "personal" state.
+  This state does not generate an invoice number and is used for capacity counting only.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_personal(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "personal"})
+      |> Repo.update()
+    end
+  end
+
+  # Helper function to validate invoice before state changes
+  defp validate_invoice_for_state_change(invoice) do
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting (3/6) *Update UI state buttons in InvoiceComponent*
+
+- [x] Add 'personal' to valid states in BookingInvoice schema
+- [x] Add transition_to_personal function in Bookings context
+- [ ] Update UI state buttons in InvoiceComponent _(in progress)_
+- [ ] Add event handler for personal state transition
+- [ ] Update state badge styling for 'personal' state
+- [ ] Verify occupancy counting includes personal state
+
+**Result:**
+
+```
+Successfully wrote todo list
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me read more of the invoice_component to see the state transition buttons section: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 35 to 115
 
 **Input:**
 
@@ -294,9 +605,129 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"35","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"115","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"610","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":83,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":83},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":82,"references":[],"text":"        \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":82},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":81,"references":[],"text":"      \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":81},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":80,"references":[],"text":"\n","type":
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`. Lines 35 to 115 (610 lines total): 
+```elixir
+        </div>
+      </div>
+
+      <%= if @invoice do %>
+        <%!-- State Transition Buttons --%>
+        <div class="mb-6 flex items-center justify-end space-x-2">
+          <%= if @invoice.state == "draft" do %>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <% end %>
+          <%= if @invoice.state in ["generated", "sent"] do %>
+            <%= if @invoice.state == "generated" do %>
+              <button
+                type="button"
+                phx-click="transition_to_sent"
+                phx-target={@myself}
+                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-paper-airplane" class="w-4 h-4 inline mr-1" /> Mark as Sent
+              </button>
+            <% end %>
+            <button
+              type="button"
+              phx-click="transition_to_paid"
+              phx-target={@myself}
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-banknotes" class="w-4 h-4 inline mr-1" /> Mark as Paid
+            </button>
+          <% end %>
+        </div>
+        <%!-- Invoice Items Table --%>
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Line Items</h3>
+            <%= if !@editing_item_id do %>
+          
 … (output truncated)
 ````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me update the state transition buttons section to include the personal state: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 38-72 @@
+
+```
+      <%= if @invoice do %>
+        <%!-- State Transition Buttons --%>
+        <div class="mb-6 flex items-center justify-end space-x-2">
+          <%= if @invoice.state == "draft" do %>
+            <button
+              type="button"
+              phx-click="transition_to_personal"
+              phx-target={@myself}
+              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-user" class="w-4 h-4 inline mr-1" /> Mark as Personal
+            </button>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <% end %>
+          <%= if @invoice.state == "personal" do %>
+            <button
+              type="button"
+              phx-click="transition_to_draft"
+              phx-target={@myself}
+              class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-arrow-uturn-left" class="w-4 h-4 inline mr-1" /> Back to Draft
+            </button>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <% end %>
+          <%= if @invoice.state in ["generated", "sent"] do %>
+            <%= if @invoice.state == "generated" do %>
+              <button
+                type="button"
+                phx-click="transition_to_sent"
+                phx-target={@myself}
+                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-paper-airplane" class="w-4 h-4 inline mr-1" /> Mark as Sent
+              </button>
+            <% end %>
+            <button
+              type="button"
+              phx-click="transition_to_paid"
+              phx-target={@myself}
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-banknotes" class="w-4 h-4 inline mr-1" /> Mark as Paid
+            </button>
+          <% end %>
+        </div>
+        <%!-- Invoice Items Table --%>
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
@@ -304,10 +735,14 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting (4/6) *Add event handler for personal state transition*
 
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list in booking_invoice.ex to include 'personal' state id:1 status:completed title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:completed title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:completed title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:in-progress title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:not-started title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:not-started title:Verify occupancy counting includes personal state]]`
+- [x] Add 'personal' to valid states in BookingInvoice schema
+- [x] Add transition_to_personal function in Bookings context
+- [x] Update UI state buttons in InvoiceComponent
+- [ ] Add event handler for personal state transition _(in progress)_
+- [ ] Update state badge styling for 'personal' state
+- [ ] Verify occupancy counting includes personal state
 
 **Result:**
 
@@ -318,8 +753,14 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me find the event handlers section and add the new handlers: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 540 to 636
 
 **Input:**
 
@@ -330,9 +771,166 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":99,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":99},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":98,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":98},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":97,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":97},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":96,"references":[],"text":"  def handle_event(\"recalculate\", _params, socket) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":96},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":95,"references":[],"text":"    case Bookings.recalculate_invoice_totals(socket.assigns.invoice) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":95},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":94,"references":[],"text":"      {:ok, invoice} -\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":94},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":93,"references":[],"text":"        {:noreply,\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":93},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":92,"references":[],"text":"         socket\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":92},"references":[],
+```elixir
+
+  @impl true
+  def handle_event("recalculate", _params, socket) do
+    case Bookings.recalculate_invoice_totals(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice totals recalculated")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to recalculate totals")}
+    end
+  end
+
+  @impl true
+  def handle_event("generate_invoice", _params, socket) do
+    case Bookings.generate_invoice_number(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice #{invoice.invoice_number} generated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to generate invoice number")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_generated", _params, socket) do
+    case Bookings.transition_to_generated(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice #{invoice.invoice_number} generated successfully")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to generate invoice")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_sent", _params, socket) do
+    case Bookings.transition_to_sent(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as sent")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as sent")}
+    end
+  end
+
+  @impl true
+  def handle_
 … (output truncated)
 ````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Now I need to add the new event handlers and update the badge styling. Let me add the transition handlers: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 603-620 @@
+
+```
+  @impl true
+  def handle_event("transition_to_paid", _params, socket) do
+    case Bookings.transition_to_paid(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as paid")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as paid")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_personal", _params, socket) do
+    case Bookings.transition_to_personal(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as personal")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as personal")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_draft", _params, socket) do
+    case Bookings.update_booking_invoice(socket.assigns.invoice, %{state: "draft"}) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice returned to draft")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to return invoice to draft")}
+    end
+  end
+
+  defp calculate_nights(booking) do
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me update the badge styling functions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 655-665 @@
+
+```
+  defp state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
+  defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+  defp state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
+  defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp state_label("draft"), do: "Draft"
+  defp state_label("personal"), do: "Personal"
+  defp state_label("generated"), do: "Generated"
+  defp state_label("sent"), do: "Sent"
+  defp state_label("paid"), do: "Paid"
+  defp state_label(state), do: String.capitalize(state)
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
@@ -340,10 +938,14 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting (5/6) *Update state badge styling for 'personal' state*
 
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list in booking_invoice.ex to include 'personal' state id:1 status:completed title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:completed title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:completed title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:completed title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:in-progress title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:not-started title:Verify occupancy counting includes personal state]]`
+- [x] Add 'personal' to valid states in BookingInvoice schema
+- [x] Add transition_to_personal function in Bookings context
+- [x] Update UI state buttons in InvoiceComponent
+- [x] Add event handler for personal state transition
+- [ ] Update state badge styling for 'personal' state _(in progress)_
+- [ ] Verify occupancy counting includes personal state
 
 **Result:**
 
@@ -354,8 +956,14 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me update the `index.ex` file to add the personal state badge styling: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `index.ex`, lines 320 to 340
 
 **Input:**
 
@@ -366,9 +974,55 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"320","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"340","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"359","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":23,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"  defp status_badge_class(\"cancelled\"), do: \"bg-red-100 text-red-800\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"  defp status_badge_class(_), do: \"bg-gray-100 text-gray-800\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"prior
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex`. Lines 320 to 340 (359 lines total): 
+```elixir
+  defp status_badge_class("cancelled"), do: "bg-red-100 text-red-800"
+  defp status_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+  defp invoice_state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp invoice_state_badge_class("paid"), do: "bg-green-100 text-green-800"
+  defp invoice_state_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp invoice_state_label("draft"), do: "Draft"
+  defp invoice_state_label("generated"), do: "Generated"
+  defp invoice_state_label("sent"), do: "Sent"
+  defp invoice_state_label("paid"), do: "Paid"
+  defp invoice_state_label(state), do: String.capitalize(state)
+
+  # Convert Phoenix indexed map params (e.g., %{"0" => "value"}) to arrays for Flop
+  defp normalize_flop_params(params) do
+    params
+    |> normalize_array_param("order_by")
+    |> normalize_array_param("order_directions")
+  end
+```
 ````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 323-333 @@
+
+```
+  defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp invoice_state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
+  defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+  defp invoice_state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp invoice_state_badge_class("paid"), do: "bg-green-100 text-green-800"
+  defp invoice_state_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp invoice_state_label("draft"), do: "Draft"
+  defp invoice_state_label("personal"), do: "Personal"
+  defp invoice_state_label("generated"), do: "Generated"
+  defp invoice_state_label("sent"), do: "Sent"
+  defp invoice_state_label("paid"), do: "Paid"
+  defp invoice_state_label(state), do: String.capitalize(state)
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
@@ -376,10 +1030,14 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting (6/6) *Verify occupancy counting includes personal state*
 
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list in booking_invoice.ex to include 'personal' state id:1 status:completed title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:completed title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:completed title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:completed title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:completed title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:in-progress title:Verify occupancy counting includes personal state]]`
+- [x] Add 'personal' to valid states in BookingInvoice schema
+- [x] Add transition_to_personal function in Bookings context
+- [x] Update UI state buttons in InvoiceComponent
+- [x] Add event handler for personal state transition
+- [x] Update state badge styling for 'personal' state
+- [ ] Verify occupancy counting includes personal state _(in progress)_
 
 **Result:**
 
@@ -390,8 +1048,14 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the occupancy functions to verify they include personal state. Looking at the code I read earlier, I can see that the occupancy functions filter by booking status: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `b\.status in \[` (`**/lib/cozy_checkout/bookings.ex`), 4 results
 
 **Input:**
 
@@ -402,15 +1066,31 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"4 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=664\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":56840,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"      where: b.status in [\"upcoming\", \"active\"],","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":13,"line":663},{"character":26,"line":663}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":56840,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=690\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":56841,"props":
-… (output truncated)
+4 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=664>
+      where: b.status in ["upcoming", "active"],
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=690>
+        where: b.status in ["upcoming", "active"],
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=664>
+      where: b.status in ["upcoming", "active"],
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=690>
+        where: b.status in ["upcoming", "active"],
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me read the occupancy functions more carefully to see if they filter by invoice state: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 645 to 695
 
 **Input:**
 
@@ -421,20 +1101,86 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"645","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"695","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"732","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"  defp maybe_generate_invoice_number(invoice), do: {:ok, invoice}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  # Occupancy Tracking\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 645 to 695 (732 lines total): 
+```elixir
+  defp maybe_generate_invoice_number(invoice), do: {:ok, invoice}
+
+  # Occupancy Tracking
+
+  @doc """
+  Returns the cottage capacity limit.
+  """
+  def cottage_capacity, do: @cottage_capacity
+
+  @doc """
+  Returns the total number of people booked for a specific date.
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_date(date) do
+    from(b in Booking,
+      join: bi in BookingInvoice,
+      on: bi.booking_id == b.id,
+      join: bii in BookingInvoiceItem,
+      on: bii.booking_invoice_id == bi.id,
+      where: b.status in ["upcoming", "active"],
+      where: b.check_in_date <= ^date,
+      where: is_nil(b.check_out_date) or b.check_out_date > ^date,
+      where: bii.item_type == "person",
+      select: sum(bii.quantity)
+    )
+    |> Repo.one()
+    |> case do
+      nil -> 0
+      count -> count
+    end
+  end
+
+  @doc """
+  Returns daily occupancy for a date range (for calendar view).
+  Returns a map: %{~D[2025-10-22] => 12, ~D[2025-10-23] => 15, ...}
+  Only counts invoice items with item_type == "person".
+  """
+  def get_occupancy_for_range(start_date, end_date) do
+    # Get all bookings that overlap with the date range
+    bookings =
+      from(b in Booking,
+        join: bi in BookingInvoice,
+        on: bi.booking_id == b.id,
+        join: bii in BookingInvoiceItem,
+        on: bii.booking_invoice_id == bi.id,
+        where: b.status in ["upcoming", "active"],
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,
+        where: bii.item_type == "person",
+        select: %{
+          check_in: b.check_in_date,
+```
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! I can see that the occupancy functions correctly:
+1. Join with `BookingInvoice` and `BookingInvoiceItem` 
+2. Filter by booking status (`upcoming`, `active`)
+3. Count only `item_type == "person"`
+4. **Do NOT filter by invoice state**
+
+This means that personal invoices will already be counted in the occupancy! The functions only care about booking status and invoice items, not the invoice state. So personal invoices will count toward capacity as required. 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Completed (6/6) *Verify occupancy counting includes personal state*
 
-- operation: `write`
-- todoList: `[map[description:Update the @valid_states list in booking_invoice.ex to include 'personal' state id:1 status:completed title:Add 'personal' to valid states in BookingInvoice schema] map[description:Create a new function to transition invoices to 'personal' state in bookings.ex id:2 status:completed title:Add transition_to_personal function in Bookings context] map[description:Add button to transition to/from personal state in invoice_component.ex id:3 status:completed title:Update UI state buttons in InvoiceComponent] map[description:Add handle_event for transition_to_personal in invoice_component.ex id:4 status:completed title:Add event handler for personal state transition] map[description:Add personal state badge class and label in both invoice_component.ex and index.ex id:5 status:completed title:Update state badge styling for 'personal' state] map[description:Check that get_occupancy_for_date and get_occupancy_for_range include personal state in queries id:6 status:completed title:Verify occupancy counting includes personal state]]`
+- [x] Add 'personal' to valid states in BookingInvoice schema
+- [x] Add transition_to_personal function in Bookings context
+- [x] Update UI state buttons in InvoiceComponent
+- [x] Add event handler for personal state transition
+- [x] Update state badge styling for 'personal' state
+- [x] Verify occupancy counting includes personal state
 
 **Result:**
 
@@ -445,8 +1191,14 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! Now let me update the project guidelines with the new personal state information: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `copilot-instructions.md`, lines 175 to 225
 
 **Input:**
 
@@ -457,7 +1209,30 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"175","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"225","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"334","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md","scheme":"file"},"options":{"isFromTool":true}}],"text":"```instructions\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"        *   `status` (open, paid, partially_paid, cancelled)\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"        *   `name` (for standalone orders)\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"        *   `guest_id`\n","type":2}],"ctor":2,"ctorName":"cle","
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md`. Lines 175 to 225 (334 lines total): 
+```instructions
+        *   `status` (open, paid, partially_paid, cancelled)
+        *   `name` (for standalone orders)
+        *   `guest_id`
+        *   `order_number` (use case-insensitive pattern match (ILIKE) instead of exact equality.)
+        *   `inserted_at` (date range for when orders were created)
+        *   Guest Name (searches in the associated booking's guest name)
+    *   The following fields should be sortable:
+        *   `inserted_at`
+        *   `status`
+    *   The default sorting should be by `desc: o.inserted_at` (newest first).
+*   To force the application to always use the light theme:
+    *   Modify the JavaScript in `root.html.heex` to always set the theme to "light". Remove the localStorage checks and system preference detection, and remove the event listeners for theme switching.
+    *   Update the daisyUI configuration in `app.css` to change `prefersdark: true` to `prefersdark: false` in the dark theme configuration. This prevents the dark theme from being applied when the browser has a dark mode preference.
+*   When displaying guest names in the Pohoda export, use the following logic to handle standalone orders:
+    *   In the template (`index.html.heex`), add a conditional check: `<%= if order.booking_id do %>`
+    *   If the order has a booking, display the guest name: `{order.booking.guest.name}`
+    *   If it's a standalone order, display a "Standalone" badge with the order name: `{order.name}`. This matches the styling used in the orders index page.
+    *   In the Pohoda module (`pohoda.ex`), replace direct access `order.booking.guest.name` with a helper function call: `get_customer_name(order)`
+    *   Add a new helper function `get_customer_name/1` that:
+        *   Returns the guest name if the order has a booking with a guest
+        *   Returns the order name for standalone orders
+        *   Falls b
 … (output truncated)
 ````
 </details></tool-use>
@@ -466,6 +1241,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `copilot-instructions.md`, lines 285 to 334
 
 **Input:**
 
@@ -476,34 +1253,108 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":52,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md","scheme":"file"},"options":{"isFromTool":true}}],"text":"```instructions\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"    *   The sequential number starts at `00001` each year.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"    *   Concurrency: Although unlikely, if multiple invoices can be generated simultaneously, proper locking is needed to prevent duplicate numbers.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":49,"references":[],"text":"    *   This requires a database migration to modify the `invoice_number` column and potentially add validation, a mechanism to track the sequential counter, and updates to the invoice generation logic.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":49},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":48,"references":[],"text":"*   **Invoice Number Generation for Bookings:** Implement the `generate_invoice_number` function in the Bookings context to use the new format `YY08XXXXX` for booking invoices.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":48},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":47,"references":[],"text":"*   **Booking Invoice States:** Implement a state management system for booking invoices with the following s
+```instructions
+    *   The sequential number starts at `00001` each year.
+    *   Concurrency: Although unlikely, if multiple invoices can be generated simultaneously, proper locking is needed to prevent duplicate numbers.
+    *   This requires a database migration to modify the `invoice_number` column and potentially add validation, a mechanism to track the sequential counter, and updates to the invoice generation logic.
+*   **Invoice Number Generation for Bookings:** Implement the `generate_invoice_number` function in the Bookings context to use the new format `YY08XXXXX` for booking invoices.
+*   **Booking Invoice States:** Implement a state management system for booking invoices with the following states:
+    *   `created`: Initial state when the invoice is created.
+    *   `generated`: State after the invoice number is generated.
+    *   `sent`: State after the invoice is sent (no email sending required at this time).
+    *   `paid`: State after the invoice is paid.
+    *   Keep it flexible for now, so state progression does not need to be linear.
+    *   State names should be:
+        *   `created` - Invoice created but no number assigned
+        *   `generated` - Invoice has a number assigned
+        *   `sent` - Invoice has been sent to guest
+        *   `paid` - Invoice has been paid
+    *   Validation: Check for invoice items and that total is not zero (it was recalculated at least once with some items)
+    *   Tracking: It is just a flag. Invoices and orders are completely separate for now. Orders are for bar, invoices are for bookings (actual stay)
+*   **Invoice State Management UI:** Add the ability to manually set the invoice state in the booking detail page in the admin section. Use separate action buttons for each state transition.
+*   **Booking Index Invoice State Visibility:** Display the invoice state in the bookings index page in a new column with a badge.
+*   **Bookings Sorting:** The default sorting for bookings should be by `check_in_date` fr
 … (output truncated)
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Good! I can see the personal state documentation is already there. Now let me verify the implementation is complete by checking if there are any errors: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
 <summary>Tool use: **get_errors**</summary>
 
+Checked workspace, 3 problems found in `mix.exs`, `copilot-instructions.md`
+
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cerrors path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs\"\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":57373,"props":{},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"This code at line ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"```\ndefmodule CozyCheckout.MixProject do\n```","type":2}],"ctor":2,"ctorName":"cle","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Wt","props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"has the problem reported:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003ccompileError\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":57375,"props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":1,"text":"an exception was raised:\n    ** (Mix.Error) Can't continue due to errors on dependencies\n        (mix 1.19.1) lib/mix.ex:647: Mix.raise/2\n        (mix 1.19.1) lib/mix/tasks/deps.loadpaths.ex:107: Mix.Tasks.Deps.Loadpaths.deps_check/3\n        (mix 1.19.1) lib/mix/tasks/deps.loadpaths.ex:73: Mix.Tasks.Deps.Loadpaths.run/1\n        (mix 1.19.1) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5\n        (mix 1.19.1) lib/mix/tasks/loadpaths.ex:43: Mix.Tasks.Loadpaths.run/1\n        (mix 1.19.1) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5\n        (mix 1.19.1) lib/mix/tasks/compile.ex:137: Mix.Tasks.Compil
-… (output truncated)
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs">
+This code at line 1
+```
+defmodule CozyCheckout.MixProject do
+```
+has the problem reported:
+<compileError>
+an exception was raised:
+    ** (Mix.Error) Can't continue due to errors on dependencies
+        (mix 1.19.1) lib/mix.ex:647: Mix.raise/2
+        (mix 1.19.1) lib/mix/tasks/deps.loadpaths.ex:107: Mix.Tasks.Deps.Loadpaths.deps_check/3
+        (mix 1.19.1) lib/mix/tasks/deps.loadpaths.ex:73: Mix.Tasks.Deps.Loadpaths.run/1
+        (mix 1.19.1) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+        (mix 1.19.1) lib/mix/tasks/loadpaths.ex:43: Mix.Tasks.Loadpaths.run/1
+        (mix 1.19.1) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+        (mix 1.19.1) lib/mix/tasks/compile.ex:137: Mix.Tasks.Compile.run/1
+        (mix 1.19.1) lib/mix/task.ex:499: anonymous fn/3 in Mix.Task.run_task/5
+        (language_server 0.29.3) lib/language_server/build.ex:566: ElixirLS.LanguageServer.Build.run_mix_compile/1
+        (language_server 0.29.3) lib/language_server/build.ex:198: ElixirLS.LanguageServer.Build.handle_compile_phase/6
+        (stdlib 7.1) timer.erl:599: :timer.tc/2
+        (language_server 0.29.3) lib/language_server/build.ex:22: anonymous fn/3 in ElixirLS.LanguageServer.Build.build/3
+        (kernel 10.4.1) global.erl:703: :global.trans/4
+</compileError>
+
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md">
+This code at line 3
+```
+globs: *
+```
+has the problem reported:
+<compileError>
+Attribute 'globs' is not supported in instructions files. Supported: description, applyTo.
+</compileError>
+This code at line 71
+```
+*   Display the order name in the order selection screen (e.g., "📋 Order #001 (Dad) - $25.50").
+```
+has the problem reported:
+<compileError>
+Unknown tool or toolset '001'.
+</compileError>
+
+</errors>
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+The errors are just compilation issues with dependencies and documentation formatting - not related to our changes. Let me create a quick test to verify the implementation works. Let me run the Phoenix server to see if everything compiles: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rules [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings"), [`head`](command:_chat.openTerminalSettingsLink?%255B7%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | head -50`
-- explanation: `Compile the project to check for any syntax errors in our changes`
-- isBackground: `false`
+Compile the project to check for any syntax errors in our changes
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | head -50
+```
 
 **Result:**
 
@@ -535,37 +1386,7 @@ form_component.ex:237)
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Perfect! Now I understand the requirements. Let me implement the "personal" state as a parallel state. I'll create a todo list to track the changes. Now let me start implementing: 
-```
-
-```
-Now let me add the transition_to_personal function in the Bookings context: 
-```
-
-```
-Now let me read more of the invoice_component to see the state transition buttons section: Now let me update the state transition buttons section to include the personal state: 
-```
-
-```
-Now let me find the event handlers section and add the new handlers: Perfect! Now I need to add the new event handlers and update the badge styling. Let me add the transition handlers: 
-```
-
-```
-Now let me update the badge styling functions: 
-```
-
-```
-Now let me update the `index.ex` file to add the personal state badge styling: 
-```
-
-```
-Now let me check the occupancy functions to verify they include personal state. Looking at the code I read earlier, I can see that the occupancy functions filter by booking status: Let me read the occupancy functions more carefully to see if they filter by invoice state: Perfect! I can see that the occupancy functions correctly:
-1. Join with `BookingInvoice` and `BookingInvoiceItem` 
-2. Filter by booking status (`upcoming`, `active`)
-3. Count only `item_type == "person"`
-4. **Do NOT filter by invoice state**
-
-This means that personal invoices will already be counted in the occupancy! The functions only care about booking status and invoice items, not the invoice state. So personal invoices will count toward capacity as required. Perfect! Now let me update the project guidelines with the new personal state information: Good! I can see the personal state documentation is already there. Now let me verify the implementation is complete by checking if there are any errors: The errors are just compilation issues with dependencies and documentation formatting - not related to our changes. Let me create a quick test to verify the implementation works. Let me run the Phoenix server to see if everything compiles: Great! The project compiles successfully with only some warnings (which are pre-existing). Now let me write a summary of what was implemented:
+Great! The project compiles successfully with only some warnings (which are pre-existing). Now let me write a summary of what was implemented:
 
 ## Summary
 

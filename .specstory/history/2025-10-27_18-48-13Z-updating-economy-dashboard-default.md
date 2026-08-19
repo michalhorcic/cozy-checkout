@@ -23,7 +23,6 @@ Looking at the code, the dashboard already uses the current year as default. If 
 **Option 1: Show data from today onwards (rest of current year)**
 
 ````elixir
-// filepath: lib/cozy_checkout_web/live/admin/economy_live/index.ex
   defp default_date_range do
     today = Date.utc_today()
     year_end = Date.end_of_year(today)
@@ -55,16 +54,14 @@ Show data for this range: current_date to current_date + 1.year.
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll update the economy dashboard to show data from the current date to one year ahead. Let me find and modify the relevant file. 
-
-Now I'll update the default date range to show from current date to current date + 1 year:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `default_date_range`, 1 result
 
 **Input:**
 
@@ -74,7 +71,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_18-48Z-updating-economy-dashboard-default-year-display.md\" line=26\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":77151,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  defp default_date_range do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":7,"line":25},{"character":25,"line":25}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_18-48Z-updating-economy-dashboard-default-year-display.md","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_18-48Z-updating-economy-dashboard-default-year-display.md","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_18-48Z-updating-economy-dashboard-default-year-display.md","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":77151,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_18-48Z-updating-economy-dashboard-default-year-display.md" line=26>
+  defp default_date_range do
+</match>
 ```
 </details></tool-use>
 
@@ -83,6 +82,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/economy_live.ex`, no matches
+
 **Input:**
 
 - query: `**/economy_live.ex`
@@ -90,7 +91,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No files found","type":2}],"ctor":2,"ctorName":"Ore","props":{},"references":[],"type":1}}
+No files found
 ```
 </details></tool-use>
 
@@ -98,6 +99,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `defmodule.*Economy.*Live`, 1 result
 
 **Input:**
 
@@ -107,7 +110,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex\" line=1\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":77202,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"defmodule CozyCheckoutWeb.EconomyLive.Index do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":0,"line":0},{"character":37,"line":0}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":77202,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex" line=1>
+defmodule CozyCheckoutWeb.EconomyLive.Index do
+</match>
 ```
 </details></tool-use>
 
@@ -116,6 +121,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `index.ex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex`
@@ -123,21 +130,137 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":143,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":143},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":142,"references":[],"text":"defmodule CozyCheckoutWeb.EconomyLive.Index do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":142},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":141,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":141},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":140,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":140},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":139,"references":[],"text":"  alias CozyCheckout.Bookings\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":139},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":138,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":138},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":137,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":137},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":136,"references":[],"text":"  def mount(_params, _session, socket) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":136},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":
+```elixir
+defmodule CozyCheckoutWeb.EconomyLive.Index do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Bookings
+
+  @impl true
+  def mount(_params, _session, socket) do
+    # Default to current year
+    today = Date.utc_today()
+    start_of_year = Date.new!(today.year, 1, 1)
+    end_of_year = Date.new!(today.year, 12, 31)
+
+    # Default to all states selected
+    all_states = ["draft", "personal", "generated", "sent", "advance_paid", "paid"]
+
+    socket =
+      socket
+      |> assign(:page_title, "Economy Management")
+      |> assign(:start_date, start_of_year)
+      |> assign(:end_date, end_of_year)
+      |> assign(:selected_states, all_states)
+      |> assign(:all_states, all_states)
+      |> load_economy_data()
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("filter", params, socket) do
+    start_date = parse_date(params["start_date"]) || socket.assigns.start_date
+    end_date = parse_date(params["end_date"]) || socket.assigns.end_date
+
+    socket =
+      socket
+      |> assign(:start_date, start_date)
+      |> assign(:end_date, end_date)
+      |> load_economy_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("toggle_state", %{"state" => state}, socket) do
+    selected_states =
+      if state in socket.assigns.selected_states do
+        List.delete(socket.assigns.selected_states, state)
+      else
+        [state | socket.assigns.selected_states]
+      end
+
+    socket =
+      socket
+      |> assign(:selected_states, selected_states)
+      |> load_economy_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_all_states", _params, socket) do
+    socket =
+      socket
+      |> assign(:selected_states, socket.assigns.all_states)
+      |> load_economy_data()
+
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("clear_all_states", _params, socket) do
+    socket =
+      socket
+      |> assign(:selected_states, [])
+      |> load_economy_data()
+
+    {:noreply, socket}
+  end
+
+  defp load_economy_data(s
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll update the economy dashboard to show data from the current date to one year ahead. Let me find and modify the relevant file. Now I'll update the default date range to show from current date to current date + 1 year: 
-```
+Now I'll update the default date range to show from current date to current date + 1 year: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 6-14 @@
 
 ```
+  @impl true
+  def mount(_params, _session, socket) do
+    # Default to current date + 1 year
+    today = Date.utc_today()
+    one_year_ahead = Date.add(today, 365)
+
+    # Default to all states selected
+    all_states = ["draft", "personal", "generated", "sent", "advance_paid", "paid"]
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 15-25 @@
 
 ```
+    socket =
+      socket
+      |> assign(:page_title, "Economy Management")
+      |> assign(:start_date, today)
+      |> assign(:end_date, one_year_ahead)
+      |> assign(:selected_states, all_states)
+      |> assign(:all_states, all_states)
+      |> load_economy_data()
 
+    {:ok, socket}
+  end
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've updated the economy dashboard to show data from the current date to one year ahead. The changes:
 
 1. **Changed from**: Start of current year to end of current year (Jan 1, 2025 - Dec 31, 2025)

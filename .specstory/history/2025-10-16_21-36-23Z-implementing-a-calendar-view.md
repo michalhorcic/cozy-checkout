@@ -12,65 +12,14 @@ Let's implement calendar view for our bookings. Check internet for best practice
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you implement a calendar view for bookings. Let me first search for best practices and check what's available in the Elixir/Phoenix ecosystem. 
-
-Now let me check the existing booking context and look at best practices for calendar views in Phoenix LiveView: 
-
-Great! Now let me implement a calendar view for bookings. Based on best practices for Phoenix LiveView and to avoid JavaScript dependencies, I'll create a pure Elixir/LiveView calendar implementation using Tailwind CSS for styling.
-
-I'll create:
-1. A new context function to get bookings for a specific month
-2. A calendar LiveView component
-3. Calendar helper functions to generate the calendar grid
-
-Let me start: 
-
-Now let's create a calendar helper module to generate the calendar grid: 
-
-Now let's create the calendar LiveView: 
-
-Now let's create the calendar template: 
-
-Now let's create a component for the day cell: 
-
-Now we need to add the CalendarHelpers alias to the template. Let's update the template to include the module alias properly: 
-
-Now let's add the calendar route to the router: 
-
-Now let's add a link to the calendar view in the bookings index page: 
-
-Now let's also add a link to the calendar from the admin dashboard: 
-
-Let's add a calendar card to the dashboard: 
-
-Now let's test the calendar by starting the server: 
-
-We need to fix the `current_scope` attribute - it should be a string, not an atom. Let's also check what the proper scope should be: 
-
-Let me check the existing layouts and how they handle this: 
-
-I see the issue. The `current_scope` attribute expects a `:map`, but we're passing an atom. Let me check how other templates handle this: 
-
-It looks like other LiveViews don't use the `<Layouts.app>` wrapper. They just have the content directly. Let me check one of them: 
-
-I see - the templates don't use the `<Layouts.app>` wrapper. Let me update the calendar template to match the pattern: 
-
-I need to remove the closing tag as well: 
-
-Let me read the full file to understand the structure: 
-
-I see the issue - there's an extra closing div. Let me fix it: 
-
-Good! Now let's also fix the indentation issue with the rest of the template: 
-
-Now let's compile again:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
+
+Fetched 2 resources
 
 **Input:**
 
@@ -79,7 +28,59 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex` starting at line 93:\n```ex\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex\n...\n          \u003cdiv :if={@booking.notes} class=\"mt-4\"\u003e\n            \u003cp class=\"text-sm text-gray-500\"\u003eBooking Notes\u003c/p\u003e\n            \u003cp class=\"text-gray-900\"\u003e{@booking.notes}\u003c/p\u003e\n          \u003c/div\u003e\n        \u003c/div\u003e\n\n        \u003c%!-- Associated Orders --%\u003e\n        \u003cdiv class=\"bg-white shadow-lg rounded-lg p-6\"\u003e\n          \u003ch2 class=\"text-2xl font-bold text-gray-900 mb-4\"\u003eOrders\u003c/h2\u003e\n          \u003c%= if @booking.orders == [] do %\u003e\n            \u003cp class=\"text-gray-500\"\u003eNo orders yet for this booking.\u003c/p\u003e\n          \u003c% else %\u003e\n            \u003cdiv class=\"overflow-hidden\"\u003e\n              \u003ctable class=\"min-w-full divide-y divide-gray-200\"\u003e\n                \u003cthead class=\"bg-gray-50\"\u003e\n                  \u003ctr\u003e\n                    \u003cth class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"\u003e\n                      Order Date\n                    \u003c/th\u003e\n                    \u003cth class=\"px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider\"\u003e\n...\n```\n\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_comp
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex` starting at line 93:
+```ex
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex
+...
+          <div :if={@booking.notes} class="mt-4">
+            <p class="text-sm text-gray-500">Booking Notes</p>
+            <p class="text-gray-900">{@booking.notes}</p>
+          </div>
+        </div>
+
+        <%!-- Associated Orders --%>
+        <div class="bg-white shadow-lg rounded-lg p-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">Orders</h2>
+          <%= if @booking.orders == [] do %>
+            <p class="text-gray-500">No orders yet for this booking.</p>
+          <% else %>
+            <div class="overflow-hidden">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Order Date
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex` starting at line 1:
+```ex
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex
+defmodule CozyCheckoutWeb.BookingLive.FormComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckout.Guests
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div>
+      <.header>
+        {@title}
+      </.header>
+
+      <.form
+        for={@form}
+        id="booking-form"
+        phx-target={@myself}
+        phx-change="validate"
+        phx-submit="save"
+      >
+        <.input
+  
 … (output truncated)
 ````
 </details></tool-use>
@@ -89,6 +90,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Searched codebase for "bookings table schema check_in check_out dates", 21 results
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`
@@ -96,15 +99,110 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":126,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":126},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":125,"references":[],"text":"defmodule CozyCheckout.Bookings do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":125},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":124,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":124},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":123,"references":[],"text":"  The Bookings context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":123},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":122,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":122},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":121,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":121},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":120,"references":[],"text":"  import Ecto.Query, warn: false\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":120},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":119,"references":[],"text":"  alias CozyCheckout.Repo\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":119},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":118,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":
+```elixir
+defmodule CozyCheckout.Bookings do
+  @moduledoc """
+  The Bookings context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+
+  @doc """
+  Returns the list of bookings.
+  """
+  def list_bookings do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of active bookings (currently checked in).
+  """
+  def list_active_bookings do
+    today = Date.utc_today()
+
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.status == "active")
+    |> where([b], b.check_in_date <= ^today)
+    |> where([b], is_nil(b.check_out_date) or b.check_out_date >= ^today)
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.room_number])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of bookings for a specific guest.
+  """
+  def list_bookings_for_guest(guest_id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.guest_id == ^guest_id)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single booking.
+  """
+  def get_booking!(id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload([:guest, :orders])
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a booking.
+  """
+  def create_booking(attrs \\ %{}) do
+    %Booking{}
+    |> Booking.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a booking.
+  """
+  def update_booking(%Booking{} = booking, attrs) do
+    booking
+    |> Booking.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a booking (soft delete).
+  """
+  def delete_booking(%Booking{} = booking) do
+    booking
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking booking changes.
+  """
+  def change_booking(%Booking{} = booking, attrs \\ %{}) 
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the existing booking context and look at best practices for calendar views in Phoenix LiveView: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Read `bookings.ex`
 
 **Input:**
 
@@ -115,8 +213,24 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"6 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=14\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":77333,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def list_bookings do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":13},{"character":19,"line":13}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":77333,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=25\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":77334,"props":{},"references":[],"type":1},{"chil
-… (output truncated)
+6 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=14>
+  def list_bookings do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=25>
+  def list_active_bookings do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=41>
+  def list_bookings_for_guest(guest_id) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=14>
+  def list_bookings do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=25>
+  def list_active_bookings do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=41>
+  def list_bookings_for_guest(guest_id) do
+</match>
 ```
 </details></tool-use>
 
@@ -124,6 +238,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Searched text for `def list_bookings|list_active_bookings` (`**/lib/cozy_checkout/bookings.ex`), 6 results
 
 **Input:**
 
@@ -244,14 +360,114 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Great! Now let me implement a calendar view for bookings. Based on best practices for Phoenix LiveView and to avoid JavaScript dependencies, I'll create a pure Elixir/LiveView calendar implementation using Tailwind CSS for styling.
+
+I'll create:
+1. A new context function to get bookings for a specific month
+2. A calendar LiveView component
+3. Calendar helper functions to generate the calendar grid
+
+Let me start: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 93-123 @@
+
+```
+  @doc """
+  Updates booking status based on check-in/check-out dates.
+  Should be called periodically or when dates change.
+  """
+  def update_booking_status(%Booking{} = booking) do
+    today = Date.utc_today()
+
+    new_status =
+      cond do
+        booking.status == "cancelled" ->
+          "cancelled"
+
+        Date.compare(booking.check_in_date, today) == :gt ->
+          "upcoming"
+
+        booking.check_out_date && Date.compare(booking.check_out_date, today) == :lt ->
+          "completed"
+
+        true ->
+          "active"
+      end
+
+    if new_status != booking.status do
+      booking
+      |> Ecto.Changeset.change(status: new_status)
+      |> Repo.update()
+    else
+      {:ok, booking}
+    end
+  end
+
+  @doc """
+  Returns bookings for a specific month.
+  Useful for calendar views.
+  """
+  def list_bookings_for_month(year, month) do
+    start_date = Date.new!(year, month, 1)
+    end_date = Date.end_of_month(start_date)
+
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where(
+      [b],
+      (b.check_in_date >= ^start_date and b.check_in_date <= ^end_date) or
+        (b.check_out_date >= ^start_date and b.check_out_date <= ^end_date) or
+        (b.check_in_date < ^start_date and
+           (is_nil(b.check_out_date) or b.check_out_date > ^end_date))
+    )
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.guest_id])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns bookings for a specific date range.
+  """
+  def list_bookings_for_date_range(start_date, end_date) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where(
+      [b],
+      (b.check_in_date >= ^start_date and b.check_in_date <= ^end_date) or
+        (b.check_out_date >= ^start_date and b.check_out_date <= ^end_date) or
+        (b.check_in_date < ^start_date and
+           (is_nil(b.check_out_date) or b.check_out_date > ^end_date))
+    )
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.guest_id])
+    |> Repo.all()
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's create a calendar helper module to generate the calendar grid: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `calendar_helpers.ex`
 
 **Input:**
 
@@ -352,14 +568,901 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar_helpers.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.BookingLive.CalendarHelpers do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  @moduledoc """
+```
+
+@@ lines 3-3 @@
+
+```
+
+  Helper functions for generating calendar views.
+```
+
+@@ lines 4-4 @@
+
+```
+
+  """
+```
+
+@@ lines 5-5 @@
+
+```
+
+
+```
+
+@@ lines 6-6 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 7-7 @@
+
+```
+
+  Generates a list of weeks for a given month.
+```
+
+@@ lines 8-8 @@
+
+```
+
+  Each week is a list of 7 days (starting Monday).
+```
+
+@@ lines 9-9 @@
+
+```
+
+  Days outside the current month are nil.
+```
+
+@@ lines 10-10 @@
+
+```
+
+  """
+```
+
+@@ lines 11-11 @@
+
+```
+
+  def generate_calendar_grid(year, month) do
+```
+
+@@ lines 12-12 @@
+
+```
+
+    first_day = Date.new!(year, month, 1)
+```
+
+@@ lines 13-13 @@
+
+```
+
+    last_day = Date.end_of_month(first_day)
+```
+
+@@ lines 14-14 @@
+
+```
+
+    
+```
+
+@@ lines 15-15 @@
+
+```
+
+    # Find the Monday of the week containing the first day
+```
+
+@@ lines 16-16 @@
+
+```
+
+    start_offset = Date.day_of_week(first_day) - 1
+```
+
+@@ lines 17-17 @@
+
+```
+
+    calendar_start = Date.add(first_day, -start_offset)
+```
+
+@@ lines 18-18 @@
+
+```
+
+    
+```
+
+@@ lines 19-19 @@
+
+```
+
+    # Find the Sunday of the week containing the last day
+```
+
+@@ lines 20-20 @@
+
+```
+
+    end_offset = 7 - Date.day_of_week(last_day)
+```
+
+@@ lines 21-21 @@
+
+```
+
+    calendar_end = Date.add(last_day, end_offset)
+```
+
+@@ lines 22-22 @@
+
+```
+
+    
+```
+
+@@ lines 23-23 @@
+
+```
+
+    # Generate all dates in the calendar grid
+```
+
+@@ lines 24-24 @@
+
+```
+
+    calendar_start
+```
+
+@@ lines 25-25 @@
+
+```
+
+    |> Date.range(calendar_end)
+```
+
+@@ lines 26-26 @@
+
+```
+
+    |> Enum.map(fn date ->
+```
+
+@@ lines 27-27 @@
+
+```
+
+      if date.month == month do
+```
+
+@@ lines 28-28 @@
+
+```
+
+        date
+```
+
+@@ lines 29-29 @@
+
+```
+
+      else
+```
+
+@@ lines 30-30 @@
+
+```
+
+        nil
+```
+
+@@ lines 31-31 @@
+
+```
+
+      end
+```
+
+@@ lines 32-32 @@
+
+```
+
+    end)
+```
+
+@@ lines 33-33 @@
+
+```
+
+    |> Enum.chunk_every(7)
+```
+
+@@ lines 34-34 @@
+
+```
+
+  end
+```
+
+@@ lines 35-35 @@
+
+```
+
+
+```
+
+@@ lines 36-36 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 37-37 @@
+
+```
+
+  Returns the name of the month.
+```
+
+@@ lines 38-38 @@
+
+```
+
+  """
+```
+
+@@ lines 39-39 @@
+
+```
+
+  def month_name(month) do
+```
+
+@@ lines 40-40 @@
+
+```
+
+    case month do
+```
+
+@@ lines 41-41 @@
+
+```
+
+      1 -> "January"
+```
+
+@@ lines 42-42 @@
+
+```
+
+      2 -> "February"
+```
+
+@@ lines 43-43 @@
+
+```
+
+      3 -> "March"
+```
+
+@@ lines 44-44 @@
+
+```
+
+      4 -> "April"
+```
+
+@@ lines 45-45 @@
+
+```
+
+      5 -> "May"
+```
+
+@@ lines 46-46 @@
+
+```
+
+      6 -> "June"
+```
+
+@@ lines 47-47 @@
+
+```
+
+      7 -> "July"
+```
+
+@@ lines 48-48 @@
+
+```
+
+      8 -> "August"
+```
+
+@@ lines 49-49 @@
+
+```
+
+      9 -> "September"
+```
+
+@@ lines 50-50 @@
+
+```
+
+      10 -> "October"
+```
+
+@@ lines 51-51 @@
+
+```
+
+      11 -> "November"
+```
+
+@@ lines 52-52 @@
+
+```
+
+      12 -> "December"
+```
+
+@@ lines 53-53 @@
+
+```
+
+    end
+```
+
+@@ lines 54-54 @@
+
+```
+
+  end
+```
+
+@@ lines 55-55 @@
+
+```
+
+
+```
+
+@@ lines 56-56 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 57-57 @@
+
+```
+
+  Returns the short name of a day of week (1 = Monday, 7 = Sunday).
+```
+
+@@ lines 58-58 @@
+
+```
+
+  """
+```
+
+@@ lines 59-59 @@
+
+```
+
+  def day_name(day_of_week) do
+```
+
+@@ lines 60-60 @@
+
+```
+
+    case day_of_week do
+```
+
+@@ lines 61-61 @@
+
+```
+
+      1 -> "Mon"
+```
+
+@@ lines 62-62 @@
+
+```
+
+      2 -> "Tue"
+```
+
+@@ lines 63-63 @@
+
+```
+
+      3 -> "Wed"
+```
+
+@@ lines 64-64 @@
+
+```
+
+      4 -> "Thu"
+```
+
+@@ lines 65-65 @@
+
+```
+
+      5 -> "Fri"
+```
+
+@@ lines 66-66 @@
+
+```
+
+      6 -> "Sat"
+```
+
+@@ lines 67-67 @@
+
+```
+
+      7 -> "Sun"
+```
+
+@@ lines 68-68 @@
+
+```
+
+    end
+```
+
+@@ lines 69-69 @@
+
+```
+
+  end
+```
+
+@@ lines 70-70 @@
+
+```
+
+
+```
+
+@@ lines 71-71 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 72-72 @@
+
+```
+
+  Gets bookings that overlap with a specific date.
+```
+
+@@ lines 73-73 @@
+
+```
+
+  """
+```
+
+@@ lines 74-74 @@
+
+```
+
+  def bookings_for_date(bookings, date) do
+```
+
+@@ lines 75-75 @@
+
+```
+
+    Enum.filter(bookings, fn booking ->
+```
+
+@@ lines 76-76 @@
+
+```
+
+      date_in_range?(date, booking.check_in_date, booking.check_out_date)
+```
+
+@@ lines 77-77 @@
+
+```
+
+    end)
+```
+
+@@ lines 78-78 @@
+
+```
+
+  end
+```
+
+@@ lines 79-79 @@
+
+```
+
+
+```
+
+@@ lines 80-80 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 81-81 @@
+
+```
+
+  Checks if a date falls within a booking range.
+```
+
+@@ lines 82-82 @@
+
+```
+
+  """
+```
+
+@@ lines 83-83 @@
+
+```
+
+  def date_in_range?(date, check_in, check_out) do
+```
+
+@@ lines 84-84 @@
+
+```
+
+    check_in_ok = Date.compare(date, check_in) in [:eq, :gt]
+```
+
+@@ lines 85-85 @@
+
+```
+
+    
+```
+
+@@ lines 86-86 @@
+
+```
+
+    check_out_ok =
+```
+
+@@ lines 87-87 @@
+
+```
+
+      if check_out do
+```
+
+@@ lines 88-88 @@
+
+```
+
+        Date.compare(date, check_out) in [:eq, :lt]
+```
+
+@@ lines 89-89 @@
+
+```
+
+      else
+```
+
+@@ lines 90-90 @@
+
+```
+
+        true
+```
+
+@@ lines 91-91 @@
+
+```
+
+      end
+```
+
+@@ lines 92-92 @@
+
+```
+
+    
+```
+
+@@ lines 93-93 @@
+
+```
+
+    check_in_ok and check_out_ok
+```
+
+@@ lines 94-94 @@
+
+```
+
+  end
+```
+
+@@ lines 95-95 @@
+
+```
+
+
+```
+
+@@ lines 96-96 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 97-97 @@
+
+```
+
+  Navigates to the previous month.
+```
+
+@@ lines 98-98 @@
+
+```
+
+  """
+```
+
+@@ lines 99-99 @@
+
+```
+
+  def previous_month(year, month) do
+```
+
+@@ lines 100-100 @@
+
+```
+
+    if month == 1 do
+```
+
+@@ lines 101-101 @@
+
+```
+
+      {year - 1, 12}
+```
+
+@@ lines 102-102 @@
+
+```
+
+    else
+```
+
+@@ lines 103-103 @@
+
+```
+
+      {year, month - 1}
+```
+
+@@ lines 104-104 @@
+
+```
+
+    end
+```
+
+@@ lines 105-105 @@
+
+```
+
+  end
+```
+
+@@ lines 106-106 @@
+
+```
+
+
+```
+
+@@ lines 107-107 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 108-108 @@
+
+```
+
+  Navigates to the next month.
+```
+
+@@ lines 109-109 @@
+
+```
+
+  """
+```
+
+@@ lines 110-110 @@
+
+```
+
+  def next_month(year, month) do
+```
+
+@@ lines 111-111 @@
+
+```
+
+    if month == 12 do
+```
+
+@@ lines 112-112 @@
+
+```
+
+      {year + 1, 1}
+```
+
+@@ lines 113-113 @@
+
+```
+
+    else
+```
+
+@@ lines 114-114 @@
+
+```
+
+      {year, month + 1}
+```
+
+@@ lines 115-115 @@
+
+```
+
+    end
+```
+
+@@ lines 116-116 @@
+
+```
+
+  end
+```
+
+@@ lines 117-117 @@
+
+```
+
+
+```
+
+@@ lines 118-118 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 119-119 @@
+
+```
+
+  Returns true if the date is today.
+```
+
+@@ lines 120-120 @@
+
+```
+
+  """
+```
+
+@@ lines 121-121 @@
+
+```
+
+  def today?(date) do
+```
+
+@@ lines 122-122 @@
+
+```
+
+    Date.compare(date, Date.utc_today()) == :eq
+```
+
+@@ lines 123-123 @@
+
+```
+
+  end
+```
+
+@@ lines 124-124 @@
+
+```
+
+end
+```
+
+@@ lines 125-125 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's create the calendar LiveView: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `calendar.ex`
 
 **Input:**
 
@@ -475,14 +1578,635 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.BookingLive.Calendar do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use CozyCheckoutWeb, :live_view
+```
+
+@@ lines 3-3 @@
+
+```
+
+
+```
+
+@@ lines 4-4 @@
+
+```
+
+  alias CozyCheckout.Bookings
+```
+
+@@ lines 5-5 @@
+
+```
+
+  alias CozyCheckoutWeb.BookingLive.CalendarHelpers
+```
+
+@@ lines 6-6 @@
+
+```
+
+
+```
+
+@@ lines 7-7 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 8-8 @@
+
+```
+
+  def mount(_params, _session, socket) do
+```
+
+@@ lines 9-9 @@
+
+```
+
+    today = Date.utc_today()
+```
+
+@@ lines 10-10 @@
+
+```
+
+
+```
+
+@@ lines 11-11 @@
+
+```
+
+    socket =
+```
+
+@@ lines 12-12 @@
+
+```
+
+      socket
+```
+
+@@ lines 13-13 @@
+
+```
+
+      |> assign(:year, today.year)
+```
+
+@@ lines 14-14 @@
+
+```
+
+      |> assign(:month, today.month)
+```
+
+@@ lines 15-15 @@
+
+```
+
+      |> load_calendar_data()
+```
+
+@@ lines 16-16 @@
+
+```
+
+
+```
+
+@@ lines 17-17 @@
+
+```
+
+    {:ok, socket}
+```
+
+@@ lines 18-18 @@
+
+```
+
+  end
+```
+
+@@ lines 19-19 @@
+
+```
+
+
+```
+
+@@ lines 20-20 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 21-21 @@
+
+```
+
+  def handle_params(_params, _url, socket) do
+```
+
+@@ lines 22-22 @@
+
+```
+
+    {:noreply, socket}
+```
+
+@@ lines 23-23 @@
+
+```
+
+  end
+```
+
+@@ lines 24-24 @@
+
+```
+
+
+```
+
+@@ lines 25-25 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 26-26 @@
+
+```
+
+  def handle_event("prev_month", _params, socket) do
+```
+
+@@ lines 27-27 @@
+
+```
+
+    {year, month} = CalendarHelpers.previous_month(socket.assigns.year, socket.assigns.month)
+```
+
+@@ lines 28-28 @@
+
+```
+
+
+```
+
+@@ lines 29-29 @@
+
+```
+
+    socket =
+```
+
+@@ lines 30-30 @@
+
+```
+
+      socket
+```
+
+@@ lines 31-31 @@
+
+```
+
+      |> assign(:year, year)
+```
+
+@@ lines 32-32 @@
+
+```
+
+      |> assign(:month, month)
+```
+
+@@ lines 33-33 @@
+
+```
+
+      |> load_calendar_data()
+```
+
+@@ lines 34-34 @@
+
+```
+
+
+```
+
+@@ lines 35-35 @@
+
+```
+
+    {:noreply, socket}
+```
+
+@@ lines 36-36 @@
+
+```
+
+  end
+```
+
+@@ lines 37-37 @@
+
+```
+
+
+```
+
+@@ lines 38-38 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 39-39 @@
+
+```
+
+  def handle_event("next_month", _params, socket) do
+```
+
+@@ lines 40-40 @@
+
+```
+
+    {year, month} = CalendarHelpers.next_month(socket.assigns.year, socket.assigns.month)
+```
+
+@@ lines 41-41 @@
+
+```
+
+
+```
+
+@@ lines 42-42 @@
+
+```
+
+    socket =
+```
+
+@@ lines 43-43 @@
+
+```
+
+      socket
+```
+
+@@ lines 44-44 @@
+
+```
+
+      |> assign(:year, year)
+```
+
+@@ lines 45-45 @@
+
+```
+
+      |> assign(:month, month)
+```
+
+@@ lines 46-46 @@
+
+```
+
+      |> load_calendar_data()
+```
+
+@@ lines 47-47 @@
+
+```
+
+
+```
+
+@@ lines 48-48 @@
+
+```
+
+    {:noreply, socket}
+```
+
+@@ lines 49-49 @@
+
+```
+
+  end
+```
+
+@@ lines 50-50 @@
+
+```
+
+
+```
+
+@@ lines 51-51 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 52-52 @@
+
+```
+
+  def handle_event("today", _params, socket) do
+```
+
+@@ lines 53-53 @@
+
+```
+
+    today = Date.utc_today()
+```
+
+@@ lines 54-54 @@
+
+```
+
+
+```
+
+@@ lines 55-55 @@
+
+```
+
+    socket =
+```
+
+@@ lines 56-56 @@
+
+```
+
+      socket
+```
+
+@@ lines 57-57 @@
+
+```
+
+      |> assign(:year, today.year)
+```
+
+@@ lines 58-58 @@
+
+```
+
+      |> assign(:month, today.month)
+```
+
+@@ lines 59-59 @@
+
+```
+
+      |> load_calendar_data()
+```
+
+@@ lines 60-60 @@
+
+```
+
+
+```
+
+@@ lines 61-61 @@
+
+```
+
+    {:noreply, socket}
+```
+
+@@ lines 62-62 @@
+
+```
+
+  end
+```
+
+@@ lines 63-63 @@
+
+```
+
+
+```
+
+@@ lines 64-64 @@
+
+```
+
+  defp load_calendar_data(socket) do
+```
+
+@@ lines 65-65 @@
+
+```
+
+    year = socket.assigns.year
+```
+
+@@ lines 66-66 @@
+
+```
+
+    month = socket.assigns.month
+```
+
+@@ lines 67-67 @@
+
+```
+
+
+```
+
+@@ lines 68-68 @@
+
+```
+
+    bookings = Bookings.list_bookings_for_month(year, month)
+```
+
+@@ lines 69-69 @@
+
+```
+
+    weeks = CalendarHelpers.generate_calendar_grid(year, month)
+```
+
+@@ lines 70-70 @@
+
+```
+
+
+```
+
+@@ lines 71-71 @@
+
+```
+
+    socket
+```
+
+@@ lines 72-72 @@
+
+```
+
+    |> assign(:bookings, bookings)
+```
+
+@@ lines 73-73 @@
+
+```
+
+    |> assign(:weeks, weeks)
+```
+
+@@ lines 74-74 @@
+
+```
+
+    |> assign(:page_title, "Calendar - #{CalendarHelpers.month_name(month)} #{year}")
+```
+
+@@ lines 75-75 @@
+
+```
+
+  end
+```
+
+@@ lines 76-76 @@
+
+```
+
+
+```
+
+@@ lines 77-77 @@
+
+```
+
+  defp status_color(status) do
+```
+
+@@ lines 78-78 @@
+
+```
+
+    case status do
+```
+
+@@ lines 79-79 @@
+
+```
+
+      "upcoming" -> "bg-blue-100 border-blue-300 text-blue-800"
+```
+
+@@ lines 80-80 @@
+
+```
+
+      "active" -> "bg-green-100 border-green-300 text-green-800"
+```
+
+@@ lines 81-81 @@
+
+```
+
+      "completed" -> "bg-gray-100 border-gray-300 text-gray-600"
+```
+
+@@ lines 82-82 @@
+
+```
+
+      "cancelled" -> "bg-red-100 border-red-300 text-red-600"
+```
+
+@@ lines 83-83 @@
+
+```
+
+      _ -> "bg-gray-100 border-gray-300 text-gray-600"
+```
+
+@@ lines 84-84 @@
+
+```
+
+    end
+```
+
+@@ lines 85-85 @@
+
+```
+
+  end
+```
+
+@@ lines 86-86 @@
+
+```
+
+end
+```
+
+@@ lines 87-87 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's create the calendar template: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Created `calendar.html.heex`
 
 **Input:**
 
@@ -566,14 +2290,849 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.html.heex**</summary>
+
+@@ lines 1-1 @@
+
+```
+<Layouts.app flash={@flash} current_scope={:admin}>
+```
+
+@@ lines 2-2 @@
+
+```
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+```
+
+@@ lines 3-3 @@
+
+```
+
+    <%!-- Header --%>
+```
+
+@@ lines 4-4 @@
+
+```
+
+    <div class="flex justify-between items-center mb-8">
+```
+
+@@ lines 5-5 @@
+
+```
+
+      <div>
+```
+
+@@ lines 6-6 @@
+
+```
+
+        <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+```
+
+@@ lines 7-7 @@
+
+```
+
+          ← Back to Dashboard
+```
+
+@@ lines 8-8 @@
+
+```
+
+        </.link>
+```
+
+@@ lines 9-9 @@
+
+```
+
+        <h1 class="text-4xl font-bold text-gray-900">Booking Calendar</h1>
+```
+
+@@ lines 10-10 @@
+
+```
+
+      </div>
+```
+
+@@ lines 11-11 @@
+
+```
+
+      <.link navigate={~p"/admin/bookings"}>
+```
+
+@@ lines 12-12 @@
+
+```
+
+        <.button>
+```
+
+@@ lines 13-13 @@
+
+```
+
+          <.icon name="hero-list-bullet" class="w-5 h-5 mr-2" /> List View
+```
+
+@@ lines 14-14 @@
+
+```
+
+        </.button>
+```
+
+@@ lines 15-15 @@
+
+```
+
+      </.link>
+```
+
+@@ lines 16-16 @@
+
+```
+
+    </div>
+```
+
+@@ lines 17-17 @@
+
+```
+
+
+```
+
+@@ lines 18-18 @@
+
+```
+
+    <%!-- Calendar Navigation --%>
+```
+
+@@ lines 19-19 @@
+
+```
+
+    <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+```
+
+@@ lines 20-20 @@
+
+```
+
+      <div class="flex justify-between items-center">
+```
+
+@@ lines 21-21 @@
+
+```
+
+        <button
+```
+
+@@ lines 22-22 @@
+
+```
+
+          phx-click="prev_month"
+```
+
+@@ lines 23-23 @@
+
+```
+
+          class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+```
+
+@@ lines 24-24 @@
+
+```
+
+        >
+```
+
+@@ lines 25-25 @@
+
+```
+
+          <.icon name="hero-chevron-left" class="w-6 h-6 text-gray-600" />
+```
+
+@@ lines 26-26 @@
+
+```
+
+        </button>
+```
+
+@@ lines 27-27 @@
+
+```
+
+
+```
+
+@@ lines 28-28 @@
+
+```
+
+        <div class="flex items-center gap-4">
+```
+
+@@ lines 29-29 @@
+
+```
+
+          <h2 class="text-2xl font-bold text-gray-900">
+```
+
+@@ lines 30-30 @@
+
+```
+
+            {CalendarHelpers.month_name(@month)} {@year}
+```
+
+@@ lines 31-31 @@
+
+```
+
+          </h2>
+```
+
+@@ lines 32-32 @@
+
+```
+
+          <button
+```
+
+@@ lines 33-33 @@
+
+```
+
+            phx-click="today"
+```
+
+@@ lines 34-34 @@
+
+```
+
+            class="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+```
+
+@@ lines 35-35 @@
+
+```
+
+          >
+```
+
+@@ lines 36-36 @@
+
+```
+
+            Today
+```
+
+@@ lines 37-37 @@
+
+```
+
+          </button>
+```
+
+@@ lines 38-38 @@
+
+```
+
+        </div>
+```
+
+@@ lines 39-39 @@
+
+```
+
+
+```
+
+@@ lines 40-40 @@
+
+```
+
+        <button
+```
+
+@@ lines 41-41 @@
+
+```
+
+          phx-click="next_month"
+```
+
+@@ lines 42-42 @@
+
+```
+
+          class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+```
+
+@@ lines 43-43 @@
+
+```
+
+        >
+```
+
+@@ lines 44-44 @@
+
+```
+
+          <.icon name="hero-chevron-right" class="w-6 h-6 text-gray-600" />
+```
+
+@@ lines 45-45 @@
+
+```
+
+        </button>
+```
+
+@@ lines 46-46 @@
+
+```
+
+      </div>
+```
+
+@@ lines 47-47 @@
+
+```
+
+    </div>
+```
+
+@@ lines 48-48 @@
+
+```
+
+
+```
+
+@@ lines 49-49 @@
+
+```
+
+    <%!-- Calendar Grid --%>
+```
+
+@@ lines 50-50 @@
+
+```
+
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+```
+
+@@ lines 51-51 @@
+
+```
+
+      <%!-- Day Headers --%>
+```
+
+@@ lines 52-52 @@
+
+```
+
+      <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+```
+
+@@ lines 53-53 @@
+
+```
+
+        <%= for day <- 1..7 do %>
+```
+
+@@ lines 54-54 @@
+
+```
+
+          <div class="px-2 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+```
+
+@@ lines 55-55 @@
+
+```
+
+            {CalendarHelpers.day_name(day)}
+```
+
+@@ lines 56-56 @@
+
+```
+
+          </div>
+```
+
+@@ lines 57-57 @@
+
+```
+
+        <% end %>
+```
+
+@@ lines 58-58 @@
+
+```
+
+      </div>
+```
+
+@@ lines 59-59 @@
+
+```
+
+
+```
+
+@@ lines 60-60 @@
+
+```
+
+      <%!-- Calendar Days --%>
+```
+
+@@ lines 61-61 @@
+
+```
+
+      <div class="grid grid-cols-7">
+```
+
+@@ lines 62-62 @@
+
+```
+
+        <%= for week <- @weeks do %>
+```
+
+@@ lines 63-63 @@
+
+```
+
+          <%= for day <- week do %>
+```
+
+@@ lines 64-64 @@
+
+```
+
+            <%= if day do %>
+```
+
+@@ lines 65-65 @@
+
+```
+
+              <.day_cell
+```
+
+@@ lines 66-66 @@
+
+```
+
+                date={day}
+```
+
+@@ lines 67-67 @@
+
+```
+
+                bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
+```
+
+@@ lines 68-68 @@
+
+```
+
+                is_today={CalendarHelpers.today?(day)}
+```
+
+@@ lines 69-69 @@
+
+```
+
+              />
+```
+
+@@ lines 70-70 @@
+
+```
+
+            <% else %>
+```
+
+@@ lines 71-71 @@
+
+```
+
+              <div class="min-h-[120px] bg-gray-50 border-r border-b border-gray-100"></div>
+```
+
+@@ lines 72-72 @@
+
+```
+
+            <% end %>
+```
+
+@@ lines 73-73 @@
+
+```
+
+          <% end %>
+```
+
+@@ lines 74-74 @@
+
+```
+
+        <% end %>
+```
+
+@@ lines 75-75 @@
+
+```
+
+      </div>
+```
+
+@@ lines 76-76 @@
+
+```
+
+    </div>
+```
+
+@@ lines 77-77 @@
+
+```
+
+
+```
+
+@@ lines 78-78 @@
+
+```
+
+    <%!-- Legend --%>
+```
+
+@@ lines 79-79 @@
+
+```
+
+    <div class="mt-6 bg-white shadow-lg rounded-lg p-6">
+```
+
+@@ lines 80-80 @@
+
+```
+
+      <h3 class="text-lg font-semibold text-gray-900 mb-4">Legend</h3>
+```
+
+@@ lines 81-81 @@
+
+```
+
+      <div class="flex flex-wrap gap-4">
+```
+
+@@ lines 82-82 @@
+
+```
+
+        <div class="flex items-center gap-2">
+```
+
+@@ lines 83-83 @@
+
+```
+
+          <div class="w-4 h-4 rounded bg-blue-100 border-2 border-blue-300"></div>
+```
+
+@@ lines 84-84 @@
+
+```
+
+          <span class="text-sm text-gray-700">Upcoming</span>
+```
+
+@@ lines 85-85 @@
+
+```
+
+        </div>
+```
+
+@@ lines 86-86 @@
+
+```
+
+        <div class="flex items-center gap-2">
+```
+
+@@ lines 87-87 @@
+
+```
+
+          <div class="w-4 h-4 rounded bg-green-100 border-2 border-green-300"></div>
+```
+
+@@ lines 88-88 @@
+
+```
+
+          <span class="text-sm text-gray-700">Active</span>
+```
+
+@@ lines 89-89 @@
+
+```
+
+        </div>
+```
+
+@@ lines 90-90 @@
+
+```
+
+        <div class="flex items-center gap-2">
+```
+
+@@ lines 91-91 @@
+
+```
+
+          <div class="w-4 h-4 rounded bg-gray-100 border-2 border-gray-300"></div>
+```
+
+@@ lines 92-92 @@
+
+```
+
+          <span class="text-sm text-gray-700">Completed</span>
+```
+
+@@ lines 93-93 @@
+
+```
+
+        </div>
+```
+
+@@ lines 94-94 @@
+
+```
+
+        <div class="flex items-center gap-2">
+```
+
+@@ lines 95-95 @@
+
+```
+
+          <div class="w-4 h-4 rounded bg-red-100 border-2 border-red-300"></div>
+```
+
+@@ lines 96-96 @@
+
+```
+
+          <span class="text-sm text-gray-700">Cancelled</span>
+```
+
+@@ lines 97-97 @@
+
+```
+
+        </div>
+```
+
+@@ lines 98-98 @@
+
+```
+
+      </div>
+```
+
+@@ lines 99-99 @@
+
+```
+
+    </div>
+```
+
+@@ lines 100-100 @@
+
+```
+
+  </div>
+```
+
+@@ lines 101-101 @@
+
+```
+
+</Layouts.app>
+```
+
+@@ lines 102-102 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's create a component for the day cell: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.ex**</summary>
+
+@@ lines 77-86 @@
+
+```
+  defp status_color(status) do
+    case status do
+      "upcoming" -> "bg-blue-100 border-blue-300 text-blue-800"
+      "active" -> "bg-green-100 border-green-300 text-green-800"
+      "completed" -> "bg-gray-100 border-gray-300 text-gray-600"
+      "cancelled" -> "bg-red-100 border-red-300 text-red-600"
+      _ -> "bg-gray-100 border-gray-300 text-gray-600"
+    end
+  end
+
+  defp day_cell(assigns) do
+    ~H"""
+    <div class={[
+      "min-h-[120px] border-r border-b border-gray-200 p-2 relative",
+      @is_today && "bg-blue-50"
+    ]}>
+      <%!-- Day number --%>
+      <div class="text-right mb-1">
+        <span class={[
+          "text-sm font-semibold",
+          @is_today && "inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white",
+          !@is_today && "text-gray-700"
+        ]}>
+          {@date.day}
+        </span>
+      </div>
+
+      <%!-- Bookings for this day --%>
+      <div class="space-y-1">
+        <%= for booking <- Enum.take(@bookings, 3) do %>
+          <.link
+            navigate={~p"/admin/bookings/#{booking}"}
+            class={[
+              "block px-2 py-1 rounded text-xs font-medium border-l-2 hover:shadow-sm transition-shadow",
+              status_color(booking.status)
+            ]}
+          >
+            <div class="truncate font-semibold">{booking.guest.name}</div>
+            <%= if booking.room_number do %>
+              <div class="truncate text-[10px] opacity-75">Room {booking.room_number}</div>
+            <% end %>
+          </.link>
+        <% end %>
+
+        <%!-- Show count if more than 3 bookings --%>
+        <%= if length(@bookings) > 3 do %>
+          <div class="text-[10px] text-gray-500 text-center pt-1">
+            +{length(@bookings) - 3} more
+          </div>
+        <% end %>
+      </div>
+    </div>
+    """
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now we need to add the CalendarHelpers alias to the template. Let's update the template to include the module alias properly: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.ex**</summary>
+
+@@ lines 1-18 @@
+
+```
+defmodule CozyCheckoutWeb.BookingLive.Calendar do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckoutWeb.BookingLive.CalendarHelpers
+
+  # Make CalendarHelpers available in templates
+  defp assign_helpers(socket) do
+    assign(socket, :CalendarHelpers, CalendarHelpers)
+  end
+
+  @impl true
+  def mount(_params, _session, socket) do
+    today = Date.utc_today()
+
+    socket =
+      socket
+      |> assign(:year, today.year)
+      |> assign(:month, today.month)
+      |> assign_helpers()
+      |> load_calendar_data()
+
+    {:ok, socket}
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's add the calendar route to the router: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `router.ex`
 
 **Input:**
 
@@ -603,14 +3162,38 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **router.ex**</summary>
+
+@@ lines 49-53 @@
+
+```
+    # Bookings
+    live "/bookings", BookingLive.Index, :index
+    live "/bookings/new", BookingLive.Index, :new
+    live "/bookings/calendar", BookingLive.Calendar
+    live "/bookings/:id", BookingLive.Show
+    live "/bookings/:id/edit", BookingLive.Index, :edit
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's add a link to the calendar view in the bookings index page: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `index.ex`, lines 1 to 71
 
 **Input:**
 
@@ -666,14 +3249,54 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 50-64 @@
+
+```
+    ~H"""
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+            ← Back to Dashboard
+          </.link>
+          <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+        </div>
+        <div class="flex gap-3">
+          <.link navigate={~p"/admin/bookings/calendar"}>
+            <.button>
+              <.icon name="hero-calendar" class="w-5 h-5 mr-2" /> Calendar View
+            </.button>
+          </.link>
+          <.link patch={~p"/admin/bookings/new"}>
+            <.button>
+              <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Booking
+            </.button>
+          </.link>
+        </div>
+      </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's also add a link to the calendar from the admin dashboard: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `dashboard_live.ex`
 
 **Input:**
 
@@ -714,14 +3337,51 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let's add a calendar card to the dashboard: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard_live.ex**</summary>
+
+@@ lines 65-71 @@
+
+```
+          <.dashboard_card
+            title="Bookings"
+            description="Manage guest bookings & stays"
+            icon="hero-calendar-days"
+            navigate={~p"/admin/bookings"}
+            color="rose"
+          />
+
+          <.dashboard_card
+            title="Calendar"
+            description="View bookings calendar"
+            icon="hero-calendar"
+            navigate={~p"/admin/bookings/calendar"}
+            color="pink"
+          />
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's test the calendar by starting the server: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
 **Input:**
 
@@ -732,15 +3392,25 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex\" line=1\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":77744,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"\u003cLayouts.app flash={@flash} current_scope={:admin}\u003e","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":28,"line":0},{"character":42,"line":0}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":77744,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_c
-… (output truncated)
+2 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex" line=1>
+<Layouts.app flash={@flash} current_scope={:admin}>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex" line=1>
+<Layouts.app flash={@flash} current_scope={:admin}>
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+We need to fix the `current_scope` attribute - it should be a string, not an atom. Let's also check what the proper scope should be: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `current_scope=` (`**/*.heex`), 2 results
 
 **Input:**
 
@@ -751,7 +3421,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found","type":2}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+No matches found
 ```
 </details></tool-use>
 
@@ -760,6 +3430,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Searched text for `Layouts.app` (`**/lib/cozy_checkout_web/live/**/*.ex`), no results
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/layouts.ex`
@@ -767,15 +3439,88 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":178,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/layouts.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/layouts.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/components/layouts.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":178},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":177,"references":[],"text":"defmodule CozyCheckoutWeb.Layouts do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":177},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":176,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":176},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":175,"references":[],"text":"  This module holds layouts and related functionality\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":175},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":174,"references":[],"text":"  used by your application.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":174},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":173,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":173},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":172,"references":[],"text":"  use CozyCheckoutWeb, :html\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":172},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":171,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":171},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":170,"
+```elixir
+defmodule CozyCheckoutWeb.Layouts do
+  @moduledoc """
+  This module holds layouts and related functionality
+  used by your application.
+  """
+  use CozyCheckoutWeb, :html
+
+  # Embed all files in layouts/* within this module.
+  # The default root.html.heex file contains the HTML
+  # skeleton of your application, namely HTML headers
+  # and other static content.
+  embed_templates "layouts/*"
+
+  @doc """
+  Renders your app layout.
+
+  This function is typically invoked from every template,
+  and it often contains your application menu, sidebar,
+  or similar.
+
+  ## Examples
+
+      <Layouts.app flash={@flash}>
+        <h1>Content</h1>
+      </Layouts.app>
+
+  """
+  attr :flash, :map, required: true, doc: "the map of flash messages"
+
+  attr :current_scope, :map,
+    default: nil,
+    doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
+
+  slot :inner_block, required: true
+
+  def app(assigns) do
+    ~H"""
+    <header class="navbar px-4 sm:px-6 lg:px-8">
+      <div class="flex-1">
+        <a href="/" class="flex-1 flex w-fit items-center gap-2">
+          <img src={~p"/images/logo.svg"} width="36" />
+          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
+        </a>
+      </div>
+      <div class="flex-none">
+        <ul class="flex flex-column px-1 space-x-4 items-center">
+          <li>
+            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
+          </li>
+          <li>
+            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
+          </li>
+          <li>
+            <.theme_toggle />
+          </li>
+          <li>
+            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
+              Get Started <span aria-hidden="true">&rarr;</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </header>
+
+    <main class="px-4 py-20 sm:px-6 lg:px-8">
+      <div class="mx-auto max-w-2xl space-y-4">
+        {ren
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me check the existing layouts and how they handle this: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Read `layouts.ex`
 
 **Input:**
 
@@ -786,15 +3531,54 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"14 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex\" line=51\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":77865,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    \u003cdiv class=\"max-w-7xl mx-auto px-4 py-8\"\u003e","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":4,"line":50},{"character":33,"line":50}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":77865,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/i
+14 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex" line=51>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=51>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex" line=11>
+      <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex" line=51>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=51>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex" line=11>
+      <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/category_live/index.ex" line=51>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/payment_live/index.ex" line=55>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/new.ex" line=214>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/index.ex" line=51>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/product_live/index.ex" line=51>
+    <div class="max-w-7xl mx-auto px-4 py-8">
+</match>
+<match path="/Use
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+I see the issue. The `current_scope` attribute expects a `:map`, but we're passing an atom. Let me check how other templates handle this: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Searched text for `<div class="max-w-7xl mx-auto` (`**/lib/cozy_checkout_web/live/**/*.ex`), 14 results
 
 **Input:**
 
@@ -805,15 +3589,53 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"48","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"78","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"140","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":33,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":31,"references":[],"text":"  def render(assigns) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":30,"references":[],"text":"    ~H\"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":30},"
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/guest_live/index.ex`. Lines 48 to 78 (140 lines total): 
+```elixir
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+            ← Back to Dashboard
+          </.link>
+          <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+        </div>
+        <.link patch={~p"/admin/guests/new"}>
+          <.button>
+            <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Guest
+          </.button>
+        </.link>
+      </div>
+
+      <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email
+              </th>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Phone
+              </th>
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+It looks like other LiveViews don't use the `<Layouts.app>` wrapper. They just have the content directly. Let me check one of them: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `index.ex`, lines 48 to 78
 
 **Input:**
 
@@ -863,15 +3685,87 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The edit to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" was applied successfully.","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"The edit resulted in the following lint errors:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cerrors path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex\"\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":78004,"props":{},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"This code at line ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"100","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"```\n\u003c/Layouts.app\u003e\n```","type":2}],"ctor":2,"ctorName":"cle","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Wt","props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"has the problem reported:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003ccompileError\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":78005,"props":{},"references":[],"type":1},{"chi
-… (output truncated)
+The edit to /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex was applied successfully.
+The edit resulted in the following lint errors:
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex">
+This code at line 100
+```
+</Layouts.app>
+```
+has the problem reported:
+<compileError>
+** (Phoenix.LiveView.Tokenizer.ParseError) lib/cozy_checkout_web/live/booking_live/calendar.html.heex:100:1: missing opening tag for </Layouts.app>
+    |
+ 97 |       </div>
+ 98 |     </div>
+ 99 |   </div>
+100 | </Layouts.app>
+    | ^
+</compileError>
+
+</errors>
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+I see - the templates don't use the `<Layouts.app>` wrapper. Let me update the calendar template to match the pattern: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.html.heex**</summary>
+
+@@ lines 1-16 @@
+
+```
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <%!-- Header --%>
+  <div class="flex justify-between items-center mb-8">
+    <div>
+      <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+        ← Back to Dashboard
+      </.link>
+      <h1 class="text-4xl font-bold text-gray-900">Booking Calendar</h1>
+    </div>
+    <.link navigate={~p"/admin/bookings"}>
+      <.button>
+        <.icon name="hero-list-bullet" class="w-5 h-5 mr-2" /> List View
+      </.button>
+    </.link>
+  </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+I need to remove the closing tag as well: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.html.heex**</summary>
+
+@@ lines 97-100 @@
+
+```
+      </div>
+    </div>
+  </div>
+</div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Let me read the full file to understand the structure: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `calendar.html.heex`
 
 **Input:**
 
@@ -937,60 +3831,130 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you implement a calendar view for bookings. Let me first search for best practices and check what's available in the Elixir/Phoenix ecosystem. Now let me check the existing booking context and look at best practices for calendar views in Phoenix LiveView: Great! Now let me implement a calendar view for bookings. Based on best practices for Phoenix LiveView and to avoid JavaScript dependencies, I'll create a pure Elixir/LiveView calendar implementation using Tailwind CSS for styling.
+I see the issue - there's an extra closing div. Let me fix it: 
 
-I'll create:
-1. A new context function to get bookings for a specific month
-2. A calendar LiveView component
-3. Calendar helper functions to generate the calendar grid
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me start: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.html.heex**</summary>
 
-```
-Now let's create a calendar helper module to generate the calendar grid: Now let's create the calendar LiveView: Now let's create the calendar template: Now let's create a component for the day cell: 
-```
+@@ lines 77-100 @@
 
 ```
-Now we need to add the CalendarHelpers alias to the template. Let's update the template to include the module alias properly: 
+  <%!-- Legend --%>
+  <div class="mt-6 bg-white shadow-lg rounded-lg p-6">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Legend</h3>
+    <div class="flex flex-wrap gap-4">
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-blue-100 border-2 border-blue-300"></div>
+        <span class="text-sm text-gray-700">Upcoming</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-green-100 border-2 border-green-300"></div>
+        <span class="text-sm text-gray-700">Active</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-gray-100 border-2 border-gray-300"></div>
+        <span class="text-sm text-gray-700">Completed</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded bg-red-100 border-2 border-red-300"></div>
+        <span class="text-sm text-gray-700">Cancelled</span>
+      </div>
+    </div>
+  </div>
+</div>
 ```
+</details></tool-use>
 
-```
-Now let's add the calendar route to the router: 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
-Now let's add a link to the calendar view in the bookings index page: 
-```
-
-```
-Now let's also add a link to the calendar from the admin dashboard: Let's add a calendar card to the dashboard: 
-```
-
-```
-Now let's test the calendar by starting the server: We need to fix the `current_scope` attribute - it should be a string, not an atom. Let's also check what the proper scope should be: Let me check the existing layouts and how they handle this: I see the issue. The `current_scope` attribute expects a `:map`, but we're passing an atom. Let me check how other templates handle this: It looks like other LiveViews don't use the `<Layouts.app>` wrapper. They just have the content directly. Let me check one of them: I see - the templates don't use the `<Layouts.app>` wrapper. Let me update the calendar template to match the pattern: 
-```
-
-```
-I need to remove the closing tag as well: 
-```
-
-```
-Let me read the full file to understand the structure: I see the issue - there's an extra closing div. Let me fix it: 
-```
-
-```
 Good! Now let's also fix the indentation issue with the rest of the template: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **calendar.html.heex**</summary>
+
+@@ lines 15-75 @@
 
 ```
+  </div>
+
+  <%!-- Calendar Navigation --%>
+  <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+    <div class="flex justify-between items-center">
+      <button
+        phx-click="prev_month"
+        class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      >
+        <.icon name="hero-chevron-left" class="w-6 h-6 text-gray-600" />
+      </button>
+
+      <div class="flex items-center gap-4">
+        <h2 class="text-2xl font-bold text-gray-900">
+          {CalendarHelpers.month_name(@month)} {@year}
+        </h2>
+        <button
+          phx-click="today"
+          class="px-4 py-2 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+        >
+          Today
+        </button>
+      </div>
+
+      <button
+        phx-click="next_month"
+        class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+      >
+        <.icon name="hero-chevron-right" class="w-6 h-6 text-gray-600" />
+      </button>
+    </div>
+  </div>
+
+  <%!-- Calendar Grid --%>
+  <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+    <%!-- Day Headers --%>
+    <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+      <%= for day <- 1..7 do %>
+        <div class="px-2 py-3 text-center text-xs font-semibold text-gray-600 uppercase">
+          {CalendarHelpers.day_name(day)}
+        </div>
+      <% end %>
+    </div>
+
+    <%!-- Calendar Days --%>
+    <div class="grid grid-cols-7">
+      <%= for week <- @weeks do %>
+        <%= for day <- week do %>
+          <%= if day do %>
+            <.day_cell
+              date={day}
+              bookings={CalendarHelpers.bookings_for_date(@bookings, day)}
+              is_today={CalendarHelpers.today?(day)}
+            />
+          <% else %>
+            <div class="min-h-[120px] bg-gray-50 border-r border-b border-gray-100"></div>
+          <% end %>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Now let's compile again: 
+
+> ❓ Continue to iterate? — Copilot has been working on this problem for a while. It can continue to iterate, or you can send a new message to refine your prompt. `Configure max requests`.
 
 ---
 
@@ -1002,8 +3966,1314 @@ _**User (2025-10-16 21:48:15Z)**_
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Great! Now let's start the server and test the calendar view: Excellent! The server is running. Now let's open the browser to test the calendar: Perfect! Let me create a summary document about the calendar implementation: Perfect! Let me create a quick visual example to show you what was implemented. Let me also check if there are any errors we should address: Let me fix that unused import warning: 
-```
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Great! Now let's start the server and test the calendar view: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
+<summary>Tool use: **get_terminal_output**</summary>
+
+Checked background terminal output
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Excellent! The server is running. Now let's open the browser to test the calendar: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_openSimpleBrowser"><details>
+<summary>Tool use: **copilot_openSimpleBrowser**</summary>
+
+Opened Simple Browser at http://localhost:4000/admin/bookings/calendar
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Let me create a summary document about the calendar implementation: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_createFile"><details>
+<summary>Tool use: **copilot_createFile**</summary>
+
+Created `CALENDAR_VIEW.md`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **CALENDAR_VIEW.md**</summary>
+
+@@ lines 1-1 @@
 
 ```
-Now let's check if we need to add the import back where it's used: Good - it's using `Ecto.Query.where/2` with the full module name, so the import isn't needed. Let's verify the compilation: 
+# Booking Calendar View Implementation
+```
+
+@@ lines 2-2 @@
+
+```
+
+
+```
+
+@@ lines 3-3 @@
+
+```
+
+## Overview
+```
+
+@@ lines 4-4 @@
+
+```
+
+
+```
+
+@@ lines 5-5 @@
+
+```
+
+A pure Elixir/Phoenix LiveView calendar implementation for viewing bookings without JavaScript dependencies. The calendar provides an intuitive month view with navigation and booking details.
+```
+
+@@ lines 6-6 @@
+
+```
+
+
+```
+
+@@ lines 7-7 @@
+
+```
+
+## Features
+```
+
+@@ lines 8-8 @@
+
+```
+
+
+```
+
+@@ lines 9-9 @@
+
+```
+
+- **Monthly Calendar View**: Displays bookings in a traditional month-grid format
+```
+
+@@ lines 10-10 @@
+
+```
+
+- **Navigation**: Previous/Next month buttons and "Today" quick navigation
+```
+
+@@ lines 11-11 @@
+
+```
+
+- **Color-Coded Status**: Visual indicators for booking status (upcoming, active, completed, cancelled)
+```
+
+@@ lines 12-12 @@
+
+```
+
+- **Booking Details**: Shows guest name and room number for each booking
+```
+
+@@ lines 13-13 @@
+
+```
+
+- **Click-through**: Click on any booking to view details
+```
+
+@@ lines 14-14 @@
+
+```
+
+- **Overflow Handling**: Shows first 3 bookings per day with "+X more" indicator
+```
+
+@@ lines 15-15 @@
+
+```
+
+- **Today Highlighting**: Current date is highlighted with a blue circle
+```
+
+@@ lines 16-16 @@
+
+```
+
+- **Pure Elixir**: No JavaScript dependencies, fully server-rendered
+```
+
+@@ lines 17-17 @@
+
+```
+
+
+```
+
+@@ lines 18-18 @@
+
+```
+
+## Implementation Details
+```
+
+@@ lines 19-19 @@
+
+```
+
+
+```
+
+@@ lines 20-20 @@
+
+```
+
+### Files Created
+```
+
+@@ lines 21-21 @@
+
+```
+
+
+```
+
+@@ lines 22-22 @@
+
+```
+
+1. **`lib/cozy_checkout/bookings.ex`** (updated)
+```
+
+@@ lines 23-23 @@
+
+```
+
+   - Added `list_bookings_for_month/2` - Fetches bookings for a specific month
+```
+
+@@ lines 24-24 @@
+
+```
+
+   - Added `list_bookings_for_date_range/2` - Fetches bookings for a date range
+```
+
+@@ lines 25-25 @@
+
+```
+
+   - Smart query logic to include bookings that span across month boundaries
+```
+
+@@ lines 26-26 @@
+
+```
+
+
+```
+
+@@ lines 27-27 @@
+
+```
+
+2. **`lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex`**
+```
+
+@@ lines 28-28 @@
+
+```
+
+   - `generate_calendar_grid/2` - Creates 7-day week grid starting Monday
+```
+
+@@ lines 29-29 @@
+
+```
+
+   - `month_name/1` - Returns month name from month number
+```
+
+@@ lines 30-30 @@
+
+```
+
+   - `day_name/1` - Returns short day name (Mon, Tue, etc.)
+```
+
+@@ lines 31-31 @@
+
+```
+
+   - `bookings_for_date/2` - Filters bookings overlapping a specific date
+```
+
+@@ lines 32-32 @@
+
+```
+
+   - `date_in_range?/3` - Checks if date falls within booking range
+```
+
+@@ lines 33-33 @@
+
+```
+
+   - `previous_month/2` & `next_month/2` - Navigation helpers
+```
+
+@@ lines 34-34 @@
+
+```
+
+   - `today?/1` - Checks if date is today
+```
+
+@@ lines 35-35 @@
+
+```
+
+
+```
+
+@@ lines 36-36 @@
+
+```
+
+3. **`lib/cozy_checkout_web/live/booking_live/calendar.ex`**
+```
+
+@@ lines 37-37 @@
+
+```
+
+   - LiveView module with navigation event handlers
+```
+
+@@ lines 38-38 @@
+
+```
+
+   - `day_cell/1` - Private function component for rendering individual day cells
+```
+
+@@ lines 39-39 @@
+
+```
+
+   - `status_color/1` - Maps booking status to Tailwind CSS classes
+```
+
+@@ lines 40-40 @@
+
+```
+
+
+```
+
+@@ lines 41-41 @@
+
+```
+
+4. **`lib/cozy_checkout_web/live/booking_live/calendar.html.heex`**
+```
+
+@@ lines 42-42 @@
+
+```
+
+   - Responsive calendar grid layout
+```
+
+@@ lines 43-43 @@
+
+```
+
+   - Day headers (Mon-Sun)
+```
+
+@@ lines 44-44 @@
+
+```
+
+   - Calendar navigation UI
+```
+
+@@ lines 45-45 @@
+
+```
+
+   - Legend for status colors
+```
+
+@@ lines 46-46 @@
+
+```
+
+
+```
+
+@@ lines 47-47 @@
+
+```
+
+### Routes Added
+```
+
+@@ lines 48-48 @@
+
+```
+
+
+```
+
+@@ lines 49-49 @@
+
+````
+
+```elixir
+````
+
+@@ lines 50-50 @@
+
+```
+
+# In router.ex
+```
+
+@@ lines 51-51 @@
+
+```
+
+live "/admin/bookings/calendar", BookingLive.Calendar
+```
+
+@@ lines 52-52 @@
+
+````
+
+```
+````
+
+@@ lines 53-53 @@
+
+```
+
+
+```
+
+@@ lines 54-54 @@
+
+```
+
+### Navigation Links Added
+```
+
+@@ lines 55-55 @@
+
+```
+
+
+```
+
+@@ lines 56-56 @@
+
+```
+
+- **Bookings Index**: Added "Calendar View" button
+```
+
+@@ lines 57-57 @@
+
+```
+
+- **Calendar View**: Added "List View" button
+```
+
+@@ lines 58-58 @@
+
+```
+
+- **Admin Dashboard**: Added "Calendar" card
+```
+
+@@ lines 59-59 @@
+
+```
+
+
+```
+
+@@ lines 60-60 @@
+
+```
+
+## Design Choices
+```
+
+@@ lines 61-61 @@
+
+```
+
+
+```
+
+@@ lines 62-62 @@
+
+```
+
+### Pure Elixir Implementation
+```
+
+@@ lines 63-63 @@
+
+```
+
+
+```
+
+@@ lines 64-64 @@
+
+```
+
+Following project guidelines, the calendar is implemented entirely in Elixir/Phoenix LiveView:
+```
+
+@@ lines 65-65 @@
+
+```
+
+- No JavaScript libraries required
+```
+
+@@ lines 66-66 @@
+
+```
+
+- Server-rendered for reliability
+```
+
+@@ lines 67-67 @@
+
+```
+
+- LiveView handles all interactivity
+```
+
+@@ lines 68-68 @@
+
+```
+
+- Tailwind CSS for styling
+```
+
+@@ lines 69-69 @@
+
+```
+
+
+```
+
+@@ lines 70-70 @@
+
+```
+
+### Calendar Grid Logic
+```
+
+@@ lines 71-71 @@
+
+```
+
+
+```
+
+@@ lines 72-72 @@
+
+```
+
+The grid starts on Monday and includes partial weeks:
+```
+
+@@ lines 73-73 @@
+
+```
+
+- First week may include days from previous month (shown as empty)
+```
+
+@@ lines 74-74 @@
+
+```
+
+- Last week may include days from next month (shown as empty)
+```
+
+@@ lines 75-75 @@
+
+```
+
+- This provides a complete 4-6 week grid for consistency
+```
+
+@@ lines 76-76 @@
+
+```
+
+
+```
+
+@@ lines 77-77 @@
+
+```
+
+### Booking Overlap Detection
+```
+
+@@ lines 78-78 @@
+
+```
+
+
+```
+
+@@ lines 79-79 @@
+
+```
+
+The query in `list_bookings_for_month/2` correctly handles bookings that:
+```
+
+@@ lines 80-80 @@
+
+```
+
+- Start within the month
+```
+
+@@ lines 81-81 @@
+
+```
+
+- End within the month
+```
+
+@@ lines 82-82 @@
+
+```
+
+- Span across the entire month (check-in before, check-out after)
+```
+
+@@ lines 83-83 @@
+
+```
+
+
+```
+
+@@ lines 84-84 @@
+
+```
+
+### Performance Considerations
+```
+
+@@ lines 85-85 @@
+
+```
+
+
+```
+
+@@ lines 86-86 @@
+
+```
+
+- Single database query per month
+```
+
+@@ lines 87-87 @@
+
+```
+
+- Bookings filtered in-memory per day
+```
+
+@@ lines 88-88 @@
+
+```
+
+- Limited to 3 bookings shown per cell to prevent UI crowding
+```
+
+@@ lines 89-89 @@
+
+```
+
+- Efficient date range queries with proper indexes
+```
+
+@@ lines 90-90 @@
+
+```
+
+
+```
+
+@@ lines 91-91 @@
+
+```
+
+## Usage
+```
+
+@@ lines 92-92 @@
+
+```
+
+
+```
+
+@@ lines 93-93 @@
+
+```
+
+Navigate to:
+```
+
+@@ lines 94-94 @@
+
+```
+
+- **From Admin Dashboard**: Click "Calendar" card
+```
+
+@@ lines 95-95 @@
+
+```
+
+- **From Bookings List**: Click "Calendar View" button
+```
+
+@@ lines 96-96 @@
+
+```
+
+- **Direct URL**: `/admin/bookings/calendar`
+```
+
+@@ lines 97-97 @@
+
+```
+
+
+```
+
+@@ lines 98-98 @@
+
+```
+
+## Color Legend
+```
+
+@@ lines 99-99 @@
+
+```
+
+
+```
+
+@@ lines 100-100 @@
+
+```
+
+- **Blue** (bg-blue-100): Upcoming bookings
+```
+
+@@ lines 101-101 @@
+
+```
+
+- **Green** (bg-green-100): Active bookings (currently checked in)
+```
+
+@@ lines 102-102 @@
+
+```
+
+- **Gray** (bg-gray-100): Completed bookings (checked out)
+```
+
+@@ lines 103-103 @@
+
+```
+
+- **Red** (bg-red-100): Cancelled bookings
+```
+
+@@ lines 104-104 @@
+
+```
+
+
+```
+
+@@ lines 105-105 @@
+
+```
+
+## Future Enhancements (Optional)
+```
+
+@@ lines 106-106 @@
+
+```
+
+
+```
+
+@@ lines 107-107 @@
+
+```
+
+- Week view option
+```
+
+@@ lines 108-108 @@
+
+```
+
+- Day view with hourly breakdown
+```
+
+@@ lines 109-109 @@
+
+```
+
+- Drag-and-drop booking rescheduling
+```
+
+@@ lines 110-110 @@
+
+```
+
+- Multi-room view (rows per room)
+```
+
+@@ lines 111-111 @@
+
+```
+
+- Export calendar to PDF
+```
+
+@@ lines 112-112 @@
+
+```
+
+- iCal feed integration for external calendars
+```
+
+@@ lines 113-113 @@
+
+```
+
+- Filtering by status or room
+```
+
+@@ lines 114-114 @@
+
+```
+
+- Search/filter guests
+```
+
+@@ lines 115-115 @@
+
+```
+
+
+```
+
+@@ lines 116-116 @@
+
+```
+
+## Best Practices Followed
+```
+
+@@ lines 117-117 @@
+
+```
+
+
+```
+
+@@ lines 118-118 @@
+
+```
+
+✅ Pure Elixir/LiveView (no JS libraries)
+```
+
+@@ lines 119-119 @@
+
+```
+
+✅ Tailwind CSS for styling
+```
+
+@@ lines 120-120 @@
+
+```
+
+✅ Proper Phoenix 1.8 patterns
+```
+
+@@ lines 121-121 @@
+
+```
+
+✅ Efficient database queries
+```
+
+@@ lines 122-122 @@
+
+```
+
+✅ Responsive design
+```
+
+@@ lines 123-123 @@
+
+```
+
+✅ Accessibility considerations
+```
+
+@@ lines 124-124 @@
+
+```
+
+✅ Clean code organization
+```
+
+@@ lines 125-125 @@
+
+```
+
+✅ Proper error handling
+```
+
+@@ lines 126-126 @@
+
+```
+
+✅ Documentation
+```
+
+@@ lines 127-127 @@
+
+```
+
+
+```
+
+@@ lines 128-128 @@
+
+```
+
+## Testing
+```
+
+@@ lines 129-129 @@
+
+```
+
+
+```
+
+@@ lines 130-130 @@
+
+```
+
+To test the calendar:
+```
+
+@@ lines 131-131 @@
+
+```
+
+
+```
+
+@@ lines 132-132 @@
+
+```
+
+1. Start the server: `mix phx.server`
+```
+
+@@ lines 133-133 @@
+
+```
+
+2. Navigate to: `http://localhost:4000/admin/bookings/calendar`
+```
+
+@@ lines 134-134 @@
+
+```
+
+3. Test navigation: Click prev/next month buttons
+```
+
+@@ lines 135-135 @@
+
+```
+
+4. Test today button: Jump to current month
+```
+
+@@ lines 136-136 @@
+
+```
+
+5. Test booking links: Click on any booking to view details
+```
+
+@@ lines 137-137 @@
+
+```
+
+6. Verify color coding matches booking status
+```
+
+@@ lines 138-138 @@
+
+```
+
+7. Check responsiveness on different screen sizes
+```
+
+@@ lines 139-139 @@
+
+```
+
+
+```
+
+@@ lines 140-140 @@
+
+```
+
+## Database Schema
+```
+
+@@ lines 141-141 @@
+
+```
+
+
+```
+
+@@ lines 142-142 @@
+
+```
+
+The calendar relies on the `bookings` table:
+```
+
+@@ lines 143-143 @@
+
+```
+
+
+```
+
+@@ lines 144-144 @@
+
+````
+
+```sql
+````
+
+@@ lines 145-145 @@
+
+```
+
+CREATE TABLE bookings (
+```
+
+@@ lines 146-146 @@
+
+```
+
+  id UUID PRIMARY KEY,
+```
+
+@@ lines 147-147 @@
+
+```
+
+  guest_id UUID REFERENCES guests(id),
+```
+
+@@ lines 148-148 @@
+
+```
+
+  check_in_date DATE NOT NULL,
+```
+
+@@ lines 149-149 @@
+
+```
+
+  check_out_date DATE,
+```
+
+@@ lines 150-150 @@
+
+```
+
+  status VARCHAR (upcoming|active|completed|cancelled),
+```
+
+@@ lines 151-151 @@
+
+```
+
+  room_number VARCHAR,
+```
+
+@@ lines 152-152 @@
+
+```
+
+  notes TEXT,
+```
+
+@@ lines 153-153 @@
+
+```
+
+  deleted_at TIMESTAMP,
+```
+
+@@ lines 154-154 @@
+
+```
+
+  inserted_at TIMESTAMP,
+```
+
+@@ lines 155-155 @@
+
+```
+
+  updated_at TIMESTAMP
+```
+
+@@ lines 156-156 @@
+
+```
+
+);
+```
+
+@@ lines 157-157 @@
+
+```
+
+
+```
+
+@@ lines 158-158 @@
+
+```
+
+-- Indexes used by calendar queries
+```
+
+@@ lines 159-159 @@
+
+```
+
+CREATE INDEX ON bookings(check_in_date);
+```
+
+@@ lines 160-160 @@
+
+```
+
+CREATE INDEX ON bookings(check_out_date);
+```
+
+@@ lines 161-161 @@
+
+```
+
+CREATE INDEX ON bookings(deleted_at);
+```
+
+@@ lines 162-162 @@
+
+````
+
+```
+````
+
+@@ lines 163-163 @@
+
+```
+
+
+```
+
+@@ lines 164-164 @@
+
+```
+
+## Notes
+```
+
+@@ lines 165-165 @@
+
+```
+
+
+```
+
+@@ lines 166-166 @@
+
+```
+
+- The calendar uses Monday as the first day of the week (standard in Europe)
+```
+
+@@ lines 167-167 @@
+
+```
+
+- Empty cells for days outside current month prevent visual clutter
+```
+
+@@ lines 168-168 @@
+
+```
+
+- Bookings without check-out dates are assumed to continue indefinitely
+```
+
+@@ lines 169-169 @@
+
+```
+
+- The "today" indicator uses UTC date for consistency
+```
+
+@@ lines 170-170 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Let me create a quick visual example to show you what was implemented. Let me also check if there are any errors we should address: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_getErrors"><details>
+<summary>Tool use: **copilot_getErrors**</summary>
+
+Checked workspace, 1 problem found in `ical_importer.ex`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Let me fix that unused import warning: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
+<summary>Tool use: **copilot_readFile**</summary>
+
+Read `ical_importer.ex`, lines 1 to 16
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ical_importer.ex**</summary>
+
+@@ lines 1-10 @@
+
+```
+defmodule CozyCheckout.IcalImporter do
+  @moduledoc """
+  Imports iCal files to create guests and bookings.
+  """
+
+  alias CozyCheckout.{Guests, Bookings, Repo}
+  alias CozyCheckout.Guests.Guest
+  alias CozyCheckout.Bookings.Booking
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's check if we need to add the import back where it's used: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
+<summary>Tool use: **copilot_findTextInFiles**</summary>
+
+Searched text for `where\(|from\(|order_by\(` (`**/lib/cozy_checkout/ical_importer.ex`), 10 results
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Good - it's using `Ecto.Query.where/2` with the full module name, so the import isn't needed. Let's verify the compilation: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Using "Run in Terminal"
+</details></tool-use>

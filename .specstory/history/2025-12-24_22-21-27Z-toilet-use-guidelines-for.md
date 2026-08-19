@@ -12,14 +12,14 @@ Navrhni mi jednoduchý, ale výstižný nápis na záchody na horské chalupy up
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Vytvořím vám jednoduchý, ale výrazný nápis na záchody s jasným sdělením. Vytvořím HTML soubor, který bude možné otevřít v prohlížeči a vytisknout na A4.
-</details></think>
+Vytvořím vám jednoduchý, ale výrazný nápis na záchody s jasným sdělením. Vytvořím HTML soubor, který bude možné otevřít v prohlížeči a vytisknout na A4. 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `zachod_napisy.html`
 
 **Input:**
 
@@ -209,13 +209,1251 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"P_","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Vytvořím vám jednoduchý, ale výrazný nápis na záchody s jasným sdělením. Vytvořím HTML soubor, který bude možné otevřít v prohlížeči a vytisknout na A4. Hotovo! Vytvořil jsem jednoduchý, ale výrazný nápis na záchody. Soubor je uložen zde:
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 1-1 @@
+
+```
+<!DOCTYPE html>
+```
+
+@@ lines 2-2 @@
+
+```
+
+<html lang="cs">
+```
+
+@@ lines 3-3 @@
+
+```
+
+<head>
+```
+
+@@ lines 4-4 @@
+
+```
+
+    <meta charset="UTF-8">
+```
+
+@@ lines 5-5 @@
+
+```
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+```
+
+@@ lines 6-6 @@
+
+```
+
+    <title>Nápis na záchod</title>
+```
+
+@@ lines 7-7 @@
+
+```
+
+    <style>
+```
+
+@@ lines 8-8 @@
+
+```
+
+        @media print {
+```
+
+@@ lines 9-9 @@
+
+```
+
+            body { margin: 0; }
+```
+
+@@ lines 10-10 @@
+
+```
+
+            .no-print { display: none; }
+```
+
+@@ lines 11-11 @@
+
+```
+
+        }
+```
+
+@@ lines 12-12 @@
+
+```
+
+        
+```
+
+@@ lines 13-13 @@
+
+```
+
+        body {
+```
+
+@@ lines 14-14 @@
+
+```
+
+            font-family: 'Arial', sans-serif;
+```
+
+@@ lines 15-15 @@
+
+```
+
+            margin: 0;
+```
+
+@@ lines 16-16 @@
+
+```
+
+            padding: 20px;
+```
+
+@@ lines 17-17 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 18-18 @@
+
+```
+
+            justify-content: center;
+```
+
+@@ lines 19-19 @@
+
+```
+
+            align-items: center;
+```
+
+@@ lines 20-20 @@
+
+```
+
+            min-height: 100vh;
+```
+
+@@ lines 21-21 @@
+
+```
+
+            background: #f5f5f5;
+```
+
+@@ lines 22-22 @@
+
+```
+
+        }
+```
+
+@@ lines 23-23 @@
+
+```
+
+        
+```
+
+@@ lines 24-24 @@
+
+```
+
+        .poster {
+```
+
+@@ lines 25-25 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 26-26 @@
+
+```
+
+            width: 210mm;
+```
+
+@@ lines 27-27 @@
+
+```
+
+            height: 297mm;
+```
+
+@@ lines 28-28 @@
+
+```
+
+            padding: 40px;
+```
+
+@@ lines 29-29 @@
+
+```
+
+            box-sizing: border-box;
+```
+
+@@ lines 30-30 @@
+
+```
+
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+```
+
+@@ lines 31-31 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 32-32 @@
+
+```
+
+            flex-direction: column;
+```
+
+@@ lines 33-33 @@
+
+```
+
+            justify-content: center;
+```
+
+@@ lines 34-34 @@
+
+```
+
+            align-items: center;
+```
+
+@@ lines 35-35 @@
+
+```
+
+            text-align: center;
+```
+
+@@ lines 36-36 @@
+
+```
+
+        }
+```
+
+@@ lines 37-37 @@
+
+```
+
+        
+```
+
+@@ lines 38-38 @@
+
+```
+
+        .warning-icon {
+```
+
+@@ lines 39-39 @@
+
+```
+
+            font-size: 120px;
+```
+
+@@ lines 40-40 @@
+
+```
+
+            margin-bottom: 20px;
+```
+
+@@ lines 41-41 @@
+
+```
+
+        }
+```
+
+@@ lines 42-42 @@
+
+```
+
+        
+```
+
+@@ lines 43-43 @@
+
+```
+
+        h1 {
+```
+
+@@ lines 44-44 @@
+
+```
+
+            color: #dc2626;
+```
+
+@@ lines 45-45 @@
+
+```
+
+            font-size: 48px;
+```
+
+@@ lines 46-46 @@
+
+```
+
+            font-weight: bold;
+```
+
+@@ lines 47-47 @@
+
+```
+
+            margin: 0 0 30px 0;
+```
+
+@@ lines 48-48 @@
+
+```
+
+            line-height: 1.2;
+```
+
+@@ lines 49-49 @@
+
+```
+
+        }
+```
+
+@@ lines 50-50 @@
+
+```
+
+        
+```
+
+@@ lines 51-51 @@
+
+```
+
+        .main-message {
+```
+
+@@ lines 52-52 @@
+
+```
+
+            font-size: 32px;
+```
+
+@@ lines 53-53 @@
+
+```
+
+            color: #1f2937;
+```
+
+@@ lines 54-54 @@
+
+```
+
+            margin: 30px 0;
+```
+
+@@ lines 55-55 @@
+
+```
+
+            font-weight: 600;
+```
+
+@@ lines 56-56 @@
+
+```
+
+            line-height: 1.4;
+```
+
+@@ lines 57-57 @@
+
+```
+
+        }
+```
+
+@@ lines 58-58 @@
+
+```
+
+        
+```
+
+@@ lines 59-59 @@
+
+```
+
+        .icons-row {
+```
+
+@@ lines 60-60 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 61-61 @@
+
+```
+
+            justify-content: center;
+```
+
+@@ lines 62-62 @@
+
+```
+
+            align-items: center;
+```
+
+@@ lines 63-63 @@
+
+```
+
+            gap: 40px;
+```
+
+@@ lines 64-64 @@
+
+```
+
+            margin: 40px 0;
+```
+
+@@ lines 65-65 @@
+
+```
+
+            font-size: 80px;
+```
+
+@@ lines 66-66 @@
+
+```
+
+        }
+```
+
+@@ lines 67-67 @@
+
+```
+
+        
+```
+
+@@ lines 68-68 @@
+
+```
+
+        .allowed {
+```
+
+@@ lines 69-69 @@
+
+```
+
+            color: #059669;
+```
+
+@@ lines 70-70 @@
+
+```
+
+        }
+```
+
+@@ lines 71-71 @@
+
+```
+
+        
+```
+
+@@ lines 72-72 @@
+
+```
+
+        .not-allowed {
+```
+
+@@ lines 73-73 @@
+
+```
+
+            color: #dc2626;
+```
+
+@@ lines 74-74 @@
+
+```
+
+            opacity: 0.4;
+```
+
+@@ lines 75-75 @@
+
+```
+
+            position: relative;
+```
+
+@@ lines 76-76 @@
+
+```
+
+        }
+```
+
+@@ lines 77-77 @@
+
+```
+
+        
+```
+
+@@ lines 78-78 @@
+
+```
+
+        .not-allowed::before {
+```
+
+@@ lines 79-79 @@
+
+```
+
+            content: "🚫";
+```
+
+@@ lines 80-80 @@
+
+```
+
+            position: absolute;
+```
+
+@@ lines 81-81 @@
+
+```
+
+            top: -10px;
+```
+
+@@ lines 82-82 @@
+
+```
+
+            right: -10px;
+```
+
+@@ lines 83-83 @@
+
+```
+
+            font-size: 50px;
+```
+
+@@ lines 84-84 @@
+
+```
+
+        }
+```
+
+@@ lines 85-85 @@
+
+```
+
+        
+```
+
+@@ lines 86-86 @@
+
+```
+
+        .consequence {
+```
+
+@@ lines 87-87 @@
+
+```
+
+            background: #fef2f2;
+```
+
+@@ lines 88-88 @@
+
+```
+
+            border: 4px solid #dc2626;
+```
+
+@@ lines 89-89 @@
+
+```
+
+            border-radius: 16px;
+```
+
+@@ lines 90-90 @@
+
+```
+
+            padding: 30px;
+```
+
+@@ lines 91-91 @@
+
+```
+
+            margin: 40px 0;
+```
+
+@@ lines 92-92 @@
+
+```
+
+            font-size: 28px;
+```
+
+@@ lines 93-93 @@
+
+```
+
+            color: #991b1b;
+```
+
+@@ lines 94-94 @@
+
+```
+
+            font-weight: bold;
+```
+
+@@ lines 95-95 @@
+
+```
+
+            line-height: 1.5;
+```
+
+@@ lines 96-96 @@
+
+```
+
+        }
+```
+
+@@ lines 97-97 @@
+
+```
+
+        
+```
+
+@@ lines 98-98 @@
+
+```
+
+        .consequence-icon {
+```
+
+@@ lines 99-99 @@
+
+```
+
+            font-size: 60px;
+```
+
+@@ lines 100-100 @@
+
+```
+
+            margin-bottom: 15px;
+```
+
+@@ lines 101-101 @@
+
+```
+
+        }
+```
+
+@@ lines 102-102 @@
+
+```
+
+        
+```
+
+@@ lines 103-103 @@
+
+```
+
+        .footer {
+```
+
+@@ lines 104-104 @@
+
+```
+
+            margin-top: 40px;
+```
+
+@@ lines 105-105 @@
+
+```
+
+            font-size: 24px;
+```
+
+@@ lines 106-106 @@
+
+```
+
+            color: #6b7280;
+```
+
+@@ lines 107-107 @@
+
+```
+
+            font-style: italic;
+```
+
+@@ lines 108-108 @@
+
+```
+
+        }
+```
+
+@@ lines 109-109 @@
+
+```
+
+        
+```
+
+@@ lines 110-110 @@
+
+```
+
+        .print-button {
+```
+
+@@ lines 111-111 @@
+
+```
+
+            position: fixed;
+```
+
+@@ lines 112-112 @@
+
+```
+
+            top: 20px;
+```
+
+@@ lines 113-113 @@
+
+```
+
+            right: 20px;
+```
+
+@@ lines 114-114 @@
+
+```
+
+            padding: 15px 30px;
+```
+
+@@ lines 115-115 @@
+
+```
+
+            font-size: 18px;
+```
+
+@@ lines 116-116 @@
+
+```
+
+            background: #2563eb;
+```
+
+@@ lines 117-117 @@
+
+```
+
+            color: white;
+```
+
+@@ lines 118-118 @@
+
+```
+
+            border: none;
+```
+
+@@ lines 119-119 @@
+
+```
+
+            border-radius: 8px;
+```
+
+@@ lines 120-120 @@
+
+```
+
+            cursor: pointer;
+```
+
+@@ lines 121-121 @@
+
+```
+
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+```
+
+@@ lines 122-122 @@
+
+```
+
+        }
+```
+
+@@ lines 123-123 @@
+
+```
+
+        
+```
+
+@@ lines 124-124 @@
+
+```
+
+        .print-button:hover {
+```
+
+@@ lines 125-125 @@
+
+```
+
+            background: #1d4ed8;
+```
+
+@@ lines 126-126 @@
+
+```
+
+        }
+```
+
+@@ lines 127-127 @@
+
+```
+
+    </style>
+```
+
+@@ lines 128-128 @@
+
+```
+
+</head>
+```
+
+@@ lines 129-129 @@
+
+```
+
+<body>
+```
+
+@@ lines 130-130 @@
+
+```
+
+    <button class="print-button no-print" onclick="window.print()">🖨️ Vytisknout</button>
+```
+
+@@ lines 131-131 @@
+
+```
+
+    
+```
+
+@@ lines 132-132 @@
+
+```
+
+    <div class="poster">
+```
+
+@@ lines 133-133 @@
+
+```
+
+        <div class="warning-icon">⚠️</div>
+```
+
+@@ lines 134-134 @@
+
+```
+
+        
+```
+
+@@ lines 135-135 @@
+
+```
+
+        <h1>POZOR!</h1>
+```
+
+@@ lines 136-136 @@
+
+```
+
+        
+```
+
+@@ lines 137-137 @@
+
+```
+
+        <div class="main-message">
+```
+
+@@ lines 138-138 @@
+
+```
+
+            Do záchodu patří<br>
+```
+
+@@ lines 139-139 @@
+
+```
+
+            <strong>POUZE</strong> toaletní papír
+```
+
+@@ lines 140-140 @@
+
+```
+
+        </div>
+```
+
+@@ lines 141-141 @@
+
+```
+
+        
+```
+
+@@ lines 142-142 @@
+
+```
+
+        <div class="icons-row">
+```
+
+@@ lines 143-143 @@
+
+```
+
+            <div class="allowed" title="Pouze toaletní papír">
+```
+
+@@ lines 144-144 @@
+
+```
+
+                🧻
+```
+
+@@ lines 145-145 @@
+
+```
+
+            </div>
+```
+
+@@ lines 146-146 @@
+
+```
+
+            <div style="font-size: 60px; color: #6b7280;">✓</div>
+```
+
+@@ lines 147-147 @@
+
+```
+
+        </div>
+```
+
+@@ lines 148-148 @@
+
+```
+
+        
+```
+
+@@ lines 149-149 @@
+
+```
+
+        <div class="icons-row">
+```
+
+@@ lines 150-150 @@
+
+```
+
+            <div class="not-allowed" title="Vlhčené ubrousky">
+```
+
+@@ lines 151-151 @@
+
+```
+
+                🧴
+```
+
+@@ lines 152-152 @@
+
+```
+
+            </div>
+```
+
+@@ lines 153-153 @@
+
+```
+
+            <div class="not-allowed" title="Vatové tyčinky">
+```
+
+@@ lines 154-154 @@
+
+```
+
+                🪥
+```
+
+@@ lines 155-155 @@
+
+```
+
+            </div>
+```
+
+@@ lines 156-156 @@
+
+```
+
+            <div class="not-allowed" title="Hygienické vložky">
+```
+
+@@ lines 157-157 @@
+
+```
+
+                🩹
+```
+
+@@ lines 158-158 @@
+
+```
+
+            </div>
+```
+
+@@ lines 159-159 @@
+
+```
+
+            <div class="not-allowed" title="Cokoliv jiného">
+```
+
+@@ lines 160-160 @@
+
+```
+
+                🗑️
+```
+
+@@ lines 161-161 @@
+
+```
+
+            </div>
+```
+
+@@ lines 162-162 @@
+
+```
+
+        </div>
+```
+
+@@ lines 163-163 @@
+
+```
+
+        
+```
+
+@@ lines 164-164 @@
+
+```
+
+        <div class="consequence">
+```
+
+@@ lines 165-165 @@
+
+```
+
+            <div class="consequence-icon">🚨</div>
+```
+
+@@ lines 166-166 @@
+
+```
+
+            Ucpání odpadu = <br>
+```
+
+@@ lines 167-167 @@
+
+```
+
+            OKAMŽITÉ UKONČENÍ POBYTU<br>
+```
+
+@@ lines 168-168 @@
+
+```
+
+            všem hostům!
+```
+
+@@ lines 169-169 @@
+
+```
+
+        </div>
+```
+
+@@ lines 170-170 @@
+
+```
+
+        
+```
+
+@@ lines 171-171 @@
+
+```
+
+        <div class="footer">
+```
+
+@@ lines 172-172 @@
+
+```
+
+            Děkujeme za pochopení 🙏
+```
+
+@@ lines 173-173 @@
+
+```
+
+        </div>
+```
+
+@@ lines 174-174 @@
+
+```
+
+    </div>
+```
+
+@@ lines 175-175 @@
+
+```
+
+</body>
+```
+
+@@ lines 176-176 @@
+
+```
+
+</html>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Hotovo! Vytvořil jsem jednoduchý, ale výrazný nápis na záchody. Soubor je uložen zde:
 
 `priv/static/zachod_napisy.html`
 
@@ -249,10 +1487,218 @@ Použij modernějši design a ideálně v černobílé variantě. Mám pouze če
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 14-172 @@
 
 ```
-
+Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f9fafb;
+        }
+        
+        .poster {
+            background: white;
+            width: 210mm;
+            height: 297mm;
+            padding: 50px;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+        
+        .header {
+            margin-bottom: 50px;
+        }
+        
+        .toilet-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            border: 6px solid #000;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 70px;
+        }
+        
+        h1 {
+            color: #000;
+            font-size: 42px;
+            font-weight: 300;
+            margin: 0;
+            letter-spacing: -1px;
+            line-height: 1.3;
+        }
+        
+        h1 strong {
+            font-weight: 700;
+            display: block;
+            font-size: 52px;
+            margin-top: 10px;
+        }
+        
+        .divider {
+            width: 80px;
+            height: 3px;
+            background: #000;
+            margin: 40px auto;
+        }
+        
+        .rules {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .rule-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin: 30px 0;
+            font-size: 28px;
+            font-weight: 500;
+        }
+        
+        .rule-icon {
+            width: 80px;
+            height: 80px;
+            border: 3px solid #000;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+        }
+        
+        .check {
+            font-size: 40px;
+            font-weight: bold;
+        }
+        
+        .cross {
+            font-size: 40px;
+            font-weight: bold;
+            opacity: 0.5;
+        }
+        
+        .info-box {
+            background: #f3f4f6;
+            border: 3px solid #000;
+            border-radius: 20px;
+            padding: 35px 40px;
+            margin: 50px 0 30px;
+            max-width: 650px;
+        }
+        
+        .info-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .info-text {
+            font-size: 26px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            font-size: 22px;
+            color: #374151;
+            font-weight: 300;
+            font-style: italic;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            font-weight: 500;
+        }
+        
+        .print-button:hover {
+            background: #374151;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ Vytisknout</button>
+    
+    <div class="poster">
+        <div class="header">
+            <div class="toilet-icon">🚽</div>
+            <h1>
+                Prosíme vás
+                <strong>Ochraňte odpad</strong>
+            </h1>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="rules">
+            <div class="rule-item">
+                <div class="rule-icon">🧻</div>
+                <span class="check">✓</span>
+                <span>Toaletní papír</span>
+            </div>
+            
+            <div class="rule-item">
+                <div class="rule-icon" style="opacity: 0.3;">🧴</div>
+                <span class="cross">✗</span>
+                <span style="opacity: 0.5;">Vlhčené ubrousky</span>
+            </div>
+            
+            <div class="rule-item">
+                <div class="rule-icon" style="opacity: 0.3;">🩹</div>
+                <span class="cross">✗</span>
+                <span style="opacity: 0.5;">Hygienické potřeby</span>
+            </div>
+            
+            <div class="rule-item">
+                <div class="rule-icon" style="opacity: 0.3;">🗑️</div>
+                <span class="cross">✗</span>
+                <span style="opacity: 0.5;">Ostatní odpad</span>
+            </div>
+        </div>
+        
+        <div class="info-box">
+            <div class="info-title">⚠️ Důležité</div>
+            <div class="info-text">
+                Ucpání odpadu způsobí výpadek všech záchodů v celé chatě. 
+                V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům.
+            </div>
+        </div>
+        
+        <div class="footer">
+            Děkujeme za pochopení a spolupráci
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Hotovo! Vytvořil jsem modernější, minimalistický design v černobílé variantě, který je vstřícnější k hostům:
 
 **Změny:**
@@ -275,10 +1721,312 @@ Vždyť je to fakt hnusný. Koukni na internet jak zhruba tyto nápisy vypadají
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 13-214 @@
 
 ```
-
+* {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f5f5f5;
+        }
+        
+        .poster {
+            background: white;
+            width: 210mm;
+            height: 297mm;
+            padding: 45mm 30mm;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .header {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 36px;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 20px;
+            color: #666;
+            font-weight: 400;
+            margin: 0;
+        }
+        
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 35px;
+            margin: 40px 0;
+        }
+        
+        .allowed-section {
+            text-align: center;
+        }
+        
+        .allowed-section h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
+        .icon-circle {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            position: relative;
+        }
+        
+        .icon-circle::before {
+            content: '';
+            width: 30px;
+            height: 50px;
+            background: white;
+            border: 4px solid #1a1a1a;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .icon-circle::after {
+            content: '';
+            width: 18px;
+            height: 18px;
+            background: white;
+            border: 4px solid #1a1a1a;
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .item-name {
+            font-size: 22px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 0 60px;
+        }
+        
+        .not-allowed-section h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 25px 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
+        .not-allowed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .not-allowed-item {
+            text-align: center;
+            opacity: 0.4;
+        }
+        
+        .icon-box {
+            width: 70px;
+            height: 70px;
+            border: 3px solid #1a1a1a;
+            border-radius: 12px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .icon-box::before,
+        .icon-box::after {
+            content: '';
+            position: absolute;
+            width: 60px;
+            height: 3px;
+            background: #1a1a1a;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .icon-box::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+        
+        .icon-wipes::before {
+            content: '';
+            width: 28px;
+            height: 38px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 6px 6px 12px 12px;
+        }
+        
+        .icon-hygiene::before {
+            content: '';
+            width: 35px;
+            height: 12px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 15px;
+        }
+        
+        .icon-trash::before {
+            content: '';
+            width: 30px;
+            height: 32px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 3px 3px 6px 6px;
+        }
+        
+        .not-allowed-item span {
+            font-size: 16px;
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+        
+        .warning {
+            background: #f8f8f8;
+            border-left: 4px solid #1a1a1a;
+            padding: 25px 30px;
+            margin: 35px 0 0 0;
+        }
+        
+        .warning-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .warning-text {
+            font-size: 18px;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 18px;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .print-button:hover {
+            background: #333;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">Vytisknout</button>
+    
+    <div class="poster">
+        <div class="header">
+            <h1>Prosíme o ohleduplnost</h1>
+            <p class="subtitle">Pomozte nám udržet záchody funkční pro všechny hosty</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <h2>Do záchodu patří</h2>
+                <div class="icon-circle"></div>
+                <div class="item-name">Pouze toaletní papír</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <h2>Do záchodu nepatří</h2>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Vlhčené<br>ubrousky</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygienické<br>potřeby</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Jiný<br>odpad</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Důležité upozornění</div>
+                <p class="warning-text">
+                    Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. 
+                    V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům 
+                    až do vyřešení závady.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Děkujeme za pochopení a přejeme příjemný pobyt
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Hotovo! Vytvořil jsem profesionální, moderní design inspirovaný běžnými informačními nápisy:
 
 **Klíčové změny:**
@@ -301,31 +2049,104 @@ Pomož mi s vytvořením emailu pro hosty, kteří mají teprve přijet do mého
 
 _**Agent (copilot/claude-opus-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Výborně, mám základní informace z webu. Vidím, že jde o chatu Jindřichův dům v Peci pod Sněžkou (nadmořská výška 1030 m), adresa Pec pod Sněžkou 24. Nyní se podívám na stránku s praktickými informacemi:
-</details></think>
-
-_**Agent (copilot/claude-opus-4.5)**_
-
 <tool-use data-tool-type="generic" data-tool-name="fetch_webpage"><details>
 <summary>Tool use: **fetch_webpage**</summary>
+
+Fetched 2 resources
 
 **Input:**
 
 - query: `praktické informace, parkování, příjezd, cesta, check-in, check-out, pravidla`
-- urls: `[https://www.jindrichuvdum.cz/practical-info]`
+- urls: `["https://www.jindrichuvdum.cz/practical-info"]`
 
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"Here is some relevant context from the web page https://www.jindrichuvdum.cz/practical-info:","type":2}],"ctor":2,"ctorName":"Bve","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"","keepWithId":30371,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  \n# 🏔️ Jindřichův dům\n...\n## Ubytování\n\n 🔑 Check-in: od 15:00 🚪 Check-out: do 10:00 🔐 Vrácení klíčů: v kuchyni 📶\n## WiFi připojení\n\n 📡 jindrichuvdum_hoste 🔒 Heslo: Jindrich 🍽️\n## Stravování\n\n ☕ Snídaně: 8:00 - 10:00 🍲 Večeře: 18:00 - 20:00 🍺 Bar: od 13:00(zvoňte na zvoneček) ⚠️ Snídaně na cesty: Pouze po domluvě a za poplatek ℹ️\n ...","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":1000},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":999,"references":[],"text":"  \n# 🏔️ Jindřichův dům\n...\n## Pravidla domu\n\n\n🚭Zákaz kouření v celém objektu (včetně e-cigaret)\n♻️Třídíme odpad: papír a plast na každém patře, ostatní v přízemí\n🔥Kamna v herní místnosti: přikládá pouze personál\n\n 📞\n## Důležité kontakty\n\n PROVOZOVATEL 📱 739 655 826 HORSKÁ SLUŽBA ⛰️ 602 448 444 ZÁCHRANNÁ SLUŽBA 🚑 155 / 112 HASIČI 🚒 150\n ...","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":999},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":998,"references":[],"text":"  \n# 🏔️ Jindřichův dům\n...\n## 📋 Online domovní kniha\n\n\nNaskenujte QR kód pro vyplnění registračního formuláře\n\n ![QR kód domovní kniha](https://api.qrserver.com/v1/create-qr-code/?size=200x200\u0026data=https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b)\n\n 🏔️❤️\nPřejeme Vám příjemný pobyt v Krkonoších!\n\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":998},"references":
-… (output truncated)
+Here is some relevant context from the web page https://www.jindrichuvdum.cz/practical-info:
+  
+# 🏔️ Jindřichův dům
+...
+## Ubytování
+
+ 🔑 Check-in: od 15:00 🚪 Check-out: do 10:00 🔐 Vrácení klíčů: v kuchyni 📶
+## WiFi připojení
+
+ 📡 jindrichuvdum_hoste 🔒 Heslo: Jindrich 🍽️
+## Stravování
+
+ ☕ Snídaně: 8:00 - 10:00 🍲 Večeře: 18:00 - 20:00 🍺 Bar: od 13:00(zvoňte na zvoneček) ⚠️ Snídaně na cesty: Pouze po domluvě a za poplatek ℹ️
+ ...
+  
+# 🏔️ Jindřichův dům
+...
+## Pravidla domu
+
+
+🚭Zákaz kouření v celém objektu (včetně e-cigaret)
+♻️Třídíme odpad: papír a plast na každém patře, ostatní v přízemí
+🔥Kamna v herní místnosti: přikládá pouze personál
+
+ 📞
+## Důležité kontakty
+
+ PROVOZOVATEL 📱 739 655 826 HORSKÁ SLUŽBA ⛰️ 602 448 444 ZÁCHRANNÁ SLUŽBA 🚑 155 / 112 HASIČI 🚒 150
+ ...
+  
+# 🏔️ Jindřichův dům
+...
+## 📋 Online domovní kniha
+
+
+Naskenujte QR kód pro vyplnění registračního formuláře
+
+ ![QR kód domovní kniha](https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b)
+
+ 🏔️❤️
+Přejeme Vám příjemný pobyt v Krkonoších!
+
+  
+# 🏔️ Jindřichův dům
+
+
+Vítejte v Krkonoších • Pension v centru Krkonoš
+
+ 🏠
+## Ubytování
+ ...
+## WiFi připojení
+ ...
+## Stravování
+ ...
+## Pravidla domu
+...
+## Důležité kontakty
+ ...
+## 📋 Online domovní kniha
+...
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-opus-4.5)**_
 
-Výborně, mám základní informace z webu. Vidím, že jde o chatu Jindřichův dům v Peci pod Sněžkou (nadmořská výška 1030 m), adresa Pec pod Sněžkou 24. Nyní se podívám na stránku s praktickými informacemi: Skvělé, mám hodně užitečných informací. Teď mám několik **doplňujících otázek**, abych mohl připravit co nejlepší email:
+Výborně, mám základní informace z webu. Vidím, že jde o chatu Jindřichův dům v Peci pod Sněžkou (nadmořská výška 1030 m), adresa Pec pod Sněžkou 24. Nyní se podívám na stránku s praktickými informacemi: 
+
+_**Agent (copilot/claude-opus-4.5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="vscode_fetchWebPage_internal"><details>
+<summary>Tool use: **vscode_fetchWebPage_internal**</summary>
+
+Fetched https://www.jindrichuvdum.cz/practical-info
+
+**Result:**
+
+```
+/practical-info
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-opus-4.5)**_
+
+Skvělé, mám hodně užitečných informací. Teď mám několik **doplňujících otázek**, abych mohl připravit co nejlepší email:
 
 ---
 
@@ -378,14 +2199,14 @@ Ostatní: Email se posílá 3-4 dny před příjezdem, nic specifického mě te�
 
 _**Agent (copilot/claude-opus-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Perfektní, mám vše potřebné! Vytvořím vám přehledný email ve dvou verzích (zimní a letní) s přátelským tónem:
-</details></think>
+Perfektní, mám vše potřebné! Vytvořím vám přehledný email ve dvou verzích (zimní a letní) s přátelským tónem: 
 
 _**Agent (copilot/claude-opus-4.5)**_
 
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `email_pred_prijezdem.html`
 
 **Input:**
 
@@ -749,13 +2570,2469 @@ _**Agent (copilot/claude-opus-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"P_","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-opus-4.5)**_
 
-Perfektní, mám vše potřebné! Vytvořím vám přehledný email ve dvou verzích (zimní a letní) s přátelským tónem: Hotovo! Vytvořil jsem přehlednou stránku s oběma verzemi emailu:
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **email_pred_prijezdem.html**</summary>
+
+@@ lines 1-1 @@
+
+```
+<!DOCTYPE html>
+```
+
+@@ lines 2-2 @@
+
+```
+
+<html lang="cs">
+```
+
+@@ lines 3-3 @@
+
+```
+
+<head>
+```
+
+@@ lines 4-4 @@
+
+```
+
+    <meta charset="UTF-8">
+```
+
+@@ lines 5-5 @@
+
+```
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+```
+
+@@ lines 6-6 @@
+
+```
+
+    <title>Email před příjezdem - Jindřichův dům</title>
+```
+
+@@ lines 7-7 @@
+
+```
+
+    <style>
+```
+
+@@ lines 8-8 @@
+
+```
+
+        body {
+```
+
+@@ lines 9-9 @@
+
+```
+
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+```
+
+@@ lines 10-10 @@
+
+```
+
+            max-width: 800px;
+```
+
+@@ lines 11-11 @@
+
+```
+
+            margin: 0 auto;
+```
+
+@@ lines 12-12 @@
+
+```
+
+            padding: 40px 20px;
+```
+
+@@ lines 13-13 @@
+
+```
+
+            background: #f5f5f5;
+```
+
+@@ lines 14-14 @@
+
+```
+
+            line-height: 1.6;
+```
+
+@@ lines 15-15 @@
+
+```
+
+        }
+```
+
+@@ lines 16-16 @@
+
+```
+
+        
+```
+
+@@ lines 17-17 @@
+
+```
+
+        .version-tabs {
+```
+
+@@ lines 18-18 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 19-19 @@
+
+```
+
+            gap: 10px;
+```
+
+@@ lines 20-20 @@
+
+```
+
+            margin-bottom: 20px;
+```
+
+@@ lines 21-21 @@
+
+```
+
+        }
+```
+
+@@ lines 22-22 @@
+
+```
+
+        
+```
+
+@@ lines 23-23 @@
+
+```
+
+        .tab {
+```
+
+@@ lines 24-24 @@
+
+```
+
+            padding: 12px 24px;
+```
+
+@@ lines 25-25 @@
+
+```
+
+            border: none;
+```
+
+@@ lines 26-26 @@
+
+```
+
+            border-radius: 8px 8px 0 0;
+```
+
+@@ lines 27-27 @@
+
+```
+
+            cursor: pointer;
+```
+
+@@ lines 28-28 @@
+
+```
+
+            font-size: 16px;
+```
+
+@@ lines 29-29 @@
+
+```
+
+            font-weight: 600;
+```
+
+@@ lines 30-30 @@
+
+```
+
+            transition: all 0.2s;
+```
+
+@@ lines 31-31 @@
+
+```
+
+        }
+```
+
+@@ lines 32-32 @@
+
+```
+
+        
+```
+
+@@ lines 33-33 @@
+
+```
+
+        .tab.winter {
+```
+
+@@ lines 34-34 @@
+
+```
+
+            background: #e0f2fe;
+```
+
+@@ lines 35-35 @@
+
+```
+
+            color: #0369a1;
+```
+
+@@ lines 36-36 @@
+
+```
+
+        }
+```
+
+@@ lines 37-37 @@
+
+```
+
+        
+```
+
+@@ lines 38-38 @@
+
+```
+
+        .tab.summer {
+```
+
+@@ lines 39-39 @@
+
+```
+
+            background: #dcfce7;
+```
+
+@@ lines 40-40 @@
+
+```
+
+            color: #166534;
+```
+
+@@ lines 41-41 @@
+
+```
+
+        }
+```
+
+@@ lines 42-42 @@
+
+```
+
+        
+```
+
+@@ lines 43-43 @@
+
+```
+
+        .tab.active {
+```
+
+@@ lines 44-44 @@
+
+```
+
+            transform: translateY(2px);
+```
+
+@@ lines 45-45 @@
+
+```
+
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+```
+
+@@ lines 46-46 @@
+
+```
+
+        }
+```
+
+@@ lines 47-47 @@
+
+```
+
+        
+```
+
+@@ lines 48-48 @@
+
+```
+
+        .tab.winter.active {
+```
+
+@@ lines 49-49 @@
+
+```
+
+            background: #0ea5e9;
+```
+
+@@ lines 50-50 @@
+
+```
+
+            color: white;
+```
+
+@@ lines 51-51 @@
+
+```
+
+        }
+```
+
+@@ lines 52-52 @@
+
+```
+
+        
+```
+
+@@ lines 53-53 @@
+
+```
+
+        .tab.summer.active {
+```
+
+@@ lines 54-54 @@
+
+```
+
+            background: #22c55e;
+```
+
+@@ lines 55-55 @@
+
+```
+
+            color: white;
+```
+
+@@ lines 56-56 @@
+
+```
+
+        }
+```
+
+@@ lines 57-57 @@
+
+```
+
+        
+```
+
+@@ lines 58-58 @@
+
+```
+
+        .email-container {
+```
+
+@@ lines 59-59 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 60-60 @@
+
+```
+
+            border-radius: 12px;
+```
+
+@@ lines 61-61 @@
+
+```
+
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+```
+
+@@ lines 62-62 @@
+
+```
+
+            overflow: hidden;
+```
+
+@@ lines 63-63 @@
+
+```
+
+        }
+```
+
+@@ lines 64-64 @@
+
+```
+
+        
+```
+
+@@ lines 65-65 @@
+
+```
+
+        .email-header {
+```
+
+@@ lines 66-66 @@
+
+```
+
+            padding: 30px;
+```
+
+@@ lines 67-67 @@
+
+```
+
+            text-align: center;
+```
+
+@@ lines 68-68 @@
+
+```
+
+        }
+```
+
+@@ lines 69-69 @@
+
+```
+
+        
+```
+
+@@ lines 70-70 @@
+
+```
+
+        .email-header.winter {
+```
+
+@@ lines 71-71 @@
+
+```
+
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+```
+
+@@ lines 72-72 @@
+
+```
+
+            color: white;
+```
+
+@@ lines 73-73 @@
+
+```
+
+        }
+```
+
+@@ lines 74-74 @@
+
+```
+
+        
+```
+
+@@ lines 75-75 @@
+
+```
+
+        .email-header.summer {
+```
+
+@@ lines 76-76 @@
+
+```
+
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+```
+
+@@ lines 77-77 @@
+
+```
+
+            color: white;
+```
+
+@@ lines 78-78 @@
+
+```
+
+        }
+```
+
+@@ lines 79-79 @@
+
+```
+
+        
+```
+
+@@ lines 80-80 @@
+
+```
+
+        .email-header h1 {
+```
+
+@@ lines 81-81 @@
+
+```
+
+            margin: 0 0 5px 0;
+```
+
+@@ lines 82-82 @@
+
+```
+
+            font-size: 24px;
+```
+
+@@ lines 83-83 @@
+
+```
+
+        }
+```
+
+@@ lines 84-84 @@
+
+```
+
+        
+```
+
+@@ lines 85-85 @@
+
+```
+
+        .email-header p {
+```
+
+@@ lines 86-86 @@
+
+```
+
+            margin: 0;
+```
+
+@@ lines 87-87 @@
+
+```
+
+            opacity: 0.9;
+```
+
+@@ lines 88-88 @@
+
+```
+
+        }
+```
+
+@@ lines 89-89 @@
+
+```
+
+        
+```
+
+@@ lines 90-90 @@
+
+```
+
+        .email-body {
+```
+
+@@ lines 91-91 @@
+
+```
+
+            padding: 30px;
+```
+
+@@ lines 92-92 @@
+
+```
+
+        }
+```
+
+@@ lines 93-93 @@
+
+```
+
+        
+```
+
+@@ lines 94-94 @@
+
+```
+
+        .email-body h2 {
+```
+
+@@ lines 95-95 @@
+
+```
+
+            font-size: 18px;
+```
+
+@@ lines 96-96 @@
+
+```
+
+            color: #1f2937;
+```
+
+@@ lines 97-97 @@
+
+```
+
+            margin: 25px 0 15px 0;
+```
+
+@@ lines 98-98 @@
+
+```
+
+            padding-bottom: 8px;
+```
+
+@@ lines 99-99 @@
+
+```
+
+            border-bottom: 2px solid #e5e7eb;
+```
+
+@@ lines 100-100 @@
+
+```
+
+        }
+```
+
+@@ lines 101-101 @@
+
+```
+
+        
+```
+
+@@ lines 102-102 @@
+
+```
+
+        .email-body h2:first-child {
+```
+
+@@ lines 103-103 @@
+
+```
+
+            margin-top: 0;
+```
+
+@@ lines 104-104 @@
+
+```
+
+        }
+```
+
+@@ lines 105-105 @@
+
+```
+
+        
+```
+
+@@ lines 106-106 @@
+
+```
+
+        .email-body p {
+```
+
+@@ lines 107-107 @@
+
+```
+
+            color: #374151;
+```
+
+@@ lines 108-108 @@
+
+```
+
+            margin: 12px 0;
+```
+
+@@ lines 109-109 @@
+
+```
+
+        }
+```
+
+@@ lines 110-110 @@
+
+```
+
+        
+```
+
+@@ lines 111-111 @@
+
+```
+
+        .info-box {
+```
+
+@@ lines 112-112 @@
+
+```
+
+            background: #fef3c7;
+```
+
+@@ lines 113-113 @@
+
+```
+
+            border-left: 4px solid #f59e0b;
+```
+
+@@ lines 114-114 @@
+
+```
+
+            padding: 15px 20px;
+```
+
+@@ lines 115-115 @@
+
+```
+
+            margin: 20px 0;
+```
+
+@@ lines 116-116 @@
+
+```
+
+            border-radius: 0 8px 8px 0;
+```
+
+@@ lines 117-117 @@
+
+```
+
+        }
+```
+
+@@ lines 118-118 @@
+
+```
+
+        
+```
+
+@@ lines 119-119 @@
+
+```
+
+        .info-box.blue {
+```
+
+@@ lines 120-120 @@
+
+```
+
+            background: #dbeafe;
+```
+
+@@ lines 121-121 @@
+
+```
+
+            border-left-color: #3b82f6;
+```
+
+@@ lines 122-122 @@
+
+```
+
+        }
+```
+
+@@ lines 123-123 @@
+
+```
+
+        
+```
+
+@@ lines 124-124 @@
+
+```
+
+        .info-box strong {
+```
+
+@@ lines 125-125 @@
+
+```
+
+            color: #92400e;
+```
+
+@@ lines 126-126 @@
+
+```
+
+        }
+```
+
+@@ lines 127-127 @@
+
+```
+
+        
+```
+
+@@ lines 128-128 @@
+
+```
+
+        .info-box.blue strong {
+```
+
+@@ lines 129-129 @@
+
+```
+
+            color: #1e40af;
+```
+
+@@ lines 130-130 @@
+
+```
+
+        }
+```
+
+@@ lines 131-131 @@
+
+```
+
+        
+```
+
+@@ lines 132-132 @@
+
+```
+
+        .link-button {
+```
+
+@@ lines 133-133 @@
+
+```
+
+            display: inline-block;
+```
+
+@@ lines 134-134 @@
+
+```
+
+            background: #2563eb;
+```
+
+@@ lines 135-135 @@
+
+```
+
+            color: white !important;
+```
+
+@@ lines 136-136 @@
+
+```
+
+            padding: 12px 24px;
+```
+
+@@ lines 137-137 @@
+
+```
+
+            border-radius: 8px;
+```
+
+@@ lines 138-138 @@
+
+```
+
+            text-decoration: none;
+```
+
+@@ lines 139-139 @@
+
+```
+
+            font-weight: 600;
+```
+
+@@ lines 140-140 @@
+
+```
+
+            margin: 10px 0;
+```
+
+@@ lines 141-141 @@
+
+```
+
+        }
+```
+
+@@ lines 142-142 @@
+
+```
+
+        
+```
+
+@@ lines 143-143 @@
+
+```
+
+        .signature {
+```
+
+@@ lines 144-144 @@
+
+```
+
+            margin-top: 30px;
+```
+
+@@ lines 145-145 @@
+
+```
+
+            padding-top: 20px;
+```
+
+@@ lines 146-146 @@
+
+```
+
+            border-top: 1px solid #e5e7eb;
+```
+
+@@ lines 147-147 @@
+
+```
+
+            color: #6b7280;
+```
+
+@@ lines 148-148 @@
+
+```
+
+        }
+```
+
+@@ lines 149-149 @@
+
+```
+
+        
+```
+
+@@ lines 150-150 @@
+
+```
+
+        .copy-btn {
+```
+
+@@ lines 151-151 @@
+
+```
+
+            position: fixed;
+```
+
+@@ lines 152-152 @@
+
+```
+
+            bottom: 30px;
+```
+
+@@ lines 153-153 @@
+
+```
+
+            right: 30px;
+```
+
+@@ lines 154-154 @@
+
+```
+
+            padding: 15px 25px;
+```
+
+@@ lines 155-155 @@
+
+```
+
+            background: #1f2937;
+```
+
+@@ lines 156-156 @@
+
+```
+
+            color: white;
+```
+
+@@ lines 157-157 @@
+
+```
+
+            border: none;
+```
+
+@@ lines 158-158 @@
+
+```
+
+            border-radius: 8px;
+```
+
+@@ lines 159-159 @@
+
+```
+
+            cursor: pointer;
+```
+
+@@ lines 160-160 @@
+
+```
+
+            font-size: 16px;
+```
+
+@@ lines 161-161 @@
+
+```
+
+            font-weight: 600;
+```
+
+@@ lines 162-162 @@
+
+```
+
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+```
+
+@@ lines 163-163 @@
+
+```
+
+        }
+```
+
+@@ lines 164-164 @@
+
+```
+
+        
+```
+
+@@ lines 165-165 @@
+
+```
+
+        .copy-btn:hover {
+```
+
+@@ lines 166-166 @@
+
+```
+
+            background: #374151;
+```
+
+@@ lines 167-167 @@
+
+```
+
+        }
+```
+
+@@ lines 168-168 @@
+
+```
+
+        
+```
+
+@@ lines 169-169 @@
+
+```
+
+        .hidden {
+```
+
+@@ lines 170-170 @@
+
+```
+
+            display: none;
+```
+
+@@ lines 171-171 @@
+
+```
+
+        }
+```
+
+@@ lines 172-172 @@
+
+```
+
+        
+```
+
+@@ lines 173-173 @@
+
+```
+
+        .highlight {
+```
+
+@@ lines 174-174 @@
+
+```
+
+            background: #fef9c3;
+```
+
+@@ lines 175-175 @@
+
+```
+
+            padding: 2px 6px;
+```
+
+@@ lines 176-176 @@
+
+```
+
+            border-radius: 4px;
+```
+
+@@ lines 177-177 @@
+
+```
+
+        }
+```
+
+@@ lines 178-178 @@
+
+```
+
+        
+```
+
+@@ lines 179-179 @@
+
+```
+
+        ul {
+```
+
+@@ lines 180-180 @@
+
+```
+
+            padding-left: 20px;
+```
+
+@@ lines 181-181 @@
+
+```
+
+        }
+```
+
+@@ lines 182-182 @@
+
+```
+
+        
+```
+
+@@ lines 183-183 @@
+
+```
+
+        li {
+```
+
+@@ lines 184-184 @@
+
+```
+
+            margin: 8px 0;
+```
+
+@@ lines 185-185 @@
+
+```
+
+            color: #374151;
+```
+
+@@ lines 186-186 @@
+
+```
+
+        }
+```
+
+@@ lines 187-187 @@
+
+```
+
+    </style>
+```
+
+@@ lines 188-188 @@
+
+```
+
+</head>
+```
+
+@@ lines 189-189 @@
+
+```
+
+<body>
+```
+
+@@ lines 190-190 @@
+
+```
+
+    <h1 style="text-align: center; color: #1f2937; margin-bottom: 30px;">📧 Email před příjezdem</h1>
+```
+
+@@ lines 191-191 @@
+
+```
+
+    
+```
+
+@@ lines 192-192 @@
+
+```
+
+    <div class="version-tabs">
+```
+
+@@ lines 193-193 @@
+
+```
+
+        <button class="tab winter active" onclick="showVersion('winter')">❄️ Zimní verze</button>
+```
+
+@@ lines 194-194 @@
+
+```
+
+        <button class="tab summer" onclick="showVersion('summer')">☀️ Letní verze</button>
+```
+
+@@ lines 195-195 @@
+
+```
+
+    </div>
+```
+
+@@ lines 196-196 @@
+
+```
+
+    
+```
+
+@@ lines 197-197 @@
+
+```
+
+    <!-- ZIMNÍ VERZE -->
+```
+
+@@ lines 198-198 @@
+
+```
+
+    <div id="winter-email" class="email-container">
+```
+
+@@ lines 199-199 @@
+
+```
+
+        <div class="email-header winter">
+```
+
+@@ lines 200-200 @@
+
+```
+
+            <h1>🏔️ Jindřichův dům</h1>
+```
+
+@@ lines 201-201 @@
+
+```
+
+            <p>Těšíme se na vás v Krkonoších!</p>
+```
+
+@@ lines 202-202 @@
+
+```
+
+        </div>
+```
+
+@@ lines 203-203 @@
+
+```
+
+        
+```
+
+@@ lines 204-204 @@
+
+```
+
+        <div class="email-body" id="winter-content">
+```
+
+@@ lines 205-205 @@
+
+```
+
+            <p>Dobrý den,</p>
+```
+
+@@ lines 206-206 @@
+
+```
+
+            
+```
+
+@@ lines 207-207 @@
+
+```
+
+            <p>už za pár dní vás přivítáme na Jindřichově domě! Posíláme vám pár praktických informací k vašemu pobytu.</p>
+```
+
+@@ lines 208-208 @@
+
+```
+
+            
+```
+
+@@ lines 209-209 @@
+
+```
+
+            <h2>🚗 Parkování a příjezd</h2>
+```
+
+@@ lines 210-210 @@
+
+```
+
+            <p>V zimním období <strong>není možné přijet autem až k chatě</strong>. Auto je potřeba nechat na jednom z parkovišť v obci a k nám se dostat pěšky (cca 15 minut do kopce) nebo využít místní taxi službu.</p>
+```
+
+@@ lines 211-211 @@
+
+```
+
+            
+```
+
+@@ lines 212-212 @@
+
+```
+
+            <div class="info-box">
+```
+
+@@ lines 213-213 @@
+
+```
+
+                <strong>💡 Tip:</strong> S přepravou zavazadel vám rádi poradíme – stačí zavolat a domluvíme se.
+```
+
+@@ lines 214-214 @@
+
+```
+
+            </div>
+```
+
+@@ lines 215-215 @@
+
+```
+
+            
+```
+
+@@ lines 216-216 @@
+
+```
+
+            <h2>🔑 Check-in</h2>
+```
+
+@@ lines 217-217 @@
+
+```
+
+            <p>Příjezd je možný <strong>od 15:00</strong>. Na místě vás osobně přivítá jeden z majitelů. Pokud byste potřebovali dorazit v jiný čas, dejte nám prosím vědět – pokusíme se to zařídit, i když ne vždy je to možné.</p>
+```
+
+@@ lines 218-218 @@
+
+```
+
+            
+```
+
+@@ lines 219-219 @@
+
+```
+
+            <h2>📋 Domovní kniha – vyplňte předem</h2>
+```
+
+@@ lines 220-220 @@
+
+```
+
+            <p>Abychom vám ušetřili čas při příjezdu, můžete se <strong>zaregistrovat předem online</strong>. Na místě pak jen zkontrolujeme údaje podle dokladu totožnosti.</p>
+```
+
+@@ lines 221-221 @@
+
+```
+
+            
+```
+
+@@ lines 222-222 @@
+
+```
+
+            <p><a href="https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b" class="link-button">📝 Vyplnit domovní knihu</a></p>
+```
+
+@@ lines 223-223 @@
+
+```
+
+            
+```
+
+@@ lines 224-224 @@
+
+```
+
+            <h2>💳 Platby na chatě</h2>
+```
+
+@@ lines 225-225 @@
+
+```
+
+            <div class="info-box">
+```
+
+@@ lines 226-226 @@
+
+```
+
+                <strong>Důležité:</strong> Platby kartou bohužel nepřijímáme. Na chatě je možné platit pouze <strong>hotově</strong> nebo převodem přes <strong>QR kód</strong>.
+```
+
+@@ lines 227-227 @@
+
+```
+
+            </div>
+```
+
+@@ lines 228-228 @@
+
+```
+
+            
+```
+
+@@ lines 229-229 @@
+
+```
+
+            <h2>🎿 Úschovna lyží</h2>
+```
+
+@@ lines 230-230 @@
+
+```
+
+            <p>Máme pro vás k dispozici vyhřívanou úschovnu lyží přímo v chatě.</p>
+```
+
+@@ lines 231-231 @@
+
+```
+
+            
+```
+
+@@ lines 232-232 @@
+
+```
+
+            <h2>📶 WiFi</h2>
+```
+
+@@ lines 233-233 @@
+
+```
+
+            <ul>
+```
+
+@@ lines 234-234 @@
+
+```
+
+                <li>Síť: <strong>jindrichuvdum_hoste</strong></li>
+```
+
+@@ lines 235-235 @@
+
+```
+
+                <li>Heslo: <strong>Jindrich</strong></li>
+```
+
+@@ lines 236-236 @@
+
+```
+
+            </ul>
+```
+
+@@ lines 237-237 @@
+
+```
+
+            
+```
+
+@@ lines 238-238 @@
+
+```
+
+            <h2>🍽️ Stravování</h2>
+```
+
+@@ lines 239-239 @@
+
+```
+
+            <ul>
+```
+
+@@ lines 240-240 @@
+
+```
+
+                <li>Snídaně: 8:00 – 10:00</li>
+```
+
+@@ lines 241-241 @@
+
+```
+
+                <li>Večeře: 18:00 – 20:00</li>
+```
+
+@@ lines 242-242 @@
+
+```
+
+            </ul>
+```
+
+@@ lines 243-243 @@
+
+```
+
+            
+```
+
+@@ lines 244-244 @@
+
+```
+
+            <h2>🚪 Check-out</h2>
+```
+
+@@ lines 245-245 @@
+
+```
+
+            <p>V den odjezdu prosíme o uvolnění pokoje <strong>do 10:00</strong>.</p>
+```
+
+@@ lines 246-246 @@
+
+```
+
+            
+```
+
+@@ lines 247-247 @@
+
+```
+
+            <div class="signature">
+```
+
+@@ lines 248-248 @@
+
+```
+
+                <p>Pokud budete mít jakékoliv dotazy, neváhejte nám zavolat na <strong>739 655 826</strong>.</p>
+```
+
+@@ lines 249-249 @@
+
+```
+
+                <p>Těšíme se na vás! 🏔️</p>
+```
+
+@@ lines 250-250 @@
+
+```
+
+                <p><strong>Tým Jindřichova domu</strong></p>
+```
+
+@@ lines 251-251 @@
+
+```
+
+            </div>
+```
+
+@@ lines 252-252 @@
+
+```
+
+        </div>
+```
+
+@@ lines 253-253 @@
+
+```
+
+    </div>
+```
+
+@@ lines 254-254 @@
+
+```
+
+    
+```
+
+@@ lines 255-255 @@
+
+```
+
+    <!-- LETNÍ VERZE -->
+```
+
+@@ lines 256-256 @@
+
+```
+
+    <div id="summer-email" class="email-container hidden">
+```
+
+@@ lines 257-257 @@
+
+```
+
+        <div class="email-header summer">
+```
+
+@@ lines 258-258 @@
+
+```
+
+            <h1>🏔️ Jindřichův dům</h1>
+```
+
+@@ lines 259-259 @@
+
+```
+
+            <p>Těšíme se na vás v Krkonoších!</p>
+```
+
+@@ lines 260-260 @@
+
+```
+
+        </div>
+```
+
+@@ lines 261-261 @@
+
+```
+
+        
+```
+
+@@ lines 262-262 @@
+
+```
+
+        <div class="email-body" id="summer-content">
+```
+
+@@ lines 263-263 @@
+
+```
+
+            <p>Dobrý den,</p>
+```
+
+@@ lines 264-264 @@
+
+```
+
+            
+```
+
+@@ lines 265-265 @@
+
+```
+
+            <p>už za pár dní vás přivítáme na Jindřichově domě! Posíláme vám pár praktických informací k vašemu pobytu.</p>
+```
+
+@@ lines 266-266 @@
+
+```
+
+            
+```
+
+@@ lines 267-267 @@
+
+```
+
+            <h2>🚗 Parkování a příjezd</h2>
+```
+
+@@ lines 268-268 @@
+
+```
+
+            <p>V létě je možné <strong>přijet autem až k chatě</strong>. Poplatek za parkování je <strong>200 Kč na týden</strong>.</p>
+```
+
+@@ lines 269-269 @@
+
+```
+
+            
+```
+
+@@ lines 270-270 @@
+
+```
+
+            <div class="info-box blue">
+```
+
+@@ lines 271-271 @@
+
+```
+
+                <strong>📍 Jak na to:</strong> Poplatek se platí u automatu dole v obci ještě před výjezdem k chatě. Lístek si nechte za sklem auta.
+```
+
+@@ lines 272-272 @@
+
+```
+
+            </div>
+```
+
+@@ lines 273-273 @@
+
+```
+
+            
+```
+
+@@ lines 274-274 @@
+
+```
+
+            <h2>🔑 Check-in</h2>
+```
+
+@@ lines 275-275 @@
+
+```
+
+            <p>Příjezd je možný <strong>od 15:00</strong>. Na místě vás osobně přivítá jeden z majitelů. Pokud byste potřebovali dorazit v jiný čas, dejte nám prosím vědět – pokusíme se to zařídit, i když ne vždy je to možné.</p>
+```
+
+@@ lines 276-276 @@
+
+```
+
+            
+```
+
+@@ lines 277-277 @@
+
+```
+
+            <h2>📋 Domovní kniha – vyplňte předem</h2>
+```
+
+@@ lines 278-278 @@
+
+```
+
+            <p>Abychom vám ušetřili čas při příjezdu, můžete se <strong>zaregistrovat předem online</strong>. Na místě pak jen zkontrolujeme údaje podle dokladu totožnosti.</p>
+```
+
+@@ lines 279-279 @@
+
+```
+
+            
+```
+
+@@ lines 280-280 @@
+
+```
+
+            <p><a href="https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b" class="link-button">📝 Vyplnit domovní knihu</a></p>
+```
+
+@@ lines 281-281 @@
+
+```
+
+            
+```
+
+@@ lines 282-282 @@
+
+```
+
+            <h2>💳 Platby na chatě</h2>
+```
+
+@@ lines 283-283 @@
+
+```
+
+            <div class="info-box">
+```
+
+@@ lines 284-284 @@
+
+```
+
+                <strong>Důležité:</strong> Platby kartou bohužel nepřijímáme. Na chatě je možné platit pouze <strong>hotově</strong> nebo převodem přes <strong>QR kód</strong>.
+```
+
+@@ lines 285-285 @@
+
+```
+
+            </div>
+```
+
+@@ lines 286-286 @@
+
+```
+
+            
+```
+
+@@ lines 287-287 @@
+
+```
+
+            <h2>🚴 Úschovna kol</h2>
+```
+
+@@ lines 288-288 @@
+
+```
+
+            <p>Máme pro vás k dispozici uzamykatelnou úschovnu kol přímo v chatě.</p>
+```
+
+@@ lines 289-289 @@
+
+```
+
+            
+```
+
+@@ lines 290-290 @@
+
+```
+
+            <h2>📶 WiFi</h2>
+```
+
+@@ lines 291-291 @@
+
+```
+
+            <ul>
+```
+
+@@ lines 292-292 @@
+
+```
+
+                <li>Síť: <strong>jindrichuvdum_hoste</strong></li>
+```
+
+@@ lines 293-293 @@
+
+```
+
+                <li>Heslo: <strong>Jindrich</strong></li>
+```
+
+@@ lines 294-294 @@
+
+```
+
+            </ul>
+```
+
+@@ lines 295-295 @@
+
+```
+
+            
+```
+
+@@ lines 296-296 @@
+
+```
+
+            <h2>🍽️ Stravování</h2>
+```
+
+@@ lines 297-297 @@
+
+```
+
+            <ul>
+```
+
+@@ lines 298-298 @@
+
+```
+
+                <li>Snídaně: 8:00 – 10:00</li>
+```
+
+@@ lines 299-299 @@
+
+```
+
+                <li>Večeře: 18:00 – 20:00</li>
+```
+
+@@ lines 300-300 @@
+
+```
+
+            </ul>
+```
+
+@@ lines 301-301 @@
+
+```
+
+            
+```
+
+@@ lines 302-302 @@
+
+```
+
+            <h2>🚪 Check-out</h2>
+```
+
+@@ lines 303-303 @@
+
+```
+
+            <p>V den odjezdu prosíme o uvolnění pokoje <strong>do 10:00</strong>.</p>
+```
+
+@@ lines 304-304 @@
+
+```
+
+            
+```
+
+@@ lines 305-305 @@
+
+```
+
+            <div class="signature">
+```
+
+@@ lines 306-306 @@
+
+```
+
+                <p>Pokud budete mít jakékoliv dotazy, neváhejte nám zavolat na <strong>739 655 826</strong>.</p>
+```
+
+@@ lines 307-307 @@
+
+```
+
+                <p>Těšíme se na vás! 🏔️</p>
+```
+
+@@ lines 308-308 @@
+
+```
+
+                <p><strong>Tým Jindřichova domu</strong></p>
+```
+
+@@ lines 309-309 @@
+
+```
+
+            </div>
+```
+
+@@ lines 310-310 @@
+
+```
+
+        </div>
+```
+
+@@ lines 311-311 @@
+
+```
+
+    </div>
+```
+
+@@ lines 312-312 @@
+
+```
+
+    
+```
+
+@@ lines 313-313 @@
+
+```
+
+    <button class="copy-btn" onclick="copyEmail()">📋 Kopírovat text emailu</button>
+```
+
+@@ lines 314-314 @@
+
+```
+
+    
+```
+
+@@ lines 315-315 @@
+
+```
+
+    <script>
+```
+
+@@ lines 316-316 @@
+
+```
+
+        let currentVersion = 'winter';
+```
+
+@@ lines 317-317 @@
+
+```
+
+        
+```
+
+@@ lines 318-318 @@
+
+```
+
+        function showVersion(version) {
+```
+
+@@ lines 319-319 @@
+
+```
+
+            currentVersion = version;
+```
+
+@@ lines 320-320 @@
+
+```
+
+            
+```
+
+@@ lines 321-321 @@
+
+```
+
+            // Update tabs
+```
+
+@@ lines 322-322 @@
+
+```
+
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+```
+
+@@ lines 323-323 @@
+
+```
+
+            document.querySelector('.tab.' + version).classList.add('active');
+```
+
+@@ lines 324-324 @@
+
+```
+
+            
+```
+
+@@ lines 325-325 @@
+
+```
+
+            // Show/hide emails
+```
+
+@@ lines 326-326 @@
+
+```
+
+            document.getElementById('winter-email').classList.toggle('hidden', version !== 'winter');
+```
+
+@@ lines 327-327 @@
+
+```
+
+            document.getElementById('summer-email').classList.toggle('hidden', version !== 'summer');
+```
+
+@@ lines 328-328 @@
+
+```
+
+        }
+```
+
+@@ lines 329-329 @@
+
+```
+
+        
+```
+
+@@ lines 330-330 @@
+
+```
+
+        function copyEmail() {
+```
+
+@@ lines 331-331 @@
+
+```
+
+            const contentId = currentVersion + '-content';
+```
+
+@@ lines 332-332 @@
+
+```
+
+            const content = document.getElementById(contentId);
+```
+
+@@ lines 333-333 @@
+
+```
+
+            
+```
+
+@@ lines 334-334 @@
+
+```
+
+            // Create plain text version
+```
+
+@@ lines 335-335 @@
+
+```
+
+            let text = content.innerText;
+```
+
+@@ lines 336-336 @@
+
+```
+
+            
+```
+
+@@ lines 337-337 @@
+
+```
+
+            // Clean up the text
+```
+
+@@ lines 338-338 @@
+
+```
+
+            text = text.replace(/\n{3,}/g, '\n\n');
+```
+
+@@ lines 339-339 @@
+
+```
+
+            
+```
+
+@@ lines 340-340 @@
+
+```
+
+            navigator.clipboard.writeText(text).then(() => {
+```
+
+@@ lines 341-341 @@
+
+```
+
+                const btn = document.querySelector('.copy-btn');
+```
+
+@@ lines 342-342 @@
+
+```
+
+                btn.textContent = '✅ Zkopírováno!';
+```
+
+@@ lines 343-343 @@
+
+```
+
+                setTimeout(() => {
+```
+
+@@ lines 344-344 @@
+
+```
+
+                    btn.textContent = '📋 Kopírovat text emailu';
+```
+
+@@ lines 345-345 @@
+
+```
+
+                }, 2000);
+```
+
+@@ lines 346-346 @@
+
+```
+
+            });
+```
+
+@@ lines 347-347 @@
+
+```
+
+        }
+```
+
+@@ lines 348-348 @@
+
+```
+
+    </script>
+```
+
+@@ lines 349-349 @@
+
+```
+
+</body>
+```
+
+@@ lines 350-350 @@
+
+```
+
+</html>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-opus-4.5)**_
+
+Hotovo! Vytvořil jsem přehlednou stránku s oběma verzemi emailu:
 
 **Soubor:** `priv/static/email_pred_prijezdem.html`
 
@@ -803,16 +5080,63 @@ Doplň do mailu následující informace do logických míst samozřejmě:
 
 _**Agent (copilot/claude-opus-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Některé změny se neprovedly kvůli duplicitnímu textu. Doplním zbývající: 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **email_pred_prijezdem.html**</summary>
 
-Vidím, že letní verze má přezůvky i dietní omezení. Teď doplním přezůvky do zimní verze:
-</details></think>
+@@ lines 301-301 @@
+
+```
+<p>🥗 <strong>Máte dietní omezení?</strong> Dejte nám prosím vědět předem (alergie, vegetariánství, bezlepková dieta apod.), rádi vám přizpůsobíme stravu.</p>
+            
+```
+
+@@ lines 277-277 @@
+
+```
+🥿 Co s sebou</h2>
+            <p>Na chatě se chodí <strong>v přezůvkách</strong> – nezapomeňte si je přibalit!</p>
+            
+            <h2>
+```
+
+@@ lines 267-267 @@
+
+```
+div class="info-box blue">
+                <strong>👥 Jedete ve skupině?</strong> Pokud jste organizátorem, přepošlete prosím tento email i ostatním účastníkům, ať mají všichni potřebné informace.
+            </div>
+            
+            <
+```
+
+@@ lines 243-243 @@
+
+```
+<p>🥗 <strong>Máte dietní omezení?</strong> Dejte nám prosím vědět předem (alergie, vegetariánství, bezlepková dieta apod.), rádi vám přizpůsobíme stravu.</p>
+            
+```
+
+@@ lines 209-209 @@
+
+```
+div class="info-box blue">
+                <strong>👥 Jedete ve skupině?</strong> Pokud jste organizátorem, přepošlete prosím tento email i ostatním účastníkům, ať mají všichni potřebné informace.
+            </div>
+            
+            <
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-opus-4.5)**_
+
+Některé změny se neprovedly kvůli duplicitnímu textu. Doplním zbývající: 
 
 _**Agent (copilot/claude-opus-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `email_pred_prijezdem.html`, lines 1 to 280
 
 **Input:**
 
@@ -823,7 +5147,83 @@ _**Agent (copilot/claude-opus-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"280","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"363","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":282,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","scheme":"file"},"options":{"isFromTool":true}}],"text":"```html\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":282},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":281,"references":[],"text":"\u003c!DOCTYPE html\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":281},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":280,"references":[],"text":"\u003chtml lang=\"cs\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":280},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":279,"references":[],"text":"\u003chead\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":279},"reference
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html`. Lines 1 to 280 (363 lines total): 
+```html
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email před příjezdem - Jindřichův dům</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .version-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .tab.winter {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        .tab.summer {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .tab.active {
+            transform: translateY(2px);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .tab.winter.active {
+            background: #0ea5e9;
+            color: white;
+        }
+        
+        .tab.summer.active {
+            background: #22c55e;
+            color: white;
+        }
+        
+        .email-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .email-header {
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .email-header.winter {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+            color: white;
+        }
+        
+ 
 … (output truncated)
 ````
 </details></tool-use>
@@ -832,6 +5232,8 @@ _**Agent (copilot/claude-opus-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `email_pred_prijezdem.html`, lines 280 to 363
 
 **Input:**
 
@@ -842,21 +5244,66 @@ _**Agent (copilot/claude-opus-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":86,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","scheme":"file"},"options":{"isFromTool":true}}],"text":"```html\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":86},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":85,"references":[],"text":"                \u003cstrong\u003e📍 Jak na to:\u003c/strong\u003e Poplatek se platí u automatu dole v obci ještě před výjezdem k chatě. Lístek si nechte za sklem auta.\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":85},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":84,"references":[],"text":"            \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":84},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":83,"references":[],"text":"            \n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":83},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":82,"references":[],"text":"            \u003ch2\u003e🔑 Check-in\u003c/h2\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":82},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":81,"references":[],"text":"            \u003cp\u003ePříjezd je možný \u003cstrong\u003eod 15:00\u003c/strong\u003e. Na místě vás osobně přivítá jeden z majitelů. Pokud byste potřebovali dorazit v jiný čas, dejte nám prosím vědět – pokusíme se to zařídit, i když ne vždy je to možné.\u003c/p\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":81},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":80,"references":[
+```html
+                <strong>📍 Jak na to:</strong> Poplatek se platí u automatu dole v obci ještě před výjezdem k chatě. Lístek si nechte za sklem auta.
+            </div>
+            
+            <h2>🔑 Check-in</h2>
+            <p>Příjezd je možný <strong>od 15:00</strong>. Na místě vás osobně přivítá jeden z majitelů. Pokud byste potřebovali dorazit v jiný čas, dejte nám prosím vědět – pokusíme se to zařídit, i když ne vždy je to možné.</p>
+            
+            <h2>🥿 Co s sebou</h2>
+            <p>Na chatě se chodí <strong>v přezůvkách</strong> – nezapomeňte si je přibalit!</p>
+            
+            <h2>📋 Domovní kniha – vyplňte předem</h2>
+            <p>Abychom vám ušetřili čas při příjezdu, můžete se <strong>zaregistrovat předem online</strong>. Na místě pak jen zkontrolujeme údaje podle dokladu totožnosti.</p>
+            
+            <p><a href="https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b" class="link-button">📝 Vyplnit domovní knihu</a></p>
+            
+            <h2>💳 Platby na chatě</h2>
+            <div class="info-box">
+                <strong>Důležité:</strong> Platby kartou bohužel nepřijímáme. Na chatě je možné platit pouze <strong>hotově</strong> nebo převodem přes <strong>QR kód</strong>.
+            </div>
+            
+            <h2>🚴 Úschovna kol</h2>
+            <p>Máme pro vás k dispozici uzamykatelnou úschovnu kol přímo v chatě.</p>
+            
+            <h2>📶 WiFi</h2>
+            <ul>
+                <li>Síť: <strong>jindrichuvdum_hoste</strong></li>
+                <li>Heslo: <strong>Jindrich</strong></li>
+            </ul>
+            
+            <h2>🍽️ Stravování</h2>
+            <ul>
+                <li>Snídaně: 8:00 – 10:00</li>
+                <li>Večeře: 18:00 – 20:00</li>
+            </ul>
+            <p>🥗 <strong>Máte dietní omezení?</strong> Dejte nám prosím vědět předem (alergie, vegetariánství, bezlepková dieta apod.), rádi v
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-opus-4.5)**_
 
+Vidím, že letní verze má přezůvky i dietní omezení. Teď doplním přezůvky do zimní verze: 
+
+_**Agent (copilot/claude-opus-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **email_pred_prijezdem.html**</summary>
+
+@@ lines 223-223 @@
 
 ```
+🥿 Co s sebou</h2>
+            <p>Na chatě se chodí <strong>v přezůvkách</strong> – nezapomeňte si je přibalit!</p>
+            
+            <h2>
+```
+</details></tool-use>
 
-```
-Některé změny se neprovedly kvůli duplicitnímu textu. Doplním zbývající: Vidím, že letní verze má přezůvky i dietní omezení. Teď doplním přezůvky do zimní verze: 
-```
+_**Agent (copilot/claude-opus-4.5)**_
 
-```
 Hotovo! Všechny tři informace jsou nyní v obou verzích emailu:
 
 **Přidané informace:**
@@ -877,14 +5324,10 @@ Výborně, teď mi prosím ještě vytvoř jazykovou mutaci stejného textu v n�
 
 _**Agent (copilot/claude-opus-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Teď aktualizuji JavaScript, aby správně fungoval s přepínáním jazyků:
-</details></think>
-
-_**Agent (copilot/claude-opus-4.5)**_
-
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `email_pred_prijezdem.html`, lines 1 to 180
 
 **Input:**
 
@@ -895,7 +5338,83 @@ _**Agent (copilot/claude-opus-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"180","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"366","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":182,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","scheme":"file"},"options":{"isFromTool":true}}],"text":"```html\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":182},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":181,"references":[],"text":"\u003c!DOCTYPE html\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":181},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":180,"references":[],"text":"\u003chtml lang=\"cs\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":180},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":179,"references":[],"text":"\u003chead\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":179},"reference
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html`. Lines 1 to 180 (366 lines total): 
+```html
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email před příjezdem - Jindřichův dům</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+        }
+        
+        .version-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .tab.winter {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        
+        .tab.summer {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .tab.active {
+            transform: translateY(2px);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .tab.winter.active {
+            background: #0ea5e9;
+            color: white;
+        }
+        
+        .tab.summer.active {
+            background: #22c55e;
+            color: white;
+        }
+        
+        .email-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        
+        .email-header {
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .email-header.winter {
+            background: linear-gradient(135deg, #0ea5e9, #0284c7);
+            color: white;
+        }
+        
+ 
 … (output truncated)
 ````
 </details></tool-use>
@@ -904,6 +5423,8 @@ _**Agent (copilot/claude-opus-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `email_pred_prijezdem.html`, lines 160 to 366
 
 **Input:**
 
@@ -914,21 +5435,455 @@ _**Agent (copilot/claude-opus-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":209,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/email_pred_prijezdem.html","scheme":"file"},"options":{"isFromTool":true}}],"text":"```html\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":209},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":208,"references":[],"text":"            font-size: 16px;\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":208},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":207,"references":[],"text":"            font-weight: 600;\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":207},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":206,"references":[],"text":"            box-shadow: 0 4px 12px rgba(0,0,0,0.2);\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":206},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":205,"references":[],"text":"        }\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":205},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":204,"references":[],"text":"        \n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":204},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":203,"references":[],"text":"        .copy-btn:hover {\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":203},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":202,"references":[],"text":"            background: #374151;\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":202},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":201,"reference
+```html
+            font-size: 16px;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .copy-btn:hover {
+            background: #374151;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .highlight {
+            background: #fef9c3;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        ul {
+            padding-left: 20px;
+        }
+        
+        li {
+            margin: 8px 0;
+            color: #374151;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: #1f2937; margin-bottom: 30px;">📧 Email před příjezdem</h1>
+    
+    <div class="version-tabs">
+        <button class="tab winter active" onclick="showVersion('winter')">❄️ Zimní verze</button>
+        <button class="tab summer" onclick="showVersion('summer')">☀️ Letní verze</button>
+    </div>
+    
+    <!-- ZIMNÍ VERZE -->
+    <div id="winter-email" class="email-container">
+        <div class="email-header winter">
+            <h1>🏔️ Jindřichův dům</h1>
+            <p>Těšíme se na vás v Krkonoších!</p>
+        </div>
+        
+        <div class="email-body" id="winter-content">
+            <p>Dobrý den,</p>
+            
+            <p>už za pár dní vás přivítáme na Jindřichově domě! Posíláme vám pár praktických informací k vašemu pobytu.</p>
+            
+            <div class="info-box blue">
+                <strong>👥 Jedete ve skupině?</strong> Pokud jste organizátorem, přepošlete prosím tento email i ostatním účastníkům, ať mají všichni potřebné informace.
+            </div>
+            
+            <h2>🚗 Parkování a příjezd</h2>
+            <p>V zimním období <strong>není možné přijet autem až k chatě</strong>. Auto je potřeba nechat na jednom z parkovišť v obci a k nám se dostat pěšky (cca 15 minut do kopce) nebo využít místní taxi službu.</p>
+            
+            <div class="info-box">
+                <strong>💡 Tip:</strong> S přepravou zava
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-opus-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **email_pred_prijezdem.html**</summary>
+
+@@ lines 192-324 @@
 
 ```
-
+!-- LANGUAGE TABS -->
+    <div style="display: flex; gap: 20px; margin-bottom: 10px; justify-content: center;">
+        <button class="lang-tab active" onclick="switchLanguage('cz')" style="padding: 8px 20px; border: 2px solid #1f2937; border-radius: 20px; background: #1f2937; color: white; cursor: pointer; font-weight: 600;">🇨🇿 Čeština</button>
+        <button class="lang-tab" onclick="switchLanguage('de')" style="padding: 8px 20px; border: 2px solid #1f2937; border-radius: 20px; background: white; color: #1f2937; cursor: pointer; font-weight: 600;">🇩🇪 Deutsch</button>
+    </div>
+    
+    <!-- CZECH VERSION -->
+    <div id="cz-version">
+        <div class="version-tabs">
+            <button class="tab winter active" onclick="showVersion('winter')">❄️ Zimní verze</button>
+            <button class="tab summer" onclick="showVersion('summer')">☀️ Letní verze</button>
+        </div>
+        
+        <!-- ZIMNÍ VERZE CZ -->
+        <div id="winter-email" class="email-container">
+            <div class="email-header winter">
+                <h1>🏔️ Jindřichův dům</h1>
+                <p>Těšíme se na vás v Krkonoších!</p>
+            </div>
+            
+            <div class="email-body" id="winter-content">
+                <p>Dobrý den,</p>
+                
+                <p>už za pár dní vás přivítáme na Jindřichově domě! Posíláme vám pár praktických informací k vašemu pobytu.</p>
+                
+                <div class="info-box blue">
+                    <strong>👥 Jedete ve skupině?</strong> Pokud jste organizátorem, přepošlete prosím tento email i ostatním účastníkům, ať mají všichni potřebné informace.
+                </div>
+                
+                <h2>🚗 Parkování a příjezd</h2>
+                <p>V zimním období <strong>není možné přijet autem až k chatě</strong>. Auto je potřeba nechat na jednom z parkovišť v obci a k nám se dostat pěšky (cca 15 minut do kopce) nebo využít místní taxi službu.</p>
+                
+                <div class="info-box">
+                    <strong>💡 Tip:</strong> S přepravou zavazadel vám rádi poradíme – stačí zavolat a domluvíme se.
+                </div>
+                
+                <h2>🔑 Check-in</h2>
+                <p>Příjezd je možný <strong>od 15:00</strong>. Na místě vás osobně přivítá jeden z majitelů. Pokud byste potřebovali dorazit v jiný čas, dejte nám prosím vědět – pokusíme se to zařídit, i když ne vždy je to možné.</p>
+                
+                <h2>🥿 Co s sebou</h2>
+                <p>Na chatě se chodí <strong>v přezůvkách</strong> – nezapomeňte si je přibalit!</p>
+                
+                <h2>📋 Domovní kniha – vyplňte předem</h2>
+                <p>Abychom vám ušetřili čas při příjezdu, můžete se <strong>zaregistrovat předem online</strong>. Na místě pak jen zkontrolujeme údaje podle dokladu totožnosti.</p>
+                
+                <p><a href="https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b" class="link-button">📝 Vyplnit domovní knihu</a></p>
+                
+                <h2>💳 Platby na chatě</h2>
+                <div class="info-box">
+                    <strong>Důležité:</strong> Platby kartou bohužel nepřijímáme. Na chatě je možné platit pouze <strong>hotově</strong> nebo převodem přes <strong>QR kód</strong>.
+                </div>
+                
+                <h2>🎿 Úschovna lyží</h2>
+                <p>Máme pro vás k dispozici vyhřívanou úschovnu lyží přímo v chatě.</p>
+                
+                <h2>📶 WiFi</h2>
+                <ul>
+                    <li>Síť: <strong>jindrichuvdum_hoste</strong></li>
+                    <li>Heslo: <strong>Jindrich</strong></li>
+                </ul>
+                
+                <h2>🍽️ Stravování</h2>
+                <ul>
+                    <li>Snídaně: 8:00 – 10:00</li>
+                    <li>Večeře: 18:00 – 20:00</li>
+                </ul>
+                <p>🥗 <strong>Máte dietní omezení?</strong> Dejte nám prosím vědět předem (alergie, vegetariánství, bezlepková dieta apod.), rádi vám přizpůsobíme stravu.</p>
+                
+                <h2>🚪 Check-out</h2>
+                <p>V den odjezdu prosíme o uvolnění pokoje <strong>do 10:00</strong>.</p>
+                
+                <div class="signature">
+                    <p>Pokud budete mít jakékoliv dotazy, neváhejte nám zavolat na <strong>739 655 826</strong>.</p>
+                    <p>Těšíme se na vás! 🏔️</p>
+                    <p><strong>Tým Jindřichova domu</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- LETNÍ VERZE CZ -->
+        <div id="summer-email" class="email-container hidden">
+            <div class="email-header summer">
+                <h1>🏔️ Jindřichův dům</h1>
+                <p>Těšíme se na vás v Krkonoších!</p>
+            </div>
+            
+            <div class="email-body" id="summer-content">
+                <p>Dobrý den,</p>
+                
+                <p>už za pár dní vás přivítáme na Jindřichově domě! Posíláme vám pár praktických informací k vašemu pobytu.</p>
+                
+                <div class="info-box blue">
+                    <strong>👥 Jedete ve skupině?</strong> Pokud jste organizátorem, přepošlete prosím tento email i ostatním účastníkům, ať mají všichni potřebné informace.
+                </div>
+                
+                <h2>🚗 Parkování a příjezd</h2>
+                <p>V létě je možné <strong>přijet autem až k chatě</strong>. Poplatek za parkování je <strong>200 Kč na týden</strong>.</p>
+                
+                <div class="info-box blue">
+                    <strong>📍 Jak na to:</strong> Poplatek se platí u automatu dole v obci ještě před výjezdem k chatě. Lístek si nechte za sklem auta.
+                </div>
+                
+                <h2>🔑 Check-in</h2>
+                <p>Příjezd je možný <strong>od 15:00</strong>. Na místě vás osobně přivítá jeden z majitelů. Pokud byste potřebovali dorazit v jiný čas, dejte nám prosím vědět – pokusíme se to zařídit, i když ne vždy je to možné.</p>
+                
+                <h2>🥿 Co s sebou</h2>
+                <p>Na chatě se chodí <strong>v přezůvkách</strong> – nezapomeňte si je přibalit!</p>
+                
+                <h2>📋 Domovní kniha – vyplňte předem</h2>
+                <p>Abychom vám ušetřili čas při příjezdu, můžete se <strong>zaregistrovat předem online</strong>. Na místě pak jen zkontrolujeme údaje podle dokladu totožnosti.</p>
+                
+                <p><a href="https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b" class="link-button">📝 Vyplnit domovní knihu</a></p>
+                
+                <h2>💳 Platby na chatě</h2>
+                <div class="info-box">
+                    <strong>Důležité:</strong> Platby kartou bohužel nepřijímáme. Na chatě je možné platit pouze <strong>hotově</strong> nebo převodem přes <strong>QR kód</strong>.
+                </div>
+                
+                <h2>🚴 Úschovna kol</h2>
+                <p>Máme pro vás k dispozici uzamykatelnou úschovnu kol přímo v chatě.</p>
+                
+                <h2>📶 WiFi</h2>
+                <ul>
+                    <li>Síť: <strong>jindrichuvdum_hoste</strong></li>
+                    <li>Heslo: <strong>Jindrich</strong></li>
+                </ul>
+                
+                <h2>🍽️ Stravování</h2>
+                <ul>
+                    <li>Snídaně: 8:00 – 10:00</li>
+                    <li>Večeře: 18:00 – 20:00</li>
+                </ul>
+                <p>🥗 <strong>Máte dietní omezení?</strong> Dejte nám prosím vědět předem (alergie, vegetariánství, bezlepková dieta apod.), rádi vám přizpůsobíme stravu.</p>
+                
+                <h2>🚪 Check-out</h2>
+                <p>V den odjezdu prosíme o uvolnění pokoje <strong>do 10:00</strong>.</p>
+                
+                <div class="signature">
+                    <p>Pokud budete mít jakékoliv dotazy, neváhejte nám zavolat na <strong>739 655 826</strong>.</p>
+                    <p>Těšíme se na vás! 🏔️</p>
+                    <p><strong>Tým Jindřichova domu</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- GERMAN VERSION -->
+    <div id="de-version" class="hidden">
+        <div class="version-tabs">
+            <button class="tab winter active" onclick="showVersion('winter-de')">❄️ Winterversion</button>
+            <button class="tab summer" onclick="showVersion('summer-de')">☀️ Sommerversion</button>
+        </div>
+        
+        <!-- WINTER VERSION DE -->
+        <div id="winter-de-email" class="email-container">
+            <div class="email-header winter">
+                <h1>🏔️ Jindřichův dům</h1>
+                <p>Wir freuen uns auf Sie im Riesengebirge!</p>
+            </div>
+            
+            <div class="email-body" id="winter-de-content">
+                <p>Guten Tag,</p>
+                
+                <p>in wenigen Tagen begrüßen wir Sie im Jindřichův dům! Hier finden Sie einige praktische Informationen zu Ihrem Aufenthalt.</p>
+                
+                <div class="info-box blue">
+                    <strong>👥 Reisen Sie in einer Gruppe?</strong> Falls Sie der Organisator sind, leiten Sie diese E-Mail bitte an alle Teilnehmer weiter, damit alle die nötigen Informationen haben.
+                </div>
+                
+                <h2>🚗 Parken und Anreise</h2>
+                <p>Im Winter <strong>ist es nicht möglich, mit dem Auto bis zur Hütte zu fahren</strong>. Sie müssen Ihr Auto auf einem der Parkplätze im Dorf abstellen und zu uns zu Fuß gehen (ca. 15 Minuten bergauf) oder den lokalen Taxidienst nutzen.</p>
+                
+                <div class="info-box">
+                    <strong>💡 Tipp:</strong> Bei der Gepäckbeförderung helfen wir Ihnen gerne – rufen Sie uns einfach an, und wir finden eine Lösung.
+                </div>
+                
+                <h2>🔑 Check-in</h2>
+                <p>Die Anreise ist <strong>ab 15:00 Uhr</strong> möglich. Vor Ort werden Sie persönlich von einem der Eigentümer begrüßt. Falls Sie zu einer anderen Zeit ankommen möchten, lassen Sie es uns bitte wissen – wir versuchen es zu ermöglichen, auch wenn es nicht immer möglich ist.</p>
+                
+                <h2>🥿 Was Sie mitbringen sollten</h2>
+                <p>In der Hütte werden <strong>Hausschuhe getragen</strong> – vergessen Sie nicht, diese einzupacken!</p>
+                
+                <h2>📋 Gästebuch – bitte vorab ausfüllen</h2>
+                <p>Um Ihnen Zeit bei der Ankunft zu sparen, können Sie sich <strong>vorab online registrieren</strong>. Vor Ort überprüfen wir dann nur die Daten anhand Ihres Ausweises.</p>
+                
+                <p><a href="https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b" class="link-button">📝 Gästebuch ausfüllen</a></p>
+                
+                <h2>💳 Zahlungen in der Hütte</h2>
+                <div class="info-box">
+                    <strong>Wichtig:</strong> Leider akzeptieren wir keine Kartenzahlungen. In der Hütte können Sie nur <strong>bar</strong> oder per <strong>QR-Code-Überweisung</strong> bezahlen.
+                </div>
+                
+                <h2>🎿 Skiaufbewahrung</h2>
+                <p>Wir bieten Ihnen eine beheizte Skiaufbewahrung direkt in der Hütte.</p>
+                
+                <h2>📶 WLAN</h2>
+                <ul>
+                    <li>Netzwerk: <strong>jindrichuvdum_hoste</strong></li>
+                    <li>Passwort: <strong>Jindrich</strong></li>
+                </ul>
+                
+                <h2>🍽️ Verpflegung</h2>
+                <ul>
+                    <li>Frühstück: 8:00 – 10:00</li>
+                    <li>Abendessen: 18:00 – 20:00</li>
+                </ul>
+                <p>🥗 <strong>Haben Sie Ernährungseinschränkungen?</strong> Bitte teilen Sie uns diese vorab mit (Allergien, Vegetarismus, glutenfreie Ernährung usw.), wir passen die Mahlzeiten gerne für Sie an.</p>
+                
+                <h2>🚪 Check-out</h2>
+                <p>Am Abreisetag bitten wir Sie, das Zimmer <strong>bis 10:00 Uhr</strong> zu räumen.</p>
+                
+                <div class="signature">
+                    <p>Bei Fragen können Sie uns jederzeit unter <strong>+420 739 655 826</strong> anrufen.</p>
+                    <p>Wir freuen uns auf Sie! 🏔️</p>
+                    <p><strong>Das Team vom Jindřichův dům</strong></p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SUMMER VERSION DE -->
+        <div id="summer-de-email" class="email-container hidden">
+            <div class="email-header summer">
+                <h1>🏔️ Jindřichův dům</h1>
+                <p>Wir freuen uns auf Sie im Riesengebirge!</p>
+            </div>
+            
+            <div class="email-body" id="summer-de-content">
+                <p>Guten Tag,</p>
+                
+                <p>in wenigen Tagen begrüßen wir Sie im Jindřichův dům! Hier finden Sie einige praktische Informationen zu Ihrem Aufenthalt.</p>
+                
+                <div class="info-box blue">
+                    <strong>👥 Reisen Sie in einer Gruppe?</strong> Falls Sie der Organisator sind, leiten Sie diese E-Mail bitte an alle Teilnehmer weiter, damit alle die nötigen Informationen haben.
+                </div>
+                
+                <h2>🚗 Parken und Anreise</h2>
+                <p>Im Sommer <strong>können Sie mit dem Auto bis zur Hütte fahren</strong>. Die Parkgebühr beträgt <strong>200 CZK pro Woche</strong>.</p>
+                
+                <div class="info-box blue">
+                    <strong>📍 So geht's:</strong> Die Gebühr wird am Automaten unten im Dorf bezahlt, bevor Sie zur Hütte fahren. Legen Sie den Parkschein hinter die Windschutzscheibe.
+                </div>
+                
+                <h2>🔑 Check-in</h2>
+                <p>Die Anreise ist <strong>ab 15:00 Uhr</strong> möglich. Vor Ort werden Sie persönlich von einem der Eigentümer begrüßt. Falls Sie zu einer anderen Zeit ankommen möchten, lassen Sie es uns bitte wissen – wir versuchen es zu ermöglichen, auch wenn es nicht immer möglich ist.</p>
+                
+                <h2>🥿 Was Sie mitbringen sollten</h2>
+                <p>In der Hütte werden <strong>Hausschuhe getragen</strong> – vergessen Sie nicht, diese einzupacken!</p>
+                
+                <h2>📋 Gästebuch – bitte vorab ausfüllen</h2>
+                <p>Um Ihnen Zeit bei der Ankunft zu sparen, können Sie sich <strong>vorab online registrieren</strong>. Vor Ort überprüfen wir dann nur die Daten anhand Ihres Ausweises.</p>
+                
+                <p><a href="https://portal.deskline.net/en/Checkin/Reception/CZE/89af773f-2cbc-4405-a4d5-69d8e8208c89?userId=c278c811-a195-49ed-93ae-0e20861ecb9b" class="link-button">📝 Gästebuch ausfüllen</a></p>
+                
+                <h2>💳 Zahlungen in der Hütte</h2>
+                <div class="info-box">
+                    <strong>Wichtig:</strong> Leider akzeptieren wir keine Kartenzahlungen. In der Hütte können Sie nur <strong>bar</strong> oder per <strong>QR-Code-Überweisung</strong> bezahlen.
+                </div>
+                
+                <h2>🚴 Fahrradaufbewahrung</h2>
+                <p>Wir bieten Ihnen eine abschließbare Fahrradaufbewahrung direkt in der Hütte.</p>
+                
+                <h2>📶 WLAN</h2>
+                <ul>
+                    <li>Netzwerk: <strong>jindrichuvdum_hoste</strong></li>
+                    <li>Passwort: <strong>Jindrich</strong></li>
+                </ul>
+                
+                <h2>🍽️ Verpflegung</h2>
+                <ul>
+                    <li>Frühstück: 8:00 – 10:00</li>
+                    <li>Abendessen: 18:00 – 20:00</li>
+                </ul>
+                <p>🥗 <strong>Haben Sie Ernährungseinschränkungen?</strong> Bitte teilen Sie uns diese vorab mit (Allergien, Vegetarismus, glutenfreie Ernährung usw.), wir passen die Mahlzeiten gerne für Sie an.</p>
+                
+                <h2>🚪 Check-out</h2>
+                <p>Am Abreisetag bitten wir Sie, das Zimmer <strong>bis 10:00 Uhr</strong> zu räumen.</p>
+                
+                <div class="signature">
+                    <p>Bei Fragen können Sie uns jederzeit unter <strong>+420 739 655 826</strong> anrufen.</p>
+                    <p>Wir freuen uns auf Sie! 🏔️</p>
+                    <p><strong>Das Team vom Jindřichův dům</strong></p>
+                </div
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-opus-4.5)**_
+
 Teď aktualizuji JavaScript, aby správně fungoval s přepínáním jazyků: 
-```
+
+_**Agent (copilot/claude-opus-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **email_pred_prijezdem.html**</summary>
+
+@@ lines 482-509 @@
 
 ```
+let currentLang = 'cz';
+        
+        function switchLanguage(lang) {
+            currentLang = lang;
+            
+            // Update language tabs
+            document.querySelectorAll('.lang-tab').forEach(tab => {
+                tab.style.background = 'white';
+                tab.style.color = '#1f2937';
+            });
+            event.target.style.background = '#1f2937';
+            event.target.style.color = 'white';
+            
+            // Show/hide language versions
+            document.getElementById('cz-version').classList.toggle('hidden', lang !== 'cz');
+            document.getElementById('de-version').classList.toggle('hidden', lang !== 'de');
+            
+            // Reset to winter version when switching language
+            if (lang === 'cz') {
+                showVersion('winter');
+            } else {
+                showVersion('winter-de');
+            }
+        }
+        
+        function showVersion(version) {
+            currentVersion = version;
+            
+            if (currentLang === 'cz') {
+                // Update CZ tabs
+                document.querySelectorAll('#cz-version .tab').forEach(tab => tab.classList.remove('active'));
+                if (version === 'winter') {
+                    document.querySelector('#cz-version .tab.winter').classList.add('active');
+                } else {
+                    document.querySelector('#cz-version .tab.summer').classList.add('active');
+                }
+                
+                // Show/hide CZ emails
+                document.getElementById('winter-email').classList.toggle('hidden', version !== 'winter');
+                document.getElementById('summer-email').classList.toggle('hidden', version !== 'summer');
+            } else {
+                // Update DE tabs
+                document.querySelectorAll('#de-version .tab').forEach(tab => tab.classList.remove('active'));
+                if (version === 'winter-de') {
+                    document.querySelector('#de-version .tab.winter').classList.add('active');
+                } else {
+                    document.querySelector('#de-version .tab.summer').classList.add('active');
+                }
+                
+                // Show/hide DE emails
+                document.getElementById('winter-de-email').classList.toggle('hidden', version !== 'winter-de');
+                document.getElementById('summer-de-email').classList.toggle('hidden', version !== 'summer-de');
+            }
+        }
+        
+        function copyEmail() {
+            let contentId;
+            if (currentLang === 'cz') {
+                contentId = currentVersion + '-content';
+            } else {
+                contentId = currentVersion + '-content';
+            }
+            const content = document.getElementById(contentId);
+            
+            // Create plain text version
+            let text = content.innerText;
+            
+            // Clean up the text
+            text = text.replace(/\n{3,}/g, '\n\n');
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Zkopírováno!';
+                setTimeout(() => {
+                    btn.textContent = originalText
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-opus-4.5)**_
+
 Hotovo! Přidal jsem kompletní německou verzi emailu. Nyní máte:
 
 **Struktura:**
@@ -958,10 +5913,168 @@ Ještě zpět k nápisům na záchody. Takhle jak to se mi to líbí, ale potře
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 258-311 @@
 
 ```
-
+    
+        .lang-switch {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .lang-btn {
+            padding: 12px 20px;
+            font-size: 16px;
+            background: white;
+            color: #1a1a1a;
+            border: 2px solid #1a1a1a;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .lang-btn.active {
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .lang-btn:hover:not(.active) {
+            background: #f5f5f5;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="lang-switch no-print">
+        <button class="lang-btn active" onclick="switchLang('cz')">🇨🇿 Čeština</button>
+        <button class="lang-btn" onclick="switchLang('de')">🇩🇪 Deutsch</button>
+    </div>
+    
+    <button class="print-button no-print" onclick="window.print()">Vytisknout</button>
+    
+    <!-- CZECH VERSION -->
+    <div id="cz-poster" class="poster">
+        <div class="header">
+            <h1>Prosíme o ohleduplnost</h1>
+            <p class="subtitle">Pomozte nám udržet záchody funkční pro všechny hosty</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <h2>Do záchodu patří</h2>
+                <div class="icon-circle"></div>
+                <div class="item-name">Pouze toaletní papír</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <h2>Do záchodu nepatří</h2>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Vlhčené<br>ubrousky</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygienické<br>potřeby</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Jiný<br>odpad</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Důležité upozornění</div>
+                <p class="warning-text">
+                    Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. 
+                    V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům 
+                    až do vyřešení závady.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Děkujeme za pochopení a přejeme příjemný pobyt
+        </div>
+    </div>
+    
+    <!-- GERMAN VERSION -->
+    <div id="de-poster" class="poster hidden">
+        <div class="header">
+            <h1>Bitte um Rücksichtnahme</h1>
+            <p class="subtitle">Helfen Sie uns, die Toiletten für alle Gäste funktionsfähig zu halten</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <h2>In die Toilette gehört</h2>
+                <div class="icon-circle"></div>
+                <div class="item-name">Nur Toilettenpapier</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <h2>Nicht in die Toilette gehört</h2>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Feuchte<br>Tücher</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygiene-<br>artikel</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Sonstiger<br>Abfall</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Wichtiger Hinweis</div>
+                <p class="warning-text">
+                    Eine Verstopfung führt zur Funktionsunfähigkeit aller Toiletten in der gesamten Hütte. 
+                    In diesem Fall sind wir leider gezwungen, den Aufenthalt aller Gäste zu beenden, 
+                    bis das Problem behoben ist.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Vielen Dank für Ihr Verständnis und einen angenehmen Aufenthalt
+        </div>
+    </div>
+    
+    <script>
+        function switchLang(lang) {
+            // Update buttons
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Show/hide posters
+            document.getElementById('cz-poster').classList.toggle('hidden', lang !== 'cz');
+            document.getElementById('de-poster').classList.toggle('hidden', lang !== 'de');
+        }
+    </script
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Hotovo! Přidal jsem německou verzi nápisu s jednoduchým přepínačem nahoře vlevo:
 
 **Jak to funguje:**
@@ -989,8 +6102,234 @@ To sme si nerozumněli, na záchodech potřebuju aby byl jeden papír A4 a na n�
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 32-238 @@
+
+```
+20mm 15mm;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 15px;
+            color: #666;
+            font-weight: 400;
+            margin: 0;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .language-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .allowed-section {
+            text-align: center;
+        }
+        
+        .allowed-section h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        
+        .icon-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+        
+        .icon-circle::before {
+            content: '';
+            width: 22px;
+            height: 36px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 6px;
+            position: relative;
+        }
+        
+        .icon-circle::after {
+            content: '';
+            width: 14px;
+            height: 14px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 50%;
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .item-name {
+            font-size: 16px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 10px 20px;
+        }
+        
+        .not-allowed-section h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 15px 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        
+        .not-allowed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        
+        .not-allowed-item {
+            text-align: center;
+            opacity: 0.4;
+        }
+        
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #1a1a1a;
+            border-radius: 8px;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .icon-box::before,
+        .icon-box::after {
+            content: '';
+            position: absolute;
+            width: 42px;
+            height: 2px;
+            background: #1a1a1a;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .icon-box::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+        
+        .icon-wipes::before {
+            content: '';
+            width: 20px;
+            height: 28px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 4px 4px 8px 8px;
+        }
+        
+        .icon-hygiene::before {
+            content: '';
+            width: 26px;
+            height: 9px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 12px;
+        }
+        
+        .icon-trash::before {
+            content: '';
+            width: 22px;
+            height: 24px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 2px 2px 4px 4px;
+        }
+        
+        .not-allowed-item span {
+            font-size: 11px;
+            color: #1a1a1a;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        
+        .warning {
+            background: #f8f8f8;
+            border-left: 3px solid #1a1a1a;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .warning-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        
+        .warning-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            font-weight: 400;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `zachod_napisy.html`, lines 235 to 280
 
 **Input:**
 
@@ -1001,15 +6340,168 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"235","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"280","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"414","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":48,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","scheme":"file"},"options":{"isFromTool":true}}],"text":"```html\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":48},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":47,"references":[],"text":"        }\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":47},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":46,"references":[],"text":"        \n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":46},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":45,"references":[],"text":"        .footer {\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":45},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":44,"r
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html`. Lines 235 to 280 (414 lines total): 
+```html
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            font-weight: 400;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        
+        .print-button:hover {
+            background: #333;
+        }
+        
+        .lang-switch {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .lang-btn {
+            padding: 12px 20px;
+            font-size: 16px;
+            background: white;
+            color: #1a1a1a;
+            border: 2px solid #1a1a1a;
+            border-radius: 6px;
+            cursor: pointer;
+```
 ````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 264-304 @@
+
+```
+</style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">Vytisknout</button>
+    
+    <div class="poster">
+        <div class="header">
+            <h1>🇨🇿 Prosíme o ohleduplnost / 🇩🇪 Bitte um Rücksichtnahme</h1>
+            <p class="subtitle">Pomozte nám udržet záchody funkční • Helfen Sie uns, die Toiletten funktionsfähig zu halten</p>
+        </div>
+        
+        <div class="content">
+            <!-- CZECH VERSION -->
+            <div class="language-section">
+                <div class="allowed-section">
+                    <h2>Do záchodu patří</h2>
+                    <div class="icon-circle"></div>
+                    <div class="item-name">Pouze toaletní papír</div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="not-allowed-section">
+                    <h2>Do záchodu nepatří</h2>
+                    <div class="not-allowed-grid">
+                        <div class="not-allowed-item">
+                            <div class="icon-box icon-wipes"></div>
+                            <span>Vlhčené<br>ubrousky</span>
+                        </div>
+                        <div class="not-allowed-item">
+                            <div class="icon-box icon-hygiene"></div>
+                            <span>Hygienické<br>potřeby</span>
+                        </div>
+                        <div class="not-allowed-item">
+                            <div class="icon-box icon-trash"></div>
+                            <span>Jiný<br>odpad</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="warning">
+                    <div class="warning-title">⚠️ Důležité upozornění</div>
+                    <p class="warning-text">
+                        Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. 
+                        V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- GERMAN VERSION -->
+            <div class="language-section">
+                <div class="allowed-section">
+                    <h2>In die Toilette gehört</h2>
+                    <div class="icon-circle"></div>
+                    <div class="item-name">Nur Toilettenpapier</div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="not-allowed-section">
+                    <h2>Nicht in die Toilette</h2>
+                    <div class="not-allowed-grid">
+                        <div class="not-allowed-item">
+                            <div class="icon-box icon-wipes"></div>
+                            <span>Feuchte<br>Tücher</span>
+                        </div>
+                        <div class="not-allowed-item">
+                            <div class="icon-box icon-hygiene"></div>
+                            <span>Hygiene-<br>artikel</span>
+                        </div>
+                        <div class="not-allowed-item">
+                            <div class="icon-box icon-trash"></div>
+                            <span>Sonstiger<br>Abfall</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="warning">
+                    <div class="warning-title">⚠️ Wichtiger Hinweis</div>
+                    <p class="warning-text">
+                        Eine Verstopfung führt zur Funktionsunfähigkeit aller Toiletten in der Hütte. 
+                        In diesem Fall müssen wir den Aufenthalt aller Gäste beenden.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Děkujeme za pochopení • Vielen Dank für Ihr Verständnis
+        </div>
+    </div>
+</body>
+</html
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `zachod_napisy.html`, lines 350 to 414
 
 **Input:**
 
@@ -1020,7 +6512,57 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"350","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"414","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"466","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":67,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","scheme":"file"},"options":{"isFromTool":true}}],"text":"```html\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":67},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":66,"references":[],"text":"        \n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":66},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":65,"references":[],"text":"        \u003cdiv class=\"footer\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":65},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":64,"references":[],"text":"            Děkujeme za pochopení • Vielen Dank für Ihr Verständnis\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":64
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html`. Lines 350 to 414 (466 lines total): 
+```html
+        
+        <div class="footer">
+            Děkujeme za pochopení • Vielen Dank für Ihr Verständnis
+        </div>
+    </div>
+</body>
+</html>
+    
+    <!-- CZECH VERSION -->
+    <div id="cz-poster" class="poster">
+        <div class="header">
+            <h1>Prosíme o ohleduplnost</h1>
+            <p class="subtitle">Pomozte nám udržet záchody funkční pro všechny hosty</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <h2>Do záchodu patří</h2>
+                <div class="icon-circle"></div>
+                <div class="item-name">Pouze toaletní papír</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <h2>Do záchodu nepatří</h2>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Vlhčené<br>ubrousky</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygienické<br>potřeby</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Jiný<br>odpad</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Důležité upozornění</div>
+                <p class="warning-text">
+                    Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. 
+                    V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům 
+                    až do vyřešení závady.
+  
 … (output truncated)
 ````
 </details></tool-use>
@@ -1029,6 +6571,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `zachod_napisy.html`, lines 410 to 466
 
 **Input:**
 
@@ -1039,25 +6583,76 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":59,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy.html","scheme":"file"},"options":{"isFromTool":true}}],"text":"```html\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":59},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":58,"references":[],"text":"            \u003ch1\u003eBitte um Rücksichtnahme\u003c/h1\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":58},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":57,"references":[],"text":"            \u003cp class=\"subtitle\"\u003eHelfen Sie uns, die Toiletten für alle Gäste funktionsfähig zu halten\u003c/p\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":57},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":56,"references":[],"text":"        \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":56},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":55,"references":[],"text":"        \n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"references":[],"text":"        \u003cdiv class=\"content\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":54},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":53,"references":[],"text":"            \u003cdiv class=\"allowed-section\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"                \u003ch2\u003eIn die Toilette gehört\u0
+```html
+            <h1>Bitte um Rücksichtnahme</h1>
+            <p class="subtitle">Helfen Sie uns, die Toiletten für alle Gäste funktionsfähig zu halten</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <h2>In die Toilette gehört</h2>
+                <div class="icon-circle"></div>
+                <div class="item-name">Nur Toilettenpapier</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <h2>Nicht in die Toilette gehört</h2>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Feuchte<br>Tücher</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygiene-<br>artikel</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Sonstiger<br>Abfall</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Wichtiger Hinweis</div>
+                <p class="warning-text">
+                    Eine Verstopfung führt zur Funktionsunfähigkeit aller Toiletten in der gesamten Hütte. 
+                    In diesem Fall sind wir leider gezwungen, den Aufenthalt aller Gäste zu beenden, 
+                    bis das Problem behoben ist.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Vielen Dank für Ihr Verständnis und einen angenehmen Aufenthalt
+        </div>
+    </div>
+    
+    <script>
+        function switchLang(lang) {
+            // Update buttons
+            document
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 455-466 @@
 
 ```
-
+</body>
+</html
 ```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
-
-```
-
-```
 Perfektní! Teď máte obě jazykové verze na **jednom A4**:
 
 **Struktura:**
@@ -1085,18 +6680,310 @@ Teď se to úplně rozpadlo. vrátil jsem zpět původní verzi s jedním jazyke
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 32-55 @@
 
 ```
+15mm 15mm;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0 0 8px 0;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            font-weight: 400;
+            margin: 0;
+        }
+        
+        .bilingual {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .lang-label {
+            font-size: 12px;
+            color: #999;
+            font-weight: 50
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 75-251 @@
 
 ```
+gap: 15px;
+        }
+        
+        .allowed-section {
+            text-align: center;
+        }
+        
+        .allowed-section h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        
+        .icon-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 3px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            position: relative;
+        }
+        
+        .icon-circle::before {
+            content: '';
+            width: 22px;
+            height: 36px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 6px;
+            position: relative;
+        }
+        
+        .icon-circle::after {
+            content: '';
+            width: 14px;
+            height: 14px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 50%;
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .item-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 10px 40px;
+        }
+        
+        .not-allowed-section h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 12px 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        
+        .not-allowed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .not-allowed-item {
+            text-align: center;
+            opacity: 0.4;
+        }
+        
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #1a1a1a;
+            border-radius: 8px;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .icon-box::before,
+        .icon-box::after {
+            content: '';
+            position: absolute;
+            width: 42px;
+            height: 2px;
+            background: #1a1a1a;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .icon-box::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+        
+        .icon-wipes::before {
+            content: '';
+            width: 20px;
+            height: 28px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 4px 4px 8px 8px;
+        }
+        
+        .icon-hygiene::before {
+            content: '';
+            width: 26px;
+            height: 9px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 12px;
+        }
+        
+        .icon-trash::before {
+            content: '';
+            width: 22px;
+            height: 24px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 2px 2px 4px 4px;
+        }
+        
+        .not-allowed-item span {
+            font-size: 11px;
+            color: #1a1a1a;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .warning {
+            background: #f8f8f8;
+            border-left: 3px solid #1a1a1a;
+            padding: 12px 15px;
+            margin: 12px 0 0 0;
+        }
+        
+        .warning-title {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 6px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        
+        .warning-text {
+            font-size: 11px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            font-weight: 400;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid #e0e0e
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 278-320 @@
 
 ```
-
+🇨🇿 Prosíme o ohleduplnost • 🇩🇪 Bitte um Rücksichtnahme</h1>
+            <p class="subtitle">Pomozte nám udržet záchody funkční • Helfen Sie uns, die Toiletten funktionsfähig zu halten</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <div class="bilingual">
+                    <h2>Do záchodu patří</h2>
+                    <h2>In die Toilette gehört</h2>
+                </div>
+                <div class="icon-circle"></div>
+                <div class="bilingual">
+                    <div class="item-name">Pouze toaletní papír</div>
+                    <div class="item-name">Nur Toilettenpapier</div>
+                </div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <div class="bilingual">
+                    <h2>Do záchodu nepatří</h2>
+                    <h2>Nicht in die Toilette</h2>
+                </div>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Vlhčené ubrousky<br>Feuchte Tücher</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygienické potřeby<br>Hygieneartikel</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Jiný odpad<br>Sonstiger Abfall</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="bilingual">
+                    <div class="warning-title">⚠️ Důležité upozornění</div>
+                    <div class="warning-title">⚠️ Wichtiger Hinweis</div>
+                </div>
+                <p class="warning-text">
+                    🇨🇿 Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům.
+                    <br><br>
+                    🇩🇪 Eine Verstopfung führt zur Funktionsunfähigkeit aller Toiletten in der Hütte. In diesem Fall müssen wir den Aufenthalt aller Gäste beenden.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Děkujeme za pochopení • Vielen Dank für Ihr Verständnis
 ```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
 Hotovo! Doplnil jsem německé texty vedle českých. Změny:
 
 1. **Zmenšené fonty a mezery** - všechno je kompaktnější, aby se vešly oba jazyky
@@ -1117,18 +7004,287 @@ nevím, ale teď si to úplně rozhodil a některé texty jsou jakoby ve vlastn�
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 278-334 @@
 
 ```
+poster">
+        <div class="header">
+            <h1>Prosíme o ohleduplnost / Bitte um Rücksichtnahme</h1>
+            <p class="subtitle">Pomozte nám udržet záchody funkční<br>Helfen Sie uns, die Toiletten funktionsfähig zu halten</p>
+        </div>
+        
+        <div class="content">
+            <div class="allowed-section">
+                <h2>Do záchodu patří / In die Toilette gehört</h2>
+                <div class="icon-circle"></div>
+                <div class="item-name">Pouze toaletní papír / Nur Toilettenpapier</div>
+            </div>
+            
+            <div class="divider"></div>
+            
+            <div class="not-allowed-section">
+                <h2>Do záchodu nepatří / Nicht in die Toilette</h2>
+                <div class="not-allowed-grid">
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-wipes"></div>
+                        <span>Vlhčené ubrousky<br>Feuchte Tücher</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-hygiene"></div>
+                        <span>Hygienické potřeby<br>Hygieneartikel</span>
+                    </div>
+                    <div class="not-allowed-item">
+                        <div class="icon-box icon-trash"></div>
+                        <span>Jiný odpad<br>Sonstiger Abfall</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="warning">
+                <div class="warning-title">Důležité upozornění / Wichtiger Hinweis</div>
+                <p class="warning-text">
+                    Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům.
+                    <br><br>
+                    Eine Verstopfung führt zur Funktionsunfähigkeit aller Toiletten in der Hütte. In diesem Fall müssen wir den Aufenthalt aller Gäste beenden.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Děkujeme za pochopení / Vielen Dank für Ihr Verständnis
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 32-68 @@
 
 ```
+30mm 25mm;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        .header {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0 0 12px 0;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+        
+        .subtitle {
+            font-size: 15px;
+            color: #666;
+            font-weight: 400;
+            margin: 0;
+            line-height: 1.5
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 75-253 @@
 
 ```
-
+justify-content: center;
+            gap: 25px;
+        }
+        
+        .allowed-section {
+            text-align: center;
+        }
+        
+        .allowed-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 18px 0;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            position: relative;
+        }
+        
+        .icon-circle::before {
+            content: '';
+            width: 25px;
+            height: 40px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 6px;
+            position: relative;
+        }
+        
+        .icon-circle::after {
+            content: '';
+            width: 15px;
+            height: 15px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 50%;
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .item-name {
+            font-size: 17px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 0 50px;
+        }
+        
+        .not-allowed-section h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 18px 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        
+        .not-allowed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        .not-allowed-item {
+            text-align: center;
+            opacity: 0.4;
+        }
+        
+        .icon-box {
+            width: 55px;
+            height: 55px;
+            border: 2px solid #1a1a1a;
+            border-radius: 8px;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .icon-box::before,
+        .icon-box::after {
+            content: '';
+            position: absolute;
+            width: 45px;
+            height: 2px;
+            background: #1a1a1a;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .icon-box::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+        
+        .icon-wipes::before {
+            content: '';
+            width: 22px;
+            height: 30px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 4px 4px 8px 8px;
+        }
+        
+        .icon-hygiene::before {
+            content: '';
+            width: 28px;
+            height: 10px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 12px;
+        }
+        
+        .icon-trash::before {
+            content: '';
+            width: 24px;
+            height: 26px;
+            background: white;
+            border: 2px solid #1a1a1a;
+            border-radius: 2px 2px 4px 4px;
+        }
+        
+        .not-allowed-item span {
+            font-size: 12px;
+            color: #1a1a1a;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        
+        .warning {
+            background: #f8f8f8;
+            border-left: 3px solid #1a1a1a;
+            padding: 15px 18px;
+            margin: 20px 0 0 0;
+        }
+        
+        .warning-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+        
+        .warning-text {
+            font-size: 12px;
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            font-weight: 40
 ```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
 Opravil jsem to. Teď je to úplně jednoduchý design - německé texty jsou jednoduše přidané vedle českých s lomítkem `/`. Žádné složité layouty nebo sloupce, všechno je vycentrované a čitelné. Mělo by se to pohodlně vejít na A4.
 
 ---
@@ -1141,22 +7297,239 @@ Uvědom si že to lidi budou číst na WC. Potřebuju aby to bylo snadno čiteln
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 44-89 @@
 
 ```
+34px;
+            font-weight: 700;
+            margin: 0 0 15px 0;
+            color: #1a1a1a;
+            letter-spacing: -0.5px;
+            line-height: 1.3;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #666;
+            font-weight: 400;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 30px;
+        }
+        
+        .allowed-section {
+            text-align: center;
+        }
+        
+        .allowed-section h2 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 20px 0;
+            text-transform: uppercase;
+            letter-spacing: 1.5
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 82-118 @@
 
 ```
+100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            position: relative;
+        }
+        
+        .icon-circle::before {
+            content: '';
+            width: 30px;
+            height: 50px;
+            background: white;
+            border: 4px solid #1a1a1a;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .icon-circle::after {
+            content: '';
+            width: 18px;
+            height: 18px;
+            background: white;
+            border: 4px solid #1a1a1a;
+            border-radius: 50%;
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .item-name {
+            font-size: 20px;
+            font-weight: 6
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 129-207 @@
 
 ```
+20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin: 0 0 20px 0;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+        
+        .not-allowed-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            max-width: 550px;
+            margin: 0 auto;
+        }
+        
+        .not-allowed-item {
+            text-align: center;
+            opacity: 0.4;
+        }
+        
+        .icon-box {
+            width: 70px;
+            height: 70px;
+            border: 3px solid #1a1a1a;
+            border-radius: 10px;
+            margin: 0 auto 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .icon-box::before,
+        .icon-box::after {
+            content: '';
+            position: absolute;
+            width: 58px;
+            height: 3px;
+            background: #1a1a1a;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+        
+        .icon-box::after {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+        
+        .icon-wipes::before {
+            content: '';
+            width: 26px;
+            height: 36px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 5px 5px 10px 10px;
+        }
+        
+        .icon-hygiene::before {
+            content: '';
+            width: 34px;
+            height: 12px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 14px;
+        }
+        
+        .icon-trash::before {
+            content: '';
+            width: 28px;
+            height: 32px;
+            background: white;
+            border: 3px solid #1a1a1a;
+            border-radius: 3px 3px 6px 6px;
+        }
+        
+        .not-allowed-item span {
+            font-size: 15
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy.html**</summary>
+
+@@ lines 215-240 @@
 
 ```
-
+5px solid #1a1a1a;
+            padding: 22px 25px;
+            margin: 25px 0 0 0;
+        }
+        
+        .warning-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 12px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .warning-text {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 16px;
+            color: #666;
+            font-weight: 400;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            background: #1a1a1a;
+            color: white;
+            border: none;
 ```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
-
-```
 Výrazně jsem zvětšil všechny fonty pro lepší čitelnost na WC:
 
 - **Hlavní nadpis**: 34px (tučný)
@@ -1181,6 +7554,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `zachod_napisy_landscape.html`
 
 **Input:**
 
@@ -1515,7 +7890,2260 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy_landscape.html","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"P_","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/static/zachod_napisy_landscape.html
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **zachod_napisy_landscape.html**</summary>
+
+@@ lines 1-1 @@
+
+```
+<!DOCTYPE html>
+```
+
+@@ lines 2-2 @@
+
+```
+
+<html lang="cs">
+```
+
+@@ lines 3-3 @@
+
+```
+
+<head>
+```
+
+@@ lines 4-4 @@
+
+```
+
+    <meta charset="UTF-8">
+```
+
+@@ lines 5-5 @@
+
+```
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+```
+
+@@ lines 6-6 @@
+
+```
+
+    <title>Nápis na záchod - Na šířku</title>
+```
+
+@@ lines 7-7 @@
+
+```
+
+    <style>
+```
+
+@@ lines 8-8 @@
+
+```
+
+        @media print {
+```
+
+@@ lines 9-9 @@
+
+```
+
+            body { margin: 0; }
+```
+
+@@ lines 10-10 @@
+
+```
+
+            .no-print { display: none; }
+```
+
+@@ lines 11-11 @@
+
+```
+
+            @page { size: landscape; }
+```
+
+@@ lines 12-12 @@
+
+```
+
+        }
+```
+
+@@ lines 13-13 @@
+
+```
+
+        
+```
+
+@@ lines 14-14 @@
+
+```
+
+        * {
+```
+
+@@ lines 15-15 @@
+
+```
+
+            box-sizing: border-box;
+```
+
+@@ lines 16-16 @@
+
+```
+
+        }
+```
+
+@@ lines 17-17 @@
+
+```
+
+        
+```
+
+@@ lines 18-18 @@
+
+```
+
+        body {
+```
+
+@@ lines 19-19 @@
+
+```
+
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+```
+
+@@ lines 20-20 @@
+
+```
+
+            margin: 0;
+```
+
+@@ lines 21-21 @@
+
+```
+
+            padding: 20px;
+```
+
+@@ lines 22-22 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 23-23 @@
+
+```
+
+            justify-content: center;
+```
+
+@@ lines 24-24 @@
+
+```
+
+            align-items: center;
+```
+
+@@ lines 25-25 @@
+
+```
+
+            min-height: 100vh;
+```
+
+@@ lines 26-26 @@
+
+```
+
+            background: #f5f5f5;
+```
+
+@@ lines 27-27 @@
+
+```
+
+        }
+```
+
+@@ lines 28-28 @@
+
+```
+
+        
+```
+
+@@ lines 29-29 @@
+
+```
+
+        .poster {
+```
+
+@@ lines 30-30 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 31-31 @@
+
+```
+
+            width: 297mm;
+```
+
+@@ lines 32-32 @@
+
+```
+
+            height: 210mm;
+```
+
+@@ lines 33-33 @@
+
+```
+
+            padding: 20mm 30mm;
+```
+
+@@ lines 34-34 @@
+
+```
+
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+```
+
+@@ lines 35-35 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 36-36 @@
+
+```
+
+            flex-direction: column;
+```
+
+@@ lines 37-37 @@
+
+```
+
+            justify-content: space-between;
+```
+
+@@ lines 38-38 @@
+
+```
+
+        }
+```
+
+@@ lines 39-39 @@
+
+```
+
+        
+```
+
+@@ lines 40-40 @@
+
+```
+
+        .header {
+```
+
+@@ lines 41-41 @@
+
+```
+
+            text-align: center;
+```
+
+@@ lines 42-42 @@
+
+```
+
+        }
+```
+
+@@ lines 43-43 @@
+
+```
+
+        
+```
+
+@@ lines 44-44 @@
+
+```
+
+        h1 {
+```
+
+@@ lines 45-45 @@
+
+```
+
+            font-size: 48px;
+```
+
+@@ lines 46-46 @@
+
+```
+
+            font-weight: 700;
+```
+
+@@ lines 47-47 @@
+
+```
+
+            margin: 0 0 10px 0;
+```
+
+@@ lines 48-48 @@
+
+```
+
+            color: #1a1a1a;
+```
+
+@@ lines 49-49 @@
+
+```
+
+            letter-spacing: -0.5px;
+```
+
+@@ lines 50-50 @@
+
+```
+
+            line-height: 1.2;
+```
+
+@@ lines 51-51 @@
+
+```
+
+        }
+```
+
+@@ lines 52-52 @@
+
+```
+
+        
+```
+
+@@ lines 53-53 @@
+
+```
+
+        .subtitle {
+```
+
+@@ lines 54-54 @@
+
+```
+
+            font-size: 24px;
+```
+
+@@ lines 55-55 @@
+
+```
+
+            color: #666;
+```
+
+@@ lines 56-56 @@
+
+```
+
+            font-weight: 400;
+```
+
+@@ lines 57-57 @@
+
+```
+
+            margin: 0;
+```
+
+@@ lines 58-58 @@
+
+```
+
+            line-height: 1.4;
+```
+
+@@ lines 59-59 @@
+
+```
+
+        }
+```
+
+@@ lines 60-60 @@
+
+```
+
+        
+```
+
+@@ lines 61-61 @@
+
+```
+
+        .content {
+```
+
+@@ lines 62-62 @@
+
+```
+
+            flex: 1;
+```
+
+@@ lines 63-63 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 64-64 @@
+
+```
+
+            align-items: center;
+```
+
+@@ lines 65-65 @@
+
+```
+
+            gap: 40px;
+```
+
+@@ lines 66-66 @@
+
+```
+
+        }
+```
+
+@@ lines 67-67 @@
+
+```
+
+        
+```
+
+@@ lines 68-68 @@
+
+```
+
+        .allowed-section {
+```
+
+@@ lines 69-69 @@
+
+```
+
+            flex: 1;
+```
+
+@@ lines 70-70 @@
+
+```
+
+            text-align: center;
+```
+
+@@ lines 71-71 @@
+
+```
+
+        }
+```
+
+@@ lines 72-72 @@
+
+```
+
+        
+```
+
+@@ lines 73-73 @@
+
+```
+
+        .allowed-section h2 {
+```
+
+@@ lines 74-74 @@
+
+```
+
+            font-size: 26px;
+```
+
+@@ lines 75-75 @@
+
+```
+
+            font-weight: 600;
+```
+
+@@ lines 76-76 @@
+
+```
+
+            color: #1a1a1a;
+```
+
+@@ lines 77-77 @@
+
+```
+
+            margin: 0 0 20px 0;
+```
+
+@@ lines 78-78 @@
+
+```
+
+            text-transform: uppercase;
+```
+
+@@ lines 79-79 @@
+
+```
+
+            letter-spacing: 1.5px;
+```
+
+@@ lines 80-80 @@
+
+```
+
+        }
+```
+
+@@ lines 81-81 @@
+
+```
+
+        
+```
+
+@@ lines 82-82 @@
+
+```
+
+        .icon-circle {
+```
+
+@@ lines 83-83 @@
+
+```
+
+            width: 120px;
+```
+
+@@ lines 84-84 @@
+
+```
+
+            height: 120px;
+```
+
+@@ lines 85-85 @@
+
+```
+
+            border-radius: 50%;
+```
+
+@@ lines 86-86 @@
+
+```
+
+            border: 5px solid #1a1a1a;
+```
+
+@@ lines 87-87 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 88-88 @@
+
+```
+
+            align-items: center;
+```
+
+@@ lines 89-89 @@
+
+```
+
+            justify-content: center;
+```
+
+@@ lines 90-90 @@
+
+```
+
+            margin: 0 auto 15px;
+```
+
+@@ lines 91-91 @@
+
+```
+
+            position: relative;
+```
+
+@@ lines 92-92 @@
+
+```
+
+        }
+```
+
+@@ lines 93-93 @@
+
+```
+
+        
+```
+
+@@ lines 94-94 @@
+
+```
+
+        .icon-circle::before {
+```
+
+@@ lines 95-95 @@
+
+```
+
+            content: '';
+```
+
+@@ lines 96-96 @@
+
+```
+
+            width: 36px;
+```
+
+@@ lines 97-97 @@
+
+```
+
+            height: 60px;
+```
+
+@@ lines 98-98 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 99-99 @@
+
+```
+
+            border: 5px solid #1a1a1a;
+```
+
+@@ lines 100-100 @@
+
+```
+
+            border-radius: 10px;
+```
+
+@@ lines 101-101 @@
+
+```
+
+            position: relative;
+```
+
+@@ lines 102-102 @@
+
+```
+
+        }
+```
+
+@@ lines 103-103 @@
+
+```
+
+        
+```
+
+@@ lines 104-104 @@
+
+```
+
+        .icon-circle::after {
+```
+
+@@ lines 105-105 @@
+
+```
+
+            content: '';
+```
+
+@@ lines 106-106 @@
+
+```
+
+            width: 22px;
+```
+
+@@ lines 107-107 @@
+
+```
+
+            height: 22px;
+```
+
+@@ lines 108-108 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 109-109 @@
+
+```
+
+            border: 5px solid #1a1a1a;
+```
+
+@@ lines 110-110 @@
+
+```
+
+            border-radius: 50%;
+```
+
+@@ lines 111-111 @@
+
+```
+
+            position: absolute;
+```
+
+@@ lines 112-112 @@
+
+```
+
+            top: 24px;
+```
+
+@@ lines 113-113 @@
+
+```
+
+            left: 50%;
+```
+
+@@ lines 114-114 @@
+
+```
+
+            transform: translateX(-50%);
+```
+
+@@ lines 115-115 @@
+
+```
+
+        }
+```
+
+@@ lines 116-116 @@
+
+```
+
+        
+```
+
+@@ lines 117-117 @@
+
+```
+
+        .item-name {
+```
+
+@@ lines 118-118 @@
+
+```
+
+            font-size: 26px;
+```
+
+@@ lines 119-119 @@
+
+```
+
+            font-weight: 600;
+```
+
+@@ lines 120-120 @@
+
+```
+
+            color: #1a1a1a;
+```
+
+@@ lines 121-121 @@
+
+```
+
+        }
+```
+
+@@ lines 122-122 @@
+
+```
+
+        
+```
+
+@@ lines 123-123 @@
+
+```
+
+        .divider-vertical {
+```
+
+@@ lines 124-124 @@
+
+```
+
+            width: 2px;
+```
+
+@@ lines 125-125 @@
+
+```
+
+            background: #e0e0e0;
+```
+
+@@ lines 126-126 @@
+
+```
+
+            align-self: stretch;
+```
+
+@@ lines 127-127 @@
+
+```
+
+        }
+```
+
+@@ lines 128-128 @@
+
+```
+
+        
+```
+
+@@ lines 129-129 @@
+
+```
+
+        .not-allowed-section {
+```
+
+@@ lines 130-130 @@
+
+```
+
+            flex: 2;
+```
+
+@@ lines 131-131 @@
+
+```
+
+        }
+```
+
+@@ lines 132-132 @@
+
+```
+
+        
+```
+
+@@ lines 133-133 @@
+
+```
+
+        .not-allowed-section h2 {
+```
+
+@@ lines 134-134 @@
+
+```
+
+            font-size: 26px;
+```
+
+@@ lines 135-135 @@
+
+```
+
+            font-weight: 600;
+```
+
+@@ lines 136-136 @@
+
+```
+
+            color: #1a1a1a;
+```
+
+@@ lines 137-137 @@
+
+```
+
+            margin: 0 0 20px 0;
+```
+
+@@ lines 138-138 @@
+
+```
+
+            text-align: center;
+```
+
+@@ lines 139-139 @@
+
+```
+
+            text-transform: uppercase;
+```
+
+@@ lines 140-140 @@
+
+```
+
+            letter-spacing: 1.5px;
+```
+
+@@ lines 141-141 @@
+
+```
+
+        }
+```
+
+@@ lines 142-142 @@
+
+```
+
+        
+```
+
+@@ lines 143-143 @@
+
+```
+
+        .not-allowed-grid {
+```
+
+@@ lines 144-144 @@
+
+```
+
+            display: grid;
+```
+
+@@ lines 145-145 @@
+
+```
+
+            grid-template-columns: repeat(3, 1fr);
+```
+
+@@ lines 146-146 @@
+
+```
+
+            gap: 25px;
+```
+
+@@ lines 147-147 @@
+
+```
+
+            max-width: 100%;
+```
+
+@@ lines 148-148 @@
+
+```
+
+            margin: 0 auto;
+```
+
+@@ lines 149-149 @@
+
+```
+
+        }
+```
+
+@@ lines 150-150 @@
+
+```
+
+        
+```
+
+@@ lines 151-151 @@
+
+```
+
+        .not-allowed-item {
+```
+
+@@ lines 152-152 @@
+
+```
+
+            text-align: center;
+```
+
+@@ lines 153-153 @@
+
+```
+
+            opacity: 0.4;
+```
+
+@@ lines 154-154 @@
+
+```
+
+        }
+```
+
+@@ lines 155-155 @@
+
+```
+
+        
+```
+
+@@ lines 156-156 @@
+
+```
+
+        .icon-box {
+```
+
+@@ lines 157-157 @@
+
+```
+
+            width: 90px;
+```
+
+@@ lines 158-158 @@
+
+```
+
+            height: 90px;
+```
+
+@@ lines 159-159 @@
+
+```
+
+            border: 4px solid #1a1a1a;
+```
+
+@@ lines 160-160 @@
+
+```
+
+            border-radius: 12px;
+```
+
+@@ lines 161-161 @@
+
+```
+
+            margin: 0 auto 15px;
+```
+
+@@ lines 162-162 @@
+
+```
+
+            display: flex;
+```
+
+@@ lines 163-163 @@
+
+```
+
+            align-items: center;
+```
+
+@@ lines 164-164 @@
+
+```
+
+            justify-content: center;
+```
+
+@@ lines 165-165 @@
+
+```
+
+            position: relative;
+```
+
+@@ lines 166-166 @@
+
+```
+
+        }
+```
+
+@@ lines 167-167 @@
+
+```
+
+        
+```
+
+@@ lines 168-168 @@
+
+```
+
+        .icon-box::before,
+```
+
+@@ lines 169-169 @@
+
+```
+
+        .icon-box::after {
+```
+
+@@ lines 170-170 @@
+
+```
+
+            content: '';
+```
+
+@@ lines 171-171 @@
+
+```
+
+            position: absolute;
+```
+
+@@ lines 172-172 @@
+
+```
+
+            width: 75px;
+```
+
+@@ lines 173-173 @@
+
+```
+
+            height: 4px;
+```
+
+@@ lines 174-174 @@
+
+```
+
+            background: #1a1a1a;
+```
+
+@@ lines 175-175 @@
+
+```
+
+            top: 50%;
+```
+
+@@ lines 176-176 @@
+
+```
+
+            left: 50%;
+```
+
+@@ lines 177-177 @@
+
+```
+
+            transform: translate(-50%, -50%) rotate(45deg);
+```
+
+@@ lines 178-178 @@
+
+```
+
+        }
+```
+
+@@ lines 179-179 @@
+
+```
+
+        
+```
+
+@@ lines 180-180 @@
+
+```
+
+        .icon-box::after {
+```
+
+@@ lines 181-181 @@
+
+```
+
+            transform: translate(-50%, -50%) rotate(-45deg);
+```
+
+@@ lines 182-182 @@
+
+```
+
+        }
+```
+
+@@ lines 183-183 @@
+
+```
+
+        
+```
+
+@@ lines 184-184 @@
+
+```
+
+        .icon-wipes::before {
+```
+
+@@ lines 185-185 @@
+
+```
+
+            content: '';
+```
+
+@@ lines 186-186 @@
+
+```
+
+            width: 32px;
+```
+
+@@ lines 187-187 @@
+
+```
+
+            height: 44px;
+```
+
+@@ lines 188-188 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 189-189 @@
+
+```
+
+            border: 4px solid #1a1a1a;
+```
+
+@@ lines 190-190 @@
+
+```
+
+            border-radius: 6px 6px 12px 12px;
+```
+
+@@ lines 191-191 @@
+
+```
+
+        }
+```
+
+@@ lines 192-192 @@
+
+```
+
+        
+```
+
+@@ lines 193-193 @@
+
+```
+
+        .icon-hygiene::before {
+```
+
+@@ lines 194-194 @@
+
+```
+
+            content: '';
+```
+
+@@ lines 195-195 @@
+
+```
+
+            width: 42px;
+```
+
+@@ lines 196-196 @@
+
+```
+
+            height: 15px;
+```
+
+@@ lines 197-197 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 198-198 @@
+
+```
+
+            border: 4px solid #1a1a1a;
+```
+
+@@ lines 199-199 @@
+
+```
+
+            border-radius: 16px;
+```
+
+@@ lines 200-200 @@
+
+```
+
+        }
+```
+
+@@ lines 201-201 @@
+
+```
+
+        
+```
+
+@@ lines 202-202 @@
+
+```
+
+        .icon-trash::before {
+```
+
+@@ lines 203-203 @@
+
+```
+
+            content: '';
+```
+
+@@ lines 204-204 @@
+
+```
+
+            width: 35px;
+```
+
+@@ lines 205-205 @@
+
+```
+
+            height: 40px;
+```
+
+@@ lines 206-206 @@
+
+```
+
+            background: white;
+```
+
+@@ lines 207-207 @@
+
+```
+
+            border: 4px solid #1a1a1a;
+```
+
+@@ lines 208-208 @@
+
+```
+
+            border-radius: 4px 4px 8px 8px;
+```
+
+@@ lines 209-209 @@
+
+```
+
+        }
+```
+
+@@ lines 210-210 @@
+
+```
+
+        
+```
+
+@@ lines 211-211 @@
+
+```
+
+        .not-allowed-item span {
+```
+
+@@ lines 212-212 @@
+
+```
+
+            font-size: 20px;
+```
+
+@@ lines 213-213 @@
+
+```
+
+            color: #1a1a1a;
+```
+
+@@ lines 214-214 @@
+
+```
+
+            font-weight: 500;
+```
+
+@@ lines 215-215 @@
+
+```
+
+            line-height: 1.3;
+```
+
+@@ lines 216-216 @@
+
+```
+
+        }
+```
+
+@@ lines 217-217 @@
+
+```
+
+        
+```
+
+@@ lines 218-218 @@
+
+```
+
+        .warning {
+```
+
+@@ lines 219-219 @@
+
+```
+
+            background: #f8f8f8;
+```
+
+@@ lines 220-220 @@
+
+```
+
+            border-left: 6px solid #1a1a1a;
+```
+
+@@ lines 221-221 @@
+
+```
+
+            padding: 20px 30px;
+```
+
+@@ lines 222-222 @@
+
+```
+
+            margin: 20px 0 0 0;
+```
+
+@@ lines 223-223 @@
+
+```
+
+        }
+```
+
+@@ lines 224-224 @@
+
+```
+
+        
+```
+
+@@ lines 225-225 @@
+
+```
+
+        .warning-title {
+```
+
+@@ lines 226-226 @@
+
+```
+
+            font-size: 22px;
+```
+
+@@ lines 227-227 @@
+
+```
+
+            font-weight: 700;
+```
+
+@@ lines 228-228 @@
+
+```
+
+            color: #1a1a1a;
+```
+
+@@ lines 229-229 @@
+
+```
+
+            margin: 0 0 12px 0;
+```
+
+@@ lines 230-230 @@
+
+```
+
+            text-transform: uppercase;
+```
+
+@@ lines 231-231 @@
+
+```
+
+            letter-spacing: 1px;
+```
+
+@@ lines 232-232 @@
+
+```
+
+        }
+```
+
+@@ lines 233-233 @@
+
+```
+
+        
+```
+
+@@ lines 234-234 @@
+
+```
+
+        .warning-text {
+```
+
+@@ lines 235-235 @@
+
+```
+
+            font-size: 19px;
+```
+
+@@ lines 236-236 @@
+
+```
+
+            line-height: 1.6;
+```
+
+@@ lines 237-237 @@
+
+```
+
+            color: #333;
+```
+
+@@ lines 238-238 @@
+
+```
+
+            margin: 0;
+```
+
+@@ lines 239-239 @@
+
+```
+
+            font-weight: 500;
+```
+
+@@ lines 240-240 @@
+
+```
+
+        }
+```
+
+@@ lines 241-241 @@
+
+```
+
+        
+```
+
+@@ lines 242-242 @@
+
+```
+
+        .footer {
+```
+
+@@ lines 243-243 @@
+
+```
+
+            text-align: center;
+```
+
+@@ lines 244-244 @@
+
+```
+
+            font-size: 20px;
+```
+
+@@ lines 245-245 @@
+
+```
+
+            color: #666;
+```
+
+@@ lines 246-246 @@
+
+```
+
+            font-weight: 400;
+```
+
+@@ lines 247-247 @@
+
+```
+
+            margin-top: 15px;
+```
+
+@@ lines 248-248 @@
+
+```
+
+        }
+```
+
+@@ lines 249-249 @@
+
+```
+
+        
+```
+
+@@ lines 250-250 @@
+
+```
+
+        .print-button {
+```
+
+@@ lines 251-251 @@
+
+```
+
+            position: fixed;
+```
+
+@@ lines 252-252 @@
+
+```
+
+            top: 20px;
+```
+
+@@ lines 253-253 @@
+
+```
+
+            right: 20px;
+```
+
+@@ lines 254-254 @@
+
+```
+
+            padding: 12px 24px;
+```
+
+@@ lines 255-255 @@
+
+```
+
+            font-size: 16px;
+```
+
+@@ lines 256-256 @@
+
+```
+
+            background: #1a1a1a;
+```
+
+@@ lines 257-257 @@
+
+```
+
+            color: white;
+```
+
+@@ lines 258-258 @@
+
+```
+
+            border: none;
+```
+
+@@ lines 259-259 @@
+
+```
+
+            border-radius: 6px;
+```
+
+@@ lines 260-260 @@
+
+```
+
+            cursor: pointer;
+```
+
+@@ lines 261-261 @@
+
+```
+
+            font-weight: 500;
+```
+
+@@ lines 262-262 @@
+
+```
+
+        }
+```
+
+@@ lines 263-263 @@
+
+```
+
+        
+```
+
+@@ lines 264-264 @@
+
+```
+
+        .print-button:hover {
+```
+
+@@ lines 265-265 @@
+
+```
+
+            background: #333;
+```
+
+@@ lines 266-266 @@
+
+```
+
+        }
+```
+
+@@ lines 267-267 @@
+
+```
+
+    </style>
+```
+
+@@ lines 268-268 @@
+
+```
+
+</head>
+```
+
+@@ lines 269-269 @@
+
+```
+
+<body>
+```
+
+@@ lines 270-270 @@
+
+```
+
+    <button class="print-button no-print" onclick="window.print()">Vytisknout</button>
+```
+
+@@ lines 271-271 @@
+
+```
+
+    
+```
+
+@@ lines 272-272 @@
+
+```
+
+    <div class="poster">
+```
+
+@@ lines 273-273 @@
+
+```
+
+        <div class="header">
+```
+
+@@ lines 274-274 @@
+
+```
+
+            <h1>Prosíme o ohleduplnost / Bitte um Rücksichtnahme</h1>
+```
+
+@@ lines 275-275 @@
+
+```
+
+            <p class="subtitle">Pomozte nám udržet záchody funkční • Helfen Sie uns, die Toiletten funktionsfähig zu halten</p>
+```
+
+@@ lines 276-276 @@
+
+```
+
+        </div>
+```
+
+@@ lines 277-277 @@
+
+```
+
+        
+```
+
+@@ lines 278-278 @@
+
+```
+
+        <div class="content">
+```
+
+@@ lines 279-279 @@
+
+```
+
+            <div class="allowed-section">
+```
+
+@@ lines 280-280 @@
+
+```
+
+                <h2>Do záchodu patří<br>In die Toilette gehört</h2>
+```
+
+@@ lines 281-281 @@
+
+```
+
+                <div class="icon-circle"></div>
+```
+
+@@ lines 282-282 @@
+
+```
+
+                <div class="item-name">Pouze toaletní papír<br>Nur Toilettenpapier</div>
+```
+
+@@ lines 283-283 @@
+
+```
+
+            </div>
+```
+
+@@ lines 284-284 @@
+
+```
+
+            
+```
+
+@@ lines 285-285 @@
+
+```
+
+            <div class="divider-vertical"></div>
+```
+
+@@ lines 286-286 @@
+
+```
+
+            
+```
+
+@@ lines 287-287 @@
+
+```
+
+            <div class="not-allowed-section">
+```
+
+@@ lines 288-288 @@
+
+```
+
+                <h2>Do záchodu nepatří / Nicht in die Toilette</h2>
+```
+
+@@ lines 289-289 @@
+
+```
+
+                <div class="not-allowed-grid">
+```
+
+@@ lines 290-290 @@
+
+```
+
+                    <div class="not-allowed-item">
+```
+
+@@ lines 291-291 @@
+
+```
+
+                        <div class="icon-box icon-wipes"></div>
+```
+
+@@ lines 292-292 @@
+
+```
+
+                        <span>Vlhčené ubrousky<br>Feuchte Tücher</span>
+```
+
+@@ lines 293-293 @@
+
+```
+
+                    </div>
+```
+
+@@ lines 294-294 @@
+
+```
+
+                    <div class="not-allowed-item">
+```
+
+@@ lines 295-295 @@
+
+```
+
+                        <div class="icon-box icon-hygiene"></div>
+```
+
+@@ lines 296-296 @@
+
+```
+
+                        <span>Hygienické potřeby<br>Hygieneartikel</span>
+```
+
+@@ lines 297-297 @@
+
+```
+
+                    </div>
+```
+
+@@ lines 298-298 @@
+
+```
+
+                    <div class="not-allowed-item">
+```
+
+@@ lines 299-299 @@
+
+```
+
+                        <div class="icon-box icon-trash"></div>
+```
+
+@@ lines 300-300 @@
+
+```
+
+                        <span>Jiný odpad<br>Sonstiger Abfall</span>
+```
+
+@@ lines 301-301 @@
+
+```
+
+                    </div>
+```
+
+@@ lines 302-302 @@
+
+```
+
+                </div>
+```
+
+@@ lines 303-303 @@
+
+```
+
+            </div>
+```
+
+@@ lines 304-304 @@
+
+```
+
+        </div>
+```
+
+@@ lines 305-305 @@
+
+```
+
+        
+```
+
+@@ lines 306-306 @@
+
+```
+
+        <div class="warning">
+```
+
+@@ lines 307-307 @@
+
+```
+
+            <div class="warning-title">⚠️ Důležité upozornění / Wichtiger Hinweis</div>
+```
+
+@@ lines 308-308 @@
+
+```
+
+            <p class="warning-text">
+```
+
+@@ lines 309-309 @@
+
+```
+
+                Ucpání odpadu způsobí nefunkčnost všech záchodů v celé chatě. V takovém případě budeme bohužel nuceni ukončit pobyt všem hostům.
+```
+
+@@ lines 310-310 @@
+
+```
+
+                <br>
+```
+
+@@ lines 311-311 @@
+
+```
+
+                Eine Verstopfung führt zur Funktionsunfähigkeit aller Toiletten in der Hütte. In diesem Fall müssen wir den Aufenthalt aller Gäste beenden.
+```
+
+@@ lines 312-312 @@
+
+```
+
+            </p>
+```
+
+@@ lines 313-313 @@
+
+```
+
+        </div>
+```
+
+@@ lines 314-314 @@
+
+```
+
+        
+```
+
+@@ lines 315-315 @@
+
+```
+
+        <div class="footer">
+```
+
+@@ lines 316-316 @@
+
+```
+
+            Děkujeme za pochopení / Vielen Dank für Ihr Verständnis
+```
+
+@@ lines 317-317 @@
+
+```
+
+        </div>
+```
+
+@@ lines 318-318 @@
+
+```
+
+    </div>
+```
+
+@@ lines 319-319 @@
+
+```
+
+</body>
+```
+
+@@ lines 320-320 @@
+
+```
+
+</html>
+```
+
+@@ lines 321-321 @@
+
+```
+
+
 ```
 </details></tool-use>
 

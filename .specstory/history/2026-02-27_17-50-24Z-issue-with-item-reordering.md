@@ -12,20 +12,10 @@ I have a weird problem when I am adding items into purchase order everything wor
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<think><details><summary>Thought Process</summary>
-I can see the issue. Let me look at the validate handler more closely: 
-
-Found it. The bug is in `Map.values()` — when the form sends items keyed as `"0"`, `"1"`, ..., `"9"`, `"10"`, Map keys are sorted lexicographically, so `"10"` sorts before `"2"`. This causes items to reorder once you have 10+ entries.
-
-Let me also check the `save` handler for the same bug: 
-
-Both the `validate` handler and `create_items` have `Map.values()` which returns values in lexicographic key order (`"10"` before `"2"`). The fix is to sort by integer key value before extracting values.
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
+
+Searched codebase for "purchase order items input fields LiveView", 20 results
 
 **Input:**
 
@@ -34,15 +24,73 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex` starting at line 1:\n```ex\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex\ndefmodule CozyCheckout.Inventory.PurchaseOrderItem do\n  use Ecto.Schema\n  import Ecto.Changeset\n\n  @primary_key {:id, :binary_id, autogenerate: true}\n  @foreign_key_type :binary_id\n\n  schema \"purchase_order_items\" do\n    field :quantity, :integer\n    field :unit_amount, :decimal\n    field :cost_price, :decimal\n    field :notes, :string\n    field :deleted_at, :utc_datetime\n\n    belongs_to :purchase_order, CozyCheckout.Inventory.PurchaseOrder\n    belongs_to :product, CozyCheckout.Catalog.Product\n\n    timestamps(type: :utc_datetime)\n  end\n\n  @doc false\n  def changeset(purchase_order_item, attrs) do\n    require Logger\n    Logger.debug(\"PurchaseOrderItem attrs: #{inspect(attrs)}\")\n\n    purchase_order_item\n    |\u003e cast(attrs, [:product_id, :quantity, :unit_amount, :cost_price, :notes])\n    |\u003e validate_required([:product_id, :quantity, :cost_price])\n...\n```\n\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/show.ex` starting at line 166:\n```ex\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/show.ex\n...\n              \u003cdiv class=\"space-y-2\"\u003e\n                \u003cdiv class=\"flex justify-between\"\u003e\n                  \u003cspan class=\"text-primary-400\"\u003eOrder Name:\
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex` starting at line 1:
+```ex
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex
+defmodule CozyCheckout.Inventory.PurchaseOrderItem do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+
+  schema "purchase_order_items" do
+    field :quantity, :integer
+    field :unit_amount, :decimal
+    field :cost_price, :decimal
+    field :notes, :string
+    field :deleted_at, :utc_datetime
+
+    belongs_to :purchase_order, CozyCheckout.Inventory.PurchaseOrder
+    belongs_to :product, CozyCheckout.Catalog.Product
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(purchase_order_item, attrs) do
+    require Logger
+    Logger.debug("PurchaseOrderItem attrs: #{inspect(attrs)}")
+
+    purchase_order_item
+    |> cast(attrs, [:product_id, :quantity, :unit_amount, :cost_price, :notes])
+    |> validate_required([:product_id, :quantity, :cost_price])
+...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/show.ex` starting at line 166:
+```ex
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/show.ex
+...
+              <div class="space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-primary-400">Order Name:</span>
+                  <span class="font-medium">{@order.name}</span>
+                </div>
+              </div>
+            </div>
+          <% end %>
+
+          <%!-- Order Items --%>
+          <div class="bg-white shadow-lg rounded-lg p-6">
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Order Items</h2>
+            <div class="space-y-3">
+              <div
+                :for={group
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+I can see the issue. Let me look at the validate handler more closely: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 310 to 380
 
 **Input:**
 
@@ -53,15 +101,75 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"310","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"380","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"528","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":73,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":73},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":72,"references":[],"text":"    # Reset search state\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":72},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":71,"references":[],"text":"    product_searches = Map.delete(socket.assigns.product_searches, index)\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":71},"references":[],"type":1},{"children":[{"lin
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex`. Lines 310 to 380 (528 lines total): 
+```elixir
+    # Reset search state
+    product_searches = Map.delete(socket.assigns.product_searches, index)
+    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign(:product_searches, product_searches)
+     |> assign(:show_product_suggestions, show_suggestions)}
+  end
+
+  @impl true
+  def handle_event("validate", %{"purchase_order" => purchase_order_params} = params, socket) do
+    changeset =
+      socket.assigns.purchase_order
+      |> Inventory.change_purchase_order(purchase_order_params)
+      |> Map.put(:action, :validate)
+
+    # Update items from form params to preserve user input
+    items =
+      case params do
+        %{"items" => items_params} ->
+          # Merge form params with existing items to preserve IDs and product_ids
+          items_params
+          |> Map.values()
+          |> Enum.with_index()
+          |> Enum.map(fn {item_params, index} ->
+            existing_item = Enum.at(socket.assigns.items, index) || %{}
+
+            %{
+              id: item_params["id"] || existing_item[:id],
+              product_id: item_params["product_id"] || existing_item[:product_id],
+              quantity: parse_integer(item_params["quantity"]),
+              unit_amount: parse_decimal(item_params["unit_amount"]),
+              cost_price: parse_decimal(item_params["cost_price"]),
+              notes: item_params["notes"]
+            }
+          end)
+        _ ->
+          socket.assigns.items
+      end
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign_form(changeset)}
+  end
+
+  # IMPORTANT: handle_event must match the exact params structure sent by the client
+  # phx-click sends simple params, but phx-change sends the entire form structure
+  def handle_event("add_item", _params, 
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+Found it. The bug is in `Map.values()` — when the form sends items keyed as `"0"`, `"1"`, ..., `"9"`, `"10"`, Map keys are sorted lexicographically, so `"10"` sorts before `"2"`. This causes items to reorder once you have 10+ entries.
+
+Let me also check the `save` handler for the same bug: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 430 to 495
 
 **Input:**
 
@@ -72,58 +180,101 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"430","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"495","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"528","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":68,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":68},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":67,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":67},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":66,"references":[],"text":"      {:error, %Ecto.Changeset{} = changeset} -\u003e\n","type":2}],"ctor":2,"ctorName":"iBe","props":{"priority":66},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":65,"references
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex`. Lines 430 to 495 (528 lines total): 
+```elixir
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign_form(socket, changeset)}
+    end
+  end
+
+  defp save_purchase_order(socket, :edit, purchase_order_params, items_params) do
+    case Inventory.update_purchase_order(socket.assigns.purchase_order, purchase_order_params) do
+      {:ok, purchase_order} ->
+        # Delete removed items first
+        delete_items(socket.assigns.deleted_item_ids)
+
+        # Update/create items
+        create_items(purchase_order, items_params)
+
+        notify_parent({:saved, purchase_order})
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Purchase order updated successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign_form(socket, changeset)}
+    end
+  end
+
+  defp delete_items(deleted_item_ids) do
+    # Delete items directly by ID using Repo
+    alias CozyCheckout.Repo
+    alias CozyCheckout.Inventory.PurchaseOrderItem
+
+    Enum.each(deleted_item_ids, fn item_id ->
+      Repo.get(PurchaseOrderItem, item_id)
+      |> case do
+        nil -> :ok
+        item -> Repo.delete(item)
+      end
+    end)
+  end
+
+  defp create_items(purchase_order, items_params) do
+    items_params
+    |> Map.values()
+    |> Enum.each(fn item_params ->
+      if item_params["product_id"] && item_params["product_id"] != "" do
+        if item_params["id"] do
+          # Update existing item
+          case Inventory.get_purchase_order_item(item_params["id"]) do
+            nil -> :ok
+            item -> Inventory.update_purchase_order_item(item, item_params)
+          end
+        else
+          # Create new item
+          Inventory.create_purchase_order_item(purchase_order, item_params)
+        end
+      end
+    end)
+  end
+
+  defp assign_form(socket, %Ecto.Changeset{} = changeset)
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="multi_replace_string_in_file"><details>
-<summary>Tool use: **multi_replace_string_in_file**</summary>
+Both the `validate` handler and `create_items` have `Map.values()` which returns values in lexicographic key order (`"10"` before `"2"`). The fix is to sort by integer key value before extracting values. 
 
-**Input:**
+_**Agent (copilot/claude-sonnet-4.6)**_
 
-- explanation: `Fix lexicographic sort bug in Map.values() calls — sort by integer index before processing`
-- replacements:
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 473-473 @@
 
 ```
-[map[filePath:/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex newString:        %{"items" => items_params} ->
-          # Merge form params with existing items to preserve IDs and product_ids
-          # NOTE: Must sort by integer key, not lexicographically — "10" < "2" lexicographically
+Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
+    |> Enum.map(fn {_k, v} -> v end
+```
+
+@@ lines 333-334 @@
+
+```
+# NOTE: Must sort by integer key, not lexicographically — "10" < "2" lexicographically
           items_params
           |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
-          |> Enum.map(fn {_k, v} -> v end)
-          |> Enum.with_index() oldString:        %{"items" => items_params} ->
-          # Merge form params with existing items to preserve IDs and product_ids
-          items_params
-          |> Map.values()
-          |> Enum.with_index()] map[filePath:/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex newString:  defp create_items(purchase_order, items_params) do
-    items_params
-    |> Enum.sort_by(fn {k, _v} -> String.to_integer(k) end)
-    |> Enum.map(fn {_k, v} -> v end)
-    |> Enum.each(fn item_params -> oldString:  defp create_items(purchase_order, items_params) do
-    items_params
-    |> Map.values()
-    |> Enum.each(fn item_params ->]]
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"sw","props":{},"references":[],"type":1}}
+          |> Enum.map(fn {_k, v} -> v end
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-I can see the issue. Let me look at the validate handler more closely: Found it. The bug is in `Map.values()` — when the form sends items keyed as `"0"`, `"1"`, ..., `"9"`, `"10"`, Map keys are sorted lexicographically, so `"10"` sorts before `"2"`. This causes items to reorder once you have 10+ entries.
-
-Let me also check the `save` handler for the same bug: Both the `validate` handler and `create_items` have `Map.values()` which returns values in lexicographic key order (`"10"` before `"2"`). The fix is to sort by integer key value before extracting values. 
-```
-
-```
 The root cause: form params arrive as `%{"0" => ..., "1" => ..., "10" => ..., "2" => ...}`. Elixir maps with binary keys sort lexicographically, so `Map.values()` returned `"10"` before `"2"` — causing items 10+ to jump ahead of items 2-9 on every change event.
 
 The fix sorts entries by `String.to_integer(key)` before extracting values, preserving the correct insertion order. Applied in both the `validate` handler (where the UI reordering was visible) and `create_items` (where save could also persist in the wrong order).

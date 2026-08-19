@@ -12,20 +12,14 @@ Now when creating default invoice items, please add actual number of nights coun
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you fix the default invoice items to calculate the actual number of nights from check-in and check-out dates. Let me first find where the invoice items are created. 
-
-Now let me look at the Bookings context where default invoice items are created: 
-
-Perfect! I can see that when creating default invoice items, the `nights` field is not being set. Let me check the `calculate_nights` function in the `BookingInvoice` module: 
-
-Perfect! Now I need to update the `create_default_invoice` function to calculate the actual number of nights and set it in the default items. Let me do that:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `create_default_invoice_items|nights.*1`, 13 results
 
 **Input:**
 
@@ -35,7 +29,34 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"13 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex\" line=250\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":71808,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.nights || 1)}","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":75,"line":249},{"character":86,"line":249}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":71808,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"
+13 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=250>
+                        {CozyCheckoutWeb.CurrencyHelper.format_number(item.nights || 1)}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex" line=11>
+    field :nights, :integer, default: 1
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex" line=56>
+    # Get nights from item, default to 1 if not set
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex" line=57>
+    nights = invoice_item.nights || 1
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=47>
+  def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027135319_add_nights_to_booking_invoice_items.exs" line=6>
+      add :nights, :integer, null: false, default: 1
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-22_18-46Z-adding-invoicing-details-to-booking-system.md" line=212>
+  def calculate_nights(%{check_in_date: check_in, check_out_date: nil}), do: 1
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md" line=53>
+[ ] Adults (11 × 3 nights @ 500 CZK) = 16,500 CZK
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md" line=57>
+[ ] Adults (9 × 3 nights @ 500 CZK) = 13,500 CZK
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-varia
 … (output truncated)
 ```
 </details></tool-use>
@@ -44,6 +65,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `create_default_invoice_items`, no results
 
 **Input:**
 
@@ -53,7 +76,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found","type":2}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+No matches found
 ```
 </details></tool-use>
 
@@ -61,6 +84,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `default invoice items`, 1 result
 
 **Input:**
 
@@ -70,8 +95,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md\" line=205\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":71891,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"Now let me search for where invoice items are created to ensure they get the nights field set: Now let me check where default invoice items are created when an invoice is initialized: Let me search for where invoice items get created initially: Let me search in the LiveView files for invoice forms: [object Object]","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":118,"line":204},{"character":139,"line":204}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":71891,"props":{},"references":[],"
-… (output truncated)
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md" line=205>
+Now let me search for where invoice items are created to ensure they get the nights field set: Now let me check where default invoice items are created when an invoice is initialized: Let me search for where invoice items get created initially: Let me search in the LiveView files for invoice forms: [object Object]
+</match>
 ```
 </details></tool-use>
 
@@ -79,6 +105,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `adult_count|kids_under` (`**/bookings.ex`), no results
 
 **Input:**
 
@@ -89,7 +117,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found","type":2}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+No matches found
 ```
 </details></tool-use>
 
@@ -98,6 +126,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
 
+Searched codebase for "create invoice items adult_count kids_under nights", 22 results
+
 **Input:**
 
 - query: `create invoice items adult_count kids_under nights`
@@ -105,15 +135,61 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md` starting at line 17:\n```md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md\n...\n# Handling variable stay durations for booking invoices (2025-10-27 13:46Z)\n...\n## Questions:\n\n1. **Invoice Structure**: Currently, invoice items are tied to the booking invoice (not individual guests). Do you want to:\n   - Keep it simple: Have multiple line items like \"9 adults (3 nights)\" and \"2 adults (2 nights)\"?\n   - Or track which specific guests stayed how many nights?\n\n2. **Guest Information**: Do you need to know *which* specific guests stayed fewer nights, or just the count?\n\n3. **UI Location**: Where would staff enter this information?\n   - During initial booking creation?\n   - When generating the invoice?\n   - When editing invoice items?\n\n   ...\n```\n\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027135319_add_nights_to_booking_invoice_items.exs` starting at line 1:\n```exs\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027135319_add_nights_to_booking_invoice_items.exs\ndefmodule CozyCheckout.Repo.Migrations.AddNightsToBookingInvoiceItems do\n  use Ecto.Migration\n\n  def change do\n    alter table(:booking_invoice_items) do\n      add :nights, :integer, null: false, default: 1\n    end\n  end\nend\n```\n\n","type":2}],"ct
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md` starting at line 17:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46Z-handling-variable-stay-durations-for-booking-invoices.md
+...
+# Handling variable stay durations for booking invoices (2025-10-27 13:46Z)
+...
+## Questions:
+
+1. **Invoice Structure**: Currently, invoice items are tied to the booking invoice (not individual guests). Do you want to:
+   - Keep it simple: Have multiple line items like "9 adults (3 nights)" and "2 adults (2 nights)"?
+   - Or track which specific guests stayed how many nights?
+
+2. **Guest Information**: Do you need to know *which* specific guests stayed fewer nights, or just the count?
+
+3. **UI Location**: Where would staff enter this information?
+   - During initial booking creation?
+   - When generating the invoice?
+   - When editing invoice items?
+
+   ...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027135319_add_nights_to_booking_invoice_items.exs` starting at line 1:
+```exs
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027135319_add_nights_to_booking_invoice_items.exs
+defmodule CozyCheckout.Repo.Migrations.AddNightsToBookingInvoiceItems do
+  use Ecto.Migration
+
+  def change do
+    alter table(:booking_invoice_items) do
+      add :nights, :integer, null: false, default: 1
+    end
+  end
+end
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-22_18-46Z-adding-invoicing-details-to-booking-system.md` starting at line 585:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-22_18-46Z-adding-invoicing-details-to-booking-system.md
+...
+# Adding invoicin
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me look at the Bookings context where default invoice items are created: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 355 to 405
 
 **Input:**
 
@@ -124,15 +200,73 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"355","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"405","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"735","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"    Repo.transaction(fn -\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"      # Create invoice header\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"      invoice =\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"children":[{
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 355 to 405 (735 lines total): 
+```elixir
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice =
+        %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Create default line items
+      default_items = [
+        %{
+          name: "Dospělí",
+          quantity: 2,
+          price_per_night: Decimal.new("980.00"),
+          vat_rate: Decimal.new("0"),
+          position: 1,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 2 let",
+          quantity: 0,
+          price_per_night: Decimal.new("210.00"),
+          vat_rate: Decimal.new("0"),
+          position: 2,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 12 let",
+          quantity: 0,
+          price_per_night: Decimal.new("880.00"),
+          vat_rate: Decimal.new("0"),
+          position: 3,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        }
+      ]
+
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(item_attrs)
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+      get_booking_invoice!(invoice.id)
+    end)
+  end
+
+  @doc """
+  Updates a booking invoice header.
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! I can see that when creating default invoice items, the `nights` field is not being set. Let me check the `calculate_nights` function in the `BookingInvoice` module: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `booking_invoice.ex`
 
 **Input:**
 
@@ -141,17 +275,134 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":55,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"references":[],"text":"defmodule CozyCheckout.Bookings.BookingInvoice do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":54},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":53,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":49,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":49},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":48,"references":[],"text":"  schema \"booking_invoices\" do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":48},"references":[],"type":1},{"children":[{"lineBreakBefore"
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Bookings.BookingInvoice do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "booking_invoices" do
+    # Cached calculations
+    field :subtotal, :decimal
+    field :vat_amount, :decimal
+    field :total_price, :decimal
+
+    field :invoice_number, :string
+    field :invoice_generated_at, :utc_datetime
+    field :state, :string, default: "draft"
+
+    belongs_to :booking, CozyCheckout.Bookings.Booking
+    has_many :items, CozyCheckout.Bookings.BookingInvoiceItem, foreign_key: :booking_invoice_id
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @valid_states ~w(draft personal generated sent paid)
+
+  @doc false
+  def changeset(booking_invoice, attrs) do
+    booking_invoice
+    |> cast(attrs, [
+      :booking_id,
+      :subtotal,
+      :vat_amount,
+      :total_price,
+      :invoice_number,
+      :invoice_generated_at,
+      :state
+    ])
+    |> validate_required([:booking_id])
+    |> validate_inclusion(:state, @valid_states)
+    |> unique_constraint(:booking_id)
+    |> unique_constraint(:invoice_number)
+  end
+
+  @doc """
+  Calculate the number of nights between check-in and check-out dates.
+  Returns 1 if check_out_date is nil (open-ended booking).
+  """
+  def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+
+  def calculate_nights(%{check_in_date: check_in, check_out_date: check_out}) do
+    Date.diff(check_out, check_in)
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you fix the default invoice items to calculate the actual number of nights from check-in and check-out dates. Let me first find where the invoice items are created. Now let me look at the Bookings context where default invoice items are created: Perfect! I can see that when creating default invoice items, the `nights` field is not being set. Let me check the `calculate_nights` function in the `BookingInvoice` module: Perfect! Now I need to update the `create_default_invoice` function to calculate the actual number of nights and set it in the default items. Let me do that: 
-```
+Perfect! Now I need to update the `create_default_invoice` function to calculate the actual number of nights and set it in the default items. Let me do that: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 355-401 @@
 
 ```
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice =
+        %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Calculate actual nights from booking
+      nights = BookingInvoice.calculate_nights(booking)
+
+      # Create default line items
+      default_items = [
+        %{
+          name: "Dospělí",
+          quantity: 2,
+          nights: nights,
+          price_per_night: Decimal.new("980.00"),
+          vat_rate: Decimal.new("0"),
+          position: 1,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 2 let",
+          quantity: 0,
+          nights: nights,
+          price_per_night: Decimal.new("210.00"),
+          vat_rate: Decimal.new("0"),
+          position: 2,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        },
+        %{
+          name: "Děti do 12 let",
+          quantity: 0,
+          nights: nights,
+          price_per_night: Decimal.new("880.00"),
+          vat_rate: Decimal.new("0"),
+          position: 3,
+          booking_invoice_id: invoice.id,
+          item_type: "person"
+        }
+      ]
+
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(item_attrs)
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+      get_booking_invoice!(invoice.id)
+    end)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've updated the `create_default_invoice` function to:
 
 1. Calculate the actual number of nights from the booking using `BookingInvoice.calculate_nights(booking)`

@@ -12,49 +12,14 @@ Get back to bookings states and add one more, I need to track advance paid. This
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you add a new booking invoice state to track advance payments. Let me first examine the current state implementation. 
-
-Now let me check where states are used in the UI and business logic: 
-
-Now let me check the state badge display: 
-
-Now let me check the event handlers for state transitions: 
-
-Now let me check the Bookings context for transition functions: 
-
-Perfect! Now I have a complete understanding of the state management. Let me implement the "advance_paid" state. I'll need to:
-
-1. Add "advance_paid" to the valid states list (between "sent" and "paid")
-2. Add badge classes for the new state
-3. Add UI buttons for transitioning to/from "advance_paid"
-4. Add a transition function in the Bookings context
-
-Let's start: 
-
-Now let's add the transition function in the Bookings context: 
-
-Now let's update the invoice component to add badge classes and state labels: 
-
-Now let's add the UI buttons for the state transitions. Let me check the exact structure: 
-
-Now let me replace the state transition buttons section to add the new "advance_paid" state: 
-
-Now let's add the event handler for the new state transition: 
-
-Now let's update the booking index page to add the badge class there as well: 
-
-Now let me check if there's a state label function in the index page too: 
-
-Perfect! Now let's verify our changes are complete and test them. Let me run the mix precommit to check for any issues: 
-
-Let me wait for the command output:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `state.*created.*generated.*sent.*paid`, no results
 
 **Input:**
 
@@ -64,7 +29,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found","type":2}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+No matches found
 ```
 </details></tool-use>
 
@@ -72,6 +37,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `booking_invoice.*state`, 2 results
 
 **Input:**
 
@@ -81,8 +48,12 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex\" line=666\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":73322,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    case Bookings.update_booking_invoice(socket.assigns.invoice, %{state: \"draft\"}) do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":25,"line":665},{"character":72,"line":665}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":73322,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/
-… (output truncated)
+2 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=666>
+    case Bookings.update_booking_invoice(socket.assigns.invoice, %{state: "draft"}) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027130435_add_state_to_booking_invoices.exs" line=9>
+    create index(:booking_invoices, [:state])
+</match>
 ```
 </details></tool-use>
 
@@ -91,6 +62,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `booking_invoice.ex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex`
@@ -98,8 +71,61 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":55,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":55},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":54,"references":[],"text":"defmodule CozyCheckout.Bookings.BookingInvoice do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":54},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":53,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":49,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":49},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":48,"references":[],"text":"  schema \"booking_invoices\" do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":48},"references":[],"type":1},{"children":[{"lineBreakBefore"
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Bookings.BookingInvoice do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "booking_invoices" do
+    # Cached calculations
+    field :subtotal, :decimal
+    field :vat_amount, :decimal
+    field :total_price, :decimal
+
+    field :invoice_number, :string
+    field :invoice_generated_at, :utc_datetime
+    field :state, :string, default: "draft"
+
+    belongs_to :booking, CozyCheckout.Bookings.Booking
+    has_many :items, CozyCheckout.Bookings.BookingInvoiceItem, foreign_key: :booking_invoice_id
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @valid_states ~w(draft personal generated sent paid)
+
+  @doc false
+  def changeset(booking_invoice, attrs) do
+    booking_invoice
+    |> cast(attrs, [
+      :booking_id,
+      :subtotal,
+      :vat_amount,
+      :total_price,
+      :invoice_number,
+      :invoice_generated_at,
+      :state
+    ])
+    |> validate_required([:booking_id])
+    |> validate_inclusion(:state, @valid_states)
+    |> unique_constraint(:booking_id)
+    |> unique_constraint(:invoice_number)
+  end
+
+  @doc """
+  Calculate the number of nights between check-in and check-out dates.
+  Returns 1 if check_out_date is nil (open-ended booking).
+  """
+  def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+
+  def calculate_nights(%{check_in_date: check_in, check_out_date: check_out}) do
+    Date.diff(check_out, check_in)
+  end
+end
+
+```
 ````
 </details></tool-use>
 
@@ -108,6 +134,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `20251027130435_add_state_to_booking_invoices.exs`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027130435_add_state_to_booking_invoices.exs`
@@ -115,15 +143,33 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":14,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027130435_add_state_to_booking_invoices.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027130435_add_state_to_booking_invoices.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251027130435_add_state_to_booking_invoices.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":14},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":13,"references":[],"text":"defmodule CozyCheckout.Repo.Migrations.AddStateToBookingInvoices do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":13},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":12,"references":[],"text":"  use Ecto.Migration\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":12},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":11,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":11},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[],"text":"  def change do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9,"references":[],"text":"    alter table(:booking_invoices) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":9},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":8,"references":[],"text":"      add :state, :string, default: \"draft\", null: false\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":8},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":7,"references":[],"text":"    end\n","type":2}],"ctor":2,"ctorName":"cle","props":{"pri
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Repo.Migrations.AddStateToBookingInvoices do
+  use Ecto.Migration
+
+  def change do
+    alter table(:booking_invoices) do
+      add :state, :string, default: "draft", null: false
+    end
+
+    create index(:booking_invoices, [:state])
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check where states are used in the UI and business logic: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `@valid_states`, 2 results
 
 **Input:**
 
@@ -133,8 +179,12 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex\" line=23\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":73366,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  @valid_states ~w(draft personal generated sent paid)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":22},{"character":15,"line":22}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":73366,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex\" l
-… (output truncated)
+2 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=23>
+  @valid_states ~w(draft personal generated sent paid)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex" line=38>
+    |> validate_inclusion(:state, @valid_states)
+</match>
 ```
 </details></tool-use>
 
@@ -142,6 +192,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `state.*=.*"(draft|personal|generated|sent|paid)"`, 3 results
 
 **Input:**
 
@@ -151,8 +203,15 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"3 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex\" line=41\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":73372,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"          \u003c%= if @invoice.state == \"draft\" do %\u003e","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":26,"line":40},{"character":42,"line":40}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":73372,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELI
-… (output truncated)
+3 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=41>
+          <%= if @invoice.state == "draft" do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=59>
+          <%= if @invoice.state == "personal" do %>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=78>
+            <%= if @invoice.state == "generated" do %>
+</match>
 ```
 </details></tool-use>
 
@@ -160,6 +219,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 35 to 135
 
 **Input:**
 
@@ -170,15 +231,64 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"35","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"135","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"696","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"        \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"      \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"\n",
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`. Lines 35 to 135 (696 lines total): 
+```elixir
+        </div>
+      </div>
+
+      <%= if @invoice do %>
+        <%!-- State Transition Buttons --%>
+        <div class="mb-6 flex items-center justify-end space-x-2">
+          <%= if @invoice.state == "draft" do %>
+            <button
+              type="button"
+              phx-click="transition_to_personal"
+              phx-target={@myself}
+              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-user" class="w-4 h-4 inline mr-1" /> Mark as Personal
+            </button>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <% end %>
+          <%= if @invoice.state == "personal" do %>
+            <button
+              type="button"
+              phx-click="transition_to_draft"
+              phx-target={@myself}
+              class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-arrow-uturn-left" class="w-4 h-4 inline mr-1" /> Back to Draft
+            </button>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the state badge display: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `state_badge`, 14 results
 
 **Input:**
 
@@ -188,7 +298,34 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"14 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex\" line=22\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":73432,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"              state_badge_class(@invoice.state)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":14,"line":21},{"character":25,"line":21}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":73432,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_che
+14 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=22>
+              state_badge_class(@invoice.state)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=682>
+  defp state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=683>
+  defp state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=684>
+  defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=685>
+  defp state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=686>
+  defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=687>
+  defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=278>
+                        invoice_state_badge_class(booking.invoice.state)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=341>
+  defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" l
 … (output truncated)
 ```
 </details></tool-use>
@@ -198,6 +335,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
 
+Searched text for `def.*state.*badge`, 12 results
+
 **Input:**
 
 - isRegexp: `true`
@@ -206,15 +345,48 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"12 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex\" line=682\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":73474,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  defp state_badge_class(\"draft\"), do: \"bg-gray-100 text-gray-800\"","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":681},{"character":18,"line":681}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":73474,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic
+12 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=682>
+  defp state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=683>
+  defp state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=684>
+  defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=685>
+  defp state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=686>
+  defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex" line=687>
+  defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=341>
+  defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=342>
+  defp invoice_state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=343>
+  defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/li
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the event handlers for state transitions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 600 to 696
 
 **Input:**
 
@@ -225,15 +397,86 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":99,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":99},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":98,"references":[],"text":"        {:noreply,\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":98},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":97,"references":[],"text":"         socket\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":97},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":96,"references":[],"text":"         |\u003e assign(:invoice, invoice)\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":96},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":95,"references":[],"text":"         |\u003e put_flash(:info, \"Invoice #{invoice.invoice_number} generated successfully\")}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":95},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":94,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":94},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":93,"references":[],"text":"      {:error, message} when is_binary(message) -\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":93},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":92,"references":[],"text":"        {:noreply, put_flash(socket, :error, message)}
+```elixir
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice #{invoice.invoice_number} generated successfully")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to generate invoice")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_sent", _params, socket) do
+    case Bookings.transition_to_sent(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as sent")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as sent")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_paid", _params, socket) do
+    case Bookings.transition_to_paid(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as paid")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as paid")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_personal", _params, socket) do
+    case Bookings.transition_to_personal(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as personal")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as personal")}
+    end
+  end
+
+  @impl tr
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the Bookings context for transition functions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `def transition_to_`, 4 results
 
 **Input:**
 
@@ -243,8 +486,18 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"4 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=581\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":73597,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def transition_to_generated(%BookingInvoice{} = invoice) do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":580},{"character":20,"line":580}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":73597,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=596\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":73598,
-… (output truncated)
+4 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=581>
+  def transition_to_generated(%BookingInvoice{} = invoice) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=596>
+  def transition_to_sent(%BookingInvoice{} = invoice) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=610>
+  def transition_to_paid(%BookingInvoice{} = invoice) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=625>
+  def transition_to_personal(%BookingInvoice{} = invoice) do
+</match>
 ```
 </details></tool-use>
 
@@ -252,6 +505,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 575 to 675
 
 **Input:**
 
@@ -262,15 +517,180 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"575","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"675","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"741","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"  Transitions the invoice to \"generated\" state.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":100},"references":[],"type":1},{"children":[{"line
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 575 to 675 (741 lines total): 
+```elixir
+
+  @doc """
+  Transitions the invoice to "generated" state.
+  Validates that invoice has items and total > 0.
+  Also generates the invoice number if not already generated.
+  """
+  def transition_to_generated(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice),
+         {:ok, invoice} <- maybe_generate_invoice_number(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "generated"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Transitions the invoice to "sent" state.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_sent(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "sent"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Transitions the invoice to "paid" state.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_paid(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "paid"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Transitions the invoice to "personal" state.
+  This state does not generate an invoice number and is used for capacity counting only.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_personal(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "personal"})
+      |> Repo.update()
+    end
+  end
+
+  # Helper function to validate invoice before state changes
+  defp validate_invoice_for_state_change(invo
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! Now I have a complete understanding of the state management. Let me implement the "advance_paid" state. I'll need to:
+
+1. Add "advance_paid" to the valid states list (between "sent" and "paid")
+2. Add badge classes for the new state
+3. Add UI buttons for transitioning to/from "advance_paid"
+4. Add a transition function in the Bookings context
+
+Let's start: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice.ex**</summary>
+
+@@ lines 23-23 @@
+
+```
+  @valid_states ~w(draft personal generated sent advance_paid paid)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's add the transition function in the Bookings context: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 606-618 @@
+
+```
+  @doc """
+  Transitions the invoice to "advance_paid" state.
+  This indicates that 50% of the total amount has been paid.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_advance_paid(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "advance_paid"})
+      |> Repo.update()
+    end
+  end
+
+  @doc """
+  Transitions the invoice to "paid" state.
+  Validates that invoice has items and total > 0.
+  """
+  def transition_to_paid(%BookingInvoice{} = invoice) do
+    invoice = Repo.preload(invoice, :items)
+
+    with :ok <- validate_invoice_for_state_change(invoice) do
+      invoice
+      |> BookingInvoice.changeset(%{state: "paid"})
+      |> Repo.update()
+    end
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's update the invoice component to add badge classes and state labels: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 682-694 @@
+
+```
+  defp state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
+  defp state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+  defp state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp state_badge_class("advance_paid"), do: "bg-yellow-100 text-yellow-800"
+  defp state_badge_class("paid"), do: "bg-green-100 text-green-800"
+  defp state_badge_class(_), do: "bg-gray-100 text-gray-800"
+
+  defp state_label("draft"), do: "Draft"
+  defp state_label("personal"), do: "Personal"
+  defp state_label("generated"), do: "Generated"
+  defp state_label("sent"), do: "Sent"
+  defp state_label("advance_paid"), do: "Advance Paid (50%)"
+  defp state_label("paid"), do: "Paid"
+  defp state_label(state), do: String.capitalize(state)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's add the UI buttons for the state transitions. Let me check the exact structure: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 35 to 105
 
 **Input:**
 
@@ -281,15 +701,196 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"35","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"105","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"698","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":73,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":73},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":72,"references":[],"text":"        \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":72},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":71,"references":[],"text":"      \u003c/div\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":71},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":70,"references":[],"text":"\n","type":
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`. Lines 35 to 105 (698 lines total): 
+```elixir
+        </div>
+      </div>
+
+      <%= if @invoice do %>
+        <%!-- State Transition Buttons --%>
+        <div class="mb-6 flex items-center justify-end space-x-2">
+          <%= if @invoice.state == "draft" do %>
+            <button
+              type="button"
+              phx-click="transition_to_personal"
+              phx-target={@myself}
+              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-user" class="w-4 h-4 inline mr-1" /> Mark as Personal
+            </button>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <% end %>
+          <%= if @invoice.state == "personal" do %>
+            <button
+              type="button"
+              phx-click="transition_to_draft"
+              phx-target={@myself}
+              class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-arrow-uturn-left" class="w-4 h-4 inline mr-1" /> Back to Draft
+            </button>
+            <button
+              type="button"
+              phx-click="transition_to_generated"
+              phx-target={@myself}
+              class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-check-circle" class="w-4 h-4 inline mr-1" /> Generate Invoice
+            </button>
+          <
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me replace the state transition buttons section to add the new "advance_paid" state: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 77-96 @@
+
+```
+          <%= if @invoice.state in ["generated", "sent", "advance_paid"] do %>
+            <%= if @invoice.state == "generated" do %>
+              <button
+                type="button"
+                phx-click="transition_to_sent"
+                phx-target={@myself}
+                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-paper-airplane" class="w-4 h-4 inline mr-1" /> Mark as Sent
+              </button>
+            <% end %>
+            <%= if @invoice.state in ["sent", "generated"] do %>
+              <button
+                type="button"
+                phx-click="transition_to_advance_paid"
+                phx-target={@myself}
+                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-currency-dollar" class="w-4 h-4 inline mr-1" /> Mark as Advance Paid (50%)
+              </button>
+            <% end %>
+            <button
+              type="button"
+              phx-click="transition_to_paid"
+              phx-target={@myself}
+              class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-banknotes" class="w-4 h-4 inline mr-1" /> Mark as Paid
+            </button>
+          <% end %>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's add the event handler for the new state transition: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 623-655 @@
+
+```
+  @impl true
+  def handle_event("transition_to_sent", _params, socket) do
+    case Bookings.transition_to_sent(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as sent")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as sent")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_advance_paid", _params, socket) do
+    case Bookings.transition_to_advance_paid(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as advance paid (50%)")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as advance paid")}
+    end
+  end
+
+  @impl true
+  def handle_event("transition_to_paid", _params, socket) do
+    case Bookings.transition_to_paid(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice marked as paid")}
+
+      {:error, message} when is_binary(message) ->
+        {:noreply, put_flash(socket, :error, message)}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to mark invoice as paid")}
+    end
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's update the booking index page to add the badge class there as well: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 341-346 @@
+
+```
+  defp invoice_state_badge_class("draft"), do: "bg-gray-100 text-gray-800"
+  defp invoice_state_badge_class("personal"), do: "bg-amber-100 text-amber-800"
+  defp invoice_state_badge_class("generated"), do: "bg-blue-100 text-blue-800"
+  defp invoice_state_badge_class("sent"), do: "bg-purple-100 text-purple-800"
+  defp invoice_state_badge_class("advance_paid"), do: "bg-yellow-100 text-yellow-800"
+  defp invoice_state_badge_class("paid"), do: "bg-green-100 text-green-800"
+  defp invoice_state_badge_class(_), do: "bg-gray-100 text-gray-800"
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me check if there's a state label function in the index page too: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `invoice_state_label` (`**/lib/cozy_checkout_web/live/booking_live/index.ex`), 14 results
 
 **Input:**
 
@@ -300,21 +901,75 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"14 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex\" line=280\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":74199,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"                        {invoice_state_label(booking.invoice.state)}","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":25,"line":279},{"character":44,"line":279}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":74199,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_
+14 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=280>
+                        {invoice_state_label(booking.invoice.state)}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=349>
+  defp invoice_state_label("draft"), do: "Draft"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=350>
+  defp invoice_state_label("personal"), do: "Personal"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=351>
+  defp invoice_state_label("generated"), do: "Generated"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=352>
+  defp invoice_state_label("sent"), do: "Sent"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=353>
+  defp invoice_state_label("paid"), do: "Paid"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=354>
+  defp invoice_state_label(state), do: String.capitalize(state)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=280>
+                        {invoice_state_label(booking.invoice.state)}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=349>
+  defp invoice_state_label("draft"), do: "Draft"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex" line=350>
+  defp invoice_state_label("personal"), do: "Personal"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 349-354 @@
+
+```
+  defp invoice_state_label("draft"), do: "Draft"
+  defp invoice_state_label("personal"), do: "Personal"
+  defp invoice_state_label("generated"), do: "Generated"
+  defp invoice_state_label("sent"), do: "Sent"
+  defp invoice_state_label("advance_paid"), do: "Advance Paid (50%)"
+  defp invoice_state_label("paid"), do: "Paid"
+  defp invoice_state_label(state), do: String.capitalize(state)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Now let's verify our changes are complete and test them. Let me run the mix precommit to check for any issues: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix precommit`
-- explanation: `Running mix precommit to check for any issues with the changes`
-- isBackground: `false`
+Running mix precommit to check for any issues with the changes
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix precommit
+```
 
 **Result:**
 
@@ -322,7 +977,6 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 Note: The tool simplified the command to `mix precommit`, and this is the output of running that command instead:
 ❯ 
 ❯ mix precommit
-
 ```
 </details></tool-use>
 
@@ -330,6 +984,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
 <summary>Tool use: **get_terminal_output**</summary>
+
+Checked background terminal output
 
 **Input:**
 
@@ -345,14 +1001,20 @@ Please check your input and try again.
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me wait for the command output: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `mix format`
-- explanation: `Formatting the code`
-- isBackground: `false`
+Formatting the code
+
+```bash
+mix format
+```
 
 **Result:**
 
@@ -369,42 +1031,7 @@ Command exited with code 130
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you add a new booking invoice state to track advance payments. Let me first examine the current state implementation. Now let me check where states are used in the UI and business logic: Now let me check the state badge display: Now let me check the event handlers for state transitions: Now let me check the Bookings context for transition functions: Perfect! Now I have a complete understanding of the state management. Let me implement the "advance_paid" state. I'll need to:
-
-1. Add "advance_paid" to the valid states list (between "sent" and "paid")
-2. Add badge classes for the new state
-3. Add UI buttons for transitioning to/from "advance_paid"
-4. Add a transition function in the Bookings context
-
-Let's start: 
-```
-
-```
-Now let's add the transition function in the Bookings context: 
-```
-
-```
-Now let's update the invoice component to add badge classes and state labels: 
-```
-
-```
-Now let's add the UI buttons for the state transitions. Let me check the exact structure: Now let me replace the state transition buttons section to add the new "advance_paid" state: 
-```
-
-```
-Now let's add the event handler for the new state transition: 
-```
-
-```
-Now let's update the booking index page to add the badge class there as well: 
-```
-
-```
-Now let me check if there's a state label function in the index page too: 
-```
-
-```
-Perfect! Now let's verify our changes are complete and test them. Let me run the mix precommit to check for any issues: Let me wait for the command output: Let me now create a summary of the changes made:
+Let me now create a summary of the changes made:
 
 ## Summary
 

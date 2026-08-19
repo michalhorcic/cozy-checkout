@@ -94,7 +94,6 @@ Let's start:
 ### 1. Create Migration
 
 ````elixir
-// filepath: priv/repo/migrations/20251022_create_booking_invoices.exs
 defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do
   use Ecto.Migration
 
@@ -137,7 +136,6 @@ end
 ### 2. Create BookingInvoice Schema
 
 ````elixir
-// filepath: lib/cozy_checkout/bookings/booking_invoice.ex
 defmodule CozyCheckout.Bookings.BookingInvoice do
   use Ecto.Schema
   import Ecto.Changeset
@@ -260,7 +258,6 @@ end
 ### 3. Update Booking Schema
 
 ````elixir
-// filepath: lib/cozy_checkout/bookings/booking.ex
 // ...existing code...
 schema "bookings" do
   // ...existing code...
@@ -275,7 +272,6 @@ end
 ### 4. Add Context Functions
 
 ````elixir
-// filepath: lib/cozy_checkout/bookings.ex
 // ...existing code...
 
 alias CozyCheckout.Bookings.BookingInvoice
@@ -398,42 +394,20 @@ Please implement what you planned and also add crud to manage there invoicing de
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll implement the complete invoicing system with CRUD interface. Let me start by creating the necessary files. 
-
-Now let me create the BookingInvoice schema: 
-
-Now let me update the Booking schema to add the invoice relationship: 
-
-Now let me update the Bookings context to add invoice management functions: 
-
-Now let me add the invoice management functions at the end of the Bookings context: 
-
-Now let me run the migration: 
-
-Great! Now let me create the LiveView CRUD interface for managing booking invoices. First, let me check the existing booking show page: 
-
-Now let me create a LiveComponent for managing the booking invoice. I'll add it as a new section in the booking show page: 
-
-Now let me update the booking show page to include the invoice component: 
-
-Now let's test the implementation. First, let me check if there are any compilation errors: 
-
-Perfect! Now let me update the router to ensure the booking routes are accessible. Let me check the current router: 
-
-Good! The routes are already set up. Now let me create a quick seed to test the invoice functionality. Let me check the seeds file:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.gen.migration create_booking_invoices`
-- explanation: `Generate a new migration for the booking_invoices table`
-- isBackground: `false`
+Generate a new migration for the booking_invoices table
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.gen.migration create_booking_invoices
+```
 
 **Result:**
 
@@ -461,6 +435,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `20251022185655_create_booking_invoices.exs`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251022185655_create_booking_invoices.exs`
@@ -468,15 +444,77 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251022185655_create_booking_invoices.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251022185655_create_booking_invoices.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251022185655_create_booking_invoices.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9,"references":[],"text":"defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":9},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":8,"references":[],"text":"  use Ecto.Migration\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":8},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":7,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":7},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":6,"references":[],"text":"  def change do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":6},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":5,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":5},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":4,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":4},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":3,"references":[],"text":"end\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":3},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":2,"references":[],"text":"\n","type":2}]
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do
+  use Ecto.Migration
+
+  def change do
+
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **20251022185655_create_booking_invoices.exs**</summary>
+
+@@ lines 1-7 @@
+
+```
+defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do
+  use Ecto.Migration
+
+  def change do
+    create table(:booking_invoices, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :booking_id, references(:bookings, on_delete: :delete_all, type: :binary_id), null: false
+      
+      # Guest counts
+      add :adult_count, :integer, null: false
+      add :kids_under_2_count, :integer, null: false, default: 0
+      add :kids_under_12_count, :integer, null: false, default: 0
+      
+      # Pricing per night
+      add :price_per_adult_per_night, :decimal, precision: 10, scale: 2, null: false
+      add :price_per_kid_under_2_per_night, :decimal, precision: 10, scale: 2, null: false, default: 0
+      add :price_per_kid_under_12_per_night, :decimal, precision: 10, scale: 2, null: false
+      
+      # VAT
+      add :vat_rate, :decimal, precision: 5, scale: 2, null: false
+      
+      # Calculated totals (cached)
+      add :subtotal, :decimal, precision: 10, scale: 2
+      add :vat_amount, :decimal, precision: 10, scale: 2
+      add :total_price, :decimal, precision: 10, scale: 2
+      
+      # Invoice metadata
+      add :invoice_number, :string
+      add :invoice_generated_at, :utc_datetime
+      
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:booking_invoices, [:booking_id])
+    create unique_index(:booking_invoices, [:invoice_number])
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me create the BookingInvoice schema: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `booking_invoice.ex`
 
 **Input:**
 
@@ -604,14 +642,824 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckout.Bookings.BookingInvoice do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use Ecto.Schema
+```
+
+@@ lines 3-3 @@
+
+```
+
+  import Ecto.Changeset
+```
+
+@@ lines 4-4 @@
+
+```
+
+
+```
+
+@@ lines 5-5 @@
+
+```
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+```
+
+@@ lines 6-6 @@
+
+```
+
+  @foreign_key_type :binary_id
+```
+
+@@ lines 7-7 @@
+
+```
+
+  schema "booking_invoices" do
+```
+
+@@ lines 8-8 @@
+
+```
+
+    field :adult_count, :integer
+```
+
+@@ lines 9-9 @@
+
+```
+
+    field :kids_under_2_count, :integer, default: 0
+```
+
+@@ lines 10-10 @@
+
+```
+
+    field :kids_under_12_count, :integer, default: 0
+```
+
+@@ lines 11-11 @@
+
+```
+
+    
+```
+
+@@ lines 12-12 @@
+
+```
+
+    field :price_per_adult_per_night, :decimal
+```
+
+@@ lines 13-13 @@
+
+```
+
+    field :price_per_kid_under_2_per_night, :decimal
+```
+
+@@ lines 14-14 @@
+
+```
+
+    field :price_per_kid_under_12_per_night, :decimal
+```
+
+@@ lines 15-15 @@
+
+```
+
+    
+```
+
+@@ lines 16-16 @@
+
+```
+
+    field :vat_rate, :decimal
+```
+
+@@ lines 17-17 @@
+
+```
+
+    
+```
+
+@@ lines 18-18 @@
+
+```
+
+    # Cached calculations
+```
+
+@@ lines 19-19 @@
+
+```
+
+    field :subtotal, :decimal
+```
+
+@@ lines 20-20 @@
+
+```
+
+    field :vat_amount, :decimal
+```
+
+@@ lines 21-21 @@
+
+```
+
+    field :total_price, :decimal
+```
+
+@@ lines 22-22 @@
+
+```
+
+    
+```
+
+@@ lines 23-23 @@
+
+```
+
+    field :invoice_number, :string
+```
+
+@@ lines 24-24 @@
+
+```
+
+    field :invoice_generated_at, :utc_datetime
+```
+
+@@ lines 25-25 @@
+
+```
+
+
+```
+
+@@ lines 26-26 @@
+
+```
+
+    belongs_to :booking, CozyCheckout.Bookings.Booking
+```
+
+@@ lines 27-27 @@
+
+```
+
+
+```
+
+@@ lines 28-28 @@
+
+```
+
+    timestamps(type: :utc_datetime)
+```
+
+@@ lines 29-29 @@
+
+```
+
+  end
+```
+
+@@ lines 30-30 @@
+
+```
+
+
+```
+
+@@ lines 31-31 @@
+
+```
+
+  @doc false
+```
+
+@@ lines 32-32 @@
+
+```
+
+  def changeset(booking_invoice, attrs) do
+```
+
+@@ lines 33-33 @@
+
+```
+
+    booking_invoice
+```
+
+@@ lines 34-34 @@
+
+```
+
+    |> cast(attrs, [
+```
+
+@@ lines 35-35 @@
+
+```
+
+      :booking_id,
+```
+
+@@ lines 36-36 @@
+
+```
+
+      :adult_count,
+```
+
+@@ lines 37-37 @@
+
+```
+
+      :kids_under_2_count,
+```
+
+@@ lines 38-38 @@
+
+```
+
+      :kids_under_12_count,
+```
+
+@@ lines 39-39 @@
+
+```
+
+      :price_per_adult_per_night,
+```
+
+@@ lines 40-40 @@
+
+```
+
+      :price_per_kid_under_2_per_night,
+```
+
+@@ lines 41-41 @@
+
+```
+
+      :price_per_kid_under_12_per_night,
+```
+
+@@ lines 42-42 @@
+
+```
+
+      :vat_rate,
+```
+
+@@ lines 43-43 @@
+
+```
+
+      :subtotal,
+```
+
+@@ lines 44-44 @@
+
+```
+
+      :vat_amount,
+```
+
+@@ lines 45-45 @@
+
+```
+
+      :total_price,
+```
+
+@@ lines 46-46 @@
+
+```
+
+      :invoice_number,
+```
+
+@@ lines 47-47 @@
+
+```
+
+      :invoice_generated_at
+```
+
+@@ lines 48-48 @@
+
+```
+
+    ])
+```
+
+@@ lines 49-49 @@
+
+```
+
+    |> validate_required([
+```
+
+@@ lines 50-50 @@
+
+```
+
+      :adult_count,
+```
+
+@@ lines 51-51 @@
+
+```
+
+      :price_per_adult_per_night,
+```
+
+@@ lines 52-52 @@
+
+```
+
+      :price_per_kid_under_12_per_night,
+```
+
+@@ lines 53-53 @@
+
+```
+
+      :vat_rate
+```
+
+@@ lines 54-54 @@
+
+```
+
+    ])
+```
+
+@@ lines 55-55 @@
+
+```
+
+    |> validate_number(:adult_count, greater_than: 0)
+```
+
+@@ lines 56-56 @@
+
+```
+
+    |> validate_number(:kids_under_2_count, greater_than_or_equal_to: 0)
+```
+
+@@ lines 57-57 @@
+
+```
+
+    |> validate_number(:kids_under_12_count, greater_than_or_equal_to: 0)
+```
+
+@@ lines 58-58 @@
+
+```
+
+    |> validate_number(:price_per_adult_per_night, greater_than_or_equal_to: 0)
+```
+
+@@ lines 59-59 @@
+
+```
+
+    |> validate_number(:price_per_kid_under_2_per_night, greater_than_or_equal_to: 0)
+```
+
+@@ lines 60-60 @@
+
+```
+
+    |> validate_number(:price_per_kid_under_12_per_night, greater_than_or_equal_to: 0)
+```
+
+@@ lines 61-61 @@
+
+```
+
+    |> validate_number(:vat_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+```
+
+@@ lines 62-62 @@
+
+```
+
+    |> unique_constraint(:booking_id)
+```
+
+@@ lines 63-63 @@
+
+```
+
+    |> unique_constraint(:invoice_number)
+```
+
+@@ lines 64-64 @@
+
+```
+
+  end
+```
+
+@@ lines 65-65 @@
+
+```
+
+
+```
+
+@@ lines 66-66 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 67-67 @@
+
+```
+
+  Calculate the number of nights between check-in and check-out dates.
+```
+
+@@ lines 68-68 @@
+
+```
+
+  Returns 1 if check_out_date is nil (open-ended booking).
+```
+
+@@ lines 69-69 @@
+
+```
+
+  """
+```
+
+@@ lines 70-70 @@
+
+```
+
+  def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+```
+
+@@ lines 71-71 @@
+
+```
+
+  def calculate_nights(%{check_in_date: check_in, check_out_date: check_out}) do
+```
+
+@@ lines 72-72 @@
+
+```
+
+    Date.diff(check_out, check_in)
+```
+
+@@ lines 73-73 @@
+
+```
+
+  end
+```
+
+@@ lines 74-74 @@
+
+```
+
+
+```
+
+@@ lines 75-75 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 76-76 @@
+
+```
+
+  Calculate all invoice totals based on booking dates and pricing.
+```
+
+@@ lines 77-77 @@
+
+```
+
+  Returns a map with :subtotal, :vat_amount, and :total_price.
+```
+
+@@ lines 78-78 @@
+
+```
+
+  """
+```
+
+@@ lines 79-79 @@
+
+```
+
+  def calculate_totals(booking_invoice, booking) do
+```
+
+@@ lines 80-80 @@
+
+```
+
+    nights = calculate_nights(booking)
+```
+
+@@ lines 81-81 @@
+
+```
+
+    
+```
+
+@@ lines 82-82 @@
+
+```
+
+    adult_total = Decimal.mult(
+```
+
+@@ lines 83-83 @@
+
+```
+
+      Decimal.mult(booking_invoice.price_per_adult_per_night, Decimal.new(booking_invoice.adult_count)),
+```
+
+@@ lines 84-84 @@
+
+```
+
+      Decimal.new(nights)
+```
+
+@@ lines 85-85 @@
+
+```
+
+    )
+```
+
+@@ lines 86-86 @@
+
+```
+
+    
+```
+
+@@ lines 87-87 @@
+
+```
+
+    kids_under_2_total = Decimal.mult(
+```
+
+@@ lines 88-88 @@
+
+```
+
+      Decimal.mult(booking_invoice.price_per_kid_under_2_per_night || Decimal.new(0), Decimal.new(booking_invoice.kids_under_2_count)),
+```
+
+@@ lines 89-89 @@
+
+```
+
+      Decimal.new(nights)
+```
+
+@@ lines 90-90 @@
+
+```
+
+    )
+```
+
+@@ lines 91-91 @@
+
+```
+
+    
+```
+
+@@ lines 92-92 @@
+
+```
+
+    kids_under_12_total = Decimal.mult(
+```
+
+@@ lines 93-93 @@
+
+```
+
+      Decimal.mult(booking_invoice.price_per_kid_under_12_per_night, Decimal.new(booking_invoice.kids_under_12_count)),
+```
+
+@@ lines 94-94 @@
+
+```
+
+      Decimal.new(nights)
+```
+
+@@ lines 95-95 @@
+
+```
+
+    )
+```
+
+@@ lines 96-96 @@
+
+```
+
+    
+```
+
+@@ lines 97-97 @@
+
+```
+
+    subtotal = adult_total
+```
+
+@@ lines 98-98 @@
+
+```
+
+      |> Decimal.add(kids_under_2_total)
+```
+
+@@ lines 99-99 @@
+
+```
+
+      |> Decimal.add(kids_under_12_total)
+```
+
+@@ lines 100-100 @@
+
+```
+
+    
+```
+
+@@ lines 101-101 @@
+
+```
+
+    vat_amount = subtotal
+```
+
+@@ lines 102-102 @@
+
+```
+
+      |> Decimal.mult(booking_invoice.vat_rate)
+```
+
+@@ lines 103-103 @@
+
+```
+
+      |> Decimal.div(Decimal.new(100))
+```
+
+@@ lines 104-104 @@
+
+```
+
+    
+```
+
+@@ lines 105-105 @@
+
+```
+
+    total_price = Decimal.add(subtotal, vat_amount)
+```
+
+@@ lines 106-106 @@
+
+```
+
+    
+```
+
+@@ lines 107-107 @@
+
+```
+
+    %{
+```
+
+@@ lines 108-108 @@
+
+```
+
+      subtotal: subtotal,
+```
+
+@@ lines 109-109 @@
+
+```
+
+      vat_amount: vat_amount,
+```
+
+@@ lines 110-110 @@
+
+```
+
+      total_price: total_price
+```
+
+@@ lines 111-111 @@
+
+```
+
+    }
+```
+
+@@ lines 112-112 @@
+
+```
+
+  end
+```
+
+@@ lines 113-113 @@
+
+```
+
+end
+```
+
+@@ lines 114-114 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me update the Booking schema to add the invoice relationship: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `booking.ex`
 
 **Input:**
 
@@ -620,15 +1468,88 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":49,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":49},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":48,"references":[],"text":"defmodule CozyCheckout.Bookings.Booking do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":48},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":47,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":47},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":46,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":46},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":45,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":45},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":44,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":44},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":43,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":43},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":42,"references":[],"text":"  schema \"bookings\" do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":42},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":41,"references":[],"te
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Bookings.Booking do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "bookings" do
+    field :room_number, :string
+    field :check_in_date, :date
+    field :check_out_date, :date
+    field :status, :string, default: "upcoming"
+    field :notes, :string
+    field :deleted_at, :utc_datetime
+
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
+    has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
+    has_many :rooms, through: [:booking_rooms, :room]
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(booking, attrs) do
+    booking
+    |> cast(attrs, [:guest_id, :room_number, :check_in_date, :check_out_date, :status, :notes])
+    |> validate_required([:guest_id, :check_in_date])
+    |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])
+    |> validate_date_range()
+    |> foreign_key_constraint(:guest_id)
+    |> unique_constraint([:guest_id, :check_in_date])
+  end
+
+  defp validate_date_range(changeset) do
+    check_in = get_field(changeset, :check_in_date)
+    check_out = get_field(changeset, :check_out_date)
+
+    if check_in && check_out && Date.compare(check_in, check_out) == :gt do
+      add_error(changeset, :check_out_date, "must be after check-in date")
+    else
+      changeset
+    end
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking.ex**</summary>
+
+@@ lines 15-22 @@
+
+```
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
+    has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
+    has_many :rooms, through: [:booking_rooms, :room]
+    has_one :invoice, CozyCheckout.Bookings.BookingInvoice
+
+    timestamps(type: :utc_datetime)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me update the Bookings context to add invoice management functions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`
 
 **Input:**
 
@@ -637,21 +1558,261 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":313,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":313},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":312,"references":[],"text":"defmodule CozyCheckout.Bookings do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":312},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":311,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":311},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":310,"references":[],"text":"  The Bookings context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":310},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":309,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":309},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":308,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":308},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":307,"references":[],"text":"  import Ecto.Query, warn: false\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":307},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":306,"references":[],"text":"  alias CozyCheckout.Repo\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":306},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":305,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":
+```elixir
+defmodule CozyCheckout.Bookings do
+  @moduledoc """
+  The Bookings context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Rooms
+
+  @doc """
+  Returns the list of bookings.
+  """
+  def list_bookings do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of active bookings (currently checked in).
+  """
+  def list_active_bookings do
+    today = Date.utc_today()
+
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.status == "active")
+    |> where([b], b.check_in_date <= ^today)
+    |> where([b], is_nil(b.check_out_date) or b.check_out_date >= ^today)
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.room_number])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of bookings for a specific guest.
+  """
+  def list_bookings_for_guest(guest_id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.guest_id == ^guest_id)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single booking.
+  """
+  def get_booking!(id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload([:guest, :orders])
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a booking.
+  Automatically creates a booking_guest record for the primary guest.
+  """
+  def create_booking(attrs \\ %{}) do
+    Repo.transaction(fn ->
+      case %Booking{}
+           |> Booking.changeset(attrs)
+           |> Repo.insert() do
+        {:ok, booking} ->
+          # Create primary booking_guest record
+          %BookingGuest{}
+          |> BookingGuest.changeset(%{
+            booking_id: booking.id,
+            guest_id: booking.guest_id,
+            is_primary: true
+          })
+          |> Repo.insert!()
+
+          booking
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 6-12 @@
+
+```
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Rooms
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me add the invoice management functions at the end of the Bookings context: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 308-311 @@
+
+```
+      {:error, {:rooms_not_available, unavailable_rooms}}
+    end
+  end
+
+  # Booking Invoice Management
+
+  @doc """
+  Gets the invoice for a booking, creating one if it doesn't exist.
+  """
+  def get_or_create_invoice(%Booking{} = booking) do
+    case Repo.get_by(BookingInvoice, booking_id: booking.id) do
+      nil -> create_default_invoice(booking)
+      invoice -> {:ok, invoice}
+    end
+  end
+
+  @doc """
+  Gets the invoice for a booking by booking_id.
+  """
+  def get_invoice_by_booking_id(booking_id) do
+    Repo.get_by(BookingInvoice, booking_id: booking_id)
+  end
+
+  @doc """
+  Creates a default invoice for a booking with default pricing.
+  """
+  def create_default_invoice(%Booking{} = booking) do
+    attrs = %{
+      booking_id: booking.id,
+      adult_count: 2,
+      kids_under_2_count: 0,
+      kids_under_12_count: 0,
+      price_per_adult_per_night: Decimal.new("1000.00"),
+      price_per_kid_under_2_per_night: Decimal.new("0.00"),
+      price_per_kid_under_12_per_night: Decimal.new("500.00"),
+      vat_rate: Decimal.new("21.00")
+    }
+
+    %BookingInvoice{}
+    |> BookingInvoice.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a booking invoice.
+  """
+  def update_booking_invoice(%BookingInvoice{} = invoice, attrs) do
+    invoice
+    |> BookingInvoice.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a booking invoice.
+  """
+  def delete_booking_invoice(%BookingInvoice{} = invoice) do
+    Repo.delete(invoice)
+  end
+
+  @doc """
+  Recalculates and updates the cached totals for a booking invoice.
+  """
+  def recalculate_invoice_totals(%BookingInvoice{} = invoice) do
+    booking = get_booking!(invoice.booking_id)
+    totals = BookingInvoice.calculate_totals(invoice, booking)
+    
+    invoice
+    |> BookingInvoice.changeset(totals)
+    |> Repo.update()
+  end
+
+  @doc """
+  Generates an invoice number and marks the invoice as generated.
+  Format: INV-YYYYMMDD-NNNN (e.g., INV-20251022-0001)
+  """
+  def generate_invoice_number(%BookingInvoice{} = invoice) do
+    today = Date.utc_today()
+    date_prefix = "INV-#{Date.to_iso8601(today, :basic)}"
+    
+    # Find the highest invoice number for today
+    last_invoice = 
+      from(i in BookingInvoice,
+        where: fragment("? LIKE ?", i.invoice_number, ^"#{date_prefix}%"),
+        order_by: [desc: i.invoice_number],
+        limit: 1
+      )
+      |> Repo.one()
+    
+    next_number = case last_invoice do
+      nil -> 1
+      %{invoice_number: number} ->
+        # Extract NNNN part and increment
+        number
+        |> String.split("-")
+        |> List.last()
+        |> String.to_integer()
+        |> Kernel.+(1)
+    end
+    
+    invoice_number = "#{date_prefix}-#{String.pad_leading(Integer.to_string(next_number), 4, "0")}"
+    
+    # Recalculate totals before generating
+    {:ok, invoice} = recalculate_invoice_totals(invoice)
+    
+    invoice
+    |> BookingInvoice.changeset(%{
+      invoice_number: invoice_number,
+      invoice_generated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking invoice changes.
+  """
+  def change_booking_invoice(%BookingInvoice{} = invoice, attrs \\ %{}) do
+    BookingInvoice.changeset(invoice, attrs)
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me run the migration: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate`
-- explanation: `Run the booking_invoices migration`
-- isBackground: `false`
+Run the booking_invoices migration
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate
+```
 
 **Result:**
 
@@ -677,14 +1838,19 @@ Generated cozy_checkout app
 20:58:17.508 [info] create index booking_invoices_invoice_number_index
 
 20:58:17.510 [info] == Migrated 20251022185655 in 0.0s
-
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Great! Now let me create the LiveView CRUD interface for managing booking invoices. First, let me check the existing booking show page: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Searched for files matching `**/booking_live/**`, 7 matches
 
 **Input:**
 
@@ -703,6 +1869,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Read `show.ex`
+
 **Input:**
 
 - query: `**/booking_live/**`
@@ -710,15 +1878,27 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"7 total results","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/
-… (output truncated)
+7 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar_helpers.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/calendar.html.heex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/manage_guests.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me create a LiveComponent for managing the booking invoice. I'll add it as a new section in the booking show page: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Created `invoice_component.ex`
 
 **Input:**
 
@@ -727,15 +1907,2703 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":191,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":191},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":190,"references":[],"text":"defmodule CozyCheckoutWeb.BookingLive.Show do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":190},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":189,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":189},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":188,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":188},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":187,"references":[],"text":"  alias CozyCheckout.Bookings\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":187},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":186,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":186},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":185,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":185},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":184,"references":[],"text":"  def mount(_params, _session, socket) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":184},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":183,
+```elixir
+defmodule CozyCheckoutWeb.BookingLive.Show do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Bookings
+
+  @impl true
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(%{"id" => id}, _, socket) do
+    booking = Bookings.get_booking!(id)
+    rooms = Bookings.list_booking_rooms(booking.id)
+
+    {:noreply,
+     socket
+     |> assign(:page_title, "Booking Details")
+     |> assign(:booking, booking)
+     |> assign(:rooms, rooms)}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-4xl mx-auto px-4 py-8">
+      <div class="mb-8">
+        <.link navigate={~p"/admin/bookings"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+          ← Back to Bookings
+        </.link>
+        <div class="flex items-center justify-between">
+          <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+          <div class="flex space-x-3">
+            <.link
+              navigate={~p"/admin/bookings/#{@booking}/guests"}
+              class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
+            >
+              <.icon name="hero-user-group" class="w-5 h-5 mr-2" /> Manage Guests
+            </.link>
+            <.link patch={~p"/admin/bookings/#{@booking}/edit"}>
+              <.button>
+                <.icon name="hero-pencil" class="w-5 h-5 mr-2" /> Edit Booking
+              </.button>
+            </.link>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <%!-- Guest Information --%>
+        <div class="bg-white shadow-lg rounded-lg p-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">Guest Information</h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-500">Name</p>
+              <p class="text-lg font-medium text-gray-900">{@booking.guest.name}</p>
+            </di
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use CozyCheckoutWeb, :live_component
+```
+
+@@ lines 3-3 @@
+
+```
+
+
+```
+
+@@ lines 4-4 @@
+
+```
+
+  alias CozyCheckout.Bookings
+```
+
+@@ lines 5-5 @@
+
+```
+
+  alias CozyCheckout.Bookings.BookingInvoice
+```
+
+@@ lines 6-6 @@
+
+```
+
+
+```
+
+@@ lines 7-7 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 8-8 @@
+
+```
+
+  def render(assigns) do
+```
+
+@@ lines 9-9 @@
+
+```
+
+    ~H"""
+```
+
+@@ lines 10-10 @@
+
+```
+
+    <div class="bg-white shadow-lg rounded-lg p-6">
+```
+
+@@ lines 11-11 @@
+
+```
+
+      <div class="flex items-center justify-between mb-4">
+```
+
+@@ lines 12-12 @@
+
+```
+
+        <h2 class="text-2xl font-bold text-gray-900">Invoice Details</h2>
+```
+
+@@ lines 13-13 @@
+
+```
+
+        <div class="flex space-x-2">
+```
+
+@@ lines 14-14 @@
+
+```
+
+          <%= if @invoice && @invoice.invoice_number do %>
+```
+
+@@ lines 15-15 @@
+
+```
+
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+```
+
+@@ lines 16-16 @@
+
+```
+
+              {@invoice.invoice_number}
+```
+
+@@ lines 17-17 @@
+
+```
+
+            </span>
+```
+
+@@ lines 18-18 @@
+
+```
+
+          <% end %>
+```
+
+@@ lines 19-19 @@
+
+```
+
+          <%= if @invoice do %>
+```
+
+@@ lines 20-20 @@
+
+```
+
+            <button
+```
+
+@@ lines 21-21 @@
+
+```
+
+              type="button"
+```
+
+@@ lines 22-22 @@
+
+```
+
+              phx-click="recalculate"
+```
+
+@@ lines 23-23 @@
+
+```
+
+              phx-target={@myself}
+```
+
+@@ lines 24-24 @@
+
+```
+
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+```
+
+@@ lines 25-25 @@
+
+```
+
+            >
+```
+
+@@ lines 26-26 @@
+
+```
+
+              <.icon name="hero-calculator" class="w-4 h-4 inline mr-1" /> Recalculate
+```
+
+@@ lines 27-27 @@
+
+```
+
+            </button>
+```
+
+@@ lines 28-28 @@
+
+```
+
+            <%= if !@invoice.invoice_number do %>
+```
+
+@@ lines 29-29 @@
+
+```
+
+              <button
+```
+
+@@ lines 30-30 @@
+
+```
+
+                type="button"
+```
+
+@@ lines 31-31 @@
+
+```
+
+                phx-click="generate_invoice"
+```
+
+@@ lines 32-32 @@
+
+```
+
+                phx-target={@myself}
+```
+
+@@ lines 33-33 @@
+
+```
+
+                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+```
+
+@@ lines 34-34 @@
+
+```
+
+              >
+```
+
+@@ lines 35-35 @@
+
+```
+
+                <.icon name="hero-document-text" class="w-4 h-4 inline mr-1" /> Generate Invoice
+```
+
+@@ lines 36-36 @@
+
+```
+
+              </button>
+```
+
+@@ lines 37-37 @@
+
+```
+
+            <% end %>
+```
+
+@@ lines 38-38 @@
+
+```
+
+            <%= if !@editing do %>
+```
+
+@@ lines 39-39 @@
+
+```
+
+              <button
+```
+
+@@ lines 40-40 @@
+
+```
+
+                type="button"
+```
+
+@@ lines 41-41 @@
+
+```
+
+                phx-click="edit"
+```
+
+@@ lines 42-42 @@
+
+```
+
+                phx-target={@myself}
+```
+
+@@ lines 43-43 @@
+
+```
+
+                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors"
+```
+
+@@ lines 44-44 @@
+
+```
+
+              >
+```
+
+@@ lines 45-45 @@
+
+```
+
+                <.icon name="hero-pencil" class="w-4 h-4 inline mr-1" /> Edit
+```
+
+@@ lines 46-46 @@
+
+```
+
+              </button>
+```
+
+@@ lines 47-47 @@
+
+```
+
+            <% end %>
+```
+
+@@ lines 48-48 @@
+
+```
+
+          <% end %>
+```
+
+@@ lines 49-49 @@
+
+```
+
+        </div>
+```
+
+@@ lines 50-50 @@
+
+```
+
+      </div>
+```
+
+@@ lines 51-51 @@
+
+```
+
+
+```
+
+@@ lines 52-52 @@
+
+```
+
+      <%= if @invoice do %>
+```
+
+@@ lines 53-53 @@
+
+```
+
+        <%= if @editing do %>
+```
+
+@@ lines 54-54 @@
+
+```
+
+          <%!-- Edit Form --%>
+```
+
+@@ lines 55-55 @@
+
+```
+
+          <.form for={@form} id="invoice-form" phx-target={@myself} phx-submit="save">
+```
+
+@@ lines 56-56 @@
+
+```
+
+            <div class="grid grid-cols-2 gap-4 mb-6">
+```
+
+@@ lines 57-57 @@
+
+```
+
+              <div class="col-span-2">
+```
+
+@@ lines 58-58 @@
+
+```
+
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Guest Counts</h3>
+```
+
+@@ lines 59-59 @@
+
+```
+
+              </div>
+```
+
+@@ lines 60-60 @@
+
+```
+
+
+```
+
+@@ lines 61-61 @@
+
+```
+
+              <.input
+```
+
+@@ lines 62-62 @@
+
+```
+
+                field={@form[:adult_count]}
+```
+
+@@ lines 63-63 @@
+
+```
+
+                type="number"
+```
+
+@@ lines 64-64 @@
+
+```
+
+                label="Number of Adults"
+```
+
+@@ lines 65-65 @@
+
+```
+
+                min="1"
+```
+
+@@ lines 66-66 @@
+
+```
+
+                required
+```
+
+@@ lines 67-67 @@
+
+```
+
+              />
+```
+
+@@ lines 68-68 @@
+
+```
+
+
+```
+
+@@ lines 69-69 @@
+
+```
+
+              <.input
+```
+
+@@ lines 70-70 @@
+
+```
+
+                field={@form[:kids_under_2_count]}
+```
+
+@@ lines 71-71 @@
+
+```
+
+                type="number"
+```
+
+@@ lines 72-72 @@
+
+```
+
+                label="Kids Under 2 Years"
+```
+
+@@ lines 73-73 @@
+
+```
+
+                min="0"
+```
+
+@@ lines 74-74 @@
+
+```
+
+              />
+```
+
+@@ lines 75-75 @@
+
+```
+
+
+```
+
+@@ lines 76-76 @@
+
+```
+
+              <.input
+```
+
+@@ lines 77-77 @@
+
+```
+
+                field={@form[:kids_under_12_count]}
+```
+
+@@ lines 78-78 @@
+
+```
+
+                type="number"
+```
+
+@@ lines 79-79 @@
+
+```
+
+                label="Kids Under 12 Years"
+```
+
+@@ lines 80-80 @@
+
+```
+
+                min="0"
+```
+
+@@ lines 81-81 @@
+
+```
+
+              />
+```
+
+@@ lines 82-82 @@
+
+```
+
+
+```
+
+@@ lines 83-83 @@
+
+```
+
+              <div class="col-span-2">
+```
+
+@@ lines 84-84 @@
+
+```
+
+                <h3 class="text-lg font-semibold text-gray-900 mb-3 mt-4">Pricing per Night</h3>
+```
+
+@@ lines 85-85 @@
+
+```
+
+              </div>
+```
+
+@@ lines 86-86 @@
+
+```
+
+
+```
+
+@@ lines 87-87 @@
+
+```
+
+              <.input
+```
+
+@@ lines 88-88 @@
+
+```
+
+                field={@form[:price_per_adult_per_night]}
+```
+
+@@ lines 89-89 @@
+
+```
+
+                type="number"
+```
+
+@@ lines 90-90 @@
+
+```
+
+                label="Price per Adult per Night"
+```
+
+@@ lines 91-91 @@
+
+```
+
+                step="0.01"
+```
+
+@@ lines 92-92 @@
+
+```
+
+                min="0"
+```
+
+@@ lines 93-93 @@
+
+```
+
+                required
+```
+
+@@ lines 94-94 @@
+
+```
+
+              />
+```
+
+@@ lines 95-95 @@
+
+```
+
+
+```
+
+@@ lines 96-96 @@
+
+```
+
+              <.input
+```
+
+@@ lines 97-97 @@
+
+```
+
+                field={@form[:price_per_kid_under_2_per_night]}
+```
+
+@@ lines 98-98 @@
+
+```
+
+                type="number"
+```
+
+@@ lines 99-99 @@
+
+```
+
+                label="Price per Kid Under 2 per Night"
+```
+
+@@ lines 100-100 @@
+
+```
+
+                step="0.01"
+```
+
+@@ lines 101-101 @@
+
+```
+
+                min="0"
+```
+
+@@ lines 102-102 @@
+
+```
+
+              />
+```
+
+@@ lines 103-103 @@
+
+```
+
+
+```
+
+@@ lines 104-104 @@
+
+```
+
+              <.input
+```
+
+@@ lines 105-105 @@
+
+```
+
+                field={@form[:price_per_kid_under_12_per_night]}
+```
+
+@@ lines 106-106 @@
+
+```
+
+                type="number"
+```
+
+@@ lines 107-107 @@
+
+```
+
+                label="Price per Kid Under 12 per Night"
+```
+
+@@ lines 108-108 @@
+
+```
+
+                step="0.01"
+```
+
+@@ lines 109-109 @@
+
+```
+
+                min="0"
+```
+
+@@ lines 110-110 @@
+
+```
+
+                required
+```
+
+@@ lines 111-111 @@
+
+```
+
+              />
+```
+
+@@ lines 112-112 @@
+
+```
+
+
+```
+
+@@ lines 113-113 @@
+
+```
+
+              <.input
+```
+
+@@ lines 114-114 @@
+
+```
+
+                field={@form[:vat_rate]}
+```
+
+@@ lines 115-115 @@
+
+```
+
+                type="number"
+```
+
+@@ lines 116-116 @@
+
+```
+
+                label="VAT Rate (%)"
+```
+
+@@ lines 117-117 @@
+
+```
+
+                step="0.01"
+```
+
+@@ lines 118-118 @@
+
+```
+
+                min="0"
+```
+
+@@ lines 119-119 @@
+
+```
+
+                max="100"
+```
+
+@@ lines 120-120 @@
+
+```
+
+                required
+```
+
+@@ lines 121-121 @@
+
+```
+
+              />
+```
+
+@@ lines 122-122 @@
+
+```
+
+            </div>
+```
+
+@@ lines 123-123 @@
+
+```
+
+
+```
+
+@@ lines 124-124 @@
+
+```
+
+            <div class="flex justify-end space-x-2">
+```
+
+@@ lines 125-125 @@
+
+```
+
+              <button
+```
+
+@@ lines 126-126 @@
+
+```
+
+                type="button"
+```
+
+@@ lines 127-127 @@
+
+```
+
+                phx-click="cancel"
+```
+
+@@ lines 128-128 @@
+
+```
+
+                phx-target={@myself}
+```
+
+@@ lines 129-129 @@
+
+```
+
+                class="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium rounded-lg transition-colors"
+```
+
+@@ lines 130-130 @@
+
+```
+
+              >
+```
+
+@@ lines 131-131 @@
+
+```
+
+                Cancel
+```
+
+@@ lines 132-132 @@
+
+```
+
+              </button>
+```
+
+@@ lines 133-133 @@
+
+```
+
+              <button
+```
+
+@@ lines 134-134 @@
+
+```
+
+                type="submit"
+```
+
+@@ lines 135-135 @@
+
+```
+
+                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+```
+
+@@ lines 136-136 @@
+
+```
+
+              >
+```
+
+@@ lines 137-137 @@
+
+```
+
+                Save Changes
+```
+
+@@ lines 138-138 @@
+
+```
+
+              </button>
+```
+
+@@ lines 139-139 @@
+
+```
+
+            </div>
+```
+
+@@ lines 140-140 @@
+
+```
+
+          </.form>
+```
+
+@@ lines 141-141 @@
+
+```
+
+        <% else %>
+```
+
+@@ lines 142-142 @@
+
+```
+
+          <%!-- Display View --%>
+```
+
+@@ lines 143-143 @@
+
+```
+
+          <div class="space-y-6">
+```
+
+@@ lines 144-144 @@
+
+```
+
+            <%!-- Guest Counts --%>
+```
+
+@@ lines 145-145 @@
+
+```
+
+            <div>
+```
+
+@@ lines 146-146 @@
+
+```
+
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">Guest Counts</h3>
+```
+
+@@ lines 147-147 @@
+
+```
+
+              <div class="grid grid-cols-3 gap-4">
+```
+
+@@ lines 148-148 @@
+
+```
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+```
+
+@@ lines 149-149 @@
+
+```
+
+                  <p class="text-sm text-gray-500">Adults</p>
+```
+
+@@ lines 150-150 @@
+
+```
+
+                  <p class="text-2xl font-bold text-gray-900">{@invoice.adult_count}</p>
+```
+
+@@ lines 151-151 @@
+
+```
+
+                </div>
+```
+
+@@ lines 152-152 @@
+
+```
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+```
+
+@@ lines 153-153 @@
+
+```
+
+                  <p class="text-sm text-gray-500">Kids Under 2</p>
+```
+
+@@ lines 154-154 @@
+
+```
+
+                  <p class="text-2xl font-bold text-gray-900">{@invoice.kids_under_2_count}</p>
+```
+
+@@ lines 155-155 @@
+
+```
+
+                </div>
+```
+
+@@ lines 156-156 @@
+
+```
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+```
+
+@@ lines 157-157 @@
+
+```
+
+                  <p class="text-sm text-gray-500">Kids Under 12</p>
+```
+
+@@ lines 158-158 @@
+
+```
+
+                  <p class="text-2xl font-bold text-gray-900">{@invoice.kids_under_12_count}</p>
+```
+
+@@ lines 159-159 @@
+
+```
+
+                </div>
+```
+
+@@ lines 160-160 @@
+
+```
+
+              </div>
+```
+
+@@ lines 161-161 @@
+
+```
+
+            </div>
+```
+
+@@ lines 162-162 @@
+
+```
+
+
+```
+
+@@ lines 163-163 @@
+
+```
+
+            <%!-- Pricing per Night --%>
+```
+
+@@ lines 164-164 @@
+
+```
+
+            <div>
+```
+
+@@ lines 165-165 @@
+
+```
+
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">Pricing per Night</h3>
+```
+
+@@ lines 166-166 @@
+
+```
+
+              <div class="grid grid-cols-3 gap-4">
+```
+
+@@ lines 167-167 @@
+
+```
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+```
+
+@@ lines 168-168 @@
+
+```
+
+                  <p class="text-sm text-gray-500">Adult</p>
+```
+
+@@ lines 169-169 @@
+
+```
+
+                  <p class="text-xl font-bold text-gray-900">
+```
+
+@@ lines 170-170 @@
+
+```
+
+                    {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.price_per_adult_per_night)}
+```
+
+@@ lines 171-171 @@
+
+```
+
+                  </p>
+```
+
+@@ lines 172-172 @@
+
+```
+
+                </div>
+```
+
+@@ lines 173-173 @@
+
+```
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+```
+
+@@ lines 174-174 @@
+
+```
+
+                  <p class="text-sm text-gray-500">Kid Under 2</p>
+```
+
+@@ lines 175-175 @@
+
+```
+
+                  <p class="text-xl font-bold text-gray-900">
+```
+
+@@ lines 176-176 @@
+
+```
+
+                    {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.price_per_kid_under_2_per_night)}
+```
+
+@@ lines 177-177 @@
+
+```
+
+                  </p>
+```
+
+@@ lines 178-178 @@
+
+```
+
+                </div>
+```
+
+@@ lines 179-179 @@
+
+```
+
+                <div class="bg-gray-50 p-4 rounded-lg">
+```
+
+@@ lines 180-180 @@
+
+```
+
+                  <p class="text-sm text-gray-500">Kid Under 12</p>
+```
+
+@@ lines 181-181 @@
+
+```
+
+                  <p class="text-xl font-bold text-gray-900">
+```
+
+@@ lines 182-182 @@
+
+```
+
+                    {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.price_per_kid_under_12_per_night)}
+```
+
+@@ lines 183-183 @@
+
+```
+
+                  </p>
+```
+
+@@ lines 184-184 @@
+
+```
+
+                </div>
+```
+
+@@ lines 185-185 @@
+
+```
+
+              </div>
+```
+
+@@ lines 186-186 @@
+
+```
+
+            </div>
+```
+
+@@ lines 187-187 @@
+
+```
+
+
+```
+
+@@ lines 188-188 @@
+
+```
+
+            <%!-- Calculation --%>
+```
+
+@@ lines 189-189 @@
+
+```
+
+            <div>
+```
+
+@@ lines 190-190 @@
+
+```
+
+              <h3 class="text-lg font-semibold text-gray-900 mb-3">Calculation</h3>
+```
+
+@@ lines 191-191 @@
+
+```
+
+              <div class="bg-gray-50 p-4 rounded-lg space-y-3">
+```
+
+@@ lines 192-192 @@
+
+```
+
+                <div class="flex justify-between text-sm">
+```
+
+@@ lines 193-193 @@
+
+```
+
+                  <span class="text-gray-600">Number of Nights</span>
+```
+
+@@ lines 194-194 @@
+
+```
+
+                  <span class="font-medium text-gray-900">{calculate_nights(@booking)}</span>
+```
+
+@@ lines 195-195 @@
+
+```
+
+                </div>
+```
+
+@@ lines 196-196 @@
+
+```
+
+                <div class="flex justify-between text-sm">
+```
+
+@@ lines 197-197 @@
+
+```
+
+                  <span class="text-gray-600">VAT Rate</span>
+```
+
+@@ lines 198-198 @@
+
+```
+
+                  <span class="font-medium text-gray-900">{Decimal.to_string(@invoice.vat_rate)}%</span>
+```
+
+@@ lines 199-199 @@
+
+```
+
+                </div>
+```
+
+@@ lines 200-200 @@
+
+```
+
+                <hr class="border-gray-300" />
+```
+
+@@ lines 201-201 @@
+
+```
+
+                <%= if @invoice.subtotal do %>
+```
+
+@@ lines 202-202 @@
+
+```
+
+                  <div class="flex justify-between text-sm">
+```
+
+@@ lines 203-203 @@
+
+```
+
+                    <span class="text-gray-600">Subtotal (excl. VAT)</span>
+```
+
+@@ lines 204-204 @@
+
+```
+
+                    <span class="font-medium text-gray-900">
+```
+
+@@ lines 205-205 @@
+
+```
+
+                      {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.subtotal)}
+```
+
+@@ lines 206-206 @@
+
+```
+
+                    </span>
+```
+
+@@ lines 207-207 @@
+
+```
+
+                  </div>
+```
+
+@@ lines 208-208 @@
+
+```
+
+                  <div class="flex justify-between text-sm">
+```
+
+@@ lines 209-209 @@
+
+```
+
+                    <span class="text-gray-600">VAT Amount</span>
+```
+
+@@ lines 210-210 @@
+
+```
+
+                    <span class="font-medium text-gray-900">
+```
+
+@@ lines 211-211 @@
+
+```
+
+                      {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.vat_amount)}
+```
+
+@@ lines 212-212 @@
+
+```
+
+                    </span>
+```
+
+@@ lines 213-213 @@
+
+```
+
+                  </div>
+```
+
+@@ lines 214-214 @@
+
+```
+
+                  <hr class="border-gray-300" />
+```
+
+@@ lines 215-215 @@
+
+```
+
+                  <div class="flex justify-between">
+```
+
+@@ lines 216-216 @@
+
+```
+
+                    <span class="text-lg font-bold text-gray-900">Total Price</span>
+```
+
+@@ lines 217-217 @@
+
+```
+
+                    <span class="text-2xl font-bold text-green-600">
+```
+
+@@ lines 218-218 @@
+
+```
+
+                      {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.total_price)}
+```
+
+@@ lines 219-219 @@
+
+```
+
+                    </span>
+```
+
+@@ lines 220-220 @@
+
+```
+
+                  </div>
+```
+
+@@ lines 221-221 @@
+
+```
+
+                <% else %>
+```
+
+@@ lines 222-222 @@
+
+```
+
+                  <p class="text-sm text-gray-500 italic">Click "Recalculate" to compute totals</p>
+```
+
+@@ lines 223-223 @@
+
+```
+
+                <% end %>
+```
+
+@@ lines 224-224 @@
+
+```
+
+              </div>
+```
+
+@@ lines 225-225 @@
+
+```
+
+            </div>
+```
+
+@@ lines 226-226 @@
+
+```
+
+
+```
+
+@@ lines 227-227 @@
+
+```
+
+            <%= if @invoice.invoice_generated_at do %>
+```
+
+@@ lines 228-228 @@
+
+```
+
+              <div class="bg-blue-50 p-4 rounded-lg">
+```
+
+@@ lines 229-229 @@
+
+```
+
+                <p class="text-sm text-gray-600">
+```
+
+@@ lines 230-230 @@
+
+```
+
+                  Invoice generated on
+```
+
+@@ lines 231-231 @@
+
+```
+
+                  <span class="font-medium text-gray-900">
+```
+
+@@ lines 232-232 @@
+
+```
+
+                    {Calendar.strftime(@invoice.invoice_generated_at, "%B %d, %Y at %I:%M %p")}
+```
+
+@@ lines 233-233 @@
+
+```
+
+                  </span>
+```
+
+@@ lines 234-234 @@
+
+```
+
+                </p>
+```
+
+@@ lines 235-235 @@
+
+```
+
+              </div>
+```
+
+@@ lines 236-236 @@
+
+```
+
+            <% end %>
+```
+
+@@ lines 237-237 @@
+
+```
+
+          </div>
+```
+
+@@ lines 238-238 @@
+
+```
+
+        <% end %>
+```
+
+@@ lines 239-239 @@
+
+```
+
+      <% else %>
+```
+
+@@ lines 240-240 @@
+
+```
+
+        <%!-- No Invoice Yet --%>
+```
+
+@@ lines 241-241 @@
+
+```
+
+        <div class="text-center py-8">
+```
+
+@@ lines 242-242 @@
+
+```
+
+          <.icon name="hero-document-text" class="w-16 h-16 mx-auto text-gray-400 mb-4" />
+```
+
+@@ lines 243-243 @@
+
+```
+
+          <p class="text-gray-500 mb-4">No invoice details yet for this booking.</p>
+```
+
+@@ lines 244-244 @@
+
+```
+
+          <button
+```
+
+@@ lines 245-245 @@
+
+```
+
+            type="button"
+```
+
+@@ lines 246-246 @@
+
+```
+
+            phx-click="create_invoice"
+```
+
+@@ lines 247-247 @@
+
+```
+
+            phx-target={@myself}
+```
+
+@@ lines 248-248 @@
+
+```
+
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+```
+
+@@ lines 249-249 @@
+
+```
+
+          >
+```
+
+@@ lines 250-250 @@
+
+```
+
+            <.icon name="hero-plus" class="w-5 h-5 inline mr-1" /> Create Invoice
+```
+
+@@ lines 251-251 @@
+
+```
+
+          </button>
+```
+
+@@ lines 252-252 @@
+
+```
+
+        </div>
+```
+
+@@ lines 253-253 @@
+
+```
+
+      <% end %>
+```
+
+@@ lines 254-254 @@
+
+```
+
+    </div>
+```
+
+@@ lines 255-255 @@
+
+```
+
+    """
+```
+
+@@ lines 256-256 @@
+
+```
+
+  end
+```
+
+@@ lines 257-257 @@
+
+```
+
+
+```
+
+@@ lines 258-258 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 259-259 @@
+
+```
+
+  def update(assigns, socket) do
+```
+
+@@ lines 260-260 @@
+
+```
+
+    booking = assigns.booking
+```
+
+@@ lines 261-261 @@
+
+```
+
+    invoice = Bookings.get_invoice_by_booking_id(booking.id)
+```
+
+@@ lines 262-262 @@
+
+```
+
+
+```
+
+@@ lines 263-263 @@
+
+```
+
+    {:ok,
+```
+
+@@ lines 264-264 @@
+
+```
+
+     socket
+```
+
+@@ lines 265-265 @@
+
+```
+
+     |> assign(assigns)
+```
+
+@@ lines 266-266 @@
+
+```
+
+     |> assign(:invoice, invoice)
+```
+
+@@ lines 267-267 @@
+
+```
+
+     |> assign(:editing, false)
+```
+
+@@ lines 268-268 @@
+
+```
+
+     |> assign_form(invoice)}
+```
+
+@@ lines 269-269 @@
+
+```
+
+  end
+```
+
+@@ lines 270-270 @@
+
+```
+
+
+```
+
+@@ lines 271-271 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 272-272 @@
+
+```
+
+  def handle_event("create_invoice", _params, socket) do
+```
+
+@@ lines 273-273 @@
+
+```
+
+    case Bookings.create_default_invoice(socket.assigns.booking) do
+```
+
+@@ lines 274-274 @@
+
+```
+
+      {:ok, invoice} ->
+```
+
+@@ lines 275-275 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 276-276 @@
+
+```
+
+         socket
+```
+
+@@ lines 277-277 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 278-278 @@
+
+```
+
+         |> assign(:editing, true)
+```
+
+@@ lines 279-279 @@
+
+```
+
+         |> assign_form(invoice)
+```
+
+@@ lines 280-280 @@
+
+```
+
+         |> put_flash(:info, "Invoice created successfully")}
+```
+
+@@ lines 281-281 @@
+
+```
+
+
+```
+
+@@ lines 282-282 @@
+
+```
+
+      {:error, _changeset} ->
+```
+
+@@ lines 283-283 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Failed to create invoice")}
+```
+
+@@ lines 284-284 @@
+
+```
+
+    end
+```
+
+@@ lines 285-285 @@
+
+```
+
+  end
+```
+
+@@ lines 286-286 @@
+
+```
+
+
+```
+
+@@ lines 287-287 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 288-288 @@
+
+```
+
+  def handle_event("edit", _params, socket) do
+```
+
+@@ lines 289-289 @@
+
+```
+
+    {:noreply, assign(socket, :editing, true)}
+```
+
+@@ lines 290-290 @@
+
+```
+
+  end
+```
+
+@@ lines 291-291 @@
+
+```
+
+
+```
+
+@@ lines 292-292 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 293-293 @@
+
+```
+
+  def handle_event("cancel", _params, socket) do
+```
+
+@@ lines 294-294 @@
+
+```
+
+    {:noreply,
+```
+
+@@ lines 295-295 @@
+
+```
+
+     socket
+```
+
+@@ lines 296-296 @@
+
+```
+
+     |> assign(:editing, false)
+```
+
+@@ lines 297-297 @@
+
+```
+
+     |> assign_form(socket.assigns.invoice)}
+```
+
+@@ lines 298-298 @@
+
+```
+
+  end
+```
+
+@@ lines 299-299 @@
+
+```
+
+
+```
+
+@@ lines 300-300 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 301-301 @@
+
+```
+
+  def handle_event("save", %{"booking_invoice" => invoice_params}, socket) do
+```
+
+@@ lines 302-302 @@
+
+```
+
+    case Bookings.update_booking_invoice(socket.assigns.invoice, invoice_params) do
+```
+
+@@ lines 303-303 @@
+
+```
+
+      {:ok, invoice} ->
+```
+
+@@ lines 304-304 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 305-305 @@
+
+```
+
+         socket
+```
+
+@@ lines 306-306 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 307-307 @@
+
+```
+
+         |> assign(:editing, false)
+```
+
+@@ lines 308-308 @@
+
+```
+
+         |> assign_form(invoice)
+```
+
+@@ lines 309-309 @@
+
+```
+
+         |> put_flash(:info, "Invoice updated successfully")}
+```
+
+@@ lines 310-310 @@
+
+```
+
+
+```
+
+@@ lines 311-311 @@
+
+```
+
+      {:error, changeset} ->
+```
+
+@@ lines 312-312 @@
+
+```
+
+        {:noreply, assign_form(socket, changeset)}
+```
+
+@@ lines 313-313 @@
+
+```
+
+    end
+```
+
+@@ lines 314-314 @@
+
+```
+
+  end
+```
+
+@@ lines 315-315 @@
+
+```
+
+
+```
+
+@@ lines 316-316 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 317-317 @@
+
+```
+
+  def handle_event("recalculate", _params, socket) do
+```
+
+@@ lines 318-318 @@
+
+```
+
+    case Bookings.recalculate_invoice_totals(socket.assigns.invoice) do
+```
+
+@@ lines 319-319 @@
+
+```
+
+      {:ok, invoice} ->
+```
+
+@@ lines 320-320 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 321-321 @@
+
+```
+
+         socket
+```
+
+@@ lines 322-322 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 323-323 @@
+
+```
+
+         |> assign_form(invoice)
+```
+
+@@ lines 324-324 @@
+
+```
+
+         |> put_flash(:info, "Invoice totals recalculated")}
+```
+
+@@ lines 325-325 @@
+
+```
+
+
+```
+
+@@ lines 326-326 @@
+
+```
+
+      {:error, _changeset} ->
+```
+
+@@ lines 327-327 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Failed to recalculate totals")}
+```
+
+@@ lines 328-328 @@
+
+```
+
+    end
+```
+
+@@ lines 329-329 @@
+
+```
+
+  end
+```
+
+@@ lines 330-330 @@
+
+```
+
+
+```
+
+@@ lines 331-331 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 332-332 @@
+
+```
+
+  def handle_event("generate_invoice", _params, socket) do
+```
+
+@@ lines 333-333 @@
+
+```
+
+    case Bookings.generate_invoice_number(socket.assigns.invoice) do
+```
+
+@@ lines 334-334 @@
+
+```
+
+      {:ok, invoice} ->
+```
+
+@@ lines 335-335 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 336-336 @@
+
+```
+
+         socket
+```
+
+@@ lines 337-337 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 338-338 @@
+
+```
+
+         |> assign_form(invoice)
+```
+
+@@ lines 339-339 @@
+
+```
+
+         |> put_flash(:info, "Invoice #{invoice.invoice_number} generated successfully")}
+```
+
+@@ lines 340-340 @@
+
+```
+
+
+```
+
+@@ lines 341-341 @@
+
+```
+
+      {:error, _changeset} ->
+```
+
+@@ lines 342-342 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Failed to generate invoice number")}
+```
+
+@@ lines 343-343 @@
+
+```
+
+    end
+```
+
+@@ lines 344-344 @@
+
+```
+
+  end
+```
+
+@@ lines 345-345 @@
+
+```
+
+
+```
+
+@@ lines 346-346 @@
+
+```
+
+  defp assign_form(socket, %BookingInvoice{} = invoice) do
+```
+
+@@ lines 347-347 @@
+
+```
+
+    form = Bookings.change_booking_invoice(invoice) |> to_form()
+```
+
+@@ lines 348-348 @@
+
+```
+
+    assign(socket, :form, form)
+```
+
+@@ lines 349-349 @@
+
+```
+
+  end
+```
+
+@@ lines 350-350 @@
+
+```
+
+
+```
+
+@@ lines 351-351 @@
+
+```
+
+  defp assign_form(socket, nil) do
+```
+
+@@ lines 352-352 @@
+
+```
+
+    assign(socket, :form, nil)
+```
+
+@@ lines 353-353 @@
+
+```
+
+  end
+```
+
+@@ lines 354-354 @@
+
+```
+
+
+```
+
+@@ lines 355-355 @@
+
+```
+
+  defp assign_form(socket, changeset) do
+```
+
+@@ lines 356-356 @@
+
+```
+
+    assign(socket, :form, to_form(changeset))
+```
+
+@@ lines 357-357 @@
+
+```
+
+  end
+```
+
+@@ lines 358-358 @@
+
+```
+
+
+```
+
+@@ lines 359-359 @@
+
+```
+
+  defp calculate_nights(booking) do
+```
+
+@@ lines 360-360 @@
+
+```
+
+    BookingInvoice.calculate_nights(booking)
+```
+
+@@ lines 361-361 @@
+
+```
+
+  end
+```
+
+@@ lines 362-362 @@
+
+```
+
+end
+```
+
+@@ lines 363-363 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me update the booking show page to include the invoice component: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **show.ex**</summary>
+
+@@ lines 118-174 @@
+
+```
+        <%!-- Associated Orders --%>
+        <div class="bg-white shadow-lg rounded-lg p-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">Orders</h2>
+          <%= if @booking.orders == [] do %>
+            <p class="text-gray-500">No orders yet for this booking.</p>
+          <% else %>
+            <div class="overflow-hidden">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Order Date
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr :for={order <- @booking.orders} class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {Calendar.strftime(order.inserted_at, "%b %d, %Y %I:%M %p")}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class={[
+                        "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                        order_status_badge_class(order.status)
+                      ]}>
+                        {String.capitalize(order.status)}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      {CozyCheckoutWeb.CurrencyHelper.format_currency(order.total_amount)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <.link
+                        navigate={~p"/admin/orders/#{order}"}
+                        class="text-indigo-600 hover:text-indigo-900"
+                      >
+                        View
+                      </.link>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- Invoice Details --%>
+        <.live_component
+          module={CozyCheckoutWeb.BookingLive.InvoiceComponent}
+          id="booking-invoice"
+          booking={@booking}
+        />
+      </div>
+    </div>
+    """
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's test the implementation. First, let me check if there are any compilation errors: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
 **Input:**
 
@@ -875,20 +4743,27 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex
 ```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Now let me update the router to ensure the booking routes are accessible. Let me check the current router: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Searched text for `live "/admin/bookings"` (`**/*.ex`), no results
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile`
-- explanation: `Compile the project to check for errors`
-- isBackground: `false`
+Compile the project to check for errors
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile
+```
 
 **Result:**
 
@@ -903,7 +4778,6 @@ Compiling 2 files (.ex)
     └─ lib/cozy_checkout/ical_importer.ex:6:3
 
 Generated cozy_checkout app
-
 ```
 </details></tool-use>
 
@@ -911,6 +4785,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `live "/bookings"` (`**/lib/cozy_checkout_web/router.ex`), 1 result
 
 **Input:**
 
@@ -921,7 +4797,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found","type":2}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+No matches found
 ```
 </details></tool-use>
 
@@ -929,6 +4805,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Read `router.ex`
 
 **Input:**
 
@@ -939,14 +4817,22 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex\" line=55\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":12308,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    live \"/bookings\", BookingLive.Index, :index","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":4,"line":54},{"character":20,"line":54}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":12308,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex" line=55>
+    live "/bookings", BookingLive.Index, :index
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Good! The routes are already set up. Now let me create a quick seed to test the invoice functionality. Let me check the seeds file: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `seeds.exs`, lines 1 to 101
 
 **Input:**
 
@@ -955,34 +4841,83 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":112,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":112},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":111,"references":[],"text":"defmodule CozyCheckoutWeb.Router do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":111},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":110,"references":[],"text":"  use CozyCheckoutWeb, :router\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":110},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":109,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":109},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":108,"references":[],"text":"  pipeline :browser do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":108},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":107,"references":[],"text":"    plug :accepts, [\"html\"]\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":107},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":106,"references":[],"text":"    plug :fetch_session\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":106},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":105,"references":[],"text":"    plug :fetch_live_flash\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":105},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":104,"references":[],"text":"    plug :put_root_
+```elixir
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", MainMenuLive
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", DashboardLive
+
+    # Categories
+    live "/categories", CategoryLive.Index, :index
+    live "/categories/new", CategoryLive.Index, :new
+    live "/categories/:id/edit", CategoryLive.Index, :edit
+
+    # Products
+    live "/products", ProductLive.Index, :index
+    live "/products/new", ProductLive.Index, :new
+    live "/products/:id/edit", ProductLive.Index, :edit
+
+    # Pricelists
+    live "/pricelists", PricelistLive.Index, :index
+    live "/pricelists/new", PricelistLive.Index, :new
+    live "/pricelists/:id/edit", PricelistLive.Index, :edit
+
+    # Guests
+    live "/guests", GuestLive.Index, :index
+    live "/guests/new", GuestLive.Index, :new
+    live "/guests/:id/edit", GuestLive.Index, :edit
+
+    # Rooms
+    live "/rooms", RoomLive.Index, :index
+    live "/rooms/new", RoomLive.Index, :new
+    live "/rooms/:id/edit", RoomLive.Index, :edit
+
+    # Bookings
+    live "/bookings", BookingLive.Index, :index
+    live "/bookings/new", BookingLive.Index, :new
+    live "/bookings/calendar", BookingLive.Calendar
+    live "/bookings/:id", BookingLive.Show
+    live "/bookings/:id/edit", BookingLive.Index, :edit
+    live "/bookings/:booking_id/guests", BookingLive.ManageGuests
+
+    # Orders
+    live "/orders", OrderLive.Index, :index
+    live "/orders/new", OrderLive.New
+    live "/orders/:id/edit", OrderLive.Edit
+    live "/orders/:id", OrderLive.Show
+
+    # Payments
+    live "/pay
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll implement the complete invoicing system with CRUD interface. Let me start by creating the necessary files. 
-```
-
-```
-Now let me create the BookingInvoice schema: Now let me update the Booking schema to add the invoice relationship: 
-```
-
-```
-Now let me update the Bookings context to add invoice management functions: 
-```
-
-```
-Now let me add the invoice management functions at the end of the Bookings context: 
-```
-
-```
-Now let me run the migration: Great! Now let me create the LiveView CRUD interface for managing booking invoices. First, let me check the existing booking show page: Now let me create a LiveComponent for managing the booking invoice. I'll add it as a new section in the booking show page: Now let me update the booking show page to include the invoice component: 
-```
-
-```
-Now let's test the implementation. First, let me check if there are any compilation errors: Perfect! Now let me update the router to ensure the booking routes are accessible. Let me check the current router: Good! The routes are already set up. Now let me create a quick seed to test the invoice functionality. Let me check the seeds file: Now let's run the application and test our invoice functionality: 
+Now let's run the application and test our invoice functionality: 
 
 ---
 
@@ -1072,38 +5007,20 @@ Yes looks good, please proceed. And scratch whatever we did until now. Also, do 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 Perfect! I'll scratch the previous implementation and create the new flexible invoice system with header and line items. Let me start fresh: 
-
-Let me stop the server and rollback properly: 
-
-Great! Now let me rewrite the migration for the new structure with header and line items: 
-
-Now let me rewrite the BookingInvoice schema: 
-
-Now let me create the BookingInvoiceItem schema: 
-
-Now let me update the Bookings context to work with the new structure: 
-
-Now let me rewrite the invoice management functions: 
-
-Now let me rewrite the InvoiceComponent to work with line items. This will be a complete rewrite: 
-
-I need to fix the file - it looks like I only replaced part of it. Let me rewrite the entire file: 
-
-The file has mixed old and new content. Let me delete and recreate it:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.rollback`
-- explanation: `Rollback the previous migration`
-- isBackground: `false`
+Rollback the previous migration
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.rollback
+```
 
 **Result:**
 
@@ -1164,14 +5081,20 @@ est_id", b0."inserted_at", b0."updated_at" FROM "bookings" AS b0 W
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me stop the server and rollback properly: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.rollback --step 1`
-- explanation: `Rollback the previous migration with step flag`
-- isBackground: `false`
+Rollback the previous migration with step flag
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.rollback --step 1
+```
 
 **Result:**
 
@@ -1206,8 +5129,140 @@ Command exited with code 130
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Great! Now let me rewrite the migration for the new structure with header and line items: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **20251022185655_create_booking_invoices.exs**</summary>
+
+@@ lines 1-37 @@
+
+```
+defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do
+  use Ecto.Migration
+
+  def change do
+    # Booking Invoice Header
+    create table(:booking_invoices, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :booking_id, references(:bookings, on_delete: :delete_all, type: :binary_id), null: false
+      
+      # Calculated totals (cached from line items)
+      add :subtotal, :decimal, precision: 10, scale: 2
+      add :vat_amount, :decimal, precision: 10, scale: 2
+      add :total_price, :decimal, precision: 10, scale: 2
+      
+      # Invoice metadata
+      add :invoice_number, :string
+      add :invoice_generated_at, :utc_datetime
+      
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:booking_invoices, [:booking_id])
+    create unique_index(:booking_invoices, [:invoice_number])
+
+    # Booking Invoice Line Items
+    create table(:booking_invoice_items, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :booking_invoice_id, references(:booking_invoices, on_delete: :delete_all, type: :binary_id), null: false
+      
+      # Line item details
+      add :name, :string, null: false
+      add :quantity, :integer, null: false
+      add :price_per_night, :decimal, precision: 10, scale: 2, null: false
+      add :vat_rate, :decimal, precision: 5, scale: 2, null: false
+      
+      # Calculated totals (cached)
+      add :subtotal, :decimal, precision: 10, scale: 2
+      add :vat_amount, :decimal, precision: 10, scale: 2
+      add :total, :decimal, precision: 10, scale: 2
+      
+      # For ordering
+      add :position, :integer, null: false, default: 0
+      
+      timestamps(type: :utc_datetime)
+    end
+
+    create index(:booking_invoice_items, [:booking_invoice_id])
+    create index(:booking_invoice_items, [:position])
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me rewrite the BookingInvoice schema: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice.ex**</summary>
+
+@@ lines 1-113 @@
+
+```
+defmodule CozyCheckout.Bookings.BookingInvoice do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "booking_invoices" do
+    # Cached calculations
+    field :subtotal, :decimal
+    field :vat_amount, :decimal
+    field :total_price, :decimal
+    
+    field :invoice_number, :string
+    field :invoice_generated_at, :utc_datetime
+
+    belongs_to :booking, CozyCheckout.Bookings.Booking
+    has_many :items, CozyCheckout.Bookings.BookingInvoiceItem, foreign_key: :booking_invoice_id
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(booking_invoice, attrs) do
+    booking_invoice
+    |> cast(attrs, [
+      :booking_id,
+      :subtotal,
+      :vat_amount,
+      :total_price,
+      :invoice_number,
+      :invoice_generated_at
+    ])
+    |> validate_required([:booking_id])
+    |> unique_constraint(:booking_id)
+    |> unique_constraint(:invoice_number)
+  end
+
+  @doc """
+  Calculate the number of nights between check-in and check-out dates.
+  Returns 1 if check_out_date is nil (open-ended booking).
+  """
+  def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+  def calculate_nights(%{check_in_date: check_in, check_out_date: check_out}) do
+    Date.diff(check_out, check_in)
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me create the BookingInvoiceItem schema: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `booking_invoice_item.ex`
 
 **Input:**
 
@@ -1291,14 +5346,1161 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice_item.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckout.Bookings.BookingInvoiceItem do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use Ecto.Schema
+```
+
+@@ lines 3-3 @@
+
+```
+
+  import Ecto.Changeset
+```
+
+@@ lines 4-4 @@
+
+```
+
+
+```
+
+@@ lines 5-5 @@
+
+```
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+```
+
+@@ lines 6-6 @@
+
+```
+
+  @foreign_key_type :binary_id
+```
+
+@@ lines 7-7 @@
+
+```
+
+  schema "booking_invoice_items" do
+```
+
+@@ lines 8-8 @@
+
+```
+
+    field :name, :string
+```
+
+@@ lines 9-9 @@
+
+```
+
+    field :quantity, :integer
+```
+
+@@ lines 10-10 @@
+
+```
+
+    field :price_per_night, :decimal
+```
+
+@@ lines 11-11 @@
+
+```
+
+    field :vat_rate, :decimal
+```
+
+@@ lines 12-12 @@
+
+```
+
+    
+```
+
+@@ lines 13-13 @@
+
+```
+
+    # Cached calculations
+```
+
+@@ lines 14-14 @@
+
+```
+
+    field :subtotal, :decimal
+```
+
+@@ lines 15-15 @@
+
+```
+
+    field :vat_amount, :decimal
+```
+
+@@ lines 16-16 @@
+
+```
+
+    field :total, :decimal
+```
+
+@@ lines 17-17 @@
+
+```
+
+    
+```
+
+@@ lines 18-18 @@
+
+```
+
+    field :position, :integer, default: 0
+```
+
+@@ lines 19-19 @@
+
+```
+
+
+```
+
+@@ lines 20-20 @@
+
+```
+
+    belongs_to :booking_invoice, CozyCheckout.Bookings.BookingInvoice
+```
+
+@@ lines 21-21 @@
+
+```
+
+
+```
+
+@@ lines 22-22 @@
+
+```
+
+    timestamps(type: :utc_datetime)
+```
+
+@@ lines 23-23 @@
+
+```
+
+  end
+```
+
+@@ lines 24-24 @@
+
+```
+
+
+```
+
+@@ lines 25-25 @@
+
+```
+
+  @doc false
+```
+
+@@ lines 26-26 @@
+
+```
+
+  def changeset(invoice_item, attrs) do
+```
+
+@@ lines 27-27 @@
+
+```
+
+    invoice_item
+```
+
+@@ lines 28-28 @@
+
+```
+
+    |> cast(attrs, [
+```
+
+@@ lines 29-29 @@
+
+```
+
+      :booking_invoice_id,
+```
+
+@@ lines 30-30 @@
+
+```
+
+      :name,
+```
+
+@@ lines 31-31 @@
+
+```
+
+      :quantity,
+```
+
+@@ lines 32-32 @@
+
+```
+
+      :price_per_night,
+```
+
+@@ lines 33-33 @@
+
+```
+
+      :vat_rate,
+```
+
+@@ lines 34-34 @@
+
+```
+
+      :subtotal,
+```
+
+@@ lines 35-35 @@
+
+```
+
+      :vat_amount,
+```
+
+@@ lines 36-36 @@
+
+```
+
+      :total,
+```
+
+@@ lines 37-37 @@
+
+```
+
+      :position
+```
+
+@@ lines 38-38 @@
+
+```
+
+    ])
+```
+
+@@ lines 39-39 @@
+
+```
+
+    |> validate_required([:name, :quantity, :price_per_night, :vat_rate])
+```
+
+@@ lines 40-40 @@
+
+```
+
+    |> validate_number(:quantity, greater_than: 0)
+```
+
+@@ lines 41-41 @@
+
+```
+
+    |> validate_number(:price_per_night, greater_than_or_equal_to: 0)
+```
+
+@@ lines 42-42 @@
+
+```
+
+    |> validate_number(:vat_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+```
+
+@@ lines 43-43 @@
+
+```
+
+  end
+```
+
+@@ lines 44-44 @@
+
+```
+
+
+```
+
+@@ lines 45-45 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 46-46 @@
+
+```
+
+  Calculate line item totals based on booking dates and item pricing.
+```
+
+@@ lines 47-47 @@
+
+```
+
+  Returns a map with :subtotal, :vat_amount, and :total.
+```
+
+@@ lines 48-48 @@
+
+```
+
+  """
+```
+
+@@ lines 49-49 @@
+
+```
+
+  def calculate_totals(invoice_item, nights) do
+```
+
+@@ lines 50-50 @@
+
+```
+
+    # subtotal = quantity * price_per_night * nights
+```
+
+@@ lines 51-51 @@
+
+```
+
+    subtotal = invoice_item.price_per_night
+```
+
+@@ lines 52-52 @@
+
+```
+
+      |> Decimal.mult(Decimal.new(invoice_item.quantity))
+```
+
+@@ lines 53-53 @@
+
+```
+
+      |> Decimal.mult(Decimal.new(nights))
+```
+
+@@ lines 54-54 @@
+
+```
+
+    
+```
+
+@@ lines 55-55 @@
+
+```
+
+    # vat_amount = subtotal * (vat_rate / 100)
+```
+
+@@ lines 56-56 @@
+
+```
+
+    vat_amount = subtotal
+```
+
+@@ lines 57-57 @@
+
+```
+
+      |> Decimal.mult(invoice_item.vat_rate)
+```
+
+@@ lines 58-58 @@
+
+```
+
+      |> Decimal.div(Decimal.new(100))
+```
+
+@@ lines 59-59 @@
+
+```
+
+    
+```
+
+@@ lines 60-60 @@
+
+```
+
+    # total = subtotal + vat_amount
+```
+
+@@ lines 61-61 @@
+
+```
+
+    total = Decimal.add(subtotal, vat_amount)
+```
+
+@@ lines 62-62 @@
+
+```
+
+    
+```
+
+@@ lines 63-63 @@
+
+```
+
+    %{
+```
+
+@@ lines 64-64 @@
+
+```
+
+      subtotal: subtotal,
+```
+
+@@ lines 65-65 @@
+
+```
+
+      vat_amount: vat_amount,
+```
+
+@@ lines 66-66 @@
+
+```
+
+      total: total
+```
+
+@@ lines 67-67 @@
+
+```
+
+    }
+```
+
+@@ lines 68-68 @@
+
+```
+
+  end
+```
+
+@@ lines 69-69 @@
+
+```
+
+end
+```
+
+@@ lines 70-70 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me update the Bookings context to work with the new structure: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 6-13 @@
+
+```
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Bookings.BookingInvoiceItem
+  alias CozyCheckout.Rooms
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me rewrite the invoice management functions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 313-427 @@
+
+```
+  # Booking Invoice Management
+
+  @doc """
+  Gets the invoice for a booking with preloaded items.
+  """
+  def get_invoice_by_booking_id(booking_id) do
+    BookingInvoice
+    |> where([i], i.booking_id == ^booking_id)
+    |> preload(items: from(i in BookingInvoiceItem, order_by: i.position))
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a booking invoice by ID with preloaded items.
+  """
+  def get_booking_invoice!(id) do
+    BookingInvoice
+    |> preload(items: from(i in BookingInvoiceItem, order_by: i.position))
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a default invoice for a booking with default line items.
+  """
+  def create_default_invoice(%Booking{} = booking) do
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice = %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Create default line items
+      default_items = [
+        %{name: "Adults", quantity: 2, price_per_night: Decimal.new("1000.00"), vat_rate: Decimal.new("21.00"), position: 1},
+        %{name: "Kids under 2 years", quantity: 0, price_per_night: Decimal.new("0.00"), vat_rate: Decimal.new("21.00"), position: 2},
+        %{name: "Kids under 12 years", quantity: 0, price_per_night: Decimal.new("500.00"), vat_rate: Decimal.new("21.00"), position: 3}
+      ]
+
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(Map.put(item_attrs, :booking_invoice_id, invoice.id))
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+      get_booking_invoice!(invoice.id)
+    end)
+  end
+
+  @doc """
+  Updates a booking invoice header.
+  """
+  def update_booking_invoice(%BookingInvoice{} = invoice, attrs) do
+    invoice
+    |> BookingInvoice.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a booking invoice and all its items.
+  """
+  def delete_booking_invoice(%BookingInvoice{} = invoice) do
+    Repo.delete(invoice)
+  end
+
+  @doc """
+  Creates a new invoice item.
+  """
+  def create_invoice_item(invoice_id, attrs) do
+    %BookingInvoiceItem{}
+    |> BookingInvoiceItem.changeset(Map.put(attrs, :booking_invoice_id, invoice_id))
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an invoice item.
+  """
+  def update_invoice_item(%BookingInvoiceItem{} = item, attrs) do
+    item
+    |> BookingInvoiceItem.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an invoice item.
+  """
+  def delete_invoice_item(%BookingInvoiceItem{} = item) do
+    Repo.delete(item)
+  end
+
+  @doc """
+  Gets an invoice item by ID.
+  """
+  def get_invoice_item!(id) do
+    Repo.get!(BookingInvoiceItem, id)
+  end
+
+  @doc """
+  Recalculates and updates the cached totals for all invoice items and the invoice header.
+  """
+  def recalculate_invoice_totals(%BookingInvoice{} = invoice) do
+    Repo.transaction(fn ->
+      booking = get_booking!(invoice.booking_id)
+      nights = BookingInvoice.calculate_nights(booking)
+      
+      # Reload invoice with items
+      invoice = get_booking_invoice!(invoice.id)
+      
+      # Recalculate each item
+      updated_items = Enum.map(invoice.items, fn item ->
+        totals = BookingInvoiceItem.calculate_totals(item, nights)
+        
+        {:ok, updated_item} = item
+          |> BookingInvoiceItem.changeset(totals)
+          |> Repo.update()
+        
+        updated_item
+      end)
+      
+      # Calculate invoice totals from items
+      invoice_subtotal = updated_items
+        |> Enum.map(& &1.subtotal)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+      
+      invoice_vat_amount = updated_items
+        |> Enum.map(& &1.vat_amount)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+      
+      invoice_total = updated_items
+        |> Enum.map(& &1.total)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+      
+      # Update invoice header with totals
+      {:ok, updated_invoice} = invoice
+        |> BookingInvoice.changeset(%{
+          subtotal: invoice_subtotal,
+          vat_amount: invoice_vat_amount,
+          total_price: invoice_total
+        })
+        |> Repo.update()
+      
+      # Reload with updated items
+      get_booking_invoice!(updated_invoice.id)
+    end)
+  end
+
+  @doc """
+  Generates an invoice number and marks the invoice as generated.
+  Format: INV-YYYYMMDD-NNNN (e.g., INV-20251022-0001)
+  """
+  def generate_invoice_number(%BookingInvoice{} = invoice) do
+    today = Date.utc_today()
+    date_prefix = "INV-#{Date.to_iso8601(today, :basic)}"
+    
+    # Find the highest invoice number for today
+    last_invoice = 
+      from(i in BookingInvoice,
+        where: fragment("? LIKE ?", i.invoice_number, ^"#{date_prefix}%"),
+        order_by: [desc: i.invoice_number],
+        limit: 1
+      )
+      |> Repo.one()
+    
+    next_number = case last_invoice do
+      nil -> 1
+      %{invoice_number: number} ->
+        # Extract NNNN part and increment
+        number
+        |> String.split("-")
+        |> List.last()
+        |> String.to_integer()
+        |> Kernel.+(1)
+    end
+    
+    invoice_number = "#{date_prefix}-#{String.pad_leading(Integer.to_string(next_number), 4, "0")}"
+    
+    # Recalculate totals before generating
+    {:ok, invoice} = recalculate_invoice_totals(invoice)
+    
+    invoice
+    |> BookingInvoice.changeset(%{
+      invoice_number: invoice_number,
+      invoice_generated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking invoice changes.
+  """
+  def change_booking_invoice(%BookingInvoice{} = invoice, attrs \\ %{}) do
+    BookingInvoice.changeset(invoice, attrs)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking invoice item changes.
+  """
+  def change_invoice_item(%BookingInvoiceItem{} = item, attrs \\ %{}) do
+    BookingInvoiceItem.changeset(item, attrs)
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me rewrite the InvoiceComponent to work with line items. This will be a complete rewrite: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckout.Bookings.{BookingInvoice, BookingInvoiceItem}
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="bg-white shadow-lg rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-gray-900">Invoice Details</h2>
+        <div class="flex space-x-2">
+          <%= if @invoice && @invoice.invoice_number do %>
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              {@invoice.invoice_number}
+            </span>
+          <% end %>
+          <%= if @invoice do %>
+            <button
+              type="button"
+              phx-click="recalculate"
+              phx-target={@myself}
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-calculator" class="w-4 h-4 inline mr-1" /> Recalculate
+            </button>
+            <%= if !@invoice.invoice_number do %>
+              <button
+                type="button"
+                phx-click="generate_invoice"
+                phx-target={@myself}
+                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-document-text" class="w-4 h-4 inline mr-1" /> Generate Invoice
+              </button>
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+
+      <%= if @invoice do %>
+        <%!-- Invoice Items Table --%>
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-lg font-semibold text-gray-900">Line Items</h3>
+            <%= if !@editing_item_id do %>
+              <button
+                type="button"
+                phx-click="add_item"
+                phx-target={@myself}
+                class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-plus" class="w-4 h-4 inline mr-1" /> Add Item
+              </button>
+            <% end %>
+          </div>
+
+          <div class="overflow-hidden border border-gray-200 rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/Night</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">VAT %</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <%= if @invoice.items == [] do %>
+                  <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                      No items yet. Click "Add Item" to create one.
+                    </td>
+                  </tr>
+                <% else %>
+                  <%= for item <- @invoice.items do %>
+                    <%= if @editing_item_id == item.id do %>
+                      <%!-- Edit Mode --%>
+                      <tr class="bg-blue-50">
+                        <td colspan="7" class="px-4 py-3">
+                          <.form for={@item_form} id={"item-form-#{item.id}"} phx-target={@myself} phx-submit="save_item">
+                            <div class="grid grid-cols-6 gap-3">
+                              <div class="col-span-2">
+                                <.input field={@item_form[:name]} type="text" placeholder="Item name" />
+                              </div>
+                              <div>
+                                <.input field={@item_form[:quantity]} type="number" min="1" placeholder="Qty" />
+                              </div>
+                              <div>
+                                <.input
+                                  field={@item_form[:price_per_night]}
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  placeholder="Price"
+                                />
+                              </div>
+                              <div>
+                                <.input
+                                  field={@item_form[:vat_rate]}
+                                  type="number"
+                                  step="0.01"
+                                  min="0"
+                                  max="100"
+                                  placeholder="VAT %"
+                                />
+                              </div>
+                              <div class="flex space-x-2">
+                                <button
+                                  type="submit"
+                                  class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  phx-click="cancel_edit"
+                                  phx-target={@myself}
+                                  class="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm rounded transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          </.form>
+                        </td>
+                      </tr>
+                    <% else %>
+                      <%!-- Display Mode --%>
+                      <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-gray-900">{item.name}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.price_per_night)}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                          {Decimal.to_string(item.vat_rate)}%
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                          <%= if item.subtotal do %>
+                            {CozyCheckoutWeb.CurrencyHelper.format_currency(item.subtotal)}
+                          <% else %>
+                            <span class="text-gray-400">—</span>
+                          <% end %>
+                        </td>
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                          <%= if item.total do %>
+                            {CozyCheckoutWeb.CurrencyHelper.format_currency(item.total)}
+                          <% else %>
+                            <span class="text-gray-400">—</span>
+                          <% end %>
+                        </td>
+                        <td class="px-4 py-3 text-right text-sm">
+                          <button
+                            type="button"
+                            phx-click="edit_item"
+                            phx-value-item-id={item.id}
+                            phx-target={@myself}
+                            class="text-indigo-600 hover:text-indigo-900 mr-3"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            phx-click="delete_item"
+                            phx-value-item-id={item.id}
+                            phx-target={@myself}
+                            class="text-red-600 hover:text-red-900"
+                            data-confirm="Are you sure you want to delete this item?"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    <% end %>
+                  <% end %>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <%!-- Invoice Summary --%>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="max-w-md ml-auto space-y-2">
+            <div class="flex justify-between text-sm">
+              <span class="text-gray-600">Number of Nights</span>
+              <span class="font-medium text-gray-900">{calculate_nights(@booking)}</span>
+            </div>
+            <hr class="border-gray-300" />
+            <%= if @invoice.subtotal do %>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Subtotal (excl. VAT)</span>
+                <span class="font-medium text-gray-900">
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.subtotal)}
+                </span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Total VAT</span>
+                <span class="font-medium text-gray-900">
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.vat_amount)}
+                </span>
+              </div>
+              <hr class="border-gray-300" />
+              <div class="flex justify-between">
+                <span class="text-lg font-bold text-gray-900">Total Price</span>
+                <span class="text-2xl font-bold text-green-600">
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.total_price)}
+                </span>
+              </div>
+            <% else %>
+              <p class="text-sm text-gray-500 italic">Click "Recalculate" to compute totals</p>
+            <% end %>
+          </div>
+
+          <%= if @invoice.invoice_generated_at do %>
+            <div class="mt-4 pt-4 border-t border-gray-300">
+              <p class="text-sm text-gray-600">
+                Invoice generated on
+                <span class="font-medium text-gray-900">
+                  {Calendar.strftime(@invoice.invoice_generated_at, "%B %d, %Y at %I:%M %p")}
+                </span>
+              </p>
+            </div>
+          <% end %>
+        </div>
+      <% else %>
+        <%!-- No Invoice Yet --%>
+        <div class="text-center py-8">
+          <.icon name="hero-document-text" class="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p class="text-gray-500 mb-4">No invoice details yet for this booking.</p>
+          <button
+            type="button"
+            phx-click="create_invoice"
+            phx-target={@myself}
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+          >
+            <.icon name="hero-plus" class="w-5 h-5 inline mr-1" /> Create Invoice
+          </button>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  @impl true
+  def update(assigns, socket) do
+    booking = assigns.booking
+    invoice = Bookings.get_invoice_by_booking_id(booking.id)
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:invoice, invoice)
+     |> assign(:editing_item_id, nil)
+     |> assign(:item_form, nil)}
+  end
+
+  @impl true
+  def handle_event("create_invoice", _params, socket) do
+    case Bookings.create_default_invoice(socket.assigns.booking) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice created with default items")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to create invoice")}
+    end
+  end
+
+  @impl true
+  def handle_event("add_item", _params, socket) do
+    next_position = length(socket.assigns.invoice.items) + 1
+
+    form =
+      Bookings.change_invoice_item(%BookingInvoiceItem{}, %{
+        position: next_position,
+        quantity: 1,
+        price_per_night: Decimal.new("0.00"),
+        vat_rate: Decimal.new("21.00")
+      })
+      |> to_form()
+
+    {:noreply,
+     socket
+     |> assign(:editing_item_id, :new)
+     |> assign(:item_form, form)}
+  end
+
+  @impl true
+  def handle_event("edit_item", %{"item-id" => item_id}, socket) do
+    item = Bookings.get_invoice_item!(item_id)
+    form = Bookings.change_invoice_item(item) |> to_form()
+
+    {:noreply,
+     socket
+     |> assign(:editing_item_id, item.id)
+     |> assign(:item_form, form)}
+  end
+
+  @impl true
+  def handle_event("cancel_edit", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:editing_item_id, nil)
+     |> assign(:item_form, nil)}
+  end
+
+  @impl true
+  def handle_event("save_item", %{"booking_invoice_item" => item_params}, socket) do
+    result =
+      if socket.assigns.editing_item_id == :new do
+        Bookings.create_invoice_item(socket.assigns.invoice.id, item_params)
+      else
+        item = Bookings.get_invoice_item!(socket.assigns.editing_item_id)
+        Bookings.update_invoice_item(item, item_params)
+      end
+
+    case result do
+      {:ok, _item} ->
+        invoice = Bookings.get_invoice_by_booking_id(socket.assigns.booking.id)
+
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> assign(:editing_item_id, nil)
+         |> assign(:item_form, nil)
+         |> put_flash(:info, "Item saved successfully")}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, :item_form, to_form(changeset))}
+    end
+  end
+
+  @impl true
+  def handle_event("delete_item", %{"item-id" => item_id}, socket) do
+    item = Bookings.get_invoice_item!(item_id)
+
+    case Bookings.delete_invoice_item(item) do
+      {:ok, _} ->
+        invoice = Bookings.get_invoice_by_booking_id(socket.assigns.booking.id)
+
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Item deleted successfully")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to delete item")}
+    end
+  end
+
+  @impl true
+  def handle_event("recalculate", _params, socket) do
+    case Bookings.recalculate_invoice_totals(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice totals recalculated")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to recalculate totals")}
+    end
+  end
+
+  @impl true
+  def handle_event("generate_invoice", _params, socket) do
+    case Bookings.generate_invoice_number(socket.assigns.invoice) do
+      {:ok, invoice} ->
+        {:noreply,
+         socket
+         |> assign(:invoice, invoice)
+         |> put_flash(:info, "Invoice #{invoice.invoice_number} generated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to generate invoice number")}
+    end
+  end
+
+  defp calculate_nights(booking) do
+    BookingInvoice.calculate_nights(booking)
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+I need to fix the file - it looks like I only replaced part of it. Let me rewrite the entire file: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 450 to 500
 
 **Input:**
 
@@ -1309,21 +6511,79 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"450","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"500","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"752","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"              \u003c.input\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"                field={@form[:adult_count]}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`. Lines 450 to 500 (752 lines total): 
+```elixir
+              <.input
+                field={@form[:adult_count]}
+                type="number"
+                label="Number of Adults"
+                min="1"
+                required
+              />
+
+              <.input
+                field={@form[:kids_under_2_count]}
+                type="number"
+                label="Kids Under 2 Years"
+                min="0"
+              />
+
+              <.input
+                field={@form[:kids_under_12_count]}
+                type="number"
+                label="Kids Under 12 Years"
+                min="0"
+              />
+
+              <div class="col-span-2">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3 mt-4">Pricing per Night</h3>
+              </div>
+
+              <.input
+                field={@form[:price_per_adult_per_night]}
+                type="number"
+                label="Price per Adult per Night"
+                step="0.01"
+                min="0"
+                required
+              />
+
+              <.input
+                field={@form[:price_per_kid_under_2_per_night]}
+                type="number"
+                label="Price per Kid Under 2 per Night"
+                step="0.01"
+                min="0"
+              />
+
+              <.input
+                field={@form[:price_per_kid_under_12_per_night]}
+                type="number"
+                label="Price per Kid Under 12 per Night"
+                step="0.01"
+                min="0"
+                required
+              />
+```
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+The file has mixed old and new content. Let me delete and recreate it: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Using "Run in Terminal"
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && rm lib/cozy_checkout_web/live/booking_live/invoice_component.ex`
-- explanation: `Remove the corrupted invoice component file`
-- isBackground: `false`
+Remove the corrupted invoice component file
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && rm lib/cozy_checkout_web/live/booking_live/invoice_component.ex
+```
 
 **Result:**
 
@@ -1338,27 +6598,7 @@ Note: The tool simplified the command to `rm lib/cozy_checkout_web/live/booking_
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Perfect! I'll scratch the previous implementation and create the new flexible invoice system with header and line items. Let me start fresh: Let me stop the server and rollback properly: Great! Now let me rewrite the migration for the new structure with header and line items: 
-```
-
-```
-Now let me rewrite the BookingInvoice schema: 
-```
-
-```
-Now let me create the BookingInvoiceItem schema: Now let me update the Bookings context to work with the new structure: 
-```
-
-```
-Now let me rewrite the invoice management functions: 
-```
-
-```
-Now let me rewrite the InvoiceComponent to work with line items. This will be a complete rewrite: 
-```
-
-```
-I need to fix the file - it looks like I only replaced part of it. Let me rewrite the entire file: The file has mixed old and new content. Let me delete and recreate it: Now let me create the complete new file: 
+Now let me create the complete new file: 
 
 ---
 
@@ -1370,48 +6610,20 @@ you seem to be kind of stuck, can you just delete everything you done and try ag
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 You're right, let me start completely fresh. I'll delete all the invoice-related files and migrations, then rebuild from scratch with the proper structure. 
-
-Now let me clean up the Booking schema and Bookings context to remove invoice references: 
-
-Now let me clean up the Bookings context - remove all invoice-related functions: 
-
-Now remove the invoice component from the show page: 
-
-Perfect! Now let's start fresh. First, create the migration: 
-
-Now let me write the migration: 
-
-Now create the schemas. First BookingInvoice: 
-
-Now create BookingInvoiceItem: 
-
-Now update the Booking schema to add the invoice relationship: 
-
-Now add the context functions to the Bookings module. I'll add them at the end before the closing `end`: 
-
-Now run the migration: 
-
-I need to fix the preload syntax: 
-
-Excellent! Now let me create the Invoice Component LiveView. This will be a completely fresh implementation: 
-
-Now add the invoice component back to the booking show page: 
-
-Perfect! Now let's test the compilation:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Using "Run in Terminal"
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && rm -f lib/cozy_checkout/bookings/booking_invoice.ex lib/cozy_checkout/bookings/booking_invoice_item.ex`
-- explanation: `Remove all invoice schema files`
-- isBackground: `false`
+Remove all invoice schema files
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && rm -f lib/cozy_checkout/bookings/booking_invoice.ex lib/cozy_checkout/bookings/booking_invoice_item.ex
+```
 
 **Result:**
 
@@ -1429,11 +6641,13 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Using "Run in Terminal"
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && rm -f priv/repo/migrations/20251022185655_create_booking_invoices.exs`
-- explanation: `Remove the migration file`
-- isBackground: `false`
+Remove the migration file
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && rm -f priv/repo/migrations/20251022185655_create_booking_invoices.exs
+```
 
 **Result:**
 
@@ -1448,8 +6662,14 @@ Note: The tool simplified the command to `rm -f priv/repo/migrations/20251022185
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me clean up the Booking schema and Bookings context to remove invoice references: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `booking.ex`
 
 **Input:**
 
@@ -1458,15 +6678,88 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":50,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":49,"references":[],"text":"defmodule CozyCheckout.Bookings.Booking do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":49},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":48,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":48},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":47,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":47},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":46,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":46},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":45,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":45},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":44,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":44},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":43,"references":[],"text":"  schema \"bookings\" do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":43},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":42,"references":[],"te
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Bookings.Booking do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "bookings" do
+    field :room_number, :string
+    field :check_in_date, :date
+    field :check_out_date, :date
+    field :status, :string, default: "upcoming"
+    field :notes, :string
+    field :deleted_at, :utc_datetime
+
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
+    has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
+    has_many :rooms, through: [:booking_rooms, :room]
+    has_one :invoice, CozyCheckout.Bookings.BookingInvoice
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(booking, attrs) do
+    booking
+    |> cast(attrs, [:guest_id, :room_number, :check_in_date, :check_out_date, :status, :notes])
+    |> validate_required([:guest_id, :check_in_date])
+    |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])
+    |> validate_date_range()
+    |> foreign_key_constraint(:guest_id)
+    |> unique_constraint([:guest_id, :check_in_date])
+  end
+
+  defp validate_date_range(changeset) do
+    check_in = get_field(changeset, :check_in_date)
+    check_out = get_field(changeset, :check_out_date)
+
+    if check_in && check_out && Date.compare(check_in, check_out) == :gt do
+      add_error(changeset, :check_out_date, "must be after check-in date")
+    else
+      changeset
+    end
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking.ex**</summary>
+
+@@ lines 15-23 @@
+
+```
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
+    has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
+    has_many :rooms, through: [:booking_rooms, :room]
+
+    timestamps(type: :utc_datetime)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me clean up the Bookings context - remove all invoice-related functions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 1 to 51
 
 **Input:**
 
@@ -1476,15 +6769,87 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"51","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"514","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"defmodule CozyCheckout.Bookings do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  The Bookings context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":50},"references":[],"type":1},{"children":[{"l
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 1 to 51 (514 lines total): 
+```elixir
+defmodule CozyCheckout.Bookings do
+  @moduledoc """
+  The Bookings context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Bookings.BookingInvoiceItem
+  alias CozyCheckout.Rooms
+
+  @doc """
+  Returns the list of bookings.
+  """
+  def list_bookings do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of active bookings (currently checked in).
+  """
+  def list_active_bookings do
+    today = Date.utc_today()
+
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.status == "active")
+    |> where([b], b.check_in_date <= ^today)
+    |> where([b], is_nil(b.check_out_date) or b.check_out_date >= ^today)
+    |> preload(:guest)
+    |> order_by([b], [b.check_in_date, b.room_number])
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of bookings for a specific guest.
+  """
+  def list_bookings_for_guest(guest_id) do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> where([b], b.guest_id == ^guest_id)
+    |> order_by([b], desc: b.check_in_date)
+    |> Repo.all()
+```
 ````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 6-14 @@
+
+```
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Rooms
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 280 to 380
 
 **Input:**
 
@@ -1495,21 +6860,180 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"280","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"380","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"512","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"    check_out_date = booking.check_out_date || Date.add(booking.check_in_date, 365)\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"    # Validate all rooms are available\n","type":2}],"ctor":2,"ctorName":"cle","props":{"p
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 280 to 380 (512 lines total): 
+```elixir
+    check_out_date = booking.check_out_date || Date.add(booking.check_in_date, 365)
+
+    # Validate all rooms are available
+    unavailable_rooms =
+      Enum.reject(room_ids, fn room_id ->
+        Rooms.room_available?(room_id, booking.check_in_date, check_out_date, booking_id)
+      end)
+
+    if Enum.empty?(unavailable_rooms) do
+      Repo.transaction(fn ->
+        # Remove existing room associations
+        from(br in BookingRoom, where: br.booking_id == ^booking_id)
+        |> Repo.delete_all()
+
+        # Add new room associations
+        Enum.each(room_ids, fn room_id ->
+          %BookingRoom{}
+          |> BookingRoom.changeset(%{
+            booking_id: booking_id,
+            room_id: room_id
+          })
+          |> Repo.insert!()
+        end)
+
+        :ok
+      end)
+    else
+      {:error, {:rooms_not_available, unavailable_rooms}}
+    end
+  end
+
+  # Booking Invoice Management
+
+  @doc """
+  Gets the invoice for a booking with preloaded items.
+  """
+  def get_invoice_by_booking_id(booking_id) do
+    BookingInvoice
+    |> where([i], i.booking_id == ^booking_id)
+    |> preload(items: from(i in BookingInvoiceItem, order_by: i.position))
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a booking invoice by ID with preloaded items.
+  """
+  def get_booking_invoice!(id) do
+    BookingInvoice
+    |> preload(items: from(i in BookingInvoiceItem, order_by: i.position))
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a default invoice for a booking with default line items.
+  """
+  def create_default_invoice(%Booking{} = booking) do
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice = %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Create default line items
+      default_items = [
+        %{name: "Adults", quantity: 2, price_per_night: Decimal.new("1000
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 307-511 @@
+
+```
+      {:error, {:rooms_not_available, unavailable_rooms}}
+    end
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now remove the invoice component from the show page: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **show.ex**</summary>
+
+@@ lines 118-181 @@
+
+```
+        <%!-- Associated Orders --%>
+        <div class="bg-white shadow-lg rounded-lg p-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">Orders</h2>
+          <%= if @booking.orders == [] do %>
+            <p class="text-gray-500">No orders yet for this booking.</p>
+          <% else %>
+            <div class="overflow-hidden">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Order Date
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr :for={order <- @booking.orders} class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {Calendar.strftime(order.inserted_at, "%b %d, %Y %I:%M %p")}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class={[
+                        "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                        order_status_badge_class(order.status)
+                      ]}>
+                        {String.capitalize(order.status)}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      {CozyCheckoutWeb.CurrencyHelper.format_currency(order.total_amount)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <.link
+                        navigate={~p"/admin/orders/#{order}"}
+                        class="text-indigo-600 hover:text-indigo-900"
+                      >
+                        View
+                      </.link>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+    """
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Now let's start fresh. First, create the migration: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.gen.migration create_booking_invoices_and_items`
-- explanation: `Generate a new migration for booking invoices with line items`
-- isBackground: `false`
+Generate a new migration for booking invoices with line items
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.gen.migration create_booking_invoices_and_items
+```
 
 **Result:**
 
@@ -1526,14 +7050,19 @@ Compiling 1 file (.ex)
 
 Generated cozy_checkout app
 * creating priv/repo/migrations/20251022191241_create_booking_invoices_and_items.exs
-
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me write the migration: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `20251022191241_create_booking_invoices_and_items.exs`
 
 **Input:**
 
@@ -1542,15 +7071,90 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251022191241_create_booking_invoices_and_items.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251022191241_create_booking_invoices_and_items.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251022191241_create_booking_invoices_and_items.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9,"references":[],"text":"defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoicesAndItems do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":9},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":8,"references":[],"text":"  use Ecto.Migration\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":8},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":7,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":7},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":6,"references":[],"text":"  def change do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":6},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":5,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":5},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":4,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":4},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":3,"references":[],"text":"end\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":3},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":2,
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoicesAndItems do
+  use Ecto.Migration
+
+  def change do
+
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **20251022191241_create_booking_invoices_and_items.exs**</summary>
+
+@@ lines 1-7 @@
+
+```
+defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoicesAndItems do
+  use Ecto.Migration
+
+  def change do
+    # Booking Invoice Header
+    create table(:booking_invoices, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :booking_id, references(:bookings, on_delete: :delete_all, type: :binary_id), null: false
+      
+      # Calculated totals (cached from line items)
+      add :subtotal, :decimal, precision: 10, scale: 2
+      add :vat_amount, :decimal, precision: 10, scale: 2
+      add :total_price, :decimal, precision: 10, scale: 2
+      
+      # Invoice metadata
+      add :invoice_number, :string
+      add :invoice_generated_at, :utc_datetime
+      
+      timestamps(type: :utc_datetime)
+    end
+
+    create unique_index(:booking_invoices, [:booking_id])
+    create unique_index(:booking_invoices, [:invoice_number])
+
+    # Booking Invoice Line Items
+    create table(:booking_invoice_items, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :booking_invoice_id, references(:booking_invoices, on_delete: :delete_all, type: :binary_id), null: false
+      
+      # Line item details
+      add :name, :string, null: false
+      add :quantity, :integer, null: false
+      add :price_per_night, :decimal, precision: 10, scale: 2, null: false
+      add :vat_rate, :decimal, precision: 5, scale: 2, null: false
+      
+      # Calculated totals (cached)
+      add :subtotal, :decimal, precision: 10, scale: 2
+      add :vat_amount, :decimal, precision: 10, scale: 2
+      add :total, :decimal, precision: 10, scale: 2
+      
+      # For ordering
+      add :position, :integer, null: false, default: 0
+      
+      timestamps(type: :utc_datetime)
+    end
+
+    create index(:booking_invoice_items, [:booking_invoice_id])
+    create index(:booking_invoice_items, [:position])
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now create the schemas. First BookingInvoice: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `booking_invoice.ex`
 
 **Input:**
 
@@ -1611,14 +7215,355 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckout.Bookings.BookingInvoice do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use Ecto.Schema
+```
+
+@@ lines 3-3 @@
+
+```
+
+  import Ecto.Changeset
+```
+
+@@ lines 4-4 @@
+
+```
+
+
+```
+
+@@ lines 5-5 @@
+
+```
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+```
+
+@@ lines 6-6 @@
+
+```
+
+  @foreign_key_type :binary_id
+```
+
+@@ lines 7-7 @@
+
+```
+
+  schema "booking_invoices" do
+```
+
+@@ lines 8-8 @@
+
+```
+
+    # Cached calculations
+```
+
+@@ lines 9-9 @@
+
+```
+
+    field :subtotal, :decimal
+```
+
+@@ lines 10-10 @@
+
+```
+
+    field :vat_amount, :decimal
+```
+
+@@ lines 11-11 @@
+
+```
+
+    field :total_price, :decimal
+```
+
+@@ lines 12-12 @@
+
+```
+
+    
+```
+
+@@ lines 13-13 @@
+
+```
+
+    field :invoice_number, :string
+```
+
+@@ lines 14-14 @@
+
+```
+
+    field :invoice_generated_at, :utc_datetime
+```
+
+@@ lines 15-15 @@
+
+```
+
+
+```
+
+@@ lines 16-16 @@
+
+```
+
+    belongs_to :booking, CozyCheckout.Bookings.Booking
+```
+
+@@ lines 17-17 @@
+
+```
+
+    has_many :items, CozyCheckout.Bookings.BookingInvoiceItem, foreign_key: :booking_invoice_id
+```
+
+@@ lines 18-18 @@
+
+```
+
+
+```
+
+@@ lines 19-19 @@
+
+```
+
+    timestamps(type: :utc_datetime)
+```
+
+@@ lines 20-20 @@
+
+```
+
+  end
+```
+
+@@ lines 21-21 @@
+
+```
+
+
+```
+
+@@ lines 22-22 @@
+
+```
+
+  @doc false
+```
+
+@@ lines 23-23 @@
+
+```
+
+  def changeset(booking_invoice, attrs) do
+```
+
+@@ lines 24-24 @@
+
+```
+
+    booking_invoice
+```
+
+@@ lines 25-25 @@
+
+```
+
+    |> cast(attrs, [
+```
+
+@@ lines 26-26 @@
+
+```
+
+      :booking_id,
+```
+
+@@ lines 27-27 @@
+
+```
+
+      :subtotal,
+```
+
+@@ lines 28-28 @@
+
+```
+
+      :vat_amount,
+```
+
+@@ lines 29-29 @@
+
+```
+
+      :total_price,
+```
+
+@@ lines 30-30 @@
+
+```
+
+      :invoice_number,
+```
+
+@@ lines 31-31 @@
+
+```
+
+      :invoice_generated_at
+```
+
+@@ lines 32-32 @@
+
+```
+
+    ])
+```
+
+@@ lines 33-33 @@
+
+```
+
+    |> validate_required([:booking_id])
+```
+
+@@ lines 34-34 @@
+
+```
+
+    |> unique_constraint(:booking_id)
+```
+
+@@ lines 35-35 @@
+
+```
+
+    |> unique_constraint(:invoice_number)
+```
+
+@@ lines 36-36 @@
+
+```
+
+  end
+```
+
+@@ lines 37-37 @@
+
+```
+
+
+```
+
+@@ lines 38-38 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 39-39 @@
+
+```
+
+  Calculate the number of nights between check-in and check-out dates.
+```
+
+@@ lines 40-40 @@
+
+```
+
+  Returns 1 if check_out_date is nil (open-ended booking).
+```
+
+@@ lines 41-41 @@
+
+```
+
+  """
+```
+
+@@ lines 42-42 @@
+
+```
+
+  def calculate_nights(%{check_in_date: _check_in, check_out_date: nil}), do: 1
+```
+
+@@ lines 43-43 @@
+
+```
+
+  def calculate_nights(%{check_in_date: check_in, check_out_date: check_out}) do
+```
+
+@@ lines 44-44 @@
+
+```
+
+    Date.diff(check_out, check_in)
+```
+
+@@ lines 45-45 @@
+
+```
+
+  end
+```
+
+@@ lines 46-46 @@
+
+```
+
+end
+```
+
+@@ lines 47-47 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now create BookingInvoiceItem: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `booking_invoice_item.ex`
 
 **Input:**
 
@@ -1702,20 +7647,786 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking_invoice_item.ex
 ```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice_item.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckout.Bookings.BookingInvoiceItem do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use Ecto.Schema
+```
+
+@@ lines 3-3 @@
+
+```
+
+  import Ecto.Changeset
+```
+
+@@ lines 4-4 @@
+
+```
+
+
+```
+
+@@ lines 5-5 @@
+
+```
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+```
+
+@@ lines 6-6 @@
+
+```
+
+  @foreign_key_type :binary_id
+```
+
+@@ lines 7-7 @@
+
+```
+
+  schema "booking_invoice_items" do
+```
+
+@@ lines 8-8 @@
+
+```
+
+    field :name, :string
+```
+
+@@ lines 9-9 @@
+
+```
+
+    field :quantity, :integer
+```
+
+@@ lines 10-10 @@
+
+```
+
+    field :price_per_night, :decimal
+```
+
+@@ lines 11-11 @@
+
+```
+
+    field :vat_rate, :decimal
+```
+
+@@ lines 12-12 @@
+
+```
+
+    
+```
+
+@@ lines 13-13 @@
+
+```
+
+    # Cached calculations
+```
+
+@@ lines 14-14 @@
+
+```
+
+    field :subtotal, :decimal
+```
+
+@@ lines 15-15 @@
+
+```
+
+    field :vat_amount, :decimal
+```
+
+@@ lines 16-16 @@
+
+```
+
+    field :total, :decimal
+```
+
+@@ lines 17-17 @@
+
+```
+
+    
+```
+
+@@ lines 18-18 @@
+
+```
+
+    field :position, :integer, default: 0
+```
+
+@@ lines 19-19 @@
+
+```
+
+
+```
+
+@@ lines 20-20 @@
+
+```
+
+    belongs_to :booking_invoice, CozyCheckout.Bookings.BookingInvoice
+```
+
+@@ lines 21-21 @@
+
+```
+
+
+```
+
+@@ lines 22-22 @@
+
+```
+
+    timestamps(type: :utc_datetime)
+```
+
+@@ lines 23-23 @@
+
+```
+
+  end
+```
+
+@@ lines 24-24 @@
+
+```
+
+
+```
+
+@@ lines 25-25 @@
+
+```
+
+  @doc false
+```
+
+@@ lines 26-26 @@
+
+```
+
+  def changeset(invoice_item, attrs) do
+```
+
+@@ lines 27-27 @@
+
+```
+
+    invoice_item
+```
+
+@@ lines 28-28 @@
+
+```
+
+    |> cast(attrs, [
+```
+
+@@ lines 29-29 @@
+
+```
+
+      :booking_invoice_id,
+```
+
+@@ lines 30-30 @@
+
+```
+
+      :name,
+```
+
+@@ lines 31-31 @@
+
+```
+
+      :quantity,
+```
+
+@@ lines 32-32 @@
+
+```
+
+      :price_per_night,
+```
+
+@@ lines 33-33 @@
+
+```
+
+      :vat_rate,
+```
+
+@@ lines 34-34 @@
+
+```
+
+      :subtotal,
+```
+
+@@ lines 35-35 @@
+
+```
+
+      :vat_amount,
+```
+
+@@ lines 36-36 @@
+
+```
+
+      :total,
+```
+
+@@ lines 37-37 @@
+
+```
+
+      :position
+```
+
+@@ lines 38-38 @@
+
+```
+
+    ])
+```
+
+@@ lines 39-39 @@
+
+```
+
+    |> validate_required([:name, :quantity, :price_per_night, :vat_rate])
+```
+
+@@ lines 40-40 @@
+
+```
+
+    |> validate_number(:quantity, greater_than: 0)
+```
+
+@@ lines 41-41 @@
+
+```
+
+    |> validate_number(:price_per_night, greater_than_or_equal_to: 0)
+```
+
+@@ lines 42-42 @@
+
+```
+
+    |> validate_number(:vat_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+```
+
+@@ lines 43-43 @@
+
+```
+
+  end
+```
+
+@@ lines 44-44 @@
+
+```
+
+
+```
+
+@@ lines 45-45 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 46-46 @@
+
+```
+
+  Calculate line item totals based on booking dates and item pricing.
+```
+
+@@ lines 47-47 @@
+
+```
+
+  Returns a map with :subtotal, :vat_amount, and :total.
+```
+
+@@ lines 48-48 @@
+
+```
+
+  """
+```
+
+@@ lines 49-49 @@
+
+```
+
+  def calculate_totals(invoice_item, nights) do
+```
+
+@@ lines 50-50 @@
+
+```
+
+    # subtotal = quantity * price_per_night * nights
+```
+
+@@ lines 51-51 @@
+
+```
+
+    subtotal = invoice_item.price_per_night
+```
+
+@@ lines 52-52 @@
+
+```
+
+      |> Decimal.mult(Decimal.new(invoice_item.quantity))
+```
+
+@@ lines 53-53 @@
+
+```
+
+      |> Decimal.mult(Decimal.new(nights))
+```
+
+@@ lines 54-54 @@
+
+```
+
+    
+```
+
+@@ lines 55-55 @@
+
+```
+
+    # vat_amount = subtotal * (vat_rate / 100)
+```
+
+@@ lines 56-56 @@
+
+```
+
+    vat_amount = subtotal
+```
+
+@@ lines 57-57 @@
+
+```
+
+      |> Decimal.mult(invoice_item.vat_rate)
+```
+
+@@ lines 58-58 @@
+
+```
+
+      |> Decimal.div(Decimal.new(100))
+```
+
+@@ lines 59-59 @@
+
+```
+
+    
+```
+
+@@ lines 60-60 @@
+
+```
+
+    # total = subtotal + vat_amount
+```
+
+@@ lines 61-61 @@
+
+```
+
+    total = Decimal.add(subtotal, vat_amount)
+```
+
+@@ lines 62-62 @@
+
+```
+
+    
+```
+
+@@ lines 63-63 @@
+
+```
+
+    %{
+```
+
+@@ lines 64-64 @@
+
+```
+
+      subtotal: subtotal,
+```
+
+@@ lines 65-65 @@
+
+```
+
+      vat_amount: vat_amount,
+```
+
+@@ lines 66-66 @@
+
+```
+
+      total: total
+```
+
+@@ lines 67-67 @@
+
+```
+
+    }
+```
+
+@@ lines 68-68 @@
+
+```
+
+  end
+```
+
+@@ lines 69-69 @@
+
+```
+
+end
+```
+
+@@ lines 70-70 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now update the Booking schema to add the invoice relationship: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking.ex**</summary>
+
+@@ lines 15-22 @@
+
+```
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
+    has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
+    has_many :rooms, through: [:booking_rooms, :room]
+    has_one :invoice, CozyCheckout.Bookings.BookingInvoice
+
+    timestamps(type: :utc_datetime)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now add the context functions to the Bookings module. I'll add them at the end before the closing `end`: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 6-12 @@
+
+```
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Bookings.BookingInvoiceItem
+  alias CozyCheckout.Rooms
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 309-312 @@
+
+```
+      {:error, {:rooms_not_available, unavailable_rooms}}
+    end
+  end
+
+  # Booking Invoice Management
+
+  @doc """
+  Gets the invoice for a booking with preloaded items.
+  """
+  def get_invoice_by_booking_id(booking_id) do
+    BookingInvoice
+    |> where([i], i.booking_id == ^booking_id)
+    |> preload(items: from(i in BookingInvoiceItem, order_by: i.position))
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a booking invoice by ID with preloaded items.
+  """
+  def get_booking_invoice!(id) do
+    BookingInvoice
+    |> preload(items: from(i in BookingInvoiceItem, order_by: i.position))
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a default invoice for a booking with default line items.
+  """
+  def create_default_invoice(%Booking{} = booking) do
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice = %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Create default line items
+      default_items = [
+        %{name: "Adults", quantity: 2, price_per_night: Decimal.new("1000.00"), vat_rate: Decimal.new("21.00"), position: 1},
+        %{name: "Kids under 2 years", quantity: 0, price_per_night: Decimal.new("0.00"), vat_rate: Decimal.new("21.00"), position: 2},
+        %{name: "Kids under 12 years", quantity: 0, price_per_night: Decimal.new("500.00"), vat_rate: Decimal.new("21.00"), position: 3}
+      ]
+
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(Map.put(item_attrs, :booking_invoice_id, invoice.id))
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+      get_booking_invoice!(invoice.id)
+    end)
+  end
+
+  @doc """
+  Updates a booking invoice header.
+  """
+  def update_booking_invoice(%BookingInvoice{} = invoice, attrs) do
+    invoice
+    |> BookingInvoice.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a booking invoice and all its items.
+  """
+  def delete_booking_invoice(%BookingInvoice{} = invoice) do
+    Repo.delete(invoice)
+  end
+
+  @doc """
+  Creates a new invoice item.
+  """
+  def create_invoice_item(invoice_id, attrs) do
+    %BookingInvoiceItem{}
+    |> BookingInvoiceItem.changeset(Map.put(attrs, :booking_invoice_id, invoice_id))
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an invoice item.
+  """
+  def update_invoice_item(%BookingInvoiceItem{} = item, attrs) do
+    item
+    |> BookingInvoiceItem.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an invoice item.
+  """
+  def delete_invoice_item(%BookingInvoiceItem{} = item) do
+    Repo.delete(item)
+  end
+
+  @doc """
+  Gets an invoice item by ID.
+  """
+  def get_invoice_item!(id) do
+    Repo.get!(BookingInvoiceItem, id)
+  end
+
+  @doc """
+  Recalculates and updates the cached totals for all invoice items and the invoice header.
+  """
+  def recalculate_invoice_totals(%BookingInvoice{} = invoice) do
+    Repo.transaction(fn ->
+      booking = get_booking!(invoice.booking_id)
+      nights = BookingInvoice.calculate_nights(booking)
+      
+      # Reload invoice with items
+      invoice = get_booking_invoice!(invoice.id)
+      
+      # Recalculate each item
+      updated_items = Enum.map(invoice.items, fn item ->
+        totals = BookingInvoiceItem.calculate_totals(item, nights)
+        
+        {:ok, updated_item} = item
+          |> BookingInvoiceItem.changeset(totals)
+          |> Repo.update()
+        
+        updated_item
+      end)
+      
+      # Calculate invoice totals from items
+      invoice_subtotal = updated_items
+        |> Enum.map(& &1.subtotal)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+      
+      invoice_vat_amount = updated_items
+        |> Enum.map(& &1.vat_amount)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+      
+      invoice_total = updated_items
+        |> Enum.map(& &1.total)
+        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
+      
+      # Update invoice header with totals
+      {:ok, updated_invoice} = invoice
+        |> BookingInvoice.changeset(%{
+          subtotal: invoice_subtotal,
+          vat_amount: invoice_vat_amount,
+          total_price: invoice_total
+        })
+        |> Repo.update()
+      
+      # Reload with updated items
+      get_booking_invoice!(updated_invoice.id)
+    end)
+  end
+
+  @doc """
+  Generates an invoice number and marks the invoice as generated.
+  Format: INV-YYYYMMDD-NNNN (e.g., INV-20251022-0001)
+  """
+  def generate_invoice_number(%BookingInvoice{} = invoice) do
+    today = Date.utc_today()
+    date_prefix = "INV-#{Date.to_iso8601(today, :basic)}"
+    
+    # Find the highest invoice number for today
+    last_invoice = 
+      from(i in BookingInvoice,
+        where: fragment("? LIKE ?", i.invoice_number, ^"#{date_prefix}%"),
+        order_by: [desc: i.invoice_number],
+        limit: 1
+      )
+      |> Repo.one()
+    
+    next_number = case last_invoice do
+      nil -> 1
+      %{invoice_number: number} ->
+        # Extract NNNN part and increment
+        number
+        |> String.split("-")
+        |> List.last()
+        |> String.to_integer()
+        |> Kernel.+(1)
+    end
+    
+    invoice_number = "#{date_prefix}-#{String.pad_leading(Integer.to_string(next_number), 4, "0")}"
+    
+    # Recalculate totals before generating
+    {:ok, invoice} = recalculate_invoice_totals(invoice)
+    
+    invoice
+    |> BookingInvoice.changeset(%{
+      invoice_number: invoice_number,
+      invoice_generated_at: DateTime.utc_now() |> DateTime.truncate(:second)
+    })
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking invoice changes.
+  """
+  def change_booking_invoice(%BookingInvoice{} = invoice, attrs \\ %{}) do
+    BookingInvoice.changeset(invoice, attrs)
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking invoice item changes.
+  """
+  def change_invoice_item(%BookingInvoiceItem{} = item, attrs \\ %{}) do
+    BookingInvoiceItem.changeset(item, attrs)
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now run the migration: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate`
-- explanation: `Run the booking invoices migration`
-- isBackground: `false`
+Run the booking invoices migration
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate
+```
 
 **Result:**
 
@@ -1739,14 +8450,53 @@ Command exited with code 1
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+I need to fix the preload syntax: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 315-332 @@
+
+```
+  @doc """
+  Gets the invoice for a booking with preloaded items.
+  """
+  def get_invoice_by_booking_id(booking_id) do
+    items_query = from(i in BookingInvoiceItem, order_by: i.position)
+    
+    BookingInvoice
+    |> where([i], i.booking_id == ^booking_id)
+    |> preload(items: ^items_query)
+    |> Repo.one()
+  end
+
+  @doc """
+  Gets a booking invoice by ID with preloaded items.
+  """
+  def get_booking_invoice!(id) do
+    items_query = from(i in BookingInvoiceItem, order_by: i.position)
+    
+    BookingInvoice
+    |> preload(items: ^items_query)
+    |> Repo.get!(id)
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate`
-- explanation: `Run the booking invoices migration again`
-- isBackground: `false`
+Run the booking invoices migration again
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate
+```
 
 **Result:**
 
@@ -1778,14 +8528,19 @@ Generated cozy_checkout app
 21:14:30.626 [info] create index booking_invoice_items_position_index
 
 21:14:30.628 [info] == Migrated 20251022191241 in 0.0s
-
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Excellent! Now let me create the Invoice Component LiveView. This will be a completely fresh implementation: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `invoice_component.ex`
 
 **Input:**
 
@@ -2190,20 +8945,2848 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Qv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex
 ```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use CozyCheckoutWeb, :live_component
+```
+
+@@ lines 3-3 @@
+
+```
+
+
+```
+
+@@ lines 4-4 @@
+
+```
+
+  alias CozyCheckout.Bookings
+```
+
+@@ lines 5-5 @@
+
+```
+
+  alias CozyCheckout.Bookings.{BookingInvoice, BookingInvoiceItem}
+```
+
+@@ lines 6-6 @@
+
+```
+
+
+```
+
+@@ lines 7-7 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 8-8 @@
+
+```
+
+  def render(assigns) do
+```
+
+@@ lines 9-9 @@
+
+```
+
+    ~H"""
+```
+
+@@ lines 10-10 @@
+
+```
+
+    <div class="bg-white shadow-lg rounded-lg p-6">
+```
+
+@@ lines 11-11 @@
+
+```
+
+      <div class="flex items-center justify-between mb-4">
+```
+
+@@ lines 12-12 @@
+
+```
+
+        <h2 class="text-2xl font-bold text-gray-900">Invoice Details</h2>
+```
+
+@@ lines 13-13 @@
+
+```
+
+        <div class="flex space-x-2">
+```
+
+@@ lines 14-14 @@
+
+```
+
+          <%= if @invoice && @invoice.invoice_number do %>
+```
+
+@@ lines 15-15 @@
+
+```
+
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+```
+
+@@ lines 16-16 @@
+
+```
+
+              {@invoice.invoice_number}
+```
+
+@@ lines 17-17 @@
+
+```
+
+            </span>
+```
+
+@@ lines 18-18 @@
+
+```
+
+          <% end %>
+```
+
+@@ lines 19-19 @@
+
+```
+
+          <%= if @invoice do %>
+```
+
+@@ lines 20-20 @@
+
+```
+
+            <button
+```
+
+@@ lines 21-21 @@
+
+```
+
+              type="button"
+```
+
+@@ lines 22-22 @@
+
+```
+
+              phx-click="recalculate"
+```
+
+@@ lines 23-23 @@
+
+```
+
+              phx-target={@myself}
+```
+
+@@ lines 24-24 @@
+
+```
+
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+```
+
+@@ lines 25-25 @@
+
+```
+
+            >
+```
+
+@@ lines 26-26 @@
+
+```
+
+              <.icon name="hero-calculator" class="w-4 h-4 inline mr-1" /> Recalculate
+```
+
+@@ lines 27-27 @@
+
+```
+
+            </button>
+```
+
+@@ lines 28-28 @@
+
+```
+
+            <%= if !@invoice.invoice_number do %>
+```
+
+@@ lines 29-29 @@
+
+```
+
+              <button
+```
+
+@@ lines 30-30 @@
+
+```
+
+                type="button"
+```
+
+@@ lines 31-31 @@
+
+```
+
+                phx-click="generate_invoice"
+```
+
+@@ lines 32-32 @@
+
+```
+
+                phx-target={@myself}
+```
+
+@@ lines 33-33 @@
+
+```
+
+                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg transition-colors"
+```
+
+@@ lines 34-34 @@
+
+```
+
+              >
+```
+
+@@ lines 35-35 @@
+
+```
+
+                <.icon name="hero-document-text" class="w-4 h-4 inline mr-1" /> Generate Invoice
+```
+
+@@ lines 36-36 @@
+
+```
+
+              </button>
+```
+
+@@ lines 37-37 @@
+
+```
+
+            <% end %>
+```
+
+@@ lines 38-38 @@
+
+```
+
+          <% end %>
+```
+
+@@ lines 39-39 @@
+
+```
+
+        </div>
+```
+
+@@ lines 40-40 @@
+
+```
+
+      </div>
+```
+
+@@ lines 41-41 @@
+
+```
+
+
+```
+
+@@ lines 42-42 @@
+
+```
+
+      <%= if @invoice do %>
+```
+
+@@ lines 43-43 @@
+
+```
+
+        <%!-- Invoice Items Table --%>
+```
+
+@@ lines 44-44 @@
+
+```
+
+        <div class="mb-6">
+```
+
+@@ lines 45-45 @@
+
+```
+
+          <div class="flex items-center justify-between mb-3">
+```
+
+@@ lines 46-46 @@
+
+```
+
+            <h3 class="text-lg font-semibold text-gray-900">Line Items</h3>
+```
+
+@@ lines 47-47 @@
+
+```
+
+            <%= if !@editing_item_id do %>
+```
+
+@@ lines 48-48 @@
+
+```
+
+              <button
+```
+
+@@ lines 49-49 @@
+
+```
+
+                type="button"
+```
+
+@@ lines 50-50 @@
+
+```
+
+                phx-click="add_item"
+```
+
+@@ lines 51-51 @@
+
+```
+
+                phx-target={@myself}
+```
+
+@@ lines 52-52 @@
+
+```
+
+                class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+```
+
+@@ lines 53-53 @@
+
+```
+
+              >
+```
+
+@@ lines 54-54 @@
+
+```
+
+                <.icon name="hero-plus" class="w-4 h-4 inline mr-1" /> Add Item
+```
+
+@@ lines 55-55 @@
+
+```
+
+              </button>
+```
+
+@@ lines 56-56 @@
+
+```
+
+            <% end %>
+```
+
+@@ lines 57-57 @@
+
+```
+
+          </div>
+```
+
+@@ lines 58-58 @@
+
+```
+
+
+```
+
+@@ lines 59-59 @@
+
+```
+
+          <div class="overflow-hidden border border-gray-200 rounded-lg">
+```
+
+@@ lines 60-60 @@
+
+```
+
+            <table class="min-w-full divide-y divide-gray-200">
+```
+
+@@ lines 61-61 @@
+
+```
+
+              <thead class="bg-gray-50">
+```
+
+@@ lines 62-62 @@
+
+```
+
+                <tr>
+```
+
+@@ lines 63-63 @@
+
+```
+
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+```
+
+@@ lines 64-64 @@
+
+```
+
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+```
+
+@@ lines 65-65 @@
+
+```
+
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/Night</th>
+```
+
+@@ lines 66-66 @@
+
+```
+
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">VAT %</th>
+```
+
+@@ lines 67-67 @@
+
+```
+
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+```
+
+@@ lines 68-68 @@
+
+```
+
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+```
+
+@@ lines 69-69 @@
+
+```
+
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+```
+
+@@ lines 70-70 @@
+
+```
+
+                </tr>
+```
+
+@@ lines 71-71 @@
+
+```
+
+              </thead>
+```
+
+@@ lines 72-72 @@
+
+```
+
+              <tbody class="bg-white divide-y divide-gray-200">
+```
+
+@@ lines 73-73 @@
+
+```
+
+                <%= if @invoice.items == [] do %>
+```
+
+@@ lines 74-74 @@
+
+```
+
+                  <tr>
+```
+
+@@ lines 75-75 @@
+
+```
+
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+```
+
+@@ lines 76-76 @@
+
+```
+
+                      No items yet. Click "Add Item" to create one.
+```
+
+@@ lines 77-77 @@
+
+```
+
+                    </td>
+```
+
+@@ lines 78-78 @@
+
+```
+
+                  </tr>
+```
+
+@@ lines 79-79 @@
+
+```
+
+                <% else %>
+```
+
+@@ lines 80-80 @@
+
+```
+
+                  <%= for item <- @invoice.items do %>
+```
+
+@@ lines 81-81 @@
+
+```
+
+                    <%= if @editing_item_id == item.id do %>
+```
+
+@@ lines 82-82 @@
+
+```
+
+                      <%!-- Edit Mode --%>
+```
+
+@@ lines 83-83 @@
+
+```
+
+                      <tr class="bg-blue-50">
+```
+
+@@ lines 84-84 @@
+
+```
+
+                        <td colspan="7" class="px-4 py-3">
+```
+
+@@ lines 85-85 @@
+
+```
+
+                          <.form for={@item_form} id={"item-form-#{item.id}"} phx-target={@myself} phx-submit="save_item">
+```
+
+@@ lines 86-86 @@
+
+```
+
+                            <div class="grid grid-cols-6 gap-3">
+```
+
+@@ lines 87-87 @@
+
+```
+
+                              <div class="col-span-2">
+```
+
+@@ lines 88-88 @@
+
+```
+
+                                <.input field={@item_form[:name]} type="text" placeholder="Item name" />
+```
+
+@@ lines 89-89 @@
+
+```
+
+                              </div>
+```
+
+@@ lines 90-90 @@
+
+```
+
+                              <div>
+```
+
+@@ lines 91-91 @@
+
+```
+
+                                <.input field={@item_form[:quantity]} type="number" min="1" placeholder="Qty" />
+```
+
+@@ lines 92-92 @@
+
+```
+
+                              </div>
+```
+
+@@ lines 93-93 @@
+
+```
+
+                              <div>
+```
+
+@@ lines 94-94 @@
+
+```
+
+                                <.input
+```
+
+@@ lines 95-95 @@
+
+```
+
+                                  field={@item_form[:price_per_night]}
+```
+
+@@ lines 96-96 @@
+
+```
+
+                                  type="number"
+```
+
+@@ lines 97-97 @@
+
+```
+
+                                  step="0.01"
+```
+
+@@ lines 98-98 @@
+
+```
+
+                                  min="0"
+```
+
+@@ lines 99-99 @@
+
+```
+
+                                  placeholder="Price"
+```
+
+@@ lines 100-100 @@
+
+```
+
+                                />
+```
+
+@@ lines 101-101 @@
+
+```
+
+                              </div>
+```
+
+@@ lines 102-102 @@
+
+```
+
+                              <div>
+```
+
+@@ lines 103-103 @@
+
+```
+
+                                <.input
+```
+
+@@ lines 104-104 @@
+
+```
+
+                                  field={@item_form[:vat_rate]}
+```
+
+@@ lines 105-105 @@
+
+```
+
+                                  type="number"
+```
+
+@@ lines 106-106 @@
+
+```
+
+                                  step="0.01"
+```
+
+@@ lines 107-107 @@
+
+```
+
+                                  min="0"
+```
+
+@@ lines 108-108 @@
+
+```
+
+                                  max="100"
+```
+
+@@ lines 109-109 @@
+
+```
+
+                                  placeholder="VAT %"
+```
+
+@@ lines 110-110 @@
+
+```
+
+                                />
+```
+
+@@ lines 111-111 @@
+
+```
+
+                              </div>
+```
+
+@@ lines 112-112 @@
+
+```
+
+                              <div class="flex space-x-2">
+```
+
+@@ lines 113-113 @@
+
+```
+
+                                <button
+```
+
+@@ lines 114-114 @@
+
+```
+
+                                  type="submit"
+```
+
+@@ lines 115-115 @@
+
+```
+
+                                  class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+```
+
+@@ lines 116-116 @@
+
+```
+
+                                >
+```
+
+@@ lines 117-117 @@
+
+```
+
+                                  Save
+```
+
+@@ lines 118-118 @@
+
+```
+
+                                </button>
+```
+
+@@ lines 119-119 @@
+
+```
+
+                                <button
+```
+
+@@ lines 120-120 @@
+
+```
+
+                                  type="button"
+```
+
+@@ lines 121-121 @@
+
+```
+
+                                  phx-click="cancel_edit"
+```
+
+@@ lines 122-122 @@
+
+```
+
+                                  phx-target={@myself}
+```
+
+@@ lines 123-123 @@
+
+```
+
+                                  class="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm rounded transition-colors"
+```
+
+@@ lines 124-124 @@
+
+```
+
+                                >
+```
+
+@@ lines 125-125 @@
+
+```
+
+                                  Cancel
+```
+
+@@ lines 126-126 @@
+
+```
+
+                                </button>
+```
+
+@@ lines 127-127 @@
+
+```
+
+                              </div>
+```
+
+@@ lines 128-128 @@
+
+```
+
+                            </div>
+```
+
+@@ lines 129-129 @@
+
+```
+
+                          </.form>
+```
+
+@@ lines 130-130 @@
+
+```
+
+                        </td>
+```
+
+@@ lines 131-131 @@
+
+```
+
+                      </tr>
+```
+
+@@ lines 132-132 @@
+
+```
+
+                    <% else %>
+```
+
+@@ lines 133-133 @@
+
+```
+
+                      <%!-- Display Mode --%>
+```
+
+@@ lines 134-134 @@
+
+```
+
+                      <tr class="hover:bg-gray-50">
+```
+
+@@ lines 135-135 @@
+
+```
+
+                        <td class="px-4 py-3 text-sm text-gray-900">{item.name}</td>
+```
+
+@@ lines 136-136 @@
+
+```
+
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
+```
+
+@@ lines 137-137 @@
+
+```
+
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+```
+
+@@ lines 138-138 @@
+
+```
+
+                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.price_per_night)}
+```
+
+@@ lines 139-139 @@
+
+```
+
+                        </td>
+```
+
+@@ lines 140-140 @@
+
+```
+
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+```
+
+@@ lines 141-141 @@
+
+```
+
+                          {Decimal.to_string(item.vat_rate)}%
+```
+
+@@ lines 142-142 @@
+
+```
+
+                        </td>
+```
+
+@@ lines 143-143 @@
+
+```
+
+                        <td class="px-4 py-3 text-sm text-gray-900 text-right">
+```
+
+@@ lines 144-144 @@
+
+```
+
+                          <%= if item.subtotal do %>
+```
+
+@@ lines 145-145 @@
+
+```
+
+                            {CozyCheckoutWeb.CurrencyHelper.format_currency(item.subtotal)}
+```
+
+@@ lines 146-146 @@
+
+```
+
+                          <% else %>
+```
+
+@@ lines 147-147 @@
+
+```
+
+                            <span class="text-gray-400">—</span>
+```
+
+@@ lines 148-148 @@
+
+```
+
+                          <% end %>
+```
+
+@@ lines 149-149 @@
+
+```
+
+                        </td>
+```
+
+@@ lines 150-150 @@
+
+```
+
+                        <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+```
+
+@@ lines 151-151 @@
+
+```
+
+                          <%= if item.total do %>
+```
+
+@@ lines 152-152 @@
+
+```
+
+                            {CozyCheckoutWeb.CurrencyHelper.format_currency(item.total)}
+```
+
+@@ lines 153-153 @@
+
+```
+
+                          <% else %>
+```
+
+@@ lines 154-154 @@
+
+```
+
+                            <span class="text-gray-400">—</span>
+```
+
+@@ lines 155-155 @@
+
+```
+
+                          <% end %>
+```
+
+@@ lines 156-156 @@
+
+```
+
+                        </td>
+```
+
+@@ lines 157-157 @@
+
+```
+
+                        <td class="px-4 py-3 text-right text-sm">
+```
+
+@@ lines 158-158 @@
+
+```
+
+                          <button
+```
+
+@@ lines 159-159 @@
+
+```
+
+                            type="button"
+```
+
+@@ lines 160-160 @@
+
+```
+
+                            phx-click="edit_item"
+```
+
+@@ lines 161-161 @@
+
+```
+
+                            phx-value-item-id={item.id}
+```
+
+@@ lines 162-162 @@
+
+```
+
+                            phx-target={@myself}
+```
+
+@@ lines 163-163 @@
+
+```
+
+                            class="text-indigo-600 hover:text-indigo-900 mr-3"
+```
+
+@@ lines 164-164 @@
+
+```
+
+                          >
+```
+
+@@ lines 165-165 @@
+
+```
+
+                            Edit
+```
+
+@@ lines 166-166 @@
+
+```
+
+                          </button>
+```
+
+@@ lines 167-167 @@
+
+```
+
+                          <button
+```
+
+@@ lines 168-168 @@
+
+```
+
+                            type="button"
+```
+
+@@ lines 169-169 @@
+
+```
+
+                            phx-click="delete_item"
+```
+
+@@ lines 170-170 @@
+
+```
+
+                            phx-value-item-id={item.id}
+```
+
+@@ lines 171-171 @@
+
+```
+
+                            phx-target={@myself}
+```
+
+@@ lines 172-172 @@
+
+```
+
+                            class="text-red-600 hover:text-red-900"
+```
+
+@@ lines 173-173 @@
+
+```
+
+                            data-confirm="Are you sure you want to delete this item?"
+```
+
+@@ lines 174-174 @@
+
+```
+
+                          >
+```
+
+@@ lines 175-175 @@
+
+```
+
+                            Delete
+```
+
+@@ lines 176-176 @@
+
+```
+
+                          </button>
+```
+
+@@ lines 177-177 @@
+
+```
+
+                        </td>
+```
+
+@@ lines 178-178 @@
+
+```
+
+                      </tr>
+```
+
+@@ lines 179-179 @@
+
+```
+
+                    <% end %>
+```
+
+@@ lines 180-180 @@
+
+```
+
+                  <% end %>
+```
+
+@@ lines 181-181 @@
+
+```
+
+                <% end %>
+```
+
+@@ lines 182-182 @@
+
+```
+
+              </tbody>
+```
+
+@@ lines 183-183 @@
+
+```
+
+            </table>
+```
+
+@@ lines 184-184 @@
+
+```
+
+          </div>
+```
+
+@@ lines 185-185 @@
+
+```
+
+        </div>
+```
+
+@@ lines 186-186 @@
+
+```
+
+
+```
+
+@@ lines 187-187 @@
+
+```
+
+        <%!-- Invoice Summary --%>
+```
+
+@@ lines 188-188 @@
+
+```
+
+        <div class="bg-gray-50 p-4 rounded-lg">
+```
+
+@@ lines 189-189 @@
+
+```
+
+          <div class="max-w-md ml-auto space-y-2">
+```
+
+@@ lines 190-190 @@
+
+```
+
+            <div class="flex justify-between text-sm">
+```
+
+@@ lines 191-191 @@
+
+```
+
+              <span class="text-gray-600">Number of Nights</span>
+```
+
+@@ lines 192-192 @@
+
+```
+
+              <span class="font-medium text-gray-900">{calculate_nights(@booking)}</span>
+```
+
+@@ lines 193-193 @@
+
+```
+
+            </div>
+```
+
+@@ lines 194-194 @@
+
+```
+
+            <hr class="border-gray-300" />
+```
+
+@@ lines 195-195 @@
+
+```
+
+            <%= if @invoice.subtotal do %>
+```
+
+@@ lines 196-196 @@
+
+```
+
+              <div class="flex justify-between text-sm">
+```
+
+@@ lines 197-197 @@
+
+```
+
+                <span class="text-gray-600">Subtotal (excl. VAT)</span>
+```
+
+@@ lines 198-198 @@
+
+```
+
+                <span class="font-medium text-gray-900">
+```
+
+@@ lines 199-199 @@
+
+```
+
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.subtotal)}
+```
+
+@@ lines 200-200 @@
+
+```
+
+                </span>
+```
+
+@@ lines 201-201 @@
+
+```
+
+              </div>
+```
+
+@@ lines 202-202 @@
+
+```
+
+              <div class="flex justify-between text-sm">
+```
+
+@@ lines 203-203 @@
+
+```
+
+                <span class="text-gray-600">Total VAT</span>
+```
+
+@@ lines 204-204 @@
+
+```
+
+                <span class="font-medium text-gray-900">
+```
+
+@@ lines 205-205 @@
+
+```
+
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.vat_amount)}
+```
+
+@@ lines 206-206 @@
+
+```
+
+                </span>
+```
+
+@@ lines 207-207 @@
+
+```
+
+              </div>
+```
+
+@@ lines 208-208 @@
+
+```
+
+              <hr class="border-gray-300" />
+```
+
+@@ lines 209-209 @@
+
+```
+
+              <div class="flex justify-between">
+```
+
+@@ lines 210-210 @@
+
+```
+
+                <span class="text-lg font-bold text-gray-900">Total Price</span>
+```
+
+@@ lines 211-211 @@
+
+```
+
+                <span class="text-2xl font-bold text-green-600">
+```
+
+@@ lines 212-212 @@
+
+```
+
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.total_price)}
+```
+
+@@ lines 213-213 @@
+
+```
+
+                </span>
+```
+
+@@ lines 214-214 @@
+
+```
+
+              </div>
+```
+
+@@ lines 215-215 @@
+
+```
+
+            <% else %>
+```
+
+@@ lines 216-216 @@
+
+```
+
+              <p class="text-sm text-gray-500 italic">Click "Recalculate" to compute totals</p>
+```
+
+@@ lines 217-217 @@
+
+```
+
+            <% end %>
+```
+
+@@ lines 218-218 @@
+
+```
+
+          </div>
+```
+
+@@ lines 219-219 @@
+
+```
+
+
+```
+
+@@ lines 220-220 @@
+
+```
+
+          <%= if @invoice.invoice_generated_at do %>
+```
+
+@@ lines 221-221 @@
+
+```
+
+            <div class="mt-4 pt-4 border-t border-gray-300">
+```
+
+@@ lines 222-222 @@
+
+```
+
+              <p class="text-sm text-gray-600">
+```
+
+@@ lines 223-223 @@
+
+```
+
+                Invoice generated on
+```
+
+@@ lines 224-224 @@
+
+```
+
+                <span class="font-medium text-gray-900">
+```
+
+@@ lines 225-225 @@
+
+```
+
+                  {Calendar.strftime(@invoice.invoice_generated_at, "%B %d, %Y at %I:%M %p")}
+```
+
+@@ lines 226-226 @@
+
+```
+
+                </span>
+```
+
+@@ lines 227-227 @@
+
+```
+
+              </p>
+```
+
+@@ lines 228-228 @@
+
+```
+
+            </div>
+```
+
+@@ lines 229-229 @@
+
+```
+
+          <% end %>
+```
+
+@@ lines 230-230 @@
+
+```
+
+        </div>
+```
+
+@@ lines 231-231 @@
+
+```
+
+      <% else %>
+```
+
+@@ lines 232-232 @@
+
+```
+
+        <%!-- No Invoice Yet --%>
+```
+
+@@ lines 233-233 @@
+
+```
+
+        <div class="text-center py-8">
+```
+
+@@ lines 234-234 @@
+
+```
+
+          <.icon name="hero-document-text" class="w-16 h-16 mx-auto text-gray-400 mb-4" />
+```
+
+@@ lines 235-235 @@
+
+```
+
+          <p class="text-gray-500 mb-4">No invoice details yet for this booking.</p>
+```
+
+@@ lines 236-236 @@
+
+```
+
+          <button
+```
+
+@@ lines 237-237 @@
+
+```
+
+            type="button"
+```
+
+@@ lines 238-238 @@
+
+```
+
+            phx-click="create_invoice"
+```
+
+@@ lines 239-239 @@
+
+```
+
+            phx-target={@myself}
+```
+
+@@ lines 240-240 @@
+
+```
+
+            class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+```
+
+@@ lines 241-241 @@
+
+```
+
+          >
+```
+
+@@ lines 242-242 @@
+
+```
+
+            <.icon name="hero-plus" class="w-5 h-5 inline mr-1" /> Create Invoice
+```
+
+@@ lines 243-243 @@
+
+```
+
+          </button>
+```
+
+@@ lines 244-244 @@
+
+```
+
+        </div>
+```
+
+@@ lines 245-245 @@
+
+```
+
+      <% end %>
+```
+
+@@ lines 246-246 @@
+
+```
+
+    </div>
+```
+
+@@ lines 247-247 @@
+
+```
+
+    """
+```
+
+@@ lines 248-248 @@
+
+```
+
+  end
+```
+
+@@ lines 249-249 @@
+
+```
+
+
+```
+
+@@ lines 250-250 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 251-251 @@
+
+```
+
+  def update(assigns, socket) do
+```
+
+@@ lines 252-252 @@
+
+```
+
+    booking = assigns.booking
+```
+
+@@ lines 253-253 @@
+
+```
+
+    invoice = Bookings.get_invoice_by_booking_id(booking.id)
+```
+
+@@ lines 254-254 @@
+
+```
+
+
+```
+
+@@ lines 255-255 @@
+
+```
+
+    {:ok,
+```
+
+@@ lines 256-256 @@
+
+```
+
+     socket
+```
+
+@@ lines 257-257 @@
+
+```
+
+     |> assign(assigns)
+```
+
+@@ lines 258-258 @@
+
+```
+
+     |> assign(:invoice, invoice)
+```
+
+@@ lines 259-259 @@
+
+```
+
+     |> assign(:editing_item_id, nil)
+```
+
+@@ lines 260-260 @@
+
+```
+
+     |> assign(:item_form, nil)}
+```
+
+@@ lines 261-261 @@
+
+```
+
+  end
+```
+
+@@ lines 262-262 @@
+
+```
+
+
+```
+
+@@ lines 263-263 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 264-264 @@
+
+```
+
+  def handle_event("create_invoice", _params, socket) do
+```
+
+@@ lines 265-265 @@
+
+```
+
+    case Bookings.create_default_invoice(socket.assigns.booking) do
+```
+
+@@ lines 266-266 @@
+
+```
+
+      {:ok, invoice} ->
+```
+
+@@ lines 267-267 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 268-268 @@
+
+```
+
+         socket
+```
+
+@@ lines 269-269 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 270-270 @@
+
+```
+
+         |> put_flash(:info, "Invoice created with default items")}
+```
+
+@@ lines 271-271 @@
+
+```
+
+
+```
+
+@@ lines 272-272 @@
+
+```
+
+      {:error, _reason} ->
+```
+
+@@ lines 273-273 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Failed to create invoice")}
+```
+
+@@ lines 274-274 @@
+
+```
+
+    end
+```
+
+@@ lines 275-275 @@
+
+```
+
+  end
+```
+
+@@ lines 276-276 @@
+
+```
+
+
+```
+
+@@ lines 277-277 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 278-278 @@
+
+```
+
+  def handle_event("add_item", _params, socket) do
+```
+
+@@ lines 279-279 @@
+
+```
+
+    next_position = length(socket.assigns.invoice.items) + 1
+```
+
+@@ lines 280-280 @@
+
+```
+
+
+```
+
+@@ lines 281-281 @@
+
+```
+
+    form =
+```
+
+@@ lines 282-282 @@
+
+```
+
+      Bookings.change_invoice_item(%BookingInvoiceItem{}, %{
+```
+
+@@ lines 283-283 @@
+
+```
+
+        position: next_position,
+```
+
+@@ lines 284-284 @@
+
+```
+
+        quantity: 1,
+```
+
+@@ lines 285-285 @@
+
+```
+
+        price_per_night: Decimal.new("0.00"),
+```
+
+@@ lines 286-286 @@
+
+```
+
+        vat_rate: Decimal.new("21.00")
+```
+
+@@ lines 287-287 @@
+
+```
+
+      })
+```
+
+@@ lines 288-288 @@
+
+```
+
+      |> to_form()
+```
+
+@@ lines 289-289 @@
+
+```
+
+
+```
+
+@@ lines 290-290 @@
+
+```
+
+    {:noreply,
+```
+
+@@ lines 291-291 @@
+
+```
+
+     socket
+```
+
+@@ lines 292-292 @@
+
+```
+
+     |> assign(:editing_item_id, :new)
+```
+
+@@ lines 293-293 @@
+
+```
+
+     |> assign(:item_form, form)}
+```
+
+@@ lines 294-294 @@
+
+```
+
+  end
+```
+
+@@ lines 295-295 @@
+
+```
+
+
+```
+
+@@ lines 296-296 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 297-297 @@
+
+```
+
+  def handle_event("edit_item", %{"item-id" => item_id}, socket) do
+```
+
+@@ lines 298-298 @@
+
+```
+
+    item = Bookings.get_invoice_item!(item_id)
+```
+
+@@ lines 299-299 @@
+
+```
+
+    form = Bookings.change_invoice_item(item) |> to_form()
+```
+
+@@ lines 300-300 @@
+
+```
+
+
+```
+
+@@ lines 301-301 @@
+
+```
+
+    {:noreply,
+```
+
+@@ lines 302-302 @@
+
+```
+
+     socket
+```
+
+@@ lines 303-303 @@
+
+```
+
+     |> assign(:editing_item_id, item.id)
+```
+
+@@ lines 304-304 @@
+
+```
+
+     |> assign(:item_form, form)}
+```
+
+@@ lines 305-305 @@
+
+```
+
+  end
+```
+
+@@ lines 306-306 @@
+
+```
+
+
+```
+
+@@ lines 307-307 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 308-308 @@
+
+```
+
+  def handle_event("cancel_edit", _params, socket) do
+```
+
+@@ lines 309-309 @@
+
+```
+
+    {:noreply,
+```
+
+@@ lines 310-310 @@
+
+```
+
+     socket
+```
+
+@@ lines 311-311 @@
+
+```
+
+     |> assign(:editing_item_id, nil)
+```
+
+@@ lines 312-312 @@
+
+```
+
+     |> assign(:item_form, nil)}
+```
+
+@@ lines 313-313 @@
+
+```
+
+  end
+```
+
+@@ lines 314-314 @@
+
+```
+
+
+```
+
+@@ lines 315-315 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 316-316 @@
+
+```
+
+  def handle_event("save_item", %{"booking_invoice_item" => item_params}, socket) do
+```
+
+@@ lines 317-317 @@
+
+```
+
+    result =
+```
+
+@@ lines 318-318 @@
+
+```
+
+      if socket.assigns.editing_item_id == :new do
+```
+
+@@ lines 319-319 @@
+
+```
+
+        Bookings.create_invoice_item(socket.assigns.invoice.id, item_params)
+```
+
+@@ lines 320-320 @@
+
+```
+
+      else
+```
+
+@@ lines 321-321 @@
+
+```
+
+        item = Bookings.get_invoice_item!(socket.assigns.editing_item_id)
+```
+
+@@ lines 322-322 @@
+
+```
+
+        Bookings.update_invoice_item(item, item_params)
+```
+
+@@ lines 323-323 @@
+
+```
+
+      end
+```
+
+@@ lines 324-324 @@
+
+```
+
+
+```
+
+@@ lines 325-325 @@
+
+```
+
+    case result do
+```
+
+@@ lines 326-326 @@
+
+```
+
+      {:ok, _item} ->
+```
+
+@@ lines 327-327 @@
+
+```
+
+        invoice = Bookings.get_invoice_by_booking_id(socket.assigns.booking.id)
+```
+
+@@ lines 328-328 @@
+
+```
+
+
+```
+
+@@ lines 329-329 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 330-330 @@
+
+```
+
+         socket
+```
+
+@@ lines 331-331 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 332-332 @@
+
+```
+
+         |> assign(:editing_item_id, nil)
+```
+
+@@ lines 333-333 @@
+
+```
+
+         |> assign(:item_form, nil)
+```
+
+@@ lines 334-334 @@
+
+```
+
+         |> put_flash(:info, "Item saved successfully")}
+```
+
+@@ lines 335-335 @@
+
+```
+
+
+```
+
+@@ lines 336-336 @@
+
+```
+
+      {:error, changeset} ->
+```
+
+@@ lines 337-337 @@
+
+```
+
+        {:noreply, assign(socket, :item_form, to_form(changeset))}
+```
+
+@@ lines 338-338 @@
+
+```
+
+    end
+```
+
+@@ lines 339-339 @@
+
+```
+
+  end
+```
+
+@@ lines 340-340 @@
+
+```
+
+
+```
+
+@@ lines 341-341 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 342-342 @@
+
+```
+
+  def handle_event("delete_item", %{"item-id" => item_id}, socket) do
+```
+
+@@ lines 343-343 @@
+
+```
+
+    item = Bookings.get_invoice_item!(item_id)
+```
+
+@@ lines 344-344 @@
+
+```
+
+
+```
+
+@@ lines 345-345 @@
+
+```
+
+    case Bookings.delete_invoice_item(item) do
+```
+
+@@ lines 346-346 @@
+
+```
+
+      {:ok, _} ->
+```
+
+@@ lines 347-347 @@
+
+```
+
+        invoice = Bookings.get_invoice_by_booking_id(socket.assigns.booking.id)
+```
+
+@@ lines 348-348 @@
+
+```
+
+
+```
+
+@@ lines 349-349 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 350-350 @@
+
+```
+
+         socket
+```
+
+@@ lines 351-351 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 352-352 @@
+
+```
+
+         |> put_flash(:info, "Item deleted successfully")}
+```
+
+@@ lines 353-353 @@
+
+```
+
+
+```
+
+@@ lines 354-354 @@
+
+```
+
+      {:error, _} ->
+```
+
+@@ lines 355-355 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Failed to delete item")}
+```
+
+@@ lines 356-356 @@
+
+```
+
+    end
+```
+
+@@ lines 357-357 @@
+
+```
+
+  end
+```
+
+@@ lines 358-358 @@
+
+```
+
+
+```
+
+@@ lines 359-359 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 360-360 @@
+
+```
+
+  def handle_event("recalculate", _params, socket) do
+```
+
+@@ lines 361-361 @@
+
+```
+
+    case Bookings.recalculate_invoice_totals(socket.assigns.invoice) do
+```
+
+@@ lines 362-362 @@
+
+```
+
+      {:ok, invoice} ->
+```
+
+@@ lines 363-363 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 364-364 @@
+
+```
+
+         socket
+```
+
+@@ lines 365-365 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 366-366 @@
+
+```
+
+         |> put_flash(:info, "Invoice totals recalculated")}
+```
+
+@@ lines 367-367 @@
+
+```
+
+
+```
+
+@@ lines 368-368 @@
+
+```
+
+      {:error, _reason} ->
+```
+
+@@ lines 369-369 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Failed to recalculate totals")}
+```
+
+@@ lines 370-370 @@
+
+```
+
+    end
+```
+
+@@ lines 371-371 @@
+
+```
+
+  end
+```
+
+@@ lines 372-372 @@
+
+```
+
+
+```
+
+@@ lines 373-373 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 374-374 @@
+
+```
+
+  def handle_event("generate_invoice", _params, socket) do
+```
+
+@@ lines 375-375 @@
+
+```
+
+    case Bookings.generate_invoice_number(socket.assigns.invoice) do
+```
+
+@@ lines 376-376 @@
+
+```
+
+      {:ok, invoice} ->
+```
+
+@@ lines 377-377 @@
+
+```
+
+        {:noreply,
+```
+
+@@ lines 378-378 @@
+
+```
+
+         socket
+```
+
+@@ lines 379-379 @@
+
+```
+
+         |> assign(:invoice, invoice)
+```
+
+@@ lines 380-380 @@
+
+```
+
+         |> put_flash(:info, "Invoice #{invoice.invoice_number} generated successfully")}
+```
+
+@@ lines 381-381 @@
+
+```
+
+
+```
+
+@@ lines 382-382 @@
+
+```
+
+      {:error, _changeset} ->
+```
+
+@@ lines 383-383 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Failed to generate invoice number")}
+```
+
+@@ lines 384-384 @@
+
+```
+
+    end
+```
+
+@@ lines 385-385 @@
+
+```
+
+  end
+```
+
+@@ lines 386-386 @@
+
+```
+
+
+```
+
+@@ lines 387-387 @@
+
+```
+
+  defp calculate_nights(booking) do
+```
+
+@@ lines 388-388 @@
+
+```
+
+    BookingInvoice.calculate_nights(booking)
+```
+
+@@ lines 389-389 @@
+
+```
+
+  end
+```
+
+@@ lines 390-390 @@
+
+```
+
+end
+```
+
+@@ lines 391-391 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now add the invoice component back to the booking show page: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **show.ex**</summary>
+
+@@ lines 118-174 @@
+
+```
+        <%!-- Associated Orders --%>
+        <div class="bg-white shadow-lg rounded-lg p-6">
+          <h2 class="text-2xl font-bold text-gray-900 mb-4">Orders</h2>
+          <%= if @booking.orders == [] do %>
+            <p class="text-gray-500">No orders yet for this booking.</p>
+          <% else %>
+            <div class="overflow-hidden">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Order Date
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Total
+                    </th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                  <tr :for={order <- @booking.orders} class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {Calendar.strftime(order.inserted_at, "%b %d, %Y %I:%M %p")}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                      <span class={[
+                        "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
+                        order_status_badge_class(order.status)
+                      ]}>
+                        {String.capitalize(order.status)}
+                      </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
+                      {CozyCheckoutWeb.CurrencyHelper.format_currency(order.total_amount)}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <.link
+                        navigate={~p"/admin/orders/#{order}"}
+                        class="text-indigo-600 hover:text-indigo-900"
+                      >
+                        View
+                      </.link>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          <% end %>
+        </div>
+
+        <%!-- Invoice Details --%>
+        <.live_component
+          module={CozyCheckoutWeb.BookingLive.InvoiceComponent}
+          id="booking-invoice"
+          booking={@booking}
+        />
+      </div>
+    </div>
+    """
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! Now let's test the compilation: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile`
-- explanation: `Compile the project to check for errors`
-- isBackground: `false`
+Compile the project to check for errors
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile
+```
 
 **Result:**
 
@@ -2218,53 +11801,12 @@ Compiling 2 files (.ex)
     └─ lib/cozy_checkout/ical_importer.ex:6:3
 
 Generated cozy_checkout app
-
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-You're right, let me start completely fresh. I'll delete all the invoice-related files and migrations, then rebuild from scratch with the proper structure. Now let me clean up the Booking schema and Bookings context to remove invoice references: 
-```
-
-```
-Now let me clean up the Bookings context - remove all invoice-related functions: 
-```
-
-```
-
-```
-
-```
-Now remove the invoice component from the show page: 
-```
-
-```
-Perfect! Now let's start fresh. First, create the migration: Now let me write the migration: 
-```
-
-```
-Now create the schemas. First BookingInvoice: Now create BookingInvoiceItem: Now update the Booking schema to add the invoice relationship: 
-```
-
-```
-Now add the context functions to the Bookings module. I'll add them at the end before the closing `end`: 
-```
-
-```
-
-```
-
-```
-Now run the migration: I need to fix the preload syntax: 
-```
-
-```
-Excellent! Now let me create the Invoice Component LiveView. This will be a completely fresh implementation: Now add the invoice component back to the booking show page: 
-```
-
-```
-Perfect! Now let's test the compilation: Excellent! The system is now compiled successfully. Let me create a quick summary document for you:
+Excellent! The system is now compiled successfully. Let me create a quick summary document for you:
 
 ## ✅ Implementation Complete!
 
@@ -2367,20 +11909,42 @@ Changeset
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-The issue is in the validation for the `quantity` field in the `BookingInvoiceItem` schema. It currently requires `greater_than: 0`, but we're trying to create a default item with `quantity: 0` for "Kids under 2 years". 
-
-Let me fix the validation to allow zero quantities:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 The issue is in the validation for the `quantity` field in the `BookingInvoiceItem` schema. It currently requires `greater_than: 0`, but we're trying to create a default item with `quantity: 0` for "Kids under 2 years". 
 
 Let me fix the validation to allow zero quantities: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking_invoice_item.ex**</summary>
+
+@@ lines 25-43 @@
 
 ```
+  @doc false
+  def changeset(invoice_item, attrs) do
+    invoice_item
+    |> cast(attrs, [
+      :booking_invoice_id,
+      :name,
+      :quantity,
+      :price_per_night,
+      :vat_rate,
+      :subtotal,
+      :vat_amount,
+      :total,
+      :position
+    ])
+    |> validate_required([:name, :quantity, :price_per_night, :vat_rate])
+    |> validate_number(:quantity, greater_than_or_equal_to: 0)
+    |> validate_number(:price_per_night, greater_than_or_equal_to: 0)
+    |> validate_number(:vat_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've changed the validation from `greater_than: 0` to `greater_than_or_equal_to: 0`. This allows invoice items to have a quantity of 0, which makes sense for optional items like "Kids under 2 years" that might not apply to every booking.
 
 Now you should be able to create invoices successfully. The system will:
@@ -2403,18 +11967,16 @@ for some reason I cant add new item there, see terminal output:
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 The issue is that when you click "Add Item", the form is being created but it's not showing up. This is likely because the condition to show/hide the "Add Item" button is checking for `!@editing_item_id`, but when adding a new item, we need to also render the form for the new item.
 
 Let me check the component and fix the issue: 
-
-I see the issue. When we're adding a new item (`:new`), we need to show the form row, but currently it only shows edit forms for existing items. Let me fix this:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`, lines 50 to 150
 
 **Input:**
 
@@ -2425,19 +11987,227 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"50","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"150","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"391","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"                phx-click=\"add_item\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"                phx-target={@myself}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex`. Lines 50 to 150 (391 lines total): 
+```elixir
+                phx-click="add_item"
+                phx-target={@myself}
+                class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                <.icon name="hero-plus" class="w-4 h-4 inline mr-1" /> Add Item
+              </button>
+            <% end %>
+          </div>
+
+          <div class="overflow-hidden border border-gray-200 rounded-lg">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Qty</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Price/Night</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">VAT %</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total</th>
+                  <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <%= if @invoice.items == [] do %>
+                  <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                      No items yet. Click "Add Item" to create one.
+                    </td>
+                  </tr>
+                <% else %>
+                  <%= for item <- @invoice.items do %>
+                    <%= if @editing_item_id == item.id do 
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-The issue is that when you click "Add Item", the form is being created but it's not showing up. This is likely because the condition to show/hide the "Add Item" button is checking for `!@editing_item_id`, but when adding a new item, we need to also render the form for the new item.
+I see the issue. When we're adding a new item (`:new`), we need to show the form row, but currently it only shows edit forms for existing items. Let me fix this: 
 
-Let me check the component and fix the issue: I see the issue. When we're adding a new item (`:new`), we need to show the form row, but currently it only shows edit forms for existing items. Let me fix this: 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 72-182 @@
 
 ```
+              <tbody class="bg-white divide-y divide-gray-200">
+                <%= if @invoice.items == [] && @editing_item_id != :new do %>
+                  <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-gray-500">
+                      No items yet. Click "Add Item" to create one.
+                    </td>
+                  </tr>
+                <% end %>
+                
+                <%= for item <- @invoice.items do %>
+                  <%= if @editing_item_id == item.id do %>
+                    <%!-- Edit Mode --%>
+                    <tr class="bg-blue-50">
+                      <td colspan="7" class="px-4 py-3">
+                        <.form for={@item_form} id={"item-form-#{item.id}"} phx-target={@myself} phx-submit="save_item">
+                          <div class="grid grid-cols-6 gap-3">
+                            <div class="col-span-2">
+                              <.input field={@item_form[:name]} type="text" placeholder="Item name" />
+                            </div>
+                            <div>
+                              <.input field={@item_form[:quantity]} type="number" min="0" placeholder="Qty" />
+                            </div>
+                            <div>
+                              <.input
+                                field={@item_form[:price_per_night]}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                placeholder="Price"
+                              />
+                            </div>
+                            <div>
+                              <.input
+                                field={@item_form[:vat_rate]}
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                placeholder="VAT %"
+                              />
+                            </div>
+                            <div class="flex space-x-2">
+                              <button
+                                type="submit"
+                                class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                              >
+                                Save
+                              </button>
+                              <button
+                                type="button"
+                                phx-click="cancel_edit"
+                                phx-target={@myself}
+                                class="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm rounded transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </.form>
+                      </td>
+                    </tr>
+                  <% else %>
+                    <%!-- Display Mode --%>
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-4 py-3 text-sm text-gray-900">{item.name}</td>
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                        {CozyCheckoutWeb.CurrencyHelper.format_currency(item.price_per_night)}
+                      </td>
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                        {Decimal.to_string(item.vat_rate)}%
+                      </td>
+                      <td class="px-4 py-3 text-sm text-gray-900 text-right">
+                        <%= if item.subtotal do %>
+                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.subtotal)}
+                        <% else %>
+                          <span class="text-gray-400">—</span>
+                        <% end %>
+                      </td>
+                      <td class="px-4 py-3 text-sm font-medium text-gray-900 text-right">
+                        <%= if item.total do %>
+                          {CozyCheckoutWeb.CurrencyHelper.format_currency(item.total)}
+                        <% else %>
+                          <span class="text-gray-400">—</span>
+                        <% end %>
+                      </td>
+                      <td class="px-4 py-3 text-right text-sm">
+                        <button
+                          type="button"
+                          phx-click="edit_item"
+                          phx-value-item-id={item.id}
+                          phx-target={@myself}
+                          class="text-indigo-600 hover:text-indigo-900 mr-3"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          phx-click="delete_item"
+                          phx-value-item-id={item.id}
+                          phx-target={@myself}
+                          class="text-red-600 hover:text-red-900"
+                          data-confirm="Are you sure you want to delete this item?"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  <% end %>
+                <% end %>
+                
+                <%!-- New Item Form --%>
+                <%= if @editing_item_id == :new do %>
+                  <tr class="bg-green-50">
+                    <td colspan="7" class="px-4 py-3">
+                      <.form for={@item_form} id="new-item-form" phx-target={@myself} phx-submit="save_item">
+                        <div class="grid grid-cols-6 gap-3">
+                          <div class="col-span-2">
+                            <.input field={@item_form[:name]} type="text" placeholder="Item name" required />
+                          </div>
+                          <div>
+                            <.input field={@item_form[:quantity]} type="number" min="0" placeholder="Qty" required />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:price_per_night]}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="Price"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <.input
+                              field={@item_form[:vat_rate]}
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="100"
+                              placeholder="VAT %"
+                              required
+                            />
+                          </div>
+                          <div class="flex space-x-2">
+                            <button
+                              type="submit"
+                              class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded transition-colors"
+                            >
+                              Add
+                            </button>
+                            <button
+                              type="button"
+                              phx-click="cancel_edit"
+                              phx-target={@myself}
+                              class="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 text-sm rounded transition-colors"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </.form>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've made the following changes:
 
 1. **Added a separate form row for new items** - When `@editing_item_id == :new`, a green-highlighted form row appears at the bottom of the table
@@ -2463,22 +12233,16 @@ now I see the row, but when I try to actually add it (save it) I get this error:
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 The issue is that when we call `Map.put(attrs, :booking_invoice_id, invoice_id)`, we're mixing atom keys with string keys. Ecto expects all keys to be either atoms or strings, not mixed.
 
 Let me fix the `create_invoice_item` function in the Bookings context: 
-
-Found it! The issue is in both `create_invoice_item` and `create_default_invoice`. Let me fix them to use string keys consistently: 
-
-Now let's also fix the `create_default_invoice` function to be consistent: 
-
-Perfect! Now I see the issue is also in `create_default_invoice`. Since the default items use atom keys, we should keep it consistent. Let me update it:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 355 to 375
 
 **Input:**
 
@@ -2489,8 +12253,30 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"355","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"375","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"518","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":23,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"      Enum.each(default_items, fn item_attrs -\u003e\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"        %BookingInvoiceItem{}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"        |\u003e BookingInvoiceItem.changeset(Map.put(item_attrs, :booking_invoice_id, invoice.id))\
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 355 to 375 (518 lines total): 
+```elixir
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(Map.put(item_attrs, :booking_invoice_id, invoice.id))
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+      get_booking_invoice!(invoice.id)
+    end)
+  end
+
+  @doc """
+  Updates a booking invoice header.
+  """
+  def update_booking_invoice(%BookingInvoice{} = invoice, attrs) do
+    invoice
+    |> BookingInvoice.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+```
 ````
 </details></tool-use>
 
@@ -2498,6 +12284,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 375 to 395
 
 **Input:**
 
@@ -2508,15 +12296,68 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"375","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"395","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"518","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":23,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"  @doc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"  Deletes a booking invoice and all its items.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBre
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 375 to 395 (518 lines total): 
+```elixir
+  @doc """
+  Deletes a booking invoice and all its items.
+  """
+  def delete_booking_invoice(%BookingInvoice{} = invoice) do
+    Repo.delete(invoice)
+  end
+
+  @doc """
+  Creates a new invoice item.
+  """
+  def create_invoice_item(invoice_id, attrs) do
+    %BookingInvoiceItem{}
+    |> BookingInvoiceItem.changeset(Map.put(attrs, :booking_invoice_id, invoice_id))
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an invoice item.
+  """
+  def update_invoice_item(%BookingInvoiceItem{} = item, attrs) do
+    item
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Found it! The issue is in both `create_invoice_item` and `create_default_invoice`. Let me fix them to use string keys consistently: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 382-389 @@
+
+```
+  @doc """
+  Creates a new invoice item.
+  """
+  def create_invoice_item(invoice_id, attrs) do
+    attrs = Map.put(attrs, "booking_invoice_id", invoice_id)
+    
+    %BookingInvoiceItem{}
+    |> BookingInvoiceItem.changeset(attrs)
+    |> Repo.insert()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's also fix the `create_default_invoice` function to be consistent: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 335 to 365
 
 **Input:**
 
@@ -2527,23 +12368,72 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"335","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"365","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"520","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":33,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"    |\u003e Repo.get!(id)\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":31,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":30,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":30},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":29,"referen
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 335 to 365 (520 lines total): 
+```elixir
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a default invoice for a booking with default line items.
+  """
+  def create_default_invoice(%Booking{} = booking) do
+    Repo.transaction(fn ->
+      # Create invoice header
+      invoice = %BookingInvoice{}
+        |> BookingInvoice.changeset(%{booking_id: booking.id})
+        |> Repo.insert!()
+
+      # Create default line items
+      default_items = [
+        %{name: "Adults", quantity: 2, price_per_night: Decimal.new("1000.00"), vat_rate: Decimal.new("21.00"), position: 1},
+        %{name: "Kids under 2 years", quantity: 0, price_per_night: Decimal.new("0.00"), vat_rate: Decimal.new("21.00"), position: 2},
+        %{name: "Kids under 12 years", quantity: 0, price_per_night: Decimal.new("500.00"), vat_rate: Decimal.new("21.00"), position: 3}
+      ]
+
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(Map.put(item_attrs, :booking_invoice_id, invoice.id))
+        |> Repo.insert!()
+      end)
+
+      # Reload with items
+      get_booking_invoice!(invoice.id)
+    end)
+  end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-The issue is that when we call `Map.put(attrs, :booking_invoice_id, invoice_id)`, we're mixing atom keys with string keys. Ecto expects all keys to be either atoms or strings, not mixed.
+Perfect! Now I see the issue is also in `create_default_invoice`. Since the default items use atom keys, we should keep it consistent. Let me update it: 
 
-Let me fix the `create_invoice_item` function in the Bookings context: Found it! The issue is in both `create_invoice_item` and `create_default_invoice`. Let me fix them to use string keys consistently: 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **bookings.ex**</summary>
+
+@@ lines 348-359 @@
 
 ```
-Now let's also fix the `create_default_invoice` function to be consistent: Perfect! Now I see the issue is also in `create_default_invoice`. Since the default items use atom keys, we should keep it consistent. Let me update it: 
-```
+      # Create default line items
+      default_items = [
+        %{name: "Adults", quantity: 2, price_per_night: Decimal.new("1000.00"), vat_rate: Decimal.new("21.00"), position: 1, booking_invoice_id: invoice.id},
+        %{name: "Kids under 2 years", quantity: 0, price_per_night: Decimal.new("0.00"), vat_rate: Decimal.new("21.00"), position: 2, booking_invoice_id: invoice.id},
+        %{name: "Kids under 12 years", quantity: 0, price_per_night: Decimal.new("500.00"), vat_rate: Decimal.new("21.00"), position: 3, booking_invoice_id: invoice.id}
+      ]
 
+      Enum.each(default_items, fn item_attrs ->
+        %BookingInvoiceItem{}
+        |> BookingInvoiceItem.changeset(item_attrs)
+        |> Repo.insert!()
+      end)
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! Now both functions are fixed:
 
 1. **`create_default_invoice`** - Now includes `booking_invoice_id` directly in the map with atom keys, avoiding the `Map.put` that was mixing keys

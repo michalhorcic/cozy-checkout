@@ -12,22 +12,14 @@ Check how export to pohoda is generated. Compare it with #file:2509K00001_trby b
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<think><details><summary>Thought Process</summary>
 Let me explore the current export implementation more broadly before asking questions.  
-
-I have a clear picture of both implementations. There are significant structural differences. Before changing anything, I need to ask some key questions. 
-
-Let me check the config for the bank account setting. 
-
-Now let me check the order_item schema to understand available fields for VAT calculations: 
-
-Now I have everything I need. Let me implement the updated export:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
+
+Searched codebase for "pohoda export XML orders controller LiveView", 17 results
 
 **Input:**
 
@@ -36,7 +28,59 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pohoda_export_live/index.html.heex` starting at line 47:\n```heex\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pohoda_export_live/index.html.heex\n...\n\u003c!-- Orders Table --\u003e\n  \u003cdiv class=\"bg-white rounded-lg shadow-sm overflow-hidden mb-6\"\u003e\n    \u003cdiv class=\"p-4 border-b border-slate-200 flex justify-between items-center\"\u003e\n      \u003cdiv class=\"flex gap-2\"\u003e\n        \u003cbutton\n          phx-click=\"select_all\"\n          class=\"px-4 py-2 text-sm text-tertiary-600 hover:bg-tertiary-50 rounded-lg transition-colors\"\n        \u003e\n          Select All\n        \u003c/button\u003e\n        \u003cbutton\n          phx-click=\"deselect_all\"\n          class=\"px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors\"\n        \u003e\n          Deselect All\n        \u003c/button\u003e\n      \u003c/div\u003e\n\n      \u003cdiv class=\"text-sm text-slate-600\"\u003e\n        {MapSet.size(@selected_orders)} / {length(@orders)} selected\n      \u003c/div\u003e\n    \u003c/div\u003e\n\n    \u003cdiv class=\"overflow-x-auto\"\u003e\n      \u003ctable class=\"w-full\"\u003e\n...\n```\n\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/index.ex` starting at line 60:\n```ex\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/index.ex\n...\n     |\u003e assign(:purchase_or
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pohoda_export_live/index.html.heex` starting at line 47:
+```heex
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pohoda_export_live/index.html.heex
+...
+<!-- Orders Table -->
+  <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-6">
+    <div class="p-4 border-b border-slate-200 flex justify-between items-center">
+      <div class="flex gap-2">
+        <button
+          phx-click="select_all"
+          class="px-4 py-2 text-sm text-tertiary-600 hover:bg-tertiary-50 rounded-lg transition-colors"
+        >
+          Select All
+        </button>
+        <button
+          phx-click="deselect_all"
+          class="px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
+        >
+          Deselect All
+        </button>
+      </div>
+
+      <div class="text-sm text-slate-600">
+        {MapSet.size(@selected_orders)} / {length(@orders)} selected
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full">
+...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/index.ex` starting at line 60:
+```ex
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/index.ex
+...
+     |> assign(:purchase_orders, Inventory.list_purchase_orders())
+     |> put_flash(:info, "Purchase order saved successfully")}
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="max-w-7xl mx-auto px-4 py-8">
+      <div class="mb-8 flex items-center justify-between">
+        <div>
+          <.link
+            navigate={~p"/admin"}
+            class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+          >
+            ← Back to Dashboard
+          </.link>
+          <h1 class="text-4xl font-bold text-primar
 … (output truncated)
 ````
 </details></tool-use>
@@ -46,6 +90,8 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
 
+Searched for regex `pohoda|export_orders|list_paid_orders_by_date|list_orders_for_pohoda`, 20 results
+
 **Input:**
 
 - isRegexp: `true`
@@ -54,19 +100,177 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex\" line=1\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":54,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"defmodule CozyCheckout.Pohoda do","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"LIt","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":23,"line":0},{"character":29,"line":0}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":54,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"JNe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex\" line=3\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":55,"props":{},"references":[
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=1>
+defmodule CozyCheckout.Pohoda do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=3>
+  Handles export of paid orders to POHODA accounting software XML format.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=9>
+  Exports paid orders to POHODA XML format.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=10>
+  Returns XML string that can be saved to file or sent to POHODA mServer.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=12>
+  def export_orders(order_ids) when is_list(order_ids) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=13>
+    orders = Sales.list_orders_for_pohoda_export(order_ids)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=17>
+  def export_orders(date_from, date_to) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=18>
+    orders = Sales.list_paid_orders_by_date(date_from, date_to)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=50>
+              <typ:paymentType>#{payment_type_to_pohoda(order.payments)}</typ:paymentType>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=80>
+              <inv:rateVAT>#{vat_rate_to_pohoda(item.vat_rate)}</inv:rateVAT>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex" line=120>
+  defp vat_rate_to_pohoda(rate) when is_struct(rate, Decimal) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/co
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+I have a clear picture of both implementations. There are significant structural differences. Before changing anything, I need to ask some key questions. 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="generic" data-tool-name="vscode_askQuestions"><details>
 <summary>Tool use: **vscode_askQuestions**</summary>
 
+Analyzing your answers...
+
 **Input:**
 
-- questions: `[map[allowFreeformInput:false header:invoice_type options:[map[label:receivable — match the example exactly recommended:true] map[label:issuedInvoice — keep the current type]] question:The example uses invoiceType 'receivable' (pohledávka), but the current code uses 'issuedInvoice'. Which should it be?] map[allowFreeformInput:false header:line_items options:[map[label:Keep individual items (invoiceDetail with each product) recommended:true] map[label:No items — aggregate total only, like the example]] question:The example has NO invoiceDetail (no individual line items) — it's a single aggregate invoice. Should each exported order keep its individual items, or become an aggregate like the example?] map[allowFreeformInput:true header:sym_var options:[map[label:The order number (e.g. 250900001)] map[label:Same as the document number (numberRequested)] map[label:Omit symVar entirely]] question:The example has a symVar field (variable symbol for payment matching). What should symVar be for each order?] map[allowFreeformInput:false header:payment_type options:[map[label:Always draft (bank transfer) recommended:true] map[label:Map from actual payment method (cash → cash, card → card)]] question:The example always uses payment type 'draft' (bank transfer / Příkazem). What should exported orders use?] map[allowFreeformInput:true header:accounting_field question:The example has an <accounting><typ:ids>1Op</typ:ids></accounting> field. What accounting account code should be used?] map[allowFreeformInput:true header:bank_account question:The example includes bank account details (accountNo and bankCode). What values should be used? The example shows accountNo=000000000000, bankCode=0100 (KB).] map[allowFreeformInput:true header:sym_const options:[map[label:Yes, always 0308 recommended:true] map[label:No, omit it] map[label:Different value]] question:The example has <inv:symConst>0308</inv:symConst>. Should this constant symbol always be 0308?] map[allowFreeformInput:false header:liquidation options:[map[label:Yes — include liquidation with the total paid amount recommended:true] map[label:No — omit liquidation]] question:The example has a <liquidation><typ:amountHome>1000</typ:amountHome></liquidation> block (marks the invoice as paid). Should this be included with the order total?] map[allowFreeformInput:false header:my_identity options:[map[label:Yes — include full myIdentity in every invoice recommended:true] map[label:No — omit myIdentity]] question:The example includes a full <myIdentity> block with Moruška s.r.o. company details (address, IČO, DIČ, phone, email, website). Should this be included in every exported invoice?]]`
+- questions:
+
+```
+[
+  {
+    "allowFreeformInput": false,
+    "header": "invoice_type",
+    "options": [
+      {
+        "label": "receivable — match the example exactly",
+        "recommended": true
+      },
+      {
+        "label": "issuedInvoice — keep the current type"
+      }
+    ],
+    "question": "The example uses invoiceType 'receivable' (pohledávka), but the current code uses 'issuedInvoice'. Which should it be?"
+  },
+  {
+    "allowFreeformInput": false,
+    "header": "line_items",
+    "options": [
+      {
+        "label": "Keep individual items (invoiceDetail with each product)",
+        "recommended": true
+      },
+      {
+        "label": "No items — aggregate total only, like the example"
+      }
+    ],
+    "question": "The example has NO invoiceDetail (no individual line items) — it's a single aggregate invoice. Should each exported order keep its individual items, or become an aggregate like the example?"
+  },
+  {
+    "allowFreeformInput": true,
+    "header": "sym_var",
+    "options": [
+      {
+        "label": "The order number (e.g. 250900001)"
+      },
+      {
+        "label": "Same as the document number (numberRequested)"
+      },
+      {
+        "label": "Omit symVar entirely"
+      }
+    ],
+    "question": "The example has a symVar field (variable symbol for payment matching). What should symVar be for each order?"
+  },
+  {
+    "allowFreeformInput": false,
+    "header": "payment_type",
+    "options": [
+      {
+        "label": "Always draft (bank transfer)",
+        "recommended": true
+      },
+      {
+        "label": "Map from actual payment method (cash → cash, card → card)"
+      }
+    ],
+    "question": "The example always uses payment type 'draft' (bank transfer / Příkazem). What should exported orders use?"
+  },
+  {
+    "allowFreeformInput": true,
+    "header": "accounting_field",
+    "question": "The example has an \u003caccounting\u003e\u003ctyp:ids\u003e1Op\u003c/typ:ids\u003e\u003c/accounting\u003e field. What accounting account code should be used?"
+  },
+  {
+    "allowFreeformInput": true,
+    "header": "bank_account",
+    "question": "The example includes bank account details (accountNo and bankCode). What values should be used? The example shows accountNo=000000000000, bankCode=0100 (KB)."
+  },
+  {
+    "allowFreeformInput": true,
+    "header": "sym_const",
+    "options": [
+      {
+        "label": "Yes, always 0308",
+        "recommended": true
+      },
+      {
+        "label": "No, omit it"
+      },
+      {
+        "label": "Different value"
+      }
+    ],
+    "question": "The example has \u003cinv:symConst\u003e0308\u003c/inv:symConst\u003e. Should this constant symbol always be 0308?"
+  },
+  {
+    "allowFreeformInput": false,
+    "header": "liquidation",
+    "options": [
+      {
+        "label": "Yes — include liquidation with the total paid amount",
+        "recommended": true
+      },
+      {
+        "label": "No — omit liquidation"
+      }
+    ],
+    "question": "The example has a \u003cliquidation\u003e\u003ctyp:amountHome\u003e1000\u003c/typ:amountHome\u003e\u003c/liquidation\u003e block (marks the invoice as paid). Should this be included with the order total?"
+  },
+  {
+    "allowFreeformInput": false,
+    "header": "my_identity",
+    "options": [
+      {
+        "label": "Yes — include full myIdentity in every invoice",
+        "recommended": true
+      },
+      {
+        "label": "No — omit myIdentity"
+      }
+    ],
+    "question": "The example includes a full \u003cmyIdentity\u003e block with Moruška s.r.o. company details (address, IČO, DIČ, phone, email, website). Should this be included in every exported invoice?"
+  }
+]
+```
+
 
 **Result:**
 
@@ -77,8 +281,14 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+Let me check the config for the bank account setting. 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `config.exs`, lines 60 to 78
 
 **Input:**
 
@@ -89,15 +299,37 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":19,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/config.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/config.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/config.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"# Use Jason for JSON parsing in Phoenix\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":19},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":18,"references":[],"text":"config :phoenix, :json_library, Jason\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":18},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":17,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":17},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":16,"references":[],"text":"# Configure Flop\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":16},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":15,"references":[],"text":"config :flop, repo: CozyCheckout.Repo\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":15},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":14,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":14},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":13,"references":[],"text":"# POHODA Export Configuration\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":13},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":12,"references":[],"text":"config :cozy_checkout,\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":12},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":11,"references":[],"text":"  # Your company ICO (tax ID) - CHANGE THIS\n","type":2}],"ctor":2,"ctor
-… (output truncated)
+# Use Jason for JSON parsing in Phoenix
+config :phoenix, :json_library, Jason
+
+# Configure Flop
+config :flop, repo: CozyCheckout.Repo
+
+# POHODA Export Configuration
+config :cozy_checkout,
+  # Your company ICO (tax ID) - CHANGE THIS
+  pohoda_ico: "23741457",
+  # Default accounting account in POHODA - CHANGE THIS
+  pohoda_default_account: "1",
+  # Bank account for QR code payments - CHANGE THIS
+  bank_account: "2903322739/2010"
+
+# Import environment specific config. This must remain at the bottom
+# of this file so it overrides the configuration defined above.
+import_config "#{config_env()}.exs"
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+Now let me check the order_item schema to understand available fields for VAT calculations: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
+
+Searched codebase for "OrderItem schema fields vat_rate unit_price actual_price original_price", 30 results
 
 **Input:**
 
@@ -106,19 +338,80 @@ _**Agent (copilot/claude-sonnet-4.6)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_14-49Z-exporting-paid-orders-to-pohoda-accounting-software.md` starting at line 94:\n```md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_14-49Z-exporting-paid-orders-to-pohoda-accounting-software.md\n...\n# Exporting paid orders to POHODA accounting software (2025-10-16 14:49Z)\n...\n## Implementation Plan\n...\n              \u003ctyp:priceNone\u003e#{order.total_amount}\u003c/typ:priceNone\u003e\n            \u003c/inv:homeCurrency\u003e\n          \u003c/inv:invoiceSummary\u003e\n        \u003c/inv:invoice\u003e\n      \u003c/dat:dataPackItem\u003e\n    \"\"\"\n  end\n\n  defp order_item_to_xml(item) do\n    \"\"\"\n            \u003cinv:invoiceItem\u003e\n              \u003cinv:text\u003e#{escape_xml(item.product_name)}\u003c/inv:text\u003e\n              \u003cinv:quantity\u003e#{item.quantity}\u003c/inv:quantity\u003e\n              \u003cinv:unit\u003e#{item.unit_amount || \"pcs\"}\u003c/inv:unit\u003e\n              \u003cinv:coefficient\u003e1.0\u003c/inv:coefficient\u003e\n              \u003cinv:payVAT\u003efalse\u003c/inv:payVAT\u003e\n              \u003cinv:rateVAT\u003e#{vat_rate_to_pohoda(item.vat_rate)}\u003c/inv:rateVAT\u003e\n...\n```\n\n","type":2}],"ctor":2,"ctorName":"b5e","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46-56Z-handling-variable-stay-durations-for-booking-invoices.md` starting at line 129:\n```md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46-56
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_14-49Z-exporting-paid-orders-to-pohoda-accounting-software.md` starting at line 94:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-16_14-49Z-exporting-paid-orders-to-pohoda-accounting-software.md
+...
+# Exporting paid orders to POHODA accounting software (2025-10-16 14:49Z)
+...
+## Implementation Plan
+...
+              <typ:priceNone>#{order.total_amount}</typ:priceNone>
+            </inv:homeCurrency>
+          </inv:invoiceSummary>
+        </inv:invoice>
+      </dat:dataPackItem>
+    """
+  end
+
+  defp order_item_to_xml(item) do
+    """
+            <inv:invoiceItem>
+              <inv:text>#{escape_xml(item.product_name)}</inv:text>
+              <inv:quantity>#{item.quantity}</inv:quantity>
+              <inv:unit>#{item.unit_amount || "pcs"}</inv:unit>
+              <inv:coefficient>1.0</inv:coefficient>
+              <inv:payVAT>false</inv:payVAT>
+              <inv:rateVAT>#{vat_rate_to_pohoda(item.vat_rate)}</inv:rateVAT>
+...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46-56Z-handling-variable-stay-durations-for-booking-invoices.md` starting at line 129:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_13-46-56Z-handling-variable-stay-durations-for-booking-invoices.md
+...
+# 2025-10-27 13:48:38Z
+...
+## Solution: Add `nights` field to `booking_invoice_items`
+...
+### Implementation Steps:
+...
+#### 2. Update the schema:
+...
+    belongs_to :booking_invoice, CozyCheckout.Bookings.BookingInvoice
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(booking_invoice_item, attrs) do
+    booking_invoice_item
+    |> cast(attrs, [
+      :booking_invoice_id,
+      :name,
+      :quantity,
+      :price_per_night,
+      :nights,
+      :vat_rate,
+ 
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
+Now let me check the order_item schema to understand available fields for VAT calculations: 
+
+Now I have everything I need. Let me implement the updated export: 
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Created 1 todo
 
-- todoList: `[map[id:1 status:in-progress title:Rewrite pohoda.ex export]]`
+- [ ] Rewrite pohoda.ex export _(in progress)_
 
 **Result:**
 
@@ -131,40 +424,13 @@ Warning: Small todo list (<3 items). This task might not need a todo list.
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
-<summary>Tool use: **replace_string_in_file**</summary>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **pohoda.ex**</summary>
 
-**Input:**
-
-- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex`
-- newString:
+@@ lines 25-143 @@
 
 ```
-defmodule CozyCheckout.Pohoda do
-  @moduledoc """
-  Handles export of paid orders to POHODA accounting software XML format.
-  """
-
-  alias CozyCheckout.Sales
-
-  @doc """
-  Exports paid orders to POHODA XML format.
-  Returns XML string that can be saved to file or sent to POHODA mServer.
-  """
-  def export_orders(order_ids) when is_list(order_ids) do
-    orders = Sales.list_orders_for_pohoda_export(order_ids)
-    generate_xml(orders)
-  end
-
-  def export_orders(date_from, date_to) do
-    orders = Sales.list_paid_orders_by_date(date_from, date_to)
-    generate_xml(orders)
-  end
-
-  defp generate_xml(orders) do
-    """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <dat:dataPack version="2.0" id="Export" ico="#{ico()}" application="CozyCheckout" note="Export paid orders" xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd">
+version="2.0" id="Export" ico="#{ico()}" application="CozyCheckout" note="Export paid orders" xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd">
     #{Enum.map_join(orders, "\n", &order_to_xml/1)}
     </dat:dataPack>
     """
@@ -381,76 +647,152 @@ defmodule CozyCheckout.Pohoda do
   end
 
   defp ico do
-    Application.get_env(:cozy_checkout, :pohoda_ico, "12345678")
-  end
-end
+    Application.get_env(:cozy_checkout, :pohoda_ico, "12345678
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `pohoda.ex`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex"
+]
 ```
 
-- oldString:
+
+**Result:**
 
 ```
-defmodule CozyCheckout.Pohoda do
-  @moduledoc """
-  Handles export of paid orders to POHODA accounting software XML format.
-  """
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex">
+No errors found
+</errors>
+```
+</details></tool-use>
 
-  alias CozyCheckout.Sales
+_**Agent (copilot/claude-sonnet-4.6)**_
 
-  @doc """
-  Exports paid orders to POHODA XML format.
-  Returns XML string that can be saved to file or sent to POHODA mServer.
-  """
-  def export_orders(order_ids) when is_list(order_ids) do
-    orders = Sales.list_orders_for_pohoda_export(order_ids)
-    generate_xml(orders)
-  end
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
 
-  def export_orders(date_from, date_to) do
-    orders = Sales.list_paid_orders_by_date(date_from, date_to)
-    generate_xml(orders)
-  end
+Completed: *Rewrite pohoda.ex export* (1/1)
 
-  defp generate_xml(orders) do
-    """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <dat:dataPack id="Export" ico="#{ico()}" application="CozyCheckout" version="2.0" note="Export paid orders" xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd" xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd" xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+- [x] Rewrite pohoda.ex export
+
+**Result:**
+
+```
+Successfully wrote todo list
+
+Warning: Small todo list (<3 items). This task might not need a todo list.
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **pohoda.ex**</summary>
+
+@@ lines 25-143 @@
+
+```
+version="2.0" id="Export" ico="#{ico()}" application="CozyCheckout" note="Export paid orders" xmlns:dat="http://www.stormware.cz/schema/version_2/data.xsd">
     #{Enum.map_join(orders, "\n", &order_to_xml/1)}
     </dat:dataPack>
     """
   end
 
   defp order_to_xml(order) do
+    date = format_date(order.inserted_at)
+    {account_no, bank_code} = parse_bank_account()
+    {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
+    items = active_order_items(order)
+    {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat, price_high_sum} = calculate_vat_totals(items)
+
     """
       <dat:dataPackItem id="#{order.order_number}" version="2.0">
-        <inv:invoice version="2.0">
-          <inv:invoiceHeader>
-            <inv:invoiceType>issuedInvoice</inv:invoiceType>
+        <inv:invoice version="2.0" xmlns:inv="http://www.stormware.cz/schema/version_2/invoice.xsd">
+          <inv:invoiceHeader xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+            <inv:invoiceType>receivable</inv:invoiceType>
             <inv:number>
               <typ:numberRequested>#{order.order_number}</typ:numberRequested>
             </inv:number>
-            <inv:date>#{format_date(order.inserted_at)}</inv:date>
-            <inv:dateTax>#{format_date(order.inserted_at)}</inv:dateTax>
-            <inv:dateAccounting>#{format_date(order.inserted_at)}</inv:dateAccounting>
-            <inv:text>Order #{order.order_number}</inv:text>
+            <inv:symVar>#{order.order_number}</inv:symVar>
+            <inv:date>#{date}</inv:date>
+            <inv:dateTax>#{date}</inv:dateTax>
+            <inv:dateAccounting>#{date}</inv:dateAccounting>
+            <inv:dateDue>#{date}</inv:dateDue>
+            <inv:accounting>
+              <typ:ids>1Op</typ:ids>
+            </inv:accounting>
+            <inv:text>Tržby bar #{order.order_number}</inv:text>
             <inv:partnerIdentity>
-              <typ:address>
-                <typ:company>#{escape_xml(get_customer_name(order))}</typ:company>
+              <typ:address linkToAddress="true">
+                <typ:name>#{escape_xml(get_customer_name(order))}</typ:name>
               </typ:address>
             </inv:partnerIdentity>
+            <inv:myIdentity>
+              <typ:address>
+                <typ:company>Moruška s.r.o.</typ:company>
+                <typ:city>Praha</typ:city>
+                <typ:street>Za skalkou</typ:street>
+                <typ:number>770/13</typ:number>
+                <typ:zip>147 00</typ:zip>
+                <typ:ico>#{ico()}</typ:ico>
+                <typ:dic>CZ#{ico()}</typ:dic>
+                <typ:mobilPhone>+420 777235566</typ:mobilPhone>
+                <typ:email>jindrichuvdum@jindrichuvdum.cz</typ:email>
+                <typ:www>www.jindrichuvdum.cz</typ:www>
+              </typ:address>
+              <typ:establishment>
+                <typ:company>Chata Jindřichův dům</typ:company>
+                <typ:city>Pec pod Sněžkou</typ:city>
+                <typ:street>Pec pod Sněžkou 24</typ:street>
+                <typ:zip>542 21</typ:zip>
+              </typ:establishment>
+            </inv:myIdentity>
             <inv:paymentType>
-              <typ:paymentType>#{payment_type_to_pohoda(order.payments)}</typ:paymentType>
+              <typ:ids>#{payment_ids}</typ:ids>
+              <typ:paymentType>#{payment_type}</typ:paymentType>
             </inv:paymentType>
             <inv:account>
-              <typ:ids>#{default_account()}</typ:ids>
+              <typ:ids>KB</typ:ids>
+              <typ:accountNo>#{account_no}</typ:accountNo>
+              <typ:bankCode>#{bank_code}</typ:bankCode>
             </inv:account>
-            <inv:symPar>#{order.order_number}</inv:symPar>
+            <inv:symConst>0308</inv:symConst>
+            <inv:liquidation>
+              <typ:amountHome>#{order.total_amount}</typ:amountHome>
+            </inv:liquidation>
+            <inv:lock2>false</inv:lock2>
+            <inv:markRecord>false</inv:markRecord>
           </inv:invoiceHeader>
-          <inv:invoiceDetail>
-    #{Enum.map_join(active_order_items(order), "\n", &order_item_to_xml/1)}
+          <inv:invoiceDetail xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+    #{Enum.map_join(items, "\n", &order_item_to_xml/1)}
           </inv:invoiceDetail>
-          <inv:invoiceSummary>
+          <inv:invoiceSummary xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
+            <inv:roundingDocument>none</inv:roundingDocument>
+            <inv:roundingVAT>none</inv:roundingVAT>
+            <inv:typeCalculateVATInclusivePrice>VATNewMethod</inv:typeCalculateVATInclusivePrice>
             <inv:homeCurrency>
-              <typ:priceNone>#{order.total_amount}</typ:priceNone>
+              <typ:priceNone>#{price_none}</typ:priceNone>
+              <typ:priceLow>#{price_low}</typ:priceLow>
+              <typ:priceLowVAT>#{price_low_vat}</typ:priceLowVAT>
+              <typ:priceLowSum>#{price_low_sum}</typ:priceLowSum>
+              <typ:priceHigh>#{price_high}</typ:priceHigh>
+              <typ:priceHighVAT>#{price_high_vat}</typ:priceHighVAT>
+              <typ:priceHighSum>#{price_high_sum}</typ:priceHighSum>
+              <typ:round>
+                <typ:priceRound>0</typ:priceRound>
+              </typ:round>
             </inv:homeCurrency>
           </inv:invoiceSummary>
         </inv:invoice>
@@ -462,12 +804,12 @@ defmodule CozyCheckout.Pohoda do
     product_name = if item.product, do: item.product.name, else: "Unknown Product"
 
     """
-            <inv:invoiceItem>
+            <inv:invoiceItem xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
               <inv:text>#{escape_xml(product_name)}</inv:text>
               <inv:quantity>#{item.quantity}</inv:quantity>
               <inv:unit>#{item.unit_amount || "pcs"}</inv:unit>
               <inv:coefficient>1.0</inv:coefficient>
-              <inv:payVAT>false</inv:payVAT>
+              <inv:payVAT>#{vat_pay?(item.vat_rate)}</inv:payVAT>
               <inv:rateVAT>#{vat_rate_to_pohoda(item.vat_rate)}</inv:rateVAT>
               <inv:homeCurrency>
                 <typ:unitPrice>#{item.unit_price}</typ:unitPrice>
@@ -493,6 +835,47 @@ defmodule CozyCheckout.Pohoda do
     end
   end
 
+  # Calculates VAT breakdown for the invoice summary.
+  # Returns {priceNone, priceLow, priceLowVAT, priceLowSum, priceHigh, priceHighVAT, priceHighSum}
+  # priceNone = base amount for 0% VAT items
+  # priceLow  = base amount for 12% VAT items; priceLowVAT = VAT portion; priceLowSum = base + VAT
+  # priceHigh = base amount for 21% VAT items; priceHighVAT = VAT portion; priceHighSum = base + VAT
+  defp calculate_vat_totals(items) do
+    zero = Decimal.new(0)
+
+    {price_none, price_low, price_low_sum, price_high, price_high_sum} =
+      Enum.reduce(items, {zero, zero, zero, zero, zero}, fn item, {none, low, low_sum, high, high_sum} ->
+        subtotal = item.subtotal || Decimal.mult(item.unit_price, item.quantity)
+        rate = item.vat_rate
+
+        cond do
+          Decimal.equal?(rate, Decimal.new(12)) ->
+            base = Decimal.div(Decimal.mult(subtotal, 100), Decimal.new(112)) |> Decimal.round(2)
+            {none, Decimal.add(low, base), Decimal.add(low_sum, subtotal), high, high_sum}
+
+          Decimal.equal?(rate, Decimal.new(21)) ->
+            base = Decimal.div(Decimal.mult(subtotal, 100), Decimal.new(121)) |> Decimal.round(2)
+            {none, low, low_sum, Decimal.add(high, base), Decimal.add(high_sum, subtotal)}
+
+          true ->
+            {Decimal.add(none, subtotal), low, low_sum, high, high_sum}
+        end
+      end)
+
+    price_low_vat = Decimal.sub(price_low_sum, price_low) |> Decimal.round(2)
+    price_high_vat = Decimal.sub(price_high_sum, price_high) |> Decimal.round(2)
+
+    {
+      Decimal.round(price_none, 2),
+      Decimal.round(price_low, 2),
+      price_low_vat,
+      Decimal.round(price_low_sum, 2),
+      Decimal.round(price_high, 2),
+      price_high_vat,
+      Decimal.round(price_high_sum, 2)
+    }
+  end
+
   defp format_date(%DateTime{} = datetime) do
     datetime
     |> DateTime.to_date()
@@ -509,85 +892,41 @@ defmodule CozyCheckout.Pohoda do
   end
 
   defp vat_rate_to_pohoda(rate) when is_struct(rate, Decimal) do
-    case Decimal.to_string(rate) do
-      "0" -> "none"
-      "12" -> "low"
-      "21" -> "high"
-      _ -> "none"
+    cond do
+      Decimal.equal?(rate, Decimal.new(12)) -> "low"
+      Decimal.equal?(rate, Decimal.new(21)) -> "high"
+      true -> "none"
     end
+  end
+
+  defp vat_pay?(rate) when is_struct(rate, Decimal) do
+    if Decimal.equal?(rate, Decimal.new(0)), do: "false", else: "true"
   end
 
   defp payment_type_to_pohoda(payments) when is_list(payments) do
     case List.first(payments) do
-      %{method: "card"} -> "card"
-      %{method: "cash"} -> "cash"
-      _ -> "cash"
+      %{method: "card"} -> {"Kartou", "card"}
+      %{method: "cash"} -> {"Hotově", "cash"}
+      _ -> {"Hotově", "cash"}
     end
   end
 
-  # Configuration helpers - these should be moved to application config
+  defp parse_bank_account do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "0/0000")
+
+    case String.split(bank_account, "/") do
+      [account_no, bank_code] -> {account_no, bank_code}
+      _ -> {"0", "0000"}
+    end
+  end
+
   defp ico do
-    Application.get_env(:cozy_checkout, :pohoda_ico, "12345678")
-  end
-
-  defp default_account do
-    Application.get_env(:cozy_checkout, :pohoda_default_account, "1")
-  end
-end
-```
-
-
-**Result:**
-
-```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"KI","props":{},"references":[],"type":1}}
+    Application.get_env(:cozy_checkout, :pohoda_ico, "12345678
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
-<summary>Tool use: **get_errors**</summary>
-
-**Input:**
-
-- filePaths: `[/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex]`
-
-**Result:**
-
-```
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cerrors path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/pohoda.ex\"\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":519,"props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":1,"text":"No errors found","type":2},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"LIt","props":{"flexGrow":1,"priority":1},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/errors\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":519,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"GG","props":{},"references":[],"type":1}}
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
-<summary>Tool use: **manage_todo_list**</summary>
-
-**Input:**
-
-- todoList: `[map[id:1 status:completed title:Rewrite pohoda.ex export]]`
-
-**Result:**
-
-```
-Successfully wrote todo list
-
-Warning: Small todo list (<3 items). This task might not need a todo list.
-```
-</details></tool-use>
-
-_**Agent (copilot/claude-sonnet-4.6)**_
-
-Let me explore the current export implementation more broadly before asking questions.  I have a clear picture of both implementations. There are significant structural differences. Before changing anything, I need to ask some key questions. Let me check the config for the bank account setting. Now let me check the order_item schema to understand available fields for VAT calculations: Now let me check the order_item schema to understand available fields for VAT calculations: Now I have everything I need. Let me implement the updated export: 
-```
-
-```
-
-```
-
-```
 Here's a summary of what changed in `lib/cozy_checkout/pohoda.ex`:
 
 **Structural changes matching the example:**

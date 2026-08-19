@@ -12,18 +12,14 @@ Check how pricelist is print. I need to change it a little bit. I need to be abl
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you modify the pricelist printing functionality. Let me first examine the current implementation to understand how it works. 
-
-Now let me examine the current implementation of the printable pricelist: 
-
-Now let me check the `get_active_pricelists_for_print` function to understand how it currently works:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="semantic_search"><details>
 <summary>Tool use: **semantic_search**</summary>
+
+Searched codebase for "pricelist print printable route admin", 24 results
 
 **Input:**
 
@@ -32,7 +28,47 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_12-06Z-receipt-printing-feature-implementation-for-czech-orders.md` starting at line 217:\n```md\n// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_12-06Z-receipt-printing-feature-implementation-for-czech-orders.md\n...\n# Receipt printing feature implementation for Czech orders (2025-10-27 12:06Z)\n...\n\u003ctool-use data-tool-type=\"task\" data-tool-name=\"manage_todo_list\"\u003e\n\u003cdetails\u003e\n\u003csummary\u003eTool use: **manage_todo_list** • Using \"Manage and track todo items for task planning\"\u003c/summary\u003e\n\n**Created 4 todos**\n\n- [ ] Create receipt printing LiveView module\n  \u003e Create /admin/orders/:id/receipt route and LiveView for printable receipts\n- [ ] Design receipt template with required Czech information\n  \u003e Include company info, IČO, items, VAT breakdown, totals, payment info per Czech requirements\n- [ ] Add Print Receipt button to order show page\n  \u003e Add a button in the order show page that navigates to the printable receipt\n- [ ] Test receipt printing functionality\n  \u003e Verify all information displays correctly and prints properly\n\n\u003c/details\u003e\n\u003c/tool-use\u003e\n\n---\n\n\u003ctool-use data-tool-type=\"task\" data-tool-name=\"manage_todo_list\"\u003e\n...\n```\n\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100.03125,"references":[],"text":"Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-11-20_16-10Z-implementing-filtering-and-sorting-for-products-and-pricelists.md` starting at line 464:\n```md\n// filepath: 
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_12-06Z-receipt-printing-feature-implementation-for-czech-orders.md` starting at line 217:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-27_12-06Z-receipt-printing-feature-implementation-for-czech-orders.md
+...
+# Receipt printing feature implementation for Czech orders (2025-10-27 12:06Z)
+...
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+<details>
+<summary>Tool use: **manage_todo_list** • Using "Manage and track todo items for task planning"</summary>
+
+**Created 4 todos**
+
+- [ ] Create receipt printing LiveView module
+  > Create /admin/orders/:id/receipt route and LiveView for printable receipts
+- [ ] Design receipt template with required Czech information
+  > Include company info, IČO, items, VAT breakdown, totals, payment info per Czech requirements
+- [ ] Add Print Receipt button to order show page
+  > Add a button in the order show page that navigates to the printable receipt
+- [ ] Test receipt printing functionality
+  > Verify all information displays correctly and prints properly
+
+</details>
+</tool-use>
+
+---
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list">
+...
+```
+
+Here is a potentially relevant text excerpt in `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-11-20_16-10Z-implementing-filtering-and-sorting-for-products-and-pricelists.md` starting at line 464:
+```md
+// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-11-20_16-10Z-implementing-filtering-and-sorting-for-products-and-pricelists.md
+...
+# Implementing filtering and sorting for products and pricelists (2025-11-20 16:10Z)
+...
+## Questions Before Implementation
+...
+### For Pricelists:
+...
+  "textEditContent": "  @impl true\n  def render(assigns) do\n    ~H\"\"\"\n    &lt;div class=\"max-w-7xl mx-auto px-4 py-8\"&gt;\n      &lt;div
 … (output truncated)
 ````
 </details></tool-use>
@@ -42,6 +78,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/pricelist*print*.{ex,heex}`, no matches
+
 **Input:**
 
 - query: `**/pricelist*print*.{ex,heex}`
@@ -49,7 +87,7 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No files found","type":2}],"ctor":2,"ctorName":"Wge","props":{},"references":[],"type":1}}
+No files found
 ```
 </details></tool-use>
 
@@ -57,6 +95,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for regex `Print Pricelist|printable.*pricelist|/pricelists/print`, 20 results
 
 **Input:**
 
@@ -66,15 +106,46 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex\" line=44\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":10249,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    live \"/pricelists/print\", PricelistLive.Printable","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Kje","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":10,"line":43},{"character":27,"line":43}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":10249,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"nfe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex\" line=64\u003e\n","type":2}
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex" line=44>
+    live "/pricelists/print", PricelistLive.Printable
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex" line=64>
+            title="Print Pricelist"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex" line=65>
+            description="Generate printable pricelist"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex" line=67>
+            navigate={~p"/admin/pricelists/print"}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md" line=237>
+*   **Printable Pricelist Feature:**
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md" line=238>
+    *   **Access Point:** Add a "Print Pricelist" button in the admin pricelists index page, and create a dedicated route like `/admin/pricelists/print` that can be accessed from the admin dashboard.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md" line=238>
+    *   **Access Point:** Add a "Print Pricelist" button in the admin pricelists index page, and create a dedicated route like `/admin/pricelists/print` that can be accessed from the admin dashboard.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md" line=242>
+    *   When generating the printable pricelist, use `Date.utc_today()` for the generated date to avoid timezone conversion issues.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md" line=243>
+*   **Printable Pricelist Display Format for Tiers:** When showing prices for tiers in the printable pricelist, display them in the fol
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me examine the current implementation of the printable pricelist: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `printable.ex`
 
 **Input:**
 
@@ -85,8 +156,30 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":24,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":24},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":23,"references":[],"text":"defmodule CozyCheckoutWeb.PricelistLive.Printable do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"  alias CozyCheckout.Catalog\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":19,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":19},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":18,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":18},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":17,"references":[],"text":"  def mount(_params, _session, socket) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":17},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"pri
-… (output truncated)
+```elixir
+defmodule CozyCheckoutWeb.PricelistLive.Printable do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Catalog
+
+  @impl true
+  def mount(_params, _session, socket) do
+    pricelists_by_category = Catalog.get_active_pricelists_for_print()
+
+    {:ok,
+     socket
+     |> assign(:page_title, "Ceník")
+     |> assign(:pricelists_by_category, pricelists_by_category)
+     |> assign(:generated_at, Date.utc_today())}
+  end
+
+  @impl true
+  def handle_event("print", _params, socket) do
+    {:noreply, push_event(socket, "print", %{})}
+  end
+end
+
+```
 ````
 </details></tool-use>
 
@@ -94,6 +187,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `printable.html.heex`
 
 **Input:**
 
@@ -104,7 +199,99 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":234,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":234},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":233,"references":[],"text":"\u003cdiv class=\"min-h-screen bg-white\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":233},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":232,"references":[],"text":"  \u003c%!-- Print Styles --%\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":232},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":231,"references":[],"text":"  \u003cstyle\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":231},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":230,"references":[],"text":"    /* Flexbox column layout for masonry-like flow */\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":230},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":229,"references":[],"text":"    .pricelist-columns {\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":229},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":228,"references":[],"text":"      display: flex;\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":228},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":227,"references":[],"text":"      flex-direction: column;\n","type":2}],"ctor":2,"ctor
+```phoenix-heex
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    /* Flexbox column layout for masonry-like flow */
+    .pricelist-columns {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      max-height: 2000px;
+      gap: 1rem;
+    }
+
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      width: calc(50% - 0.5rem);
+      overflow: hidden;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      /* Flexbox layout for 2 A4 pages in print */
+      .pricelist-columns {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        max-height: 1800px !important;
+        gap: 0.75rem !important;
+      }
+
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: calc(50% - 0.5rem) !important;
+        overflow: hidden !important;
+        display: table !important;
+      }
+
+      /* Prevent breaks in tables */
+      table {
+        page-break-inside: avoid !important;
+      }
+
+      /* Keep table rows together */
+      tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+      }
+
+      /* Scale and fit for A4 print */
+      .max-w-7xl {
+        max-width: 100% !important;
+        padding: 0.5rem !important;
+      }
+
+      /* Scale down font sizes for print */
+      h1 {
+        font-size: 1.5rem !important;
+      }
+
+      h2 {
+   
 … (output truncated)
 ````
 </details></tool-use>
@@ -114,6 +301,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
 
+Searched for text `get_active_pricelists_for_print`, 17 results
+
 **Input:**
 
 - isRegexp: `false`
@@ -122,15 +311,45 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"17 matches","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex\" line=8\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":10331,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    pricelists_by_category = Catalog.get_active_pricelists_for_print()","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Kje","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":37,"line":7},{"character":68,"line":7}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":10331,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"nfe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkou
+17 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex" line=8>
+    pricelists_by_category = Catalog.get_active_pricelists_for_print()
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex" line=303>
+  def get_active_pricelists_for_print(date \\ Date.utc_today()) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07Z-updating-price-tier-display-format-in-pricelist.md" line=259>
+  > Update get_active_pricelists_for_print to sort categories by order field
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07Z-updating-price-tier-display-format-in-pricelist.md" line=287>
+  > Update get_active_pricelists_for_print to sort categories by order field
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07Z-updating-price-tier-display-format-in-pricelist.md" line=418>
+  > Update get_active_pricelists_for_print to sort categories by order field
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07Z-updating-price-tier-display-format-in-pricelist.md" line=479>
+  > Update get_active_pricelists_for_print to sort categories by order field
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07Z-updating-price-tier-display-format-in-pricelist.md" line=540>
+  > Update get_active_pricelists_for_print to sort categories by order field
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07Z-updating-price-tier-display-format-in-pricelist.md" line=601>
+  > Update get_active_pricelists_for_print to sort categories by order field
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.specstory/history/2025-10-25_17-07Z-updating-price-t
 … (output truncated)
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the `get_active_pricelists_for_print` function to understand how it currently works: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `catalog.ex`, lines 300 to 350
 
 **Input:**
 
@@ -141,14 +360,66 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"300","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"350","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"504","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"  Only includes pricelists that are active and valid for today.\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"  Returns a list of {category, products_with_pricelists} tuples.\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex`. Lines 300 to 350 (504 lines total): 
+```elixir
+  Only includes pricelists that are active and valid for today.
+  Returns a list of {category, products_with_pricelists} tuples.
+  """
+  def get_active_pricelists_for_print(date \\ Date.utc_today()) do
+    # Get all active pricelists valid for the given date
+    pricelists =
+      Pricelist
+      |> where([p], is_nil(p.deleted_at))
+      |> where([p], p.active == true)
+      |> where([p], p.valid_from <= ^date)
+      |> where([p], is_nil(p.valid_to) or p.valid_to >= ^date)
+      |> preload([p], product: :category)
+      |> order_by([p], desc: p.valid_from)
+      |> Repo.all()
+
+    # Group by product (take most recent pricelist per product)
+    pricelists_by_product =
+      pricelists
+      |> Enum.group_by(& &1.product_id)
+      |> Enum.map(fn {_product_id, pricelists} ->
+        # Take the most recent pricelist for this product
+        List.first(pricelists)
+      end)
+      |> Enum.filter(&(&1.product != nil))
+      |> Enum.filter(&(&1.product.active == true))
+
+    # Group by category
+    pricelists_by_product
+    |> Enum.group_by(& &1.product.category)
+    |> Enum.sort_by(fn {category, _} ->
+      if category do
+        {category.order, category.name}
+      else
+        {999_999, ""}
+      end
+    end)
+    |> Enum.map(fn {category, pricelists} ->
+      # Sort products alphabetically with Czech collation support
+      sorted_pricelists =
+        Enum.sort(pricelists, &compare_czech_names(&1.product.name, &2.product.name))
+
+      {category, sorted_pricelists}
+    end)
+  end
+
+  @doc """
+  Returns all active products that have pricing issues.
+  Returns a map with three keys:
+  - :no_prices - products with no pricelists at all
+  - :expired_prices - products with pricelists that are not valid for today
+  - :incomplete_tiers - products with default_unit_amounts that don't have prices for all tiers
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you modify the pricelist printing functionality. Let me first examine the current implementation to understand how it works. Now let me examine the current implementation of the printable pricelist: Now let me check the `get_active_pricelists_for_print` function to understand how it currently works: Perfect! Now I understand how the pricelist printing works. Let me ask some clarifying questions before implementing the feature:
+Perfect! Now I understand how the pricelist printing works. Let me ask some clarifying questions before implementing the feature:
 
 ## Questions about the Printable Pricelist Feature
 
@@ -194,22 +465,18 @@ _**User (2025-12-23 19:25:25Z)**_
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 Perfect! I'll modify the current printable pricelist page to allow one-time category selection with an optional custom name. Let me implement this: 
-
-Now let me implement the changes: 
-
-Great! The implementation is complete. Let me verify the changes compile properly:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Created 3 todos
 
-- todoList: `[map[description:Add category selection state management and filtering logic to printable.ex id:1 status:not-started title:Update LiveView module for category filtering] map[description:Create checkboxes for category selection and custom name input in printable.html.heex id:2 status:not-started title:Add category selection UI to template] map[description:Modify get_active_pricelists_for_print to accept category filter parameter id:3 status:not-started title:Update Catalog context function]]`
+- [ ] Update LiveView module for category filtering
+- [ ] Add category selection UI to template
+- [ ] Update Catalog context function
 
 **Result:**
 
@@ -223,6 +490,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `catalog.ex`, lines 1 to 50
+
 **Input:**
 
 - endLine: `50`
@@ -232,19 +501,76 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"50","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"504","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":52,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"defmodule CozyCheckout.Catalog do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":50,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":50},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":49,"references":[],"text":"  The Catalog context.\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":49},"references":[],"type":1},{"children":[{"lineBre
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex`. Lines 1 to 50 (504 lines total): 
+```elixir
+defmodule CozyCheckout.Catalog do
+  @moduledoc """
+  The Catalog context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Catalog.{Category, Product, Pricelist}
+
+  ## Categories
+
+  @doc """
+  Returns the list of categories.
+  """
+  def list_categories do
+    Category
+    |> where([c], is_nil(c.deleted_at))
+    |> order_by([c], asc: c.order, asc: c.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single category.
+  """
+  def get_category!(id) do
+    Category
+    |> where([c], is_nil(c.deleted_at))
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a category.
+  """
+  def create_category(attrs \\ %{}) do
+    # If order is not provided, set it to max order + 1
+    attrs =
+      if Map.has_key?(attrs, "order") || Map.has_key?(attrs, :order) do
+        attrs
+      else
+        max_order =
+          Category
+          |> where([c], is_nil(c.deleted_at))
+          |> select([c], max(c.order))
+          |> Repo.one()
+
+        next_order = if max_order, do: max_order + 1, else: 1
+        Map.put(attrs, :order, next_order)
+      end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me implement the changes: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting: *Update LiveView module for category filtering* (1/3)
 
-- todoList: `[map[description:Add category selection state management and filtering logic to printable.ex id:1 status:in-progress title:Update LiveView module for category filtering] map[description:Create checkboxes for category selection and custom name input in printable.html.heex id:2 status:not-started title:Add category selection UI to template] map[description:Modify get_active_pricelists_for_print to accept category filter parameter id:3 status:not-started title:Update Catalog context function]]`
+- [ ] Update LiveView module for category filtering _(in progress)_
+- [ ] Add category selection UI to template
+- [ ] Update Catalog context function
 
 **Result:**
 
@@ -255,12 +581,159 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.ex**</summary>
+
+@@ lines 8-19 @@
+
+```
+categories = Catalog.list_categories()
+    all_category_ids = Enum.map(categories, & &1.id)
+    
+    pricelists_by_category = Catalog.get_active_pricelists_for_print(all_category_ids)
+
+    {:ok,
+     socket
+     |> assign(:page_title, "Ceník")
+     |> assign(:categories, categories)
+     |> assign(:selected_category_ids, all_category_ids)
+     |> assign(:pricelist_name, "Ceník")
+     |> assign(:pricelists_by_category, pricelists_by_category)
+     |> assign(:generated_at, Date.utc_today())}
+  end
+
+  @impl true
+  def handle_event("print", _params, socket) do
+    {:noreply, push_event(socket, "print", %{})}
+  end
+
+  @impl true
+  def handle_event("toggle_category", %{"category-id" => category_id}, socket) do
+    category_id = String.to_integer(category_id)
+    
+    selected_ids =
+      if category_id in socket.assigns.selected_category_ids do
+        List.delete(socket.assigns.selected_category_ids, category_id)
+      else
+        [category_id | socket.assigns.selected_category_ids]
+      end
+    
+    pricelists_by_category = Catalog.get_active_pricelists_for_print(selected_ids)
+    
+    {:noreply,
+     socket
+     |> assign(:selected_category_ids, selected_ids)
+     |> assign(:pricelists_by_category, pricelists_by_category)}
+  end
+
+  @impl true
+  def handle_event("toggle_all", _params, socket) do
+    all_category_ids = Enum.map(socket.assigns.categories, & &1.id)
+    
+    selected_ids =
+      if length(socket.assigns.selected_category_ids) == length(all_category_ids) do
+        []
+      else
+        all_category_ids
+      end
+    
+    pricelists_by_category = Catalog.get_active_pricelists_for_print(selected_ids)
+    
+    {:noreply,
+     socket
+     |> assign(:selected_category_ids, selected_ids)
+     |> assign(:pricelists_by_category, pricelists_by_category)}
+  end
+
+  @impl true
+  def handle_event("update_name", %{"name" => name}, socket) do
+    {:noreply, assign(socket, :pricelist_name, name
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **catalog.ex**</summary>
+
+@@ lines 302-342 @@
+
+```
+
+  ## Parameters
+  - category_ids: List of category IDs to filter by (if empty, returns empty list)
+  - date: The date to check validity against (defaults to today)
+  """
+  def get_active_pricelists_for_print(category_ids, date \\ Date.utc_today()) do
+    # Return empty if no categories selected
+    if category_ids == [] do
+      []
+    else
+      # Get all active pricelists valid for the given date
+      pricelists =
+        Pricelist
+        |> where([p], is_nil(p.deleted_at))
+        |> where([p], p.active == true)
+        |> where([p], p.valid_from <= ^date)
+        |> where([p], is_nil(p.valid_to) or p.valid_to >= ^date)
+        |> preload([p], product: :category)
+        |> order_by([p], desc: p.valid_from)
+        |> Repo.all()
+
+      # Group by product (take most recent pricelist per product)
+      pricelists_by_product =
+        pricelists
+        |> Enum.group_by(& &1.product_id)
+        |> Enum.map(fn {_product_id, pricelists} ->
+          # Take the most recent pricelist for this product
+          List.first(pricelists)
+        end)
+        |> Enum.filter(&(&1.product != nil))
+        |> Enum.filter(&(&1.product.active == true))
+        |> Enum.filter(fn pricelist ->
+          # Filter by selected categories
+          pricelist.product.category_id in category_ids
+        end)
+
+      # Group by category
+      pricelists_by_product
+      |> Enum.group_by(& &1.product.category)
+      |> Enum.sort_by(fn {category, _} ->
+        if category do
+          {category.order, category.name}
+        else
+          {999_999, ""}
+        end
+      end)
+      |> Enum.map(fn {category, pricelists} ->
+        # Sort products alphabetically with Czech collation support
+        sorted_pricelists =
+          Enum.sort(pricelists, &compare_czech_names(&1.product.name, &2.product.name))
+
+        {category, sorted_pricelists}
+      end)
+    end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Starting: *Add category selection UI to template* (2/3)
 
-- todoList: `[map[description:Add category selection state management and filtering logic to printable.ex id:1 status:completed title:Update LiveView module for category filtering] map[description:Create checkboxes for category selection and custom name input in printable.html.heex id:2 status:in-progress title:Add category selection UI to template] map[description:Modify get_active_pricelists_for_print to accept category filter parameter id:3 status:completed title:Update Catalog context function]]`
+- [x] Update LiveView module for category filtering
+- [ ] Add category selection UI to template _(in progress)_
+- [x] Update Catalog context function
 
 **Result:**
 
@@ -271,12 +744,105 @@ Successfully wrote todo list
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 114-129 @@
+
+```
+Category Selection Panel (Hidden on print) --%>
+  <div class="no-print bg-white border-b border-secondary-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4">
+      <div class="flex items-start gap-6">
+        <%!-- Custom Name Input --%>
+        <div class="flex-1">
+          <label class="block text-sm font-medium text-primary-500 mb-2">
+            Název ceníku (volitelné)
+          </label>
+          <input
+            type="text"
+            name="pricelist_name"
+            value={@pricelist_name}
+            phx-change="update_name"
+            placeholder="např. Vinný lístek, Destiláty..."
+            class="w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:ring-2 focus:ring-tertiary-500 focus:border-tertiary-500"
+          />
+        </div>
+
+        <%!-- Category Selection --%>
+        <div class="flex-1">
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-primary-500">
+              Vyberte kategorie
+            </label>
+            <button
+              type="button"
+              phx-click="toggle_all"
+              class="text-xs text-tertiary-600 hover:text-tertiary-800 font-medium"
+            >
+              <%= if length(@selected_category_ids) == length(@categories) do %>
+                Odznačit vše
+              <% else %>
+                Vybrat vše
+              <% end %>
+            </button>
+          </div>
+          <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-secondary-200 rounded-md p-3 bg-secondary-50">
+            <%= for category <- @categories do %>
+              <label class="flex items-center gap-2 cursor-pointer hover:bg-secondary-100 p-1 rounded">
+                <input
+                  type="checkbox"
+                  phx-click="toggle_category"
+                  phx-value-category-id={category.id}
+                  checked={category.id in @selected_category_ids}
+                  class="rounded border-secondary-300 text-tertiary-600 focus:ring-tertiary-500"
+                />
+                <span class="text-sm text-primary-500">{category.name}</span>
+              </label>
+            <% end %>
+          </div>
+        </div>
+
+        <%!-- Print Button --%>
+        <div class="flex items-end">
+          <button
+            phx-click="print"
+            class="btn btn-primary gap-2 whitespace-nowrap"
+            disabled={@selected_category_ids == []}
+          >
+            <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout
+          </button>
+        </div>
+      </div>
+      
+      <%= if @selected_category_ids == [] do %>
+        <div class="mt-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <.icon name="hero-exclamation-triangle" class="h-4 w-4 inline mr-1" />
+          Vyberte alespoň jednu kategorii pro tisk ceníku
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <%!-- Printable Content --%>
+  <div class="max-w-7xl mx-auto p-6">
+    <%!-- Header --%>
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-primary-500 mb-1">Jindřichův dům</h1>
+      <h2 class="text-xl text-primary-400 mb-2">{@pricelist_name}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
 <summary>Tool use: **manage_todo_list**</summary>
 
-**Input:**
+Completed: *Add category selection UI to template* (2/3)
 
-- todoList: `[map[description:Add category selection state management and filtering logic to printable.ex id:1 status:completed title:Update LiveView module for category filtering] map[description:Create checkboxes for category selection and custom name input in printable.html.heex id:2 status:completed title:Add category selection UI to template] map[description:Modify get_active_pricelists_for_print to accept category filter parameter id:3 status:completed title:Update Catalog context function]]`
+- [x] Update LiveView module for category filtering
+- [x] Add category selection UI to template
+- [x] Update Catalog context function
 
 **Result:**
 
@@ -290,24 +856,63 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
 <summary>Tool use: **get_errors**</summary>
 
+Checked workspace, 3 problems found in `ical_importer.ex`, `form_component.ex`, `index.ex`
+
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cerrors path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/ical_importer.ex\"\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":10794,"props":{},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"This code at line ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"6","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"```\n  import Ecto.Query\n```","type":2}],"ctor":2,"ctorName":"Bve","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"Yt","props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"has the problem reported:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003ccompileError\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":10797,"props":{},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":1,"text":"unused import Ecto.Query","type":2},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Kje","props":{"flexGrow":1,"priority":1},"references":[],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/compileError\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":10797,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"ZYe","props":{},"references":[],"type":1},{"children":[],"ctor":2,"ctorName":"bse","props"
-… (output truncated)
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/ical_importer.ex">
+This code at line 6
+```
+  import Ecto.Query
+```
+has the problem reported:
+<compileError>
+unused import Ecto.Query
+</compileError>
+
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/form_component.ex">
+This code at line 337
+```
+  def handle_event("save", %{"booking" => booking_params}, socket) do
+```
+has the problem reported:
+<compileError>
+clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/booking_live/form_component.ex:253)
+</compileError>
+
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/economy_live/index.ex">
+This code at line 100
+```
+  defp format_date(date) do
+```
+has the problem reported:
+<compileError>
+function format_date/1 is unused
+</compileError>
+
+</errors>
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Great! The implementation is complete. Let me verify the changes compile properly: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Using "Run in Terminal"
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | head -50`
-- explanation: `Compile the project to verify changes`
-- isBackground: `false`
+Compile the project to verify changes
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | head -50
+```
 
 **Result:**
 
@@ -352,19 +957,7 @@ Command exited with code 130
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Perfect! I'll modify the current printable pricelist page to allow one-time category selection with an optional custom name. Let me implement this: Now let me implement the changes: 
-```
-
-```
-
-```
-
-```
-
-```
-
-```
-Great! The implementation is complete. Let me verify the changes compile properly: Perfect! The compilation succeeded with only pre-existing warnings (unrelated to our changes). Now let me create a quick visual summary of what was implemented:
+Perfect! The compilation succeeded with only pre-existing warnings (unrelated to our changes). Now let me create a quick visual summary of what was implemented:
 
 ## ✅ Implementation Complete!
 
@@ -413,18 +1006,35 @@ When trying to choose categories I get this error: errors were found at the give
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 Let me fix the error with handling the category ID parameter: 
 
-Actually, let me check what type the category IDs are in the database first: 
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-Ah! The IDs are `:binary_id`, not integers. That's the issue. Let me fix this properly:
-</details></think>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.ex**</summary>
+
+@@ lines 29-30 @@
+
+```
+_str}, socket) do
+    category_id = 
+      case Integer.parse(category_id_str) do
+        {id, _} -> id
+        :error -> String.to_integer(category_id_str)
+      end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Actually, let me check what type the category IDs are in the database first: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for regex `categories.*binary_id|categories.*id.*:id` (`**/schema.ex`), no results
 
 **Input:**
 
@@ -435,7 +1045,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found.","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.\nIf you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).\nThen if you want to include those files you can call the tool again by setting \"includeIgnoredFiles\" to true.","type":2}],"ctor":2,"ctorName":"W0t","props":{},"references":[],"type":1}}
+No matches found.Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
 ```
 </details></tool-use>
 
@@ -443,6 +1055,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `category.ex`
 
 **Input:**
 
@@ -453,21 +1067,57 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":29,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog/category.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog/category.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog/category.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":29},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":28,"references":[],"text":"defmodule CozyCheckout.Catalog.Category do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":28},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":27,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":27},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":26,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":26},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":25,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":25},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":24,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":24},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":23,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"  schema \"categories\" do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Catalog.Category do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "categories" do
+    field :name, :string
+    field :description, :string
+    field :order, :integer, default: 0
+    field :deleted_at, :utc_datetime
+
+    has_many :products, CozyCheckout.Catalog.Product
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(category, attrs) do
+    category
+    |> cast(attrs, [:name, :description, :order])
+    |> validate_required([:name])
+    |> validate_number(:order, greater_than_or_equal_to: 0)
+    |> unique_constraint(:name)
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me fix the error with handling the category ID parameter: 
-```
+Ah! The IDs are `:binary_id`, not integers. That's the issue. Let me fix this properly: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.ex**</summary>
+
+@@ lines 29-35 @@
 
 ```
-Actually, let me check what type the category IDs are in the database first: Ah! The IDs are `:binary_id`, not integers. That's the issue. Let me fix this properly: 
+}, socket) do
+    # category_id is already a binary_id string from the template
 ```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! The issue was that I was trying to convert binary IDs (UUIDs) to integers. Since your database uses `binary_id` (UUIDs) instead of integer IDs, the category IDs are already strings and don't need conversion. The fix removes the unnecessary `String.to_integer()` call that was causing the error.
 
 ---
@@ -480,16 +1130,22 @@ Name of pricelist doesnt work at all. I cant see the change on website nor on pr
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Let me check the issue with the name input. The problem is likely in how the event parameter is being received:
-</details></think>
+Let me check the issue with the name input. The problem is likely in how the event parameter is being received: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me check the issue with the name input. The problem is likely in how the event parameter is being received: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.ex**</summary>
+
+@@ lines 66-66 @@
 
 ```
+pricelist_
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 The issue was that the event handler was looking for `%{"name" => name}` but the input sends `%{"pricelist_name" => name}` based on the `name="pricelist_name"` attribute. Now it should update correctly as you type and appear both on the page and in the printed version.
 
 ---
@@ -502,16 +1158,30 @@ It is not doing anything. When changing the name in the form I cant even see any
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-The issue is that `phx-change` on a standalone input doesn't work - it needs to be wrapped in a form. Let me fix this:
-</details></think>
+The issue is that `phx-change` on a standalone input doesn't work - it needs to be wrapped in a form. Let me fix this: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-The issue is that `phx-change` on a standalone input doesn't work - it needs to be wrapped in a form. Let me fix this: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 123-130 @@
 
 ```
+form phx-change="update_name">
+            <input
+              type="text"
+              name="pricelist_name"
+              value={@pricelist_name}
+              placeholder="např. Vinný lístek, Destiláty..."
+              class="w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm focus:ring-2 focus:ring-tertiary-500 focus:border-tertiary-500"
+            />
+          </form
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 The issue was that `phx-change` needs to be on a `<form>` element, not directly on the input. Now when you type in the name field, it will trigger the "update_name" event and update the pricelist name both on the page and in the printed version.
 
 ---
@@ -527,6 +1197,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `printable.html.heex`, lines 1 to 110
+
 **Input:**
 
 - endLine: `110`
@@ -536,17 +1208,116 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"110","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"297","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":112,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":112},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":111,"references":[],"text":"\u003cdiv class=\"min-h-screen bg-white\"\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":111},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":110,"references":[],"text":"  \u003c%!-- Print Styles --%\u003e\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":110},"references":[],"type":1},{"children":[{"lineBreakBefore":tru
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex`. Lines 1 to 110 (297 lines total): 
+```phoenix-heex
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    /* Flexbox column layout for masonry-like flow */
+    .pricelist-columns {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      max-height: 2000px;
+      gap: 1rem;
+    }
+
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      width: calc(50% - 0.5rem);
+      overflow: hidden;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      /* Flexbox layout for 2 A4 pages in print */
+      .pricelist-columns {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        max-height: 1800px !important;
+        gap: 0.75rem !important;
+      }
+
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: calc(50% - 0.5rem) !important;
+        overflow: hidden !important;
+        display: table !important;
+      }
+
+      /* Prevent breaks in tables */
+      table {
+        page-break-inside: avoid !important;
+      }
+
+      /* Keep table rows together */
+      tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+      }
+
+      /* Scale and fit for A4 print */
+      .max-w-7xl {
+        max-width: 100% !important;
+     
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 52-57 @@
 
 ```
-
+columns on A4 paper */
+      /* A4 height: 297mm - 3cm margins = 267mm ≈ 1008px at 96 DPI */
+      /* Account for header (~100px) = ~900px available for content */
+      .pricelist-columns {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        max-height: 9
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 I've updated the print layout to use A4 paper standards. The max-height is now set to 900px, which accounts for:
 - A4 height: 297mm
 - Minus margins (1.5cm × 2 = 3cm): 267mm ≈ 1008px

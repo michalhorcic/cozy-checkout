@@ -29,7 +29,6 @@ The value `0.0628` should technically pass the `greater_than_or_equal_to: 0` che
 Here's the fix:
 
 ````elixir
-// filepath: /Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex
 defmodule CozyCheckout.Inventory.PurchaseOrderItem do
   use Ecto.Schema
   import Ecto.Changeset
@@ -121,10 +120,55 @@ Please implement it
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **purchase_order_item.ex**</summary>
+
+@@ lines 27-29 @@
 
 ```
+cost_price()
+    |> foreign_key_constraint(:purchase_order_id)
+    |> foreign_key_constraint(:product_id)
+  end
 
+  defp validate_cost_price(changeset) do
+    case get_change(changeset, :cost_price) do
+      nil ->
+        changeset
+
+      cost_price when is_binary(cost_price) ->
+        # Handle string input from forms
+        case Decimal.parse(cost_price) do
+          {decimal_value, _} ->
+            if Decimal.compare(decimal_value, Decimal.new("0")) in [:eq, :gt] do
+              put_change(changeset, :cost_price, decimal_value)
+            else
+              add_error(changeset, :cost_price, "must be greater than or equal to 0")
+            end
+
+          :error ->
+            add_error(changeset, :cost_price, "is not a valid number")
+        end
+
+      %Decimal{} = decimal_value ->
+        if Decimal.compare(decimal_value, Decimal.new("0")) in [:eq, :gt] do
+          changeset
+        else
+          add_error(changeset, :cost_price, "must be greater than or equal to 0")
+        end
+
+      numeric_value when is_number(numeric_value) ->
+        if numeric_value >= 0 do
+          changeset
+        else
+          add_error(changeset, :cost_price, "must be greater than or equal to 0")
+        end
+    end
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Done! The validation has been updated. The new `validate_cost_price/1` function properly handles decimal values including very small ones like `0.0628` by using `Decimal.compare/2` for reliable comparison. This should resolve the validation issue you were experiencing.
 
 ---
@@ -137,18 +181,14 @@ No, I still cant add it
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 Let me investigate the form and LiveView code to find the issue. 
-
-Let me check the form component where the cost_price input is used: 
-
-Found it! The issue is in the HTML form input. The `step="0.01"` attribute is limiting the decimal precision. When you try to enter `0.0628`, the browser is rounding or rejecting it because it doesn't match the step increment of `0.01`.
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for regex `purchase_order_item|cost_price` (`**/*.{ex,heex}`), 20 results
 
 **Input:**
 
@@ -159,7 +199,37 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex\" line=20\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":31857,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    |\u003e preload(:purchase_order_items)","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"Kje","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":16,"line":19},{"character":35,"line":19}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":31857,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"n","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"nfe","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex\" line=31\u003e\n","type":2}],"ctor":2,"ctorName":"","keepW
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=20>
+    |> preload(:purchase_order_items)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=31>
+    |> preload([purchase_order_items: [product: :category]])
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=97>
+  def create_purchase_order_item(%PurchaseOrder{} = purchase_order, attrs) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=107>
+  def update_purchase_order_item(%PurchaseOrderItem{} = item, attrs) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=116>
+  def delete_purchase_order_item(%PurchaseOrderItem{} = item) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=434>
+      select: fragment("? / COALESCE(?, 1)", poi.cost_price, poi.unit_amount)
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=451>
+      select: avg(fragment("? / COALESCE(?, 1)", poi.cost_price, poi.unit_amount))
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex" line=512>
+        price: poi.cost_price,
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/index.ex" line=131>
+                      {length(purchase_order.purchase_order_items || [])} items
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex" line=201>
+                        name={"items[#{index}][cost_price]"}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_com
 … (output truncated)
 ```
 </details></tool-use>
@@ -169,6 +239,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/purchase_order*.{ex,heex}`, 2 matches
+
 **Input:**
 
 - query: `**/purchase_order*.{ex,heex}`
@@ -176,14 +248,22 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order.ex","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Wge","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me check the form component where the cost_price input is used: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 190 to 215
 
 **Input:**
 
@@ -194,17 +274,56 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"190","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"215","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"473","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":28,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":28},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":27,"references":[],"text":"                        placeholder=\"e.g., 500 for 500ml\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":27},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":26,"references":[],"text":"                        class=\"mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex`. Lines 190 to 215 (473 lines total): 
+```elixir
+                        placeholder="e.g., 500 for 500ml"
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label class="block text-sm font-medium text-gray-700 mb-1">
+                        Cost Price <span class="text-rose-600">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name={"items[#{index}][cost_price]"}
+                        value={item.cost_price}
+                        required
+                        min="0"
+                        step="0.01"
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-tertiary-500 focus:ring-tertiary-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div class="md:col-span-2">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                      <input
+                        type="text"
+                        name={"items[#{index}][notes]"}
+                        value={item.notes}
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me investigate the form and LiveView code to find the issue. Let me check the form component where the cost_price input is used: Found it! The issue is in the HTML form input. The `step="0.01"` attribute is limiting the decimal precision. When you try to enter `0.0628`, the browser is rounding or rejecting it because it doesn't match the step increment of `0.01`. 
-```
+Found it! The issue is in the HTML form input. The `step="0.01"` attribute is limiting the decimal precision. When you try to enter `0.0628`, the browser is rounding or rejecting it because it doesn't match the step increment of `0.01`. 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 205-205 @@
 
 ```
+any
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Fixed! The issue was `step="0.01"` in the HTML input, which only allowed values in increments of 0.01 (like 0.01, 0.02, 0.03, etc.). The value `0.0628` doesn't fit this pattern, so the browser was rejecting it.
 
 I've changed it to `step="any"` which allows any decimal precision, so you can now enter `0.0628` or any other value with any number of decimal places.
@@ -219,14 +338,10 @@ Change database so it can handle smaller numbers as well. Now it can handle only
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Now I'll create a migration to update the precision of the cost_price column:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/priv/repo/migrations/*purchase_order*.exs`, 2 matches
 
 **Input:**
 
@@ -235,7 +350,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200555_create_purchase_orders.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200555_create_purchase_orders.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200555_create_purchase_orders.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200555_create_purchase_orders.exs","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Wge","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200555_create_purchase_orders.exs
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs
 ```
 </details></tool-use>
 
@@ -243,6 +360,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `20251223200619_create_purchase_order_items.exs`
 
 **Input:**
 
@@ -253,21 +372,50 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":25,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251223200619_create_purchase_order_items.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":25},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":24,"references":[],"text":"defmodule CozyCheckout.Repo.Migrations.CreatePurchaseOrderItems do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":24},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":23,"references":[],"text":"  use Ecto.Migration\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"  def change do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"    create table(:purchase_order_items, primary_key: false) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":19,"references":[],"text":"      add :id, :binary_id, primary_key: true\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":19},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":18,"references":[],"text":"      add :purchase_order_id, references(:purchase_o
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Repo.Migrations.CreatePurchaseOrderItems do
+  use Ecto.Migration
+
+  def change do
+    create table(:purchase_order_items, primary_key: false) do
+      add :id, :binary_id, primary_key: true
+      add :purchase_order_id, references(:purchase_orders, on_delete: :delete_all, type: :binary_id), null: false
+      add :product_id, references(:products, on_delete: :restrict, type: :binary_id), null: false
+      add :quantity, :integer, null: false
+      add :unit_amount, :decimal, precision: 10, scale: 2
+      add :cost_price, :decimal, precision: 10, scale: 2, null: false
+      add :notes, :text
+      add :deleted_at, :utc_datetime
+
+      timestamps(type: :utc_datetime)
+    end
+
+    create index(:purchase_order_items, [:purchase_order_id])
+    create index(:purchase_order_items, [:product_id])
+    create index(:purchase_order_items, [:deleted_at])
+  end
+end
+
+```
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now I'll create a migration to update the precision of the cost_price column: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Using "Run in Terminal"
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.gen.migration increase_purchase_order_item_cost_price_precision`
-- explanation: `Generate a new migration to increase the decimal precision for cost_price`
-- isBackground: `false`
+Generate a new migration to increase the decimal precision for cost_price
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.gen.migration increase_purchase_order_item_cost_price_precision
+```
 
 **Result:**
 
@@ -326,6 +474,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/priv/repo/migrations/*increase_purchase_order_item_cost_price_precision.exs`, 1 match
+
 **Input:**
 
 - query: `priv/repo/migrations/*increase_purchase_order_item_cost_price_precision.exs`
@@ -333,7 +483,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 total result","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Wge","props":{},"references":[],"type":1}}
+1 total result
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs
 ```
 </details></tool-use>
 
@@ -341,6 +492,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `20251227002625_increase_purchase_order_item_cost_price_precision.exs`
 
 **Input:**
 
@@ -351,9 +504,32 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/priv/repo/migrations/20251227002625_increase_purchase_order_item_cost_price_precision.exs","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":9,"references":[],"text":"defmodule CozyCheckout.Repo.Migrations.IncreasePurchaseOrderItemCostPricePrecision do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":9},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":8,"references":[],"text":"  use Ecto.Migration\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":8},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":7,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":7},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":6,"references":[],"text":"  def change do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":6},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":5,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":5},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":4,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":4},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":3,"references":[],"text":"end\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":3},"references":[
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Repo.Migrations.IncreasePurchaseOrderItemCostPricePrecision do
+  use Ecto.Migration
+
+  def change do
+
+  end
+end
+
+```
 ````
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **20251227002625_increase_purchase_order_item_cost_price_precision.exs**</summary>
+
+@@ lines 5-5 @@
+
+```
+    alter table(:purchase_order_items) do
+      modify :cost_price, :decimal, precision: 10, scale: 4, null: false
+      modify :unit_amount, :decimal, precision: 10, scale: 4
+    end
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
@@ -361,11 +537,13 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Using "Run in Terminal"
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate`
-- explanation: `Run the migration to increase decimal precision`
-- isBackground: `false`
+Run the migration to increase decimal precision
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix ecto.migrate
+```
 
 **Result:**
 
@@ -412,16 +590,11 @@ Precision.change/0 forward
 01:26:43.097 [info] alter table purchase_order_items
 
 01:26:43.141 [info] == Migrated 20251227002625 in 0.0s
-
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Now I'll create a migration to update the precision of the cost_price column: 
-```
-
-```
 Perfect! The migration has been successfully applied. The database now supports 4 decimal places for both `cost_price` and `unit_amount` fields (changed from `scale: 2` to `scale: 4`). 
 
 You can now enter values like `0.0628` in the cost_price field. The changes include:
@@ -439,24 +612,10 @@ Is there any rounding? Because when I enter 0.0628 only 0.0600 is saved
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Now let me check how the items are being processed when saved: 
-
-Let me check if there's something in the display code that might be rounding the value: 
-
-The database is actually storing `0.0600` instead of `0.0628`. This means the rounding is happening before it reaches the database. Let me add some debugging to see what value is being received: 
-
-The issue is that the `:decimal` field type in Ecto schema doesn't have precision/scale defined. When Ecto casts the value, it might be using a default precision. Let me update the schema to specify the precision: 
-
-Actually, that won't help - Ecto schemas don't use precision/scale, those are migration-only parameters. The real issue is likely in how the form value is being displayed or parsed. Let me check the form value attribute more carefully: 
-
-Let me add debugging to see what value is actually being received:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 420 to 470
 
 **Input:**
 
@@ -467,8 +626,60 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"420","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"470","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"473","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"         socket\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"         |\u003e put_flash(:info, \"Purchase order updated successfully\")\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":51},"references":[],"type":1},{"children":[{"lineBreakBe
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex`. Lines 420 to 470 (473 lines total): 
+```elixir
+         socket
+         |> put_flash(:info, "Purchase order updated successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign_form(socket, changeset)}
+    end
+  end
+
+  defp delete_items(deleted_item_ids) do
+    # Delete items directly by ID using Repo
+    alias CozyCheckout.Repo
+    alias CozyCheckout.Inventory.PurchaseOrderItem
+
+    Enum.each(deleted_item_ids, fn item_id ->
+      Repo.get(PurchaseOrderItem, item_id)
+      |> case do
+        nil -> :ok
+        item -> Repo.delete(item)
+      end
+    end)
+  end
+
+  defp create_items(purchase_order, items_params) do
+    items_params
+    |> Map.values()
+    |> Enum.each(fn item_params ->
+      # Only create items that don't have an ID (new items)
+      # Items with ID already exist in the database
+      if item_params["product_id"] && item_params["product_id"] != "" && !item_params["id"] do
+        Inventory.create_purchase_order_item(purchase_order, item_params)
+      end
+    end)
+  end
+
+  defp assign_form(socket, %Ecto.Changeset{} = changeset) do
+    assign(socket, :form, to_form(changeset))
+  end
+
+  defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
+
+  defp get_unit_label(item, products) do
+    case Enum.find(products, &(&1.id == item.product_id)) do
+      nil -> ""
+      product when product.unit -> "(#{product.unit})"
+      _ -> ""
+    end
+  end
+
+  defp change_purchase_order(purchase_order, attrs \\ %{}) do
+    Inventory.PurchaseOrder.changeset(purchase_order, attrs)
+```
 ````
 </details></tool-use>
 
@@ -476,6 +687,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 370 to 420
 
 **Input:**
 
@@ -486,8 +699,60 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"370","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"420","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"473","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":53,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":53},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":52,"references":[],"text":"  def handle_event(\"save\", %{\"purchase_order\" =\u003e purchase_order_params}, socket) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":52},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":51,"references":[],"text":"    save_purchase_order(socket, socket.assigns.action, purchase_order_params, %{})\n","type":2}],"ctor":2,"ctorNam
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex`. Lines 370 to 420 (473 lines total): 
+```elixir
+  def handle_event("save", %{"purchase_order" => purchase_order_params}, socket) do
+    save_purchase_order(socket, socket.assigns.action, purchase_order_params, %{})
+  end
+
+  # IMPORTANT: Catch-all for unmatched events to prevent crashes
+  # This helps debug what params are actually being sent
+  def handle_event(event, params, socket) do
+    require Logger
+    Logger.warning("Unhandled event in FormComponent: #{event}, params: #{inspect(params)}")
+    {:noreply, socket}
+  end
+
+  defp save_purchase_order(socket, :new, purchase_order_params, items_params) do
+    # Generate order number if not provided
+    purchase_order_params =
+      if purchase_order_params["order_number"] == "" do
+        Map.put(purchase_order_params, "order_number", Inventory.generate_purchase_order_number())
+      else
+        purchase_order_params
+      end
+
+    case Inventory.create_purchase_order(purchase_order_params) do
+      {:ok, purchase_order} ->
+        # Create items
+        create_items(purchase_order, items_params)
+
+        notify_parent({:saved, purchase_order})
+
+        {:noreply,
+         socket
+         |> put_flash(:info, "Purchase order created successfully")
+         |> push_patch(to: socket.assigns.patch)}
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign_form(socket, changeset)}
+    end
+  end
+
+  defp save_purchase_order(socket, :edit, purchase_order_params, items_params) do
+    case Inventory.update_purchase_order(socket.assigns.purchase_order, purchase_order_params) do
+      {:ok, purchase_order} ->
+        # Delete removed items first
+        delete_items(socket.assigns.deleted_item_ids)
+
+        # Update/create items
+        create_items(purchase_order, items_params)
+
+        notify_parent({:saved, purchase_order})
+
+        {:noreply,
+         socket
+```
 ````
 </details></tool-use>
 
@@ -495,6 +760,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 280 to 370
 
 **Input:**
 
@@ -505,15 +772,75 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"280","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"370","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"473","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":93,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":93},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":92,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":92},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":91,"references":[],"text":"  def handle_event(\"select_product\", %{\"index\" =\u003e index, \"product-id\" =\u003e product_id}, socket) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":91},"references":[],"
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex`. Lines 280 to 370 (473 lines total): 
+```elixir
+  @impl true
+  def handle_event("select_product", %{"index" => index, "product-id" => product_id}, socket) do
+    index = String.to_integer(index)
+
+    # Update the item with the selected product
+    items = List.update_at(socket.assigns.items, index, fn item ->
+      Map.put(item, :product_id, product_id)
+    end)
+
+    # Clear the search for this index
+    product_searches = Map.delete(socket.assigns.product_searches, index)
+    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign(:product_searches, product_searches)
+     |> assign(:show_product_suggestions, show_suggestions)}
+  end
+
+  @impl true
+  def handle_event("clear_product", %{"index" => index}, socket) do
+    index = String.to_integer(index)
+
+    # Clear the product_id for this item
+    items = List.update_at(socket.assigns.items, index, fn item ->
+      Map.put(item, :product_id, nil)
+    end)
+
+    # Reset search state
+    product_searches = Map.delete(socket.assigns.product_searches, index)
+    show_suggestions = Map.put(socket.assigns.show_product_suggestions, index, false)
+
+    {:noreply,
+     socket
+     |> assign(:items, items)
+     |> assign(:product_searches, product_searches)
+     |> assign(:show_product_suggestions, show_suggestions)}
+  end
+
+  @impl true
+  def handle_event("validate", %{"purchase_order" => purchase_order_params}, socket) do
+    changeset =
+      socket.assigns.purchase_order
+      |> Inventory.change_purchase_order(purchase_order_params)
+      |> Map.put(:action, :validate)
+
+    {:noreply, assign_form(socket, changeset)}
+  end
+
+  # IMPORTANT: handle_event must match the exact params structure sent by the client
+  # phx-click sends simple params, but phx-change sends the entire form structure
+  def handle_event("a
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check how the items are being processed when saved: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `inventory.ex`, lines 95 to 110
 
 **Input:**
 
@@ -524,21 +851,44 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"95","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"110","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"614","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":18,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":18},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":17,"references":[],"text":"  Creates a purchase order item.\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":17},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":16,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":16},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":15,"references":[],"text":"  def create_purchase_order_item(%PurchaseOrder{} = purchase_order, attrs) do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority"
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex`. Lines 95 to 110 (614 lines total): 
+```elixir
+  Creates a purchase order item.
+  """
+  def create_purchase_order_item(%PurchaseOrder{} = purchase_order, attrs) do
+    %PurchaseOrderItem{}
+    |> PurchaseOrderItem.changeset(attrs)
+    |> Ecto.Changeset.put_assoc(:purchase_order, purchase_order)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a purchase order item.
+  """
+  def update_purchase_order_item(%PurchaseOrderItem{} = item, attrs) do
+    item
+    |> PurchaseOrderItem.changeset(attrs)
+    |> Repo.update()
+```
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Let me check if there's something in the display code that might be rounding the value: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+Using "Run in Terminal"
 
-- command: `psql -d cozy_checkout_dev -c "SELECT id, cost_price, unit_amount FROM purchase_order_items ORDER BY inserted_at DESC LIMIT 5;"`
-- explanation: `Check the actual values stored in the database`
-- isBackground: `false`
+Check the actual values stored in the database
+
+```bash
+psql -d cozy_checkout_dev -c "SELECT id, cost_price, unit_amount FROM purchase_order_items ORDER BY inserted_at DESC LIMIT 5;"
+```
 
 **Result:**
 
@@ -547,15 +897,19 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 --------------------------------------+------------+-------------
  2237003e-94a6-4915-b5ba-59068f4740b7 |     0.0600 | 250000.0000
 (1 row)
-
-
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+The database is actually storing `0.0600` instead of `0.0628`. This means the rounding is happening before it reaches the database. Let me add some debugging to see what value is being received: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `purchase_order_item.ex`
 
 **Input:**
 
@@ -566,25 +920,128 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":74,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory/purchase_order_item.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":74},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":73,"references":[],"text":"defmodule CozyCheckout.Inventory.PurchaseOrderItem do\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":73},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":72,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":72},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":71,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":71},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":70,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":70},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":69,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":69},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":68,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":68},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":67,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":67},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priori
+```elixir
+defmodule CozyCheckout.Inventory.PurchaseOrderItem do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+
+  schema "purchase_order_items" do
+    field :quantity, :integer
+    field :unit_amount, :decimal
+    field :cost_price, :decimal
+    field :notes, :string
+    field :deleted_at, :utc_datetime
+
+    belongs_to :purchase_order, CozyCheckout.Inventory.PurchaseOrder
+    belongs_to :product, CozyCheckout.Catalog.Product
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(purchase_order_item, attrs) do
+    purchase_order_item
+    |> cast(attrs, [:product_id, :quantity, :unit_amount, :cost_price, :notes])
+    |> validate_required([:product_id, :quantity, :cost_price])
+    |> validate_number(:quantity, greater_than: 0)
+    |> validate_cost_price()
+    |> foreign_key_constraint(:purchase_order_id)
+    |> foreign_key_constraint(:product_id)
+  end
+
+  defp validate_cost_price(changeset) do
+    case get_change(changeset, :cost_price) do
+      nil ->
+        changeset
+
+      cost_price when is_binary(cost_price) ->
+        # Handle string input from forms
+        case Decimal.parse(cost_price) do
+          {decimal_value, _} ->
+            if Decimal.compare(decimal_value, Decimal.new("0")) in [:eq, :gt] do
+              put_change(changeset, :cost_price, decimal_value)
+            else
+              add_error(changeset, :cost_price, "must be greater than or equal to 0")
+            end
+
+          :error ->
+            add_error(changeset, :cost_price, "is not a valid number")
+        end
+
+      %Decimal{} = decimal_value ->
+        if Decimal.compare(decimal_value, Decimal.new("0")) in [:eq, :gt] do
+          changeset
+        else
+          add_error(changeset, :cost_price, "must be greater than or equal to 0")
+        end
+
+      numeric_value when is_number(numeric_value) ->
+        if numeric_value >= 0 do
+          changeset
+        else
+          add_error(changese
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Now let me check how the items are being processed when saved: Let me check if there's something in the display code that might be rounding the value: The database is actually storing `0.0600` instead of `0.0628`. This means the rounding is happening before it reaches the database. Let me add some debugging to see what value is being received: The issue is that the `:decimal` field type in Ecto schema doesn't have precision/scale defined. When Ecto casts the value, it might be using a default precision. Let me update the schema to specify the precision: 
-```
+The issue is that the `:decimal` field type in Ecto schema doesn't have precision/scale defined. When Ecto casts the value, it might be using a default precision. Let me update the schema to specify the precision: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **purchase_order_item.ex**</summary>
+
+@@ lines 10-11 @@
 
 ```
+, precision: 10, scale: 4
+    field :cost_price, :decimal, precision: 10, scale: 4
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Actually, that won't help - Ecto schemas don't use precision/scale, those are migration-only parameters. The real issue is likely in how the form value is being displayed or parsed. Let me check the form value attribute more carefully: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **purchase_order_item.ex**</summary>
+
+@@ lines 10-11 @@
 
 ```
+
+    field :cost_price, :decimal
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Let me add debugging to see what value is actually being received: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **purchase_order_item.ex**</summary>
+
+@@ lines 23-23 @@
 
 ```
+require Logger
+    Logger.debug("PurchaseOrderItem attrs: #{inspect(attrs)}")
+    
+    
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Now try entering `0.0628` again and check your terminal logs to see what value is actually being received. The logs should show what's in the `attrs` map when the changeset is created.
 
 ---
@@ -597,16 +1054,28 @@ _**User (2025-12-27 00:30:45Z)**_
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-The browser is rounding the value before sending it. This is a known issue with HTML `type="number"` inputs - some browsers have precision limitations. Let's change it to use `type="text"` with pattern validation instead:
-</details></think>
+The browser is rounding the value before sending it. This is a known issue with HTML `type="number"` inputs - some browsers have precision limitations. Let's change it to use `type="text"` with pattern validation instead: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-The browser is rounding the value before sending it. This is a known issue with HTML `type="number"` inputs - some browsers have precision limitations. Let's change it to use `type="text"` with pattern validation instead: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 200-205 @@
 
 ```
+text"
+                        inputmode="decimal"
+                        name={"items[#{index}][cost_price]"}
+                        value={item.cost_price}
+                        required
+                        pattern="^\d+\.?\d*$"
+                        placeholder="0.0000
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Changed the input from `type="number"` to `type="text"` with:
 - `inputmode="decimal"` - Shows numeric keyboard on mobile devices
 - `pattern="^\d+\.?\d*$"` - Only allows valid decimal numbers
@@ -624,20 +1093,14 @@ Aaa, there is actually another issue. For some reason I cant change value once I
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 Let me check the save logic for editing: 
-
-Found it! The `create_items` function only creates new items. It skips existing items (those with an `id`), so updates never happen. Let me fix this: 
-
-Now I need to check if the `get_purchase_order_item` function exists: 
-
-The function doesn't exist. Let me add it to the Inventory module:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `form_component.ex`, lines 440 to 455
 
 **Input:**
 
@@ -648,15 +1111,64 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"440","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"455","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"474","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":18,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":18},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":17,"references":[],"text":"      end\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":17},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":16,"references":[],"text":"    end)\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":16},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":15,"references":[],"text":"  end\n","type":2}],"ct
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/purchase_order_live/form_component.ex`. Lines 440 to 455 (474 lines total): 
+```elixir
+      end
+    end)
+  end
+
+  defp create_items(purchase_order, items_params) do
+    items_params
+    |> Map.values()
+    |> Enum.each(fn item_params ->
+      # Only create items that don't have an ID (new items)
+      # Items with ID already exist in the database
+      if item_params["product_id"] && item_params["product_id"] != "" && !item_params["id"] do
+        Inventory.create_purchase_order_item(purchase_order, item_params)
+      end
+    end)
+  end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Found it! The `create_items` function only creates new items. It skips existing items (those with an `id`), so updates never happen. Let me fix this: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **form_component.ex**</summary>
+
+@@ lines 448-451 @@
+
+```
+if item_params["product_id"] && item_params["product_id"] != "" do
+        if item_params["id"] do
+          # Update existing item
+          case Inventory.get_purchase_order_item(item_params["id"]) do
+            nil -> :ok
+            item -> Inventory.update_purchase_order_item(item, item_params)
+          end
+        else
+          # Create new item
+          Inventory.create_purchase_order_item(purchase_order, item_params)
+        end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now I need to check if the `get_purchase_order_item` function exists: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched for text `def get_purchase_order_item` (`**/lib/cozy_checkout/inventory.ex`), no results
 
 **Input:**
 
@@ -667,14 +1179,22 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"No matches found.","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.\nIf you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).\nThen if you want to include those files you can call the tool again by setting \"includeIgnoredFiles\" to true.","type":2}],"ctor":2,"ctorName":"W0t","props":{},"references":[],"type":1}}
+No matches found.Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+The function doesn't exist. Let me add it to the Inventory module: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `inventory.ex`, lines 90 to 120
 
 **Input:**
 
@@ -685,21 +1205,62 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"90","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"120","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"614","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":33,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":31,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":30,"references":[],"text":"  ## Purchase Order Items\n","type":2}],"ctor":2,"ctorName":"Bve","props":{"priority":30},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":29,"refe
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/inventory.ex`. Lines 90 to 120 (614 lines total): 
+```elixir
+  end
+
+  ## Purchase Order Items
+
+  @doc """
+  Creates a purchase order item.
+  """
+  def create_purchase_order_item(%PurchaseOrder{} = purchase_order, attrs) do
+    %PurchaseOrderItem{}
+    |> PurchaseOrderItem.changeset(attrs)
+    |> Ecto.Changeset.put_assoc(:purchase_order, purchase_order)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a purchase order item.
+  """
+  def update_purchase_order_item(%PurchaseOrderItem{} = item, attrs) do
+    item
+    |> PurchaseOrderItem.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Soft deletes a purchase order item.
+  """
+  def delete_purchase_order_item(%PurchaseOrderItem{} = item) do
+    item
+    |> PurchaseOrderItem.soft_delete_changeset()
+    |> Repo.update()
+  end
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me check the save logic for editing: Found it! The `create_items` function only creates new items. It skips existing items (those with an `id`), so updates never happen. Let me fix this: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **inventory.ex**</summary>
+
+@@ lines 95-95 @@
 
 ```
-Now I need to check if the `get_purchase_order_item` function exists: The function doesn't exist. Let me add it to the Inventory module: 
-```
+Gets a single purchase order item.
+  """
+  def get_purchase_order_item(id), do: Repo.get(PurchaseOrderItem, id)
 
+  @doc """
+  
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! Now the update functionality should work. The changes I made:
 
 1. Added `get_purchase_order_item/1` function to retrieve an item by ID

@@ -12,18 +12,14 @@ In booking detail in invoice detail add one line showing 50% of the total amount
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you add a line showing 50% of the total amount (advance payment) in the booking invoice detail. Let me first look at the current booking detail page to understand the structure. 
-
-Now let me look at the InvoiceComponent to see where the total is displayed: 
-
-Perfect! I can see the invoice summary section. I need to add a line showing 50% of the total amount (advance payment) in the invoice summary. I'll add it between the Total VAT and Total Price lines.
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `invoice` (`**/lib/cozy_checkout_web/live/booking_live/show.ex`), 6 results
 
 **Input:**
 
@@ -34,15 +30,37 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"6 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex\" line=182\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76748,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"        \u003c%!-- Invoice Details --%\u003e","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":14,"line":181},{"character":21,"line":181}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":76748,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex
-… (output truncated)
+6 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex" line=182>
+        <%!-- Invoice Details --%>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex" line=184>
+          module={CozyCheckoutWeb.BookingLive.InvoiceComponent}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex" line=185>
+          id="booking-invoice"
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex" line=182>
+        <%!-- Invoice Details --%>
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex" line=184>
+          module={CozyCheckoutWeb.BookingLive.InvoiceComponent}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/show.ex" line=185>
+          id="booking-invoice"
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me look at the InvoiceComponent to see where the total is displayed: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `invoice_component.ex`
 
 **Input:**
 
@@ -51,17 +69,107 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":728,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/invoice_component.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":728},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":727,"references":[],"text":"defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":727},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":726,"references":[],"text":"  use CozyCheckoutWeb, :live_component\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":726},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":725,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":725},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":724,"references":[],"text":"  alias CozyCheckout.Bookings\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":724},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":723,"references":[],"text":"  alias CozyCheckout.Bookings.{BookingInvoice, BookingInvoiceItem}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":723},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":722,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":722},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":721,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":72
+```elixir
+defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
+  use CozyCheckoutWeb, :live_component
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckout.Bookings.{BookingInvoice, BookingInvoiceItem}
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="bg-white shadow-lg rounded-lg p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-2xl font-bold text-gray-900">Invoice Details</h2>
+        <div class="flex space-x-2">
+          <%= if @invoice && @invoice.invoice_number do %>
+            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+              {@invoice.invoice_number}
+            </span>
+          <% end %>
+          <%= if @invoice do %>
+            <span class={[
+              "px-3 py-1 rounded-full text-sm font-semibold",
+              state_badge_class(@invoice.state)
+            ]}>
+              {state_label(@invoice.state)}
+            </span>
+            <button
+              type="button"
+              phx-click="recalculate"
+              phx-target={@myself}
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-calculator" class="w-4 h-4 inline mr-1" /> Recalculate
+            </button>
+          <% end %>
+        </div>
+      </div>
+
+      <%= if @invoice do %>
+        <%!-- State Transition Buttons --%>
+        <div class="mb-6 flex items-center justify-end space-x-2">
+          <%= if @invoice.state == "draft" do %>
+            <button
+              type="button"
+              phx-click="transition_to_personal"
+              phx-target={@myself}
+              class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              <.icon name="hero-user" class="w-4 h-4 inline mr-1" /> Mark as Personal
+            </button>
+            <button
+              type="button"
+         
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you add a line showing 50% of the total amount (advance payment) in the booking invoice detail. Let me first look at the current booking detail page to understand the structure. Now let me look at the InvoiceComponent to see where the total is displayed: Perfect! I can see the invoice summary section. I need to add a line showing 50% of the total amount (advance payment) in the invoice summary. I'll add it between the Total VAT and Total Price lines. 
-```
+Perfect! I can see the invoice summary section. I need to add a line showing 50% of the total amount (advance payment) in the invoice summary. I'll add it between the Total VAT and Total Price lines. 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **invoice_component.ex**</summary>
+
+@@ lines 410-430 @@
 
 ```
+            <%= if @invoice.subtotal do %>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Subtotal (excl. VAT)</span>
+                <span class="font-medium text-gray-900">
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.subtotal)}
+                </span>
+              </div>
+              <div class="flex justify-between text-sm">
+                <span class="text-gray-600">Total VAT</span>
+                <span class="font-medium text-gray-900">
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.vat_amount)}
+                </span>
+              </div>
+              <hr class="border-gray-300" />
+              <div class="flex justify-between">
+                <span class="text-lg font-bold text-gray-900">Total Price</span>
+                <span class="text-2xl font-bold text-green-600">
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(@invoice.total_price)}
+                </span>
+              </div>
+              <div class="flex justify-between text-sm mt-2">
+                <span class="text-gray-600 font-medium">Advance Payment (50%)</span>
+                <span class="font-semibold text-yellow-600">
+                  {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.div(@invoice.total_price, 2))}
+                </span>
+              </div>
+            <% else %>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've added the advance payment line (50% of the total amount) to the invoice detail section. The changes include:
 
 1. **Added a new line** showing "Advance Payment (50%)" below the Total Price

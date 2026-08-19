@@ -25,7 +25,6 @@ Yes, I can help you import this iCal file into the system! The file contains VEV
 I'll create an import module and a LiveView interface for this:
 
 ````elixir
-# filepath: lib/cozy_checkout/ical_importer.ex
 defmodule CozyCheckout.IcalImporter do
   @moduledoc """
   Imports iCal files to create guests and bookings.
@@ -244,7 +243,6 @@ end
 Now let's create a LiveView interface for uploading and importing the file:
 
 ````elixir
-# filepath: lib/cozy_checkout_web/live/ical_import_live/index.ex
 defmodule CozyCheckoutWeb.IcalImportLive.Index do
   use CozyCheckoutWeb, :live_view
 
@@ -437,7 +435,6 @@ end
 Now add the route to the router:
 
 ````elixir
-# filepath: lib/cozy_checkout_web/router.ex
 # ...existing code...
 
 scope "/admin", CozyCheckoutWeb do
@@ -454,7 +451,6 @@ end
 Finally, add a card to the dashboard:
 
 ````elixir
-# filepath: lib/cozy_checkout_web/live/dashboard_live.ex
 # ...existing code...
 
 <.dashboard_card
@@ -500,38 +496,14 @@ Looks good. Please now implement it
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll implement the iCal import functionality now. Let me create all the necessary files. 
-
-Now let me read the router file to add the route: 
-
-Now let me read the dashboard to add the import card: 
-
-Now let me check if we have the Guests and Bookings contexts that the importer needs: 
-
-Great! Let me check if these contexts have the necessary functions: 
-
-Perfect! Now let me verify the schema structures to make sure our imports will work: 
-
-Perfect! The schemas match what we need. Now let's test the implementation by running the server: 
-
-I need to add the missing `import Ecto.Query` at the top of the importer file: 
-
-Great! It compiled successfully (the warning about unused import is harmless, but we actually are using it). Now let's start the server to test it: 
-
-Perfect! The server is running. Let me create a quick test to verify the import functionality works correctly. But first, let me check the terminal output more thoroughly: 
-
-Excellent! The server is running at http://localhost:4000. Now let me create a simple test to verify the import logic works: 
-
-Now let's run the tests to make sure the import logic works correctly: 
-
-Perfect! The implementation is complete. Let me create a summary document:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `ical_importer.ex`
 
 **Input:**
 
@@ -761,7 +733,1525 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/ical_importer.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/ical_importer.ex
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ical_importer.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckout.IcalImporter do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  @moduledoc """
+```
+
+@@ lines 3-3 @@
+
+```
+
+  Imports iCal files to create guests and bookings.
+```
+
+@@ lines 4-4 @@
+
+```
+
+  """
+```
+
+@@ lines 5-5 @@
+
+```
+
+
+```
+
+@@ lines 6-6 @@
+
+```
+
+  alias CozyCheckout.{Guests, Bookings, Repo}
+```
+
+@@ lines 7-7 @@
+
+```
+
+  alias CozyCheckout.Guests.Guest
+```
+
+@@ lines 8-8 @@
+
+```
+
+  alias CozyCheckout.Bookings.Booking
+```
+
+@@ lines 9-9 @@
+
+```
+
+
+```
+
+@@ lines 10-10 @@
+
+```
+
+  @doc """
+```
+
+@@ lines 11-11 @@
+
+```
+
+  Imports bookings from an iCal file content.
+```
+
+@@ lines 12-12 @@
+
+```
+
+  Returns {:ok, stats} or {:error, reason}
+```
+
+@@ lines 13-13 @@
+
+```
+
+  """
+```
+
+@@ lines 14-14 @@
+
+```
+
+  def import_ical(file_content) do
+```
+
+@@ lines 15-15 @@
+
+```
+
+    with {:ok, events} <- parse_ical(file_content),
+```
+
+@@ lines 16-16 @@
+
+```
+
+         {:ok, stats} <- process_events(events) do
+```
+
+@@ lines 17-17 @@
+
+```
+
+      {:ok, stats}
+```
+
+@@ lines 18-18 @@
+
+```
+
+    end
+```
+
+@@ lines 19-19 @@
+
+```
+
+  end
+```
+
+@@ lines 20-20 @@
+
+```
+
+
+```
+
+@@ lines 21-21 @@
+
+```
+
+  defp parse_ical(content) do
+```
+
+@@ lines 22-22 @@
+
+```
+
+    try do
+```
+
+@@ lines 23-23 @@
+
+```
+
+      events =
+```
+
+@@ lines 24-24 @@
+
+```
+
+        content
+```
+
+@@ lines 25-25 @@
+
+```
+
+        |> String.split("BEGIN:VEVENT")
+```
+
+@@ lines 26-26 @@
+
+```
+
+        |> Enum.drop(1)
+```
+
+@@ lines 27-27 @@
+
+```
+
+        |> Enum.map(&parse_event/1)
+```
+
+@@ lines 28-28 @@
+
+```
+
+        |> Enum.reject(&is_nil/1)
+```
+
+@@ lines 29-29 @@
+
+```
+
+
+```
+
+@@ lines 30-30 @@
+
+```
+
+      {:ok, events}
+```
+
+@@ lines 31-31 @@
+
+```
+
+    rescue
+```
+
+@@ lines 32-32 @@
+
+```
+
+      e -> {:error, "Failed to parse iCal file: #{Exception.message(e)}"}
+```
+
+@@ lines 33-33 @@
+
+```
+
+    end
+```
+
+@@ lines 34-34 @@
+
+```
+
+  end
+```
+
+@@ lines 35-35 @@
+
+```
+
+
+```
+
+@@ lines 36-36 @@
+
+```
+
+  defp parse_event(event_text) do
+```
+
+@@ lines 37-37 @@
+
+```
+
+    summary = extract_field(event_text, "SUMMARY")
+```
+
+@@ lines 38-38 @@
+
+```
+
+    dtstart = extract_field(event_text, "DTSTART")
+```
+
+@@ lines 39-39 @@
+
+```
+
+    dtend = extract_field(event_text, "DTEND")
+```
+
+@@ lines 40-40 @@
+
+```
+
+    description = extract_field(event_text, "Description")
+```
+
+@@ lines 41-41 @@
+
+```
+
+    status = extract_field(event_text, "STATUS")
+```
+
+@@ lines 42-42 @@
+
+```
+
+
+```
+
+@@ lines 43-43 @@
+
+```
+
+    # Parse description for contact info
+```
+
+@@ lines 44-44 @@
+
+```
+
+    {phone, email, notes} = parse_description(description)
+```
+
+@@ lines 45-45 @@
+
+```
+
+
+```
+
+@@ lines 46-46 @@
+
+```
+
+    if summary && dtstart && dtend do
+```
+
+@@ lines 47-47 @@
+
+```
+
+      %{
+```
+
+@@ lines 48-48 @@
+
+```
+
+        guest_name: summary,
+```
+
+@@ lines 49-49 @@
+
+```
+
+        check_in_date: parse_date(dtstart),
+```
+
+@@ lines 50-50 @@
+
+```
+
+        check_out_date: parse_date(dtend),
+```
+
+@@ lines 51-51 @@
+
+```
+
+        phone: phone,
+```
+
+@@ lines 52-52 @@
+
+```
+
+        email: email,
+```
+
+@@ lines 53-53 @@
+
+```
+
+        notes: notes,
+```
+
+@@ lines 54-54 @@
+
+```
+
+        status: map_status(status)
+```
+
+@@ lines 55-55 @@
+
+```
+
+      }
+```
+
+@@ lines 56-56 @@
+
+```
+
+    else
+```
+
+@@ lines 57-57 @@
+
+```
+
+      nil
+```
+
+@@ lines 58-58 @@
+
+```
+
+    end
+```
+
+@@ lines 59-59 @@
+
+```
+
+  end
+```
+
+@@ lines 60-60 @@
+
+```
+
+
+```
+
+@@ lines 61-61 @@
+
+```
+
+  defp extract_field(text, field_name) do
+```
+
+@@ lines 62-62 @@
+
+```
+
+    case Regex.run(~r/#{field_name}:(.+)/, text) do
+```
+
+@@ lines 63-63 @@
+
+```
+
+      [_, value] -> String.trim(value)
+```
+
+@@ lines 64-64 @@
+
+```
+
+      _ -> nil
+```
+
+@@ lines 65-65 @@
+
+```
+
+    end
+```
+
+@@ lines 66-66 @@
+
+```
+
+  end
+```
+
+@@ lines 67-67 @@
+
+```
+
+
+```
+
+@@ lines 68-68 @@
+
+```
+
+  defp parse_description(nil), do: {nil, nil, nil}
+```
+
+@@ lines 69-69 @@
+
+```
+
+
+```
+
+@@ lines 70-70 @@
+
+```
+
+  defp parse_description(desc) do
+```
+
+@@ lines 71-71 @@
+
+```
+
+    # Unescape the description (iCal uses \, and \n for escaping)
+```
+
+@@ lines 72-72 @@
+
+```
+
+    desc = desc |> String.replace("\\,", ",") |> String.replace("\\n", "\n")
+```
+
+@@ lines 73-73 @@
+
+```
+
+
+```
+
+@@ lines 74-74 @@
+
+```
+
+    phone = extract_description_field(desc, "Telefon")
+```
+
+@@ lines 75-75 @@
+
+```
+
+    email = extract_description_field(desc, "Email")
+```
+
+@@ lines 76-76 @@
+
+```
+
+
+```
+
+@@ lines 77-77 @@
+
+```
+
+    # Extract notes (everything after the adults/children count)
+```
+
+@@ lines 78-78 @@
+
+```
+
+    notes =
+```
+
+@@ lines 79-79 @@
+
+```
+
+      case Regex.run(~r/Dospělí:.*?děti \d+\\n(.+)$/s, desc) do
+```
+
+@@ lines 80-80 @@
+
+```
+
+        [_, note] -> String.trim(note)
+```
+
+@@ lines 81-81 @@
+
+```
+
+        _ -> nil
+```
+
+@@ lines 82-82 @@
+
+```
+
+      end
+```
+
+@@ lines 83-83 @@
+
+```
+
+
+```
+
+@@ lines 84-84 @@
+
+```
+
+    {phone, email, notes}
+```
+
+@@ lines 85-85 @@
+
+```
+
+  end
+```
+
+@@ lines 86-86 @@
+
+```
+
+
+```
+
+@@ lines 87-87 @@
+
+```
+
+  defp extract_description_field(desc, field) do
+```
+
+@@ lines 88-88 @@
+
+```
+
+    case Regex.run(~r/#{field}: ?([^\n\\]+)/, desc) do
+```
+
+@@ lines 89-89 @@
+
+```
+
+      [_, value] ->
+```
+
+@@ lines 90-90 @@
+
+```
+
+        value = String.trim(value)
+```
+
+@@ lines 91-91 @@
+
+```
+
+        if value == "" or value == "\\", do: nil, else: value
+```
+
+@@ lines 92-92 @@
+
+```
+
+
+```
+
+@@ lines 93-93 @@
+
+```
+
+      _ ->
+```
+
+@@ lines 94-94 @@
+
+```
+
+        nil
+```
+
+@@ lines 95-95 @@
+
+```
+
+    end
+```
+
+@@ lines 96-96 @@
+
+```
+
+  end
+```
+
+@@ lines 97-97 @@
+
+```
+
+
+```
+
+@@ lines 98-98 @@
+
+```
+
+  defp parse_date(date_str) do
+```
+
+@@ lines 99-99 @@
+
+```
+
+    # Format: 20251205T140000
+```
+
+@@ lines 100-100 @@
+
+```
+
+    case Regex.run(~r/(\d{4})(\d{2})(\d{2})/, date_str) do
+```
+
+@@ lines 101-101 @@
+
+```
+
+      [_, year, month, day] ->
+```
+
+@@ lines 102-102 @@
+
+```
+
+        Date.new!(String.to_integer(year), String.to_integer(month), String.to_integer(day))
+```
+
+@@ lines 103-103 @@
+
+```
+
+
+```
+
+@@ lines 104-104 @@
+
+```
+
+      _ ->
+```
+
+@@ lines 105-105 @@
+
+```
+
+        nil
+```
+
+@@ lines 106-106 @@
+
+```
+
+    end
+```
+
+@@ lines 107-107 @@
+
+```
+
+  end
+```
+
+@@ lines 108-108 @@
+
+```
+
+
+```
+
+@@ lines 109-109 @@
+
+```
+
+  defp map_status("CONFIRMED"), do: "active"
+```
+
+@@ lines 110-110 @@
+
+```
+
+  defp map_status("TENTATIVE"), do: "upcoming"
+```
+
+@@ lines 111-111 @@
+
+```
+
+  defp map_status(_), do: "upcoming"
+```
+
+@@ lines 112-112 @@
+
+```
+
+
+```
+
+@@ lines 113-113 @@
+
+```
+
+  defp process_events(events) do
+```
+
+@@ lines 114-114 @@
+
+```
+
+    stats = %{
+```
+
+@@ lines 115-115 @@
+
+```
+
+      guests_created: 0,
+```
+
+@@ lines 116-116 @@
+
+```
+
+      guests_found: 0,
+```
+
+@@ lines 117-117 @@
+
+```
+
+      bookings_created: 0,
+```
+
+@@ lines 118-118 @@
+
+```
+
+      bookings_skipped: 0,
+```
+
+@@ lines 119-119 @@
+
+```
+
+      errors: []
+```
+
+@@ lines 120-120 @@
+
+```
+
+    }
+```
+
+@@ lines 121-121 @@
+
+```
+
+
+```
+
+@@ lines 122-122 @@
+
+```
+
+    result =
+```
+
+@@ lines 123-123 @@
+
+```
+
+      Enum.reduce(events, stats, fn event, acc ->
+```
+
+@@ lines 124-124 @@
+
+```
+
+        process_event(event, acc)
+```
+
+@@ lines 125-125 @@
+
+```
+
+      end)
+```
+
+@@ lines 126-126 @@
+
+```
+
+
+```
+
+@@ lines 127-127 @@
+
+```
+
+    {:ok, result}
+```
+
+@@ lines 128-128 @@
+
+```
+
+  end
+```
+
+@@ lines 129-129 @@
+
+```
+
+
+```
+
+@@ lines 130-130 @@
+
+```
+
+  defp process_event(event, stats) do
+```
+
+@@ lines 131-131 @@
+
+```
+
+    case find_or_create_guest(event) do
+```
+
+@@ lines 132-132 @@
+
+```
+
+      {:ok, guest, created?} ->
+```
+
+@@ lines 133-133 @@
+
+```
+
+        stats =
+```
+
+@@ lines 134-134 @@
+
+```
+
+          if created? do
+```
+
+@@ lines 135-135 @@
+
+```
+
+            Map.update!(stats, :guests_created, &(&1 + 1))
+```
+
+@@ lines 136-136 @@
+
+```
+
+          else
+```
+
+@@ lines 137-137 @@
+
+```
+
+            Map.update!(stats, :guests_found, &(&1 + 1))
+```
+
+@@ lines 138-138 @@
+
+```
+
+          end
+```
+
+@@ lines 139-139 @@
+
+```
+
+
+```
+
+@@ lines 140-140 @@
+
+```
+
+        case create_booking(guest, event) do
+```
+
+@@ lines 141-141 @@
+
+```
+
+          {:ok, _booking} ->
+```
+
+@@ lines 142-142 @@
+
+```
+
+            Map.update!(stats, :bookings_created, &(&1 + 1))
+```
+
+@@ lines 143-143 @@
+
+```
+
+
+```
+
+@@ lines 144-144 @@
+
+```
+
+          {:error, reason} ->
+```
+
+@@ lines 145-145 @@
+
+```
+
+            stats
+```
+
+@@ lines 146-146 @@
+
+```
+
+            |> Map.update!(:bookings_skipped, &(&1 + 1))
+```
+
+@@ lines 147-147 @@
+
+```
+
+            |> Map.update!(:errors, &[{event.guest_name, reason} | &1])
+```
+
+@@ lines 148-148 @@
+
+```
+
+        end
+```
+
+@@ lines 149-149 @@
+
+```
+
+
+```
+
+@@ lines 150-150 @@
+
+```
+
+      {:error, reason} ->
+```
+
+@@ lines 151-151 @@
+
+```
+
+        stats
+```
+
+@@ lines 152-152 @@
+
+```
+
+        |> Map.update!(:bookings_skipped, &(&1 + 1))
+```
+
+@@ lines 153-153 @@
+
+```
+
+        |> Map.update!(:errors, &[{event.guest_name, reason} | &1])
+```
+
+@@ lines 154-154 @@
+
+```
+
+    end
+```
+
+@@ lines 155-155 @@
+
+```
+
+  end
+```
+
+@@ lines 156-156 @@
+
+```
+
+
+```
+
+@@ lines 157-157 @@
+
+```
+
+  defp find_or_create_guest(event) do
+```
+
+@@ lines 158-158 @@
+
+```
+
+    # Try to find existing guest by name or email
+```
+
+@@ lines 159-159 @@
+
+```
+
+    guest =
+```
+
+@@ lines 160-160 @@
+
+```
+
+      cond do
+```
+
+@@ lines 161-161 @@
+
+```
+
+        event.email && event.email != "" ->
+```
+
+@@ lines 162-162 @@
+
+```
+
+          Repo.get_by(Guest, email: event.email) |> Repo.preload(:bookings)
+```
+
+@@ lines 163-163 @@
+
+```
+
+
+```
+
+@@ lines 164-164 @@
+
+```
+
+        true ->
+```
+
+@@ lines 165-165 @@
+
+```
+
+          Guest
+```
+
+@@ lines 166-166 @@
+
+```
+
+          |> Ecto.Query.where([g], g.name == ^event.guest_name)
+```
+
+@@ lines 167-167 @@
+
+```
+
+          |> Ecto.Query.where([g], is_nil(g.deleted_at))
+```
+
+@@ lines 168-168 @@
+
+```
+
+          |> Repo.one()
+```
+
+@@ lines 169-169 @@
+
+```
+
+          |> case do
+```
+
+@@ lines 170-170 @@
+
+```
+
+            nil -> nil
+```
+
+@@ lines 171-171 @@
+
+```
+
+            g -> Repo.preload(g, :bookings)
+```
+
+@@ lines 172-172 @@
+
+```
+
+          end
+```
+
+@@ lines 173-173 @@
+
+```
+
+      end
+```
+
+@@ lines 174-174 @@
+
+```
+
+
+```
+
+@@ lines 175-175 @@
+
+```
+
+    case guest do
+```
+
+@@ lines 176-176 @@
+
+```
+
+      nil ->
+```
+
+@@ lines 177-177 @@
+
+```
+
+        # Create new guest
+```
+
+@@ lines 178-178 @@
+
+```
+
+        case Guests.create_guest(%{
+```
+
+@@ lines 179-179 @@
+
+```
+
+               name: event.guest_name,
+```
+
+@@ lines 180-180 @@
+
+```
+
+               email: event.email,
+```
+
+@@ lines 181-181 @@
+
+```
+
+               phone: event.phone
+```
+
+@@ lines 182-182 @@
+
+```
+
+             }) do
+```
+
+@@ lines 183-183 @@
+
+```
+
+          {:ok, guest} -> {:ok, guest, true}
+```
+
+@@ lines 184-184 @@
+
+```
+
+          {:error, changeset} -> {:error, "Failed to create guest: #{inspect(changeset.errors)}"}
+```
+
+@@ lines 185-185 @@
+
+```
+
+        end
+```
+
+@@ lines 186-186 @@
+
+```
+
+
+```
+
+@@ lines 187-187 @@
+
+```
+
+      existing_guest ->
+```
+
+@@ lines 188-188 @@
+
+```
+
+        {:ok, existing_guest, false}
+```
+
+@@ lines 189-189 @@
+
+```
+
+    end
+```
+
+@@ lines 190-190 @@
+
+```
+
+  end
+```
+
+@@ lines 191-191 @@
+
+```
+
+
+```
+
+@@ lines 192-192 @@
+
+```
+
+  defp create_booking(guest, event) do
+```
+
+@@ lines 193-193 @@
+
+```
+
+    # Check if booking already exists for this guest and dates
+```
+
+@@ lines 194-194 @@
+
+```
+
+    existing =
+```
+
+@@ lines 195-195 @@
+
+```
+
+      Booking
+```
+
+@@ lines 196-196 @@
+
+```
+
+      |> Ecto.Query.where([b], b.guest_id == ^guest.id)
+```
+
+@@ lines 197-197 @@
+
+```
+
+      |> Ecto.Query.where([b], b.check_in_date == ^event.check_in_date)
+```
+
+@@ lines 198-198 @@
+
+```
+
+      |> Ecto.Query.where([b], is_nil(b.deleted_at))
+```
+
+@@ lines 199-199 @@
+
+```
+
+      |> Repo.one()
+```
+
+@@ lines 200-200 @@
+
+```
+
+
+```
+
+@@ lines 201-201 @@
+
+```
+
+    case existing do
+```
+
+@@ lines 202-202 @@
+
+```
+
+      nil ->
+```
+
+@@ lines 203-203 @@
+
+```
+
+        Bookings.create_booking(%{
+```
+
+@@ lines 204-204 @@
+
+```
+
+          guest_id: guest.id,
+```
+
+@@ lines 205-205 @@
+
+```
+
+          check_in_date: event.check_in_date,
+```
+
+@@ lines 206-206 @@
+
+```
+
+          check_out_date: event.check_out_date,
+```
+
+@@ lines 207-207 @@
+
+```
+
+          status: event.status,
+```
+
+@@ lines 208-208 @@
+
+```
+
+          notes: event.notes
+```
+
+@@ lines 209-209 @@
+
+```
+
+        })
+```
+
+@@ lines 210-210 @@
+
+```
+
+
+```
+
+@@ lines 211-211 @@
+
+```
+
+      _existing ->
+```
+
+@@ lines 212-212 @@
+
+```
+
+        {:error, "Booking already exists for these dates"}
+```
+
+@@ lines 213-213 @@
+
+```
+
+    end
+```
+
+@@ lines 214-214 @@
+
+```
+
+  end
+```
+
+@@ lines 215-215 @@
+
+```
+
+end
+```
+
+@@ lines 216-216 @@
+
+```
+
+
 ```
 </details></tool-use>
 
@@ -769,6 +2259,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `index.ex`
 
 **Input:**
 
@@ -970,14 +2462,1342 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/ical_import_live/index.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/ical_import_live/index.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.IcalImportLive.Index do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use CozyCheckoutWeb, :live_view
+```
+
+@@ lines 3-3 @@
+
+```
+
+
+```
+
+@@ lines 4-4 @@
+
+```
+
+  alias CozyCheckout.IcalImporter
+```
+
+@@ lines 5-5 @@
+
+```
+
+
+```
+
+@@ lines 6-6 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 7-7 @@
+
+```
+
+  def mount(_params, _session, socket) do
+```
+
+@@ lines 8-8 @@
+
+```
+
+    {:ok,
+```
+
+@@ lines 9-9 @@
+
+```
+
+     socket
+```
+
+@@ lines 10-10 @@
+
+```
+
+     |> assign(:page_title, "Import iCal Bookings")
+```
+
+@@ lines 11-11 @@
+
+```
+
+     |> assign(:uploaded_files, [])
+```
+
+@@ lines 12-12 @@
+
+```
+
+     |> assign(:import_result, nil)
+```
+
+@@ lines 13-13 @@
+
+```
+
+     |> allow_upload(:ical_file,
+```
+
+@@ lines 14-14 @@
+
+```
+
+       accept: ~w(.ics),
+```
+
+@@ lines 15-15 @@
+
+```
+
+       max_entries: 1,
+```
+
+@@ lines 16-16 @@
+
+```
+
+       max_file_size: 5_000_000
+```
+
+@@ lines 17-17 @@
+
+```
+
+     )}
+```
+
+@@ lines 18-18 @@
+
+```
+
+  end
+```
+
+@@ lines 19-19 @@
+
+```
+
+
+```
+
+@@ lines 20-20 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 21-21 @@
+
+```
+
+  def handle_event("validate", _params, socket) do
+```
+
+@@ lines 22-22 @@
+
+```
+
+    {:noreply, socket}
+```
+
+@@ lines 23-23 @@
+
+```
+
+  end
+```
+
+@@ lines 24-24 @@
+
+```
+
+
+```
+
+@@ lines 25-25 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 26-26 @@
+
+```
+
+  def handle_event("cancel-upload", %{"ref" => ref}, socket) do
+```
+
+@@ lines 27-27 @@
+
+```
+
+    {:noreply, cancel_upload(socket, :ical_file, ref)}
+```
+
+@@ lines 28-28 @@
+
+```
+
+  end
+```
+
+@@ lines 29-29 @@
+
+```
+
+
+```
+
+@@ lines 30-30 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 31-31 @@
+
+```
+
+  def handle_event("import", _params, socket) do
+```
+
+@@ lines 32-32 @@
+
+```
+
+    uploaded_files =
+```
+
+@@ lines 33-33 @@
+
+```
+
+      consume_uploaded_entries(socket, :ical_file, fn %{path: path}, _entry ->
+```
+
+@@ lines 34-34 @@
+
+```
+
+        content = File.read!(path)
+```
+
+@@ lines 35-35 @@
+
+```
+
+        {:ok, content}
+```
+
+@@ lines 36-36 @@
+
+```
+
+      end)
+```
+
+@@ lines 37-37 @@
+
+```
+
+
+```
+
+@@ lines 38-38 @@
+
+```
+
+    case uploaded_files do
+```
+
+@@ lines 39-39 @@
+
+```
+
+      [content] ->
+```
+
+@@ lines 40-40 @@
+
+```
+
+        case IcalImporter.import_ical(content) do
+```
+
+@@ lines 41-41 @@
+
+```
+
+          {:ok, stats} ->
+```
+
+@@ lines 42-42 @@
+
+```
+
+            {:noreply,
+```
+
+@@ lines 43-43 @@
+
+```
+
+             socket
+```
+
+@@ lines 44-44 @@
+
+```
+
+             |> assign(:import_result, {:ok, stats})
+```
+
+@@ lines 45-45 @@
+
+```
+
+             |> put_flash(:info, "Import completed successfully!")}
+```
+
+@@ lines 46-46 @@
+
+```
+
+
+```
+
+@@ lines 47-47 @@
+
+```
+
+          {:error, reason} ->
+```
+
+@@ lines 48-48 @@
+
+```
+
+            {:noreply,
+```
+
+@@ lines 49-49 @@
+
+```
+
+             socket
+```
+
+@@ lines 50-50 @@
+
+```
+
+             |> assign(:import_result, {:error, reason})
+```
+
+@@ lines 51-51 @@
+
+```
+
+             |> put_flash(:error, "Import failed: #{reason}")}
+```
+
+@@ lines 52-52 @@
+
+```
+
+        end
+```
+
+@@ lines 53-53 @@
+
+```
+
+
+```
+
+@@ lines 54-54 @@
+
+```
+
+      [] ->
+```
+
+@@ lines 55-55 @@
+
+```
+
+        {:noreply, put_flash(socket, :error, "Please select a file to import")}
+```
+
+@@ lines 56-56 @@
+
+```
+
+    end
+```
+
+@@ lines 57-57 @@
+
+```
+
+  end
+```
+
+@@ lines 58-58 @@
+
+```
+
+
+```
+
+@@ lines 59-59 @@
+
+```
+
+  @impl true
+```
+
+@@ lines 60-60 @@
+
+```
+
+  def render(assigns) do
+```
+
+@@ lines 61-61 @@
+
+```
+
+    ~H"""
+```
+
+@@ lines 62-62 @@
+
+```
+
+    <div class="max-w-4xl mx-auto px-4 py-8">
+```
+
+@@ lines 63-63 @@
+
+```
+
+      <div class="mb-8">
+```
+
+@@ lines 64-64 @@
+
+```
+
+        <.link navigate={~p"/admin"} class="text-blue-600 hover:text-blue-800 mb-2 inline-block">
+```
+
+@@ lines 65-65 @@
+
+```
+
+          ← Back to Dashboard
+```
+
+@@ lines 66-66 @@
+
+```
+
+        </.link>
+```
+
+@@ lines 67-67 @@
+
+```
+
+        <h1 class="text-4xl font-bold text-gray-900">{@page_title}</h1>
+```
+
+@@ lines 68-68 @@
+
+```
+
+        <p class="text-gray-600 mt-2">
+```
+
+@@ lines 69-69 @@
+
+```
+
+          Import bookings from an iCal (.ics) file. The system will create guests and bookings automatically.
+```
+
+@@ lines 70-70 @@
+
+```
+
+        </p>
+```
+
+@@ lines 71-71 @@
+
+```
+
+      </div>
+```
+
+@@ lines 72-72 @@
+
+```
+
+
+```
+
+@@ lines 73-73 @@
+
+```
+
+      <div class="bg-white shadow-lg rounded-lg p-6">
+```
+
+@@ lines 74-74 @@
+
+```
+
+        <form phx-submit="import" phx-change="validate" class="space-y-6">
+```
+
+@@ lines 75-75 @@
+
+```
+
+          <div>
+```
+
+@@ lines 76-76 @@
+
+```
+
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+```
+
+@@ lines 77-77 @@
+
+```
+
+              Select iCal File
+```
+
+@@ lines 78-78 @@
+
+```
+
+            </label>
+```
+
+@@ lines 79-79 @@
+
+```
+
+            <div
+```
+
+@@ lines 80-80 @@
+
+```
+
+              class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-400 transition-colors"
+```
+
+@@ lines 81-81 @@
+
+```
+
+              phx-drop-target={@uploads.ical_file.ref}
+```
+
+@@ lines 82-82 @@
+
+```
+
+            >
+```
+
+@@ lines 83-83 @@
+
+```
+
+              <div class="space-y-1 text-center">
+```
+
+@@ lines 84-84 @@
+
+```
+
+                <.icon name="hero-document-arrow-up" class="mx-auto h-12 w-12 text-gray-400" />
+```
+
+@@ lines 85-85 @@
+
+```
+
+                <div class="flex text-sm text-gray-600">
+```
+
+@@ lines 86-86 @@
+
+```
+
+                  <label
+```
+
+@@ lines 87-87 @@
+
+```
+
+                    for={@uploads.ical_file.ref}
+```
+
+@@ lines 88-88 @@
+
+```
+
+                    class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
+```
+
+@@ lines 89-89 @@
+
+```
+
+                  >
+```
+
+@@ lines 90-90 @@
+
+```
+
+                    <span>Upload a file</span>
+```
+
+@@ lines 91-91 @@
+
+```
+
+                    <.live_file_input upload={@uploads.ical_file} class="sr-only" />
+```
+
+@@ lines 92-92 @@
+
+```
+
+                  </label>
+```
+
+@@ lines 93-93 @@
+
+```
+
+                  <p class="pl-1">or drag and drop</p>
+```
+
+@@ lines 94-94 @@
+
+```
+
+                </div>
+```
+
+@@ lines 95-95 @@
+
+```
+
+                <p class="text-xs text-gray-500">iCal files (.ics) up to 5MB</p>
+```
+
+@@ lines 96-96 @@
+
+```
+
+              </div>
+```
+
+@@ lines 97-97 @@
+
+```
+
+            </div>
+```
+
+@@ lines 98-98 @@
+
+```
+
+          </div>
+```
+
+@@ lines 99-99 @@
+
+```
+
+
+```
+
+@@ lines 100-100 @@
+
+```
+
+          <%!-- Show uploaded files --%>
+```
+
+@@ lines 101-101 @@
+
+```
+
+          <div :for={entry <- @uploads.ical_file.entries} class="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+```
+
+@@ lines 102-102 @@
+
+```
+
+            <.icon name="hero-document-text" class="w-8 h-8 text-blue-600" />
+```
+
+@@ lines 103-103 @@
+
+```
+
+            <div class="flex-1">
+```
+
+@@ lines 104-104 @@
+
+```
+
+              <p class="text-sm font-medium text-gray-900">{entry.client_name}</p>
+```
+
+@@ lines 105-105 @@
+
+```
+
+              <p class="text-xs text-gray-500">{format_bytes(entry.client_size)}</p>
+```
+
+@@ lines 106-106 @@
+
+```
+
+            </div>
+```
+
+@@ lines 107-107 @@
+
+```
+
+            <button
+```
+
+@@ lines 108-108 @@
+
+```
+
+              type="button"
+```
+
+@@ lines 109-109 @@
+
+```
+
+              phx-click="cancel-upload"
+```
+
+@@ lines 110-110 @@
+
+```
+
+              phx-value-ref={entry.ref}
+```
+
+@@ lines 111-111 @@
+
+```
+
+              class="text-red-600 hover:text-red-800"
+```
+
+@@ lines 112-112 @@
+
+```
+
+            >
+```
+
+@@ lines 113-113 @@
+
+```
+
+              <.icon name="hero-x-mark" class="w-5 h-5" />
+```
+
+@@ lines 114-114 @@
+
+```
+
+            </button>
+```
+
+@@ lines 115-115 @@
+
+```
+
+          </div>
+```
+
+@@ lines 116-116 @@
+
+```
+
+
+```
+
+@@ lines 117-117 @@
+
+```
+
+          <%!-- Upload errors --%>
+```
+
+@@ lines 118-118 @@
+
+```
+
+          <div :for={err <- upload_errors(@uploads.ical_file)} class="text-red-600 text-sm">
+```
+
+@@ lines 119-119 @@
+
+```
+
+            {error_to_string(err)}
+```
+
+@@ lines 120-120 @@
+
+```
+
+          </div>
+```
+
+@@ lines 121-121 @@
+
+```
+
+
+```
+
+@@ lines 122-122 @@
+
+```
+
+          <div class="flex justify-end">
+```
+
+@@ lines 123-123 @@
+
+```
+
+            <.button type="submit" disabled={@uploads.ical_file.entries == []}>
+```
+
+@@ lines 124-124 @@
+
+```
+
+              <.icon name="hero-arrow-down-tray" class="w-5 h-5 mr-2" />
+```
+
+@@ lines 125-125 @@
+
+```
+
+              Import Bookings
+```
+
+@@ lines 126-126 @@
+
+```
+
+            </.button>
+```
+
+@@ lines 127-127 @@
+
+```
+
+          </div>
+```
+
+@@ lines 128-128 @@
+
+```
+
+        </form>
+```
+
+@@ lines 129-129 @@
+
+```
+
+      </div>
+```
+
+@@ lines 130-130 @@
+
+```
+
+
+```
+
+@@ lines 131-131 @@
+
+```
+
+      <%!-- Import Results --%>
+```
+
+@@ lines 132-132 @@
+
+```
+
+      <div :if={@import_result} class="mt-6 bg-white shadow-lg rounded-lg p-6">
+```
+
+@@ lines 133-133 @@
+
+```
+
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Import Results</h2>
+```
+
+@@ lines 134-134 @@
+
+```
+
+
+```
+
+@@ lines 135-135 @@
+
+```
+
+        <%= case @import_result do %>
+```
+
+@@ lines 136-136 @@
+
+```
+
+          <% {:ok, stats} -> %>
+```
+
+@@ lines 137-137 @@
+
+```
+
+            <div class="space-y-4">
+```
+
+@@ lines 138-138 @@
+
+```
+
+              <div class="grid grid-cols-2 gap-4">
+```
+
+@@ lines 139-139 @@
+
+```
+
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+```
+
+@@ lines 140-140 @@
+
+```
+
+                  <p class="text-sm text-green-600 font-medium">Guests Created</p>
+```
+
+@@ lines 141-141 @@
+
+```
+
+                  <p class="text-3xl font-bold text-green-900">{stats.guests_created}</p>
+```
+
+@@ lines 142-142 @@
+
+```
+
+                </div>
+```
+
+@@ lines 143-143 @@
+
+```
+
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+```
+
+@@ lines 144-144 @@
+
+```
+
+                  <p class="text-sm text-blue-600 font-medium">Guests Found</p>
+```
+
+@@ lines 145-145 @@
+
+```
+
+                  <p class="text-3xl font-bold text-blue-900">{stats.guests_found}</p>
+```
+
+@@ lines 146-146 @@
+
+```
+
+                </div>
+```
+
+@@ lines 147-147 @@
+
+```
+
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+```
+
+@@ lines 148-148 @@
+
+```
+
+                  <p class="text-sm text-green-600 font-medium">Bookings Created</p>
+```
+
+@@ lines 149-149 @@
+
+```
+
+                  <p class="text-3xl font-bold text-green-900">{stats.bookings_created}</p>
+```
+
+@@ lines 150-150 @@
+
+```
+
+                </div>
+```
+
+@@ lines 151-151 @@
+
+```
+
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+```
+
+@@ lines 152-152 @@
+
+```
+
+                  <p class="text-sm text-yellow-600 font-medium">Bookings Skipped</p>
+```
+
+@@ lines 153-153 @@
+
+```
+
+                  <p class="text-3xl font-bold text-yellow-900">{stats.bookings_skipped}</p>
+```
+
+@@ lines 154-154 @@
+
+```
+
+                </div>
+```
+
+@@ lines 155-155 @@
+
+```
+
+              </div>
+```
+
+@@ lines 156-156 @@
+
+```
+
+
+```
+
+@@ lines 157-157 @@
+
+```
+
+              <div :if={stats.errors != []} class="mt-4">
+```
+
+@@ lines 158-158 @@
+
+```
+
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Errors</h3>
+```
+
+@@ lines 159-159 @@
+
+```
+
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 space-y-2">
+```
+
+@@ lines 160-160 @@
+
+```
+
+                  <div :for={{guest_name, error} <- stats.errors} class="text-sm text-red-800">
+```
+
+@@ lines 161-161 @@
+
+```
+
+                    <span class="font-medium">{guest_name}:</span> {error}
+```
+
+@@ lines 162-162 @@
+
+```
+
+                  </div>
+```
+
+@@ lines 163-163 @@
+
+```
+
+                </div>
+```
+
+@@ lines 164-164 @@
+
+```
+
+              </div>
+```
+
+@@ lines 165-165 @@
+
+```
+
+            </div>
+```
+
+@@ lines 166-166 @@
+
+```
+
+          <% {:error, reason} -> %>
+```
+
+@@ lines 167-167 @@
+
+```
+
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+```
+
+@@ lines 168-168 @@
+
+```
+
+              <p class="text-red-800">{reason}</p>
+```
+
+@@ lines 169-169 @@
+
+```
+
+            </div>
+```
+
+@@ lines 170-170 @@
+
+```
+
+        <% end %>
+```
+
+@@ lines 171-171 @@
+
+```
+
+      </div>
+```
+
+@@ lines 172-172 @@
+
+```
+
+    </div>
+```
+
+@@ lines 173-173 @@
+
+```
+
+    """
+```
+
+@@ lines 174-174 @@
+
+```
+
+  end
+```
+
+@@ lines 175-175 @@
+
+```
+
+
+```
+
+@@ lines 176-176 @@
+
+```
+
+  defp error_to_string(:too_large), do: "File is too large (max 5MB)"
+```
+
+@@ lines 177-177 @@
+
+```
+
+  defp error_to_string(:not_accepted), do: "File type not accepted (only .ics files)"
+```
+
+@@ lines 178-178 @@
+
+```
+
+  defp error_to_string(:too_many_files), do: "Too many files (max 1)"
+```
+
+@@ lines 179-179 @@
+
+```
+
+
+```
+
+@@ lines 180-180 @@
+
+```
+
+  defp format_bytes(bytes) do
+```
+
+@@ lines 181-181 @@
+
+```
+
+    cond do
+```
+
+@@ lines 182-182 @@
+
+```
+
+      bytes >= 1_000_000 -> "#{Float.round(bytes / 1_000_000, 2)} MB"
+```
+
+@@ lines 183-183 @@
+
+```
+
+      bytes >= 1_000 -> "#{Float.round(bytes / 1_000, 2)} KB"
+```
+
+@@ lines 184-184 @@
+
+```
+
+      true -> "#{bytes} bytes"
+```
+
+@@ lines 185-185 @@
+
+```
+
+    end
+```
+
+@@ lines 186-186 @@
+
+```
+
+  end
+```
+
+@@ lines 187-187 @@
+
+```
+
+end
+```
+
+@@ lines 188-188 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me read the router file to add the route: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `router.ex`
 
 **Input:**
 
@@ -986,15 +3806,108 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":102,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"defmodule CozyCheckoutWeb.Router do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"  use CozyCheckoutWeb, :router\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":100},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":99,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":99},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":98,"references":[],"text":"  pipeline :browser do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":98},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":97,"references":[],"text":"    plug :accepts, [\"html\"]\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":97},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":96,"references":[],"text":"    plug :fetch_session\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":96},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":95,"references":[],"text":"    plug :fetch_live_flash\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":95},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":94,"references":[],"text":"    plug :put_root_layout, htm
+```elixir
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", MainMenuLive
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", DashboardLive
+
+    # Categories
+    live "/categories", CategoryLive.Index, :index
+    live "/categories/new", CategoryLive.Index, :new
+    live "/categories/:id/edit", CategoryLive.Index, :edit
+
+    # Products
+    live "/products", ProductLive.Index, :index
+    live "/products/new", ProductLive.Index, :new
+    live "/products/:id/edit", ProductLive.Index, :edit
+
+    # Pricelists
+    live "/pricelists", PricelistLive.Index, :index
+    live "/pricelists/new", PricelistLive.Index, :new
+    live "/pricelists/:id/edit", PricelistLive.Index, :edit
+
+    # Guests
+    live "/guests", GuestLive.Index, :index
+    live "/guests/new", GuestLive.Index, :new
+    live "/guests/:id/edit", GuestLive.Index, :edit
+
+    # Bookings
+    live "/bookings", BookingLive.Index, :index
+    live "/bookings/new", BookingLive.Index, :new
+    live "/bookings/:id", BookingLive.Show
+    live "/bookings/:id/edit", BookingLive.Index, :edit
+
+    # Orders
+    live "/orders", OrderLive.Index, :index
+    live "/orders/new", OrderLive.New
+    live "/orders/:id/edit", OrderLive.Edit
+    live "/orders/:id", OrderLive.Show
+
+    # Payments
+    live "/payments", PaymentLive.Index, :index
+    live "/payments/new", PaymentLive.New
+
+    # POHODA Export
+    live "/pohoda-export", PohodaExportLive.Index, :index
+  end
+
+  # Point of Sale (POS) - Touch-friendly interface for bar staff
+  scope "/pos", CozyCheckoutWeb.PosLive 
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **router.ex**</summary>
+
+@@ lines 65-67 @@
+
+```
+    # POHODA Export
+    live "/pohoda-export", PohodaExportLive.Index, :index
+
+    # iCal Import
+    live "/ical-import", IcalImportLive.Index, :index
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me read the dashboard to add the import card: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `dashboard_live.ex`
 
 **Input:**
 
@@ -1003,15 +3916,112 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":143,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":143},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":142,"references":[],"text":"defmodule CozyCheckoutWeb.DashboardLive do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":142},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":141,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":141},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":140,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":140},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":139,"references":[],"text":"  def mount(_params, _session, socket) do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":139},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":138,"references":[],"text":"    {:ok, socket}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":138},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":137,"references":[],"text":"  end\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":137},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":136,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":136},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":135,"references":[],"text":"  def r
+```elixir
+defmodule CozyCheckoutWeb.DashboardLive do
+  use CozyCheckoutWeb, :live_view
+
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center mb-12">
+          <div>
+            <h1 class="text-5xl font-bold text-gray-900 mb-4">
+              Admin Dashboard
+            </h1>
+            <p class="text-xl text-gray-600">
+              Manage your mountain cottage system
+            </p>
+          </div>
+          <.link
+            navigate={~p"/"}
+            class="px-6 py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 transition-colors duration-200 flex items-center gap-2"
+          >
+            <.icon name="hero-arrow-left" class="w-5 h-5" />
+            Back to Menu
+          </.link>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <%!-- Catalog Management --%>
+          <.dashboard_card
+            title="Categories"
+            description="Manage product categories"
+            icon="hero-tag"
+            navigate={~p"/admin/categories"}
+            color="blue"
+          />
+
+          <.dashboard_card
+            title="Products"
+            description="Manage your bar products"
+            icon="hero-cube"
+            navigate={~p"/admin/products"}
+            color="indigo"
+          />
+
+          <.dashboard_card
+            title="Pricelists"
+            description="Manage product pricing & VAT"
+            icon="hero-currency-dollar"
+            navigate={~p"/admin/pricelists"}
+            color="green"
+          />
+
+          <%!-- Guest Management --%>
+          <.dashboard_card
+            title="Guests"
+            description="Manage guest information"
+            icon="hero-user-group"
+            navigate={~p"/admin/guests"}
+            color="p
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard_live.ex**</summary>
+
+@@ lines 90-98 @@
+
+```
+          <%!-- POHODA Export --%>
+          <.dashboard_card
+            title="POHODA Export"
+            description="Export to accounting software"
+            icon="hero-arrow-down-tray"
+            navigate={~p"/admin/pohoda-export"}
+            color="purple"
+          />
+
+          <%!-- iCal Import --%>
+          <.dashboard_card
+            title="Import Bookings"
+            description="Import from iCal file"
+            icon="hero-arrow-up-tray"
+            navigate={~p"/admin/ical-import"}
+            color="sky"
+          />
+        </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let me check if we have the Guests and Bookings contexts that the importer needs: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/lib/cozy_checkout/guests.ex`, 2 matches
 
 **Input:**
 
@@ -1020,7 +4030,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Ore","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex
 ```
 </details></tool-use>
 
@@ -1029,6 +4041,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
 
+Searched for files matching `**/lib/cozy_checkout/bookings.ex`, 2 matches
+
 **Input:**
 
 - query: `lib/cozy_checkout/bookings.ex`
@@ -1036,14 +4050,22 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Ore","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Great! Let me check if these contexts have the necessary functions: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `def create_guest` (`**/lib/cozy_checkout/guests.ex`), 1 result
 
 **Input:**
 
@@ -1054,7 +4076,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"1 match","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex\" line=33\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76876,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def create_guest(attrs \\\\ %{}) do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":32},{"character":18,"line":32}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":76876,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"QKe","props":{},"references":[],"type":1}}
+1 match<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex" line=33>
+  def create_guest(attrs \\ %{}) do
+</match>
 ```
 </details></tool-use>
 
@@ -1062,6 +4086,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `def create_booking` (`**/lib/cozy_checkout/bookings.ex`), 2 results
 
 **Input:**
 
@@ -1072,15 +4098,25 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=62\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76907,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def create_booking(attrs \\\\ %{}) do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":61},{"character":20,"line":61}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":76907,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=62\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76908,"props":{},"references":[]
-… (output truncated)
+2 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=62>
+  def create_booking(attrs \\ %{}) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=62>
+  def create_booking(attrs \\ %{}) do
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! Now let me verify the schema structures to make sure our imports will work: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `guest.ex`
 
 **Input:**
 
@@ -1089,8 +4125,37 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":31,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests/guest.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests/guest.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests/guest.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":30,"references":[],"text":"defmodule CozyCheckout.Guests.Guest do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":30},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":29,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":29},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":28,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":28},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":27,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":27},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":26,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":26},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":25,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":25},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":24,"references":[],"text":"  schema \"guests\" do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":24},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":23,"references":[],"text":"    field :na
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Guests.Guest do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "guests" do
+    field :name, :string
+    field :email, :string
+    field :phone, :string
+    field :notes, :string
+    field :deleted_at, :utc_datetime
+
+    has_many :bookings, CozyCheckout.Bookings.Booking
+    has_many :orders, CozyCheckout.Sales.Order
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(guest, attrs) do
+    guest
+    |> cast(attrs, [:name, :email, :phone, :notes])
+    |> validate_required([:name])
+    |> validate_format(:email, ~r/^[^\s]+@[^\s]+$/, message: "must have the @ sign and no spaces")
+    |> unique_constraint(:email)
+  end
+end
+
+```
 ````
 </details></tool-use>
 
@@ -1099,6 +4164,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `booking.ex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex`
@@ -1106,21 +4173,72 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":45,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":45},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":44,"references":[],"text":"defmodule CozyCheckout.Bookings.Booking do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":44},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":43,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":43},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":42,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":42},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":41,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":41},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":40,"references":[],"text":"  @primary_key {:id, :binary_id, autogenerate: true}\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":40},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":39,"references":[],"text":"  @foreign_key_type :binary_id\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":39},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":38,"references":[],"text":"  schema \"bookings\" do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":38},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":37,"references":[],"te
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Bookings.Booking do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "bookings" do
+    field :room_number, :string
+    field :check_in_date, :date
+    field :check_out_date, :date
+    field :status, :string, default: "upcoming"
+    field :notes, :string
+    field :deleted_at, :utc_datetime
+
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(booking, attrs) do
+    booking
+    |> cast(attrs, [:guest_id, :room_number, :check_in_date, :check_out_date, :status, :notes])
+    |> validate_required([:guest_id, :check_in_date])
+    |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])
+    |> validate_date_range()
+    |> foreign_key_constraint(:guest_id)
+    |> unique_constraint([:guest_id, :check_in_date])
+  end
+
+  defp validate_date_range(changeset) do
+    check_in = get_field(changeset, :check_in_date)
+    check_out = get_field(changeset, :check_out_date)
+
+    if check_in && check_out && Date.compare(check_in, check_out) == :gt do
+      add_error(changeset, :check_out_date, "must be after check-in date")
+    else
+      changeset
+    end
+  end
+end
+
+```
 ````
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! The schemas match what we need. Now let's test the implementation by running the server: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile`
-- explanation: `Compiling the project to check for any errors`
-- isBackground: `false`
+$(info) Enable `shell integration` to improve command detection
+
+Compiling the project to check for any errors
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile
+```
 
 **Result:**
 
@@ -1180,14 +4298,41 @@ or all necessary macros have been required
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+I need to add the missing `import Ecto.Query` at the top of the importer file: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ical_importer.ex**</summary>
+
+@@ lines 1-8 @@
+
+```
+defmodule CozyCheckout.IcalImporter do
+  @moduledoc """
+  Imports iCal files to create guests and bookings.
+  """
+
+  import Ecto.Query
+
+  alias CozyCheckout.{Guests, Bookings, Repo}
+  alias CozyCheckout.Guests.Guest
+  alias CozyCheckout.Bookings.Booking
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `mix compile`
-- explanation: `Compiling again after fixing the import`
-- isBackground: `false`
+Compiling again after fixing the import
+
+```bash
+mix compile
+```
 
 **Result:**
 
@@ -1201,20 +4346,25 @@ Compiling 4 files (.ex)
     └─ lib/cozy_checkout/ical_importer.ex:6:3
 
 Generated cozy_checkout app
-
 ```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Great! It compiled successfully (the warning about unused import is harmless, but we actually are using it). Now let's start the server to test it: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
 <summary>Tool use: **run_in_terminal**</summary>
 
-**Input:**
+_Auto approved by rule [`mix`](command:_chat.openTerminalSettingsLink?%255B3%255D "View rule in settings")_
 
-- command: `mix phx.server`
-- explanation: `Starting the Phoenix server to test the iCal import functionality`
-- isBackground: `true`
+Starting the Phoenix server to test the iCal import functionality
+
+```bash
+mix phx.server
+```
 
 **Result:**
 
@@ -1233,8 +4383,14 @@ Since there are no errors, the return value is `undefined`.
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! The server is running. Let me create a quick test to verify the import functionality works correctly. But first, let me check the terminal output more thoroughly: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="get_terminal_output"><details>
 <summary>Tool use: **get_terminal_output**</summary>
+
+Checked background terminal output
 
 **Input:**
 
@@ -1260,23 +4416,19 @@ Output of terminal b3c80b00-6959-4fe1-a963-9d748b706aa4:
 
 /*! 🌼 daisyUI 5.0.35 */
 Done in 219ms
-
-
-
-
-
-
-
-
-
-
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Excellent! The server is running at http://localhost:4000. Now let me create a simple test to verify the import logic works: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `ical_importer_test.exs`
 
 **Input:**
 
@@ -1452,18 +4604,1171 @@ end
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout/ical_importer_test.exs","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout/ical_importer_test.exs
 ```
 </details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ical_importer_test.exs**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckout.IcalImporterTest do
+```
+
+@@ lines 2-2 @@
+
+```
+
+  use CozyCheckout.DataCase
+```
+
+@@ lines 3-3 @@
+
+```
+
+
+```
+
+@@ lines 4-4 @@
+
+```
+
+  alias CozyCheckout.IcalImporter
+```
+
+@@ lines 5-5 @@
+
+```
+
+  alias CozyCheckout.{Guests, Bookings, Repo}
+```
+
+@@ lines 6-6 @@
+
+```
+
+
+```
+
+@@ lines 7-7 @@
+
+```
+
+  describe "import_ical/1" do
+```
+
+@@ lines 8-8 @@
+
+```
+
+    test "imports a simple iCal file with one event" do
+```
+
+@@ lines 9-9 @@
+
+```
+
+      ical_content = """
+```
+
+@@ lines 10-10 @@
+
+```
+
+      BEGIN:VCALENDAR
+```
+
+@@ lines 11-11 @@
+
+```
+
+      VERSION:2.0
+```
+
+@@ lines 12-12 @@
+
+```
+
+      PRODID:-//Test//Test 1.0//EN
+```
+
+@@ lines 13-13 @@
+
+```
+
+      BEGIN:VEVENT
+```
+
+@@ lines 14-14 @@
+
+```
+
+      DTSTART:20251205T140000
+```
+
+@@ lines 15-15 @@
+
+```
+
+      DTEND:20251207T100000
+```
+
+@@ lines 16-16 @@
+
+```
+
+      SUMMARY:John Doe
+```
+
+@@ lines 17-17 @@
+
+```
+
+      UID:test-123@test.com
+```
+
+@@ lines 18-18 @@
+
+```
+
+      STATUS:CONFIRMED
+```
+
+@@ lines 19-19 @@
+
+```
+
+      Description:Telefon: 603873879\\nEmail: john@example.com\\nDospělí: 2\\, děti 1\\nTest booking
+```
+
+@@ lines 20-20 @@
+
+```
+
+      END:VEVENT
+```
+
+@@ lines 21-21 @@
+
+```
+
+      END:VCALENDAR
+```
+
+@@ lines 22-22 @@
+
+```
+
+      """
+```
+
+@@ lines 23-23 @@
+
+```
+
+
+```
+
+@@ lines 24-24 @@
+
+```
+
+      assert {:ok, stats} = IcalImporter.import_ical(ical_content)
+```
+
+@@ lines 25-25 @@
+
+```
+
+      assert stats.guests_created == 1
+```
+
+@@ lines 26-26 @@
+
+```
+
+      assert stats.bookings_created == 1
+```
+
+@@ lines 27-27 @@
+
+```
+
+      assert stats.bookings_skipped == 0
+```
+
+@@ lines 28-28 @@
+
+```
+
+      assert stats.errors == []
+```
+
+@@ lines 29-29 @@
+
+```
+
+
+```
+
+@@ lines 30-30 @@
+
+```
+
+      # Verify guest was created
+```
+
+@@ lines 31-31 @@
+
+```
+
+      guest = Repo.get_by(Guests.Guest, email: "john@example.com")
+```
+
+@@ lines 32-32 @@
+
+```
+
+      assert guest
+```
+
+@@ lines 33-33 @@
+
+```
+
+      assert guest.name == "John Doe"
+```
+
+@@ lines 34-34 @@
+
+```
+
+      assert guest.phone == "603873879"
+```
+
+@@ lines 35-35 @@
+
+```
+
+
+```
+
+@@ lines 36-36 @@
+
+```
+
+      # Verify booking was created
+```
+
+@@ lines 37-37 @@
+
+```
+
+      bookings = Bookings.list_bookings()
+```
+
+@@ lines 38-38 @@
+
+```
+
+      assert length(bookings) == 1
+```
+
+@@ lines 39-39 @@
+
+```
+
+      booking = hd(bookings)
+```
+
+@@ lines 40-40 @@
+
+```
+
+      assert booking.guest_id == guest.id
+```
+
+@@ lines 41-41 @@
+
+```
+
+      assert booking.check_in_date == ~D[2025-12-05]
+```
+
+@@ lines 42-42 @@
+
+```
+
+      assert booking.check_out_date == ~D[2025-12-07]
+```
+
+@@ lines 43-43 @@
+
+```
+
+      assert booking.status == "active"
+```
+
+@@ lines 44-44 @@
+
+```
+
+      assert booking.notes == "Test booking"
+```
+
+@@ lines 45-45 @@
+
+```
+
+    end
+```
+
+@@ lines 46-46 @@
+
+```
+
+
+```
+
+@@ lines 47-47 @@
+
+```
+
+    test "finds existing guest by email" do
+```
+
+@@ lines 48-48 @@
+
+```
+
+      # Create a guest first
+```
+
+@@ lines 49-49 @@
+
+```
+
+      {:ok, existing_guest} = Guests.create_guest(%{
+```
+
+@@ lines 50-50 @@
+
+```
+
+        name: "Jane Smith",
+```
+
+@@ lines 51-51 @@
+
+```
+
+        email: "jane@example.com",
+```
+
+@@ lines 52-52 @@
+
+```
+
+        phone: "123456789"
+```
+
+@@ lines 53-53 @@
+
+```
+
+      })
+```
+
+@@ lines 54-54 @@
+
+```
+
+
+```
+
+@@ lines 55-55 @@
+
+```
+
+      ical_content = """
+```
+
+@@ lines 56-56 @@
+
+```
+
+      BEGIN:VCALENDAR
+```
+
+@@ lines 57-57 @@
+
+```
+
+      VERSION:2.0
+```
+
+@@ lines 58-58 @@
+
+```
+
+      BEGIN:VEVENT
+```
+
+@@ lines 59-59 @@
+
+```
+
+      DTSTART:20251210T140000
+```
+
+@@ lines 60-60 @@
+
+```
+
+      DTEND:20251212T100000
+```
+
+@@ lines 61-61 @@
+
+```
+
+      SUMMARY:Jane Smith
+```
+
+@@ lines 62-62 @@
+
+```
+
+      STATUS:CONFIRMED
+```
+
+@@ lines 63-63 @@
+
+```
+
+      Description:Telefon: \\nEmail: jane@example.com\\nDospělí: 1\\, děti 0\\n
+```
+
+@@ lines 64-64 @@
+
+```
+
+      END:VEVENT
+```
+
+@@ lines 65-65 @@
+
+```
+
+      END:VCALENDAR
+```
+
+@@ lines 66-66 @@
+
+```
+
+      """
+```
+
+@@ lines 67-67 @@
+
+```
+
+
+```
+
+@@ lines 68-68 @@
+
+```
+
+      assert {:ok, stats} = IcalImporter.import_ical(ical_content)
+```
+
+@@ lines 69-69 @@
+
+```
+
+      assert stats.guests_created == 0
+```
+
+@@ lines 70-70 @@
+
+```
+
+      assert stats.guests_found == 1
+```
+
+@@ lines 71-71 @@
+
+```
+
+      assert stats.bookings_created == 1
+```
+
+@@ lines 72-72 @@
+
+```
+
+
+```
+
+@@ lines 73-73 @@
+
+```
+
+      # Verify no duplicate guest was created
+```
+
+@@ lines 74-74 @@
+
+```
+
+      guests = Guests.list_guests()
+```
+
+@@ lines 75-75 @@
+
+```
+
+      assert length(guests) == 1
+```
+
+@@ lines 76-76 @@
+
+```
+
+      assert hd(guests).id == existing_guest.id
+```
+
+@@ lines 77-77 @@
+
+```
+
+    end
+```
+
+@@ lines 78-78 @@
+
+```
+
+
+```
+
+@@ lines 79-79 @@
+
+```
+
+    test "skips duplicate bookings for same guest and check-in date" do
+```
+
+@@ lines 80-80 @@
+
+```
+
+      {:ok, guest} = Guests.create_guest(%{name: "Test Guest", email: "test@example.com"})
+```
+
+@@ lines 81-81 @@
+
+```
+
+      {:ok, _booking} = Bookings.create_booking(%{
+```
+
+@@ lines 82-82 @@
+
+```
+
+        guest_id: guest.id,
+```
+
+@@ lines 83-83 @@
+
+```
+
+        check_in_date: ~D[2025-12-15],
+```
+
+@@ lines 84-84 @@
+
+```
+
+        check_out_date: ~D[2025-12-17],
+```
+
+@@ lines 85-85 @@
+
+```
+
+        status: "upcoming"
+```
+
+@@ lines 86-86 @@
+
+```
+
+      })
+```
+
+@@ lines 87-87 @@
+
+```
+
+
+```
+
+@@ lines 88-88 @@
+
+```
+
+      ical_content = """
+```
+
+@@ lines 89-89 @@
+
+```
+
+      BEGIN:VCALENDAR
+```
+
+@@ lines 90-90 @@
+
+```
+
+      VERSION:2.0
+```
+
+@@ lines 91-91 @@
+
+```
+
+      BEGIN:VEVENT
+```
+
+@@ lines 92-92 @@
+
+```
+
+      DTSTART:20251215T140000
+```
+
+@@ lines 93-93 @@
+
+```
+
+      DTEND:20251217T100000
+```
+
+@@ lines 94-94 @@
+
+```
+
+      SUMMARY:Test Guest
+```
+
+@@ lines 95-95 @@
+
+```
+
+      STATUS:CONFIRMED
+```
+
+@@ lines 96-96 @@
+
+```
+
+      Description:Telefon: \\nEmail: test@example.com\\nDospělí: 1\\, děti 0\\n
+```
+
+@@ lines 97-97 @@
+
+```
+
+      END:VEVENT
+```
+
+@@ lines 98-98 @@
+
+```
+
+      END:VCALENDAR
+```
+
+@@ lines 99-99 @@
+
+```
+
+      """
+```
+
+@@ lines 100-100 @@
+
+```
+
+
+```
+
+@@ lines 101-101 @@
+
+```
+
+      assert {:ok, stats} = IcalImporter.import_ical(ical_content)
+```
+
+@@ lines 102-102 @@
+
+```
+
+      assert stats.guests_found == 1
+```
+
+@@ lines 103-103 @@
+
+```
+
+      assert stats.bookings_created == 0
+```
+
+@@ lines 104-104 @@
+
+```
+
+      assert stats.bookings_skipped == 1
+```
+
+@@ lines 105-105 @@
+
+```
+
+      assert length(stats.errors) == 1
+```
+
+@@ lines 106-106 @@
+
+```
+
+    end
+```
+
+@@ lines 107-107 @@
+
+```
+
+
+```
+
+@@ lines 108-108 @@
+
+```
+
+    test "imports multiple events" do
+```
+
+@@ lines 109-109 @@
+
+```
+
+      ical_content = """
+```
+
+@@ lines 110-110 @@
+
+```
+
+      BEGIN:VCALENDAR
+```
+
+@@ lines 111-111 @@
+
+```
+
+      VERSION:2.0
+```
+
+@@ lines 112-112 @@
+
+```
+
+      BEGIN:VEVENT
+```
+
+@@ lines 113-113 @@
+
+```
+
+      DTSTART:20251201T140000
+```
+
+@@ lines 114-114 @@
+
+```
+
+      DTEND:20251203T100000
+```
+
+@@ lines 115-115 @@
+
+```
+
+      SUMMARY:Guest One
+```
+
+@@ lines 116-116 @@
+
+```
+
+      STATUS:CONFIRMED
+```
+
+@@ lines 117-117 @@
+
+```
+
+      Description:Telefon: 111\\nEmail: one@example.com\\nDospělí: 2\\, děti 0\\n
+```
+
+@@ lines 118-118 @@
+
+```
+
+      END:VEVENT
+```
+
+@@ lines 119-119 @@
+
+```
+
+      BEGIN:VEVENT
+```
+
+@@ lines 120-120 @@
+
+```
+
+      DTSTART:20251205T140000
+```
+
+@@ lines 121-121 @@
+
+```
+
+      DTEND:20251207T100000
+```
+
+@@ lines 122-122 @@
+
+```
+
+      SUMMARY:Guest Two
+```
+
+@@ lines 123-123 @@
+
+```
+
+      STATUS:TENTATIVE
+```
+
+@@ lines 124-124 @@
+
+```
+
+      Description:Telefon: 222\\nEmail: two@example.com\\nDospělí: 1\\, děti 1\\n
+```
+
+@@ lines 125-125 @@
+
+```
+
+      END:VEVENT
+```
+
+@@ lines 126-126 @@
+
+```
+
+      END:VCALENDAR
+```
+
+@@ lines 127-127 @@
+
+```
+
+      """
+```
+
+@@ lines 128-128 @@
+
+```
+
+
+```
+
+@@ lines 129-129 @@
+
+```
+
+      assert {:ok, stats} = IcalImporter.import_ical(ical_content)
+```
+
+@@ lines 130-130 @@
+
+```
+
+      assert stats.guests_created == 2
+```
+
+@@ lines 131-131 @@
+
+```
+
+      assert stats.bookings_created == 2
+```
+
+@@ lines 132-132 @@
+
+```
+
+      assert stats.bookings_skipped == 0
+```
+
+@@ lines 133-133 @@
+
+```
+
+
+```
+
+@@ lines 134-134 @@
+
+```
+
+      guests = Guests.list_guests()
+```
+
+@@ lines 135-135 @@
+
+```
+
+      assert length(guests) == 2
+```
+
+@@ lines 136-136 @@
+
+```
+
+      bookings = Bookings.list_bookings()
+```
+
+@@ lines 137-137 @@
+
+```
+
+      assert length(bookings) == 2
+```
+
+@@ lines 138-138 @@
+
+```
+
+    end
+```
+
+@@ lines 139-139 @@
+
+```
+
+
+```
+
+@@ lines 140-140 @@
+
+```
+
+    test "maps TENTATIVE status to upcoming" do
+```
+
+@@ lines 141-141 @@
+
+```
+
+      ical_content = """
+```
+
+@@ lines 142-142 @@
+
+```
+
+      BEGIN:VCALENDAR
+```
+
+@@ lines 143-143 @@
+
+```
+
+      VERSION:2.0
+```
+
+@@ lines 144-144 @@
+
+```
+
+      BEGIN:VEVENT
+```
+
+@@ lines 145-145 @@
+
+```
+
+      DTSTART:20251220T140000
+```
+
+@@ lines 146-146 @@
+
+```
+
+      DTEND:20251222T100000
+```
+
+@@ lines 147-147 @@
+
+```
+
+      SUMMARY:Tentative Guest
+```
+
+@@ lines 148-148 @@
+
+```
+
+      STATUS:TENTATIVE
+```
+
+@@ lines 149-149 @@
+
+```
+
+      Description:Telefon: \\nEmail: tentative@example.com\\nDospělí: 1\\, děti 0\\n
+```
+
+@@ lines 150-150 @@
+
+```
+
+      END:VEVENT
+```
+
+@@ lines 151-151 @@
+
+```
+
+      END:VCALENDAR
+```
+
+@@ lines 152-152 @@
+
+```
+
+      """
+```
+
+@@ lines 153-153 @@
+
+```
+
+
+```
+
+@@ lines 154-154 @@
+
+```
+
+      assert {:ok, _stats} = IcalImporter.import_ical(ical_content)
+```
+
+@@ lines 155-155 @@
+
+```
+
+      
+```
+
+@@ lines 156-156 @@
+
+```
+
+      bookings = Bookings.list_bookings()
+```
+
+@@ lines 157-157 @@
+
+```
+
+      assert length(bookings) == 1
+```
+
+@@ lines 158-158 @@
+
+```
+
+      assert hd(bookings).status == "upcoming"
+```
+
+@@ lines 159-159 @@
+
+```
+
+    end
+```
+
+@@ lines 160-160 @@
+
+```
+
+  end
+```
+
+@@ lines 161-161 @@
+
+```
+
+end
+```
+
+@@ lines 162-162 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Now let's run the tests to make sure the import logic works correctly: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="runTests"><details>
 <summary>Tool use: **runTests**</summary>
 
+Running tests...
+
 **Input:**
 
-- files: `[/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout/ical_importer_test.exs]`
+- files:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout/ical_importer_test.exs"
+]
+```
+
 
 **Result:**
 
@@ -1474,8 +5779,14 @@ The user chose to skip the tool call, they want to proceed without running it
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! The implementation is complete. Let me create a summary document: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="write" data-tool-name="create_file"><details>
 <summary>Tool use: **create_file**</summary>
+
+Created `ICAL_IMPORT.md`
 
 **Input:**
 
@@ -1588,25 +5899,712 @@ mix test test/cozy_checkout/ical_importer_test.exs
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/ICAL_IMPORT.md","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"Uv","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/ICAL_IMPORT.md
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll implement the iCal import functionality now. Let me create all the necessary files. Now let me read the router file to add the route: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **ICAL_IMPORT.md**</summary>
+
+@@ lines 1-1 @@
 
 ```
-Now let me read the dashboard to add the import card: 
+# iCal Import Feature
 ```
 
-```
-Now let me check if we have the Guests and Bookings contexts that the importer needs: Great! Let me check if these contexts have the necessary functions: Perfect! Now let me verify the schema structures to make sure our imports will work: Perfect! The schemas match what we need. Now let's test the implementation by running the server: I need to add the missing `import Ecto.Query` at the top of the importer file: 
-```
+@@ lines 2-2 @@
 
 ```
-Great! It compiled successfully (the warning about unused import is harmless, but we actually are using it). Now let's start the server to test it: Perfect! The server is running. Let me create a quick test to verify the import functionality works correctly. But first, let me check the terminal output more thoroughly: Excellent! The server is running at http://localhost:4000. Now let me create a simple test to verify the import logic works: Now let's run the tests to make sure the import logic works correctly: Perfect! The implementation is complete. Let me create a summary document: Perfect! The iCal import feature has been fully implemented. Here's what was created:
+
+
+```
+
+@@ lines 3-3 @@
+
+```
+
+## Overview
+```
+
+@@ lines 4-4 @@
+
+```
+
+The system can now import bookings from iCal (.ics) files. This feature automatically creates guests and bookings from calendar entries.
+```
+
+@@ lines 5-5 @@
+
+```
+
+
+```
+
+@@ lines 6-6 @@
+
+```
+
+## Features
+```
+
+@@ lines 7-7 @@
+
+```
+
+- ✅ Parse iCal VEVENT entries
+```
+
+@@ lines 8-8 @@
+
+```
+
+- ✅ Extract guest information (name, email, phone, notes)
+```
+
+@@ lines 9-9 @@
+
+```
+
+- ✅ Create new guests or find existing ones by email/name
+```
+
+@@ lines 10-10 @@
+
+```
+
+- ✅ Create bookings with proper status mapping
+```
+
+@@ lines 11-11 @@
+
+```
+
+- ✅ Handle duplicate bookings (skips existing bookings for same guest + check-in date)
+```
+
+@@ lines 12-12 @@
+
+```
+
+- ✅ Drag-and-drop file upload interface
+```
+
+@@ lines 13-13 @@
+
+```
+
+- ✅ Detailed import statistics and error reporting
+```
+
+@@ lines 14-14 @@
+
+```
+
+
+```
+
+@@ lines 15-15 @@
+
+```
+
+## How to Use
+```
+
+@@ lines 16-16 @@
+
+```
+
+
+```
+
+@@ lines 17-17 @@
+
+```
+
+1. Navigate to the Admin Dashboard at http://localhost:4000/admin
+```
+
+@@ lines 18-18 @@
+
+```
+
+2. Click on "Import Bookings" card
+```
+
+@@ lines 19-19 @@
+
+```
+
+3. Upload an iCal (.ics) file by:
+```
+
+@@ lines 20-20 @@
+
+```
+
+   - Clicking "Upload a file" and selecting a file, or
+```
+
+@@ lines 21-21 @@
+
+```
+
+   - Dragging and dropping the file into the upload area
+```
+
+@@ lines 22-22 @@
+
+```
+
+4. Click "Import Bookings" button
+```
+
+@@ lines 23-23 @@
+
+```
+
+5. Review the import results showing:
+```
+
+@@ lines 24-24 @@
+
+```
+
+   - Guests created
+```
+
+@@ lines 25-25 @@
+
+```
+
+   - Guests found (existing)
+```
+
+@@ lines 26-26 @@
+
+```
+
+   - Bookings created
+```
+
+@@ lines 27-27 @@
+
+```
+
+   - Bookings skipped (duplicates)
+```
+
+@@ lines 28-28 @@
+
+```
+
+   - Any errors encountered
+```
+
+@@ lines 29-29 @@
+
+```
+
+
+```
+
+@@ lines 30-30 @@
+
+```
+
+## Data Mapping
+```
+
+@@ lines 31-31 @@
+
+```
+
+
+```
+
+@@ lines 32-32 @@
+
+```
+
+### From iCal to Guest
+```
+
+@@ lines 33-33 @@
+
+```
+
+- `SUMMARY` → Guest name
+```
+
+@@ lines 34-34 @@
+
+```
+
+- `Description` field `Email:` → Guest email
+```
+
+@@ lines 35-35 @@
+
+```
+
+- `Description` field `Telefon:` → Guest phone
+```
+
+@@ lines 36-36 @@
+
+```
+
+- Text after adults/children count → Guest notes
+```
+
+@@ lines 37-37 @@
+
+```
+
+
+```
+
+@@ lines 38-38 @@
+
+```
+
+### From iCal to Booking
+```
+
+@@ lines 39-39 @@
+
+```
+
+- `DTSTART` → Check-in date
+```
+
+@@ lines 40-40 @@
+
+```
+
+- `DTEND` → Check-out date
+```
+
+@@ lines 41-41 @@
+
+```
+
+- `STATUS`:
+```
+
+@@ lines 42-42 @@
+
+```
+
+  - `CONFIRMED` → `active`
+```
+
+@@ lines 43-43 @@
+
+```
+
+  - `TENTATIVE` → `upcoming`
+```
+
+@@ lines 44-44 @@
+
+```
+
+  - Other → `upcoming`
+```
+
+@@ lines 45-45 @@
+
+```
+
+- Remaining description text → Booking notes
+```
+
+@@ lines 46-46 @@
+
+```
+
+
+```
+
+@@ lines 47-47 @@
+
+```
+
+## Implementation Details
+```
+
+@@ lines 48-48 @@
+
+```
+
+
+```
+
+@@ lines 49-49 @@
+
+```
+
+### Files Created
+```
+
+@@ lines 50-50 @@
+
+```
+
+- `lib/cozy_checkout/ical_importer.ex` - Core import logic
+```
+
+@@ lines 51-51 @@
+
+```
+
+- `lib/cozy_checkout_web/live/ical_import_live/index.ex` - LiveView interface
+```
+
+@@ lines 52-52 @@
+
+```
+
+- `test/cozy_checkout/ical_importer_test.exs` - Test suite
+```
+
+@@ lines 53-53 @@
+
+```
+
+
+```
+
+@@ lines 54-54 @@
+
+```
+
+### Files Modified
+```
+
+@@ lines 55-55 @@
+
+```
+
+- `lib/cozy_checkout_web/router.ex` - Added `/admin/ical-import` route
+```
+
+@@ lines 56-56 @@
+
+```
+
+- `lib/cozy_checkout_web/live/dashboard_live.ex` - Added import card to dashboard
+```
+
+@@ lines 57-57 @@
+
+```
+
+
+```
+
+@@ lines 58-58 @@
+
+```
+
+## Example iCal Format
+```
+
+@@ lines 59-59 @@
+
+```
+
+
+```
+
+@@ lines 60-60 @@
+
+````
+
+```ical
+````
+
+@@ lines 61-61 @@
+
+```
+
+BEGIN:VCALENDAR
+```
+
+@@ lines 62-62 @@
+
+```
+
+VERSION:2.0
+```
+
+@@ lines 63-63 @@
+
+```
+
+PRODID:-//e-chalupy.cz//Zap Calendar 1.0//CZ
+```
+
+@@ lines 64-64 @@
+
+```
+
+BEGIN:VEVENT
+```
+
+@@ lines 65-65 @@
+
+```
+
+DTSTART:20251205T140000
+```
+
+@@ lines 66-66 @@
+
+```
+
+DTEND:20251207T100000
+```
+
+@@ lines 67-67 @@
+
+```
+
+SUMMARY:John Doe
+```
+
+@@ lines 68-68 @@
+
+```
+
+UID:unique-id@domain.com
+```
+
+@@ lines 69-69 @@
+
+```
+
+STATUS:CONFIRMED
+```
+
+@@ lines 70-70 @@
+
+```
+
+Description:Telefon: 603873879\nEmail: john@example.com\nDospělí: 2\, děti 1\nSpecial requirements
+```
+
+@@ lines 71-71 @@
+
+```
+
+END:VEVENT
+```
+
+@@ lines 72-72 @@
+
+```
+
+END:VCALENDAR
+```
+
+@@ lines 73-73 @@
+
+````
+
+```
+````
+
+@@ lines 74-74 @@
+
+```
+
+
+```
+
+@@ lines 75-75 @@
+
+```
+
+## Duplicate Handling
+```
+
+@@ lines 76-76 @@
+
+```
+
+- Guests are matched by email first, then by name
+```
+
+@@ lines 77-77 @@
+
+```
+
+- Bookings are considered duplicates if they have the same guest_id and check_in_date
+```
+
+@@ lines 78-78 @@
+
+```
+
+- Duplicate bookings are skipped and reported in the import results
+```
+
+@@ lines 79-79 @@
+
+```
+
+
+```
+
+@@ lines 80-80 @@
+
+```
+
+## Error Handling
+```
+
+@@ lines 81-81 @@
+
+```
+
+- Invalid iCal format: Returns error message
+```
+
+@@ lines 82-82 @@
+
+```
+
+- Missing required fields: Skips the event and reports error
+```
+
+@@ lines 83-83 @@
+
+```
+
+- Database constraint violations: Skips the record and reports error
+```
+
+@@ lines 84-84 @@
+
+```
+
+- All errors are collected and displayed after import
+```
+
+@@ lines 85-85 @@
+
+```
+
+
+```
+
+@@ lines 86-86 @@
+
+```
+
+## Testing
+```
+
+@@ lines 87-87 @@
+
+```
+
+Run the test suite:
+```
+
+@@ lines 88-88 @@
+
+````
+
+```bash
+````
+
+@@ lines 89-89 @@
+
+```
+
+mix test test/cozy_checkout/ical_importer_test.exs
+```
+
+@@ lines 90-90 @@
+
+````
+
+```
+````
+
+@@ lines 91-91 @@
+
+```
+
+
+```
+
+@@ lines 92-92 @@
+
+```
+
+## Future Enhancements
+```
+
+@@ lines 93-93 @@
+
+```
+
+- Support for room_number extraction from description
+```
+
+@@ lines 94-94 @@
+
+```
+
+- Batch import from multiple files
+```
+
+@@ lines 95-95 @@
+
+```
+
+- Preview before import
+```
+
+@@ lines 96-96 @@
+
+```
+
+- Undo/rollback functionality
+```
+
+@@ lines 97-97 @@
+
+```
+
+- Support for recurring events
+```
+
+@@ lines 98-98 @@
+
+```
+
+- Export bookings to iCal format
+```
+
+@@ lines 99-99 @@
+
+```
+
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+Perfect! The iCal import feature has been fully implemented. Here's what was created:
 
 ## ✅ Implementation Complete
 

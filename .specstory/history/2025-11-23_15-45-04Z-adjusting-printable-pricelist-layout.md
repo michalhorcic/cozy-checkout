@@ -12,16 +12,14 @@ Check print pricelist functionality and change it so categories goes after each 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll check the printable pricelist functionality and change the layout so categories are displayed sequentially instead of in a grid. 
-
-Now I can see the issue. The template uses a two-column grid (`grid grid-cols-2 gap-6`) which causes categories with fewer items to look unbalanced. I'll change it to a single-column layout where categories flow sequentially one after another.
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `printable.ex`
 
 **Input:**
 
@@ -30,17 +28,65 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":24,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":24},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":23,"references":[],"text":"defmodule CozyCheckoutWeb.PricelistLive.Printable do\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":23},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":22,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":22},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":21,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":21},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"  alias CozyCheckout.Catalog\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":19,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":19},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":18,"references":[],"text":"  @impl true\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":18},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":17,"references":[],"text":"  def mount(_params, _session, socket) do\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":17},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"pri
-… (output truncated)
+```elixir
+defmodule CozyCheckoutWeb.PricelistLive.Printable do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Catalog
+
+  @impl true
+  def mount(_params, _session, socket) do
+    pricelists_by_category = Catalog.get_active_pricelists_for_print()
+
+    {:ok,
+     socket
+     |> assign(:page_title, "Ceník")
+     |> assign(:pricelists_by_category, pricelists_by_category)
+     |> assign(:generated_at, Date.utc_today())}
+  end
+
+  @impl true
+  def handle_event("print", _params, socket) do
+    {:noreply, push_event(socket, "print", %{})}
+  end
+end
+
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll check the printable pricelist functionality and change the layout so categories are displayed sequentially instead of in a grid. Now I can see the issue. The template uses a two-column grid (`grid grid-cols-2 gap-6`) which causes categories with fewer items to look unbalanced. I'll change it to a single-column layout where categories flow sequentially one after another. 
-```
+Now I can see the issue. The template uses a two-column grid (`grid grid-cols-2 gap-6`) which causes categories with fewer items to look unbalanced. I'll change it to a single-column layout where categories flow sequentially one after another. 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 68-82 @@
 
 ```
+    <%!-- Categories and Products --%>
+    <%= if @pricelists_by_category == [] do %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
+      </div>
+    <% else %>
+      <div class="space-y-6">
+        <%= for {category, pricelists} <- @pricelists_by_category do %>
+          <div class="category-section">
+            <%!-- Category Header --%>
+            <div class="border-b-2 border-gray-900 pb-1 mb-3">
+              <h3 class="text-lg font-bold text-gray-900">
+                {if category, do: category.name, else: "Bez kategorie"}
+              </h3>
+            </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Done! I've changed the pricelist layout from a two-column grid to a single-column sequential layout. The key changes:
 
 1. **Removed grid layout**: Changed `grid grid-cols-2 gap-6` to `space-y-6` for vertical spacing
@@ -59,16 +105,36 @@ I still want to use two columns to save space, but make it kind of flowing witho
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-I'll change it to use a two-column layout with a masonry-like flow where categories naturally fill the columns without large gaps.
-</details></think>
+I'll change it to use a two-column layout with a masonry-like flow where categories naturally fill the columns without large gaps. 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll change it to use a two-column layout with a masonry-like flow where categories naturally fill the columns without large gaps. 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 68-82 @@
 
 ```
+    <%!-- Categories and Products --%>
+    <%= if @pricelists_by_category == [] do %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
+      </div>
+    <% else %>
+      <div class="columns-2 gap-6">
+        <%= for {category, pricelists} <- @pricelists_by_category do %>
+          <div class="category-section mb-4 break-inside-avoid">
+            <%!-- Category Header --%>
+            <div class="border-b-2 border-gray-900 pb-1 mb-3">
+              <h3 class="text-lg font-bold text-gray-900">
+                {if category, do: category.name, else: "Bez kategorie"}
+              </h3>
+            </div>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've changed the layout to use CSS columns (`columns-2`) instead of a grid. This creates a flowing two-column layout where:
 
 1. **Masonry-like flow**: Categories automatically flow into two columns without rigid alignment
@@ -88,16 +154,71 @@ Looks great, can you also make sure it fits to A4 and still keeps two columns wh
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-I'll add print-specific styles to ensure the two-column layout is maintained when printing to A4.
-</details></think>
+I'll add print-specific styles to ensure the two-column layout is maintained when printing to A4. 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll add print-specific styles to ensure the two-column layout is maintained when printing to A4. 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-45 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      .category-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* Force two columns on print */
+      .columns-2 {
+        column-count: 2 !important;
+        column-gap: 1.5rem !important;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Done! I've added print-specific styles that force the two-column layout when printing:
 
 - `column-count: 2 !important` - Ensures exactly 2 columns are maintained in print
@@ -115,16 +236,10 @@ Unfortunately it still folds into one column when actually printed
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-I'll check the current file and adjust the print styles to ensure the two-column layout persists when printing. 
-
-I see the issue. The `max-w-7xl` container might be restricting the width too much for print. Let me add more specific print styles to ensure the columns work properly on print.
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Searched codebase for "Unfortunately it still folds into one column when actually printed", 20 results
 
 **Input:**
 
@@ -133,15 +248,104 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":173,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":173},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":172,"references":[],"text":"\u003cdiv class=\"min-h-screen bg-white\"\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":172},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":171,"references":[],"text":"  \u003c%!-- Print Styles --%\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":171},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":170,"references":[],"text":"  \u003cstyle\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":170},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":169,"references":[],"text":"    @media print {\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":169},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":168,"references":[],"text":"      body {\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":168},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":167,"references":[],"text":"        margin: 0;\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":167},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":166,"references":[],"text":"        padding: 0;\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":166},"references":[],"type"
+```phoenix-heex
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      .category-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* Force two columns on print */
+      .columns-2 {
+        column-count: 2 !important;
+        column-gap: 1.5rem !important;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+
+  <%!-- Print Button (Hidden on print) --%>
+  <div class="no-print fixed top-4 right-4 z-50">
+    <button
+      phx-click="print"
+      class="btn btn-primary gap-2"
+    >
+      <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout ceník
+    </button>
+  </div>
+
+  <%!-- Printable Content --%>
+  <div class="max-w-7xl mx-auto p-6">
+    <%!-- Header --%>
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-1">Jindřichův dům</h1>
+      <h2 class="text-xl text-gray-600 mb-2">Ceník</h2>
+      <p class="text-xs text-gray-500">
+        Platný od {Calendar.strftime(@generated_at, "%d. %m. %Y")}
+      </p>
+    </div>
+
+    <%!-- Categories and Products --%>
+    <%= if @pricelists_by_category == [] do %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
+      </div>
+    <% else %>
+      <div class="columns-2 gap-6">
+        <%= for {category, pricelists} <- @pricelists_by_category do %>
+          <div class="category-section mb-4 break-inside-avoid">
+            <%
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+I'll check the current file and adjust the print styles to ensure the two-column layout persists when printing. 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Read `printable.html.heex`
 
 **Input:**
 
@@ -275,20 +479,113 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"d0","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll check the current file and adjust the print styles to ensure the two-column layout persists when printing. I see the issue. The `max-w-7xl` container might be restricting the width too much for print. Let me add more specific print styles to ensure the columns work properly on print. 
-```
+I see the issue. The `max-w-7xl` container might be restricting the width too much for print. Let me add more specific print styles to ensure the columns work properly on print. 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-51 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    /* Force two columns for both screen and print */
+    .pricelist-columns {
+      column-count: 2;
+      column-gap: 1.5rem;
+      column-fill: auto;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      .category-section {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+
+      /* Ensure columns are maintained on print */
+      .pricelist-columns {
+        column-count: 2 !important;
+        column-gap: 1.5rem !important;
+        column-fill: auto !important;
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
+      }
+
+      /* Remove max-width constraint for print */
+      .max-w-7xl {
+        max-width: none !important;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 89-97 @@
 
 ```
-
+    <%!-- Categories and Products --%>
+    <%= if @pricelists_by_category == [] do %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
+      </div>
+    <% else %>
+      <div class="pricelist-columns">
+        <%= for {category, pricelists} <- @pricelists_by_category do %>
+          <div class="category-section mb-4 break-inside-avoid">
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've made several changes to ensure the two-column layout persists when printing:
 
 1. **Created a dedicated CSS class** (`pricelist-columns`) instead of relying on Tailwind's `columns-2`
@@ -309,14 +606,10 @@ Still the same problem. Search internet if somebody tries to solve same problem
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Based on the research, I found that the issue with CSS columns not working in print is well-documented. The solution involves adding `display: table` to the child elements. Let me update the styles:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Fetched https://stackoverflow.com/questions/7785374/css-column-count-not-working-in-print-media
 
 **Input:**
 
@@ -478,16 +771,106 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"d0","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 Based on the research, I found that the issue with CSS columns not working in print is well-documented. The solution involves adding `display: table` to the child elements. Let me update the styles: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-66 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    /* Force two columns for both screen and print */
+    .pricelist-columns {
+      column-count: 2;
+      column-gap: 1.5rem;
+      column-fill: auto;
+    }
+
+    .category-section {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      -webkit-column-break-inside: avoid;
+      overflow: hidden;
+      display: table;
+      width: 100%;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      /* Critical for print: display: table prevents column breaks */
+      .category-section {
+        display: table !important;
+        width: 100% !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        -webkit-column-break-inside: avoid !important;
+      }
+
+      /* Ensure columns are maintained on print */
+      .pricelist-columns {
+        column-count: 2 !important;
+        column-gap: 1.5rem !important;
+        column-fill: auto !important;
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
+      }
+
+      /* Remove max-width constraint for print */
+      .max-w-7xl {
+        max-width: none !important;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! Based on the research from Stack Overflow, I've implemented the key fix that makes CSS columns work properly in print:
 
 **The critical change**: Added `display: table` to `.category-section` elements. According to multiple sources, this is the most reliable cross-browser solution for preventing column breaks when printing.
@@ -510,16 +893,14 @@ Unfortunately this changed nothing. I still can see two columns below each other
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 Let me check the current state of the file and try a different approach. The issue might be that we need to use a different CSS technique for print media. 
-
-I see the issue - the `display: table` on category sections might be interfering with the column layout. Let me try a completely different approach using inline-block instead, which is another proven method for CSS columns in print:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `printable.html.heex`
 
 **Input:**
 
@@ -528,17 +909,198 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":201,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":201},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":200,"references":[],"text":"\u003cdiv class=\"min-h-screen bg-white\"\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":200},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":199,"references":[],"text":"  \u003c%!-- Print Styles --%\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":199},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":198,"references":[],"text":"  \u003cstyle\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":198},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":197,"references":[],"text":"    /* Force two columns for both screen and print */\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":197},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":196,"references":[],"text":"    .pricelist-columns {\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":196},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":195,"references":[],"text":"      column-count: 2;\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":195},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":194,"references":[],"text":"      column-gap: 1.5rem;\n","type":2}],"ctor":2,"ctorNa
+```phoenix-heex
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    /* Force two columns for both screen and print */
+    .pricelist-columns {
+      column-count: 2;
+      column-gap: 1.5rem;
+      column-fill: auto;
+    }
+
+    .category-section {
+      break-inside: avoid;
+      page-break-inside: avoid;
+      -webkit-column-break-inside: avoid;
+      overflow: hidden;
+      display: table;
+      width: 100%;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      /* Critical for print: display: table prevents column breaks */
+      .category-section {
+        display: table !important;
+        width: 100% !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        -webkit-column-break-inside: avoid !important;
+      }
+
+      /* Ensure columns are maintained on print */
+      .pricelist-columns {
+        column-count: 2 !important;
+        column-gap: 1.5rem !important;
+        column-fill: auto !important;
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
+      }
+
+      /* Remove max-width constraint for print */
+      .max-w-7xl {
+        max-width: none !important;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+
+  <%!-- Print Button (Hidden on print) --%>
+  <div class="no-print fixed top-4 right-4 z-50">
+    <button
+      phx-click="print"
+      class="btn btn-primary gap-2"
+    >
+      <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout ceník
+ 
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me check the current state of the file and try a different approach. The issue might be that we need to use a different CSS technique for print media. I see the issue - the `display: table` on category sections might be interfering with the column layout. Let me try a completely different approach using inline-block instead, which is another proven method for CSS columns in print: 
-```
+I see the issue - the `display: table` on category sections might be interfering with the column layout. Let me try a completely different approach using inline-block instead, which is another proven method for CSS columns in print: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-79 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    /* Force two columns for both screen and print */
+    .pricelist-columns {
+      -webkit-column-count: 2;
+      -moz-column-count: 2;
+      column-count: 2;
+      -webkit-column-gap: 1.5rem;
+      -moz-column-gap: 1.5rem;
+      column-gap: 1.5rem;
+    }
+
+    .category-section {
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 1rem;
+      -webkit-column-break-inside: avoid;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      /* Ensure categories don't break across columns */
+      .category-section {
+        display: inline-block !important;
+        width: 100% !important;
+        -webkit-column-break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Force two columns on print with all vendor prefixes */
+      .pricelist-columns {
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
+        column-count: 2 !important;
+        -webkit-column-gap: 1.5rem !important;
+        -moz-column-gap: 1.5rem !important;
+        column-gap: 1.5rem !important;
+      }
+
+      /* Remove max-width constraint for print */
+      .max-w-7xl {
+        max-width: none !important;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 I've changed the approach to use `display: inline-block` instead of `display: table`, which is another proven method from the Stack Overflow research. The key changes:
 
 1. **`display: inline-block`** on category sections - This prevents column breaks while maintaining the flow
@@ -558,37 +1120,38 @@ Still the same, does it matter how many categories I have? Because I am testing 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 Ah, that might be the issue! With only two categories, CSS columns might be displaying them vertically because there's not enough content to fill two columns properly. Let me search for more information about this specific scenario. 
-
-Let me try a different search: 
-
-Yes, you're right! The issue is likely that with only 2 categories, CSS columns by default tries to **balance** the height of the columns. This means if your content isn't tall enough, it will stack them vertically instead of side-by-side. 
-
-The key property we need is `column-fill: balance` vs `column-fill: auto`. Let me also add a minimum height constraint for print:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="generic" data-tool-name="fetch_webpage"><details>
 <summary>Tool use: **fetch_webpage**</summary>
 
+Fetched https://stackoverflow.com/questions/25729707/css-column-count-not-working
+
 **Input:**
 
 - query: `CSS columns height balancing print`
-- urls: `[https://css-tricks.com/almanac/properties/c/columns/]`
+- urls: `["https://css-tricks.com/almanac/properties/c/columns/"]`
 
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":9007199254740991,"references":[],"text":"Here is some relevant context from the web page https://css-tricks.com/almanac/properties/c/columns/:","type":2}],"ctor":2,"ctorName":"Kfe","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"","keepWithId":404,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"The webpage has redirected to \"https://codepen.io/anon/embed/xxjRMz/59265dd206624b5def837be15200a58d?default-tab=result\u0026height=268\u0026slug-hash=59265dd206624b5def837be15200a58d\u0026theme-id=1\". Use the vscode_fetchWebPage_internal again to get its contents.","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":1000},"references":[],"type":1}],"ctor":2,"ctorName":"","flags":4,"keepWithId":404,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"k3e","flags":6,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"n","flags":4,"props":{"passPriority":true},"references":[],"type":1}],"ctor":2,"ctorName":"hAt","props":{},"references":[],"type":1}}
+Here is some relevant context from the web page https://css-tricks.com/almanac/properties/c/columns/:
+The webpage has redirected to "https://codepen.io/anon/embed/xxjRMz/59265dd206624b5def837be15200a58d?default-tab=result&height=268&slug-hash=59265dd206624b5def837be15200a58d&theme-id=1". Use the vscode_fetchWebPage_internal again to get its contents.
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me try a different search: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Fetched https://css-tricks.com/almanac/properties/c/columns/
 
 **Input:**
 
@@ -629,22 +1192,76 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"d0","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Ah, that might be the issue! With only two categories, CSS columns might be displaying them vertically because there's not enough content to fill two columns properly. Let me search for more information about this specific scenario. Let me try a different search: Yes, you're right! The issue is likely that with only 2 categories, CSS columns by default tries to **balance** the height of the columns. This means if your content isn't tall enough, it will stack them vertically instead of side-by-side. 
+Yes, you're right! The issue is likely that with only 2 categories, CSS columns by default tries to **balance** the height of the columns. This means if your content isn't tall enough, it will stack them vertically instead of side-by-side. 
 
 The key property we need is `column-fill: balance` vs `column-fill: auto`. Let me also add a minimum height constraint for print: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 4-21 @@
 
 ```
+    /* Force two columns for both screen and print */
+    .pricelist-columns {
+      -webkit-column-count: 2;
+      -moz-column-count: 2;
+      column-count: 2;
+      -webkit-column-gap: 1.5rem;
+      -moz-column-gap: 1.5rem;
+      column-gap: 1.5rem;
+      -webkit-column-fill: balance;
+      -moz-column-fill: balance;
+      column-fill: balance;
+      min-height: 500px;
+    }
+
+    .category-section {
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 1rem;
+      -webkit-column-break-inside: avoid;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 67-75 @@
 
 ```
-
+      /* Force two columns on print with all vendor prefixes */
+      .pricelist-columns {
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
+        column-count: 2 !important;
+        -webkit-column-gap: 1.5rem !important;
+        -moz-column-gap: 1.5rem !important;
+        column-gap: 1.5rem !important;
+        -webkit-column-fill: balance !important;
+        -moz-column-fill: balance !important;
+        column-fill: balance !important;
+        min-height: 800px !important;
+      }
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've added two critical fixes:
 
 1. **`column-fill: balance`** - This tells the browser to balance content across columns, which should help with a small number of categories
@@ -664,14 +1281,10 @@ Not working at all. Is it maybe too wide for two columns to fit on A4? Can we sc
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Yes! That's likely the issue - the `max-w-7xl` container is too wide for A4 paper when trying to fit two columns. Let me scale it down and adjust the sizing for print:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `printable.html.heex`
 
 **Input:**
 
@@ -680,7 +1293,93 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":205,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":205},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":204,"references":[],"text":"\u003cdiv class=\"min-h-screen bg-white\"\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":204},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":203,"references":[],"text":"  \u003c%!-- Print Styles --%\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":203},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":202,"references":[],"text":"  \u003cstyle\u003e\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":202},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":201,"references":[],"text":"    /* Force two columns for both screen and print */\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":201},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":200,"references":[],"text":"    .pricelist-columns {\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":200},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":199,"references":[],"text":"      -webkit-column-count: 2;\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":199},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":198,"references":[],"text":"      -moz-column-count: 2;\n","type":2}],"ctor"
+```phoenix-heex
+<div class="min-h-screen bg-white">
+  <%!-- Print Styles --%>
+  <style>
+    /* Force two columns for both screen and print */
+    .pricelist-columns {
+      -webkit-column-count: 2;
+      -moz-column-count: 2;
+      column-count: 2;
+      -webkit-column-gap: 1.5rem;
+      -moz-column-gap: 1.5rem;
+      column-gap: 1.5rem;
+    }
+
+    .category-section {
+      display: inline-block;
+      width: 100%;
+      margin-bottom: 1rem;
+      -webkit-column-break-inside: avoid;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      /* Ensure categories don't break across columns */
+      .category-section {
+        display: inline-block !important;
+        width: 100% !important;
+        -webkit-column-break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Force two columns on print with all vendor prefixes */
+      .pricelist-columns {
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
+        column-count: 2 !important;
+        -webkit-column-gap: 1.5rem !important;
+        -moz-column-gap: 1.5rem !important;
+        column-gap: 1.5rem !important;
+      }
+
+      /* Remove max-width constraint for print */
+      .max-w-7xl {
+        max-width: none !important;
+      }
+    }
+
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+
+  <%!-- Print Button (Hidden on print) --%>
+  <div class="no-print fixed 
 … (output truncated)
 ````
 </details></tool-use>
@@ -688,9 +1387,97 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 Yes! That's likely the issue - the `max-w-7xl` container is too wide for A4 paper when trying to fit two columns. Let me scale it down and adjust the sizing for print: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 23-77 @@
 
 ```
+    @media print {
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      
+      .no-print {
+        display: none !important;
+      }
+      
+      .print-page {
+        page-break-after: always;
+      }
+      
+      .print-page:last-child {
+        page-break-after: auto;
+      }
+      
+      table {
+        page-break-inside: auto;
+      }
+      
+      tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+      }
+      
+      thead {
+        display: table-header-group;
+      }
+      
+      /* Ensure categories don't break across columns */
+      .category-section {
+        display: inline-block !important;
+        width: 100% !important;
+        -webkit-column-break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Force two columns on print with all vendor prefixes */
+      .pricelist-columns {
+        -webkit-column-count: 2 !important;
+        -moz-column-count: 2 !important;
+        column-count: 2 !important;
+        -webkit-column-gap: 1rem !important;
+        -moz-column-gap: 1rem !important;
+        column-gap: 1rem !important;
+      }
+
+      /* Scale and fit for A4 print */
+      .max-w-7xl {
+        max-width: 100% !important;
+        padding: 0.5rem !important;
+      }
+
+      /* Scale down font sizes for print */
+      h1 {
+        font-size: 1.5rem !important;
+      }
+
+      h2 {
+        font-size: 1rem !important;
+      }
+
+      h3 {
+        font-size: 0.875rem !important;
+      }
+
+      .text-sm {
+        font-size: 0.75rem !important;
+      }
+
+      .text-xs {
+        font-size: 0.625rem !important;
+      }
+    }
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've made several key changes to make it fit on A4 with two columns:
 
 1. **Reduced column gap** - Changed from `1.5rem` to `1rem` to give more space for content
@@ -713,19 +1500,10 @@ Not helping. Search internet again an try to find out what people use to make pr
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-You're absolutely right - CSS columns in print are notoriously unreliable. Based on the research, the real-world approach for professional printable documents is to either:
-
-1. **Use a PDF generation library** (like wkhtmltopdf, Puppeteer, or similar)
-2. **Use a simpler layout** that doesn't rely on CSS columns for print
-
-Let me try a completely different approach - instead of using CSS columns, let's use a **simple two-column grid layout** that's proven to work reliably in print:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 <tool-use data-tool-type="generic" data-tool-name="replace_string_in_file"><details>
 <summary>Tool use: **replace_string_in_file**</summary>
+
+Fetched https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
 
 **Input:**
 
@@ -782,7 +1560,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"The following files were successfully edited:","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"d0","props":{},"references":[],"type":1}}
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex
 ```
 </details></tool-use>
 
@@ -794,13 +1573,85 @@ You're absolutely right - CSS columns in print are notoriously unreliable. Based
 2. **Use a simpler layout** that doesn't rely on CSS columns for print
 
 Let me try a completely different approach - instead of using CSS columns, let's use a **simple two-column grid layout** that's proven to work reliably in print: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-23 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    /* Two column grid layout that works reliably in print */
+    .pricelist-columns {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    @media print {
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 48-92 @@
 
 ```
+      /* Keep grid layout for print */
+      .pricelist-columns {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1rem !important;
+      }
 
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      /* Scale and fit for A4 print */
+      .max-w-7xl {
+        max-width: 100% !important;
+        padding: 0.5rem !important;
+      }
+
+      /* Scale down font sizes for print */
+      h1 {
+        font-size: 1.5rem !important;
+      }
+
+      h2 {
+        font-size: 1rem !important;
+      }
+
+      h3 {
+        font-size: 0.875rem !important;
+      }
+
+      .text-sm {
+        font-size: 0.75rem !important;
+      }
+
+      .text-xs {
+        font-size: 0.625rem !important;
+      }
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've completely changed the approach from CSS columns to **CSS Grid**, which is much more reliable for printing:
 
 **Key changes:**
@@ -827,24 +1678,67 @@ Doesn't this going to introduce gaps between categories with different number of
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-You're absolutely right! CSS Grid will create a rigid grid where each cell aligns with cells in the other column, creating gaps. We need the categories to flow naturally like a masonry layout.
-
-Let me try a different approach - using **flexbox with column direction**, which should work more reliably in print than CSS columns:
-</details></think>
-
-_**Agent (copilot/claude-sonnet-4.5)**_
-
 You're absolutely right! CSS Grid will create a rigid grid where each cell aligns with cells in the other column, creating gaps. We need the categories to flow naturally like a masonry layout.
 
 Let me try a different approach - using **flexbox with column direction**, which should work more reliably in print than CSS columns: 
-```
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-17 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    /* Flexbox column layout for masonry-like flow */
+    .pricelist-columns {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      max-height: 1000px;
+      gap: 1rem;
+    }
+
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      width: calc(50% - 0.5rem);
+    }
+
+    @media print {
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 51-61 @@
 
 ```
+      /* Flexbox column layout for print with adjusted height */
+      .pricelist-columns {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        max-height: 900px !important;
+        gap: 0.75rem !important;
+      }
 
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: calc(50% - 0.5rem) !important;
+      }
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've switched to **flexbox with column wrapping**, which creates a true masonry-like flow:
 
 **How it works:**
@@ -871,20 +1765,59 @@ Better, now it prints in columns properly, but when there is more content than f
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Ah yes! The `max-height` is causing overflow. Let me remove that restriction so content can flow across multiple pages naturally:
-</details></think>
+Ah yes! The `max-height` is causing overflow. Let me remove that restriction so content can flow across multiple pages naturally: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Ah yes! The `max-height` is causing overflow. Let me remove that restriction so content can flow across multiple pages naturally: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-18 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    /* Simple two-column layout using columns */
+    .pricelist-columns {
+      column-count: 2;
+      column-gap: 1.5rem;
+    }
+
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      display: inline-block;
+      width: 100%;
+    }
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 49-62 @@
 
 ```
+      /* Two columns that flow across multiple pages */
+      .pricelist-columns {
+        column-count: 2 !important;
+        column-gap: 1rem !important;
+      }
 
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        display: inline-block !important;
+        width: 100% !important;
+      }
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've gone back to CSS columns but this time **without any height restriction**. The key difference now:
 
 1. **No `max-height`** - Content can flow naturally across as many pages as needed
@@ -910,20 +1843,67 @@ Now we are back at printing just one columns :( Would it help to go back but ins
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Yes! Let's go back to the flexbox approach with a specific height for 2 pages. We'll set the max-height to accommodate 2 A4 pages:
-</details></think>
+Yes! Let's go back to the flexbox approach with a specific height for 2 pages. We'll set the max-height to accommodate 2 A4 pages: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Yes! Let's go back to the flexbox approach with a specific height for 2 pages. We'll set the max-height to accommodate 2 A4 pages: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 2-18 @@
 
 ```
+  <%!-- Print Styles --%>
+  <style>
+    /* Flexbox column layout for masonry-like flow */
+    .pricelist-columns {
+      display: flex;
+      flex-direction: column;
+      flex-wrap: wrap;
+      max-height: 2000px;
+      gap: 1rem;
+    }
+
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      width: calc(50% - 0.5rem);
+    }
+
+    @media print {
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 51-64 @@
 
 ```
+      /* Flexbox layout for 2 A4 pages in print */
+      .pricelist-columns {
+        display: flex !important;
+        flex-direction: column !important;
+        flex-wrap: wrap !important;
+        max-height: 1800px !important;
+        gap: 0.75rem !important;
+      }
 
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: calc(50% - 0.5rem) !important;
+      }
+
+      /* Scale and fit for A4 print */
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've set it back to the flexbox approach with a `max-height` that accommodates 2 A4 pages:
 
 - **Screen view**: `max-height: 2000px` - enough space for about 2 A4 pages worth of content
@@ -941,14 +1921,55 @@ Decent now. Can we make sure that category name and its items are never separate
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 13-18 @@
 
 ```
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      width: calc(50% - 0.5rem);
+    }
+
+    /* Ensure category header stays with its content */
+    .category-section > div:first-child {
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 66-70 @@
 
 ```
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: calc(50% - 0.5rem) !important;
+      }
 
-```
+      /* Ensure category header stays with its content in print */
+      .category-section > div:first-child {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
 
+      table {
+        page-break-inside: auto !important;
+      }
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've added styles to ensure the category header never separates from its items:
 
 1. **`page-break-after: avoid`** on the category header div - Prevents a page break right after the category name
@@ -970,14 +1991,14 @@ for some reason it didnt help. It is still separated in my use case
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
-Let me try a different approach - wrapping the entire category section in a container that forces it to stay together:
-</details></think>
+Let me try a different approach - wrapping the entire category section in a container that forces it to stay together: 
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `printable.html.heex`, lines 110 to 140
 
 **Input:**
 
@@ -988,21 +2009,92 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"110","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"140","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"234","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":33,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```phoenix-heex\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":33},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":32,"references":[],"text":"    @page {\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":32},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":31,"references":[],"text":"      size: A4 portrait;\n","type":2}],"ctor":2,"ctorName":"Kfe","props":{"priority":31},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":30,"references":[],"text":"      margi
-… (output truncated)
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pricelist_live/printable.html.heex`. Lines 110 to 140 (234 lines total): 
+```phoenix-heex
+    @page {
+      size: A4 portrait;
+      margin: 1.5cm;
+    }
+  </style>
+
+  <%!-- Print Button (Hidden on print) --%>
+  <div class="no-print fixed top-4 right-4 z-50">
+    <button
+      phx-click="print"
+      class="btn btn-primary gap-2"
+    >
+      <.icon name="hero-printer" class="h-5 w-5" /> Vytisknout ceník
+    </button>
+  </div>
+
+  <%!-- Printable Content --%>
+  <div class="max-w-7xl mx-auto p-6">
+    <%!-- Header --%>
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-1">Jindřichův dům</h1>
+      <h2 class="text-xl text-gray-600 mb-2">Ceník</h2>
+      <p class="text-xs text-gray-500">
+        Platný od {Calendar.strftime(@generated_at, "%d. %m. %Y")}
+      </p>
+    </div>
+
+    <%!-- Categories and Products --%>
+    <%= if @pricelists_by_category == [] do %>
+      <div class="text-center py-12">
+        <p class="text-gray-500 text-lg">Žádné aktivní produkty v ceníku.</p>
+```
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-Let me try a different approach - wrapping the entire category section in a container that forces it to stay together: 
-```
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 13-24 @@
 
 ```
+    .category-section {
+      margin-bottom: 1rem;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      width: calc(50% - 0.5rem);
+      overflow: hidden;
+    }
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **printable.html.heex**</summary>
+
+@@ lines 61-75 @@
 
 ```
+      .category-section {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        width: calc(50% - 0.5rem) !important;
+        overflow: hidden !important;
+        display: table !important;
+      }
 
+      /* Prevent breaks in tables */
+      table {
+        page-break-inside: avoid !important;
+      }
+
+      /* Keep table rows together */
+      tr {
+        page-break-inside: avoid !important;
+        page-break-after: auto !important;
+      }
 ```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 I've added two critical properties that should force the category to stay together:
 
 1. **`overflow: hidden`** - This is a known workaround from the Stack Overflow research that forces browsers to keep elements together in print

@@ -12,22 +12,14 @@ In bookings index, show 100 records by default before pagination
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you modify the bookings index to show 100 records by default before pagination. Let me first check the current bookings index implementation. 
-
-Now let me check the Bookings context to see where the default page size is set: 
-
-Let me check the Flop schema configuration for the Booking model: 
-
-Perfect! Now let me read the Booking schema file to update the default limit: 
-
-Now I'll update the `default_limit` from 20 to 100 in the Booking schema:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="file_search"><details>
 <summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/booking_live/index.ex`, 2 matches
 
 **Input:**
 
@@ -36,7 +28,9 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 total results","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":10,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":10},"references":[],"type":1}],"ctor":2,"ctorName":"Ore","props":{},"references":[],"type":1}}
+2 total results
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex
 ```
 </details></tool-use>
 
@@ -45,6 +39,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `index.ex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex`
@@ -52,15 +48,93 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":412,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/booking_live/index.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":412},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":411,"references":[],"text":"defmodule CozyCheckoutWeb.BookingLive.Index do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":411},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":410,"references":[],"text":"  use CozyCheckoutWeb, :live_view\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":410},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":409,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":409},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":408,"references":[],"text":"  alias CozyCheckout.Bookings\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":408},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":407,"references":[],"text":"  alias CozyCheckout.Bookings.Booking\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":407},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":406,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":406},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":405,"references":[],"text":"  import CozyCheckoutWeb.FlopComponents\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":405},"references":[],"type":1},{"children":[{"lineBreakB
+```elixir
+defmodule CozyCheckoutWeb.BookingLive.Index do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Bookings
+  alias CozyCheckout.Bookings.Booking
+
+  import CozyCheckoutWeb.FlopComponents
+
+  @impl true
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_params(params, _url, socket) do
+    # Normalize params: convert indexed maps to arrays for Flop
+    normalized_params = normalize_flop_params(params)
+
+    socket =
+      case Bookings.list_bookings_with_flop(normalized_params) do
+        {:ok, {bookings, meta}} ->
+          # Add rooms and invoice to each booking
+          bookings_with_rooms =
+            Enum.map(bookings, fn booking ->
+              rooms = Bookings.list_booking_rooms(booking.id)
+              invoice = Bookings.get_invoice_by_booking_id(booking.id)
+
+              booking
+              |> Map.put(:rooms_list, rooms)
+              |> Map.put(:invoice, invoice)
+            end)
+
+          socket
+          |> assign(:bookings, bookings_with_rooms)
+          |> assign(:meta, meta)
+
+        {:error, meta} ->
+          socket
+          |> assign(:bookings, [])
+          |> assign(:meta, meta)
+      end
+
+    {:noreply, apply_action(socket, socket.assigns.live_action, params)}
+  end
+
+  defp apply_action(socket, :edit, %{"id" => id}) do
+    socket
+    |> assign(:page_title, "Edit Booking")
+    |> assign(:booking, Bookings.get_booking!(id))
+  end
+
+  defp apply_action(socket, :new, _params) do
+    socket
+    |> assign(:page_title, "New Booking")
+    |> assign(:booking, %Booking{})
+  end
+
+  defp apply_action(socket, :index, _params) do
+    socket
+    |> assign(:page_title, "Bookings")
+    |> assign(:booking, nil)
+  end
+
+  @impl true
+  def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, _booking}}, socket) do
+    # Re-fetch bookings to show updated data
+    {:noreply, push_patch(socket, to: ~p"/admin/bookings")}
+  end
+
+  @impl true
+  def handle_info({:guest_created, guest}, socket) do
+    #
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Now let me check the Bookings context to see where the default page size is set: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `list_bookings_with_flop|page_size|per_page` (`**/lib/cozy_checkout/bookings.ex`), 2 results
 
 **Input:**
 
@@ -71,8 +145,12 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"2 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=34\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76873,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  def list_bookings_with_flop(params \\\\ %{}) do","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":6,"line":33},{"character":29,"line":33}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":76873,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex\" line=34\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76874,"props":{},"refe
-… (output truncated)
+2 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=34>
+  def list_bookings_with_flop(params \\ %{}) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex" line=34>
+  def list_bookings_with_flop(params \\ %{}) do
+</match>
 ```
 </details></tool-use>
 
@@ -80,6 +158,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `bookings.ex`, lines 1 to 101
 
 **Input:**
 
@@ -90,15 +170,88 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"File: `","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"`. Lines ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"1","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" to ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"101","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" (","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"924","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":" lines total): ","type":2},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2},{"children":[{"children":[{"lineBreakBefore":true,"priority":103,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":103},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":102,"references":[],"text":"defmodule CozyCheckout.Bookings do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":102},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":101,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":101},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":100,"references":[],"text":"  The Bookings context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":100},"references":[],"type":1},{"child
+File: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings.ex`. Lines 1 to 101 (924 lines total): 
+```elixir
+defmodule CozyCheckout.Bookings do
+  @moduledoc """
+  The Bookings context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Bookings.BookingGuest
+  alias CozyCheckout.Bookings.BookingRoom
+  alias CozyCheckout.Bookings.BookingInvoice
+  alias CozyCheckout.Bookings.BookingInvoiceItem
+  alias CozyCheckout.Sales.InvoiceCounter
+  alias CozyCheckout.Rooms
+
+  @cottage_capacity 45
+
+  @doc """
+  Returns the list of bookings.
+  """
+  def list_bookings do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> preload(:guest)
+    |> order_by([b], asc: b.check_in_date)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns paginated, filtered, and sorted bookings with Flop.
+  Supports custom filters for invoice state and guest name/email.
+  """
+  def list_bookings_with_flop(params \\ %{}) do
+    base_query =
+      Booking
+      |> where([b], is_nil(b.deleted_at))
+      |> join(:left, [b], i in assoc(b, :invoice), as: :invoice)
+      |> join(:left, [b], g in assoc(b, :guest), as: :guest)
+      |> preload([b, invoice: i, guest: g], guest: g)
+
+    # Apply custom filters
+    query = apply_custom_filters(base_query, params)
+
+    Flop.validate_and_run(query, params, for: Booking)
+  end
+
+  # Apply custom filters that aren't supported by Flop directly
+  defp apply_custom_filters(query, params) do
+    query
+    |> apply_invoice_state_filter(params)
+    |> apply_guest_search_filter(params)
+  end
+
+  # Filter by invoice state
+  defp apply_invoice_state_filter(query, %{"invoice_state" => state}) when state != "" do
+    case state do
+      "no_invoice" ->
+        where(query, [b, invoice: i], is_nil(i.id))
+
+      state when state in ["draft", "personal", "generated", "sent", "advance_paid", "paid"] ->
+        where(query, [b, invoice: i], i.state == ^state)
+
+      _ ->
+        query
+    end
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Let me check the Flop schema configuration for the Booking model: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `@derive|Flop.Schema|default_limit|max_limit` (`**/lib/cozy_checkout/bookings/booking.ex`), 8 results
 
 **Input:**
 
@@ -109,15 +262,43 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"8 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex\" line=5\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76916,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"  @derive {","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":2,"line":4},{"character":9,"line":4}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":76916,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex\" line=6\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":76917,"props":{},"referen
-… (output truncated)
+8 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=5>
+  @derive {
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=6>
+    Flop.Schema,
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=13>
+    default_limit: 20,
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=14>
+    max_limit: 100
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=5>
+  @derive {
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=6>
+    Flop.Schema,
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=13>
+    default_limit: 20,
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex" line=14>
+    max_limit: 100
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! Now let me read the Booking schema file to update the default limit: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `booking.ex`
 
 **Input:**
 
@@ -126,17 +307,103 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":72,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/bookings/booking.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":72},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":71,"references":[],"text":"defmodule CozyCheckout.Bookings.Booking do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":71},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":70,"references":[],"text":"  use Ecto.Schema\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":70},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":69,"references":[],"text":"  import Ecto.Changeset\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":69},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":68,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":68},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":67,"references":[],"text":"  @derive {\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":67},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":66,"references":[],"text":"    Flop.Schema,\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":66},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":65,"references":[],"text":"    filterable: [:status, :check_in_date, :check_out_date, :short_note],\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":65},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":64,"references":[],"text":"  
+```elixir
+defmodule CozyCheckout.Bookings.Booking do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  @derive {
+    Flop.Schema,
+    filterable: [:status, :check_in_date, :check_out_date, :short_note],
+    sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
+    default_order: %{
+      order_by: [:check_in_date],
+      order_directions: [:asc]
+    },
+    default_limit: 20,
+    max_limit: 100
+  }
+
+  @primary_key {:id, :binary_id, autogenerate: true}
+  @foreign_key_type :binary_id
+  schema "bookings" do
+    field :room_number, :string
+    field :check_in_date, :date
+    field :check_out_date, :date
+    field :status, :string, default: "upcoming"
+    field :notes, :string
+    field :short_note, :string
+    field :deleted_at, :utc_datetime
+
+    belongs_to :guest, CozyCheckout.Guests.Guest
+    has_many :orders, CozyCheckout.Sales.Order
+    has_many :booking_guests, CozyCheckout.Bookings.BookingGuest
+    has_many :additional_guests, through: [:booking_guests, :guest]
+    has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
+    has_many :rooms, through: [:booking_rooms, :room]
+    has_one :invoice, CozyCheckout.Bookings.BookingInvoice
+
+    timestamps(type: :utc_datetime)
+  end
+
+  @doc false
+  def changeset(booking, attrs) do
+    booking
+    |> cast(attrs, [
+      :guest_id,
+      :room_number,
+      :check_in_date,
+      :check_out_date,
+      :status,
+      :notes,
+      :short_note
+    ])
+    |> validate_required([:guest_id, :check_in_date])
+    |> validate_length(:short_note, max: 30)
+    |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])
+    |> validate_date_range()
+    |> foreign_key_constraint(:guest_id)
+    |> unique_constraint([:guest_id, :check_in_date])
+  end
+
+  defp validate_date_range(changeset) do
+    check_in = get_field(changeset, :check_in_date)
+    check_out = get_field(changeset, :check_out_date)
+
+    if check_in && check_out && Date.compare(check_in, check_out) == :gt do
+      add_error(changeset, :check_out
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you modify the bookings index to show 100 records by default before pagination. Let me first check the current bookings index implementation. Now let me check the Bookings context to see where the default page size is set: Let me check the Flop schema configuration for the Booking model: Perfect! Now let me read the Booking schema file to update the default limit: Now I'll update the `default_limit` from 20 to 100 in the Booking schema: 
-```
+Now I'll update the `default_limit` from 20 to 100 in the Booking schema: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **booking.ex**</summary>
+
+@@ lines 5-15 @@
 
 ```
+  @derive {
+    Flop.Schema,
+    filterable: [:status, :check_in_date, :check_out_date, :short_note],
+    sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
+    default_order: %{
+      order_by: [:check_in_date],
+      order_directions: [:asc]
+    },
+    default_limit: 100,
+    max_limit: 100
+  }
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 Perfect! I've updated the bookings index to show 100 records by default. The change was made in the `Booking` schema's Flop configuration, where I updated the `default_limit` from 20 to 100.
 
 This means that:
