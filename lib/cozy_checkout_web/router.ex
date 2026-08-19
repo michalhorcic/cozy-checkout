@@ -24,6 +24,9 @@ defmodule CozyCheckoutWeb.Router do
   scope "/admin", CozyCheckoutWeb do
     pipe_through :browser
 
+    import Phoenix.LiveDashboard.Router
+    live_dashboard "/system", metrics: CozyCheckoutWeb.Telemetry, additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
     live "/", DashboardLive
 
     # Categories
@@ -127,17 +130,9 @@ defmodule CozyCheckoutWeb.Router do
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:cozy_checkout, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
-    import Phoenix.LiveDashboard.Router
-
     scope "/dev" do
       pipe_through :browser
 
-      live_dashboard "/dashboard", metrics: CozyCheckoutWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end

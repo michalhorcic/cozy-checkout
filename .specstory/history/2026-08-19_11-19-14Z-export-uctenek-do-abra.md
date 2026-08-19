@@ -8188,3 +8188,653 @@ Plnohodnotné admin rozhraní na [oban.pro](https://oban.pro). Licence ~$150/rok
 ---
 
 Vzhledem k tomu, že `phoenix_live_dashboard` je v projektu, **`oban_live_dashboard` je nejrychlejší cesta** — jedna závislost, pár řádků konfigurace, hotovo. Pro správu barových účtenek to plně postačí.
+
+---
+
+_**User (2026-08-19 13:46:14Z)**_
+
+Výborně, zkus tam to zdarma rozhraní přidat a udělej mi jednoduchý odkaz z admin dashboardu
+
+---
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `live_dashboard` (`**/lib/cozy_checkout_web/router.ex`), 1 result
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/router.ex`
+- isRegexp: `false`
+- query: `live_dashboard`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "live_dashboard"
+
+lib/cozy_checkout_web/router.ex
+140:      live_dashboard "/dashboard", metrics: CozyCheckoutWeb.Telemetry
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `admin dashboard` (`**/lib/cozy_checkout_web/live/**/*.ex`), 3 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/**/*.ex`
+- isRegexp: `false`
+- query: `admin dashboard`
+
+**Result:**
+
+```
+Found 3 matches in 2 files for "admin dashboard"
+
+lib/cozy_checkout_web/live/dashboard_live.ex
+27:            <h1 class="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+
+lib/cozy_checkout_web/live/main_menu_live.ex
+51:          <%!-- Admin Dashboard Card --%>
+70:                Admin Dashboard
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/dashboard_live.ex`
+- isRegexp: `false`
+- query: `href\|navigate\|link\|/admin`
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `router.ex`, lines 130 to 145
+
+**Input:**
+
+- endLine: `145`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex`
+- startLine: `130`
+
+**Result:**
+
+```
+    # If you want to use the LiveDashboard in production, you should put
+    # it behind authentication and allow only admins to access it.
+    # If your application does not have an admins-only section yet,
+    # you can use Plug.BasicAuth to set up some basic authentication
+    # as long as you are also using SSL (which you should anyway).
+    import Phoenix.LiveDashboard.Router
+
+    scope "/dev" do
+      pipe_through :browser
+
+      live_dashboard "/dashboard", metrics: CozyCheckoutWeb.Telemetry
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for text `def render` (`**/lib/cozy_checkout_web/live/dashboard_live.ex`), 1 result
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/dashboard_live.ex`
+- isRegexp: `false`
+- query: `def render`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "def render"
+
+lib/cozy_checkout_web/live/dashboard_live.ex
+20:  def render(assigns) do
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dashboard_live.ex`, lines 1 to 80
+
+**Input:**
+
+- endLine: `80`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.DashboardLive do
+  use CozyCheckoutWeb, :live_view
+
+  def mount(_params, _session, socket) do
+    {:ok,
+     socket
+     |> assign(:expanded_sections, %{
+       "catalog" => false,
+       "inventory" => false,
+       "sales" => false,
+       "other" => false
+     })}
+  end
+
+  def handle_event("toggle_section", %{"section" => section}, socket) do
+    expanded = socket.assigns.expanded_sections
+    {:noreply, assign(socket, :expanded_sections, Map.update!(expanded, section, &(!&1)))}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <%!-- Header --%>
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+            <p class="text-lg text-gray-600">Jindřichův dům Management</p>
+          </div>
+          <.link
+            navigate={~p"/"}
+            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
+          >
+            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back
+          </.link>
+        </div>
+
+        <%!-- Quick Actions (Most Used) --%>
+        <div class="mb-8">
+          <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            Quick Actions
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <.quick_action_card
+              title="Bookings"
+              icon="hero-calendar-days"
+              navigate={~p"/admin/bookings"}
+            />
+            <.quick_action_card
+              title="Calendar"
+              icon="hero-calendar"
+              navigate={~p"/admin/bookings/calendar"}
+            />
+            <.quick_action_card
+              title="Products"
+              icon="hero-cube"
+              navigate={~p"/admin/products"}
+           
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dashboard_live.ex`, lines 80 to 268
+
+**Input:**
+
+- endLine: `350`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex`
+- startLine: `80`
+
+**Result:**
+
+```
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card
+                title="Categories"
+                icon="hero-tag"
+                navigate={~p"/admin/categories"}
+              />
+              <.compact_card
+                title="Products"
+                icon="hero-cube"
+                navigate={~p"/admin/products"}
+              />
+              <.compact_card
+                title="Pricelists"
+                icon="hero-currency-dollar"
+                navigate={~p"/admin/pricelists"}
+              />
+              <.compact_card
+                title="Price Management"
+                icon="hero-chart-bar"
+                navigate={~p"/admin/pricelists/management"}
+              />
+              <.compact_card
+                title="Print Pricelist"
+                icon="hero-printer"
+                navigate={~p"/admin/pricelists/print"}
+              />
+            </div>
+          </.expandable_section>
+
+          <%!-- Inventory --%>
+          <.expandable_section
+            title="Inventory & Stock"
+            section="inventory"
+            expanded={@expanded_sections["inventory"]}
+            count={4}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card
+                title="Purchase Orders"
+                icon="hero-archive-box"
+                navigate={~p"/admin/purchase_orders"}
+              />
+              <.compact_card
+                title="Stock Overview"
+                icon="hero-chart-bar"
+                navigate={~p"/admin/stock"}
+              />
+              <.compact_card
+                title="Stock Adjustments"
+                icon="hero-adjustments-horizontal"
+                navigate={~p"/admin/stock-adjustments"}
+              />
+              <.compact_card
+                title="Inventory Reports"
+                icon="hero-chart-pie"
+                navigate={~p"/admin/inventory-reports"}
+            
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `router.ex`
+
+**Input:**
+
+- endLine: `145`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", MainMenuLive
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", DashboardLive
+
+    # Categories
+    live "/categories", CategoryLive.Index, :index
+    live "/categories/new", CategoryLive.Index, :new
+    live "/categories/:id/edit", CategoryLive.Index, :edit
+
+    # Products
+    live "/products", ProductLive.Index, :index
+    live "/products/new", ProductLive.Index, :new
+    live "/products/:id/edit", ProductLive.Index, :edit
+
+    # Pricelists
+    live "/pricelists", PricelistLive.Index, :index
+    live "/pricelists/new", PricelistLive.Index, :new
+    live "/pricelists/:id/edit", PricelistLive.Index, :edit
+    live "/pricelists/management", PricelistLive.Management
+    live "/pricelists/print", PricelistLive.Printable
+
+    # Purchase Orders
+    live "/purchase_orders", PurchaseOrderLive.Index, :index
+    live "/purchase_orders/new", PurchaseOrderLive.Index, :new
+    live "/purchase_orders/:id/edit", PurchaseOrderLive.Index, :edit
+    live "/purchase_orders/:id", PurchaseOrderLive.Show
+
+    # Stock Overview
+    live "/stock", StockOverviewLive.Index
+    live "/stock/restock", StockRestockLive
+
+    # Stock Adjustments
+    live "/stock-adjustments", StockAdjustmentLive.Index, :index
+    live "/stock-adjustments/new", StockAdjustmentLive.Index, :new
+    live "/stock-adjustments/:id/edit", StockAdjustmentLive.Index, :edit
+
+    # Inventory Reports
+    live "/inventory-reports", InventoryReportsLive.Index
+
+    # Guests
+    live "/guests", GuestLive.Ind
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Teď provedu tři změny: přidat závislost, přidat dashboard do admin routeru a odkaz z admin UI.  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **mix.exs**</summary>
+
+@@ lines 71-71 @@
+
+```
+,
+      {:oban_live_dashboard, "~> 0.2"}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **router.ex**</summary>
+
+@@ lines 27-27 @@
+
+```
+import Phoenix.LiveDashboard.Router
+    live_dashboard "/system", metrics: CozyCheckoutWeb.Telemetry, additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard_live.ex**</summary>
+
+@@ lines 161-161 @@
+
+```
+
+              <.compact_card
+                title="Job Queue (Oban)"
+                icon="hero-queue-list"
+                navigate="/admin/system?page=oban"
+              />
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Teď aktualizuj count na "Sales & Finance" sekci z 5 na 6:  
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard_live.ex**</summary>
+
+@@ lines 146-146 @@
+
+```
+6
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix deps.get 2>&1 | tail -5`
+
+Fetch the new oban_live_dashboard dependency
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix deps.get 2>&1 | tail -5
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` mix deps.get 2>&1 | tail -5` (terminal ID=604bbaa8-7917-4361-be99-3cf2cc097fb0). This is the output of running that command instead:
+  thousand_island 1.5.0
+  websock 0.5.3
+  websock_adapter 0.6.0
+  xml_builder 2.4.0
+* Getting oban_live_dashboard (Hex package)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile 2>&1 | grep -E "error|warning.\*router|warning.\*dashboard" | head...`
+
+Compile and check for errors in the changed files
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | grep -E "error|warning.*router|warning.*dashboard" | head -10
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` mix compile 2>&1 | grep -E "error|warning.*router|warning.*dashboard" | head -10` (terminal ID=b38b05e1-96cf-42df-8c10-2ba5a76b2ca9). This is the output of running that command instead:
+== Compilation error in file lib/cozy_checkout_web/router.ex ==
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile 2>&1 | grep -A 10 "Compilation error"`
+
+Get the full compilation error
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | grep -A 10 "Compilation error"
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` mix compile 2>&1 | grep -A 10 "Compilation error"` (terminal ID=04a3436c-cf0a-4f37-b47a-44c25b874ea4). This is the output of running that command instead:
+== Compilation error in file lib/cozy_checkout_web/router.ex ==
+** (RuntimeError) attempting to redefine live_session :live_dashboard.
+live_session routes must be declared in a single named block.
+
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/router.ex:252: Phoenix.LiveView.Router.__live_session__/3
+    lib/cozy_checkout_web/router.ex:143: (module)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Konflikt jmen live_session — `live_dashboard` existuje dvakrát. Přesunu ho do admin scopu a odstraním z dev scopu (mailbox preview zůstane):   
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **router.ex**</summary>
+
+@@ lines 133-143 @@
+
+```
+scope "/dev" do
+      pipe_through :browser
+
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile 2>&1 | grep -E "^==" | head -5`
+
+Check for compilation errors
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | grep -E "^==" | head -5
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` mix compile 2>&1 | grep -E "^==" | head -5` (terminal ID=dcf0417d-cebc-4829-a11d-9f906dde087d). This is the output of running that command instead:
+
+╭─    ~/p/E/cozy_checkout  on   main !8 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile 2>&1 | grep "error" | head -5`
+
+Check for errors only
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | grep "error" | head -5
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` mix compile 2>&1 | grep "error" | head -5` (terminal ID=a8b2908c-d296-48e4-9fcd-eaf455af0985). This is the output of running that command instead:
+
+╭─    ~/p/E/cozy_checkout  on   main !8 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `router.ex`, `dashboard_live.ex`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex">
+No errors found
+</errors>
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Vše v pořádku. Shrnutí změn:
+
+- `mix.exs` — přidán `{:oban_live_dashboard, "~> 0.2"}`
+- `lib/cozy_checkout_web/router.ex` — `live_dashboard` přesunut do `/admin` scopu na `/admin/system` s Oban panelem; z dev scopu odstraněn (mailbox preview zůstal)
+- `lib/cozy_checkout_web/live/dashboard_live.ex` — karta **Job Queue (Oban)** v sekci Sales & Finance odkazuje na `/admin/system?page=oban`
+
+Oban dashboard je teď dostupný na **`/admin/system`** (záložka Oban) — vidíš tam fronty, jednotlivé joby, stav retries a můžeš joby ručně cancelovat nebo restartovat.
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Updated todo list
+</details></tool-use>

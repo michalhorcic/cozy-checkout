@@ -143,7 +143,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Sales & Finance"
             section="sales"
             expanded={@expanded_sections["sales"]}
-            count={5}
+            count={6}
           >
             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
               <.compact_card title="Orders" icon="hero-shopping-cart" navigate={~p"/admin/orders"} />
@@ -158,6 +158,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
                 title="POHODA Export"
                 icon="hero-arrow-down-tray"
                 navigate={~p"/admin/pohoda-export"}
+              />
+              <.compact_card
+                title="Job Queue (Oban)"
+                icon="hero-queue-list"
+                navigate="/admin/system?page=oban"
               />
             </div>
           </.expandable_section>
