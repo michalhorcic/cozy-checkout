@@ -45,6 +45,22 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
   end
 
   @impl true
+  def handle_event("retry_abra_sync", %{"id" => id}, socket) do
+    order = Sales.get_order!(id)
+
+    case Sales.retry_abra_sync(order) do
+      {:ok, _job} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Sync to Abra queued.")
+         |> push_patch(to: ~p"/admin/orders")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to queue Abra sync.")}
+    end
+  end
+
+  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     order = Sales.get_order!(id)
 
@@ -331,22 +347,33 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
                     {Calendar.strftime(order.inserted_at, "%Y-%m-%d %H:%M")}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <%= cond do %>
-                      <% order.abra_sync_status == "synced" -> %>
-                        <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                          <.icon name="hero-check-circle" class="w-3 h-3" /> Synced
-                        </span>
-                      <% order.abra_sync_status == "failed" -> %>
-                        <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                          <.icon name="hero-x-circle" class="w-3 h-3" /> Failed
-                        </span>
-                      <% order.status == "paid" -> %>
-                        <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
-                          <.icon name="hero-clock" class="w-3 h-3" /> Pending
-                        </span>
-                      <% true -> %>
-                        <span class="text-primary-300">—</span>
-                    <% end %>
+                    <div class="flex flex-col gap-1">
+                      <%= cond do %>
+                        <% order.abra_sync_status == "synced" -> %>
+                          <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                            <.icon name="hero-check-circle" class="w-3 h-3" /> Synced
+                          </span>
+                        <% order.abra_sync_status == "failed" -> %>
+                          <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                            <.icon name="hero-x-circle" class="w-3 h-3" /> Failed
+                          </span>
+                        <% order.status == "paid" -> %>
+                          <span class="px-2 inline-flex items-center gap-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800">
+                            <.icon name="hero-clock" class="w-3 h-3" /> Pending
+                          </span>
+                        <% true -> %>
+                          <span class="text-primary-300">—</span>
+                      <% end %>
+                      <%= if order.status == "paid" and order.abra_sync_status != "synced" do %>
+                        <button
+                          phx-click="retry_abra_sync"
+                          phx-value-id={order.id}
+                          class="px-2 py-0.5 inline-flex items-center gap-1 text-xs font-medium rounded bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 transition-colors"
+                        >
+                          <.icon name="hero-arrow-path" class="w-3 h-3" /> Sync
+                        </button>
+                      <% end %>
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <.link

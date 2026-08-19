@@ -37,7 +37,7 @@ export PHX_HOST=cozy.jd.local
 export ABRA_BASE_URL="${ABRA_BASE_URL:-https://moruska.flexibee.eu}"
 export ABRA_COMPANY_ID="${ABRA_COMPANY_ID:-moruska_s_r_o_}"
 export ABRA_USERNAME="${ABRA_USERNAME:-pokladna-bar}"
-export ABRA_PASSWORD="${ABRA_PASSWORD:-gozso7-juxker-wimJaf}"
+export ABRA_PASSWORD="${ABRA_PASSWORD:-[REDACTED:generic-api-key]}"
 export ABRA_CASH_REGISTER_CODE="${ABRA_CASH_REGISTER_CODE:-POKLADNA KČ}"
 export ABRA_DOCUMENT_SERIES_CODE="${ABRA_DOCUMENT_SERIES_CODE:-FAKTURA-BAR}"
 export ABRA_BANK_ACCOUNT_CODE="${ABRA_BANK_ACCOUNT_CODE:-BANKOVNÍ ÚČET}"
@@ -193,7 +193,7 @@ config :cozy_checkout, :abra,
 | Variable | `config.exs` default | `env.sh.eex` default |
 |---|---|---|
 | `ABRA_COMPANY_ID` | `moruska_s_r_o__2026_08_19_1130_testovani_bar` (test!) | `moruska_s_r_o_` |
-| `ABRA_PASSWORD` | `xetkek-xuhxo4-pedhuB` | `gozso7-juxker-wimJaf` |
+| `ABRA_PASSWORD` | `xetkek-xuhxo4-pedhuB` | `[REDACTED:generic-api-key]` |
 
 So right now your production server is **using the test company ID** baked in at compile time, regardless of what `env.sh.eex` says.
 
@@ -206,3 +206,79 @@ Then update `rel/env.sh.eex` defaults to the correct production values, and remo
 _**User (2026-08-19 15:43:19Z)**_
 
 ok move it to runtime then, do not change env.sh.eex file as it is set on server correctly
+
+---
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `runtime.exs`, lines 130 to 135
+
+**Input:**
+
+- endLine: `135`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs`
+- startLine: `130`
+
+**Result:**
+
+```
+  #
+  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
+  #
+  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **config.exs**</summary>
+
+@@ lines 80-90 @@ (deleted)
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **runtime.exs**</summary>
+
+@@ lines 134-134 @@
+
+```
+
+
+# Abra Flexi REST API integration
+config :cozy_checkout, :abra,
+  base_url: System.get_env("ABRA_BASE_URL", "https://moruska.flexibee.eu"),
+  company_id: System.get_env("ABRA_COMPANY_ID", "moruska_s_r_o_"),
+  username: System.get_env("ABRA_USERNAME", "pokladna-bar"),
+  password: System.get_env("ABRA_PASSWORD", "[REDACTED:generic-api-key]"),
+  cash_register_code: System.get_env("ABRA_CASH_REGISTER_CODE", "POKLADNA KČ"),
+  document_series_code: System.get_env("ABRA_DOCUMENT_SERIES_CODE", "FAKTURA-BAR"),
+  bank_account_code: System.get_env("ABRA_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Done. The Abra config is now in `config/runtime.exs` (outside the prod-only block, so it works in all environments) with defaults matching `rel/env.sh.eex`. After deploying, the env vars from `env.sh.eex` will be picked up correctly at startup.
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
