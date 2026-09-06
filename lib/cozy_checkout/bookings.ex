@@ -28,6 +28,80 @@ defmodule CozyCheckout.Bookings do
   end
 
   @doc """
+  Returns booking data needed by the private iCalendar feed.
+  """
+  def list_bookings_for_calendar do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> join(:inner, [b], g in assoc(b, :guest))
+    |> join(:left, [b], i in assoc(b, :invoice))
+    |> join(:left, [b, _g, i], item in assoc(i, :items), on: item.item_type == "person")
+    |> group_by([b, g], [b.id, g.name])
+    |> order_by([b], asc: b.check_in_date)
+    |> select([b, g, _i, item], %{
+      id: b.id,
+      guest_name: g.name,
+      check_in_date: b.check_in_date,
+      check_out_date: b.check_out_date,
+      status: b.status,
+      person_count: coalesce(sum(item.quantity), 0),
+      updated_at: b.updated_at
+    })
+    |> Repo.all()
+  end
+
+  @doc """
+  Serializes booking data as an RFC 5545 compatible iCalendar document.
+  """
+  def to_ical(bookings) do
+    timestamp = Calendar.strftime(DateTime.utc_now(), "%Y%m%dT%H%M%SZ")
+
+    events = Enum.map_join(bookings, "", &booking_to_ical(&1, timestamp))
+
+    "BEGIN:VCALENDAR\r\n" <>
+      "VERSION:2.0\r\n" <>
+      "PRODID:-//Moruska s.r.o.//Cozy Checkout//CS\r\n" <>
+      "CALSCALE:GREGORIAN\r\n" <>
+      "METHOD:PUBLISH\r\n" <>
+      "X-WR-CALNAME:Jindrichuv dum - rezervace\r\n" <>
+      events <> "END:VCALENDAR\r\n"
+  end
+
+  defp booking_to_ical(booking, timestamp) do
+    check_out_date = booking.check_out_date || Date.add(booking.check_in_date, 1)
+    status = calendar_status(booking.status)
+
+    "BEGIN:VEVENT\r\n" <>
+      "UID:booking-#{booking.id}@cozy-checkout\r\n" <>
+      "DTSTAMP:#{timestamp}\r\n" <>
+      "LAST-MODIFIED:#{Calendar.strftime(booking.updated_at, "%Y%m%dT%H%M%SZ")}\r\n" <>
+      "DTSTART;VALUE=DATE:#{Calendar.strftime(booking.check_in_date, "%Y%m%d")}\r\n" <>
+      "DTEND;VALUE=DATE:#{Calendar.strftime(check_out_date, "%Y%m%d")}\r\n" <>
+      "SUMMARY:#{escape_ical("Jindrichuv dum: #{booking.guest_name} (#{status_label(booking.status)})")}\r\n" <>
+      "DESCRIPTION:#{escape_ical("Stav: #{status_label(booking.status)}\\nPocet hostu: #{booking.person_count}")}\r\n" <>
+      "STATUS:#{status}\r\n" <>
+      "END:VEVENT\r\n"
+  end
+
+  defp calendar_status("cancelled"), do: "CANCELLED"
+  defp calendar_status(_status), do: "CONFIRMED"
+
+  defp status_label("upcoming"), do: "Nadchazejici"
+  defp status_label("active"), do: "Aktivni"
+  defp status_label("completed"), do: "Dokoncena"
+  defp status_label("cancelled"), do: "Zrusena"
+  defp status_label(_status), do: "Neznamy"
+
+  defp escape_ical(value) do
+    value
+    |> to_string()
+    |> String.replace("\\", "\\\\")
+    |> String.replace(";", "\\;")
+    |> String.replace(",", "\\,")
+    |> String.replace("\n", "\\n")
+  end
+
+  @doc """
   Returns paginated, filtered, and sorted bookings with Flop.
   Supports custom filters for invoice state and guest name/email.
   """

@@ -14,6 +14,16 @@ defmodule CozyCheckoutWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :calendar do
+    plug :accepts, ["html", "ics"]
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :calendar
+
+    get "/calendar/bookings.ics", BookingCalendarController, :index
+  end
+
   scope "/", CozyCheckoutWeb do
     pipe_through :browser
 
@@ -25,7 +35,10 @@ defmodule CozyCheckoutWeb.Router do
     pipe_through :browser
 
     import Phoenix.LiveDashboard.Router
-    live_dashboard "/system", metrics: CozyCheckoutWeb.Telemetry, additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    live_dashboard "/system",
+      metrics: CozyCheckoutWeb.Telemetry,
+      additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
 
     live "/", DashboardLive
 

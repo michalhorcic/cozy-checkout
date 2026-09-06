@@ -11,6 +11,14 @@
       <h1 class="text-4xl font-bold text-primary-500">Booking Calendar</h1>
     </div>
     <div class="flex gap-2">
+      <%= if @calendar_token do %>
+        <a
+          href={~p"/calendar/bookings.ics?token=#{@calendar_token}"}
+          class="inline-flex items-center justify-center gap-2 rounded-lg bg-secondary-100 px-4 py-2 text-sm font-semibold text-primary-500 transition-colors hover:bg-secondary-200"
+        >
+          <.icon name="hero-calendar-days" class="h-5 w-5" /> Calendar feed
+        </a>
+      <% end %>
       <.link navigate={~p"/admin/bookings/timeline"}>
         <.button>
           <.icon name="hero-bars-3" class="w-5 h-5 mr-2" /> Timeline View

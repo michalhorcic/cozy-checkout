@@ -142,3 +142,5 @@ config :cozy_checkout, :abra,
   cash_register_code: System.get_env("ABRA_CASH_REGISTER_CODE", "POKLADNA KČ"),
   document_series_code: System.get_env("ABRA_DOCUMENT_SERIES_CODE", "FAKTURA-BAR"),
   bank_account_code: System.get_env("ABRA_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
+
+config :cozy_checkout, :booking_ical_token, System.get_env("BOOKING_ICAL_TOKEN")

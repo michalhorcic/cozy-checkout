@@ -12,6 +12,7 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
   @impl true
   def mount(_params, _session, socket) do
     today = Date.utc_today()
+    calendar_token = Application.get_env(:cozy_checkout, :booking_ical_token)
 
     socket =
       socket
@@ -20,6 +21,7 @@ defmodule CozyCheckoutWeb.BookingLive.Calendar do
       |> assign(:modal_date, nil)
       |> assign(:modal_bookings, [])
       |> assign(:modal_categorized, %{arriving: [], staying: [], leaving: []})
+      |> assign(:calendar_token, calendar_token)
       |> assign_helpers()
       |> load_calendar_data()
 

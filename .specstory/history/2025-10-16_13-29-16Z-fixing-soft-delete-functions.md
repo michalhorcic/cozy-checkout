@@ -14,18 +14,14 @@ Use `DateTime.truncate(utc_datetime, :second)` (available in Elixir v1.6+) to re
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-<think><details><summary>Thought Process</summary>
 I'll help you fix the soft delete functions to properly truncate microseconds. Let me first search for all soft delete implementations in the codebase. 
-
-Perfect! I found all the soft delete functions that need to be fixed. Let me now read each file to see the context and fix them: 
-
-Now I'll fix all the soft delete functions by replacing `DateTime.utc_now()` with `DateTime.utc_now() |> DateTime.truncate(:second)`:
-</details></think>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
+
+Searched text for `deleted_at|soft_delete|def delete`, 20 results
 
 **Input:**
 
@@ -35,7 +31,40 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"20 matches (more results are available)","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales/order_item.ex\" line=13\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":6975,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    field :deleted_at, :utc_datetime","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":11,"line":12},{"character":21,"line":12}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales/order_item.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales/order_item.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales/order_item.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":6975,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md\" line=8\u003e\n","type":2}],"ctor":2,
+20 matches (more results are available)<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales/order_item.ex" line=13>
+    field :deleted_at, :utc_datetime
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md" line=8>
+*   When designing databases, implement soft deletes using a `deleted_at` column of type `:utc_datetime` and create an index on this column.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/.github/copilot-instructions.md" line=11>
+*   When creating a database table, every table with soft deletes should also have an index on the `deleted_at` column.
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests/guest.ex" line=14>
+    field :deleted_at, :utc_datetime
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/edit.ex" line=274>
+                :for={item <- Enum.reject(@order.order_items, & &1.deleted_at)}
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex" line=16>
+    |> where([g], is_nil(g.deleted_at))
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex" line=28>
+    |> where([g], is_nil(g.deleted_at))
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex" line=41>
+    |> where([g], is_nil(g.deleted_at))
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex" line=66>
+  def delete_guest(%Guest{} = guest) do
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex" line=68>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales/payment.ex" line=12>
+    field :deleted_at, :utc_datetime
+</match>
+<match path="/Users/michalhor
 … (output truncated)
 ```
 </details></tool-use>
@@ -45,6 +74,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="search" data-tool-name="grep_search"><details>
 <summary>Tool use: **grep_search**</summary>
 
+Searched text for `DateTime\.utc_now\(\)`, 7 results
+
 **Input:**
 
 - isRegexp: `true`
@@ -53,15 +84,40 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ```
-{"node":{"children":[{"children":[{"lineBreakBefore":true,"priority":20,"references":[],"text":"7 matches","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":20},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex\" line=68\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":7052,"props":{},"references":[],"type":1},{"children":[{"children":[{"lineBreakBefore":true,"priority":1000,"references":[],"text":"    |\u003e Ecto.Changeset.change(deleted_at: DateTime.utc_now())","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":1000},"references":[],"type":1},{"lineBreakBefore":false,"priority":1,"text":"\n","type":2}],"ctor":2,"ctorName":"DLe","props":{"flexGrow":1,"priority":1},"references":[{"anchor":{"range":[{"character":41,"line":67},{"character":59,"line":67}],"uri":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","scheme":"file"}},"options":{"isFromTool":true}}],"type":1},{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003c/match\u003e","type":2}],"ctor":2,"ctorName":"","keepWithId":7052,"props":{},"references":[],"type":1},{"lineBreakBefore":false,"priority":9007199254740991,"text":"\n","type":2}],"ctor":2,"ctorName":"r","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"jre","flags":4,"props":{"passPriority":true},"references":[],"type":1},{"children":[{"children":[{"children":[{"lineBreakBefore":false,"priority":9007199254740991,"text":"\u003cmatch path=\"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex\" line=55\u003e\n","type":2}],"ctor":2,"ctorName":"","keepWithId":7053,"props":{},
-… (output truncated)
+7 matches<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex" line=68>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex" line=55>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex" line=112>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex" line=184>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=60>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=120>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
+<match path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex" line=201>
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+</match>
 ```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
+Perfect! I found all the soft delete functions that need to be fixed. Let me now read each file to see the context and fix them: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `guests.ex`
 
 **Input:**
 
@@ -70,8 +126,87 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":81,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/guests.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":81},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":80,"references":[],"text":"defmodule CozyCheckout.Guests do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":80},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":79,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":79},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":78,"references":[],"text":"  The Guests context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":78},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":77,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":77},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":76,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":76},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":75,"references":[],"text":"  import Ecto.Query, warn: false\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":75},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":74,"references":[],"text":"  alias CozyCheckout.Repo\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":74},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":73,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":73},"references
-… (output truncated)
+```elixir
+defmodule CozyCheckout.Guests do
+  @moduledoc """
+  The Guests context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Guests.Guest
+
+  @doc """
+  Returns the list of guests.
+  """
+  def list_guests do
+    Guest
+    |> where([g], is_nil(g.deleted_at))
+    |> order_by([g], desc: g.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Returns the list of active guests (currently checked in).
+  """
+  def list_active_guests do
+    today = Date.utc_today()
+
+    Guest
+    |> where([g], is_nil(g.deleted_at))
+    |> where([g], not is_nil(g.check_in_date))
+    |> where([g], g.check_in_date <= ^today)
+    |> where([g], is_nil(g.check_out_date) or g.check_out_date >= ^today)
+    |> order_by([g], g.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single guest.
+  """
+  def get_guest!(id) do
+    Guest
+    |> where([g], is_nil(g.deleted_at))
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a guest.
+  """
+  def create_guest(attrs \\ %{}) do
+    %Guest{}
+    |> Guest.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a guest.
+  """
+  def update_guest(%Guest{} = guest, attrs) do
+    guest
+    |> Guest.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a guest (soft delete).
+  """
+  def delete_guest(%Guest{} = guest) do
+    guest
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking guest changes.
+  """
+  def change_guest(%Guest{} = guest, attrs \\ %{}) do
+    Guest.changeset(guest, attrs)
+  end
+end
+
+```
 ````
 </details></tool-use>
 
@@ -79,6 +214,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
+
+Read `catalog.ex`
 
 **Input:**
 
@@ -87,7 +224,115 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":197,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/catalog.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":197},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":196,"references":[],"text":"defmodule CozyCheckout.Catalog do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":196},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":195,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":195},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":194,"references":[],"text":"  The Catalog context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":194},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":193,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":193},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":192,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":192},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":191,"references":[],"text":"  import Ecto.Query, warn: false\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":191},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":190,"references":[],"text":"  alias CozyCheckout.Repo\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":190},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":189,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"pri
+```elixir
+defmodule CozyCheckout.Catalog do
+  @moduledoc """
+  The Catalog context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Catalog.{Category, Product, Pricelist}
+
+  ## Categories
+
+  @doc """
+  Returns the list of categories.
+  """
+  def list_categories do
+    Category
+    |> where([c], is_nil(c.deleted_at))
+    |> order_by([c], c.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single category.
+  """
+  def get_category!(id) do
+    Category
+    |> where([c], is_nil(c.deleted_at))
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a category.
+  """
+  def create_category(attrs \\ %{}) do
+    %Category{}
+    |> Category.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a category.
+  """
+  def update_category(%Category{} = category, attrs) do
+    category
+    |> Category.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes a category (soft delete).
+  """
+  def delete_category(%Category{} = category) do
+    category
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking category changes.
+  """
+  def change_category(%Category{} = category, attrs \\ %{}) do
+    Category.changeset(category, attrs)
+  end
+
+  ## Products
+
+  @doc """
+  Returns the list of products.
+  """
+  def list_products do
+    Product
+    |> where([p], is_nil(p.deleted_at))
+    |> preload(:category)
+    |> order_by([p], p.name)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single product.
+  """
+  def get_product!(id) do
+    Product
+    |> where([p], is_nil(p.deleted_at))
+    |> preload(:category)
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates a product.
+  """
+  def create_product(attrs \\ %{}) do
+    %Product{}
+    |> Product.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates a product.
+  """
+  def update_product(%Product{} = product, attrs) do
+    product
+    |> Product.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+
 … (output truncated)
 ````
 </details></tool-use>
@@ -97,6 +342,8 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 <tool-use data-tool-type="read" data-tool-name="read_file"><details>
 <summary>Tool use: **read_file**</summary>
 
+Read `sales.ex`
+
 **Input:**
 
 - filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex`
@@ -104,41 +351,238 @@ _**Agent (copilot/claude-sonnet-4.5)**_
 **Result:**
 
 ````
-{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":239,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"```elixir\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":239},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":238,"references":[],"text":"defmodule CozyCheckout.Sales do\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":238},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":237,"references":[],"text":"  @moduledoc \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":237},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":236,"references":[],"text":"  The Sales context.\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":236},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":235,"references":[],"text":"  \"\"\"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":235},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":234,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":234},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":233,"references":[],"text":"  import Ecto.Query, warn: false\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":233},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":232,"references":[],"text":"  alias CozyCheckout.Repo\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":232},"references":[],"type":1},{"children":[{"lineBreakBefore":true,"priority":231,"references":[],"text":"\n","type":2}],"ctor":2,"ctorName":"cle","props":{"priority":231
+```elixir
+defmodule CozyCheckout.Sales do
+  @moduledoc """
+  The Sales context.
+  """
+
+  import Ecto.Query, warn: false
+  alias CozyCheckout.Repo
+
+  alias CozyCheckout.Sales.{Order, OrderItem, Payment}
+  alias CozyCheckout.Catalog
+
+  ## Orders
+
+  @doc """
+  Returns the list of orders.
+  """
+  def list_orders do
+    Order
+    |> where([o], is_nil(o.deleted_at))
+    |> preload([:guest, :order_items, :payments])
+    |> order_by([o], desc: o.inserted_at)
+    |> Repo.all()
+  end
+
+  @doc """
+  Gets a single order.
+  """
+  def get_order!(id) do
+    Order
+    |> where([o], is_nil(o.deleted_at))
+    |> preload([:guest, order_items: :product, payments: []])
+    |> Repo.get!(id)
+  end
+
+  @doc """
+  Creates an order.
+  """
+  def create_order(attrs \\ %{}) do
+    attrs = Map.put_new(attrs, "order_number", generate_order_number())
+
+    %Order{}
+    |> Order.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Updates an order.
+  """
+  def update_order(%Order{} = order, attrs) do
+    order
+    |> Order.changeset(attrs)
+    |> Repo.update()
+  end
+
+  @doc """
+  Deletes an order (soft delete).
+  """
+  def delete_order(%Order{} = order) do
+    order
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now())
+    |> Repo.update()
+  end
+
+  @doc """
+  Returns an `%Ecto.Changeset{}` for tracking order changes.
+  """
+  def change_order(%Order{} = order, attrs \\ %{}) do
+    Order.changeset(order, attrs)
+  end
+
+  @doc """
+  Generates a unique order number.
+  """
+  def generate_order_number do
+    date = Date.utc_today()
+    date_str = Calendar.strftime(date, "%Y%m%d")
+    random = :rand.uniform(9999) |> Integer.to_string() |> String.pad_leading(4, "0")
+    "ORD-#{date_str}-#{random}"
+  end
+
+  ## Order Items
+
+  @doc """
+  Creates an order item with price from current pricelist.
+  """
+  def create_order_item(attrs \\ %{}) do
+    product_id = Map.get(attrs, "product_id") || Map.get(attrs, :product_id)
+
+    attrs =
+      if product_id do
+        pricelist = Catalog.get_active_pricelist_fo
 … (output truncated)
 ````
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.5)**_
 
-I'll help you fix the soft delete functions to properly truncate microseconds. Let me first search for all soft delete implementations in the codebase. Perfect! I found all the soft delete functions that need to be fixed. Let me now read each file to see the context and fix them: Now I'll fix all the soft delete functions by replacing `DateTime.utc_now()` with `DateTime.utc_now() |> DateTime.truncate(:second)`: 
-```
+Now I'll fix all the soft delete functions by replacing `DateTime.utc_now()` with `DateTime.utc_now() |> DateTime.truncate(:second)`: 
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **guests.ex**</summary>
+
+@@ lines 63-70 @@
 
 ```
+  @doc """
+  Deletes a guest (soft delete).
+  """
+  def delete_guest(%Guest{} = guest) do
+    guest
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **catalog.ex**</summary>
+
+@@ lines 50-57 @@
 
 ```
+  @doc """
+  Deletes a category (soft delete).
+  """
+  def delete_category(%Category{} = category) do
+    category
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **catalog.ex**</summary>
+
+@@ lines 107-114 @@
 
 ```
+  @doc """
+  Deletes a product (soft delete).
+  """
+  def delete_product(%Product{} = product) do
+    product
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **catalog.ex**</summary>
+
+@@ lines 179-186 @@
 
 ```
+  @doc """
+  Deletes a pricelist (soft delete).
+  """
+  def delete_pricelist(%Pricelist{} = pricelist) do
+    pricelist
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **sales.ex**</summary>
+
+@@ lines 55-62 @@
 
 ```
+  @doc """
+  Deletes an order (soft delete).
+  """
+  def delete_order(%Order{} = order) do
+    order
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **sales.ex**</summary>
+
+@@ lines 115-122 @@
 
 ```
+  @doc """
+  Deletes an order item (soft delete).
+  """
+  def delete_order_item(%OrderItem{} = order_item) do
+    order_item
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **sales.ex**</summary>
+
+@@ lines 199-203 @@
 
 ```
-
+  defp do_delete_payment(payment) do
+    payment
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
 ```
+</details></tool-use>
 
-```
+_**Agent (copilot/claude-sonnet-4.5)**_
 
-```
-
-```
-
-```
-
-```
 Perfect! I've successfully fixed all soft delete functions in your codebase. Here's a summary of the changes:
 
 ## Fixed Files:

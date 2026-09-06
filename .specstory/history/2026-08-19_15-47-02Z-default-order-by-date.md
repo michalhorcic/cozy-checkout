@@ -848,34 +848,137 @@ Let me check the worker and sales module to understand what's already there.
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `retry_abra_sync` (`**/lib/cozy_checkout/sales.ex`), 1 result
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout/sales.ex`
+- isRegexp: `false`
+- query: `retry_abra_sync`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "retry_abra_sync"
+
+lib/cozy_checkout/sales.ex
+793:  def retry_abra_sync(%Order{} = order) do
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `abra_sync_worker.ex`
+
+**Input:**
+
+- endLine: `40`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/workers/abra_sync_worker.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckout.Workers.AbraSyncWorker do
+  @moduledoc """
+  Oban worker that syncs a paid order to ABRA Flexi.
+  Retries up to 5 times with exponential backoff. After final failure,
+  marks the order as failed so staff can retry manually from the admin UI.
+  """
+
+  use Oban.Worker, queue: :abra_sync, max_attempts: 5
+
+  alias CozyCheckout.{Abra, Sales}
+
+  @impl Oban.Worker
+  def perform(%Oban.Job{args: %{"order_id" => order_id}, attempt: attempt, max_attempts: max}) do
+    Sales.increment_abra_sync_attempts(order_id)
+
+    case Abra.sync_order(order_id) do
+      {:ok, _abra_id} ->
+        :ok
+
+      {:error, reason} when attempt >= max ->
+        Sales.mark_order_abra_failed(order_id, reason)
+        {:cancel, reason}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+end
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_readFile"><details>
-<summary>Tool use: **copilot_readFile**</summary>
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
 
 Read `sales.ex`, lines 793 to 815
+
+**Input:**
+
+- endLine: `815`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/sales.ex`
+- startLine: `793`
+
+**Result:**
+
+```
+  def retry_abra_sync(%Order{} = order) do
+    with {:ok, _} <-
+           order
+           |> Ecto.Changeset.change(abra_sync_status: nil, abra_sync_error: nil)
+           |> Repo.update() do
+      %{order_id: order.id}
+      |> AbraSyncWorker.new()
+      |> Oban.insert()
+    end
+  end
+
+  ## Statistics
+
+  @doc """
+  Gets product sales statistics for a date range and optional status filter.
+  Returns a list of maps with product details and sales metrics.
+  """
+  def get_product_statistics(
+        date_from,
+        date_to,
+        status_filter \\ ["paid", "open"],
+        service_filter \\ "all"
+      ) do
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_findTextInFiles"><details>
-<summary>Tool use: **copilot_findTextInFiles**</summary>
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
 
 Searched for text `PubSub` (`**/lib/cozy_checkout/application.ex`), 1 result
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout/application.ex`
+- isRegexp: `false`
+- query: `PubSub`
+
+**Result:**
+
+```
+Found 1 match in 1 file for "PubSub"
+
+lib/cozy_checkout/application.ex
+14:      {Phoenix.PubSub, name: CozyCheckout.PubSub},
+```
 </details></tool-use>
 
 _**Agent (copilot/claude-sonnet-4.6)**_
@@ -884,8 +987,81 @@ All clear. Three files to change:
 
 _**Agent (copilot/claude-sonnet-4.6)**_
 
-<tool-use data-tool-type="generic" data-tool-name="copilot_multiReplaceString"><details>
-<summary>Tool use: **copilot_multiReplaceString**</summary>
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **abra_sync_worker.ex**</summary>
 
-Multi-Replace String in Files
+@@ lines 18-21 @@
+
+```
+Phoenix.PubSub.broadcast(CozyCheckout.PubSub, "abra_sync", {:abra_sync_updated, order_id})
+        :ok
+
+      {:error, reason} when attempt >= max ->
+        Sales.mark_order_abra_failed(order_id, reason)
+        Phoenix.PubSub.broadcast(CozyCheckout.PubSub, "abra_sync", {:abra_sync_updated, order_id}
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **index.ex**</summary>
+
+@@ lines 53-60 @@
+
+```
+updated_orders =
+          Enum.map(socket.assigns.orders, fn o ->
+            if o.id == id, do: %{o | abra_sync_status: nil}, else: o
+          end)
+
+        {:noreply,
+         socket
+         |> assign(:orders, updated_orders)
+         |> put_flash(:info, "Sync to Abra queued.")}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Failed to queue Abra sync.")}
+    end
+  end
+
+  @impl true
+  def handle_info({:abra_sync_updated, order_id}, socket) do
+    updated_orders =
+      Enum.map(socket.assigns.orders, fn o ->
+        if o.id == order_id, do: Sales.get_order!(order_id), else: o
+      end)
+
+    {:noreply, assign(socket, :orders, updated_orders)}
+```
+
+@@ lines 10-10 @@
+
+```
+if connected?(socket), do: Phoenix.PubSub.subscribe(CozyCheckout.PubSub, "abra_sync")
+    
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+Done. Changes across 2 files:
+
+- `lib/cozy_checkout/workers/abra_sync_worker.ex` — broadcasts `{:abra_sync_updated, order_id}` on success and final failure
+- `lib/cozy_checkout_web/live/order_live/index.ex` — subscribes to `"abra_sync"` on connect, optimistically marks the row as pending on click (no page reload), and refreshes just that one row via `handle_info` when the job finishes
+
+_**Agent (copilot/claude-sonnet-4.6)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 4 todos
 </details></tool-use>
