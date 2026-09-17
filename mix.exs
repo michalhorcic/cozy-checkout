@@ -88,6 +88,7 @@ defmodule CozyCheckout.MixProject do
       "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
       "assets.build": ["compile", "tailwind cozy_checkout", "esbuild cozy_checkout"],
       "assets.deploy": [
+        "compile",
         "tailwind cozy_checkout --minify",
         "esbuild cozy_checkout --minify",
         "phx.digest"
