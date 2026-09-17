@@ -51,6 +51,9 @@ COPY config/config.exs config/prod.exs config/
 COPY rel rel
 RUN mix release
 
+# Debug: show what mix release actually produced
+RUN ls -la _build/prod/ && ls -la _build/prod/rel/ && ls _build/prod/rel/cozy_checkout/bin
+
 # start a new build stage so that the final image will only contain
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE} AS app
