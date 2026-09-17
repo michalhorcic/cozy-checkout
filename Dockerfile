@@ -67,7 +67,7 @@ RUN chown nobody /app
 ENV MIX_ENV="prod"
 
 # Only copy the final release from the build stage
-COPY --from=build --chown=nobody:root _build/prod/rel/cozy_checkout ./
+COPY --from=build --chown=nobody:root /app/_build/prod/rel/cozy_checkout ./
 
 USER nobody
 
