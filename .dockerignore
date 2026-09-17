@@ -1,0 +1,11 @@
+.dockerignore
+.git
+.github
+_build
+deps
+priv/static/assets
+priv/static/cache
+test
+*.md
+erl_crash.dump
+.DS_Store
