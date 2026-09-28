@@ -95,6 +95,13 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
     {:noreply, socket}
   end
 
+  def handle_event("download_csv", _params, socket) do
+    csv = build_product_statistics_csv(socket.assigns.categories_with_products)
+    filename = "sales_statistics_#{socket.assigns.date_from}_#{socket.assigns.date_to}.csv"
+
+    {:noreply, push_event(socket, "download_csv", %{content: csv, filename: filename})}
+  end
+
   defp load_statistics(socket) do
     date_from = socket.assigns.date_from
     date_to = socket.assigns.date_to
@@ -172,6 +179,50 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
     end
   end
 
+  defp build_product_statistics_csv(categories) do
+    header =
+      [
+        "Category",
+        "Product",
+        "Quantity sold",
+        "Total amount",
+        "Unit",
+        "Revenue",
+        "Order count"
+      ]
+      |> Enum.map_join(";", &csv_field/1)
+
+    rows =
+      for category <- categories, product <- category.products do
+        [
+          category.category_name,
+          product.product_name,
+          Integer.to_string(product.total_quantity),
+          format_csv_decimal(product.total_amount),
+          product.product_unit || "",
+          format_csv_decimal(product.total_revenue),
+          Integer.to_string(product.order_count)
+        ]
+        |> Enum.map_join(";", &csv_field/1)
+      end
+
+    <<0xEF, 0xBB, 0xBF>> <> Enum.join([header | rows], "\r\n")
+  end
+
+  defp csv_field(value) do
+    value = to_string(value)
+    value = if Regex.match?(~r/^\s*[=+\-@]/u, value), do: "'" <> value, else: value
+    "\"" <> String.replace(value, "\"", "\"\"") <> "\""
+  end
+
+  defp format_csv_decimal(nil), do: "0"
+
+  defp format_csv_decimal(decimal) do
+    decimal
+    |> Decimal.to_string(:normal)
+    |> String.replace(".", ",")
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -204,6 +255,13 @@ defmodule CozyCheckoutWeb.StatisticsLive.Index do
             >
               <.icon name="hero-arrow-left" class="w-4 h-4 inline mr-2" /> Back to Dashboard
             </.link>
+            <button
+              id="download-statistics-csv"
+              phx-click="download_csv"
+              class="px-4 py-2 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition-colors"
+            >
+              <.icon name="hero-arrow-down-tray" class="w-4 h-4 inline mr-2" /> Download CSV
+            </button>
           </div>
         </div>
 

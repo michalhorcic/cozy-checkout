@@ -226,6 +226,19 @@ topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
 window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
 window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
 
+window.addEventListener("phx:download_csv", (event) => {
+  const {content, filename} = event.detail
+  const blob = new Blob([content], {type: "text/csv;charset=utf-8"})
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+})
+
 // connect if there are any LiveViews on the page
 liveSocket.connect()
 

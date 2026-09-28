@@ -37,7 +37,7 @@ export PHX_HOST=cozy.jd.local
 export ABRA_BASE_URL="${ABRA_BASE_URL:-https://moruska.flexibee.eu}"
 export ABRA_COMPANY_ID="${ABRA_COMPANY_ID:-moruska_s_r_o_}"
 export ABRA_USERNAME="${ABRA_USERNAME:-pokladna-bar}"
-export ABRA_PASSWORD="${ABRA_PASSWORD:-[REDACTED:generic-api-key]}"
+export ABRA_PASSWORD="${ABRA_PASSWORD:-gozso7-juxker-wimJaf}"
 export ABRA_CASH_REGISTER_CODE="${ABRA_CASH_REGISTER_CODE:-POKLADNA KČ}"
 export ABRA_DOCUMENT_SERIES_CODE="${ABRA_DOCUMENT_SERIES_CODE:-FAKTURA-BAR}"
 export ABRA_BANK_ACCOUNT_CODE="${ABRA_BANK_ACCOUNT_CODE:-BANKOVNÍ ÚČET}"
@@ -193,7 +193,7 @@ config :cozy_checkout, :abra,
 | Variable | `config.exs` default | `env.sh.eex` default |
 |---|---|---|
 | `ABRA_COMPANY_ID` | `moruska_s_r_o__2026_08_19_1130_testovani_bar` (test!) | `moruska_s_r_o_` |
-| `ABRA_PASSWORD` | `xetkek-xuhxo4-pedhuB` | `[REDACTED:generic-api-key]` |
+| `ABRA_PASSWORD` | `xetkek-xuhxo4-pedhuB` | `gozso7-juxker-wimJaf` |
 
 So right now your production server is **using the test company ID** baked in at compile time, regardless of what `env.sh.eex` says.
 
@@ -264,7 +264,7 @@ config :cozy_checkout, :abra,
   base_url: System.get_env("ABRA_BASE_URL", "https://moruska.flexibee.eu"),
   company_id: System.get_env("ABRA_COMPANY_ID", "moruska_s_r_o_"),
   username: System.get_env("ABRA_USERNAME", "pokladna-bar"),
-  password: System.get_env("ABRA_PASSWORD", "[REDACTED:generic-api-key]"),
+  password: System.get_env("ABRA_PASSWORD", "gozso7-juxker-wimJaf"),
   cash_register_code: System.get_env("ABRA_CASH_REGISTER_CODE", "POKLADNA KČ"),
   document_series_code: System.get_env("ABRA_DOCUMENT_SERIES_CODE", "FAKTURA-BAR"),
   bank_account_code: System.get_env("ABRA_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")

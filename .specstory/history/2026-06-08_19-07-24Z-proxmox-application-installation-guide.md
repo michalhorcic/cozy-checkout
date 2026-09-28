@@ -467,7 +467,7 @@ Based on `config/runtime.exs` and `rel/env.sh.eex`, you need these:
 
 | Variable | Value |
 |---|---|
-| `DATABASE_URL` | `ecto://cozy:YOUR_PASS@postgres/cozy_checkout` |
+| `DATABASE_URL` | `ecto://cozy:[REDACTED:generic-password]@postgres/cozy_checkout` |
 | `SECRET_KEY_BASE` | Generate with `mix phx.gen.secret` |
 | `PHX_HOST` | `cozy.jd.local` ← already set in `env.sh.eex` |
 | `PHX_SERVER` | `true` |
@@ -485,7 +485,7 @@ services:
     ports:
       - "4000:4000"
     environment:
-      DATABASE_URL: "ecto://cozy:YOUR_PASS@postgres/cozy_checkout"
+      DATABASE_URL: "ecto://cozy:[REDACTED:generic-password]@postgres/cozy_checkout"
       SECRET_KEY_BASE: "GENERATE_WITH_mix_phx.gen.secret"
       PHX_HOST: "cozy.jd.local"
       PHX_SERVER: "true"
@@ -499,7 +499,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: cozy
-      POSTGRES_PASSWORD: YOUR_PASS
+      POSTGRES_PASSWORD: [REDACTED:generic-password]
       POSTGRES_DB: cozy_checkout
     volumes:
       - postgres_data:/var/lib/postgresql/data

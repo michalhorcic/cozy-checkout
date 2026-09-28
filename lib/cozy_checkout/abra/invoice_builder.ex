@@ -54,7 +54,8 @@ defmodule CozyCheckout.Abra.InvoiceBuilder do
   end
 
   defp maybe_add_bank_account(invoice, order, cfg) do
-    has_qr = Enum.any?(order.payments, &(is_nil(&1.deleted_at) and &1.payment_method == "qr_code"))
+    has_qr =
+      Enum.any?(order.payments, &(is_nil(&1.deleted_at) and &1.payment_method == "qr_code"))
 
     if has_qr and cfg[:bank_account_code] not in [nil, ""] do
       Map.put(invoice, "bankovniUcet", "code:#{cfg[:bank_account_code]}")

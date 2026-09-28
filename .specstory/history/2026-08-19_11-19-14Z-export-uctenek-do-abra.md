@@ -6382,10 +6382,10 @@ Dva problémy opraveny:
 
 1. **`invoice_builder.ex` byl prázdný** po revertu — obnoveno. Tohle byl důvod proč synchronizace vůbec neprobíhala.
 
-2. **Heslo v `config.exs`** — `[REDACTED:generic-api-key]` bylo plaintext přímo v kódu. Odstraněno. Nastav přihlašovací údaje přes ENV proměnné:
+2. **Heslo v `config.exs`** — `[REDACTED:generic-password]` bylo plaintext přímo v kódu. Odstraněno. Nastav přihlašovací údaje přes ENV proměnné:
    ```
    export ABRA_USERNAME=pokladna-bar
-   export ABRA_PASSWORD=[REDACTED:generic-api-key]
+   export ABRA_PASSWORD=[REDACTED:generic-password]
    ```
    nebo je vlož do `.env` souboru (který není v gitu). **Zkontroluj git historii** — pokud bylo heslo už commitnuto, změň ho v Abře. 
 
@@ -7083,7 +7083,7 @@ config/config.exs
 82:  base_url: System.get_env("ABRA_BASE_URL", "https://moruska.flexibee.eu"),
 83:  company_id: System.get_env("ABRA_COMPANY_ID", "moruska_s_r_o__2026_08_19_1130_testovani_bar"),
 84:  username: System.get_env("ABRA_USERNAME", "pokladna-bar"),
-85:  password: System.get_env("ABRA_PASSWORD", "[REDACTED:generic-api-key]"),
+85:  password: System.get_env("ABRA_PASSWORD", "[REDACTED:generic-password]"),
 86:  cash_register_code: System.get_env("ABRA_CASH_REGISTER_CODE", "POKLADNA KČ"),
 87:  document_series_code: System.get_env("ABRA_DOCUMENT_SERIES_CODE", "FAKTURA-BAR")
 ```

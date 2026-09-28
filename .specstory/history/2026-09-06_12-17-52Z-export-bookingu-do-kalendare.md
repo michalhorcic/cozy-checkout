@@ -1222,8 +1222,8 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :cozy_checkout, CozyCheckout.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "[REDACTED:generic-password]",
+  password: "[REDACTED:generic-password]",
   hostname: "localhost",
   database: "cozy_checkout_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
@@ -2913,8 +2913,8 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :cozy_checkout, CozyCheckout.Repo,
-  username: "postgres",
-  password: "postgres",
+  username: "[REDACTED:generic-password]",
+  password: "[REDACTED:generic-password]",
   hostname: "localhost",
   database: "cozy_checkout_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
@@ -3587,14 +3587,14 @@ _**Agent (copilot/auto)**_
 <summary passed=0 failed=1 />
 <testFailure name="file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/controllers/booking_calendar_controller_test.exs" path="file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout">
 <message>
-[31m14:24:10.732 [error] Postgrex.Protocol (#PID<0.7383.0> ("db_conn_4")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
-[31m14:24:10.732 [error] Postgrex.Protocol (#PID<0.7385.0> ("db_conn_6")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
-[31m14:24:10.732 [error] Postgrex.Protocol (#PID<0.7382.0> ("db_conn_3")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
-[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7391.0> ("db_conn_12")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
-[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7389.0> ("db_conn_10")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
-[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7388.0> ("db_conn_9")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
-[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7384.0> ("db_conn_5")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
-[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7386.0> ("db_conn_7")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "postgres" does not exist[0m
+[31m14:24:10.732 [error] Postgrex.Protocol (#PID<0.7383.0> ("db_conn_4")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m14:24:10.732 [error] Postgrex.Protocol (#PID<0.7385.0> ("db_conn_6")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m14:24:10.732 [error] Postgrex.Protocol (#PID<0.7382.0> ("db_conn_3")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7391.0> ("db_conn_12")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7389.0> ("db_conn_10")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7388.0> ("db_conn_9")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7384.0> ("db_conn_5")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7386.0> ("db_conn_7")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
 [31m14:24:10.733 [error] Postgrex.Protocol (#PID<0.7390.0> ("db_conn_11")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_sp
 … (output truncated)
 ```
@@ -3602,7 +3602,7 @@ _**Agent (copilot/auto)**_
 
 _**Agent (copilot/auto)**_
 
-Cílený test se nespustil, protože lokální testovací PostgreSQL očekává roli `postgres`, která na stroji není dostupná; selhání nastalo před vykonáním testů. Zdrojový kód proto ještě ověřím formátováním a diagnostikou editoru, což nevyžaduje databázi.
+Cílený test se nespustil, protože lokální testovací PostgreSQL očekává roli `[REDACTED:generic-password]`, která na stroji není dostupná; selhání nastalo před vykonáním testů. Zdrojový kód proto ještě ověřím formátováním a diagnostikou editoru, což nevyžaduje databázi.
 
 _**Agent (copilot/auto)**_
 
@@ -3873,4 +3873,4 @@ Po restartu aplikace se v administračním kalendáři objeví tlačítko **Cale
 
 Změny jsou v routeru, exportu bookingů, novém controlleru a admin kalendáři. Přidal jsem také controller test.
 
-Ověřeno: formátování všech dotčených souborů prošlo. Cílený test nešel spustit, protože lokální testovací PostgreSQL nemá roli `postgres`; selhal ještě před spuštěním testů.
+Ověřeno: formátování všech dotčených souborů prošlo. Cílený test nešel spustit, protože lokální testovací PostgreSQL nemá roli `[REDACTED:generic-password]`; selhal ještě před spuštěním testů.
