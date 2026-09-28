@@ -18,6 +18,8 @@ defmodule CozyCheckout.Catalog.Product do
     field :unit, :string
     field :default_unit_amounts, :string
     field :low_stock_threshold, :integer, default: 0
+    field :track_bar_stock, :boolean, default: false
+    field :bar_stock_threshold, :decimal, default: Decimal.new("0")
     field :deleted_at, :utc_datetime
 
     belongs_to :category, CozyCheckout.Catalog.Category
@@ -39,11 +41,14 @@ defmodule CozyCheckout.Catalog.Product do
       :visible_in_pos,
       :unit,
       :default_unit_amounts,
-      :low_stock_threshold
+      :low_stock_threshold,
+      :track_bar_stock,
+      :bar_stock_threshold
     ])
     |> validate_required([:name])
     |> validate_inclusion(:unit, ["ml", "L", "pcs", nil], message: "must be ml, L, pcs, or empty")
     |> validate_number(:low_stock_threshold, greater_than_or_equal_to: 0)
+    |> validate_number(:bar_stock_threshold, greater_than_or_equal_to: 0)
     |> validate_unit_amounts()
     |> foreign_key_constraint(:category_id)
   end

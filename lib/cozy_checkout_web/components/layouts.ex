@@ -31,11 +31,16 @@ defmodule CozyCheckoutWeb.Layouts do
     default: nil,
     doc: "the current [scope](https://hexdocs.pm/phoenix/scopes.html)"
 
+  attr :content_class, :string, default: "mx-auto max-w-2xl space-y-4"
+  attr :main_class, :string, default: "px-4 py-20 sm:px-6 lg:px-8"
+  attr :show_header, :boolean, default: true
+  attr :flash_info_class, :string, default: "alert-info"
+
   slot :inner_block, required: true
 
   def app(assigns) do
     ~H"""
-    <header class="navbar px-4 sm:px-6 lg:px-8">
+    <header :if={@show_header} class="navbar px-4 sm:px-6 lg:px-8">
       <div class="flex-1">
         <a href="/" class="flex-1 flex w-fit items-center gap-2">
           <img src={~p"/images/logo.svg"} width="36" />
@@ -62,13 +67,13 @@ defmodule CozyCheckoutWeb.Layouts do
       </div>
     </header>
 
-    <main class="px-4 py-20 sm:px-6 lg:px-8">
-      <div class="mx-auto max-w-2xl space-y-4">
+    <main class={@main_class}>
+      <div class={@content_class}>
         {render_slot(@inner_block)}
       </div>
     </main>
 
-    <.flash_group flash={@flash} />
+    <.flash_group flash={@flash} info_class={@flash_info_class} />
     """
   end
 
@@ -102,11 +107,12 @@ defmodule CozyCheckoutWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :id, :string, default: "flash-group", doc: "the optional id of flash container"
+  attr :info_class, :string, default: "alert-info"
 
   def flash_group(assigns) do
     ~H"""
     <div id={@id} aria-live="polite">
-      <.flash kind={:info} flash={@flash} />
+      <.flash kind={:info} flash={@flash} info_class={@info_class} />
       <.flash kind={:error} flash={@flash} />
 
       <.flash

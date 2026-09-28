@@ -112,7 +112,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Inventory & Stock"
             section="inventory"
             expanded={@expanded_sections["inventory"]}
-            count={4}
+            count={5}
           >
             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
               <.compact_card
@@ -124,6 +124,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
                 title="Stock Overview"
                 icon="hero-chart-bar"
                 navigate={~p"/admin/stock"}
+              />
+              <.compact_card
+                title="Bar Stock"
+                icon="hero-beaker"
+                navigate={~p"/admin/bar-stock"}
               />
               <.compact_card
                 title="Stock Adjustments"

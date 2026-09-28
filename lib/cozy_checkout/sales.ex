@@ -9,6 +9,7 @@ defmodule CozyCheckout.Sales do
   alias CozyCheckout.Sales.{Order, OrderItem, Payment}
   alias CozyCheckout.Catalog
   alias CozyCheckout.Bookings
+  alias CozyCheckout.Inventory
   alias CozyCheckout.Workers.AbraSyncWorker
 
   ## Orders
@@ -511,18 +512,34 @@ defmodule CozyCheckout.Sales do
         attrs
       end
 
-    %OrderItem{}
-    |> OrderItem.changeset(attrs)
-    |> Repo.insert()
+    Repo.transaction(fn ->
+      case %OrderItem{} |> OrderItem.changeset(attrs) |> Repo.insert() do
+        {:ok, item} ->
+          Inventory.record_bar_stock_sale(item)
+          item
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
   end
 
   @doc """
   Deletes an order item (soft delete).
   """
   def delete_order_item(%OrderItem{} = order_item) do
-    order_item
-    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
-    |> Repo.update()
+    Repo.transaction(fn ->
+      case order_item
+           |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+           |> Repo.update() do
+        {:ok, deleted_item} ->
+          Inventory.reverse_bar_stock_sale(order_item)
+          deleted_item
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
   end
 
   @doc """
@@ -542,7 +559,16 @@ defmodule CozyCheckout.Sales do
         changeset
       end
 
-    Repo.update(changeset)
+    Repo.transaction(fn ->
+      case Repo.update(changeset) do
+        {:ok, updated_item} ->
+          Inventory.sync_bar_stock_order_item(order_item, updated_item)
+          updated_item
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
   end
 
   @doc """

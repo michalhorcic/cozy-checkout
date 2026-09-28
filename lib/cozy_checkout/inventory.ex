@@ -5,7 +5,15 @@ defmodule CozyCheckout.Inventory do
 
   import Ecto.Query, warn: false
   alias CozyCheckout.Repo
-  alias CozyCheckout.Inventory.{PurchaseOrder, PurchaseOrderItem, StockAdjustment}
+
+  alias CozyCheckout.Inventory.{
+    BarStockMovement,
+    PurchaseOrder,
+    PurchaseOrderItem,
+    StockAdjustment
+  }
+
+  alias CozyCheckout.Catalog.Product
 
   ## Purchase Orders
 
@@ -180,6 +188,329 @@ defmodule CozyCheckout.Inventory do
   """
   def change_stock_adjustment(%StockAdjustment{} = adjustment, attrs \\ %{}) do
     StockAdjustment.changeset(adjustment, attrs)
+  end
+
+  ## Bar Stock
+
+  def list_bar_stock_products do
+    Product
+    |> where([p], is_nil(p.deleted_at) and p.track_bar_stock == true)
+    |> preload(:category)
+    |> order_by([p], asc: p.name)
+    |> Repo.all()
+    |> Enum.map(fn product ->
+      raw_stock = get_bar_stock_level(product.id)
+      volume_based? = product.unit in ["ml", "L", "cl"]
+      stock = if volume_based?, do: Decimal.div(raw_stock, 1000), else: raw_stock
+      display_unit = if volume_based?, do: "L", else: product.unit || "pcs"
+      threshold = product.bar_stock_threshold || Decimal.new("0")
+
+      status =
+        cond do
+          Decimal.compare(stock, 0) != :gt ->
+            :out_of_stock
+
+          Decimal.compare(threshold, 0) == :gt and Decimal.compare(stock, threshold) != :gt ->
+            :low_stock
+
+          true ->
+            :in_stock
+        end
+
+      %{
+        product: product,
+        raw_stock: raw_stock,
+        stock: stock,
+        display_unit: display_unit,
+        threshold: threshold,
+        status: status
+      }
+    end)
+  end
+
+  def list_bar_stock_candidates do
+    Product
+    |> where([p], is_nil(p.deleted_at) and p.active == true and p.track_bar_stock == false)
+    |> preload(:category)
+    |> order_by([p], asc: p.name)
+    |> Repo.all()
+  end
+
+  def add_product_to_bar(product_id, attrs) do
+    with {:ok, initial_quantity} <- parse_stock_decimal(Map.get(attrs, "initial_quantity")),
+         {:ok, threshold} <- parse_stock_decimal(Map.get(attrs, "threshold")),
+         :ok <- validate_non_negative(initial_quantity),
+         :ok <- validate_non_negative(threshold) do
+      Repo.transaction(fn ->
+        product = Repo.get!(Product, product_id)
+
+        if product.track_bar_stock do
+          Repo.rollback(:already_tracked)
+        end
+
+        if not valid_product_quantity?(product, initial_quantity) or
+             not valid_product_quantity?(product, threshold) do
+          Repo.rollback(:invalid_quantity)
+        end
+
+        product =
+          product
+          |> Product.changeset(%{track_bar_stock: true, bar_stock_threshold: threshold})
+          |> Repo.update!()
+
+        opening_stock = to_base_stock(product, initial_quantity)
+
+        if Decimal.compare(opening_stock, 0) == :gt do
+          insert_bar_movement!(%{
+            product_id: product.id,
+            quantity: opening_stock,
+            movement_type: "opening",
+            notes: "Počáteční zásoba baru"
+          })
+        end
+
+        product
+      end)
+    end
+  end
+
+  def restock_bar_stock(product_id, quantity) do
+    with {:ok, quantity} <- parse_stock_decimal(quantity),
+         :ok <- validate_positive(quantity),
+         %Product{} = product <- get_tracked_bar_product(product_id),
+         :ok <- validate_product_quantity(product, quantity) do
+      quantity = to_base_stock(product, quantity)
+
+      Repo.insert(
+        BarStockMovement.changeset(%BarStockMovement{}, %{
+          product_id: product.id,
+          quantity: quantity,
+          movement_type: "restock",
+          notes: "Doplnění baru"
+        })
+      )
+    else
+      nil -> {:error, :not_tracked}
+      error -> error
+    end
+  end
+
+  def count_bar_stock(product_id, counted_quantity) do
+    with {:ok, counted_quantity} <- parse_stock_decimal(counted_quantity),
+         :ok <- validate_non_negative(counted_quantity),
+         %Product{} = product <- get_tracked_bar_product(product_id),
+         :ok <- validate_product_quantity(product, counted_quantity) do
+      counted_stock = to_base_stock(product, counted_quantity)
+      current_stock = get_bar_stock_level(product.id)
+      difference = Decimal.sub(counted_stock, current_stock)
+
+      if Decimal.compare(difference, 0) == :eq do
+        {:ok, difference}
+      else
+        display_difference =
+          if product.unit in ["ml", "L", "cl"],
+            do: Decimal.div(difference, 1000),
+            else: difference
+
+        notes =
+          "Inventura: napočítáno #{Decimal.to_string(counted_quantity)} #{if product.unit in ["ml", "L", "cl"], do: "L", else: product.unit || "pcs"}; rozdíl #{Decimal.to_string(display_difference)}"
+
+        case Repo.insert(
+               BarStockMovement.changeset(%BarStockMovement{}, %{
+                 product_id: product.id,
+                 quantity: difference,
+                 movement_type: "count_adjustment",
+                 notes: notes
+               })
+             ) do
+          {:ok, _movement} -> {:ok, difference}
+          error -> error
+        end
+      end
+    else
+      nil -> {:error, :not_tracked}
+      error -> error
+    end
+  end
+
+  def update_bar_stock_threshold(product_id, threshold) do
+    with {:ok, threshold} <- parse_stock_decimal(threshold),
+         :ok <- validate_non_negative(threshold),
+         %Product{} = product <- get_tracked_bar_product(product_id),
+         :ok <- validate_product_quantity(product, threshold) do
+      product
+      |> Product.changeset(%{bar_stock_threshold: threshold})
+      |> Repo.update()
+    else
+      nil -> {:error, :not_tracked}
+      error -> error
+    end
+  end
+
+  def get_bar_stock_level(product_id) do
+    Repo.one(
+      from m in BarStockMovement,
+        where: m.product_id == ^product_id,
+        select: coalesce(sum(m.quantity), 0)
+    ) || Decimal.new("0")
+  end
+
+  def list_recent_bar_stock_movements(limit \\ 50) do
+    BarStockMovement
+    |> order_by([m], desc: m.inserted_at)
+    |> limit(^limit)
+    |> preload([:product, order_item: :order])
+    |> Repo.all()
+  end
+
+  def record_bar_stock_sale(%CozyCheckout.Sales.OrderItem{} = item) do
+    product = Repo.get!(Product, item.product_id)
+
+    if product.track_bar_stock do
+      insert_bar_movement!(%{
+        product_id: product.id,
+        order_item_id: item.id,
+        quantity: Decimal.negate(order_item_stock_quantity(item, product)),
+        movement_type: "sale",
+        notes: "Prodej na účtu"
+      })
+    end
+
+    :ok
+  end
+
+  def sync_bar_stock_order_item(old_item, new_item) do
+    old_product = Repo.get!(Product, old_item.product_id)
+    new_product = Repo.get!(Product, new_item.product_id)
+    has_movements? = bar_stock_movements_exist?(old_item.id)
+
+    if old_item.product_id == new_item.product_id do
+      if has_movements? or new_product.track_bar_stock do
+        old_quantity =
+          if has_movements?,
+            do: order_item_stock_quantity(old_item, old_product),
+            else: Decimal.new("0")
+
+        new_quantity = order_item_stock_quantity(new_item, new_product)
+        difference = Decimal.sub(old_quantity, new_quantity)
+
+        if Decimal.compare(difference, 0) != :eq do
+          movement_type =
+            if Decimal.compare(difference, 0) == :gt, do: "sale_reversal", else: "sale"
+
+          insert_bar_movement!(%{
+            product_id: new_product.id,
+            order_item_id: new_item.id,
+            quantity: difference,
+            movement_type: movement_type,
+            notes: "Úprava položky účtu"
+          })
+        end
+      end
+    else
+      if has_movements? do
+        insert_bar_movement!(%{
+          product_id: old_product.id,
+          order_item_id: old_item.id,
+          quantity: order_item_stock_quantity(old_item, old_product),
+          movement_type: "sale_reversal",
+          notes: "Změna produktu na účtu"
+        })
+      end
+
+      if new_product.track_bar_stock do
+        insert_bar_movement!(%{
+          product_id: new_product.id,
+          order_item_id: new_item.id,
+          quantity: Decimal.negate(order_item_stock_quantity(new_item, new_product)),
+          movement_type: "sale",
+          notes: "Prodej na účtu"
+        })
+      end
+    end
+
+    :ok
+  end
+
+  def reverse_bar_stock_sale(%CozyCheckout.Sales.OrderItem{} = item) do
+    if is_nil(item.deleted_at) and bar_stock_movements_exist?(item.id) do
+      product = Repo.get!(Product, item.product_id)
+
+      insert_bar_movement!(%{
+        product_id: product.id,
+        order_item_id: item.id,
+        quantity: order_item_stock_quantity(item, product),
+        movement_type: "sale_reversal",
+        notes: "Odstranění položky z účtu"
+      })
+    end
+
+    :ok
+  end
+
+  defp get_tracked_bar_product(product_id) do
+    Repo.one(
+      from p in Product,
+        where: p.id == ^product_id and p.track_bar_stock == true and is_nil(p.deleted_at)
+    )
+  end
+
+  defp insert_bar_movement!(attrs) do
+    %BarStockMovement{}
+    |> BarStockMovement.changeset(attrs)
+    |> Repo.insert!()
+  end
+
+  defp bar_stock_movements_exist?(order_item_id) do
+    Repo.exists?(from m in BarStockMovement, where: m.order_item_id == ^order_item_id)
+  end
+
+  defp order_item_stock_quantity(item, product) do
+    quantity = Decimal.new(item.quantity)
+
+    if product.unit in ["ml", "L", "cl"] do
+      Decimal.mult(quantity, item.unit_amount || Decimal.new("1"))
+    else
+      quantity
+    end
+  end
+
+  defp to_base_stock(product, quantity) do
+    if product.unit in ["ml", "L", "cl"], do: Decimal.mult(quantity, 1000), else: quantity
+  end
+
+  defp parse_stock_decimal(%Decimal{} = value), do: {:ok, value}
+  defp parse_stock_decimal(value) when is_integer(value), do: {:ok, Decimal.new(value)}
+
+  defp parse_stock_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {decimal, ""} -> {:ok, decimal}
+      _ -> {:error, :invalid_quantity}
+    end
+  end
+
+  defp parse_stock_decimal(_value), do: {:error, :invalid_quantity}
+
+  defp validate_non_negative(value) do
+    if Decimal.compare(value, 0) == :lt, do: {:error, :invalid_quantity}, else: :ok
+  end
+
+  defp validate_positive(value) do
+    if Decimal.compare(value, 0) != :gt, do: {:error, :invalid_quantity}, else: :ok
+  end
+
+  defp validate_product_quantity(%Product{unit: unit}, _quantity) when unit in ["ml", "L", "cl"],
+    do: :ok
+
+  defp validate_product_quantity(product, quantity) do
+    if valid_product_quantity?(product, quantity), do: :ok, else: {:error, :invalid_quantity}
+  end
+
+  defp valid_product_quantity?(%Product{unit: unit}, _quantity) when unit in ["ml", "L", "cl"],
+    do: true
+
+  defp valid_product_quantity?(_product, quantity) do
+    Decimal.equal?(quantity, Decimal.round(quantity, 0))
   end
 
   @doc """
