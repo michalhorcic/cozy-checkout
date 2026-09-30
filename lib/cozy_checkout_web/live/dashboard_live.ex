@@ -74,9 +74,9 @@ defmodule CozyCheckoutWeb.DashboardLive do
               navigate={~p"/admin/pricelists"}
             />
             <.quick_action_card
-              title="Meal Planner"
-              icon="hero-clipboard-document-list"
-              navigate={~p"/admin/meal-planner"}
+              title="Bar Stock"
+              icon="hero-beaker"
+              navigate={~p"/admin/bar-stock"}
             />
           </div>
         </div>
@@ -189,7 +189,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Guest Management & Tools"
             section="other"
             expanded={@expanded_sections["other"]}
-            count={4}
+            count={5}
           >
             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
               <.compact_card title="Guests" icon="hero-user-group" navigate={~p"/admin/guests"} />
@@ -203,6 +203,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
                 title="Import Bookings"
                 icon="hero-arrow-up-tray"
                 navigate={~p"/admin/ical-import"}
+              />
+              <.compact_card
+                title="Meal Planner"
+                icon="hero-clipboard-document-list"
+                navigate={~p"/admin/meal-planner"}
               />
             </div>
           </.expandable_section>

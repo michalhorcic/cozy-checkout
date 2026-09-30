@@ -47799,3 +47799,214 @@ _**Agent (copilot/claude-sonnet-5)**_
 
 Created 4 todos
 </details></tool-use>
+
+---
+
+_**User (2026-09-30 14:52:18Z)**_
+
+Dneska poslední drobnost, dej odkaz na bar stock do hlavního dashboardu v adminu ať nemusím klikat dvakrát, vyměň ho za meal planner který stačí mít dostupný v guest management
+
+---
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `Meal Planner|meal_planner|Bar Stock|bar_stock_path|~p"/admin/bar_stock"|~p"/admin/meal` (`**/lib/cozy_checkout_web/**/*.{ex,heex}`), 22 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/**/*.{ex,heex}`
+- isRegexp: `true`
+- query: `Meal Planner|meal_planner|Bar Stock|bar_stock_path|~p"/admin/bar_stock"|~p"/admin/meal`
+
+**Result:**
+
+```
+Found 22 matches in 6 files for "Meal Planner|meal_planner|Bar Stock|bar_stock_path|~p"/admin/bar_stock"|~p"/admin/meal"
+
+lib/cozy_checkout_web/live/bar_stock_live.ex
+21:    {:noreply, assign(socket, :page_title, "Bar Stock")}
+32:           |> put_flash(:info, "#{product.name} added to bar stock")
+38:          {:noreply, put_flash(socket, :error, "This product is already tracked in bar stock")}
+44:          {:noreply, put_flash(socket, :error, "Could not add product to bar stock")}
+107:         |> put_flash(:info, "Bar stock replenished")
+280:            <h1 class="text-4xl font-bold text-primary-500">Bar Stock</h1>
+293:            Add product to bar stock
+767:                      No bar stock movements yet.
+
+lib/cozy_checkout_web/live/dashboard_live.ex
+77:              title="Meal Planner"
+79:              navigate={~p"/admin/meal-planner"}
+141:                title="Bar Stock"
+
+lib/cozy_checkout_web/live/meal_planner_live/index.ex
+239:    |> assign(:page_title, "Meal Planner - Week of #{Calendar.strftime(week_start, "%B %d, %Y")}")
+
+lib/cozy_checkout_web/live/meal_planner_live/index.html.heex
+12:        <span>🍽️</span> Meal Planner
+16:      <.link navigate={~p"/admin/meal-planner/templates"}>
+21:      <.link navigate={~p"/admin/meal-planner/print?week=#{Date.to_iso8601(@week_start)}"}>
+
+lib/cozy_checkout_web/live/meal_planner_live/templates.html.heex
+5:        navigate={~p"/admin/meal-planner"}
+8:        ← Back to Meal Planner
+13:    <.link patch={~p"/admin/meal-planner/templates/new"}>
+53:              patch={~p"/admin/meal-planner/templates/#{template.id}/edit"}
+77:  on_cancel={JS.patch(~p"/admin/meal-planner/templates")}
+85:    patch={~p"/admin/meal-planner/templates"}
+
+lib/cozy_checkout_web/router.ex
+137:      # Meal Planner
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `dashboard_live.ex`, lines 1 to 260
+
+**Input:**
+
+- endLine: `260`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.DashboardLive do
+  use CozyCheckoutWeb, :live_view
+  import Phoenix.Controller, only: [get_csrf_token: 0]
+
+  def mount(_params, _session, socket) do
+    {:ok,
+     socket
+     |> assign(:expanded_sections, %{
+       "catalog" => false,
+       "inventory" => false,
+       "sales" => false,
+       "other" => false
+     })}
+  end
+
+  def handle_event("toggle_section", %{"section" => section}, socket) do
+    expanded = socket.assigns.expanded_sections
+    {:noreply, assign(socket, :expanded_sections, Map.update!(expanded, section, &(!&1)))}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <%!-- Header --%>
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+            <p class="text-lg text-gray-600">Jindřichův dům Management</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <form action={~p"/admin/logout"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+              >
+                <.icon name="hero-lock-closed" class="h-4 w-4" /> Lock Admin
+              </button>
+            </form>
+            <.link
+              navigate={~p"/pos"}
+              class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+            >
+              <.icon name="hero-arrow-left" class="h-4 w-4" /> POS
+            </.link>
+          </div>
+        </div>
+
+        <%!-- Quick Actions (Most Used) --%>
+        <div class="mb-8">
+          <h2 class="text-sm font-semibold text-gray-500 uppercas
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard_live.ex**</summary>
+
+@@ lines 192-205 @@
+
+```
+5}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card title="Guests" icon="hero-user-group" navigate={~p"/admin/guests"} />
+              <.compact_card title="Rooms" icon="hero-home" navigate={~p"/admin/rooms"} />
+              <.compact_card
+                title="Bookings"
+                icon="hero-calendar-days"
+                navigate={~p"/admin/bookings"}
+              />
+              <.compact_card
+                title="Import Bookings"
+                icon="hero-arrow-up-tray"
+                navigate={~p"/admin/ical-import"}
+              />
+              <.compact_card
+                title="Meal Planner"
+                icon="hero-clipboard-document-list"
+                navigate={~p"/admin/meal-planner
+```
+
+@@ lines 77-79 @@
+
+```
+Bar Stock"
+              icon="hero-beaker"
+              navigate={~p"/admin/bar-stock
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile 2>&1 | grep -iE "error|dashboard\_live" ; echo "---"; mix format ...`
+
+Recompiles and checks formatting for the edited dashboard file
+
+```bash
+cd /Users/michalhorcic/projects/ELIXIR/cozy_checkout && mix compile 2>&1 | grep -iE "error|dashboard_live" ; echo "---"; mix format --check-formatted lib/cozy_checkout_web/live/dashboard_live.ex; echo "FMT_EXIT:$?"
+```
+
+**Result:**
+
+```
+Note: The tool simplified the command to ` mix compile 2>&1 | grep -iE "error|dashboard_live" ; echo "---"; mix format --check-formatted lib/cozy_checkout_web/live/dashboard_live.ex; echo "FMT_EXIT:$?"` (terminal ID=f7bfedad-e4f0-4571-8fd0-cc24099317e6). This is the output of running that command instead:
+---
+FMT_EXIT:0
+```
+</details></tool-use>
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+Čisté, žádné chyby ani problém s formátováním.
+
+**Provedeno v** `lib/cozy_checkout_web/live/dashboard_live.ex`:
+- V horní liště „Quick Actions" nahrazen „Meal Planner" za „Bar Stock" (odkaz `/admin/bar-stock`) — dostupný jedním kliknutím z hlavní stránky.
+- „Meal Planner" přesunut do sekce „Guest Management & Tools" (rozbalovací sekce), počet položek v ní upraven z 4 na 5.
+- „Bar Stock" zůstává i nadále dostupný v sekci „Inventory & Stock" — stejný vzor duplicity už dashboard používá i u Bookings/Products/Pricelists.
+
+_**Agent (copilot/claude-sonnet-5)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
