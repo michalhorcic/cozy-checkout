@@ -46,6 +46,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       {:ok,
        socket
        |> assign(:order_id, order_id)
+       |> assign(:page_title, "Order")
        |> assign(:selected_category_id, nil)
        |> assign(:show_unit_modal, false)
        |> assign(:selected_product, nil)

@@ -11,6 +11,8 @@ defmodule CozyCheckoutWeb.BarStockLive do
      |> assign(:product_search_results, [])
      |> assign(:selected_product, nil)
      |> assign(:show_product_results, false)
+     |> assign(:loss_start_date, "")
+     |> assign(:loss_end_date, "")
      |> load_stock()}
   end
 
@@ -157,14 +159,83 @@ defmodule CozyCheckoutWeb.BarStockLive do
     end
   end
 
+  def handle_event(
+        "log_waste",
+        %{"product_id" => product_id, "quantity" => quantity, "reason" => reason},
+        socket
+      ) do
+    case Inventory.record_bar_stock_waste(product_id, quantity, reason) do
+      {:ok, _movement} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Loss recorded")
+         |> load_stock()}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Enter a valid amount and reason")}
+    end
+  end
+
+  def handle_event("untrack_product", %{"product_id" => product_id}, socket) do
+    case Inventory.untrack_bar_stock_product(product_id) do
+      {:ok, product} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "#{product.name} is no longer tracked in the bar")
+         |> load_stock()}
+
+      {:error, _reason} ->
+        {:noreply, put_flash(socket, :error, "Could not stop tracking this product")}
+    end
+  end
+
+  def handle_event("filter_loss_summary", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:loss_start_date, params["start_date"] || "")
+     |> assign(:loss_end_date, params["end_date"] || "")
+     |> load_stock()}
+  end
+
+  def handle_event("clear_loss_filter", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:loss_start_date, "")
+     |> assign(:loss_end_date, "")
+     |> load_stock()}
+  end
+
   defp load_stock(socket) do
     socket
     |> assign(:bar_stock_items, Inventory.list_bar_stock_products())
     |> assign(:bar_stock_candidates, Inventory.list_bar_stock_candidates())
     |> assign(:recent_movements, Inventory.list_recent_bar_stock_movements())
+    |> assign(:loss_summary, Inventory.get_bar_stock_loss_summary(loss_filters(socket)))
+    |> assign(:waste_reasons, Inventory.bar_stock_waste_reasons())
+  end
+
+  defp loss_filters(socket) do
+    %{}
+    |> maybe_put_loss_date(:start_date, parse_filter_date(socket.assigns[:loss_start_date]))
+    |> maybe_put_loss_date(:end_date, parse_filter_date(socket.assigns[:loss_end_date]))
+  end
+
+  defp maybe_put_loss_date(filters, _key, nil), do: filters
+  defp maybe_put_loss_date(filters, key, date), do: Map.put(filters, key, date)
+
+  defp parse_filter_date(nil), do: nil
+  defp parse_filter_date(""), do: nil
+
+  defp parse_filter_date(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date} -> date
+      _ -> nil
+    end
   end
 
   defp format_quantity(quantity), do: Decimal.to_string(Decimal.round(quantity, 2), :normal)
+
+  defp format_percent(value), do: Decimal.to_string(Decimal.round(value, 1), :normal)
 
   defp format_movement_quantity(quantity, product) do
     quantity =
@@ -181,6 +252,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
   defp movement_label("sale"), do: "Account entry"
   defp movement_label("sale_reversal"), do: "Account correction"
   defp movement_label("count_adjustment"), do: "Stock count"
+  defp movement_label("waste"), do: "Loss recorded"
 
   defp non_negative(quantity) do
     if Decimal.compare(quantity, 0) == :lt, do: Decimal.new("0"), else: quantity
@@ -381,13 +453,14 @@ defmodule CozyCheckoutWeb.BarStockLive do
           <table class="min-w-full divide-y divide-gray-200 text-sm">
             <thead class="bg-gradient-to-r from-primary-500 to-secondary-600 text-left text-xs font-medium uppercase text-white">
               <tr>
-                <th class="whitespace-nowrap px-6 py-3">Status</th>
-                <th class="px-6 py-3">Product</th>
-                <th class="px-6 py-3">Category</th>
-                <th class="whitespace-nowrap px-6 py-3">Current Stock</th>
-                <th class="whitespace-nowrap px-6 py-3">Low Stock Alert</th>
-                <th class="px-6 py-3">Restock</th>
-                <th class="px-6 py-3">Count</th>
+                <th class="whitespace-nowrap px-2 py-3">Status</th>
+                <th class="px-2 py-3">Product</th>
+                <th class="px-2 py-3">Category</th>
+                <th class="whitespace-nowrap px-2 py-3">Current Stock</th>
+                <th class="whitespace-nowrap px-2 py-3">Low Stock Alert</th>
+                <th class="px-2 py-3">Restock</th>
+                <th class="px-2 py-3">Count</th>
+                <th class="px-2 py-3">Log Loss</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 bg-white">
@@ -397,7 +470,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
                   item.status == :out_of_stock && "bg-rose-50",
                   item.status == :low_stock && "bg-amber-50"
                 ]}>
-                  <td class="whitespace-nowrap px-6 py-4">
+                  <td class="whitespace-nowrap px-2 py-3">
                     <span class={[
                       "inline-block h-3 w-3 rounded-full",
                       item.status == :out_of_stock && "bg-rose-500",
@@ -405,11 +478,26 @@ defmodule CozyCheckoutWeb.BarStockLive do
                       item.status == :in_stock && "bg-emerald-500"
                     ]}></span>
                   </td>
-                  <td class="px-6 py-4 text-sm font-medium text-gray-900">{item.product.name}</td>
-                  <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
+                  <td class="px-2 py-3 text-sm font-medium text-gray-900">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="truncate">{item.product.name}</span>
+                      <button
+                        type="button"
+                        phx-click="untrack_product"
+                        phx-value-product_id={item.product.id}
+                        data-confirm={"Stop tracking #{item.product.name} in the bar? Current stock (#{format_quantity(item.stock)} #{item.display_unit}) will no longer be monitored, but past movements are kept."}
+                        aria-label={"Stop tracking #{item.product.name}"}
+                        title="Stop tracking this product"
+                        class="flex-shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-rose-600"
+                      >
+                        <.icon name="hero-eye-slash" class="size-4" />
+                      </button>
+                    </div>
+                  </td>
+                  <td class="whitespace-nowrap px-2 py-3 text-sm text-gray-900">
                     {item.product.category && item.product.category.name}
                   </td>
-                  <td class="whitespace-nowrap px-6 py-4">
+                  <td class="whitespace-nowrap px-2 py-3">
                     <div class={[
                       "text-sm font-semibold",
                       item.status == :out_of_stock && "text-rose-600",
@@ -419,12 +507,12 @@ defmodule CozyCheckoutWeb.BarStockLive do
                       {format_quantity(item.stock)} {item.display_unit}
                     </div>
                   </td>
-                  <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                  <td class="whitespace-nowrap px-2 py-3 text-sm text-gray-500">
                     <.form
                       for={%{}}
                       as={:threshold}
                       phx-submit="update_threshold"
-                      class="flex min-w-36 items-center gap-1"
+                      class="flex items-center gap-1"
                     >
                       <input type="hidden" name="product_id" value={item.product.id} />
                       <input
@@ -434,7 +522,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
                         min="0"
                         step="0.01"
                         value={format_quantity(item.threshold)}
-                        class="w-20 rounded-md border-gray-300 text-sm shadow-sm"
+                        class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
                       />
                       <span class="text-xs text-gray-500">{item.display_unit}</span>
                       <button
@@ -446,12 +534,12 @@ defmodule CozyCheckoutWeb.BarStockLive do
                       </button>
                     </.form>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-2 py-3">
                     <.form
                       for={%{}}
                       as={:restock}
                       phx-submit="restock"
-                      class="flex min-w-40 items-center gap-1"
+                      class="flex items-center gap-1"
                     >
                       <input type="hidden" name="product_id" value={item.product.id} />
                       <input
@@ -462,7 +550,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
                         step="0.01"
                         placeholder={item.display_unit}
                         required
-                        class="w-20 rounded-md border-gray-300 text-sm shadow-sm"
+                        class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
                       />
                       <button
                         type="submit"
@@ -473,12 +561,12 @@ defmodule CozyCheckoutWeb.BarStockLive do
                       </button>
                     </.form>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-2 py-3">
                     <.form
                       for={%{}}
                       as={:count}
                       phx-submit="count"
-                      class="flex min-w-40 items-center gap-1"
+                      class="flex items-center gap-1"
                     >
                       <input type="hidden" name="product_id" value={item.product.id} />
                       <input
@@ -489,7 +577,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
                         step="0.01"
                         value={format_quantity(non_negative(item.stock))}
                         required
-                        class="w-20 rounded-md border-gray-300 text-sm shadow-sm"
+                        class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
                       />
                       <span class="text-xs text-gray-500">{item.display_unit}</span>
                       <button
@@ -501,11 +589,51 @@ defmodule CozyCheckoutWeb.BarStockLive do
                       </button>
                     </.form>
                   </td>
+                  <td class="px-2 py-3">
+                    <.form
+                      for={%{}}
+                      as={:waste}
+                      phx-submit="log_waste"
+                      class="flex w-40 flex-col items-stretch gap-1"
+                    >
+                      <input type="hidden" name="product_id" value={item.product.id} />
+                      <div class="flex items-center gap-1">
+                        <input
+                          aria-label={"Amount lost for #{item.product.name}"}
+                          name="quantity"
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          placeholder={item.display_unit}
+                          required
+                          class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
+                        />
+                        <button
+                          type="submit"
+                          aria-label={"Log loss for #{item.product.name}"}
+                          class="rounded p-1 text-rose-700 hover:bg-rose-50"
+                        >
+                          <.icon name="hero-exclamation-triangle" class="size-4" />
+                        </button>
+                      </div>
+                      <select
+                        aria-label={"Loss reason for #{item.product.name}"}
+                        name="reason"
+                        required
+                        class="w-full rounded-md border-gray-300 text-xs shadow-sm"
+                      >
+                        <option value="">Reason</option>
+                        <%= for reason <- @waste_reasons do %>
+                          <option value={reason}>{String.capitalize(reason)}</option>
+                        <% end %>
+                      </select>
+                    </.form>
+                  </td>
                 </tr>
               <% end %>
               <%= if @bar_stock_items == [] do %>
                 <tr>
-                  <td colspan="6" class="px-4 py-10 text-center text-gray-500">
+                  <td colspan="8" class="px-4 py-10 text-center text-gray-500">
                     No products are being tracked in the bar yet.
                   </td>
                 </tr>
@@ -513,6 +641,90 @@ defmodule CozyCheckoutWeb.BarStockLive do
             </tbody>
           </table>
         </div>
+
+        <section class="mb-10">
+          <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
+            <h2 class="text-lg font-semibold text-gray-900">
+              Loss overview
+              <span class="font-normal text-gray-500">
+                {if @loss_start_date == "" and @loss_end_date == "",
+                  do: "(all-time)",
+                  else: "(selected period)"}
+              </span>
+            </h2>
+            <form phx-change="filter_loss_summary" class="flex flex-wrap items-end gap-2">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600" for="loss-start-date">
+                  From
+                </label>
+                <input
+                  id="loss-start-date"
+                  type="date"
+                  name="start_date"
+                  value={@loss_start_date}
+                  class="rounded-md border-gray-300 text-sm shadow-sm"
+                />
+              </div>
+              <div>
+                <label class="mb-1 block text-xs font-medium text-gray-600" for="loss-end-date">
+                  To
+                </label>
+                <input
+                  id="loss-end-date"
+                  type="date"
+                  name="end_date"
+                  value={@loss_end_date}
+                  class="rounded-md border-gray-300 text-sm shadow-sm"
+                />
+              </div>
+              <button
+                type="button"
+                phx-click="clear_loss_filter"
+                class="rounded-md bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+              >
+                Clear
+              </button>
+            </form>
+          </div>
+          <div class="overflow-x-auto border-y border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+              <thead class="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
+                <tr>
+                  <th class="px-4 py-3">Product</th>
+                  <th class="whitespace-nowrap px-4 py-3">Sold</th>
+                  <th class="whitespace-nowrap px-4 py-3">Loss</th>
+                  <th class="whitespace-nowrap px-4 py-3">Loss rate</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 bg-white">
+                <%= for row <- @loss_summary do %>
+                  <tr class={Decimal.compare(row.loss_rate, 5) == :gt && "bg-rose-50"}>
+                    <td class="px-4 py-3 font-medium text-gray-900">{row.product.name}</td>
+                    <td class="whitespace-nowrap px-4 py-3 text-gray-700">
+                      {format_quantity(row.sold)} {row.display_unit}
+                    </td>
+                    <td class="whitespace-nowrap px-4 py-3 text-gray-700">
+                      {format_quantity(row.loss)} {row.display_unit}
+                    </td>
+                    <td class={[
+                      "whitespace-nowrap px-4 py-3 font-semibold",
+                      Decimal.compare(row.loss_rate, 5) == :gt && "text-rose-700"
+                    ]}>
+                      {format_percent(row.loss_rate)}%
+                    </td>
+                  </tr>
+                <% end %>
+                <%= if @loss_summary == [] do %>
+                  <tr>
+                    <td colspan="4" class="px-4 py-8 text-center text-gray-500">
+                      No products are being tracked in the bar yet.
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
         <section class="mt-10">
           <h2 class="mb-3 text-lg font-semibold text-gray-900">Recent movements</h2>

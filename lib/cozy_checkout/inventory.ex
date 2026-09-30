@@ -236,6 +236,45 @@ defmodule CozyCheckout.Inventory do
     |> Repo.all()
   end
 
+  @doc """
+  Returns per-product totals of net sold vs. lost quantity for all bar-tracked
+  products, so staff can see which products lose the most relative to sales.
+  Loss only counts negative count adjustments and recorded waste, not overages.
+  Accepts optional `:start_date` / `:end_date` (`Date`) to scope to a period.
+  """
+  def get_bar_stock_loss_summary(filters \\ %{}) do
+    Product
+    |> where([p], is_nil(p.deleted_at) and p.track_bar_stock == true)
+    |> preload(:category)
+    |> order_by([p], asc: p.name)
+    |> Repo.all()
+    |> Enum.map(fn product ->
+      sold = get_bar_stock_net_sold(product.id, filters)
+      loss = get_bar_stock_loss_quantity(product.id, filters)
+      volume_based? = product.unit in ["ml", "L", "cl"]
+      display_unit = if volume_based?, do: "L", else: product.unit || "pcs"
+      display_sold = if volume_based?, do: Decimal.div(sold, 1000), else: sold
+      display_loss = if volume_based?, do: Decimal.div(loss, 1000), else: loss
+      denominator = Decimal.add(sold, loss)
+
+      loss_rate =
+        if Decimal.compare(denominator, 0) == :gt do
+          loss |> Decimal.div(denominator) |> Decimal.mult(100)
+        else
+          Decimal.new("0")
+        end
+
+      %{
+        product: product,
+        sold: display_sold,
+        loss: display_loss,
+        display_unit: display_unit,
+        loss_rate: loss_rate
+      }
+    end)
+    |> Enum.sort_by(& &1.loss_rate, {:desc, Decimal})
+  end
+
   def add_product_to_bar(product_id, attrs) do
     with {:ok, initial_quantity} <- parse_stock_decimal(Map.get(attrs, "initial_quantity")),
          {:ok, threshold} <- parse_stock_decimal(Map.get(attrs, "threshold")),
@@ -330,6 +369,49 @@ defmodule CozyCheckout.Inventory do
     else
       nil -> {:error, :not_tracked}
       error -> error
+    end
+  end
+
+  @doc """
+  Records a bar stock loss (spillage, breakage, theft, spoilage, expired, other)
+  entered directly by staff during operation, separate from periodic counts.
+  """
+  def record_bar_stock_waste(product_id, quantity, reason) do
+    with {:ok, quantity} <- parse_stock_decimal(quantity),
+         :ok <- validate_positive(quantity),
+         %Product{} = product <- get_tracked_bar_product(product_id),
+         :ok <- validate_product_quantity(product, quantity) do
+      base_quantity = to_base_stock(product, quantity)
+
+      Repo.insert(
+        BarStockMovement.changeset(%BarStockMovement{}, %{
+          product_id: product.id,
+          quantity: Decimal.negate(base_quantity),
+          movement_type: "waste",
+          reason: reason,
+          notes: "Loss recorded during service"
+        })
+      )
+    else
+      nil -> {:error, :not_tracked}
+      error -> error
+    end
+  end
+
+  def bar_stock_waste_reasons, do: BarStockMovement.waste_reasons()
+
+  @doc """
+  Stops tracking a product in the bar. Movement history is kept for records/analytics.
+  """
+  def untrack_bar_stock_product(product_id) do
+    case get_tracked_bar_product(product_id) do
+      nil ->
+        {:error, :not_tracked}
+
+      %Product{} = product ->
+        product
+        |> Product.changeset(%{track_bar_stock: false})
+        |> Repo.update()
     end
   end
 
@@ -453,6 +535,57 @@ defmodule CozyCheckout.Inventory do
       from p in Product,
         where: p.id == ^product_id and p.track_bar_stock == true and is_nil(p.deleted_at)
     )
+  end
+
+  # Net units removed via sales: sale movements are negative, reversals positive.
+  defp get_bar_stock_net_sold(product_id, filters) do
+    sum =
+      from(m in BarStockMovement,
+        where: m.product_id == ^product_id and m.movement_type in ["sale", "sale_reversal"]
+      )
+      |> apply_movement_date_filter(filters)
+      |> select([m], coalesce(sum(m.quantity), 0))
+      |> Repo.one()
+      |> Kernel.||(Decimal.new("0"))
+
+    negated = Decimal.negate(sum)
+    if Decimal.compare(negated, 0) == :lt, do: Decimal.new("0"), else: negated
+  end
+
+  # Only negative differences count as loss; positive overages are ignored.
+  defp get_bar_stock_loss_quantity(product_id, filters) do
+    sum =
+      from(m in BarStockMovement,
+        where:
+          m.product_id == ^product_id and m.movement_type in ["count_adjustment", "waste"] and
+            m.quantity < 0
+      )
+      |> apply_movement_date_filter(filters)
+      |> select([m], coalesce(sum(m.quantity), 0))
+      |> Repo.one()
+      |> Kernel.||(Decimal.new("0"))
+
+    Decimal.abs(sum)
+  end
+
+  defp apply_movement_date_filter(query, filters) do
+    query
+    |> filter_movements_from(Map.get(filters, :start_date))
+    |> filter_movements_until(Map.get(filters, :end_date))
+  end
+
+  defp filter_movements_from(query, nil), do: query
+
+  defp filter_movements_from(query, %Date{} = date) do
+    starts_at = DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
+    where(query, [m], m.inserted_at >= ^starts_at)
+  end
+
+  defp filter_movements_until(query, nil), do: query
+
+  defp filter_movements_until(query, %Date{} = date) do
+    ends_at = DateTime.new!(date, ~T[23:59:59], "Etc/UTC")
+    where(query, [m], m.inserted_at <= ^ends_at)
   end
 
   defp insert_bar_movement!(attrs) do
