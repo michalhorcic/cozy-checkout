@@ -75,4 +75,5 @@ USER nobody
 # If using an environment that doesn't automatically reap zombie processes,
 # consider adding an init process via tini:
 # https://github.com/krallin/tini
-CMD ["/app/bin/server"]
+# start.sh runs pending Ecto migrations, then boots the Phoenix server
+CMD ["/app/bin/start.sh"]
