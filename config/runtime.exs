@@ -20,6 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :cozy_checkout, CozyCheckoutWeb.Endpoint, server: true
 end
 
+if admin_pin_hash = System.get_env("ADMIN_PIN_HASH") do
+  config :cozy_checkout, :admin_pin_hash, admin_pin_hash
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

@@ -9,6 +9,15 @@
         >
           <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
         </button>
+        <a
+          href={~p"/admin"}
+          aria-label="Open administration with PIN"
+          title="Admin"
+          class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-200 active:scale-95"
+        >
+          <.icon name="hero-lock-closed" class="h-5 w-5" />
+          <span>Admin</span>
+        </a>
         <div>
           <%= if @order.booking_id do %>
             <h1 class="text-2xl font-bold text-slate-900">
@@ -846,6 +855,65 @@
       </div>
     </div>
 
+    <!-- Payment PIN Modal -->
+    <div
+      :if={@show_payment_pin}
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      phx-click="cancel_payment_pin"
+    >
+      <div
+        class="w-full max-w-sm rounded-2xl bg-white p-7 shadow-2xl"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="mb-6 text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <.icon name="hero-lock-closed" class="h-7 w-7" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900">PIN required to collect payment</h2>
+          <p class="mt-2 text-sm text-slate-500">
+            Enter the staff PIN to continue with this payment.
+          </p>
+        </div>
+
+        <%= if @payment_pin_configured do %>
+          <form id="pos-payment-pin-form" phx-submit="authorize_payment" class="space-y-4">
+            <input
+              id="pos-payment-pin"
+              type="password"
+              name="payment_pin"
+              value={@payment_pin}
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]{6,8}"
+              minlength="6"
+              maxlength="8"
+              required
+              autofocus
+              class="w-full rounded-xl border-2 border-slate-300 px-4 py-4 text-center text-3xl tracking-[0.4em] focus:border-amber-500 focus:ring-amber-200"
+            />
+            <button
+              type="submit"
+              class="w-full rounded-xl bg-amber-700 px-5 py-4 text-lg font-bold text-white transition-colors hover:bg-amber-800"
+            >
+              Continue to payment
+            </button>
+          </form>
+        <% else %>
+          <p class="rounded-lg bg-rose-50 p-4 text-sm text-rose-800">
+            Payment PIN is not configured on this server.
+          </p>
+        <% end %>
+
+        <button
+          type="button"
+          phx-click="cancel_payment_pin"
+          class="mt-3 w-full rounded-xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
     <!-- Payment Modal -->
     <div
       :if={@show_payment_modal}
@@ -883,7 +951,7 @@
             </div>
 
             <.link
-              navigate={~p"/admin/orders/#{@order}/receipt"}
+              navigate={~p"/pos/orders/#{@order}/receipt"}
               target="_blank"
               class="block mb-3"
             >
@@ -998,7 +1066,7 @@
                 </div>
 
                 <.link
-                  navigate={~p"/admin/orders/#{@order}/receipt"}
+                  navigate={~p"/pos/orders/#{@order}/receipt"}
                   target="_blank"
                   class="block mb-3"
                 >

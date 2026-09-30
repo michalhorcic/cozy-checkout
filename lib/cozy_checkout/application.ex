@@ -12,6 +12,7 @@ defmodule CozyCheckout.Application do
       CozyCheckout.Repo,
       {DNSCluster, query: Application.get_env(:cozy_checkout, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: CozyCheckout.PubSub},
+      CozyCheckoutWeb.AdminAuthRateLimiter,
       {Oban, Application.fetch_env!(:cozy_checkout, Oban)},
       # Start to serve requests, typically the last entry
       CozyCheckoutWeb.Endpoint

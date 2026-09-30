@@ -24428,3 +24428,19298 @@ _**Agent (copilot/auto)**_
 Doporučil bych PIN zadávat na samostatné obrazovce při otevření **`/admin`**. Pokud správce nemá odemčenou session, aplikace ho přesměruje na `/admin/login`, kde zadá PIN; po ověření ho vrátí do administrace. Hosté zůstanou v POS a žádné tlačítko do administrace na ně nemusí vykukovat.
 
 PIN bychom **neukládali do kódu ani databáze jako prostý text**. Uložil by se jako hash v konfiguraci prostředí serveru; do session prohlížeče se uloží jen informace, že administrace byla ověřena. Na sdíleném tabletu dává smysl administraci po třeba 15 minutách nečinnosti zamknout a nabídnout tlačítko „Zamknout“. Pro krátký PIN bych přidal také prodlevu po opakovaných chybných pokusech.
+
+---
+
+_**User (2026-09-28 19:41:02Z)**_
+
+Výborně, to dává smysl, tak to pojď naimplementovat.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Než změním routy, ověřím ještě obsah úvodní stránky a způsob, jak aplikace spouští své procesy a načítá tajné hodnoty. To rozhodne, zda po zadání PINu hosté uvidí jako jedinou veřejnou cestu skutečně POS, a jak PIN bezpečně nastavit bez uložení do repozitáře.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git status --[REDACTED:generic-password]`
+
+Kontroluje změny pracovního stromu před úpravou rout a autentizace, aby zůstaly zachovány zásahy uživatele.
+
+```bash
+git status --[REDACTED:generic-password]
+```
+
+**Result:**
+
+```
+ M .specstory/history/2026-09-28_18-38-27Z-skladovy-system-pro-samoobsluzny.md
+ M .specstory/statistics.json
+ M rel/env.sh.eex
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `application.ex`
+
+**Input:**
+
+- endLine: `150`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/application.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckout.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      CozyCheckoutWeb.Telemetry,
+      CozyCheckout.Repo,
+      {DNSCluster, query: Application.get_env(:cozy_checkout, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: CozyCheckout.PubSub},
+      {Oban, Application.fetch_env!(:cozy_checkout, Oban)},
+      # Start to serve requests, typically the last entry
+      CozyCheckoutWeb.Endpoint
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: CozyCheckout.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    CozyCheckoutWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `runtime.exs`, lines 1 to 100
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs`
+- startLine: `1`
+
+**Result:**
+
+```
+import Config
+
+# config/runtime.exs is executed for all environments, including
+# during releases. It is executed after compilation and before the
+# system starts, so it is typically used to load production configuration
+# and secrets from environment variables or elsewhere. Do not define
+# any compile-time configuration in here, as it won't be applied.
+# The block below contains prod specific runtime configuration.
+
+# ## Using releases
+#
+# If you use `mix release`, you need to explicitly enable the server
+# by passing the PHX_SERVER=true when you start it:
+#
+#     PHX_SERVER=true bin/cozy_checkout start
+#
+# Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
+# script that automatically sets the env var above.
+if System.get_env("PHX_SERVER") do
+  config :cozy_checkout, CozyCheckoutWeb.Endpoint, server: true
+end
+
+if config_env() == :prod do
+  database_url =
+    System.get_env("DATABASE_URL") ||
+      raise """
+      environment variable DATABASE_URL is missing.
+      For example: ecto://USER:PASS@HOST/DATABASE
+      """
+
+  maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
+
+  config :logger, level: :debug
+  config :phoenix, :socket_filters, [CozyCheckoutWeb.UserSocket]
+
+  config :cozy_checkout, CozyCheckout.Repo,
+    # ssl: true,
+    url: database_url,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    # For machines with several cores, consider starting multiple pools of `pool_size`
+    # pool_count: 4,
+    socket_options: maybe_ipv6
+
+  # The secret key base is used to sign/encrypt cookies and other secrets.
+  # A default value is used in config/dev.exs and config/test.exs but you
+  # want to use a different value for prod and you most likely don't want
+  # to check this value into version control, so we use an environment
+  # variable instead.
+  secret_key_base =
+    System.get_env("SECRET_KEY_BASE") ||
+      raise """
+      environment variable SECRET_KEY_BASE is missing.
+      You can 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `main_menu_live.ex`
+
+**Input:**
+
+- endLine: `220`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/main_menu_live.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.MainMenuLive do
+  use CozyCheckoutWeb, :live_view
+
+  def mount(_params, _session, socket) do
+    {:ok, socket}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-primary-800">
+      <div class="max-w-6xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h1 class="text-6xl font-bold text-white mb-4 tracking-tight">
+            Cozy Checkout
+          </h1>
+          <p class="text-2xl text-secondary-100">
+            Mountain Cottage Point of Sale System
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <%!-- POS System Card --%>
+          <.link
+            navigate={~p"/pos"}
+            class={[
+              "group relative overflow-hidden",
+              "bg-tertiary-500",
+              "rounded-3xl shadow-2xl hover:shadow-tertiary-500/50",
+              "transform transition-all duration-300 hover:scale-105",
+              "p-12 text-center"
+            ]}
+          >
+            <div class="relative z-10">
+              <div class="mb-6">
+                <.icon
+                  name="hero-device-tablet"
+                  class="w-24 h-24 text-white mx-auto group-hover:scale-110 transition-transform duration-300"
+                />
+              </div>
+              <h2 class="text-4xl font-bold text-white mb-4">
+                POS System
+              </h2>
+              <p class="text-xl text-white opacity-90">
+                Touch-friendly bar interface for quick orders
+              </p>
+            </div>
+            <div class="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity duration-300">
+            </div>
+          </.link>
+
+          <%!-- Admin Dashboard Card --%>
+          <.link
+            navigate={~p"/admin"}
+            class={[
+              "group relative overflow-hidden",
+              "bg-success",
+              "rounded-3xl shadow-2xl hover:shadow-succe
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `endpoint.ex`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/endpoint.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.Endpoint do
+  use Phoenix.Endpoint, otp_app: :cozy_checkout
+
+  # The session will be stored in the cookie and signed,
+  # this means its contents can be read but not tampered with.
+  # Set :encryption_salt if you would also like to encrypt it.
+  @session_options [
+    store: :cookie,
+    key: "_cozy_checkout_key",
+    signing_salt: "jmdiDYpD",
+    same_site: "Lax"
+  ]
+
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [
+      connect_info: [session: @session_options],
+      # Never timeout the WebSocket connection
+      timeout: :infinity
+    ],
+    longpoll: [connect_info: [session: @session_options]]
+
+  # Serve at "/" the static files from "priv/static" directory.
+  #
+  # When code reloading is disabled (e.g., in production),
+  # the `gzip` option is enabled to serve compressed
+  # static files generated by running `phx.digest`.
+  plug Plug.Static,
+    at: "/",
+    from: :cozy_checkout,
+    gzip: not code_reloading?,
+    only: CozyCheckoutWeb.static_paths()
+
+  # Code reloading can be explicitly enabled under the
+  # :code_reloader configuration of your endpoint.
+  if code_reloading? do
+    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+    plug Phoenix.LiveReloader
+    plug Phoenix.CodeReloader
+    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :cozy_checkout
+  end
+
+  plug Phoenix.LiveDashboard.RequestLogger,
+    param_key: "request_logger",
+    cookie_key: "request_logger"
+
+  plug Plug.RequestId
+  plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
+
+  plug Plug.Parsers,
+    parsers: [:urlencoded, :multipart, :json],
+    pass: ["*/*"],
+    json_decoder: Phoenix.json_library()
+
+  plug Plug.MethodOverride
+  plug Plug.Head
+  plug Plug.Session, @session_options
+  plug CozyCheckoutWeb.Router
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Současná hlavní stránka skutečně nabízí i kartu administrace a tisk účtenky z POS odkazuje do `/admin/orders/.../receipt`. Ochranu proto navrhnu tak, aby `/` vedlo rovnou do POS, administrace byla blokovaná jak při HTTP načtení, tak při LiveView událostech, a tisk účtenky z POS zůstal funkční přes samostatnou POS cestu.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `admin/orders|receipt` (`**/lib/cozy_checkout_web/live/pos_live/**`), 4 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/pos_live/**`
+- isRegexp: `true`
+- maxResults: `30`
+- query: `admin/orders|receipt`
+
+**Result:**
+
+```
+Found 4 matches in 1 file for "admin/orders|receipt"
+
+lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+886:              navigate={~p"/admin/orders/#{@order}/receipt"}
+894:                <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+1001:                  navigate={~p"/admin/orders/#{@order}/receipt"}
+1009:                    <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `deps/plug_crypto/lib/**`
+- isRegexp: `true`
+- maxResults: `30`
+- query: `KeyGenerator|pbkdf2_hmac|secure_compare`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `application.ex`
+
+**Input:**
+
+- endLine: `70`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/application.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckout.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      CozyCheckoutWeb.Telemetry,
+      CozyCheckout.Repo,
+      {DNSCluster, query: Application.get_env(:cozy_checkout, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: CozyCheckout.PubSub},
+      {Oban, Application.fetch_env!(:cozy_checkout, Oban)},
+      # Start to serve requests, typically the last entry
+      CozyCheckoutWeb.Endpoint
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: CozyCheckout.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    CozyCheckoutWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `cozy_checkout_web.ex`
+
+**Input:**
+
+- endLine: `130`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb do
+  @moduledoc """
+  The entrypoint for defining your web interface, such
+  as controllers, components, channels, and so on.
+
+  This can be used in your application as:
+
+      use CozyCheckoutWeb, :controller
+      use CozyCheckoutWeb, :html
+
+  The definitions below will be executed for every controller,
+  component, etc, so keep them [REDACTED:generic-password] and clean, focused
+  on imports, uses and aliases.
+
+  Do NOT define functions inside the quoted expressions
+  below. Instead, define additional modules and import
+  those modules here.
+  """
+
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+
+  def router do
+    quote do
+      use Phoenix.Router, helpers: false
+
+      # Import common connection and controller functions to use in pipelines
+      import Plug.Conn
+      import Phoenix.Controller
+      import Phoenix.LiveView.Router
+    end
+  end
+
+  def channel do
+    quote do
+      use Phoenix.Channel
+    end
+  end
+
+  def controller do
+    quote do
+      use Phoenix.Controller, formats: [:html, :json]
+
+      use Gettext, backend: CozyCheckoutWeb.Gettext
+
+      import Plug.Conn
+
+      unquote(verified_routes())
+    end
+  end
+
+  def live_view do
+    quote do
+      use Phoenix.LiveView
+
+      unquote(html_helpers())
+    end
+  end
+
+  def live_component do
+    quote do
+      use Phoenix.LiveComponent
+
+      unquote(html_helpers())
+    end
+  end
+
+  def html do
+    quote do
+      use Phoenix.Component
+
+      # Import convenience functions from controllers
+      import Phoenix.Controller,
+        only: [get_csrf_token: 0, view_module: 1, view_template: 1]
+
+      # Include general helpers for rendering HTML
+      unquote(html_helpers())
+    end
+  end
+
+  defp html_helpers do
+    quote do
+      # Translation
+      use Gettext, backend: CozyCheckoutWeb.Gettext
+
+      # HTML escaping functionality
+      import Phoenix.HTML
+      # Core UI components
+      import CozyCheckoutWeb.CoreComponents
+      # Booking UI components
+      import CozyCheckoutW
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `receipt.ex`
+
+**Input:**
+
+- endLine: `190`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/order_live/receipt.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.OrderLive.Receipt do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.Sales
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => id}, _session, socket) do
+    order = Sales.get_order!(id)
+    payments = Sales.list_payments_for_order(id)
+
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+    # Group items by VAT rate for VAT breakdown
+    vat_breakdown = calculate_vat_breakdown(order.order_items)
+
+    total_paid =
+      Enum.reduce(payments, Decimal.new("0"), fn payment, acc ->
+        Decimal.add(acc, payment.amount)
+      end)
+
+    socket =
+      socket
+      |> assign(:page_title, "Receipt - Order #{order.order_number}")
+      |> assign(:order, order)
+      |> assign(:payments, payments)
+      |> assign(:grouped_items, grouped_items)
+      |> assign(:vat_breakdown, vat_breakdown)
+      |> assign(:total_paid, total_paid)
+      |> assign(:generated_at, DateTime.utc_now())
+
+    {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("print", _params, socket) do
+    {:noreply, push_event(socket, "print", %{})}
+  end
+
+  defp calculate_vat_breakdown(order_items) do
+    active_items = Enum.filter(order_items, &is_nil(&1.deleted_at))
+
+    active_items
+    |> Enum.group_by(& &1.vat_rate)
+    |> Enum.map(fn {vat_rate, items} ->
+      # Calculate total for this VAT rate group
+      total_incl_vat =
+        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
+          Decimal.add(acc, item.subtotal)
+        end)
+
+      # Calculate base (without VAT) and VAT amount
+      # Formula: base = total / (1 + vat_rate/100)
+      # vat_amount = total - base
+      divisor = Decimal.add(Decimal.new("1"), Decimal.div(vat_rate, 100))
+      base = Decimal.div(total_incl_vat, divisor)
+      vat_amount = Decimal.sub(total_incl_vat, base)
+
+      %{
+        vat_rate: vat_rate,
+        base: Decimal.round(base, 2),
+        vat_amount: Decimal.round(vat_amount, 2),
+        total_incl_vat: total_incl_vat
+      }
+    en
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Implementaci provádím s těmito hranicemi: běžná cesta `/` povede do POS, `/admin/*` dostane PIN gate na HTTP i LiveView události a POS tisk účtenky zůstane dostupný přes POS URL. PIN nebude mít výchozí hodnotu; bude se nastavovat jako PBKDF2 hash přes `ADMIN_PIN_HASH`, s 15minutovým neaktivním timeoutem a limitem chybných pokusů. Ještě ověřím dostupné crypto API, potom začnu editovat.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="file_search"><details>
+<summary>Tool use: **file_search**</summary>
+
+Searched for files matching `**/deps/plug_crypto/lib/plug/crypto*`, no matches
+
+**Input:**
+
+- query: `deps/plug_crypto/lib/plug/crypto*`
+
+**Result:**
+
+```
+No files found
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+No matches found. Your search pattern might be excluded completely by either the search.exclude settings or .*ignore files.
+If you believe that it should have results, you can check into the .*ignore files and the exclude setting (here are some excluded patterns for reference:[**/node_modules,**/bower_components,**/*.code-search]).
+Then if you want to include those files you can call the tool again by setting "includeIgnoredFiles" to true.
+
+**Input:**
+
+- includePattern: `deps/plug_crypto/lib/**`
+- isRegexp: `true`
+- maxResults: `20`
+- query: `def secure_compare|secure_compare\(`
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `runtime.exs`, lines 1 to 25
+
+**Input:**
+
+- endLine: `25`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/config/runtime.exs`
+- startLine: `1`
+
+**Result:**
+
+```
+import Config
+
+# config/runtime.exs is executed for all environments, including
+# during releases. It is executed after compilation and before the
+# system starts, so it is typically used to load production configuration
+# and secrets from environment variables or elsewhere. Do not define
+# any compile-time configuration in here, as it won't be applied.
+# The block below contains prod specific runtime configuration.
+
+# ## Using releases
+#
+# If you use `mix release`, you need to explicitly enable the server
+# by passing the PHX_SERVER=true when you start it:
+#
+#     PHX_SERVER=true bin/cozy_checkout start
+#
+# Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
+# script that automatically sets the env var above.
+if System.get_env("PHX_SERVER") do
+  config :cozy_checkout, CozyCheckoutWeb.Endpoint, server: true
+end
+
+if config_env() == :prod do
+  database_url =
+    System.get_env("DATABASE_URL") ||
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 985 to 1020
+
+**Input:**
+
+- endLine: `1020`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `985`
+
+**Result:**
+
+```
+                    <img
+                      src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                      alt="Payment QR Code"
+                      class="w-48 h-48"
+                    />
+                  <% end %>
+                </div>
+
+                <div class="bg-success-light border-2 border-green-200 rounded-xl p-4 mb-5">
+                  <p class="text-slate-700 font-semibold mb-1">QR Code Payment Recorded</p>
+                  <p class="text-4xl font-bold text-success-dark">
+                    {format_currency(@last_payment_amount || @order.total_amount)}
+                  </p>
+                </div>
+
+                <.link
+                  navigate={~p"/admin/orders/#{@order}/receipt"}
+                  target="_blank"
+                  class="block mb-3"
+                >
+                  <button
+                    type="button"
+                    class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+                  </button>
+                </.link>
+
+                <%= if @split_mode do %>
+                  <button
+                    phx-click="close_payment_modal"
+                    class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+                  >
+                    <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+                  </button>
+                  <button
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 865 to 905
+
+**Input:**
+
+- endLine: `905`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `865`
+
+**Result:**
+
+```
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-2">
+                <%= if @split_mode do %>
+                  Split Payment Collected!
+                <% else %>
+                  Payment Successful!
+                <% end %>
+              </h2>
+              <p class="text-lg text-slate-600 mb-2">
+                Invoice: {@payment_invoice_number}
+              </p>
+            </div>
+
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-6 mb-6">
+              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+              <p class="text-4xl font-bold text-success-dark">
+                {format_currency(@last_payment_amount || @order.total_amount)}
+              </p>
+            </div>
+
+            <.link
+              navigate={~p"/admin/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mb-3"
+            >
+              <button
+                type="button"
+                class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+              </button>
+            </.link>
+
+            <%= if @split_mode do %>
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+              >
+                <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+              </button>
+              <button
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Veřejná hlavní stránka není potřeba: nahradím ji přímým vstupem do POS, zatímco URL administrace zůstane dostupné jen po ověření session. Teď ještě ověřím formát existujícího přihlašovacího tokenu a README, abych nastavení PIN hash jasně popsal pro spuštění i produkci.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `router.ex`
+
+**Input:**
+
+- endLine: `165`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :calendar do
+    plug :accepts, ["html", "ics"]
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :calendar
+
+    get "/calendar/bookings.ics", BookingCalendarController, :index
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", MainMenuLive
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    import Phoenix.LiveDashboard.Router
+
+    live_dashboard "/system",
+      metrics: CozyCheckoutWeb.Telemetry,
+      additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    live "/", DashboardLive
+
+    # Categories
+    live "/categories", CategoryLive.Index, :index
+    live "/categories/new", CategoryLive.Index, :new
+    live "/categories/:id/edit", CategoryLive.Index, :edit
+
+    # Products
+    live "/products", ProductLive.Index, :index
+    live "/products/new", ProductLive.Index, :new
+    live "/products/:id/edit", ProductLive.Index, :edit
+
+    # Pricelists
+    live "/pricelists", PricelistLive.Index, :index
+    live "/pricelists/new", PricelistLive.Index, :new
+    live "/pricelists/:id/edit", PricelistLive.Index, :edit
+    live "/pricelists/management", PricelistLive.Management
+    live "/pricelists/print", PricelistLive.Printable
+
+    # Purchase Orders
+    live "/purchase_orders", PurchaseOrderLive.Index, :index
+    live "/purchase_orders/new", PurchaseOrderLive.Index, :new
+    live "/purchase_orders/:id/edit", PurchaseOrderLive.Index, :edit
+    live "/purchase_orders/:id", PurchaseOrderLive.Show
+
+    # Stock Overview
+    live "/stock", StockOverviewLive.Index
+    live "/stock/restock
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `booking_calendar_controller.ex`
+
+**Input:**
+
+- endLine: `45`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/booking_calendar_controller.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.BookingCalendarController do
+  use CozyCheckoutWeb, :controller
+
+  alias CozyCheckout.Bookings
+
+  def index(conn, %{"token" => token}) do
+    if valid_token?(token) do
+      conn
+      |> put_resp_content_type("text/calendar")
+      |> put_resp_header("content-disposition", "inline; filename=bookings.ics")
+      |> send_resp(200, Bookings.to_ical(Bookings.list_bookings_for_calendar()))
+    else
+      send_resp(conn, 404, "Not found")
+    end
+  end
+
+  def index(conn, _params), do: send_resp(conn, 404, "Not found")
+
+  defp valid_token?(provided_token) do
+    case Application.get_env(:cozy_checkout, :booking_ical_token) do
+      configured_token when is_binary(configured_token) and byte_size(configured_token) > 0 ->
+        Plug.Crypto.secure_compare(provided_token, configured_token)
+
+      _ ->
+        false
+    end
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `README.md`
+
+**Input:**
+
+- endLine: `150`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/README.md`
+- startLine: `1`
+
+**Result:**
+
+```
+# CozyCheckout
+
+To start your Phoenix server:
+
+* Run `mix setup` to install and setup dependencies
+* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+
+Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+
+Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+
+## Learn more
+
+* Official website: https://www.phoenixframework.org/
+* Guides: https://hexdocs.pm/phoenix/overview.html
+* Docs: https://hexdocs.pm/phoenix
+* Forum: https://elixirforum.com/c/phoenix-forum
+* Source: https://github.com/phoenixframework/phoenix
+
+
+How to setup sql server:
+Steps to Configure PostgreSQL for Local Network Access
+1. Locate and Edit pg_hba.conf
+The file location varies by system:
+
+Linux (Debian/Ubuntu): /etc/[REDACTED:generic-password]ql/17/main/pg_hba.conf
+Linux (Red Hat/CentOS): /var/lib/pgsql/17/data/pg_hba.conf
+macOS (Homebrew): pg_hba.conf or /usr/local/var/[REDACTED:generic-password]ql@17/pg_hba.conf
+Docker: Inside the container at /var/lib/[REDACTED:generic-password]ql/data/pg_hba.conf
+2. Add Configuration for Local Network
+Add these lines to allow password authentication from your local network:
+
+Replace 192.168.1.0/24 with your actual local network range. Common ranges:
+
+192.168.0.0/24 (192.168.0.1 - 192.168.0.254)
+192.168.1.0/24 (192.168.1.1 - 192.168.1.254)
+10.0.0.0/8 (10.0.0.1 - 10.255.255.254)
+3. Edit [REDACTED:generic-password]ql.conf to Listen on Network
+Find and edit [REDACTED:generic-password]ql.conf (same directory as pg_hba.conf):
+
+# Listen on all interfaces (default is localhost only)
+listen_addresses = '*'
+
+# Or specify your local network IP
+listen_addresses = '192.168.1.100'  # Your server's IP
+
+
+sudo systemctl restart [REDACTED:generic-password]ql
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `mix.exs`, lines 1 to 65
+
+**Input:**
+
+- endLine: `65`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/mix.exs`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckout.MixProject do
+  use Mix.Project
+
+  def project do
+    [
+      app: :cozy_checkout,
+      version: "0.1.0",
+      elixir: "~> 1.15",
+      elixirc_paths: elixirc_paths(Mix.env()),
+      start_permanent: Mix.env() == :prod,
+      aliases: aliases(),
+      deps: deps(),
+      compilers: [:phoenix_live_view] ++ Mix.compilers(),
+      listeners: [Phoenix.CodeReloader]
+    ]
+  end
+
+  # Configuration for the OTP application.
+  #
+  # Type `mix help compile.app` for more information.
+  def application do
+    [
+      mod: {CozyCheckout.Application, []},
+      extra_applications: [:logger, :runtime_tools]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [precommit: :test]
+    ]
+  end
+
+  # Specifies which paths to compile per environment.
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
+
+  # Specifies your project dependencies.
+  #
+  # Type `mix help deps` for examples and options.
+  defp deps do
+    [
+      {:phoenix, "~> 1.8.1"},
+      {:phoenix_ecto, "~> 4.5"},
+      {:ecto_sql, "~> 3.13"},
+      {:postgrex, ">= 0.0.0"},
+      {:phoenix_html, "~> 4.1"},
+      {:phoenix_live_reload, "~> 1.2", only: :dev},
+      {:phoenix_live_view, "~> 1.2"},
+      {:lazy_html, ">= 0.1.0", only: :test},
+      {:phoenix_live_dashboard, "~> 0.8.3"},
+      {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
+      {:heroicons,
+       github: "tailwindlabs/heroicons",
+       tag: "v2.2.0",
+       sparse: "optimized",
+       app: false,
+       compile: false,
+       depth: 1},
+      {:swoosh, "~> 1.16"},
+      {:req, "~> 0.5"},
+      {:qr_code, "~> 3.2"},
+      {:flop, "~> 0.26.0"},
+      {:telemetry_metrics, "~> 1.0"},
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Implementace bude mít čtyři části: PIN hash generator, veřejnou přihlašovací stránku a controller, ochranný plug plus LiveView timeout hook a úpravu rout/POS tiskových odkazů. Kořen aplikace pošlu rovnou do POS; `/admin/login` zůstane veřejný, ale všechny ostatní admin cesty ověří session při HTTP požadavku i při připojení LiveView. Přidám také testy hashování a blokování pokusů a krátký návod k nastavení `ADMIN_PIN_HASH`.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **router.ex**</summary>
+
+@@ lines 1-170 @@
+
+```
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :calendar do
+    plug :accepts, ["html", "ics"]
+  end
+
+  pipeline :admin_auth do
+    plug CozyCheckoutWeb.AdminAuth
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :calendar
+
+    get "/calendar/bookings.ics", BookingCalendarController, :index
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", PosLive.GuestSelection
+  end
+
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/login", AdminLoginLive
+    post "/login", AdminSessionController, :create
+    post "/logout", AdminSessionController, :delete
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through [:browser, :admin_auth]
+
+    import Phoenix.LiveDashboard.Router
+
+    live_dashboard "/system",
+      metrics: CozyCheckoutWeb.Telemetry,
+      additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    live_session :admin, on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}] do
+    live "/", DashboardLive
+
+    # Categories
+    live "/categories", CategoryLive.Index, :index
+    live "/categories/new", CategoryLive.Index, :new
+    live "/categories/:id/edit", CategoryLive.Index, :edit
+
+    # Products
+    live "/products", ProductLive.Index, :index
+    live "/products/new", ProductLive.Index, :new
+    live "/products/:id/edit", ProductLive.Index, :edit
+
+    # Pricelists
+    live "/pricelists", PricelistLive.Index, :index
+    live "/pricelists/new", PricelistLive.Index, :new
+    live "/pricelists/:id/edit", PricelistLive.Index, :edit
+    live "/pricelists/management", PricelistLive.Management
+    live "/pricelists/print", PricelistLive.Printable
+
+    # Purchase Orders
+    live "/purchase_orders", PurchaseOrderLive.Index, :index
+    live "/purchase_orders/new", PurchaseOrderLive.Index, :new
+    live "/purchase_orders/:id/edit", PurchaseOrderLive.Index, :edit
+    live "/purchase_orders/:id", PurchaseOrderLive.Show
+
+    # Stock Overview
+    live "/stock", StockOverviewLive.Index
+    live "/stock/restock", StockRestockLive
+    live "/bar-stock", BarStockLive
+
+    # Stock Adjustments
+    live "/stock-adjustments", StockAdjustmentLive.Index, :index
+    live "/stock-adjustments/new", StockAdjustmentLive.Index, :new
+    live "/stock-adjustments/:id/edit", StockAdjustmentLive.Index, :edit
+
+    # Inventory Reports
+    live "/inventory-reports", InventoryReportsLive.Index
+
+    # Guests
+    live "/guests", GuestLive.Index, :index
+    live "/guests/new", GuestLive.Index, :new
+    live "/guests/:id/edit", GuestLive.Index, :edit
+
+    # Rooms
+    live "/rooms", RoomLive.Index, :index
+    live "/rooms/new", RoomLive.Index, :new
+    live "/rooms/:id/edit", RoomLive.Index, :edit
+
+    # Bookings
+    live "/bookings", BookingLive.Index, :index
+    live "/bookings/new", BookingLive.Index, :new
+    live "/bookings/calendar", BookingLive.Calendar
+    live "/bookings/timeline", BookingLive.Timeline
+    live "/bookings/:id", BookingLive.Show
+    live "/bookings/:id/edit", BookingLive.Index, :edit
+    live "/bookings/:booking_id/guests", BookingLive.ManageGuests
+
+    # Orders
+    live "/orders", OrderLive.Index, :index
+    live "/orders/new", OrderLive.New
+    live "/orders/:id/edit", OrderLive.Edit
+    live "/orders/:id", OrderLive.Show
+    live "/orders/:id/receipt", OrderLive.Receipt
+
+    # Payments
+    live "/payments", PaymentLive.Index, :index
+    live "/payments/new", PaymentLive.New
+
+    # Economy Management
+    live "/economy", EconomyLive.Index
+
+    # Statistics
+    live "/statistics", StatisticsLive.Index
+
+    # POHODA Export
+    live "/pohoda-export", PohodaExportLive.Index, :index
+
+    # iCal Import
+    live "/ical-import", IcalImportLive.Index, :index
+
+    # Meal Planner
+    live "/meal-planner", MealPlannerLive.Index
+    live "/meal-planner/templates", MealPlannerLive.Templates, :index
+    live "/meal-planner/templates/new", MealPlannerLive.Templates, :new
+    live "/meal-planner/templates/:id/edit", MealPlannerLive.Templates, :edit
+    live "/meal-planner/print", MealPlannerLive.Print
+    end
+  end
+
+  # Point of Sale (POS) - Touch-friendly interface for bar staff
+  scope "/pos", CozyCheckoutWeb.PosLive do
+    pipe_through :browser
+
+    live "/", GuestSelection
+    live "/bookings/:booking_id/orders", OrderSelection
+    live "/orders/:id", OrderManagement
+    live "/orders/:id/receipt", CozyCheckoutWeb.OrderLive.Receipt
+  end
+
+  # Other scopes may use custom stacks.
+  # scope "/api", CozyCheckoutWeb do
+  #   pipe_through :api
+  # end
+
+  # Enable LiveDashboard and Swoosh mailbox preview in development
+  if Application.compile_env(:cozy_checkout, :dev_routes) do
+    scope "/dev" do
+      pipe_through :browser
+
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **application.ex**</summary>
+
+@@ lines 1-36 @@
+
+```
+defmodule CozyCheckout.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
+  @moduledoc false
+
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      CozyCheckoutWeb.Telemetry,
+      CozyCheckout.Repo,
+      {DNSCluster, query: Application.get_env(:cozy_checkout, :dns_cluster_query) || :ignore},
+      {Phoenix.PubSub, name: CozyCheckout.PubSub},
+      CozyCheckoutWeb.AdminAuthRateLimiter,
+      {Oban, Application.fetch_env!(:cozy_checkout, Oban)},
+      # Start to serve requests, typically the last entry
+      CozyCheckoutWeb.Endpoint
+    ]
+
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
+    opts = [strategy: :one_for_one, name: CozyCheckout.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    CozyCheckoutWeb.Endpoint.config_change(changed, removed)
+    :ok
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **runtime.exs**</summary>
+
+@@ lines 1-152 @@
+
+```
+import Config
+
+# config/runtime.exs is executed for all environments, including
+# during releases. It is executed after compilation and before the
+# system starts, so it is typically used to load production configuration
+# and secrets from environment variables or elsewhere. Do not define
+# any compile-time configuration in here, as it won't be applied.
+# The block below contains prod specific runtime configuration.
+
+# ## Using releases
+#
+# If you use `mix release`, you need to explicitly enable the server
+# by passing the PHX_SERVER=true when you start it:
+#
+#     PHX_SERVER=true bin/cozy_checkout start
+#
+# Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
+# script that automatically sets the env var above.
+if System.get_env("PHX_SERVER") do
+  config :cozy_checkout, CozyCheckoutWeb.Endpoint, server: true
+end
+
+if admin_pin_hash = System.get_env("ADMIN_PIN_HASH") do
+  config :cozy_checkout, :admin_pin_hash, admin_pin_hash
+end
+
+if config_env() == :prod do
+  database_url =
+    System.get_env("DATABASE_URL") ||
+      raise """
+      environment variable DATABASE_URL is missing.
+      For example: ecto://USER:PASS@HOST/DATABASE
+      """
+
+  maybe_ipv6 = if System.get_env("ECTO_IPV6") in ~w(true 1), do: [:inet6], else: []
+
+  config :logger, level: :debug
+  config :phoenix, :socket_filters, [CozyCheckoutWeb.UserSocket]
+
+  config :cozy_checkout, CozyCheckout.Repo,
+    # ssl: true,
+    url: database_url,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    # For machines with several cores, consider starting multiple pools of `pool_size`
+    # pool_count: 4,
+    socket_options: maybe_ipv6
+
+  # The secret key base is used to sign/encrypt cookies and other secrets.
+  # A default value is used in config/dev.exs and config/test.exs but you
+  # want to use a different value for prod and you most likely don't want
+  # to check this value into version control, so we use an environment
+  # variable instead.
+  secret_key_base =
+    System.get_env("SECRET_KEY_BASE") ||
+      raise """
+      environment variable SECRET_KEY_BASE is missing.
+      You can generate one by calling: mix phx.gen.secret
+      """
+
+  host = System.get_env("PHX_HOST") || "example.com"
+  port = String.to_integer(System.get_env("PORT") || "4000")
+
+  config :cozy_checkout, :dns_cluster_query, System.get_env("DNS_CLUSTER_QUERY")
+
+  config :cozy_checkout, CozyCheckoutWeb.Endpoint,
+    url: [host: host, port: 80, scheme: "http"],
+    http: [
+      # Enable IPv6 and bind on all interfaces.
+      # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
+      # See the documentation on https://hexdocs.pm/bandit/Bandit.html#t:options/0
+      # for details about using IPv6 vs IPv4 and loopback vs public addresses.
+      ip: {0, 0, 0, 0, 0, 0, 0, 0},
+      port: port
+    ],
+    check_origin: [
+      "//#{host}",
+      "//localhost",
+      "//cozy-server.local",
+      "//127.0.0.1"
+    ],
+    secret_key_base: secret_key_base,
+    live_view: [
+      signing_salt: secret_key_base,
+      # Increase timeout to prevent LiveView process cleanup
+      # This works with the client-side heartbeat to keep connections alive
+      timeout: :infinity
+    ]
+
+  # ## SSL Support
+  #
+  # To get SSL working, you will need to add the `https` key
+  # to your endpoint configuration:
+  #
+  #     config :cozy_checkout, CozyCheckoutWeb.Endpoint,
+  #       https: [
+  #         ...,
+  #         port: 443,
+  #         cipher_suite: :strong,
+  #         keyfile: System.get_env("SOME_APP_SSL_KEY_PATH"),
+  #         certfile: System.get_env("SOME_APP_SSL_CERT_PATH")
+  #       ]
+  #
+  # The `cipher_suite` is set to `:strong` to support only the
+  # latest and more secure SSL ciphers. This means old browsers
+  # and clients may not be supported. You can set it to
+  # `:compatible` for wider support.
+  #
+  # `:keyfile` and `:certfile` expect an absolute path to the key
+  # and cert in disk or a relative path inside priv, for example
+  # "priv/ssl/server.key". For all supported SSL configuration
+  # options, see https://hexdocs.pm/plug/Plug.SSL.html#configure/1
+  #
+  # We also recommend setting `force_ssl` in your config/prod.exs,
+  # ensuring no data is ever sent via http, always redirecting to https:
+  #
+  #     config :cozy_checkout, CozyCheckoutWeb.Endpoint,
+  #       force_ssl: [hsts: true]
+  #
+  # Check `Plug.SSL` for all available options in `force_ssl`.
+
+  # ## Configuring the mailer
+  #
+  # In production you need to configure the mailer to use a different adapter.
+  # Here is an example configuration for Mailgun:
+  #
+  #     config :cozy_checkout, CozyCheckout.Mailer,
+  #       adapter: Swoosh.Adapters.Mailgun,
+  #       api_key: System.get_env("MAILGUN_API_KEY"),
+  #       domain: System.get_env("MAILGUN_DOMAIN")
+  #
+  # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
+  # and Finch out-of-the-box. This configuration is typically done at
+  # compile-time in your config/prod.exs:
+  #
+  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
+  #
+  # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
+end
+
+# Abra Flexi REST API integration
+config :cozy_checkout, :abra,
+  base_url: System.get_env("ABRA_BASE_URL", "https://moruska.flexibee.eu"),
+  company_id: System.get_env("ABRA_COMPANY_ID", "moruska_s_r_o_"),
+  username: System.get_env("ABRA_USERNAME", ""),
+  password: System.get_env("ABRA_PASSWORD", ""),
+  cash_register_code: System.get_env("ABRA_CASH_REGISTER_CODE", "POKLADNA KČ"),
+  document_series_code: System.get_env("ABRA_DOCUMENT_SERIES_CODE", "FAKTURA-BAR"),
+  bank_account_code: System.get_env("ABRA_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
+
+config :cozy_checkout, :booking_ical_token, System.get_env("BOOKING_ICAL_TOKEN")
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.html.heex**</summary>
+
+@@ lines 1-1247 @@
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div phx-hook="KeepAlive" id="pos-keep-alive" class="h-screen flex flex-col bg-slate-50">
+    <!-- Fixed Header -->
+    <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-4">
+        <button
+          phx-click="back_to_guests"
+          class="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all"
+        >
+          <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
+        </button>
+        <div>
+          <%= if @order.booking_id do %>
+            <h1 class="text-2xl font-bold text-slate-900">
+              {if @order.guest, do: @order.guest.name, else: "Unknown Guest"}
+              <span :if={@order.booking.room_number} class="text-slate-500">
+                - Room {@order.booking.room_number}
+              </span>
+            </h1>
+          <% else %>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl font-bold text-slate-900">
+                📋 {@order.name}
+              </h1>
+              <span class="px-3 py-1 bg-info-light text-purple-700 text-sm font-semibold rounded-full">
+                Standalone Order
+              </span>
+            </div>
+          <% end %>
+          <div class="flex items-center gap-3">
+            <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
+            <%= if @order.is_service_order do %>
+              <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                Service Order
+              </span>
+            <% end %>
+            <%= if @order.status != "paid" do %>
+              <button
+                phx-click="toggle_service_order"
+                class="text-xs text-purple-600 hover:text-purple-800 underline"
+              >
+                {if @order.is_service_order, do: "Convert to Standard", else: "Convert to Service"}
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Total -->
+      <div class="text-right">
+        <div class="flex items-center justify-end gap-2 mb-1">
+          <p class="text-sm text-slate-600">Total</p>
+          <%= if total_out_of_sync?(@order) do %>
+            <span class="px-2 py-1 bg-error-light text-red-700 text-xs font-semibold rounded-full">
+              Out of sync
+            </span>
+          <% end %>
+        </div>
+        <p class="text-3xl font-bold text-success-dark">
+          {format_currency(@order.total_amount || Decimal.new("0"))}
+        </p>
+        <button
+          phx-click="open_recalculate_modal"
+          class="text-xs text-tertiary-600 hover:text-tertiary-800 underline mt-1"
+        >
+          Recalculate total
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area with Two Columns -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Left Column: Products -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Category Filter Tabs -->
+        <div class="bg-white border-b border-slate-200 px-6 py-4 overflow-x-auto">
+          <div class="flex gap-3 min-w-max">
+            <button
+              phx-click="select_category"
+              phx-value-category-id="all"
+              class={[
+                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                if(is_nil(@selected_category_id),
+                  do: "bg-tertiary-600 text-white shadow-lg",
+                  else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                )
+              ]}
+            >
+              Popular
+            </button>
+            <button
+              :for={category <- @categories}
+              phx-click="select_category"
+              phx-value-category-id={category.id}
+              class={[
+                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                if(@selected_category_id == category.id,
+                  do: "bg-tertiary-600 text-white shadow-lg",
+                  else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                )
+              ]}
+            >
+              {category.name}
+            </button>
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <%= if is_nil(@selected_category_id) do %>
+              <!-- Show Popular Products -->
+              <div
+                :for={product <- @popular_products}
+                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+              >
+                <div class="flex items-center gap-4 mb-3">
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                      {product.name}
+                    </h3>
+                    <p :if={product.category} class="text-xs text-slate-500 mb-1 truncate">
+                      {product.category.name}
+                    </p>
+                    <%= if product.pricing_info do %>
+                      <p class="text-base font-bold text-success-dark">
+                        <%= case product.pricing_info.type do %>
+                          <% :single -> %>
+                            {format_currency(product.pricing_info.price)}
+                          <% :tiers -> %>
+                            Multiple prices
+                          <% :none -> %>
+                            —
+                        <% end %>
+                      </p>
+                    <% end %>
+                    <span :if={product.unit} class="text-xs text-slate-600">
+                      per {product.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Quick Quantity Selector -->
+                <div class="grid grid-cols-3 gap-3">
+                  <button
+                    phx-click="add_product"
+                    phx-value-product-id={product.id}
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
+                  >
+                    Add 1×
+                  </button>
+                  <button
+                    phx-click="show_custom_quantity"
+                    phx-value-product-id={product.id}
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
+                  >
+                    5+
+                  </button>
+                </div>
+              </div>
+            <% else %>
+              <!-- Show Category Products -->
+              <div
+                :for={product <- filter_products(@products, @selected_category_id)}
+                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+              >
+                <div class="flex items-center gap-4 mb-3">
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                      {product.name}
+                    </h3>
+                    <%= if product.pricing_info do %>
+                      <p class="text-base font-bold text-success-dark">
+                        <%= case product.pricing_info.type do %>
+                          <% :single -> %>
+                            {format_currency(product.pricing_info.price)}
+                          <% :tiers -> %>
+                            Multiple prices
+                          <% :none -> %>
+                            —
+                        <% end %>
+                      </p>
+                    <% end %>
+                    <span :if={product.unit} class="text-xs text-slate-600">
+                      per {product.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Quick Quantity Selector -->
+                <div class="grid grid-cols-3 gap-3">
+                  <button
+                    phx-click="add_product"
+                    phx-value-product-id={product.id}
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
+                  >
+                    Add 1×
+                  </button>
+                  <button
+                    phx-click="show_custom_quantity"
+                    phx-value-product-id={product.id}
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
+                  >
+                    5+
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Order Cart -->
+      <div class="w-[450px] bg-white border-l border-slate-200 flex flex-col">
+        <div class={["px-6 py-4 border-b border-slate-200", @split_mode && "bg-amber-50"]}>
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">
+                <%= if @split_mode do %>
+                  Split Bill
+                <% else %>
+                  Current Order
+                <% end %>
+              </h2>
+              <p class="text-sm text-slate-600">
+                {Enum.count(@grouped_items)} {if Enum.count(@grouped_items) == 1,
+                  do: "item",
+                  else: "items"}
+              </p>
+            </div>
+            <%= if @split_mode do %>
+              <button
+                phx-click="exit_split_mode"
+                class="flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 text-sm font-semibold active:scale-95 transition-all"
+              >
+                <.icon name="hero-x-mark" class="w-4 h-4" /> Exit Split
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Cart Items / Split Mode -->
+        <%= if @split_mode do %>
+          <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide px-1 mb-3">
+              Select items for this person
+            </p>
+            <div class="space-y-3">
+              <div
+                :for={group <- @grouped_items}
+                class="bg-slate-50 rounded-xl p-4 border border-slate-200"
+              >
+                <% group_key = {group.product.id, group.unit_amount}
+                allocated_qty = Map.get(@split_allocated, group_key, 0)
+                total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+                available_qty = max(0, total_qty - allocated_qty)
+                selected_qty = Map.get(@split_selection, group_key, 0)
+                item_total = Decimal.mult(group.price_per_unit, Decimal.new(selected_qty)) %>
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1 min-w-0 pr-2">
+                    <h3 class="font-semibold text-slate-900 truncate">{group.product.name}</h3>
+                    <p class="text-sm text-slate-500">
+                      <%= if group.unit_amount do %>
+                        {Decimal.round(group.unit_amount, 0)}{group.unit} ·
+                      <% end %>
+                      {format_currency(group.price_per_unit)} each
+                    </p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      {available_qty}/{total_qty} available
+                      <%= if allocated_qty > 0 do %>
+                        · {allocated_qty} already split
+                      <% end %>
+                    </p>
+                  </div>
+                  <p class={[
+                    "font-bold text-lg shrink-0",
+                    if(selected_qty > 0, do: "text-success-dark", else: "text-slate-300")
+                  ]}>
+                    {format_currency(item_total)}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button
+                    phx-click="split_adjust"
+                    phx-value-product-id={group.product.id}
+                    phx-value-unit-amount={group.unit_amount || ""}
+                    phx-value-delta="-1"
+                    disabled={selected_qty == 0}
+                    class="w-10 h-10 rounded-full bg-slate-200 hover:bg-slate-300 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xl text-slate-800 flex items-center justify-center active:scale-95 transition-all"
+                  >
+                    –
+                  </button>
+                  <span class="text-2xl font-bold text-slate-900 w-8 text-center">
+                    {selected_qty}
+                  </span>
+                  <button
+                    phx-click="split_adjust"
+                    phx-value-product-id={group.product.id}
+                    phx-value-unit-amount={group.unit_amount || ""}
+                    phx-value-delta="1"
+                    disabled={selected_qty >= available_qty}
+                    class="w-10 h-10 rounded-full bg-tertiary-600 hover:bg-tertiary-700 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xl text-white flex items-center justify-center active:scale-95 transition-all"
+                  >
+                    +
+                  </button>
+                  <span class="text-sm text-slate-500">/ {available_qty}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <!-- Cart Items -->
+          <div class="flex-1 overflow-y-auto p-6">
+            <%= if @grouped_items == [] do %>
+              <div class="text-center py-12">
+                <.icon name="hero-shopping-cart" class="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p class="text-lg text-slate-400">No items yet</p>
+                <p class="text-sm text-slate-400">Tap products to add</p>
+              </div>
+            <% else %>
+              <div class="space-y-3">
+                <div :for={group <- @grouped_items} class="bg-slate-50 rounded-xl overflow-hidden">
+                  <%= if group.grouped? do %>
+                    <!-- Grouped Item Display -->
+                    <div
+                      id={"cart-group-#{Enum.join(group.item_ids, "-")}"}
+                      class="p-4"
+                    >
+                      <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                          <h3 class="font-semibold text-slate-900 mb-1">
+                            {group.product.name}
+                          </h3>
+                          <p class="text-sm text-slate-600">
+                            <%= if group.unit_amount do %>
+                              {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                                group.total_quantity,
+                                2
+                              )}
+                            <% else %>
+                              Qty: {Decimal.round(group.total_quantity, 2)}
+                            <% end %>
+                            <span class="ml-2 text-xs bg-tertiary-100 text-tertiary-800 px-2 py-1 rounded-full">
+                              {length(group.items)} items
+                            </span>
+                          </p>
+                          <p class="text-xs text-slate-500 mt-1">
+                            Added: {format_item_timestamp(
+                              Enum.max_by(group.items, & &1.inserted_at).inserted_at
+                            )}
+                          </p>
+                        </div>
+                        <div class="text-right">
+                          <p class="font-bold text-slate-900">
+                            {format_currency(group.total_price)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Expand/Collapse Button for Grouped Items -->
+                      <button
+                        phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
+                        phx-value-product-id={group.product.id}
+                        phx-value-unit-amount={group.unit_amount || ""}
+                        class="mt-3 w-full text-sm text-tertiary-600 hover:text-tertiary-800 font-medium flex items-center justify-center gap-1"
+                      >
+                        <%= if group.expanded? do %>
+                          <.icon name="hero-chevron-up" class="w-4 h-4" /> Hide individual items
+                        <% else %>
+                          <.icon name="hero-chevron-down" class="w-4 h-4" />
+                          Show {length(group.items)} individual items
+                        <% end %>
+                      </button>
+                    </div>
+                  <% else %>
+                    <!-- Single Item Display (not grouped) with delete functionality -->
+                    <div
+                      id={"cart-item-single-#{hd(group.items).id}"}
+                      phx-hook="SwipeToDelete"
+                      data-item-id={hd(group.items).id}
+                      class="relative overflow-hidden touch-pan-y"
+                    >
+                      <!-- Swipe Background -->
+                      <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
+                        <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                      </div>
+
+                      <!-- Item Content -->
+                      <div class="swipe-content relative bg-slate-50 p-4">
+                        <div class="flex justify-between items-start">
+                          <div class="flex-1">
+                            <h3 class="font-semibold text-slate-900 mb-1">
+                              {group.product.name}
+                            </h3>
+                            <p class="text-sm text-slate-600">
+                              <%= if group.unit_amount do %>
+                                {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                                  group.total_quantity,
+                                  2
+                                )}
+                              <% else %>
+                                Qty: {Decimal.round(group.total_quantity, 2)}
+                              <% end %>
+                            </p>
+                            <p class="text-xs text-slate-500 mt-1">
+                              Added: {format_item_timestamp(hd(group.items).inserted_at)}
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-3">
+                            <p class="font-bold text-slate-900">
+                              {format_currency(group.total_price)}
+                            </p>
+                            <button
+                              phx-click="delete_item"
+                              phx-value-item-id={hd(group.items).id}
+                              class="text-error hover:text-error-dark active:scale-95"
+                            >
+                              <.icon name="hero-x-mark" class="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <!-- Individual Items (when expanded) -->
+                  <%= if group.expanded? do %>
+                    <div class="border-t border-slate-200 bg-white">
+                      <div
+                        :for={item <- group.items}
+                        id={"cart-item-#{item.id}"}
+                        phx-hook="SwipeToDelete"
+                        data-item-id={item.id}
+                        class="relative overflow-hidden touch-pan-y"
+                      >
+                        <!-- Swipe Background -->
+                        <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
+                          <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                        </div>
+
+                        <!-- Item Content -->
+                        <div class="swipe-content relative bg-white p-3 border-b border-slate-100 last:border-b-0">
+                          <div class="flex justify-between items-start text-sm">
+                            <div class="flex-1">
+                              <p class="text-slate-600">
+                                <%= if item.unit_amount do %>
+                                  {Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity}
+                                <% else %>
+                                  Qty: {item.quantity}
+                                <% end %>
+                              </p>
+                              <p class="text-xs text-slate-500 mt-0.5">
+                                {format_item_timestamp(item.inserted_at)}
+                              </p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                              <p class="text-slate-700 font-medium">
+                                {format_currency(item.subtotal)}
+                              </p>
+                              <button
+                                phx-click="delete_item"
+                                phx-value-item-id={item.id}
+                                class="text-error hover:text-error-dark active:scale-95"
+                              >
+                                <.icon name="hero-x-mark" class="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        <%!-- end @split_mode --%>
+
+        <!-- Cart Summary -->
+        <div class="border-t border-slate-200 p-6 bg-slate-50">
+          <% order_total = @order.total_amount || Decimal.new("0")
+
+          total_paid =
+            Enum.reduce(@order.payments || [], Decimal.new("0"), fn p, acc ->
+              if is_nil(p.deleted_at), do: Decimal.add(acc, p.amount), else: acc
+            end)
+
+          remaining = Decimal.sub(order_total, total_paid) %>
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between text-slate-700">
+              <span>Order total</span>
+              <span class="font-semibold">{format_currency(order_total)}</span>
+            </div>
+            <div
+              :if={@order.discount_amount && Decimal.gt?(@order.discount_amount, 0)}
+              class="flex justify-between text-error"
+            >
+              <span>Discount</span>
+              <span class="font-semibold">-{format_currency(@order.discount_amount)}</span>
+            </div>
+            <%= if Decimal.gt?(total_paid, 0) do %>
+              <div class="flex justify-between text-success-dark">
+                <span>Paid so far</span>
+                <span class="font-semibold">-{format_currency(total_paid)}</span>
+              </div>
+            <% end %>
+          </div>
+          <div class={[
+            "flex justify-between items-center text-xl font-bold text-slate-900 pt-4 border-t border-slate-300 mb-4"
+          ]}>
+            <span>{if Decimal.gt?(total_paid, 0), do: "Remaining", else: "Total"}</span>
+            <span class={[
+              "text-2xl",
+              if(Decimal.gt?(total_paid, 0), do: "text-amber-600", else: "text-success-dark")
+            ]}>
+              {format_currency(if Decimal.gt?(total_paid, 0), do: remaining, else: order_total)}
+            </span>
+          </div>
+
+          <!-- Payment Button -->
+          <%= cond do %>
+            <% @split_mode -> %>
+              <% split_amount = calc_split_total(@grouped_items, @split_selection)
+              has_selection = Enum.any?(@split_selection, fn {_k, qty} -> qty > 0 end) %>
+              <button
+                phx-click="open_split_payment_modal"
+                disabled={!has_selection}
+                class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed mb-2"
+              >
+                <.icon name="hero-credit-card" class="w-6 h-6 inline-block mr-2" />
+                Collect {format_currency(split_amount)}
+              </button>
+            <% @order.status in ["open", "partially_paid"] && Decimal.gt?(order_total, 0) -> %>
+              <div class="grid grid-cols-5 gap-2">
+                <button
+                  phx-click="open_payment_modal"
+                  class="col-span-3 bg-success hover:bg-success-dark text-white font-bold py-5 px-4 rounded-2xl text-lg active:scale-95 transition-all shadow-lg"
+                >
+                  <.icon name="hero-credit-card" class="w-5 h-5 inline-block mr-1" /> Pay Order
+                </button>
+                <button
+                  phx-click="enter_split_mode"
+                  class="col-span-2 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-4 rounded-2xl text-base active:scale-95 transition-all"
+                >
+                  <.icon name="hero-users" class="w-5 h-5 inline-block" /> Split
+                </button>
+              </div>
+            <% @order.status == "paid" -> %>
+              <div class="bg-success-light border-2 border-green-600 text-success-dark font-bold py-4 px-6 rounded-2xl text-center">
+                <.icon name="hero-check-circle" class="w-6 h-6 inline-block mr-2" /> Paid
+              </div>
+            <% true -> %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unit Amount Modal -->
+    <div
+      :if={@show_unit_modal && @selected_product}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_unit_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+        id="unit-modal"
+        phx-hook="UnitAmountSelector"
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-4">
+          {@selected_product.name}
+        </h2>
+        <p class="text-lg text-slate-600 mb-6">
+          Select amount ({@selected_product.unit})
+        </p>
+
+        <!-- Quick Select Buttons -->
+        <%= if @selected_product.default_unit_amounts do %>
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Select Amount</p>
+            <div class="grid grid-cols-3 gap-3">
+              <%= for amount <- parse_default_amounts(@selected_product.default_unit_amounts) do %>
+                <button
+                  type="button"
+                  phx-click="quick_add_unit_amount"
+                  phx-value-unit_amount={amount}
+                  class="bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center"
+                >
+                  <span class="text-2xl">{amount}</span>
+                  <span class="text-sm mt-1">{@selected_product.unit}</span>
+                  <%= if price = get_price_for_amount(@selected_product, amount) do %>
+                    <span class="text-xs mt-1 opacity-90">{format_currency(price)}</span>
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <!-- For products without predefined amounts, show a simple add button -->
+          <div class="mb-6">
+            <p class="text-sm text-slate-600 mb-4">
+              This product doesn't have predefined amounts.
+            </p>
+            <button
+              type="button"
+              phx-click="quick_add_unit_amount"
+              phx-value-unit_amount="0"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+          </div>
+        <% end %>
+
+        <!-- Cancel Button -->
+        <div class="pt-4">
+          <button
+            type="button"
+            phx-click="cancel_unit_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Quantity Modal -->
+    <div
+      :if={@show_quantity_modal && @quantity_product}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_quantity_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">
+          {@quantity_product.name}
+        </h2>
+        <p class="text-lg text-slate-600 mb-6">
+          How many would you like to add?
+        </p>
+
+        <form phx-submit="add_with_quantity">
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">
+              Quantity
+            </label>
+            <input
+              type="number"
+              name="quantity"
+              min="1"
+              max="99"
+              value="5"
+              autofocus
+              class="w-full px-6 py-4 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-tertiary-200 transition-all text-2xl font-bold text-center"
+            />
+          </div>
+
+          <div class="space-y-3">
+            <button
+              type="submit"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+            <button
+              type="button"
+              phx-click="cancel_quantity_modal"
+              class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div
+      :if={@show_success}
+      phx-click="hide_success"
+      class="fixed top-20 right-6 bg-success text-white px-6 py-4 rounded-xl shadow-2xl animate-bounce-in z-50"
+    >
+      <div class="flex items-center gap-3">
+        <.icon name="hero-check-circle" class="w-6 h-6" />
+        <span class="font-semibold text-lg">Item added!</span>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      :if={@show_delete_confirm && @item_to_delete}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_delete"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-error-light rounded-full mb-4">
+            <.icon name="hero-trash" class="w-8 h-8 text-error" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 mb-2">Delete Item?</h2>
+          <p class="text-slate-600">This action cannot be undone.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-xl p-4 mb-6">
+          <h3 class="font-bold text-slate-900 text-lg mb-2">
+            {@item_to_delete.product.name}
+          </h3>
+          <div class="space-y-1 text-sm text-slate-700">
+            <p>
+              <%= if @item_to_delete.unit_amount do %>
+                Amount: {Decimal.round(@item_to_delete.unit_amount, 2)}{@item_to_delete.product.unit}
+              <% end %>
+            </p>
+            <p>Quantity: {@item_to_delete.quantity}</p>
+            <p class="font-semibold text-base text-slate-900 mt-2">
+              Price: {format_currency(@item_to_delete.subtotal)}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <button
+            phx-click="confirm_delete"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Yes, Delete Item
+          </button>
+          <button
+            phx-click="cancel_delete"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recalculation Modal -->
+    <div
+      :if={@show_recalculate_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_recalculate_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <h2 class="text-2xl font-bold text-slate-900 mb-6">Recalculate Order Total</h2>
+
+        <div class="space-y-4 mb-6">
+          <!-- Current Total -->
+          <div class="bg-slate-50 rounded-xl p-4">
+            <p class="text-sm text-slate-600 mb-1">Current Total (Database)</p>
+            <p class="text-2xl font-bold text-slate-900">
+              {format_currency(@order.total_amount || Decimal.new("0"))}
+            </p>
+          </div>
+
+          <!-- Recalculated Total -->
+          <div class={[
+            "rounded-xl p-4",
+            if(Decimal.equal?(@recalculated_total, @order.total_amount),
+              do: "bg-success-light border-2 border-green-200",
+              else: "bg-yellow-50 border-2 border-yellow-200"
+            )
+          ]}>
+            <p class="text-sm text-slate-600 mb-1">Recalculated Total (From Items)</p>
+            <p class="text-2xl font-bold text-slate-900">
+              {format_currency(@recalculated_total || Decimal.new("0"))}
+            </p>
+          </div>
+
+          <!-- Difference -->
+          <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
+            <div class="bg-error-light border-2 border-red-200 rounded-xl p-4">
+              <p class="text-sm text-error mb-1 font-semibold">Difference</p>
+              <p class="text-xl font-bold text-red-700">
+                {format_currency(Decimal.sub(@recalculated_total, @order.total_amount))}
+              </p>
+              <p class="text-xs text-error mt-2">
+                The database total doesn't match the sum of order items.
+              </p>
+            </div>
+          <% else %>
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-4">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-check-circle" class="w-5 h-5 text-success-dark" />
+                <p class="text-sm text-green-700 font-semibold">
+                  Totals match! No update needed.
+                </p>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Item Breakdown -->
+          <div class="bg-slate-50 rounded-xl p-4">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Items Breakdown</p>
+            <div class="space-y-2 text-sm">
+              <%= for item <- @order.order_items do %>
+                <div class="flex justify-between text-slate-700">
+                  <span>
+                    {item.product.name}
+                    <%= if item.unit_amount do %>
+                      ({Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity})
+                    <% else %>
+                      (× {item.quantity})
+                    <% end %>
+                  </span>
+                  <span class="font-medium">{format_currency(item.subtotal)}</span>
+                </div>
+              <% end %>
+              <div class="border-t border-slate-300 pt-2 mt-2 flex justify-between font-semibold">
+                <span>Sum of Items:</span>
+                <span>{format_currency(@recalculated_total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+          <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
+            <button
+              phx-click="apply_recalculation"
+              class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+            >
+              Update Total to {format_currency(@recalculated_total)}
+            </button>
+          <% end %>
+          <button
+            phx-click="close_recalculate_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div
+      :if={@show_payment_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_payment_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <%= if @payment_method == "cash_success" do %>
+          <!-- Cash Payment Success -->
+          <div class="text-center">
+            <div class="mb-6">
+              <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-2">
+                <%= if @split_mode do %>
+                  Split Payment Collected!
+                <% else %>
+                  Payment Successful!
+                <% end %>
+              </h2>
+              <p class="text-lg text-slate-600 mb-2">
+                Invoice: {@payment_invoice_number}
+              </p>
+            </div>
+
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-6 mb-6">
+              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+              <p class="text-4xl font-bold text-success-dark">
+                {format_currency(@last_payment_amount || @order.total_amount)}
+              </p>
+            </div>
+
+            <.link
+              navigate={~p"/pos/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mb-3"
+            >
+              <button
+                type="button"
+                class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+              </button>
+            </.link>
+
+            <%= if @split_mode do %>
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+              >
+                <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+              </button>
+              <button
+                phx-click="exit_split_mode"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+              >
+                Exit Split Mode
+              </button>
+            <% else %>
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+              >
+                Done
+              </button>
+            <% end %>
+          </div>
+        <% else %>
+          <%= if @payment_method == "qr_preview" do %>
+            <!-- QR Code Preview — payment not yet recorded -->
+            <div class="text-center">
+              <h2 class="text-3xl font-bold text-slate-900 mb-1">Scan to Pay</h2>
+              <p class="text-sm text-slate-500 mb-5">
+                Show this QR code to the customer. Confirm once the bank transfer is complete.
+              </p>
+
+              <div class="bg-white p-6 rounded-2xl border-4 border-blue-300 mb-5 inline-block">
+                <%= if @payment_qr_svg do %>
+                  <img
+                    src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                    alt="Payment QR Code"
+                    class="w-64 h-64"
+                  />
+                <% else %>
+                  <p class="text-error">Failed to generate QR code</p>
+                <% end %>
+              </div>
+
+              <div class="bg-tertiary-50 border-2 border-blue-200 rounded-xl p-4 mb-5">
+                <p class="text-slate-700 font-semibold mb-1">Amount to Pay</p>
+                <p class="text-4xl font-bold text-success-dark">
+                  {format_currency(@payment_preview_amount || @order.total_amount)}
+                </p>
+              </div>
+
+              <div class="text-left space-y-1 text-sm text-slate-600 mb-6">
+                <p>• Open your banking app</p>
+                <p>• Scan the QR code above</p>
+                <p>• Verify the amount</p>
+                <p>• Complete the payment, then tap "Mark as Paid" below</p>
+              </div>
+
+              <button
+                phx-click="confirm_qr_payment"
+                class="w-full bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
+              >
+                <.icon name="hero-check-circle" class="w-6 h-6" /> Mark as Paid
+              </button>
+
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          <% else %>
+            <%= if @payment_method == "qr_success" do %>
+              <!-- QR Payment Success -->
+              <div class="text-center">
+                <div class="mb-5">
+                  <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                    <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+                  </div>
+                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Payment Recorded!</h2>
+                  <p class="text-lg text-slate-600 mb-1">
+                    Invoice: {@payment_invoice_number}
+                  </p>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border-4 border-slate-200 mb-5 inline-block">
+                  <%= if @payment_qr_svg do %>
+                    <img
+                      src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                      alt="Payment QR Code"
+                      class="w-48 h-48"
+                    />
+                  <% end %>
+                </div>
+
+                <div class="bg-success-light border-2 border-green-200 rounded-xl p-4 mb-5">
+                  <p class="text-slate-700 font-semibold mb-1">QR Code Payment Recorded</p>
+                  <p class="text-4xl font-bold text-success-dark">
+                    {format_currency(@last_payment_amount || @order.total_amount)}
+                  </p>
+                </div>
+
+                <.link
+                  navigate={~p"/pos/orders/#{@order}/receipt"}
+                  target="_blank"
+                  class="block mb-3"
+                >
+                  <button
+                    type="button"
+                    class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+                  </button>
+                </.link>
+
+                <%= if @split_mode do %>
+                  <button
+                    phx-click="close_payment_modal"
+                    class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+                  >
+                    <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+                  </button>
+                  <button
+                    phx-click="exit_split_mode"
+                    class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+                  >
+                    Exit Split Mode
+                  </button>
+                <% else %>
+                  <button
+                    phx-click="close_payment_modal"
+                    class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                  >
+                    Done
+                  </button>
+                <% end %>
+              </div>
+            <% else %>
+              <%= if @split_payment_amount do %>
+                <%!-- Split payment: skip tips/discount, show the selected amount only --%>
+                <div class="text-center mb-6">
+                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Collect Payment</h2>
+                  <p class="text-sm text-slate-500 mb-5">Payment for selected items</p>
+                  <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 mb-6">
+                    <p class="text-sm font-semibold text-amber-800 mb-1">Amount to Collect</p>
+                    <p class="text-5xl font-bold text-amber-900">
+                      {format_currency(@split_payment_amount)}
+                    </p>
+                  </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="cash"
+                    class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">Cash</div>
+                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="qr_code"
+                    class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">QR Code</div>
+                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  phx-click="close_payment_modal"
+                  class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+              <% else %>
+                <%!-- Normal full-order payment: tips/discount form + full total --%>
+                <!-- Payment Method Selection -->
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Payment Details</h2>
+
+                <!-- Tips and Discount Form -->
+                <div class="space-y-4 mb-6 bg-slate-50 p-6 rounded-2xl">
+                  <form phx-change="update_payment_fields">
+                    <div class="grid grid-cols-2 gap-4">
+                      <!-- Discount Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Discount Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="discount_amount"
+                          value={@discount_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <!-- Tips Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Tips Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="tips_amount"
+                          value={@tips_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Discount Reason -->
+                    <div class="mt-4">
+                      <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Discount Reason (optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="discount_reason"
+                        value={@discount_reason}
+                        class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                        placeholder="e.g., Staff discount, Promotional offer"
+                      />
+                    </div>
+                  </form>
+
+                  <!-- Total Calculation Preview -->
+                  <% items_subtotal =
+                    Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
+                      Decimal.add(acc, item.subtotal)
+                    end)
+
+                  discount_dec =
+                    case Decimal.parse(@discount_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
+
+                  tips_dec =
+                    case Decimal.parse(@tips_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
+
+                  final_total =
+                    items_subtotal
+                    |> Decimal.sub(discount_dec)
+                    |> Decimal.add(tips_dec) %>
+                  <div class="border-t-2 border-slate-200 pt-4 mt-4 space-y-2">
+                    <div class="flex justify-between text-slate-700">
+                      <span>Subtotal (Items):</span>
+                      <span class="font-semibold">
+                        {format_currency(items_subtotal)}
+                      </span>
+                    </div>
+                    <%= if Decimal.gt?(discount_dec, 0) do %>
+                      <div class="flex justify-between text-error">
+                        <span>Discount:</span>
+                        <span class="font-semibold">-{format_currency(discount_dec)}</span>
+                      </div>
+                    <% end %>
+                    <%= if Decimal.gt?(tips_dec, 0) do %>
+                      <div class="flex justify-between text-success-dark">
+                        <span>Tips:</span>
+                        <span class="font-semibold">+{format_currency(tips_dec)}</span>
+                      </div>
+                    <% end %>
+                    <div class="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t-2 border-slate-300">
+                      <span>Final Total:</span>
+                      <span class="text-success-dark">
+                        {format_currency(final_total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                  <!-- Cash Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="cash"
+                    class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">Cash</div>
+                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+
+                  <!-- QR Code Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="qr_code"
+                    class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">QR Code</div>
+                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  phx-click="close_payment_modal"
+                  class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+              <% end %>
+              <%!-- end split_payment_amount conditional --%>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.pos>
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard_live.ex**</summary>
+
+@@ lines 1-290 @@
+
+```
+defmodule CozyCheckoutWeb.DashboardLive do
+  use CozyCheckoutWeb, :live_view
+
+  def mount(_params, _session, socket) do
+    {:ok,
+     socket
+     |> assign(:expanded_sections, %{
+       "catalog" => false,
+       "inventory" => false,
+       "sales" => false,
+       "other" => false
+     })}
+  end
+
+  def handle_event("toggle_section", %{"section" => section}, socket) do
+    expanded = socket.assigns.expanded_sections
+    {:noreply, assign(socket, :expanded_sections, Map.update!(expanded, section, &(!&1)))}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <%!-- Header --%>
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+            <p class="text-lg text-gray-600">Jindřichův dům Management</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <form action={~p"/admin/logout"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+              >
+                <.icon name="hero-lock-closed" class="h-4 w-4" /> Lock Admin
+              </button>
+            </form>
+            <.link
+              navigate={~p"/pos"}
+              class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+            >
+              <.icon name="hero-arrow-left" class="h-4 w-4" /> POS
+            </.link>
+          </div>
+        </div>
+
+        <%!-- Quick Actions (Most Used) --%>
+        <div class="mb-8">
+          <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            Quick Actions
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <.quick_action_card
+              title="Bookings"
+              icon="hero-calendar-days"
+              navigate={~p"/admin/bookings"}
+            />
+            <.quick_action_card
+              title="Calendar"
+              icon="hero-calendar"
+              navigate={~p"/admin/bookings/calendar"}
+            />
+            <.quick_action_card
+              title="Products"
+              icon="hero-cube"
+              navigate={~p"/admin/products"}
+            />
+            <.quick_action_card
+              title="Pricelists"
+              icon="hero-currency-dollar"
+              navigate={~p"/admin/pricelists"}
+            />
+            <.quick_action_card
+              title="Meal Planner"
+              icon="hero-clipboard-document-list"
+              navigate={~p"/admin/meal-planner"}
+            />
+          </div>
+        </div>
+
+        <%!-- Expandable Sections --%>
+        <div class="space-y-4">
+          <%!-- Catalog Management --%>
+          <.expandable_section
+            title="Catalog & Pricing"
+            section="catalog"
+            expanded={@expanded_sections["catalog"]}
+            count={5}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card
+                title="Categories"
+                icon="hero-tag"
+                navigate={~p"/admin/categories"}
+              />
+              <.compact_card
+                title="Products"
+                icon="hero-cube"
+                navigate={~p"/admin/products"}
+              />
+              <.compact_card
+                title="Pricelists"
+                icon="hero-currency-dollar"
+                navigate={~p"/admin/pricelists"}
+              />
+              <.compact_card
+                title="Price Management"
+                icon="hero-chart-bar"
+                navigate={~p"/admin/pricelists/management"}
+              />
+              <.compact_card
+                title="Print Pricelist"
+                icon="hero-printer"
+                navigate={~p"/admin/pricelists/print"}
+              />
+            </div>
+          </.expandable_section>
+
+          <%!-- Inventory --%>
+          <.expandable_section
+            title="Inventory & Stock"
+            section="inventory"
+            expanded={@expanded_sections["inventory"]}
+            count={5}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card
+                title="Purchase Orders"
+                icon="hero-archive-box"
+                navigate={~p"/admin/purchase_orders"}
+              />
+              <.compact_card
+                title="Stock Overview"
+                icon="hero-chart-bar"
+                navigate={~p"/admin/stock"}
+              />
+              <.compact_card
+                title="Bar Stock"
+                icon="hero-beaker"
+                navigate={~p"/admin/bar-stock"}
+              />
+              <.compact_card
+                title="Stock Adjustments"
+                icon="hero-adjustments-horizontal"
+                navigate={~p"/admin/stock-adjustments"}
+              />
+              <.compact_card
+                title="Inventory Reports"
+                icon="hero-chart-pie"
+                navigate={~p"/admin/inventory-reports"}
+              />
+            </div>
+          </.expandable_section>
+
+          <%!-- Sales & Payments --%>
+          <.expandable_section
+            title="Sales & Finance"
+            section="sales"
+            expanded={@expanded_sections["sales"]}
+            count={6}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card title="Orders" icon="hero-shopping-cart" navigate={~p"/admin/orders"} />
+              <.compact_card title="Payments" icon="hero-banknotes" navigate={~p"/admin/payments"} />
+              <.compact_card title="Economy" icon="hero-chart-pie" navigate={~p"/admin/economy"} />
+              <.compact_card
+                title="Statistics"
+                icon="hero-chart-bar-square"
+                navigate={~p"/admin/statistics"}
+              />
+              <.compact_card
+                title="POHODA Export"
+                icon="hero-arrow-down-tray"
+                navigate={~p"/admin/pohoda-export"}
+              />
+              <.compact_card
+                title="Job Queue (Oban)"
+                icon="hero-queue-list"
+                navigate="/admin/system?page=oban"
+              />
+            </div>
+          </.expandable_section>
+
+          <%!-- Other Tools --%>
+          <.expandable_section
+            title="Guest Management & Tools"
+            section="other"
+            expanded={@expanded_sections["other"]}
+            count={4}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card title="Guests" icon="hero-user-group" navigate={~p"/admin/guests"} />
+              <.compact_card title="Rooms" icon="hero-home" navigate={~p"/admin/rooms"} />
+              <.compact_card
+                title="Bookings"
+                icon="hero-calendar-days"
+                navigate={~p"/admin/bookings"}
+              />
+              <.compact_card
+                title="Import Bookings"
+                icon="hero-arrow-up-tray"
+                navigate={~p"/admin/ical-import"}
+              />
+            </div>
+          </.expandable_section>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  # Quick Action Card (Larger, more prominent)
+  attr :title, :string, required: true
+  attr :icon, :string, required: true
+  attr :navigate, :string, required: true
+
+  defp quick_action_card(assigns) do
+    ~H"""
+    <.link
+      navigate={@navigate}
+      class="group block p-6 bg-white rounded-xl shadow-md hover:shadow-xl transform transition-all duration-200 hover:-translate-y-1 border-2 border-transparent hover:border-blue-500"
+    >
+      <div class="flex flex-col items-center text-center space-y-3">
+        <div class="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
+          <.icon name={@icon} class="w-8 h-8 text-blue-600" />
+        </div>
+        <h3 class="text-lg font-bold text-gray-900">{@title}</h3>
+      </div>
+    </.link>
+    """
+  end
+
+  # Expandable Section
+  attr :title, :string, required: true
+  attr :section, :string, required: true
+  attr :expanded, :boolean, required: true
+  attr :count, :integer, required: true
+  slot :inner_block, required: true
+
+  defp expandable_section(assigns) do
+    ~H"""
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <button
+        type="button"
+        phx-click="toggle_section"
+        phx-value-section={@section}
+        class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+      >
+        <div class="flex items-center gap-3">
+          <h3 class="text-lg font-semibold text-gray-900">{@title}</h3>
+          <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+            {@count}
+          </span>
+        </div>
+        <.icon
+          name={if @expanded, do: "hero-chevron-up", else: "hero-chevron-down"}
+          class="w-5 h-5 text-gray-400"
+        />
+      </button>
+
+      <div class={["px-6 pb-4", !@expanded && "hidden"]}>
+        {render_slot(@inner_block)}
+      </div>
+    </div>
+    """
+  end
+
+  # Compact Card (For collapsed sections)
+  attr :title, :string, required: true
+  attr :icon, :string, required: true
+  attr :navigate, :string, required: true
+
+  defp compact_card(assigns) do
+    ~H"""
+    <.link
+      navigate={@navigate}
+      class="group flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:shadow-md transition-all duration-150"
+    >
+      <div class="p-2 rounded-lg bg-white group-hover:bg-blue-100 transition-colors">
+        <.icon name={@icon} class="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+      </div>
+      <span class="text-sm font-medium text-gray-900 group-hover:text-blue-700">{@title}</span>
+    </.link>
+    """
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Základ rout a ochranného pipeline je zapojený. Teď přidávám ověřování hashovaného PINu, rate limiter, stránku pro zadání PINu a controller pro vytvoření/uzamčení session; hodnotu PINu ani hash nebudu zapisovat do repozitáře.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `admin_auth.ex`
+
+**Input:**
+
+- content:
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1, put_flash: 3]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          put_flash(conn, :error, "Admin session expired. Enter the PIN to continue.")
+        else
+          put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - timestamp < @session_lifetime_seconds
+  end
+
+  def session_authenticated?(_timestamp), do: false
+
+  def session_key, do: @session_key
+  def return_to_key, do: @return_to_key
+
+  def safe_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/admin/") and not String.starts_with?(path, "//") and
+         path != "/admin/login" do
+      path
+    else
+      "/admin"
+    end
+  end
+
+  def safe_return_to(_path), do: "/admin"
+
+  def on_mount(:ensure_admin, _params, session, socket) do
+    if enabled?() and session_authenticated?(Map.get(session, @session_key)) do
+      {:cont, install_idle_hooks(socket)}
+    else
+      {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+    end
+  end
+
+  defp install_idle_hooks(socket) do
+    socket
+    |> reset_idle_timer()
+    |> attach_hook(:admin_idle_event, :handle_event, fn _event, _params, socket ->
+      {:cont, reset_idle_timer(socket)}
+    end)
+    |> attach_hook(:admin_idle_timer, :handle_info, fn
+      {:admin_idle_timeout, timer_ref}, socket ->
+        if timer_ref == socket.assigns.admin_idle_timer_ref do
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+        else
+          {:cont, socket}
+        end
+
+      _message, socket ->
+        {:cont, socket}
+    end)
+  end
+
+  defp reset_idle_timer(socket) do
+    if timer = socket.assigns[:admin_idle_timer], do: Process.cancel_timer(timer)
+
+    timer_ref = make_ref()
+    timer = Process.send_after(self(), {:admin_idle_timeout, timer_ref}, @idle_timeout_ms)
+
+    socket
+    |> assign(:admin_idle_timer_ref, timer_ref)
+    |> assign(:admin_idle_timer, timer)
+  end
+
+  defp configured_hash do
+    case Application.get_env(:cozy_checkout, @pin_hash_config_key) do
+      hash when is_binary(hash) ->
+        case String.split(hash, ".", parts: 2) do
+          [salt, digest] ->
+            with {:ok, salt} <- Base.decode64(salt),
+                 {:ok, digest} <- Base.decode64(digest),
+                 true <- byte_size(salt) == 16 and byte_size(digest) == @hash_bytes do
+              {salt, digest}
+            else
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp derive_hash(pin, salt) do
+    :crypto.pbkdf2_hmac(:sha256, pin, salt, @pbkdf2_iterations, @hash_bytes)
+  end
+end
+
+```
+
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `admin_auth_rate_limiter.ex`
+
+**Input:**
+
+- content:
+
+```
+defmodule CozyCheckoutWeb.AdminAuthRateLimiter do
+  use GenServer
+
+  @max_attempts 5
+  @attempt_window_seconds 300
+  @lockout_seconds 60
+  @retain_seconds 3_600
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, %{}, Keyword.put_new(opts, :name, __MODULE__))
+  end
+
+  def allowed?(key), do: GenServer.call(__MODULE__, {:allowed?, key})
+  def record_failure(key), do: GenServer.call(__MODULE__, {:record_failure, key})
+  def reset(key), do: GenServer.call(__MODULE__, {:reset, key})
+
+  @impl true
+  def init(state), do: {:ok, state}
+
+  @impl true
+  def handle_call({:allowed?, key}, _from, state) do
+    now = System.system_time(:second)
+    entry = Map.get(state, key)
+    state = prune(state, now)
+    {:reply, is_nil(entry) or entry.locked_until <= now, state}
+  end
+
+  def handle_call({:record_failure, key}, _from, state) do
+    now = System.system_time(:second)
+    state = prune(state, now)
+    entry = Map.get(state, key)
+
+    entry =
+      if is_nil(entry) or now - entry.window_started_at >= @attempt_window_seconds do
+        %{failures: 1, window_started_at: now, locked_until: 0, updated_at: now}
+      else
+        failures = entry.failures + 1
+
+        %{
+          entry
+          | failures: failures,
+            locked_until: if(failures >= @max_attempts, do: now + @lockout_seconds, else: 0),
+            updated_at: now
+        }
+      end
+
+    {:reply, :ok, Map.put(state, key, entry)}
+  end
+
+  def handle_call({:reset, key}, _from, state) do
+    {:reply, :ok, Map.delete(state, key)}
+  end
+
+  defp prune(state, now) do
+    Map.reject(state, fn {_key, entry} -> now - entry.updated_at > @retain_seconds end)
+  end
+end
+
+```
+
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `admin_session_controller.ex`
+
+**Input:**
+
+- content:
+
+```
+defmodule CozyCheckoutWeb.AdminSessionController do
+  use CozyCheckoutWeb, :controller
+
+  import Plug.Conn, only: [configure_session: 2, delete_session: 2, get_session: 2, put_session: 3]
+
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+
+  def create(conn, %{"pin" => pin}) when is_binary(pin) do
+    address = conn.remote_ip
+
+    cond do
+      not AdminAuth.enabled?() ->
+        reject(conn, "Admin PIN is not configured on the server.")
+
+      not AdminAuthRateLimiter.allowed?(address) ->
+        reject(conn, "Too many incorrect PIN attempts. Wait one minute and try again.")
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(address)
+        destination = AdminAuth.safe_return_to(get_session(conn, AdminAuth.return_to_key()))
+
+        conn
+        |> configure_session(renew: true)
+        |> delete_session(AdminAuth.return_to_key())
+        |> put_session(AdminAuth.session_key(), System.system_time(:second))
+        |> redirect(to: destination)
+
+      true ->
+        AdminAuthRateLimiter.record_failure(address)
+        reject(conn, "Incorrect PIN.")
+    end
+  end
+
+  def create(conn, _params), do: reject(conn, "Enter your PIN.")
+
+  def delete(conn, _params) do
+    conn
+    |> delete_session(AdminAuth.session_key())
+    |> delete_session(AdminAuth.return_to_key())
+    |> redirect(to: "/pos")
+  end
+
+  defp reject(conn, message) do
+    conn
+    |> put_flash(:error, message)
+    |> redirect(to: "/admin/login")
+  end
+end
+
+```
+
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `admin_login_live.ex`
+
+**Input:**
+
+- content:
+
+```
+defmodule CozyCheckoutWeb.AdminLoginLive do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @impl true
+  def mount(_params, session, socket) do
+    if AdminAuth.session_authenticated?(Map.get(session, AdminAuth.session_key())) do
+      {:ok, redirect(socket, to: "/admin")}
+    else
+      {:ok,
+       socket
+       |> assign(:page_title, "Admin PIN")
+       |> assign(:pin_configured, AdminAuth.enabled?())}
+    end
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app
+      flash={@flash}
+      content_class="mx-auto w-full max-w-sm"
+      main_class="flex min-h-screen items-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8"
+      show_header={false}
+    >
+      <section class="rounded-lg bg-white p-8 shadow-lg">
+        <div class="mb-6 text-center">
+          <.icon name="hero-lock-closed" class="mx-auto mb-3 h-9 w-9 text-primary-600" />
+          <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
+        </div>
+
+        <%= if @pin_configured do %>
+          <form action={~p"/admin/login"} method="post" id="admin-pin-form" class="space-y-5">
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <div>
+              <label for="admin-pin" class="mb-1 block text-sm font-medium text-gray-700">
+                Enter PIN
+              </label>
+              <input
+                id="admin-pin"
+                name="pin"
+                type="password"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                pattern="[0-9]{6,8}"
+                minlength="6"
+                maxlength="8"
+                required
+                autofocus
+                class="block w-full rounded-md border-gray-300 text-center text-2xl tracking-[0.4em] shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full rounded-md bg-primary-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-primary-700"
+            >
+              Unlock
+            </button>
+          </form>
+        <% else %>
+          <p class="rounded-md bg-amber-50 p-4 text-sm text-amber-900">
+            Admin PIN is not configured. Set the <code>ADMIN_PIN_HASH</code> environment variable and restart the server.
+          </p>
+        <% end %>
+
+        <.link navigate={~p"/pos"} class="mt-5 block text-center text-sm text-gray-500 hover:text-gray-800">
+          Return to POS
+        </.link>
+      </section>
+    </Layouts.app>
+    """
+  end
+end
+
+```
+
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="create_file"><details>
+<summary>Tool use: **create_file**</summary>
+
+Created `admin.pin.hash.ex`
+
+**Input:**
+
+- content:
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    pin = IO.get_password("Admin PIN (6 to 8 digits): ")
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+end
+
+```
+
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex`
+
+**Result:**
+
+```
+The following files were successfully edited:
+/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_auth.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1, put_flash: 3]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          put_flash(conn, :error, "Admin session expired. Enter the PIN to continue.")
+        else
+          put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - timestamp < @session_lifetime_seconds
+  end
+
+  def session_authenticated?(_timestamp), do: false
+
+  def session_key, do: @session_key
+  def return_to_key, do: @return_to_key
+
+  def safe_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/admin/") and not String.starts_with?(path, "//") and
+         path != "/admin/login" do
+      path
+    else
+      "/admin"
+    end
+  end
+
+  def safe_return_to(_path), do: "/admin"
+
+  def on_mount(:ensure_admin, _params, session, socket) do
+    if enabled?() and session_authenticated?(Map.get(session, @session_key)) do
+      {:cont, install_idle_hooks(socket)}
+    else
+      {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+    end
+  end
+
+  defp install_idle_hooks(socket) do
+    socket
+    |> reset_idle_timer()
+    |> attach_hook(:admin_idle_event, :handle_event, fn _event, _params, socket ->
+      {:cont, reset_idle_timer(socket)}
+    end)
+    |> attach_hook(:admin_idle_timer, :handle_info, fn
+      {:admin_idle_timeout, timer_ref}, socket ->
+        if timer_ref == socket.assigns.admin_idle_timer_ref do
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+        else
+          {:cont, socket}
+        end
+
+      _message, socket ->
+        {:cont, socket}
+    end)
+  end
+
+  defp reset_idle_timer(socket) do
+    if timer = socket.assigns[:admin_idle_timer], do: Process.cancel_timer(timer)
+
+    timer_ref = make_ref()
+    timer = Process.send_after(self(), {:admin_idle_timeout, timer_ref}, @idle_timeout_ms)
+
+    socket
+    |> assign(:admin_idle_timer_ref, timer_ref)
+    |> assign(:admin_idle_timer, timer)
+  end
+
+  defp configured_hash do
+    case Application.get_env(:cozy_checkout, @pin_hash_config_key) do
+      hash when is_binary(hash) ->
+        case String.split(hash, ".", parts: 2) do
+          [salt, digest] ->
+            with {:ok, salt} <- Base.decode64(salt),
+                 {:ok, digest} <- Base.decode64(digest),
+                 true <- byte_size(salt) == 16 and byte_size(digest) == @hash_bytes do
+              {salt, digest}
+            else
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp derive_hash(pin, salt) do
+    :crypto.pbkdf2_hmac(:sha256, pin, salt, @pbkdf2_iterations, @hash_bytes)
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_auth_rate_limiter.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.AdminAuthRateLimiter do
+  use GenServer
+
+  @max_attempts 5
+  @attempt_window_seconds 300
+  @lockout_seconds 60
+  @retain_seconds 3_600
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, %{}, Keyword.put_new(opts, :name, __MODULE__))
+  end
+
+  def allowed?(key), do: GenServer.call(__MODULE__, {:allowed?, key})
+  def record_failure(key), do: GenServer.call(__MODULE__, {:record_failure, key})
+  def reset(key), do: GenServer.call(__MODULE__, {:reset, key})
+
+  @impl true
+  def init(state), do: {:ok, state}
+
+  @impl true
+  def handle_call({:allowed?, key}, _from, state) do
+    now = System.system_time(:second)
+    entry = Map.get(state, key)
+    state = prune(state, now)
+    {:reply, is_nil(entry) or entry.locked_until <= now, state}
+  end
+
+  def handle_call({:record_failure, key}, _from, state) do
+    now = System.system_time(:second)
+    state = prune(state, now)
+    entry = Map.get(state, key)
+
+    entry =
+      if is_nil(entry) or now - entry.window_started_at >= @attempt_window_seconds do
+        %{failures: 1, window_started_at: now, locked_until: 0, updated_at: now}
+      else
+        failures = entry.failures + 1
+
+        %{
+          entry
+          | failures: failures,
+            locked_until: if(failures >= @max_attempts, do: now + @lockout_seconds, else: 0),
+            updated_at: now
+        }
+      end
+
+    {:reply, :ok, Map.put(state, key, entry)}
+  end
+
+  def handle_call({:reset, key}, _from, state) do
+    {:reply, :ok, Map.delete(state, key)}
+  end
+
+  defp prune(state, now) do
+    Map.reject(state, fn {_key, entry} -> now - entry.updated_at > @retain_seconds end)
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_session_controller.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.AdminSessionController do
+  use CozyCheckoutWeb, :controller
+
+  import Plug.Conn, only: [configure_session: 2, delete_session: 2, get_session: 2, put_session: 3]
+
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+
+  def create(conn, %{"pin" => pin}) when is_binary(pin) do
+    address = conn.remote_ip
+
+    cond do
+      not AdminAuth.enabled?() ->
+        reject(conn, "Admin PIN is not configured on the server.")
+
+      not AdminAuthRateLimiter.allowed?(address) ->
+        reject(conn, "Too many incorrect PIN attempts. Wait one minute and try again.")
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(address)
+        destination = AdminAuth.safe_return_to(get_session(conn, AdminAuth.return_to_key()))
+
+        conn
+        |> configure_session(renew: true)
+        |> delete_session(AdminAuth.return_to_key())
+        |> put_session(AdminAuth.session_key(), System.system_time(:second))
+        |> redirect(to: destination)
+
+      true ->
+        AdminAuthRateLimiter.record_failure(address)
+        reject(conn, "Incorrect PIN.")
+    end
+  end
+
+  def create(conn, _params), do: reject(conn, "Enter your PIN.")
+
+  def delete(conn, _params) do
+    conn
+    |> delete_session(AdminAuth.session_key())
+    |> delete_session(AdminAuth.return_to_key())
+    |> redirect(to: "/pos")
+  end
+
+  defp reject(conn, message) do
+    conn
+    |> put_flash(:error, message)
+    |> redirect(to: "/admin/login")
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_login_live.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.AdminLoginLive do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @impl true
+  def mount(_params, session, socket) do
+    if AdminAuth.session_authenticated?(Map.get(session, AdminAuth.session_key())) do
+      {:ok, redirect(socket, to: "/admin")}
+    else
+      {:ok,
+       socket
+       |> assign(:page_title, "Admin PIN")
+       |> assign(:pin_configured, AdminAuth.enabled?())}
+    end
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app
+      flash={@flash}
+      content_class="mx-auto w-full max-w-sm"
+      main_class="flex min-h-screen items-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8"
+      show_header={false}
+    >
+      <section class="rounded-lg bg-white p-8 shadow-lg">
+        <div class="mb-6 text-center">
+          <.icon name="hero-lock-closed" class="mx-auto mb-3 h-9 w-9 text-primary-600" />
+          <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
+        </div>
+
+        <%= if @pin_configured do %>
+          <form action={~p"/admin/login"} method="post" id="admin-pin-form" class="space-y-5">
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <div>
+              <label for="admin-pin" class="mb-1 block text-sm font-medium text-gray-700">
+                Enter PIN
+              </label>
+              <input
+                id="admin-pin"
+                name="pin"
+                type="password"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                pattern="[0-9]{6,8}"
+                minlength="6"
+                maxlength="8"
+                required
+                autofocus
+                class="block w-full rounded-md border-gray-300 text-center text-2xl tracking-[0.4em] shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full rounded-md bg-primary-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-primary-700"
+            >
+              Unlock
+            </button>
+          </form>
+        <% else %>
+          <p class="rounded-md bg-amber-50 p-4 text-sm text-amber-900">
+            Admin PIN is not configured. Set the <code>ADMIN_PIN_HASH</code> environment variable and restart the server.
+          </p>
+        <% end %>
+
+        <.link navigate={~p"/pos"} class="mt-5 block text-center text-sm text-gray-500 hover:text-gray-800">
+          Return to POS
+        </.link>
+      </section>
+    </Layouts.app>
+    """
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin.pin.hash.ex**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    pin = IO.get_password("Admin PIN (6 to 8 digits): ")
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+PIN ověřování, omezení pokusů, přihlašovací stránka i POST endpoint jsou přidané. Teď provedu okamžitou kompilaci této vrstvy; případné chyby opravím dřív, než přidám dokumentaci a testy.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Kompiluje novou autentizační vrstvu, LiveView login i Mix task pro generování hash PINu.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 9 files (.ex)
+    error: conflicting put_flash/3 import from modules Phoenix.Controller and Phoenix.LiveView
+    │
+ 28 │           put_flash(conn, :error, "Admin PIN is not configured on the server.")
+    │           ^
+    │
+    └─ lib/cozy_checkout_web/admin_auth.ex:28:11: CozyCheckoutWeb.AdminAuth.call/2
+
+
+== Compilation error in file lib/cozy_checkout_web/admin_auth.ex ==
+** (CompileError) lib/cozy_checkout_web/admin_auth.ex: cannot compile module CozyCheckoutWeb.AdminAuth (errors have been logged)
+    (stdlib 8.1) lists.erl:2673: :lists.mapfoldl_1/3
+    (stdlib 8.1) lists.erl:2673: :lists.mapfoldl_1/3
+    (elixir 1.20.4) expanding macro: Kernel.if/2
+    lib/cozy_checkout_web/admin_auth.ex:25: CozyCheckoutWeb.AdminAuth.call/2
+
+Command exited with code 1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Kompilace našla jediný lokální problém: `Phoenix.LiveView` a `Phoenix.Controller` importují stejnou funkci `put_flash/3`. Použiju explicitní volání controller funkce a zopakuji kompilaci.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_auth.ex**</summary>
+
+@@ lines 1-149 @@
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          Phoenix.Controller.put_flash(conn, :error, "Admin session expired. Enter the PIN to continue.")
+        else
+          Phoenix.Controller.put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - timestamp < @session_lifetime_seconds
+  end
+
+  def session_authenticated?(_timestamp), do: false
+
+  def session_key, do: @session_key
+  def return_to_key, do: @return_to_key
+
+  def safe_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/admin/") and not String.starts_with?(path, "//") and
+         path != "/admin/login" do
+      path
+    else
+      "/admin"
+    end
+  end
+
+  def safe_return_to(_path), do: "/admin"
+
+  def on_mount(:ensure_admin, _params, session, socket) do
+    if enabled?() and session_authenticated?(Map.get(session, @session_key)) do
+      {:cont, install_idle_hooks(socket)}
+    else
+      {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+    end
+  end
+
+  defp install_idle_hooks(socket) do
+    socket
+    |> reset_idle_timer()
+    |> attach_hook(:admin_idle_event, :handle_event, fn _event, _params, socket ->
+      {:cont, reset_idle_timer(socket)}
+    end)
+    |> attach_hook(:admin_idle_timer, :handle_info, fn
+      {:admin_idle_timeout, timer_ref}, socket ->
+        if timer_ref == socket.assigns.admin_idle_timer_ref do
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+        else
+          {:cont, socket}
+        end
+
+      _message, socket ->
+        {:cont, socket}
+    end)
+  end
+
+  defp reset_idle_timer(socket) do
+    if timer = socket.assigns[:admin_idle_timer], do: Process.cancel_timer(timer)
+
+    timer_ref = make_ref()
+    timer = Process.send_after(self(), {:admin_idle_timeout, timer_ref}, @idle_timeout_ms)
+
+    socket
+    |> assign(:admin_idle_timer_ref, timer_ref)
+    |> assign(:admin_idle_timer, timer)
+  end
+
+  defp configured_hash do
+    case Application.get_env(:cozy_checkout, @pin_hash_config_key) do
+      hash when is_binary(hash) ->
+        case String.split(hash, ".", parts: 2) do
+          [salt, digest] ->
+            with {:ok, salt} <- Base.decode64(salt),
+                 {:ok, digest} <- Base.decode64(digest),
+                 true <- byte_size(salt) == 16 and byte_size(digest) == @hash_bytes do
+              {salt, digest}
+            else
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp derive_hash(pin, salt) do
+    :crypto.pbkdf2_hmac(:sha256, pin, salt, @pbkdf2_iterations, @hash_bytes)
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 7 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Opakuje kompilaci po odstranění kolize importu.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 9 files (.ex)
+    error: undefined function get_csrf_token/0 (expected CozyCheckoutWeb.AdminLoginLive to define such a function or for it to be imported, but none are available)
+    │
+ 35 │             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+    │             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │
+    └─ lib/cozy_checkout_web/live/admin_login_live.ex:35: CozyCheckoutWeb.AdminLoginLive.render/1
+
+
+== Compilation error in file lib/cozy_checkout_web/live/admin_login_live.ex ==
+** (CompileError) lib/cozy_checkout_web/live/admin_login_live.ex: cannot compile module CozyCheckoutWeb.AdminLoginLive (errors have been logged)
+
+Command exited with code 1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Další kompilace ukázala jen to, že LiveView modul nemá automaticky importované `get_csrf_token/0` pro formulář PINu. Doplním stejný Phoenix import, který používají ostatní HTML šablony, a pokračuji stejnou kontrolou.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_login_live.ex**</summary>
+
+@@ lines 1-77 @@
+
+```
+defmodule CozyCheckoutWeb.AdminLoginLive do
+  use CozyCheckoutWeb, :live_view
+  import Phoenix.Controller, only: [get_csrf_token: 0]
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @impl true
+  def mount(_params, session, socket) do
+    if AdminAuth.session_authenticated?(Map.get(session, AdminAuth.session_key())) do
+      {:ok, redirect(socket, to: "/admin")}
+    else
+      {:ok,
+       socket
+       |> assign(:page_title, "Admin PIN")
+       |> assign(:pin_configured, AdminAuth.enabled?())}
+    end
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <Layouts.app
+      flash={@flash}
+      content_class="mx-auto w-full max-w-sm"
+      main_class="flex min-h-screen items-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8"
+      show_header={false}
+    >
+      <section class="rounded-lg bg-white p-8 shadow-lg">
+        <div class="mb-6 text-center">
+          <.icon name="hero-lock-closed" class="mx-auto mb-3 h-9 w-9 text-primary-600" />
+          <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
+        </div>
+
+        <%= if @pin_configured do %>
+          <form action={~p"/admin/login"} method="post" id="admin-pin-form" class="space-y-5">
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+            <div>
+              <label for="admin-pin" class="mb-1 block text-sm font-medium text-gray-700">
+                Enter PIN
+              </label>
+              <input
+                id="admin-pin"
+                name="pin"
+                type="password"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                pattern="[0-9]{6,8}"
+                minlength="6"
+                maxlength="8"
+                required
+                autofocus
+                class="block w-full rounded-md border-gray-300 text-center text-2xl tracking-[0.4em] shadow-sm focus:border-primary-500 focus:ring-primary-500"
+              />
+            </div>
+            <button
+              type="submit"
+              class="w-full rounded-md bg-primary-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-primary-700"
+            >
+              Unlock
+            </button>
+          </form>
+        <% else %>
+          <p class="rounded-md bg-amber-50 p-4 text-sm text-amber-900">
+            Admin PIN is not configured. Set the <code>ADMIN_PIN_HASH</code> environment variable and restart the server.
+          </p>
+        <% end %>
+
+        <.link navigate={~p"/pos"} class="mt-5 block text-center text-sm text-gray-500 hover:text-gray-800">
+          Return to POS
+        </.link>
+      </section>
+    </Layouts.app>
+    """
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje opravu CSRF helperu v přihlašovacím formuláři.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 9 files (.ex)
+    error: undefined function get_csrf_token/0 (expected CozyCheckoutWeb.DashboardLive to define such a function or for it to be imported, but none are available)
+    │
+ 32 │               <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+    │               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    │
+    └─ lib/cozy_checkout_web/live/dashboard_live.ex:32: CozyCheckoutWeb.DashboardLive.render/1
+
+
+== Compilation error in file lib/cozy_checkout_web/live/dashboard_live.ex ==
+** (CompileError) lib/cozy_checkout_web/live/dashboard_live.ex: cannot compile module CozyCheckoutWeb.DashboardLive (errors have been logged)
+
+Command exited with code 1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Přihlášení se teď zkompiluje; stejný CSRF helper je potřeba i pro tlačítko „Lock Admin“ na dashboardu. Přidám import tam a zopakuji kompilaci.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **dashboard_live.ex**</summary>
+
+@@ lines 1-291 @@
+
+```
+defmodule CozyCheckoutWeb.DashboardLive do
+  use CozyCheckoutWeb, :live_view
+  import Phoenix.Controller, only: [get_csrf_token: 0]
+
+  def mount(_params, _session, socket) do
+    {:ok,
+     socket
+     |> assign(:expanded_sections, %{
+       "catalog" => false,
+       "inventory" => false,
+       "sales" => false,
+       "other" => false
+     })}
+  end
+
+  def handle_event("toggle_section", %{"section" => section}, socket) do
+    expanded = socket.assigns.expanded_sections
+    {:noreply, assign(socket, :expanded_sections, Map.update!(expanded, section, &(!&1)))}
+  end
+
+  def render(assigns) do
+    ~H"""
+    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        <%!-- Header --%>
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
+            <p class="text-lg text-gray-600">Jindřichův dům Management</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <form action={~p"/admin/logout"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+              >
+                <.icon name="hero-lock-closed" class="h-4 w-4" /> Lock Admin
+              </button>
+            </form>
+            <.link
+              navigate={~p"/pos"}
+              class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+            >
+              <.icon name="hero-arrow-left" class="h-4 w-4" /> POS
+            </.link>
+          </div>
+        </div>
+
+        <%!-- Quick Actions (Most Used) --%>
+        <div class="mb-8">
+          <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
+            Quick Actions
+          </h2>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <.quick_action_card
+              title="Bookings"
+              icon="hero-calendar-days"
+              navigate={~p"/admin/bookings"}
+            />
+            <.quick_action_card
+              title="Calendar"
+              icon="hero-calendar"
+              navigate={~p"/admin/bookings/calendar"}
+            />
+            <.quick_action_card
+              title="Products"
+              icon="hero-cube"
+              navigate={~p"/admin/products"}
+            />
+            <.quick_action_card
+              title="Pricelists"
+              icon="hero-currency-dollar"
+              navigate={~p"/admin/pricelists"}
+            />
+            <.quick_action_card
+              title="Meal Planner"
+              icon="hero-clipboard-document-list"
+              navigate={~p"/admin/meal-planner"}
+            />
+          </div>
+        </div>
+
+        <%!-- Expandable Sections --%>
+        <div class="space-y-4">
+          <%!-- Catalog Management --%>
+          <.expandable_section
+            title="Catalog & Pricing"
+            section="catalog"
+            expanded={@expanded_sections["catalog"]}
+            count={5}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card
+                title="Categories"
+                icon="hero-tag"
+                navigate={~p"/admin/categories"}
+              />
+              <.compact_card
+                title="Products"
+                icon="hero-cube"
+                navigate={~p"/admin/products"}
+              />
+              <.compact_card
+                title="Pricelists"
+                icon="hero-currency-dollar"
+                navigate={~p"/admin/pricelists"}
+              />
+              <.compact_card
+                title="Price Management"
+                icon="hero-chart-bar"
+                navigate={~p"/admin/pricelists/management"}
+              />
+              <.compact_card
+                title="Print Pricelist"
+                icon="hero-printer"
+                navigate={~p"/admin/pricelists/print"}
+              />
+            </div>
+          </.expandable_section>
+
+          <%!-- Inventory --%>
+          <.expandable_section
+            title="Inventory & Stock"
+            section="inventory"
+            expanded={@expanded_sections["inventory"]}
+            count={5}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card
+                title="Purchase Orders"
+                icon="hero-archive-box"
+                navigate={~p"/admin/purchase_orders"}
+              />
+              <.compact_card
+                title="Stock Overview"
+                icon="hero-chart-bar"
+                navigate={~p"/admin/stock"}
+              />
+              <.compact_card
+                title="Bar Stock"
+                icon="hero-beaker"
+                navigate={~p"/admin/bar-stock"}
+              />
+              <.compact_card
+                title="Stock Adjustments"
+                icon="hero-adjustments-horizontal"
+                navigate={~p"/admin/stock-adjustments"}
+              />
+              <.compact_card
+                title="Inventory Reports"
+                icon="hero-chart-pie"
+                navigate={~p"/admin/inventory-reports"}
+              />
+            </div>
+          </.expandable_section>
+
+          <%!-- Sales & Payments --%>
+          <.expandable_section
+            title="Sales & Finance"
+            section="sales"
+            expanded={@expanded_sections["sales"]}
+            count={6}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card title="Orders" icon="hero-shopping-cart" navigate={~p"/admin/orders"} />
+              <.compact_card title="Payments" icon="hero-banknotes" navigate={~p"/admin/payments"} />
+              <.compact_card title="Economy" icon="hero-chart-pie" navigate={~p"/admin/economy"} />
+              <.compact_card
+                title="Statistics"
+                icon="hero-chart-bar-square"
+                navigate={~p"/admin/statistics"}
+              />
+              <.compact_card
+                title="POHODA Export"
+                icon="hero-arrow-down-tray"
+                navigate={~p"/admin/pohoda-export"}
+              />
+              <.compact_card
+                title="Job Queue (Oban)"
+                icon="hero-queue-list"
+                navigate="/admin/system?page=oban"
+              />
+            </div>
+          </.expandable_section>
+
+          <%!-- Other Tools --%>
+          <.expandable_section
+            title="Guest Management & Tools"
+            section="other"
+            expanded={@expanded_sections["other"]}
+            count={4}
+          >
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
+              <.compact_card title="Guests" icon="hero-user-group" navigate={~p"/admin/guests"} />
+              <.compact_card title="Rooms" icon="hero-home" navigate={~p"/admin/rooms"} />
+              <.compact_card
+                title="Bookings"
+                icon="hero-calendar-days"
+                navigate={~p"/admin/bookings"}
+              />
+              <.compact_card
+                title="Import Bookings"
+                icon="hero-arrow-up-tray"
+                navigate={~p"/admin/ical-import"}
+              />
+            </div>
+          </.expandable_section>
+        </div>
+      </div>
+    </div>
+    """
+  end
+
+  # Quick Action Card (Larger, more prominent)
+  attr :title, :string, required: true
+  attr :icon, :string, required: true
+  attr :navigate, :string, required: true
+
+  defp quick_action_card(assigns) do
+    ~H"""
+    <.link
+      navigate={@navigate}
+      class="group block p-6 bg-white rounded-xl shadow-md hover:shadow-xl transform transition-all duration-200 hover:-translate-y-1 border-2 border-transparent hover:border-blue-500"
+    >
+      <div class="flex flex-col items-center text-center space-y-3">
+        <div class="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
+          <.icon name={@icon} class="w-8 h-8 text-blue-600" />
+        </div>
+        <h3 class="text-lg font-bold text-gray-900">{@title}</h3>
+      </div>
+    </.link>
+    """
+  end
+
+  # Expandable Section
+  attr :title, :string, required: true
+  attr :section, :string, required: true
+  attr :expanded, :boolean, required: true
+  attr :count, :integer, required: true
+  slot :inner_block, required: true
+
+  defp expandable_section(assigns) do
+    ~H"""
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+      <button
+        type="button"
+        phx-click="toggle_section"
+        phx-value-section={@section}
+        class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+      >
+        <div class="flex items-center gap-3">
+          <h3 class="text-lg font-semibold text-gray-900">{@title}</h3>
+          <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+            {@count}
+          </span>
+        </div>
+        <.icon
+          name={if @expanded, do: "hero-chevron-up", else: "hero-chevron-down"}
+          class="w-5 h-5 text-gray-400"
+        />
+      </button>
+
+      <div class={["px-6 pb-4", !@expanded && "hidden"]}>
+        {render_slot(@inner_block)}
+      </div>
+    </div>
+    """
+  end
+
+  # Compact Card (For collapsed sections)
+  attr :title, :string, required: true
+  attr :icon, :string, required: true
+  attr :navigate, :string, required: true
+
+  defp compact_card(assigns) do
+    ~H"""
+    <.link
+      navigate={@navigate}
+      class="group flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:shadow-md transition-all duration-150"
+    >
+      <div class="p-2 rounded-lg bg-white group-hover:bg-blue-100 transition-colors">
+        <.icon name={@icon} class="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
+      </div>
+      <span class="text-sm font-medium text-gray-900 group-hover:text-blue-700">{@title}</span>
+    </.link>
+    """
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Opakuje kompilaci po doplnění dashboardového CSRF helperu.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Saving...">Save Category</
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Autentizační vrstva se zkompilovala, ale odhalila dvě nové chyby kvality: hashovací task volal v této Elixir verzi nedostupnou funkci pro skryté zadání a POS scope přidával prefix modulu i k plně kvalifikované receipt routě. Opravím zadávání přes Erlang `:io.get_password/1` a receipt route přes samostatný scope.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin.pin.hash.ex**</summary>
+
+@@ lines 1-20 @@
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    pin = :io.get_password('Admin PIN (6 to 8 digits): ') |> List.to_string()
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **router.ex**</summary>
+
+@@ lines 1-175 @@
+
+```
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :calendar do
+    plug :accepts, ["html", "ics"]
+  end
+
+  pipeline :admin_auth do
+    plug CozyCheckoutWeb.AdminAuth
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :calendar
+
+    get "/calendar/bookings.ics", BookingCalendarController, :index
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", PosLive.GuestSelection
+  end
+
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/login", AdminLoginLive
+    post "/login", AdminSessionController, :create
+    post "/logout", AdminSessionController, :delete
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through [:browser, :admin_auth]
+
+    import Phoenix.LiveDashboard.Router
+
+    live_dashboard "/system",
+      metrics: CozyCheckoutWeb.Telemetry,
+      additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    live_session :admin, on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}] do
+    live "/", DashboardLive
+
+    # Categories
+    live "/categories", CategoryLive.Index, :index
+    live "/categories/new", CategoryLive.Index, :new
+    live "/categories/:id/edit", CategoryLive.Index, :edit
+
+    # Products
+    live "/products", ProductLive.Index, :index
+    live "/products/new", ProductLive.Index, :new
+    live "/products/:id/edit", ProductLive.Index, :edit
+
+    # Pricelists
+    live "/pricelists", PricelistLive.Index, :index
+    live "/pricelists/new", PricelistLive.Index, :new
+    live "/pricelists/:id/edit", PricelistLive.Index, :edit
+    live "/pricelists/management", PricelistLive.Management
+    live "/pricelists/print", PricelistLive.Printable
+
+    # Purchase Orders
+    live "/purchase_orders", PurchaseOrderLive.Index, :index
+    live "/purchase_orders/new", PurchaseOrderLive.Index, :new
+    live "/purchase_orders/:id/edit", PurchaseOrderLive.Index, :edit
+    live "/purchase_orders/:id", PurchaseOrderLive.Show
+
+    # Stock Overview
+    live "/stock", StockOverviewLive.Index
+    live "/stock/restock", StockRestockLive
+    live "/bar-stock", BarStockLive
+
+    # Stock Adjustments
+    live "/stock-adjustments", StockAdjustmentLive.Index, :index
+    live "/stock-adjustments/new", StockAdjustmentLive.Index, :new
+    live "/stock-adjustments/:id/edit", StockAdjustmentLive.Index, :edit
+
+    # Inventory Reports
+    live "/inventory-reports", InventoryReportsLive.Index
+
+    # Guests
+    live "/guests", GuestLive.Index, :index
+    live "/guests/new", GuestLive.Index, :new
+    live "/guests/:id/edit", GuestLive.Index, :edit
+
+    # Rooms
+    live "/rooms", RoomLive.Index, :index
+    live "/rooms/new", RoomLive.Index, :new
+    live "/rooms/:id/edit", RoomLive.Index, :edit
+
+    # Bookings
+    live "/bookings", BookingLive.Index, :index
+    live "/bookings/new", BookingLive.Index, :new
+    live "/bookings/calendar", BookingLive.Calendar
+    live "/bookings/timeline", BookingLive.Timeline
+    live "/bookings/:id", BookingLive.Show
+    live "/bookings/:id/edit", BookingLive.Index, :edit
+    live "/bookings/:booking_id/guests", BookingLive.ManageGuests
+
+    # Orders
+    live "/orders", OrderLive.Index, :index
+    live "/orders/new", OrderLive.New
+    live "/orders/:id/edit", OrderLive.Edit
+    live "/orders/:id", OrderLive.Show
+    live "/orders/:id/receipt", OrderLive.Receipt
+
+    # Payments
+    live "/payments", PaymentLive.Index, :index
+    live "/payments/new", PaymentLive.New
+
+    # Economy Management
+    live "/economy", EconomyLive.Index
+
+    # Statistics
+    live "/statistics", StatisticsLive.Index
+
+    # POHODA Export
+    live "/pohoda-export", PohodaExportLive.Index, :index
+
+    # iCal Import
+    live "/ical-import", IcalImportLive.Index, :index
+
+    # Meal Planner
+    live "/meal-planner", MealPlannerLive.Index
+    live "/meal-planner/templates", MealPlannerLive.Templates, :index
+    live "/meal-planner/templates/new", MealPlannerLive.Templates, :new
+    live "/meal-planner/templates/:id/edit", MealPlannerLive.Templates, :edit
+    live "/meal-planner/print", MealPlannerLive.Print
+    end
+  end
+
+  scope "/pos", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/orders/:id/receipt", OrderLive.Receipt
+  end
+
+  # Point of Sale (POS) - Touch-friendly interface for bar staff
+  scope "/pos", CozyCheckoutWeb.PosLive do
+    pipe_through :browser
+
+    live "/", GuestSelection
+    live "/bookings/:booking_id/orders", OrderSelection
+    live "/orders/:id", OrderManagement
+  end
+
+  # Other scopes may use custom stacks.
+  # scope "/api", CozyCheckoutWeb do
+  #   pipe_through :api
+  # end
+
+  # Enable LiveDashboard and Swoosh mailbox preview in development
+  if Application.compile_env(:cozy_checkout, :dev_routes) do
+    scope "/dev" do
+      pipe_through :browser
+
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje hashovací task a opravené POS receipt routování.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Saving...">Save Category</
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Kompletní PIN/auth vrstva se teď kompiluje; zbývá odstranit jedno nové deprecated-varování u promptu hash tasku. Pak doplním krátký návod k nastavení environment variable a jednotkové testy pro PBKDF2 ověření i dočasné blokování po chybných pokusech.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin.pin.hash.ex**</summary>
+
+@@ lines 1-20 @@
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    pin = :io.get_password(~c"Admin PIN (6 to 8 digits): ") |> List.to_string()
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **README.md**</summary>
+
+@@ lines 1-55 @@
+
+```
+# CozyCheckout
+
+To start your Phoenix server:
+
+* Run `mix setup` to install and setup dependencies
+* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+
+## Admin PIN
+
+The root URL opens the POS. All `/admin` pages require a PIN; the POS remains public. Generate a salted PBKDF2 hash with `mix admin.pin.hash` (the PIN is entered without echo) and configure the printed `ADMIN_PIN_HASH` value as an environment secret before starting the server. Do not commit the hash to the repository.
+
+The PIN must contain 6 to 8 digits. Five incorrect attempts from the same client address trigger a one-minute lockout. An authenticated admin session expires after 12 hours and locks after 15 minutes without activity in an admin LiveView. Use **Lock Admin** on the dashboard to end the session immediately.
+
+Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+
+Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+
+## Learn more
+
+* Official website: https://www.phoenixframework.org/
+* Guides: https://hexdocs.pm/phoenix/overview.html
+* Docs: https://hexdocs.pm/phoenix
+* Forum: https://elixirforum.com/c/phoenix-forum
+* Source: https://github.com/phoenixframework/phoenix
+
+
+How to setup sql server:
+Steps to Configure PostgreSQL for Local Network Access
+1. Locate and Edit pg_hba.conf
+The file location varies by system:
+
+Linux (Debian/Ubuntu): /etc/[REDACTED:generic-password]ql/17/main/pg_hba.conf
+Linux (Red Hat/CentOS): /var/lib/pgsql/17/data/pg_hba.conf
+macOS (Homebrew): pg_hba.conf or /usr/local/var/[REDACTED:generic-password]ql@17/pg_hba.conf
+Docker: Inside the container at /var/lib/[REDACTED:generic-password]ql/data/pg_hba.conf
+2. Add Configuration for Local Network
+Add these lines to allow password authentication from your local network:
+
+Replace 192.168.1.0/24 with your actual local network range. Common ranges:
+
+192.168.0.0/24 (192.168.0.1 - 192.168.0.254)
+192.168.1.0/24 (192.168.1.1 - 192.168.1.254)
+10.0.0.0/8 (10.0.0.1 - 10.255.255.254)
+3. Edit [REDACTED:generic-password]ql.conf to Listen on Network
+Find and edit [REDACTED:generic-password]ql.conf (same directory as pg_hba.conf):
+
+# Listen on all interfaces (default is localhost only)
+listen_addresses = '*'
+
+# Or specify your local network IP
+listen_addresses = '192.168.1.100'  # Your server's IP
+
+
+sudo systemctl restart [REDACTED:generic-password]ql
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_auth_test.exs**</summary>
+
+@@ lines 1-1 @@
+
+```
+defmodule CozyCheckoutWeb.AdminAuthTest do
+  use ExUnit.Case, async: false
+
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+
+  test "PIN hashes are salted and verify without storing the PIN" do
+    previous_hash = Application.get_env(:cozy_checkout, :admin_pin_hash)
+    on_exit(fn -> restore_pin_hash(previous_hash) end)
+
+    hash = AdminAuth.hash_pin("482731")
+    Application.put_env(:cozy_checkout, :admin_pin_hash, hash)
+
+    assert AdminAuth.enabled?()
+    assert AdminAuth.verify_pin("482731")
+    refute AdminAuth.verify_pin("482732")
+    refute AdminAuth.verify_pin("123")
+  end
+
+  test "an address is temporarily blocked after five wrong PINs" do
+    address = {:test, self(), make_ref()}
+    on_exit(fn -> AdminAuthRateLimiter.reset(address) end)
+
+    for _attempt <- 1..5 do
+      assert AdminAuthRateLimiter.allowed?(address)
+      assert :ok = AdminAuthRateLimiter.record_failure(address)
+    end
+
+    refute AdminAuthRateLimiter.allowed?(address)
+    assert :ok = AdminAuthRateLimiter.reset(address)
+    assert AdminAuthRateLimiter.allowed?(address)
+  end
+
+  defp restore_pin_hash(nil), do: Application.delete_env(:cozy_checkout, :admin_pin_hash)
+
+  defp restore_pin_hash(hash),
+    do: Application.put_env(:cozy_checkout, :admin_pin_hash, hash)
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Kompiluje dokumentaci, auth testy a všechny součásti PIN řešení po finálních úpravách.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+PIN login, logout a uzamykání jsou zapojené a projekt se kompiluje bez nových varování. Teď formátuji jen dotčené Elixir soubory a zkontroluji router, protože ochrana všech administrativních LiveView rout je nejcitlivější část změny.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format lib/cozy\_checkout\_web/admin\_auth.ex lib/cozy\_checkout\_web/admin\_a...`
+
+Formátuje změněné Elixir i HEEx soubory bez zásahu do nesouvisejícího kódu.
+
+```bash
+mix format lib/cozy_checkout_web/admin_auth.ex lib/cozy_checkout_web/admin_auth_rate_limiter.ex lib/cozy_checkout_web/controllers/admin_session_controller.ex lib/cozy_checkout_web/live/admin_login_live.ex lib/mix/tasks/admin.pin.hash.ex lib/cozy_checkout_web/router.ex lib/cozy_checkout/application.ex lib/cozy_checkout_web/live/dashboard_live.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex config/runtime.exs test/cozy_checkout_web/admin_auth_test.exs
+```
+
+**Result:**
+
+```
+[Output too large (37KB). Full output saved to: /Users/michalhorcic/Library/Application Support/Code/copilot-terminal-output/copilot-terminal-output-e42abe7e-3054-4e80-a2df-3e9b6e5b9a13.txt]
+[Use readFile or grep to examine the full output.]
+
+ 779 │       total_profit = Decimal.mult(profit_per_unit, total_sold || Decimal.
+new(0))
+     │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+     │
+     └─ lib/cozy_checkout/inventory.ex:779: CozyCheckout.Inventory.get_profit_an
+alysis/1
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreCompo
+nents.button/1
+     │
+ 129 │             <.button type="submit" disabled={@uploads.ical_file.entries =
+= []}>
+     │             ~~~~~~~~~~~~~~
+
+[... middle of output truncated ...]
+
+/live/guest_live/form_component.ex:30: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreCompo
+nents.button/1
+     │
+ 382 │               <.button type="submit" class="w-full">
+     │               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/order_live/edit.ex:382: (file)
+
+     warning: the right-hand side of || will never be executed:
+
+         total_sold || ...
+
+     because the left-hand side always evaluates to:
+
+         dynamic(not false and not nil)
+
+     where "total_sold" was given the type:
+
+         # type: dynamic(not false and not nil)
+         # from: lib/cozy_checkout/inventory.ex:761:18
+         total_sold = get_total_sold_quantity(product.id, filters)
+
+     type warning found at:
+     │
+ 779 │       total_profit = Decimal.mult(profit_per_unit, total_sold || Decimal.
+new(0))
+     │       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~
+     │
+     └─ lib/cozy_checkout/inventory.ex:779: CozyCheckout.Inventory.get_profit_an
+alysis/1
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreCompo
+nents.button/1
+     │
+ 129 │             <.button type="submit" disabled={@up
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Formátování hotové. Nyní ověřuji, že všechny admin routy skutečně leží za PIN pipeline i LiveView `on_mount`, a potom provedu HTTP smoke testy pro POS, chráněný admin a veřejnou PIN obrazovku.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Kontroluje kompilaci po formátování a finálních změnách rout.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Saving...">Save Category</
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `admin.pin.hash.ex`, `router.ex`, `admin_auth.ex`, `admin_auth_rate_limiter.ex`, `admin_session_controller.ex`, `admin_login_live.ex`, 2 problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex"
+]
+```
+
+
+**Result:**
+
+````
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex">
+This code at line 9
+```
+  def run(_args) do
+```
+has the problem reported:
+<compileError>
+Function run/1 has no local return.
+</compileError>
+This code at line 10
+```
+    pin = :io.get_password(~c"Admin PIN (6 to 8 digits): ") |> List.to_string()
+```
+has the problem reported:
+<compileError>
+The call io:get_password
+         ("Admin PIN (6 to 8 digits): ") will never return since it differs in the 1st argument from the success typing arguments: 
+         (atom() | pid())
+</compileError>
+
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex">
+No errors found
+</errors>
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `admin_auth.ex`
+
+**Input:**
+
+- endLine: `230`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          Phoenix.Controller.put_flash(
+            conn,
+            :error,
+            "Admin session expired. Enter the PIN to continue."
+          )
+        else
+          Phoenix.Controller.put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - ti
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `router.ex`
+
+**Input:**
+
+- endLine: `180`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :calendar do
+    plug :accepts, ["html", "ics"]
+  end
+
+  pipeline :admin_auth do
+    plug CozyCheckoutWeb.AdminAuth
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :calendar
+
+    get "/calendar/bookings.ics", BookingCalendarController, :index
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", PosLive.GuestSelection
+  end
+
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/login", AdminLoginLive
+    post "/login", AdminSessionController, :create
+    post "/logout", AdminSessionController, :delete
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through [:browser, :admin_auth]
+
+    import Phoenix.LiveDashboard.Router
+
+    live_dashboard "/system",
+      metrics: CozyCheckoutWeb.Telemetry,
+      additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    live_session :admin, on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}] do
+      live "/", DashboardLive
+
+      # Categories
+      live "/categories", CategoryLive.Index, :index
+      live "/categories/new", CategoryLive.Index, :new
+      live "/categories/:id/edit", CategoryLive.Index, :edit
+
+      # Products
+      live "/products", ProductLive.Index, :index
+      live "/products/new", ProductLive.Index, :new
+      live "/products/:id/edit", ProductLive.Index, :edit
+
+      # Pricelists
+      live "/pricelists", PricelistLive.Index, :index
+      live "/pricelists/new", PricelistLive.Index, :new
+      live "/pricelists/:id/edit", PricelistLive.Index, :edit
+      live "/pricelists/management", PricelistLive.Management
+   
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Při kontrole jsem našel důležitý okraj: neaktivní LiveView se sice přesměrovával do loginu, ale samotná podepsaná session by zůstala platná. Změním timeout tak, aby nejprve prošel endpointem, který session skutečně smaže; současně upravím volání skrytého PIN promptu podle správného `:io` API.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin.pin.hash.ex**</summary>
+
+@@ lines 1-20 @@
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    pin = :io.get_password(:standard_io, ~c"Admin PIN (6 to 8 digits): ") |> List.to_string()
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_auth.ex**</summary>
+
+@@ lines 1-153 @@
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          Phoenix.Controller.put_flash(
+            conn,
+            :error,
+            "Admin session expired. Enter the PIN to continue."
+          )
+        else
+          Phoenix.Controller.put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - timestamp < @session_lifetime_seconds
+  end
+
+  def session_authenticated?(_timestamp), do: false
+
+  def session_key, do: @session_key
+  def return_to_key, do: @return_to_key
+
+  def safe_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/admin/") and not String.starts_with?(path, "//") and
+         path != "/admin/login" do
+      path
+    else
+      "/admin"
+    end
+  end
+
+  def safe_return_to(_path), do: "/admin"
+
+  def on_mount(:ensure_admin, _params, session, socket) do
+    if enabled?() and session_authenticated?(Map.get(session, @session_key)) do
+      {:cont, install_idle_hooks(socket)}
+    else
+      {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+    end
+  end
+
+  defp install_idle_hooks(socket) do
+    socket
+    |> reset_idle_timer()
+    |> attach_hook(:admin_idle_event, :handle_event, fn _event, _params, socket ->
+      {:cont, reset_idle_timer(socket)}
+    end)
+    |> attach_hook(:admin_idle_timer, :handle_info, fn
+      {:admin_idle_timeout, timer_ref}, socket ->
+        if timer_ref == socket.assigns.admin_idle_timer_ref do
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/lock")}
+        else
+          {:cont, socket}
+        end
+
+      _message, socket ->
+        {:cont, socket}
+    end)
+  end
+
+  defp reset_idle_timer(socket) do
+    if timer = socket.assigns[:admin_idle_timer], do: Process.cancel_timer(timer)
+
+    timer_ref = make_ref()
+    timer = Process.send_after(self(), {:admin_idle_timeout, timer_ref}, @idle_timeout_ms)
+
+    socket
+    |> assign(:admin_idle_timer_ref, timer_ref)
+    |> assign(:admin_idle_timer, timer)
+  end
+
+  defp configured_hash do
+    case Application.get_env(:cozy_checkout, @pin_hash_config_key) do
+      hash when is_binary(hash) ->
+        case String.split(hash, ".", parts: 2) do
+          [salt, digest] ->
+            with {:ok, salt} <- Base.decode64(salt),
+                 {:ok, digest} <- Base.decode64(digest),
+                 true <- byte_size(salt) == 16 and byte_size(digest) == @hash_bytes do
+              {salt, digest}
+            else
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp derive_hash(pin, salt) do
+    :crypto.pbkdf2_hmac(:sha256, pin, salt, @pbkdf2_iterations, @hash_bytes)
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **router.ex**</summary>
+
+@@ lines 1-176 @@
+
+```
+defmodule CozyCheckoutWeb.Router do
+  use CozyCheckoutWeb, :router
+
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {CozyCheckoutWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
+  pipeline :api do
+    plug :accepts, ["json"]
+  end
+
+  pipeline :calendar do
+    plug :accepts, ["html", "ics"]
+  end
+
+  pipeline :admin_auth do
+    plug CozyCheckoutWeb.AdminAuth
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :calendar
+
+    get "/calendar/bookings.ics", BookingCalendarController, :index
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", PosLive.GuestSelection
+  end
+
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    get "/lock", AdminSessionController, :lock
+    live "/login", AdminLoginLive
+    post "/login", AdminSessionController, :create
+    post "/logout", AdminSessionController, :delete
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through [:browser, :admin_auth]
+
+    import Phoenix.LiveDashboard.Router
+
+    live_dashboard "/system",
+      metrics: CozyCheckoutWeb.Telemetry,
+      additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    live_session :admin, on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}] do
+      live "/", DashboardLive
+
+      # Categories
+      live "/categories", CategoryLive.Index, :index
+      live "/categories/new", CategoryLive.Index, :new
+      live "/categories/:id/edit", CategoryLive.Index, :edit
+
+      # Products
+      live "/products", ProductLive.Index, :index
+      live "/products/new", ProductLive.Index, :new
+      live "/products/:id/edit", ProductLive.Index, :edit
+
+      # Pricelists
+      live "/pricelists", PricelistLive.Index, :index
+      live "/pricelists/new", PricelistLive.Index, :new
+      live "/pricelists/:id/edit", PricelistLive.Index, :edit
+      live "/pricelists/management", PricelistLive.Management
+      live "/pricelists/print", PricelistLive.Printable
+
+      # Purchase Orders
+      live "/purchase_orders", PurchaseOrderLive.Index, :index
+      live "/purchase_orders/new", PurchaseOrderLive.Index, :new
+      live "/purchase_orders/:id/edit", PurchaseOrderLive.Index, :edit
+      live "/purchase_orders/:id", PurchaseOrderLive.Show
+
+      # Stock Overview
+      live "/stock", StockOverviewLive.Index
+      live "/stock/restock", StockRestockLive
+      live "/bar-stock", BarStockLive
+
+      # Stock Adjustments
+      live "/stock-adjustments", StockAdjustmentLive.Index, :index
+      live "/stock-adjustments/new", StockAdjustmentLive.Index, :new
+      live "/stock-adjustments/:id/edit", StockAdjustmentLive.Index, :edit
+
+      # Inventory Reports
+      live "/inventory-reports", InventoryReportsLive.Index
+
+      # Guests
+      live "/guests", GuestLive.Index, :index
+      live "/guests/new", GuestLive.Index, :new
+      live "/guests/:id/edit", GuestLive.Index, :edit
+
+      # Rooms
+      live "/rooms", RoomLive.Index, :index
+      live "/rooms/new", RoomLive.Index, :new
+      live "/rooms/:id/edit", RoomLive.Index, :edit
+
+      # Bookings
+      live "/bookings", BookingLive.Index, :index
+      live "/bookings/new", BookingLive.Index, :new
+      live "/bookings/calendar", BookingLive.Calendar
+      live "/bookings/timeline", BookingLive.Timeline
+      live "/bookings/:id", BookingLive.Show
+      live "/bookings/:id/edit", BookingLive.Index, :edit
+      live "/bookings/:booking_id/guests", BookingLive.ManageGuests
+
+      # Orders
+      live "/orders", OrderLive.Index, :index
+      live "/orders/new", OrderLive.New
+      live "/orders/:id/edit", OrderLive.Edit
+      live "/orders/:id", OrderLive.Show
+      live "/orders/:id/receipt", OrderLive.Receipt
+
+      # Payments
+      live "/payments", PaymentLive.Index, :index
+      live "/payments/new", PaymentLive.New
+
+      # Economy Management
+      live "/economy", EconomyLive.Index
+
+      # Statistics
+      live "/statistics", StatisticsLive.Index
+
+      # POHODA Export
+      live "/pohoda-export", PohodaExportLive.Index, :index
+
+      # iCal Import
+      live "/ical-import", IcalImportLive.Index, :index
+
+      # Meal Planner
+      live "/meal-planner", MealPlannerLive.Index
+      live "/meal-planner/templates", MealPlannerLive.Templates, :index
+      live "/meal-planner/templates/new", MealPlannerLive.Templates, :new
+      live "/meal-planner/templates/:id/edit", MealPlannerLive.Templates, :edit
+      live "/meal-planner/print", MealPlannerLive.Print
+    end
+  end
+
+  scope "/pos", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/orders/:id/receipt", OrderLive.Receipt
+  end
+
+  # Point of Sale (POS) - Touch-friendly interface for bar staff
+  scope "/pos", CozyCheckoutWeb.PosLive do
+    pipe_through :browser
+
+    live "/", GuestSelection
+    live "/bookings/:booking_id/orders", OrderSelection
+    live "/orders/:id", OrderManagement
+  end
+
+  # Other scopes may use custom stacks.
+  # scope "/api", CozyCheckoutWeb do
+  #   pipe_through :api
+  # end
+
+  # Enable LiveDashboard and Swoosh mailbox preview in development
+  if Application.compile_env(:cozy_checkout, :dev_routes) do
+    scope "/dev" do
+      pipe_through :browser
+
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+
+```
+
+```
+
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_session_controller.ex**</summary>
+
+@@ lines 1-58 @@
+
+```
+defmodule CozyCheckoutWeb.AdminSessionController do
+  use CozyCheckoutWeb, :controller
+
+  import Plug.Conn,
+    only: [configure_session: 2, delete_session: 2, get_session: 2, put_session: 3]
+
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+
+  def create(conn, %{"pin" => pin}) when is_binary(pin) do
+    address = conn.remote_ip
+
+    cond do
+      not AdminAuth.enabled?() ->
+        reject(conn, "Admin PIN is not configured on the server.")
+
+      not AdminAuthRateLimiter.allowed?(address) ->
+        reject(conn, "Too many incorrect PIN attempts. Wait one minute and try again.")
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(address)
+        destination = AdminAuth.safe_return_to(get_session(conn, AdminAuth.return_to_key()))
+
+        conn
+        |> configure_session(renew: true)
+        |> delete_session(AdminAuth.return_to_key())
+        |> put_session(AdminAuth.session_key(), System.system_time(:second))
+        |> redirect(to: destination)
+
+      true ->
+        AdminAuthRateLimiter.record_failure(address)
+        reject(conn, "Incorrect PIN.")
+    end
+  end
+
+  def create(conn, _params), do: reject(conn, "Enter your PIN.")
+
+  def delete(conn, _params) do
+    conn
+    |> delete_session(AdminAuth.session_key())
+    |> delete_session(AdminAuth.return_to_key())
+    |> redirect(to: "/pos")
+  end
+
+  def lock(conn, _params) do
+    conn
+    |> delete_session(AdminAuth.session_key())
+    |> delete_session(AdminAuth.return_to_key())
+    |> redirect(to: "/admin/login")
+  end
+
+  defp reject(conn, message) do
+    conn
+    |> put_flash(:error, message)
+    |> redirect(to: "/admin/login")
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje korektní skrytý PIN prompt a skutečné uzamčení session při idle timeoutu.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Saving...">Save Category</
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Kompilace potvrdila idle uzamčení, ale Erlang `:io.get_password` přijímá jen zařízení, nikoli prompt. Vypíšu instrukci zvlášť přes stderr a PIN přečtu ze standardního terminálu bez echo; pak znovu zkontroluji kompilaci.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin.pin.hash.ex**</summary>
+
+@@ lines 1-21 @@
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    IO.write(:stderr, "Admin PIN (6 to 8 digits): ")
+    pin = :io.get_password(:standard_io) |> List.to_string()
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Potvrzuje opravené skryté čtení PINu v hashovacím tasku.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Admin CRUD routy jsou nyní pod HTTP plugem i LiveView `on_mount`; POS účtenky mají samostatnou veřejnou cestu a dashboard má tlačítko pro okamžité uzamčení. Teď ověřím PBKDF2/limit pokusů přímo bez testovací DB a zkontroluji HTTP přesměrování; databázové testy v tomto prostředí už dříve blokovala chybějící PostgreSQL role `[REDACTED:generic-password]`.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix run -e 'alias CozyCheckoutWeb.\{AdminAuth, AdminAuthRateLimiter\}; hash = ...`
+
+Ověřuje hash PINu, správné/nesprávné PINy a pět pokusů bez vyžadování databáze.
+
+```bash
+mix run -e 'alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}; hash = AdminAuth.hash_pin("482731"); Application.put_env(:cozy_checkout, :admin_pin_hash, hash); IO.inspect({AdminAuth.verify_pin("482731"), AdminAuth.verify_pin("482732"), AdminAuth.verify_pin("123")}, label: "pin verification"); key = {:smoke, self()}; Enum.each(1..5, fn _ -> AdminAuthRateLimiter.record_failure(key) end); IO.inspect(AdminAuthRateLimiter.allowed?(key), label: "allowed after five failures"); AdminAuthRateLimiter.reset(key)'
+```
+
+**Result:**
+
+```
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Saving...">Save Category</
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\}\\n' http://localhost:4000/pos`
+
+Ověřuje, že veřejný vstup do POS funguje.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:4000/pos
+```
+
+**Result:**
+
+```
+200
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\} %\{redirect\_url\}\\n' http://localhost:4...`
+
+Ověřuje, že nepřihlášený požadavek na admin je přesměrován k PINu.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' http://localhost:4000/admin
+```
+
+**Result:**
+
+```
+302 http://localhost:4000/admin/login
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\}\\n' http://localhost:4000/admin/login`
+
+Ověřuje dostupnost veřejné přihlašovací obrazovky.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:4000/admin/login
+```
+
+**Result:**
+
+```
+200
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Smoke checky potvrdily očekávané chování: `/pos` vrací 200, nepřihlášené `/admin` vrací 302 na PIN stránku a PIN stránka vrací 200. V samostatném běhu prošlo správné ověření PBKDF2 hashe a po pěti chybných pokusech limiter zablokoval další; teď spouštím kontrolu formátu, diagnostiku a cílený testovací soubor.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted README.md config/runtime.exs lib/cozy\_checkout/...`
+
+Ověří formatter pro všechny změněné soubory autentizace.
+
+```bash
+mix format --check-formatted README.md config/runtime.exs lib/cozy_checkout/application.ex lib/cozy_checkout_web/router.ex lib/cozy_checkout_web/admin_auth.ex lib/cozy_checkout_web/admin_auth_rate_limiter.ex lib/cozy_checkout_web/controllers/admin_session_controller.ex lib/cozy_checkout_web/live/admin_login_live.ex lib/cozy_checkout_web/live/dashboard_live.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex lib/mix/tasks/admin.pin.hash.ex test/cozy_checkout_web/admin_auth_test.exs >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `application.ex`, `router.ex`, `admin_auth.ex`, `admin_auth_rate_limiter.ex`, `admin_session_controller.ex`, `admin_login_live.ex`, `dashboard_live.ex`, `admin.pin.hash.ex`, `admin_auth_test.exs`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/application.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/admin_auth_test.exs"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout/application.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/admin_auth_test.exs">
+No errors found
+</errors>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="runTests"><details>
+<summary>Tool use: **runTests**</summary>
+
+0/1 tests passed (0.00%)
+
+**Input:**
+
+- files:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/admin_auth_test.exs"
+]
+```
+
+
+**Result:**
+
+```
+<summary passed=0 failed=1 />
+<testFailure name="file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/admin_auth_test.exs" path="file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout">
+<message>
+[31m21:55:17.275 [error] Postgrex.Protocol (#PID<0.7474.0> ("db_conn_1")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m21:55:17.277 [error] :gen_statem #PID<0.7474.0> terminating
+** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist
+    (db_connection 2.10.2) lib/db_connection/connection.ex:121: DBConnection.Connection.handle_event/4
+    (stdlib 8.1) gen_statem.erl:3743: :gen_statem.loop_state_callback/11
+    (stdlib 8.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+Process Label: "db_conn_1"
+Queue: [internal: {:connect, :init}]
+Postponed: [][0m
+[31m21:55:17.283 [error] Postgrex.Protocol (#PID<0.7478.0> ("db_conn_1")) failed to connect: ** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist[0m
+[31m21:55:17.283 [error] :gen_statem #PID<0.7478.0> terminating
+** (Postgrex.Error) FATAL 28000 (invalid_authorization_specification) role "[REDACTED:generic-password]" does not exist
+    (db_connection 2.10.2) lib/db_connection/connection.ex:121: DBConnection.Connection.handle_event/4
+    (stdlib 8.1) gen_statem.erl:3743: :gen_statem.loop_state_callback/11
+    (stdlib 8.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+Process Label: "db_conn_1"
+Queue: [internal: {:connect, :init}]
+Postponed: [][0m
+[31m21:55:17.284 [error] Process #PID<0.7468.0> raised an exception
+** (Mix.Error) The database for CozyCheckout.Repo couldn't be created: killed
+    (mix 1.20.4) lib/mix.ex:647: Mix.raise/2
+    (elixir 1.20.4) lib/enum.ex:983: Enum."-each/2-lists^foreach/1-0-"/2
+    (mix 1.20.4) lib/mix/task.ex:502: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.20.4) lib/mix/task.ex:576: Mix.Task.run_alias/6
+   
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Při finální bezpečnostní kontrole jsem si všiml, že aplikace posílá administraci pravidelný `heartbeat` event pro keep-alive. Kdyby tento event resetoval idle timer, automaticky by obcházel 15minutové uzamčení; upravím hook, aby časovač prodlužovala jen skutečná interakce uživatele.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_auth.ex**</summary>
+
+@@ lines 1-157 @@
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          Phoenix.Controller.put_flash(
+            conn,
+            :error,
+            "Admin session expired. Enter the PIN to continue."
+          )
+        else
+          Phoenix.Controller.put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - timestamp < @session_lifetime_seconds
+  end
+
+  def session_authenticated?(_timestamp), do: false
+
+  def session_key, do: @session_key
+  def return_to_key, do: @return_to_key
+
+  def safe_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/admin/") and not String.starts_with?(path, "//") and
+         path != "/admin/login" do
+      path
+    else
+      "/admin"
+    end
+  end
+
+  def safe_return_to(_path), do: "/admin"
+
+  def on_mount(:ensure_admin, _params, session, socket) do
+    if enabled?() and session_authenticated?(Map.get(session, @session_key)) do
+      {:cont, install_idle_hooks(socket)}
+    else
+      {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+    end
+  end
+
+  defp install_idle_hooks(socket) do
+    socket
+    |> reset_idle_timer()
+    |> attach_hook(:admin_idle_event, :handle_event, fn event, _params, socket ->
+      if event == "heartbeat" do
+        {:cont, socket}
+      else
+        {:cont, reset_idle_timer(socket)}
+      end
+    end)
+    |> attach_hook(:admin_idle_timer, :handle_info, fn
+      {:admin_idle_timeout, timer_ref}, socket ->
+        if timer_ref == socket.assigns.admin_idle_timer_ref do
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/lock")}
+        else
+          {:cont, socket}
+        end
+
+      _message, socket ->
+        {:cont, socket}
+    end)
+  end
+
+  defp reset_idle_timer(socket) do
+    if timer = socket.assigns[:admin_idle_timer], do: Process.cancel_timer(timer)
+
+    timer_ref = make_ref()
+    timer = Process.send_after(self(), {:admin_idle_timeout, timer_ref}, @idle_timeout_ms)
+
+    socket
+    |> assign(:admin_idle_timer_ref, timer_ref)
+    |> assign(:admin_idle_timer, timer)
+  end
+
+  defp configured_hash do
+    case Application.get_env(:cozy_checkout, @pin_hash_config_key) do
+      hash when is_binary(hash) ->
+        case String.split(hash, ".", parts: 2) do
+          [salt, digest] ->
+            with {:ok, salt} <- Base.decode64(salt),
+                 {:ok, digest} <- Base.decode64(digest),
+                 true <- byte_size(salt) == 16 and byte_size(digest) == @hash_bytes do
+              {salt, digest}
+            else
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp derive_hash(pin, salt) do
+    :crypto.pbkdf2_hmac(:sha256, pin, salt, @pbkdf2_iterations, @hash_bytes)
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje úpravu idle timeru proti keep-alive heartbeatům.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Idle lock теперь игнорuje automatický `heartbeat`, takže 15 minut měří skutečnou nečinnost. Zkompilování této opravy prošlo; dokončím formátování a smoke testy rout po hot reloadu.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format README.md config/runtime.exs lib/cozy\_checkout/application.ex lib...`
+
+Naformátuje finální verze dokumentace, rout, LiveView, PIN helperů a testů.
+
+```bash
+mix format README.md config/runtime.exs lib/cozy_checkout/application.ex lib/cozy_checkout_web/router.ex lib/cozy_checkout_web/admin_auth.ex lib/cozy_checkout_web/admin_auth_rate_limiter.ex lib/cozy_checkout_web/controllers/admin_session_controller.ex lib/cozy_checkout_web/live/admin_login_live.ex lib/cozy_checkout_web/live/dashboard_live.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex lib/mix/tasks/admin.pin.hash.ex test/cozy_checkout_web/admin_auth_test.exs
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !9 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Finální formátování je hotové. Ověřuji odděleně veřejný vstup, chráněný admin, PIN obrazovku, POS a poslední syntaxi změněných souborů.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\}\\n' http://localhost:4000/`
+
+Ověří, že úvodní URL nyní zobrazí POS.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:4000/
+```
+
+**Result:**
+
+```
+200
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\} %\{redirect\_url\}\\n' http://localhost:4...`
+
+Ověří, že admin vyžaduje PIN i při přímém zadání URL.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' http://localhost:4000/admin
+```
+
+**Result:**
+
+```
+302 http://localhost:4000/admin/login
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\}\\n' http://localhost:4000/admin/login`
+
+Ověří veřejnou dostupnost obrazovky PIN přihlášení.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:4000/admin/login
+```
+
+**Result:**
+
+```
+200
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted README.md config/runtime.exs lib/cozy\_checkout/...`
+
+Ověří formát všech souborů dotčených PIN autentizací.
+
+```bash
+mix format --check-formatted README.md config/runtime.exs lib/cozy_checkout/application.ex lib/cozy_checkout_web/router.ex lib/cozy_checkout_web/admin_auth.ex lib/cozy_checkout_web/admin_auth_rate_limiter.ex lib/cozy_checkout_web/controllers/admin_session_controller.ex lib/cozy_checkout_web/live/admin_login_live.ex lib/cozy_checkout_web/live/dashboard_live.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex lib/mix/tasks/admin.pin.hash.ex test/cozy_checkout_web/admin_auth_test.exs >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git diff --check`
+
+Zkontroluje whitespace v pracovním diffu bez úprav uživatelských souborů.
+
+```bash
+git diff --check
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !9 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Smoke testy rout i formatteru prošly. Ještě zpřísním slíbenou 12hodinovou absolutní platnost session: při každé skutečné LiveView události ji znovu ověřím, aby aktivní stránka nemohla pokračovat neomezeně dlouho jen tím, že timer běží.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin_auth.ex**</summary>
+
+@@ lines 1-165 @@
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          Phoenix.Controller.put_flash(
+            conn,
+            :error,
+            "Admin session expired. Enter the PIN to continue."
+          )
+        else
+          Phoenix.Controller.put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - timestamp < @session_lifetime_seconds
+  end
+
+  def session_authenticated?(_timestamp), do: false
+
+  def session_key, do: @session_key
+  def return_to_key, do: @return_to_key
+
+  def safe_return_to(path) when is_binary(path) do
+    if String.starts_with?(path, "/admin/") and not String.starts_with?(path, "//") and
+         path != "/admin/login" do
+      path
+    else
+      "/admin"
+    end
+  end
+
+  def safe_return_to(_path), do: "/admin"
+
+  def on_mount(:ensure_admin, _params, session, socket) do
+    authenticated_at = Map.get(session, @session_key)
+
+    if enabled?() and session_authenticated?(authenticated_at) do
+      socket = assign(socket, :admin_authenticated_at, authenticated_at)
+      {:cont, install_idle_hooks(socket)}
+    else
+      {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/login")}
+    end
+  end
+
+  defp install_idle_hooks(socket) do
+    socket
+    |> reset_idle_timer()
+    |> attach_hook(:admin_idle_event, :handle_event, fn event, _params, socket ->
+      cond do
+        not session_authenticated?(socket.assigns.admin_authenticated_at) ->
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/lock")}
+
+        event == "heartbeat" ->
+          {:cont, socket}
+
+        true ->
+          {:cont, reset_idle_timer(socket)}
+      end
+    end)
+    |> attach_hook(:admin_idle_timer, :handle_info, fn
+      {:admin_idle_timeout, timer_ref}, socket ->
+        if timer_ref == socket.assigns.admin_idle_timer_ref do
+          {:halt, Phoenix.LiveView.redirect(socket, to: "/admin/lock")}
+        else
+          {:cont, socket}
+        end
+
+      _message, socket ->
+        {:cont, socket}
+    end)
+  end
+
+  defp reset_idle_timer(socket) do
+    if timer = socket.assigns[:admin_idle_timer], do: Process.cancel_timer(timer)
+
+    timer_ref = make_ref()
+    timer = Process.send_after(self(), {:admin_idle_timeout, timer_ref}, @idle_timeout_ms)
+
+    socket
+    |> assign(:admin_idle_timer_ref, timer_ref)
+    |> assign(:admin_idle_timer, timer)
+  end
+
+  defp configured_hash do
+    case Application.get_env(:cozy_checkout, @pin_hash_config_key) do
+      hash when is_binary(hash) ->
+        case String.split(hash, ".", parts: 2) do
+          [salt, digest] ->
+            with {:ok, salt} <- Base.decode64(salt),
+                 {:ok, digest} <- Base.decode64(digest),
+                 true <- byte_size(salt) == 16 and byte_size(digest) == @hash_bytes do
+              {salt, digest}
+            else
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp derive_hash(pin, salt) do
+    :crypto.pbkdf2_hmac(:sha256, pin, salt, @pbkdf2_iterations, @hash_bytes)
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje absolutní limit session na každé admin LiveView události.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Absolutní 12hodinový limit i idle timeout nyní procházejí kompilací. Naformátuji poslední změnu a znovu ověřím routy; testovací soubor zůstává blokovaný chybějící PostgreSQL rolí `[REDACTED:generic-password]`, ale auth chování jsem ověřil samostatným smoke testem bez DB.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format lib/cozy\_checkout\_web/admin\_auth.ex lib/cozy\_checkout\_web/router....`
+
+Naformátuje finální změny PIN autentizace po úpravě limitu session.
+
+```bash
+mix format lib/cozy_checkout_web/admin_auth.ex lib/cozy_checkout_web/router.ex lib/cozy_checkout_web/admin_auth_rate_limiter.ex lib/cozy_checkout_web/controllers/admin_session_controller.ex lib/cozy_checkout_web/live/admin_login_live.ex lib/cozy_checkout_web/live/dashboard_live.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex lib/mix/tasks/admin.pin.hash.ex test/cozy_checkout_web/admin_auth_test.exs config/runtime.exs lib/cozy_checkout/application.ex README.md
+```
+
+**Result:**
+
+```
+[Output too large (37KB). Full output saved to: /Users/michalhorcic/Library/Application Support/Code/copilot-terminal-output/copilot-terminal-output-5d19ef6a-85dd-40f7-a180-6b13220459ff.txt]
+[Use readFile or grep to examine the full output.]
+
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/product_live/form_component.ex:73: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreCompo
+nents.button/1
+     │
+ 223 │               <.button type="submit" class="w-full">
+     │               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/manage_guests.ex:223: (file)
+
+     warning: und
+
+[... middle of output truncated ...]
+
+te "type" for component CozyCheckoutWeb.CoreCompo
+nents.button/1
+     │
+ 129 │             <.button type="submit" disabled={@uploads.ical_file.entries =
+= []}>
+     │             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/ical_import_live/index.ex:129: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreCompo
+nents.button/1
+     │
+ 242 │           <.button type="submit" phx-disable-with="Saving...">Save Purcha
+se Order</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/purchase_order_live/form_component.ex:242: (f
+ile)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreCompon
+ents.button/1
+    │
+ 35 │           <.button type="submit" phx-disable-with="Creating...">Create Gue
+st</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/booking_live/guest_form_component.ex:35: (file
+)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreCompon
+ents.button/1
+    │
+ 29 │      
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted README.md config/runtime.exs lib/cozy\_checkout/...`
+
+Potvrzuje formát všech souborů přidaných či upravených pro PIN ochranu.
+
+```bash
+mix format --check-formatted README.md config/runtime.exs lib/cozy_checkout/application.ex lib/cozy_checkout_web/router.ex lib/cozy_checkout_web/admin_auth.ex lib/cozy_checkout_web/admin_auth_rate_limiter.ex lib/cozy_checkout_web/controllers/admin_session_controller.ex lib/cozy_checkout_web/live/admin_login_live.ex lib/cozy_checkout_web/live/dashboard_live.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex lib/mix/tasks/admin.pin.hash.ex test/cozy_checkout_web/admin_auth_test.exs >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\}\\n' http://localhost:4000/pos`
+
+Ověřuje, že POS zůstává hostům veřejně dostupný.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:4000/pos
+```
+
+**Result:**
+
+```
+200
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\} %\{redirect\_url\}\\n' http://localhost:4...`
+
+Ověřuje, že přímý admin vstup stále vyžaduje přihlášení PINem.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' http://localhost:4000/admin
+```
+
+**Result:**
+
+```
+302 http://localhost:4000/admin/login
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git diff --check`
+
+Kontroluje whitespace chyby ve všech verzovaných změnách.
+
+```bash
+git diff --check
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !9 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `router.ex`, `admin_auth.ex`, `admin_auth_rate_limiter.ex`, `admin_session_controller.ex`, `admin_login_live.ex`, `dashboard_live.ex`, `admin.pin.hash.ex`, `admin_auth_test.exs`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/admin_auth_test.exs"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/controllers/admin_session_controller.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/admin_login_live.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/dashboard_live.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/admin_auth_test.exs">
+No errors found
+</errors>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Hotovo. `/` i `/pos` vedou do veřejného POS. Všechny `/admin/*` stránky vyžadují PIN; ochrana kontroluje HTTP požadavky i LiveView připojení. Po pěti chybných pokusech se přihlášení na minutu zablokuje, admin se zamkne po 15 minutách nečinnosti nebo po 12 hodinách. Automatické heartbeat zprávy timeout neprodlužují. Tisk účtenek z POS zůstává dostupný přes `/pos/orders/:id/receipt`.
+
+PIN se neukládá do repozitáře. V terminálu spusť `mix admin.pin.hash`, zadej 6–8místný PIN bez echo a nastav vypsanou hodnotu `ADMIN_PIN_HASH` jako proměnnou prostředí serveru. Pak server restartuj. **Dokud ji nenastavíš, administrace zůstane záměrně uzamčená** a přihlašovací stránka oznámí chybějící konfiguraci. Postup je také v `README.md`.
+
+`mix compile`, formátování a smoke testy rout prošly: `/pos` vrací `200`, `/admin` přesměruje na přihlášení. Cílené testy nešlo spustit, protože testovací PostgreSQL očekává roli `[REDACTED:generic-password]`, která v prostředí chybí.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Updated todo list
+</details></tool-use>
+
+---
+
+_**User (2026-09-28 20:06:01Z)**_
+
+mix admin.pin.hash dává tuto chybu:
+Admin PIN (6 to 8 digits): ** (FunctionClauseError) no function clause matching in List.to_string/1
+
+    The following arguments were given to List.to_string/1:
+
+        # 1
+        {:error, :enotsup}
+
+    Attempted function clauses (showing 1 out of 1):
+
+        def to_string(list) when is_list(list)
+
+    (elixir 1.20.4) lib/list.ex:1179: List.to_string/1
+    (cozy_checkout 0.1.0) lib/mix/tasks/admin.pin.hash.ex:11: Mix.Tasks.Admin.Pin.Hash.run/1
+    (mix 1.20.4) lib/mix/task.ex:502: anonymous fn/3 in Mix.Task.run_task/5
+    (mix 1.20.4) lib/mix/cli.ex:129: Mix.CLI.run_task/2
+    /opt/homebrew/bin/mix:7: (file)
+
+---
+
+_**Agent (copilot/auto)**_
+
+Zkontroluju aktuální hash task a upravím čtení PINu tak, aby podporovalo terminály, které neumí skryté zadávání. Pokud terminál `get_password` odmítne, task bezpečně přejde na běžné zadání s jasným upozorněním, že PIN bude při psaní viditelný.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `admin.pin.hash.ex`
+
+**Input:**
+
+- endLine: `100`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    IO.write(:stderr, "Admin PIN (6 to 8 digits): ")
+    pin = :io.get_password(:standard_io) |> List.to_string()
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Příčina je přesně podle tracebacku: `:io.get_password/1` vrací `{:error, :enotsup}` a task to bez kontroly posílá do `List.to_string/1`. Doplním fallback na `IO.gets/1` s výslovným upozorněním, že na tomto terminálu bude PIN vidět, plus čitelné hlášení při EOF či jiné chybě čtení.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin.pin.hash.ex**</summary>
+
+@@ lines 1-38 @@
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    pin = read_pin()
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+
+  defp read_pin do
+    case :io.get_password(:standard_io) do
+      pin when is_list(pin) ->
+        List.to_string(pin)
+
+      {:error, :enotsup} ->
+        IO.write(:stderr, "This terminal cannot hide typed input; the PIN will be visible.\n")
+
+        case IO.gets("Admin PIN (6 to 8 digits): ") do
+          nil -> Mix.raise("No PIN was entered")
+          pin -> pin |> String.trim_trailing("\n") |> String.trim_trailing("\r")
+        end
+
+      _ ->
+        Mix.raise("Could not read PIN from terminal")
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje opravu fallback vstupu PINu v hashovacím Mix tasku.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Pád je opravený: task nyní zachytí `{:error, :enotsup}` a místo výjimky přejde na `IO.gets/1` s upozorněním, že PIN bude při psaní viditelný. Kompilace prošla; ověřím ještě formát a diagnostiku tohoto souboru.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted lib/mix/tasks/admin.pin.hash.ex >/dev/null 2>&1...`
+
+Kontroluje formát opraveného PIN hash tasku.
+
+```bash
+mix format --check-formatted lib/mix/tasks/admin.pin.hash.ex >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git diff --check -- lib/mix/tasks/admin.pin.hash.ex`
+
+Kontroluje whitespace v opraveném hash tasku.
+
+```bash
+git diff --check -- lib/mix/tasks/admin.pin.hash.ex
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !9 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `admin.pin.hash.ex`, 1 problem found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex"
+]
+```
+
+
+**Result:**
+
+````
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex">
+This code at line 28
+```
+          nil -> Mix.raise("No PIN was entered")
+```
+has the problem reported:
+<compileError>
+The pattern can never match the type.
+
+Pattern:
+nil
+
+Type:
+:eof | binary() | string() | {:error, _}
+
+</compileError>
+
+</errors>
+````
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Diagnostika ještě zachytila drobnost v fallback větvi: `IO.gets/1` vrací při EOF `:eof`, ne `nil`. Opravím přesný pattern a znovu spustím kontrolu diagnostiky i formátu.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **admin.pin.hash.ex**</summary>
+
+@@ lines 1-38 @@
+
+```
+defmodule Mix.Tasks.Admin.Pin.Hash do
+  use Mix.Task
+
+  alias CozyCheckoutWeb.AdminAuth
+
+  @[REDACTED:generic-password]doc "Generate a PBKDF2 hash for ADMIN_PIN_HASH"
+
+  @impl Mix.Task
+  def run(_args) do
+    pin = read_pin()
+
+    if AdminAuth.valid_pin?(pin) do
+      Mix.shell().info("ADMIN_PIN_HASH=#{AdminAuth.hash_pin(pin)}")
+    else
+      Mix.raise("PIN must contain 6 to 8 digits")
+    end
+  end
+
+  defp read_pin do
+    case :io.get_password(:standard_io) do
+      pin when is_list(pin) ->
+        List.to_string(pin)
+
+      {:error, :enotsup} ->
+        IO.write(:stderr, "This terminal cannot hide typed input; the PIN will be visible.\n")
+
+        case IO.gets("Admin PIN (6 to 8 digits): ") do
+          :eof -> Mix.raise("No PIN was entered")
+          pin -> pin |> String.trim_trailing("\n") |> String.trim_trailing("\r")
+        end
+
+      _ ->
+        Mix.raise("Could not read PIN from terminal")
+    end
+  end
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje opravený EOF handling v hashovacím tasku.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted lib/mix/tasks/admin.pin.hash.ex >/dev/null 2>&1...`
+
+Finálně ověřuje formát opraveného PIN hash tasku.
+
+```bash
+mix format --check-formatted lib/mix/tasks/admin.pin.hash.ex >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git diff --check -- lib/mix/tasks/admin.pin.hash.ex`
+
+Kontroluje whitespace v opraveném hash tasku.
+
+```bash
+git diff --check -- lib/mix/tasks/admin.pin.hash.ex
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !9 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `admin.pin.hash.ex`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/mix/tasks/admin.pin.hash.ex">
+No errors found
+</errors>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Opraveno. Task teď `{:error, :enotsup}` zachytí a místo pádu zobrazí upozornění, že tento terminál neumí skrýt vstup, a pokračuje běžným zadáním PINu. Zkus znovu `mix admin.pin.hash`; na tomto terminálu bude PIN při psaní vidět.
+
+Ověřeno: kompilace, diagnostika i formatter prošly.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Update PIN reading for terminal compatibility* (1/2)
+</details></tool-use>
+
+---
+
+_**User (2026-09-28 20:08:07Z)**_
+
+Je jedno na jakém počítači pustím mix admin.pin.hash?
+
+---
+
+_**Agent (copilot/auto)**_
+
+Ne, hash můžeš vygenerovat na libovolném počítači, kde máš projekt a závislosti. Vygenerovaný `ADMIN_PIN_HASH` pak nastav jako proměnnou prostředí **na počítači, kde běží aplikace**, a server restartuj. Hash můžeš bezpečně přenést přes správce tajných údajů; neukládej ho do Gitu.
+
+---
+
+_**User (2026-09-28 20:12:22Z)**_
+
+Ještě bych potřeboval aby hosté nemohli bez pinu uzavřít/zaplatit účet. Takže ať je pro platbu vyžadován také PIN kód
+
+---
+
+_**Agent (copilot/auto)**_
+
+Napojím potvrzení PINu přímo na dokončení platby, ne na běžné přidávání položek. Nejdřív zmapuju přesné POS události pro hotovost, QR a případné rozdělené platby, aby nešlo účet uzavřít jinou cestou.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `pay|payment|cash|qr|confirm|complete|split|paid|record_payment` (`**/lib/cozy_checkout_web/live/pos_live/order_management.ex`), 133 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- isRegexp: `true`
+- maxResults: `120`
+- query: `pay|payment|cash|qr|confirm|complete|split|paid|record_payment`
+
+**Result:**
+
+```
+Found 133 matches in 1 file for "pay|payment|cash|qr|confirm|complete|split|paid|record_payment" (showing 120 matches in 1 file)
+
+lib/cozy_checkout_web/live/pos_live/order_management.ex
+5:  alias CozyCheckout.Payments.QrCode
+17:       |> assign(:show_payment_modal, false)
+18:       |> assign(:payment_method, nil)
+19:       |> assign(:payment_qr_svg, nil)
+20:       |> assign(:payment_invoice_number, nil)
+21:       |> assign(:payment_preview_amount, nil)
+27:       |> assign(:show_delete_confirm, false)
+31:       |> assign(:split_mode, false)
+32:       |> assign(:split_selection, %{})
+33:       |> assign(:split_allocated, %{})
+34:       |> assign(:split_payment_amount, nil)
+35:       |> assign(:last_payment_amount, nil)
+46:       |> assign(:show_payment_modal, false)
+47:       |> assign(:payment_method, nil)
+48:       |> assign(:payment_qr_svg, nil)
+49:       |> assign(:payment_invoice_number, nil)
+50:       |> assign(:payment_preview_amount, nil)
+56:       |> assign(:show_delete_confirm, false)
+60:       |> assign(:split_mode, false)
+61:       |> assign(:split_selection, %{})
+62:       |> assign(:split_allocated, %{})
+63:       |> assign(:split_payment_amount, nil)
+64:       |> assign(:last_payment_amount, nil)
+135:  def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+206:       |> assign(:show_delete_confirm, true)
+217:     |> assign(:show_delete_confirm, false)
+222:  def handle_event("confirm_delete", _params, socket) do
+231:       |> assign(:show_delete_confirm, false)
+237:       |> assign(:show_delete_confirm, false)
+277:      {:error, :cannot_convert_paid_order} ->
+278:        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+296:  def handle_event("enter_split_mode", _params, socket) do
+297:    # Reset selection only — keep allocated so previously-paid quantities can't be double-paid
+300:     |> assign(:split_mode, true)
+301:     |> assign(:split_selection, %{})}
+305:  def handle_event("exit_split_mode", _params,
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `phx-click="[^"]*(pay|payment|cash|qr|confirm)|phx-submit="[^"]*(pay|payment)|Payment|Pay|Cash|QR Code|Confirm` (`**/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`), 75 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- isRegexp: `true`
+- maxResults: `100`
+- query: `phx-click="[^"]*(pay|payment|cash|qr|confirm)|phx-submit="[^"]*(pay|payment)|Payment|Pay|Cash|QR Code|Confirm`
+
+**Result:**
+
+```
+Found 75 matches in 1 file for "phx-click="[^"]*(pay|payment|cash|qr|confirm)|phx-submit="[^"]*(pay|payment)|Payment|Pay|Cash|QR Code|Confirm"
+
+lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+487:            Enum.reduce(@order.payments || [], Decimal.new("0"), fn p, acc ->
+523:          <!-- Payment Button -->
+529:                phx-click="open_split_payment_modal"
+539:                  phx-click="open_payment_modal"
+542:                  <.icon name="hero-credit-card" class="w-5 h-5 inline-block mr-1" /> Pay Order
+695:    <!-- Delete Confirmation Modal -->
+697:      :if={@show_delete_confirm && @item_to_delete}
+732:            phx-click="confirm_delete"
+849:    <!-- Payment Modal -->
+851:      :if={@show_payment_modal}
+853:      phx-click="close_payment_modal"
+859:        <%= if @payment_method == "cash_success" do %>
+860:          <!-- Cash Payment Success -->
+868:                  Split Payment Collected!
+870:                  Payment Successful!
+874:                Invoice: {@payment_invoice_number}
+879:              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+881:                {format_currency(@last_payment_amount || @order.total_amount)}
+900:                phx-click="close_payment_modal"
+913:                phx-click="close_payment_modal"
+921:          <%= if @payment_method == "qr_preview" do %>
+922:            <!-- QR Code Preview — payment not yet recorded -->
+924:              <h2 class="text-3xl font-bold text-slate-900 mb-1">Scan to Pay</h2>
+926:                Show this QR code to the customer. Confirm once the bank transfer is complete.
+930:                <%= if @payment_qr_svg do %>
+932:                    src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+933:                    alt="Payment QR Code"
+937:                  <p class="text-error">Failed to generate QR code</p>
+942:                <p class="text-slate-700 font-semibold mb-1">Amount to Pay</p>
+944:                  {format_currency(@payment
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `admin_auth.ex`
+
+**Input:**
+
+- endLine: `200`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.AdminAuth do
+  use Phoenix.LiveView
+
+  import Plug.Conn, only: [get_session: 2, put_session: 3, halt: 1]
+  import Phoenix.Controller, only: [current_path: 1]
+
+  @session_key "admin_authenticated_at"
+  @return_to_key "admin_return_to"
+  @pin_hash_config_key :admin_pin_hash
+  @pbkdf2_iterations 200_000
+  @hash_bytes 32
+  @session_lifetime_seconds 12 * 60 * 60
+  @idle_timeout_seconds 15 * 60
+  @idle_timeout_ms @idle_timeout_seconds * 1_000
+
+  def init(opts), do: opts
+
+  def call(conn, _opts) do
+    if session_authenticated?(get_session(conn, @session_key)) do
+      conn
+    else
+      conn = put_session(conn, @return_to_key, current_path(conn))
+
+      conn =
+        if enabled?() do
+          Phoenix.Controller.put_flash(
+            conn,
+            :error,
+            "Admin session expired. Enter the PIN to continue."
+          )
+        else
+          Phoenix.Controller.put_flash(conn, :error, "Admin PIN is not configured on the server.")
+        end
+
+      conn
+      |> Phoenix.Controller.redirect(to: "/admin/login")
+      |> halt()
+    end
+  end
+
+  def enabled?, do: not is_nil(configured_hash())
+
+  def valid_pin?(pin) when is_binary(pin), do: Regex.match?(~r/\A\d{6,8}\z/, pin)
+  def valid_pin?(_pin), do: false
+
+  def hash_pin(pin) do
+    unless valid_pin?(pin) do
+      raise ArgumentError, "admin PIN must contain 6 to 8 digits"
+    end
+
+    salt = :crypto.strong_rand_bytes(16)
+    digest = derive_hash(pin, salt)
+    Base.encode64(salt) <> "." <> Base.encode64(digest)
+  end
+
+  def verify_pin(pin) do
+    with true <- valid_pin?(pin),
+         {salt, expected_digest} when is_binary(salt) and is_binary(expected_digest) <-
+           configured_hash() do
+      actual_digest = derive_hash(pin, salt)
+      Plug.Crypto.secure_compare(expected_digest, actual_digest)
+    else
+      _ -> false
+    end
+  end
+
+  def session_authenticated?(timestamp) when is_integer(timestamp) do
+    now = System.system_time(:second)
+    timestamp <= now and now - ti
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 340
+
+**Input:**
+
+- endLine: `340`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_tot
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+V POSu jsou dvě místa, kde se skutečně vytváří platba: hotovostní volba a potvrzení QR platby; otevření platebního okna samo účet neuzavírá. Teď projdu jejich transakční větve a modal, abych PIN vyžadoval jednou pro každý nový platební úkon a neblokoval běžné přidávání útraty.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 335 to 660
+
+**Input:**
+
+- endLine: `660`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `335`
+
+**Result:**
+
+```
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    {:noreply,
+     socket
+     |> assign(:split_payment_amount, split_amount)
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)
+     |> assign(
+       :tips_amount,
+       Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0"))
+     )
+     |> assign(
+       :discount_amount,
+       Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+     )
+     |> assign(:discount_reason, socket.assigns.order.discount_reason || "")}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amoun
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 510 to 560
+
+**Input:**
+
+- endLine: `560`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `510`
+
+**Result:**
+
+```
+          </div>
+          <div class={[
+            "flex justify-between items-center text-xl font-bold text-slate-900 pt-4 border-t border-slate-300 mb-4"
+          ]}>
+            <span>{if Decimal.gt?(total_paid, 0), do: "Remaining", else: "Total"}</span>
+            <span class={[
+              "text-2xl",
+              if(Decimal.gt?(total_paid, 0), do: "text-amber-600", else: "text-success-dark")
+            ]}>
+              {format_currency(if Decimal.gt?(total_paid, 0), do: remaining, else: order_total)}
+            </span>
+          </div>
+
+          <!-- Payment Button -->
+          <%= cond do %>
+            <% @split_mode -> %>
+              <% split_amount = calc_split_total(@grouped_items, @split_selection)
+              has_selection = Enum.any?(@split_selection, fn {_k, qty} -> qty > 0 end) %>
+              <button
+                phx-click="open_split_payment_modal"
+                disabled={!has_selection}
+                class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed mb-2"
+              >
+                <.icon name="hero-credit-card" class="w-6 h-6 inline-block mr-2" />
+                Collect {format_currency(split_amount)}
+              </button>
+            <% @order.status in ["open", "partially_paid"] && Decimal.gt?(order_total, 0) -> %>
+              <div class="grid grid-cols-5 gap-2">
+                <button
+                  phx-click="open_payment_modal"
+                  class="col-span-3 bg-success hover:bg-success-dark text-white font-bold py-5 px-4 rounded-2xl text-lg active:scale-95 transition-all shadow-lg"
+                >
+                  <.icon name="hero-credit-card" class="w-5 h-5 inline-block mr-1" /> Pay Order
+                </button>
+                <button
+                  phx-click="enter_split_mode"
+                  class="col-span-2 bg-amber-100 hover:bg-amber-200 border-2 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 840 to 1246
+
+**Input:**
+
+- endLine: `1260`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `840`
+
+**Result:**
+
+```
+            phx-click="close_recalculate_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div
+      :if={@show_payment_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_payment_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <%= if @payment_method == "cash_success" do %>
+          <!-- Cash Payment Success -->
+          <div class="text-center">
+            <div class="mb-6">
+              <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-2">
+                <%= if @split_mode do %>
+                  Split Payment Collected!
+                <% else %>
+                  Payment Successful!
+                <% end %>
+              </h2>
+              <p class="text-lg text-slate-600 mb-2">
+                Invoice: {@payment_invoice_number}
+              </p>
+            </div>
+
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-6 mb-6">
+              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+              <p class="text-4xl font-bold text-success-dark">
+                {format_currency(@last_payment_amount || @order.total_amount)}
+              </p>
+            </div>
+
+            <.link
+              navigate={~p"/pos/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mb-3"
+            >
+              <button
+                type=
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `admin_auth_test.exs`
+
+**Input:**
+
+- endLine: `160`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/test/cozy_checkout_web/admin_auth_test.exs`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.AdminAuthTest do
+  use ExUnit.Case, async: false
+
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+
+  test "PIN hashes are salted and verify without storing the PIN" do
+    previous_hash = Application.get_env(:cozy_checkout, :admin_pin_hash)
+    on_exit(fn -> restore_pin_hash(previous_hash) end)
+
+    hash = AdminAuth.hash_pin("482731")
+    Application.put_env(:cozy_checkout, :admin_pin_hash, hash)
+
+    assert AdminAuth.enabled?()
+    assert AdminAuth.verify_pin("482731")
+    refute AdminAuth.verify_pin("482732")
+    refute AdminAuth.verify_pin("123")
+  end
+
+  test "an address is temporarily blocked after five wrong PINs" do
+    address = {:test, self(), make_ref()}
+    on_exit(fn -> AdminAuthRateLimiter.reset(address) end)
+
+    for _attempt <- 1..5 do
+      assert AdminAuthRateLimiter.allowed?(address)
+      assert :ok = AdminAuthRateLimiter.record_failure(address)
+    end
+
+    refute AdminAuthRateLimiter.allowed?(address)
+    assert :ok = AdminAuthRateLimiter.reset(address)
+    assert AdminAuthRateLimiter.allowed?(address)
+  end
+
+  defp restore_pin_hash(nil), do: Application.delete_env(:cozy_checkout, :admin_pin_hash)
+
+  defp restore_pin_hash(hash),
+    do: Application.put_env(:cozy_checkout, :admin_pin_hash, hash)
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Přidám PIN gate před každým zahájením celé nebo rozdělené platby a serverovou kontrolu přímo před hotovostním zápisem i potvrzením QR. Oprávnění bude jednorázové a po platbě či zrušení se zruší, takže obejití UI přímým LiveView eventem neprojde.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 85
+
+**Input:**
+
+- endLine: `85`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_tot
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Změním POS stav tak, že tlačítka „Pay Order“ i „Collect“ nejprve otevřou PIN dialog. Hotovostní zápis, výběr QR metody i „Mark as Paid“ dostanou navíc serverovou kontrolu jednorázového oprávnění; zrušení dialogu ho smaže.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `def handle_event\("open_split_payment_modal|def handle_event\("open_payment_modal|def handle_event\("close_payment_modal|def handle_event\("select_payment_method", %\{"method" => "cash"\}|def handle_event\("select_payment_method", %\{"method" => "qr_code"\}|def handle_event\("confirm_qr_payment` (`**/lib/cozy_checkout_web/live/pos_live/order_management.ex`), 6 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- isRegexp: `true`
+- maxResults: `30`
+- query: `def handle_event\("open_split_payment_modal|def handle_event\("open_payment_modal|def handle_event\("close_payment_modal|def handle_event\("select_payment_method", %\{"method" => "cash"\}|def handle_event\("select_payment_method", %\{"method" => "qr_code"\}|def handle_event\("confirm_qr_payment`
+
+**Result:**
+
+```
+Found 6 matches in 1 file for "def handle_event\("open_split_payment_modal|def handle_event\("open_payment_modal|def handle_event\("close_payment_modal|def handle_event\("select_payment_method", %\{"method" => "cash"\}|def handle_event\("select_payment_method", %\{"method" => "qr_code"\}|def handle_event\("confirm_qr_payment"
+
+lib/cozy_checkout_web/live/pos_live/order_management.ex
+347:  def handle_event("open_split_payment_modal", _params, socket) do
+361:  def handle_event("open_payment_modal", _params, socket) do
+381:  def handle_event("close_payment_modal", _params, socket) do
+401:  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+527:  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+598:  def handle_event("confirm_qr_payment", _params, socket) do
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 5 to 75
+
+**Input:**
+
+- endLine: `75`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `5`
+
+**Result:**
+
+```
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 335 to 415
+
+**Input:**
+
+- endLine: `415`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `335`
+
+**Result:**
+
+```
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    {:noreply,
+     socket
+     |> assign(:split_payment_amount, split_amount)
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)
+     |> assign(
+       :tips_amount,
+       Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0"))
+     )
+     |> assign(
+       :discount_amount,
+       Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+     )
+     |> assign(:discount_reason, socket.assigns.order.discount_reason || "")}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amoun
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 520 to 645
+
+**Input:**
+
+- endLine: `645`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `520`
+
+**Result:**
+
+```
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: update tips/discount, then show QR for new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            qr_svg =
+              QrCode.generate_qr_svg(%{
+                account_number: bank_account,
+                amount: updated_order.total_amount,
+                currency: "CZK",
+                variable_symbol: updated_order.order_number,
+                message: "Order #{updated_order.order_number}"
+              })
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "qr_preview")
+             |> assign(:payment_qr_svg, qr_svg)
+             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split paym
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 400 to 530
+
+**Input:**
+
+- endLine: `530`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `400`
+
+**Result:**
+
+```
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: apply tips & discount, then pay the new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            payment_attrs = %{
+              "order_id" => socket.assigns.order_id,
+              "amount" => Decimal.to_string(updated_order.total_amount),
+              "payment_method" => "cash",
+              "payment_date" => Date.utc_today()
+            }
+
+            case Sales.create_payment(payment_attrs) do
+              {:ok, payment} ->
+                {:noreply,
+                 socket
+                 |> assign(:payment_method, "cash_success")
+                 |> assign(:payment_invoice_number, payment.invoice_number)
+                 |> assign(:last_payment_amount, updated_order.total_amount)
+                 |> load_order()}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            end
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: pay only the 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 7
+
+**Input:**
+
+- endLine: `7`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 585 to 650
+
+**Input:**
+
+- endLine: `650`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `585`
+
+**Result:**
+
+```
+            variable_symbol: order.order_number,
+            message: "Order #{order.order_number}"
+          })
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_preview")
+         |> assign(:payment_qr_svg, qr_svg)
+         |> assign(:payment_preview_amount, split_amount)}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
+
+    payment_attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(amount),
+      "payment_method" => "qr_code",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(payment_attrs) do
+      {:ok, payment} ->
+        socket =
+          if socket.assigns.split_payment_amount do
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            socket
+            |> assign(:split_selection, %{})
+            |> assign(:split_allocated, new_allocated)
+            |> assign(:split_payment_amount, nil)
+          else
+            socket
+          end
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_success")
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> assign(:last_payment_amount, amount)
+         |> load_order()}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to record payment")}
+    end
+  end
+
+  defp add_item_to_order(socket, product_id, unit_amount) do
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "product_id" => product_id,
+      "quantity" => "1",
+      "unit_amount" => unit_amount
+    }
+
+    case Sales.create_order_item(attrs) do
+      {:ok, _order_item} ->
+        {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        {:noreply,
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 12
+
+**Input:**
+
+- endLine: `12`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 1 to 8
+
+**Input:**
+
+- endLine: `8`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `1`
+
+**Result:**
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div phx-hook="KeepAlive" id="pos-keep-alive" class="h-screen flex flex-col bg-slate-50">
+    <!-- Fixed Header -->
+    <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-4">
+        <button
+          phx-click="back_to_guests"
+          class="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all"
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 620 to 680
+
+**Input:**
+
+- endLine: `680`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `620`
+
+**Result:**
+
+```
+          <button
+            type="button"
+            phx-click="cancel_unit_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Quantity Modal -->
+    <div
+      :if={@show_quantity_modal && @quantity_product}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_quantity_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">
+          {@quantity_product.name}
+        </h2>
+        <p class="text-lg text-slate-600 mb-6">
+          How many would you like to add?
+        </p>
+
+        <form phx-submit="add_with_quantity">
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">
+              Quantity
+            </label>
+            <input
+              type="number"
+              name="quantity"
+              min="1"
+              max="99"
+              value="5"
+              autofocus
+              class="w-full px-6 py-4 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-tertiary-200 transition-all text-2xl font-bold text-center"
+            />
+          </div>
+
+          <div class="space-y-3">
+            <button
+              type="submit"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+            <button
+              type="button"
+              phx-click="cancel_quantity_modal"
+              class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl tex
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 580 to 620
+
+**Input:**
+
+- endLine: `620`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `580`
+
+**Result:**
+
+```
+        <!-- Quick Select Buttons -->
+        <%= if @selected_product.default_unit_amounts do %>
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Select Amount</p>
+            <div class="grid grid-cols-3 gap-3">
+              <%= for amount <- parse_default_amounts(@selected_product.default_unit_amounts) do %>
+                <button
+                  type="button"
+                  phx-click="quick_add_unit_amount"
+                  phx-value-unit_amount={amount}
+                  class="bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center"
+                >
+                  <span class="text-2xl">{amount}</span>
+                  <span class="text-sm mt-1">{@selected_product.unit}</span>
+                  <%= if price = get_price_for_amount(@selected_product, amount) do %>
+                    <span class="text-xs mt-1 opacity-90">{format_currency(price)}</span>
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <!-- For products without predefined amounts, show a simple add button -->
+          <div class="mb-6">
+            <p class="text-sm text-slate-600 mb-4">
+              This product doesn't have predefined amounts.
+            </p>
+            <button
+              type="button"
+              phx-click="quick_add_unit_amount"
+              phx-value-unit_amount="0"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+          </div>
+        <% end %>
+
+        <!-- Cancel Button -->
+        <div class="pt-4">
+          <button
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 8
+
+**Input:**
+
+- endLine: `8`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 8
+
+**Input:**
+
+- endLine: `8`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Struktura plateb je potvrzená: hotovost se zapisuje při výběru Cash, QR až při `confirm_qr_payment`; PIN kontrola proto musí chránit obě větve přímo v serverové logice. Začínám upravovat POS LiveView a PIN modal; položky účtu i výběr produktů zůstanou beze změny.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 70
+
+**Input:**
+
+- endLine: `70`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_tot
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 340 to 405
+
+**Input:**
+
+- endLine: `405`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `340`
+
+**Result:**
+
+```
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    {:noreply,
+     socket
+     |> assign(:split_payment_amount, split_amount)
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)
+     |> assign(
+       :tips_amount,
+       Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0"))
+     )
+     |> assign(
+       :discount_amount,
+       Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+     )
+     |> assign(:discount_reason, socket.assigns.order.discount_reason || "")}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    case socket.assigns.split_payment_amount do
+      ni
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 398 to 402
+
+**Input:**
+
+- endLine: `402`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `398`
+
+**Result:**
+
+```
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    case socket.assigns.split_payment_amount do
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 1
+
+**Input:**
+
+- endLine: `1`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 1
+
+**Input:**
+
+- endLine: `1`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 2 to 2
+
+**Input:**
+
+- endLine: `2`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `2`
+
+**Result:**
+
+```
+  use CozyCheckoutWeb, :live_view
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 3 to 3
+
+**Input:**
+
+- endLine: `3`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `3`
+
+**Result:**
+
+```
+{"node":{"children":[{"children":[{"children":[{"lineBreakBefore":true,"priority":1,"references":[{"anchor":{"$mid":1,"external":"file:///Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex","fsPath":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex","path":"/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex","scheme":"file"},"options":{"isFromTool":true}}],"text":"","type":2}],"ctor":2,"ctorName":"b$e","props":{"priority":1},"references":[],"type":1}],"ctor":2,"ctorName":"Mn","props":{},"references":[],"type":1}],"ctor":2,"ctorName":"$Le","props":{},"references":[],"type":1}}
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 5 to 5
+
+**Input:**
+
+- endLine: `5`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `5`
+
+**Result:**
+
+```
+  alias CozyCheckout.Payments.QrCode
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Ano. PIN bych vyžadoval **pro každou platbu**, ale ne pro přidávání položek:
+
+- Hotovost: PIN před zapsáním platby.
+- QR: PIN před otevřením platebního procesu; bez něj nelze změnit slevu/spropitné ani pokračovat k potvrzení „Mark as Paid“.
+- Rozdělená platba: nový PIN pro každou část.
+- Oprávnění platí jen pro právě otevřený platební proces a po zaplacení nebo zrušení se zruší.
+- Kontrola musí být přímo v POS serverových událostech, nejen v zobrazení PIN dialogu.
+
+Konkrétně POS zapisuje hotovost v `select_payment_method` a QR platbu v `confirm_qr_payment`; obě větve musí odmítnout událost bez čerstvého ověření. Navíc výběr QR nyní ukládá slevu a spropitné ještě před potvrzením, takže samotné zamčení posledního tlačítka by nestačilo.
+
+Soubory jsem v tomto read-only režimu neupravoval.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+---
+
+_**User (2026-09-28 20:21:30Z)**_
+
+Výborně, dává smysl, přepnul jsem mód a můžeš to v tomto gardu naimplementovat.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Budu používat existující PIN hash a limiter. PIN se zadá před otevřením platebního okna; server si oprávnění uloží jen pro tento POS proces a spotřebuje ho při vytvoření platby, takže další platba vyžádá PIN znovu. Ověřím aktuální handler a modal, pak je upravím.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 840 to 900
+
+**Input:**
+
+- endLine: `900`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `840`
+
+**Result:**
+
+```
+            phx-click="close_recalculate_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div
+      :if={@show_payment_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_payment_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <%= if @payment_method == "cash_success" do %>
+          <!-- Cash Payment Success -->
+          <div class="text-center">
+            <div class="mb-6">
+              <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-2">
+                <%= if @split_mode do %>
+                  Split Payment Collected!
+                <% else %>
+                  Payment Successful!
+                <% end %>
+              </h2>
+              <p class="text-lg text-slate-600 mb-2">
+                Invoice: {@payment_invoice_number}
+              </p>
+            </div>
+
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-6 mb-6">
+              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+              <p class="text-4xl font-bold text-success-dark">
+                {format_currency(@last_payment_amount || @order.total_amount)}
+              </p>
+            </div>
+
+            <.link
+              navigate={~p"/pos/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mb-3"
+            >
+              <button
+                type=
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `admin_auth_rate_limiter.ex`
+
+**Input:**
+
+- endLine: `120`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/admin_auth_rate_limiter.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.AdminAuthRateLimiter do
+  use GenServer
+
+  @max_attempts 5
+  @attempt_window_seconds 300
+  @lockout_seconds 60
+  @retain_seconds 3_600
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, %{}, Keyword.put_new(opts, :name, __MODULE__))
+  end
+
+  def allowed?(key), do: GenServer.call(__MODULE__, {:allowed?, key})
+  def record_failure(key), do: GenServer.call(__MODULE__, {:record_failure, key})
+  def reset(key), do: GenServer.call(__MODULE__, {:reset, key})
+
+  @impl true
+  def init(state), do: {:ok, state}
+
+  @impl true
+  def handle_call({:allowed?, key}, _from, state) do
+    now = System.system_time(:second)
+    entry = Map.get(state, key)
+    state = prune(state, now)
+    {:reply, is_nil(entry) or entry.locked_until <= now, state}
+  end
+
+  def handle_call({:record_failure, key}, _from, state) do
+    now = System.system_time(:second)
+    state = prune(state, now)
+    entry = Map.get(state, key)
+
+    entry =
+      if is_nil(entry) or now - entry.window_started_at >= @attempt_window_seconds do
+        %{failures: 1, window_started_at: now, locked_until: 0, updated_at: now}
+      else
+        failures = entry.failures + 1
+
+        %{
+          entry
+          | failures: failures,
+            locked_until: if(failures >= @max_attempts, do: now + @lockout_seconds, else: 0),
+            updated_at: now
+        }
+      end
+
+    {:reply, :ok, Map.put(state, key, entry)}
+  end
+
+  def handle_call({:reset, key}, _from, state) do
+    {:reply, :ok, Map.delete(state, key)}
+  end
+
+  defp prune(state, now) do
+    Map.reject(state, fn {_key, entry} -> now - entry.updated_at > @retain_seconds end)
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 1 to 75
+
+**Input:**
+
+- endLine: `75`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `1`
+
+**Result:**
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_tot
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 340 to 420
+
+**Input:**
+
+- endLine: `420`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `340`
+
+**Result:**
+
+```
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    {:noreply,
+     socket
+     |> assign(:split_payment_amount, split_amount)
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, true)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)
+     |> assign(
+       :tips_amount,
+       Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0"))
+     )
+     |> assign(
+       :discount_amount,
+       Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+     )
+     |> assign(:discount_reason, socket.assigns.order.discount_reason || "")}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    case socket.assigns.split_payment_amount do
+      ni
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 525 to 650
+
+**Input:**
+
+- endLine: `650`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `525`
+
+**Result:**
+
+```
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: update tips/discount, then show QR for new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            qr_svg =
+              QrCode.generate_qr_svg(%{
+                account_number: bank_account,
+                amount: updated_order.total_amount,
+                currency: "CZK",
+                variable_symbol: updated_order.order_number,
+                message: "Order #{updated_order.order_number}"
+              })
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "qr_preview")
+             |> assign(:payment_qr_svg, qr_svg)
+             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: show QR for split amount only, no order update
+        order = socket.assigns.order
+
+        qr_svg =
+          QrCode
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.ex**</summary>
+
+@@ lines 1-933 @@
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> assign(:order, nil)
+       |> assign(:grouped_items, [])
+       |> assign(:categories, [])
+       |> assign(:products, [])
+       |> assign(:popular_products, [])
+       |> assign(:show_success, false)}
+    end
+  end
+
+  @impl true
+  def handle_event("heartbeat", _params, socket) do
+    # Keep the LiveView process alive - this prevents it from being garbage collected
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => "all"}, socket) do
+    {:noreply, assign(socket, :selected_category_id, nil)}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => category_id}, socket) do
+    {:noreply, assign(socket, :selected_category_id, category_id)}
+  end
+
+  @impl true
+  def handle_event("add_product", %{"product-id" => product_id} = params, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    quantity = parse_quantity(params["quantity"])
+
+    cond do
+      # If 5+ button clicked, show quantity modal
+      params["custom"] == "true" ->
+        {:noreply,
+         socket
+         |> assign(:show_quantity_modal, true)
+         |> assign(:quantity_product, product)}
+
+      # If product has unit amounts, show unit modal
+      product && product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      # Otherwise add directly
+      true ->
+        add_multiple_items_to_order(socket, product_id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("quick_add_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("cancel_unit_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_unit_modal, false)
+     |> assign(:selected_product, nil)
+     |> assign(:pending_quantity, nil)}
+  end
+
+  @impl true
+  def handle_event("show_custom_quantity", %{"product-id" => product_id}, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, true)
+     |> assign(:quantity_product, product)}
+  end
+
+  @impl true
+  def handle_event("cancel_quantity_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, false)
+     |> assign(:quantity_product, nil)}
+  end
+
+  @impl true
+  def handle_event("add_with_quantity", %{"quantity" => quantity_str}, socket) do
+    quantity = parse_quantity(quantity_str)
+    product = socket.assigns.quantity_product
+
+    socket =
+      socket
+      |> assign(:show_quantity_modal, false)
+      |> assign(:quantity_product, nil)
+
+    if product && product.unit do
+      {:noreply,
+       socket
+       |> assign(:show_unit_modal, true)
+       |> assign(:selected_product, product)
+       |> assign(:pending_quantity, quantity)}
+    else
+      add_multiple_items_to_order(socket, product.id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("delete_item", params, socket) do
+    item_id = params["item-id"] || params["item_id"]
+    order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
+
+    if order_item do
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, true)
+       |> assign(:item_to_delete, order_item)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_delete_confirm, false)
+     |> assign(:item_to_delete, nil)}
+  end
+
+  @impl true
+  def handle_event("confirm_delete", _params, socket) do
+    order_item = socket.assigns.item_to_delete
+
+    if order_item do
+      {:ok, _} = Sales.delete_order_item(order_item)
+      {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> load_order()}
+    else
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("toggle_service_order", _params, socket) do
+    case Sales.toggle_service_order(socket.assigns.order) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> load_order()
+         |> put_flash(:info, "Order type updated successfully")}
+
+      {:error, :cannot_convert_paid_order} ->
+        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order type")}
+    end
+  end
+
+  @impl true
+  def handle_event("back_to_guests", _params, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/pos")}
+  end
+
+  @impl true
+  def handle_event("hide_success", _params, socket) do
+    {:noreply, assign(socket, :show_success, false)}
+  end
+
+  @impl true
+  def handle_event("enter_split_mode", _params, socket) do
+    # Reset selection only — keep allocated so previously-paid quantities can't be double-paid
+    {:noreply,
+     socket
+     |> assign(:split_mode, true)
+     |> assign(:split_selection, %{})}
+  end
+
+  @impl true
+  def handle_event("exit_split_mode", _params, socket) do
+    # Keep split_allocated alive so re-entering split mode still respects past payments
+    {:noreply,
+     socket
+     |> assign(:split_mode, false)
+     |> assign(:split_selection, %{})
+     |> assign(:split_payment_amount, nil)
+     |> assign(:last_payment_amount, nil)
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "split_adjust",
+        %{"product-id" => product_id, "unit-amount" => unit_amount_str, "delta" => delta_str},
+        socket
+      ) do
+    unit_amount = parse_unit_amount(unit_amount_str)
+    key = {product_id, unit_amount}
+
+    group =
+      Enum.find(socket.assigns.grouped_items, fn g ->
+        g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+      end)
+
+    if group do
+      allocated_qty = Map.get(socket.assigns.split_allocated, key, 0)
+      total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+      max_available = max(0, total_qty - allocated_qty)
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :split)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :full)}
+  end
+
+  def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    cond do
+      not AdminAuth.enabled?() ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_pin, false)
+         |> put_flash(:error, "Payment PIN is not configured")}
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin_authorized, true)
+         |> assign(:show_payment_pin, false)
+         |> assign(:payment_pin, "")
+         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_payment_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+    |> assign(:payment_pin_authorized, false)
+    |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      handle_cash_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp handle_cash_payment(socket) do
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: apply tips & discount, then pay the new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            payment_attrs = %{
+              "order_id" => socket.assigns.order_id,
+              "amount" => Decimal.to_string(updated_order.total_amount),
+              "payment_method" => "cash",
+              "payment_date" => Date.utc_today()
+            }
+
+            case Sales.create_payment(payment_attrs) do
+              {:ok, payment} ->
+                {:noreply,
+                 socket
+                 |> assign(:payment_method, "cash_success")
+                 |> assign(:payment_pin_authorized, false)
+                 |> assign(:payment_invoice_number, payment.invoice_number)
+                 |> assign(:last_payment_amount, updated_order.total_amount)
+                 |> load_order()}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            end
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: pay only the selected amount, no tips/discount changes
+        payment_attrs = %{
+          "order_id" => socket.assigns.order_id,
+          "amount" => Decimal.to_string(split_amount),
+          "payment_method" => "cash",
+          "payment_date" => Date.utc_today()
+        }
+
+        case Sales.create_payment(payment_attrs) do
+          {:ok, payment} ->
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "cash_success")
+             |> assign(:payment_pin_authorized, false)
+             |> assign(:payment_invoice_number, payment.invoice_number)
+             |> assign(:last_payment_amount, split_amount)
+             |> assign(:split_selection, %{})
+             |> assign(:split_allocated, new_allocated)
+             |> assign(:split_payment_amount, nil)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to create payment")}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("open_recalculate_modal", _params, socket) do
+    # Calculate the sum from order items
+    recalculated_total =
+      socket.assigns.order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, true)
+     |> assign(:recalculated_total, recalculated_total)}
+  end
+
+  @impl true
+  def handle_event("close_recalculate_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, false)
+     |> assign(:recalculated_total, nil)}
+  end
+
+  @impl true
+  def handle_event("apply_recalculation", _params, socket) do
+    case Sales.update_order(socket.assigns.order, %{
+           total_amount: socket.assigns.recalculated_total
+         }) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> assign(:show_recalculate_modal, false)
+         |> assign(:recalculated_total, nil)
+         |> load_order()
+         |> put_flash(:info, "Order total updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      show_qr_payment_preview(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp show_qr_payment_preview(socket) do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: update tips/discount, then show QR for new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            qr_svg =
+              QrCode.generate_qr_svg(%{
+                account_number: bank_account,
+                amount: updated_order.total_amount,
+                currency: "CZK",
+                variable_symbol: updated_order.order_number,
+                message: "Order #{updated_order.order_number}"
+              })
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "qr_preview")
+             |> assign(:payment_qr_svg, qr_svg)
+             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: show QR for split amount only, no order update
+        order = socket.assigns.order
+
+        qr_svg =
+          QrCode.generate_qr_svg(%{
+            account_number: bank_account,
+            amount: split_amount,
+            currency: "CZK",
+            variable_symbol: order.order_number,
+            message: "Order #{order.order_number}"
+          })
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_preview")
+         |> assign(:payment_qr_svg, qr_svg)
+         |> assign(:payment_preview_amount, split_amount)}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    if socket.assigns.payment_pin_authorized do
+      record_qr_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp record_qr_payment(socket) do
+    amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
+
+    payment_attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(amount),
+      "payment_method" => "qr_code",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(payment_attrs) do
+      {:ok, payment} ->
+        socket =
+          if socket.assigns.split_payment_amount do
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            socket
+            |> assign(:split_selection, %{})
+            |> assign(:split_allocated, new_allocated)
+            |> assign(:split_payment_amount, nil)
+          else
+            socket
+          end
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_success")
+         |> assign(:payment_pin_authorized, false)
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> assign(:last_payment_amount, amount)
+         |> load_order()}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to record payment")}
+    end
+  end
+
+  defp add_item_to_order(socket, product_id, unit_amount) do
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "product_id" => product_id,
+      "quantity" => "1",
+      "unit_amount" => unit_amount
+    }
+
+    case Sales.create_order_item(attrs) do
+      {:ok, _order_item} ->
+        {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        {:noreply,
+         socket
+         |> load_order()
+         |> assign(:show_success, true)
+         |> push_event("item-added", %{})}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to add item")}
+    end
+  end
+
+  defp load_order(socket) do
+    order = Sales.get_order!(socket.assigns.order_id)
+
+    page_title =
+      cond do
+        # Standalone order (no booking)
+        is_nil(order.booking_id) -> "Order: #{order.name}"
+        # Regular order with guest
+        order.guest -> "Order: #{order.guest.name}"
+        # Fallback
+        true -> "Order: #{order.name || "Unknown"}"
+      end
+
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+    socket
+    |> assign(:order, order)
+    |> assign(:grouped_items, grouped_items)
+    |> assign(:page_title, page_title)
+  end
+
+  defp load_products(socket) do
+    categories = Catalog.list_pos_categories()
+    all_products = Catalog.list_pos_products()
+
+    popular_products =
+      Sales.get_popular_products(20) |> Enum.filter(&(&1.active && &1.visible_in_pos))
+
+    # Enrich products with pricing information
+    products_with_prices = enrich_products_with_prices(all_products)
+    popular_with_prices = enrich_products_with_prices(popular_products)
+
+    socket
+    |> assign(:categories, categories)
+    |> assign(:products, products_with_prices)
+    |> assign(:popular_products, popular_with_prices)
+  end
+
+  defp enrich_products_with_prices(products) do
+    Enum.map(products, fn product ->
+      pricelist = Catalog.get_active_pricelist_for_product(product.id)
+
+      pricing_info =
+        if pricelist do
+          cond do
+            pricelist.price_tiers && pricelist.price_tiers != [] ->
+              %{type: :tiers, tiers: pricelist.price_tiers}
+
+            pricelist.price ->
+              %{type: :single, price: pricelist.price}
+
+            true ->
+              %{type: :none}
+          end
+        else
+          %{type: :none}
+        end
+
+      Map.put(product, :pricing_info, pricing_info)
+    end)
+  end
+
+  defp filter_products(products, category_id) do
+    if is_nil(category_id) do
+      products
+    else
+      Enum.filter(products, fn product -> product.category_id == category_id end)
+    end
+  end
+
+  defp parse_default_amounts(amounts_str) when is_binary(amounts_str) and amounts_str != "" do
+    case Jason.decode(amounts_str) do
+      {:ok, amounts} when is_list(amounts) -> amounts
+      _ -> []
+    end
+  end
+
+  defp parse_default_amounts(_), do: []
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
+
+  defp parse_decimal(""), do: Decimal.new("0")
+  defp parse_decimal(nil), do: Decimal.new("0")
+
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {amount, _} -> amount
+      :error -> Decimal.new("0")
+    end
+  end
+
+  defp parse_decimal(_), do: Decimal.new("0")
+
+  defp parse_quantity(nil), do: 1
+  defp parse_quantity(""), do: 1
+
+  defp parse_quantity(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {qty, _} when qty > 0 -> qty
+      _ -> 1
+    end
+  end
+
+  defp parse_quantity(value) when is_integer(value) and value > 0, do: value
+  defp parse_quantity(_), do: 1
+
+  defp add_multiple_items_to_order(socket, product_id, unit_amount, quantity) do
+    # Add items one by one (could be optimized with bulk insert later)
+    results =
+      Enum.reduce(1..quantity, {:ok, socket}, fn _i, {:ok, acc_socket} ->
+        add_item_to_order(acc_socket, product_id, unit_amount)
+        |> then(fn {:noreply, updated_socket} -> {:ok, updated_socket} end)
+      end)
+
+    case results do
+      {:ok, updated_socket} -> {:noreply, updated_socket}
+      error -> error
+    end
+  end
+
+  defp total_out_of_sync?(order) do
+    items_total =
+      order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    !Decimal.equal?(order.total_amount, items_total)
+  end
+
+  defp format_item_timestamp(datetime) do
+    if is_nil(datetime), do: "", else: do_format_timestamp(datetime)
+  end
+
+  defp do_format_timestamp(datetime) do
+    today = Date.utc_today()
+    item_date = DateTime.to_date(datetime)
+
+    if Date.compare(item_date, today) == :eq do
+      # Today: show just time
+      Calendar.strftime(datetime, "%H:%M")
+    else
+      # Other day: show date and time
+      Calendar.strftime(datetime, "%b %-d, %H:%M")
+    end
+  end
+
+  defp get_price_for_amount(product, amount) do
+    if product.pricing_info && product.pricing_info.type == :tiers do
+      tier =
+        Enum.find(product.pricing_info.tiers, fn tier ->
+          tier_amount = tier["unit_amount"] || tier[:unit_amount]
+          tier_amount == amount
+        end)
+
+      if tier do
+        price = tier["price"] || tier[:price]
+        if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+      else
+        nil
+      end
+    else
+      product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
+    end
+  end
+
+  # --- Split bill helpers ---
+
+  defp calc_split_total(grouped_items, selection) do
+    Enum.reduce(selection, Decimal.new("0"), fn {{product_id, unit_amount}, qty}, acc ->
+      if qty > 0 do
+        group =
+          Enum.find(grouped_items, fn g ->
+            g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+          end)
+
+        if group && Decimal.gt?(group.total_quantity, 0) do
+          price_per_qty = Decimal.div(group.total_price, group.total_quantity)
+          item_total = Decimal.mult(price_per_qty, Decimal.new(qty))
+          Decimal.add(acc, item_total)
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  defp merge_selection_into_allocated(allocated, selection) do
+    Enum.reduce(selection, allocated, fn {key, qty}, acc ->
+      current = Map.get(acc, key, 0)
+      Map.put(acc, key, current + qty)
+    end)
+  end
+
+  defp decimals_equal?(nil, nil), do: true
+  defp decimals_equal?(nil, _), do: false
+  defp decimals_equal?(_, nil), do: false
+  defp decimals_equal?(a, b), do: Decimal.equal?(a, b)
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Kompletuje první validační průchod po změně serverových platebních handlerů.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 529 │   def handle_event("open_recalculate_modal", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:529:7
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 649 │   def handle_event("confirm_qr_payment", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:649:7
+
+     error: undefined function prepare_payment_modal/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 389 │          |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+     │             ^^^^^^^^^^^^^^^^^^^^^
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:389:13: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+     error: undefined function request_payment_pin/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 364 │     {:noreply, request_payment_pin(socket, :full)}
+     │                ^^^^^^^^^^^^^^^^^^^
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:364:16: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+     error: undefined function request_payment_pin/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 359 │     {:noreply, request_payment_pin(socket, :split)}
+     │                ^^^^^^^^^^^^^^^^^^^
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:359:16:
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Kompilace našla očekávaně chybějící dvě pomocné funkce pro otevření platebního dialogu po PINu; navíc jejich vložení rozdělilo souvislou skupinu LiveView handlerů. Doplním oba helpery a přesunu platební implementace pod handlery, aby nevznikala ani varování o pořadí funkcí.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 345 to 690
+
+**Input:**
+
+- endLine: `690`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `345`
+
+**Result:**
+
+```
+      max_available = max(0, total_qty - allocated_qty)
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :split)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :full)}
+  end
+
+  def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    cond do
+      not AdminAuth.enabled?() ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_pin, false)
+         |> put_flash(:error, "Payment PIN is not configured")}
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin_authorized, true)
+         |> assign(:show_payment_pin, false)
+         |> assign(:payment_pin, "")
+         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_paymen
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.ex**</summary>
+
+@@ lines 1-979 @@
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> assign(:order, nil)
+       |> assign(:grouped_items, [])
+       |> assign(:categories, [])
+       |> assign(:products, [])
+       |> assign(:popular_products, [])
+       |> assign(:show_success, false)}
+    end
+  end
+
+  @impl true
+  def handle_event("heartbeat", _params, socket) do
+    # Keep the LiveView process alive - this prevents it from being garbage collected
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => "all"}, socket) do
+    {:noreply, assign(socket, :selected_category_id, nil)}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => category_id}, socket) do
+    {:noreply, assign(socket, :selected_category_id, category_id)}
+  end
+
+  @impl true
+  def handle_event("add_product", %{"product-id" => product_id} = params, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    quantity = parse_quantity(params["quantity"])
+
+    cond do
+      # If 5+ button clicked, show quantity modal
+      params["custom"] == "true" ->
+        {:noreply,
+         socket
+         |> assign(:show_quantity_modal, true)
+         |> assign(:quantity_product, product)}
+
+      # If product has unit amounts, show unit modal
+      product && product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      # Otherwise add directly
+      true ->
+        add_multiple_items_to_order(socket, product_id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("quick_add_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("cancel_unit_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_unit_modal, false)
+     |> assign(:selected_product, nil)
+     |> assign(:pending_quantity, nil)}
+  end
+
+  @impl true
+  def handle_event("show_custom_quantity", %{"product-id" => product_id}, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, true)
+     |> assign(:quantity_product, product)}
+  end
+
+  @impl true
+  def handle_event("cancel_quantity_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, false)
+     |> assign(:quantity_product, nil)}
+  end
+
+  @impl true
+  def handle_event("add_with_quantity", %{"quantity" => quantity_str}, socket) do
+    quantity = parse_quantity(quantity_str)
+    product = socket.assigns.quantity_product
+
+    socket =
+      socket
+      |> assign(:show_quantity_modal, false)
+      |> assign(:quantity_product, nil)
+
+    if product && product.unit do
+      {:noreply,
+       socket
+       |> assign(:show_unit_modal, true)
+       |> assign(:selected_product, product)
+       |> assign(:pending_quantity, quantity)}
+    else
+      add_multiple_items_to_order(socket, product.id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("delete_item", params, socket) do
+    item_id = params["item-id"] || params["item_id"]
+    order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
+
+    if order_item do
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, true)
+       |> assign(:item_to_delete, order_item)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_delete_confirm, false)
+     |> assign(:item_to_delete, nil)}
+  end
+
+  @impl true
+  def handle_event("confirm_delete", _params, socket) do
+    order_item = socket.assigns.item_to_delete
+
+    if order_item do
+      {:ok, _} = Sales.delete_order_item(order_item)
+      {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> load_order()}
+    else
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("toggle_service_order", _params, socket) do
+    case Sales.toggle_service_order(socket.assigns.order) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> load_order()
+         |> put_flash(:info, "Order type updated successfully")}
+
+      {:error, :cannot_convert_paid_order} ->
+        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order type")}
+    end
+  end
+
+  @impl true
+  def handle_event("back_to_guests", _params, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/pos")}
+  end
+
+  @impl true
+  def handle_event("hide_success", _params, socket) do
+    {:noreply, assign(socket, :show_success, false)}
+  end
+
+  @impl true
+  def handle_event("enter_split_mode", _params, socket) do
+    # Reset selection only — keep allocated so previously-paid quantities can't be double-paid
+    {:noreply,
+     socket
+     |> assign(:split_mode, true)
+     |> assign(:split_selection, %{})}
+  end
+
+  @impl true
+  def handle_event("exit_split_mode", _params, socket) do
+    # Keep split_allocated alive so re-entering split mode still respects past payments
+    {:noreply,
+     socket
+     |> assign(:split_mode, false)
+     |> assign(:split_selection, %{})
+     |> assign(:split_payment_amount, nil)
+     |> assign(:last_payment_amount, nil)
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "split_adjust",
+        %{"product-id" => product_id, "unit-amount" => unit_amount_str, "delta" => delta_str},
+        socket
+      ) do
+    unit_amount = parse_unit_amount(unit_amount_str)
+    key = {product_id, unit_amount}
+
+    group =
+      Enum.find(socket.assigns.grouped_items, fn g ->
+        g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+      end)
+
+    if group do
+      allocated_qty = Map.get(socket.assigns.split_allocated, key, 0)
+      total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+      max_available = max(0, total_qty - allocated_qty)
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :split)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :full)}
+  end
+
+  def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    cond do
+      not AdminAuth.enabled?() ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_pin, false)
+         |> put_flash(:error, "Payment PIN is not configured")}
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin_authorized, true)
+         |> assign(:show_payment_pin, false)
+         |> assign(:payment_pin, "")
+         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_payment_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+    |> assign(:payment_pin_authorized, false)
+    |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      handle_cash_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp handle_cash_payment(socket) do
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: apply tips & discount, then pay the new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            payment_attrs = %{
+              "order_id" => socket.assigns.order_id,
+              "amount" => Decimal.to_string(updated_order.total_amount),
+              "payment_method" => "cash",
+              "payment_date" => Date.utc_today()
+            }
+
+            case Sales.create_payment(payment_attrs) do
+              {:ok, payment} ->
+                {:noreply,
+                 socket
+                 |> assign(:payment_method, "cash_success")
+                 |> assign(:payment_pin_authorized, false)
+                 |> assign(:payment_invoice_number, payment.invoice_number)
+                 |> assign(:last_payment_amount, updated_order.total_amount)
+                 |> load_order()}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            end
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: pay only the selected amount, no tips/discount changes
+        payment_attrs = %{
+          "order_id" => socket.assigns.order_id,
+          "amount" => Decimal.to_string(split_amount),
+          "payment_method" => "cash",
+          "payment_date" => Date.utc_today()
+        }
+
+        case Sales.create_payment(payment_attrs) do
+          {:ok, payment} ->
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "cash_success")
+             |> assign(:payment_pin_authorized, false)
+             |> assign(:payment_invoice_number, payment.invoice_number)
+             |> assign(:last_payment_amount, split_amount)
+             |> assign(:split_selection, %{})
+             |> assign(:split_allocated, new_allocated)
+             |> assign(:split_payment_amount, nil)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to create payment")}
+        end
+    end
+  end
+
+  @impl true
+  def handle_event("open_recalculate_modal", _params, socket) do
+    # Calculate the sum from order items
+    recalculated_total =
+      socket.assigns.order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, true)
+     |> assign(:recalculated_total, recalculated_total)}
+  end
+
+  @impl true
+  def handle_event("close_recalculate_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, false)
+     |> assign(:recalculated_total, nil)}
+  end
+
+  @impl true
+  def handle_event("apply_recalculation", _params, socket) do
+    case Sales.update_order(socket.assigns.order, %{
+           total_amount: socket.assigns.recalculated_total
+         }) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> assign(:show_recalculate_modal, false)
+         |> assign(:recalculated_total, nil)
+         |> load_order()
+         |> put_flash(:info, "Order total updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      show_qr_payment_preview(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp show_qr_payment_preview(socket) do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: update tips/discount, then show QR for new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            qr_svg =
+              QrCode.generate_qr_svg(%{
+                account_number: bank_account,
+                amount: updated_order.total_amount,
+                currency: "CZK",
+                variable_symbol: updated_order.order_number,
+                message: "Order #{updated_order.order_number}"
+              })
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "qr_preview")
+             |> assign(:payment_qr_svg, qr_svg)
+             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: show QR for split amount only, no order update
+        order = socket.assigns.order
+
+        qr_svg =
+          QrCode.generate_qr_svg(%{
+            account_number: bank_account,
+            amount: split_amount,
+            currency: "CZK",
+            variable_symbol: order.order_number,
+            message: "Order #{order.order_number}"
+          })
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_preview")
+         |> assign(:payment_qr_svg, qr_svg)
+         |> assign(:payment_preview_amount, split_amount)}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    if socket.assigns.payment_pin_authorized do
+      record_qr_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp record_qr_payment(socket) do
+    amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
+
+    payment_attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(amount),
+      "payment_method" => "qr_code",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(payment_attrs) do
+      {:ok, payment} ->
+        socket =
+          if socket.assigns.split_payment_amount do
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            socket
+            |> assign(:split_selection, %{})
+            |> assign(:split_allocated, new_allocated)
+            |> assign(:split_payment_amount, nil)
+          else
+            socket
+          end
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_success")
+         |> assign(:payment_pin_authorized, false)
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> assign(:last_payment_amount, amount)
+         |> load_order()}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to record payment")}
+    end
+  end
+
+  defp request_payment_pin(socket, mode) do
+    cond do
+      not AdminAuth.enabled?() ->
+        put_flash(socket, :error, "Payment PIN is not configured")
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        put_flash(socket, :error, "Too many incorrect PIN attempts. Wait one minute and try again.")
+
+      true ->
+        socket
+        |> assign(:show_payment_pin, true)
+        |> assign(:payment_pin, "")
+        |> assign(:payment_pin_mode, mode)
+        |> assign(:payment_pin_authorized, false)
+        |> assign(:show_payment_modal, false)
+    end
+  end
+
+  defp prepare_payment_modal(socket, :split) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    socket
+    |> assign(:split_payment_amount, split_amount)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+  end
+
+  defp prepare_payment_modal(socket, :full) do
+    socket
+    |> assign(:split_payment_amount, nil)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+    |> assign(:tips_amount, Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0")))
+    |> assign(
+      :discount_amount,
+      Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+    )
+    |> assign(:discount_reason, socket.assigns.order.discount_reason || "")
+  end
+
+  defp add_item_to_order(socket, product_id, unit_amount) do
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "product_id" => product_id,
+      "quantity" => "1",
+      "unit_amount" => unit_amount
+    }
+
+    case Sales.create_order_item(attrs) do
+      {:ok, _order_item} ->
+        {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        {:noreply,
+         socket
+         |> load_order()
+         |> assign(:show_success, true)
+         |> push_event("item-added", %{})}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to add item")}
+    end
+  end
+
+  defp load_order(socket) do
+    order = Sales.get_order!(socket.assigns.order_id)
+
+    page_title =
+      cond do
+        # Standalone order (no booking)
+        is_nil(order.booking_id) -> "Order: #{order.name}"
+        # Regular order with guest
+        order.guest -> "Order: #{order.guest.name}"
+        # Fallback
+        true -> "Order: #{order.name || "Unknown"}"
+      end
+
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+    socket
+    |> assign(:order, order)
+    |> assign(:grouped_items, grouped_items)
+    |> assign(:page_title, page_title)
+  end
+
+  defp load_products(socket) do
+    categories = Catalog.list_pos_categories()
+    all_products = Catalog.list_pos_products()
+
+    popular_products =
+      Sales.get_popular_products(20) |> Enum.filter(&(&1.active && &1.visible_in_pos))
+
+    # Enrich products with pricing information
+    products_with_prices = enrich_products_with_prices(all_products)
+    popular_with_prices = enrich_products_with_prices(popular_products)
+
+    socket
+    |> assign(:categories, categories)
+    |> assign(:products, products_with_prices)
+    |> assign(:popular_products, popular_with_prices)
+  end
+
+  defp enrich_products_with_prices(products) do
+    Enum.map(products, fn product ->
+      pricelist = Catalog.get_active_pricelist_for_product(product.id)
+
+      pricing_info =
+        if pricelist do
+          cond do
+            pricelist.price_tiers && pricelist.price_tiers != [] ->
+              %{type: :tiers, tiers: pricelist.price_tiers}
+
+            pricelist.price ->
+              %{type: :single, price: pricelist.price}
+
+            true ->
+              %{type: :none}
+          end
+        else
+          %{type: :none}
+        end
+
+      Map.put(product, :pricing_info, pricing_info)
+    end)
+  end
+
+  defp filter_products(products, category_id) do
+    if is_nil(category_id) do
+      products
+    else
+      Enum.filter(products, fn product -> product.category_id == category_id end)
+    end
+  end
+
+  defp parse_default_amounts(amounts_str) when is_binary(amounts_str) and amounts_str != "" do
+    case Jason.decode(amounts_str) do
+      {:ok, amounts} when is_list(amounts) -> amounts
+      _ -> []
+    end
+  end
+
+  defp parse_default_amounts(_), do: []
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
+
+  defp parse_decimal(""), do: Decimal.new("0")
+  defp parse_decimal(nil), do: Decimal.new("0")
+
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {amount, _} -> amount
+      :error -> Decimal.new("0")
+    end
+  end
+
+  defp parse_decimal(_), do: Decimal.new("0")
+
+  defp parse_quantity(nil), do: 1
+  defp parse_quantity(""), do: 1
+
+  defp parse_quantity(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {qty, _} when qty > 0 -> qty
+      _ -> 1
+    end
+  end
+
+  defp parse_quantity(value) when is_integer(value) and value > 0, do: value
+  defp parse_quantity(_), do: 1
+
+  defp add_multiple_items_to_order(socket, product_id, unit_amount, quantity) do
+    # Add items one by one (could be optimized with bulk insert later)
+    results =
+      Enum.reduce(1..quantity, {:ok, socket}, fn _i, {:ok, acc_socket} ->
+        add_item_to_order(acc_socket, product_id, unit_amount)
+        |> then(fn {:noreply, updated_socket} -> {:ok, updated_socket} end)
+      end)
+
+    case results do
+      {:ok, updated_socket} -> {:noreply, updated_socket}
+      error -> error
+    end
+  end
+
+  defp total_out_of_sync?(order) do
+    items_total =
+      order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    !Decimal.equal?(order.total_amount, items_total)
+  end
+
+  defp format_item_timestamp(datetime) do
+    if is_nil(datetime), do: "", else: do_format_timestamp(datetime)
+  end
+
+  defp do_format_timestamp(datetime) do
+    today = Date.utc_today()
+    item_date = DateTime.to_date(datetime)
+
+    if Date.compare(item_date, today) == :eq do
+      # Today: show just time
+      Calendar.strftime(datetime, "%H:%M")
+    else
+      # Other day: show date and time
+      Calendar.strftime(datetime, "%b %-d, %H:%M")
+    end
+  end
+
+  defp get_price_for_amount(product, amount) do
+    if product.pricing_info && product.pricing_info.type == :tiers do
+      tier =
+        Enum.find(product.pricing_info.tiers, fn tier ->
+          tier_amount = tier["unit_amount"] || tier[:unit_amount]
+          tier_amount == amount
+        end)
+
+      if tier do
+        price = tier["price"] || tier[:price]
+        if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+      else
+        nil
+      end
+    else
+      product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
+    end
+  end
+
+  # --- Split bill helpers ---
+
+  defp calc_split_total(grouped_items, selection) do
+    Enum.reduce(selection, Decimal.new("0"), fn {{product_id, unit_amount}, qty}, acc ->
+      if qty > 0 do
+        group =
+          Enum.find(grouped_items, fn g ->
+            g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+          end)
+
+        if group && Decimal.gt?(group.total_quantity, 0) do
+          price_per_qty = Decimal.div(group.total_price, group.total_quantity)
+          item_total = Decimal.mult(price_per_qty, Decimal.new(qty))
+          Decimal.add(acc, item_total)
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  defp merge_selection_into_allocated(allocated, selection) do
+    Enum.reduce(selection, allocated, fn {key, qty}, acc ->
+      current = Map.get(acc, key, 0)
+      Map.put(acc, key, current + qty)
+    end)
+  end
+
+  defp decimals_equal?(nil, nil), do: true
+  defp decimals_equal?(nil, _), do: false
+  defp decimals_equal?(_, nil), do: false
+  defp decimals_equal?(a, b), do: Decimal.equal?(a, b)
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.html.heex**</summary>
+
+@@ lines 1-1304 @@
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div phx-hook="KeepAlive" id="pos-keep-alive" class="h-screen flex flex-col bg-slate-50">
+    <!-- Fixed Header -->
+    <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-4">
+        <button
+          phx-click="back_to_guests"
+          class="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all"
+        >
+          <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
+        </button>
+        <div>
+          <%= if @order.booking_id do %>
+            <h1 class="text-2xl font-bold text-slate-900">
+              {if @order.guest, do: @order.guest.name, else: "Unknown Guest"}
+              <span :if={@order.booking.room_number} class="text-slate-500">
+                - Room {@order.booking.room_number}
+              </span>
+            </h1>
+          <% else %>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl font-bold text-slate-900">
+                📋 {@order.name}
+              </h1>
+              <span class="px-3 py-1 bg-info-light text-purple-700 text-sm font-semibold rounded-full">
+                Standalone Order
+              </span>
+            </div>
+          <% end %>
+          <div class="flex items-center gap-3">
+            <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
+            <%= if @order.is_service_order do %>
+              <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                Service Order
+              </span>
+            <% end %>
+            <%= if @order.status != "paid" do %>
+              <button
+                phx-click="toggle_service_order"
+                class="text-xs text-purple-600 hover:text-purple-800 underline"
+              >
+                {if @order.is_service_order, do: "Convert to Standard", else: "Convert to Service"}
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Total -->
+      <div class="text-right">
+        <div class="flex items-center justify-end gap-2 mb-1">
+          <p class="text-sm text-slate-600">Total</p>
+          <%= if total_out_of_sync?(@order) do %>
+            <span class="px-2 py-1 bg-error-light text-red-700 text-xs font-semibold rounded-full">
+              Out of sync
+            </span>
+          <% end %>
+        </div>
+        <p class="text-3xl font-bold text-success-dark">
+          {format_currency(@order.total_amount || Decimal.new("0"))}
+        </p>
+        <button
+          phx-click="open_recalculate_modal"
+          class="text-xs text-tertiary-600 hover:text-tertiary-800 underline mt-1"
+        >
+          Recalculate total
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area with Two Columns -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Left Column: Products -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Category Filter Tabs -->
+        <div class="bg-white border-b border-slate-200 px-6 py-4 overflow-x-auto">
+          <div class="flex gap-3 min-w-max">
+            <button
+              phx-click="select_category"
+              phx-value-category-id="all"
+              class={[
+                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                if(is_nil(@selected_category_id),
+                  do: "bg-tertiary-600 text-white shadow-lg",
+                  else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                )
+              ]}
+            >
+              Popular
+            </button>
+            <button
+              :for={category <- @categories}
+              phx-click="select_category"
+              phx-value-category-id={category.id}
+              class={[
+                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                if(@selected_category_id == category.id,
+                  do: "bg-tertiary-600 text-white shadow-lg",
+                  else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                )
+              ]}
+            >
+              {category.name}
+            </button>
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <%= if is_nil(@selected_category_id) do %>
+              <!-- Show Popular Products -->
+              <div
+                :for={product <- @popular_products}
+                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+              >
+                <div class="flex items-center gap-4 mb-3">
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                      {product.name}
+                    </h3>
+                    <p :if={product.category} class="text-xs text-slate-500 mb-1 truncate">
+                      {product.category.name}
+                    </p>
+                    <%= if product.pricing_info do %>
+                      <p class="text-base font-bold text-success-dark">
+                        <%= case product.pricing_info.type do %>
+                          <% :single -> %>
+                            {format_currency(product.pricing_info.price)}
+                          <% :tiers -> %>
+                            Multiple prices
+                          <% :none -> %>
+                            —
+                        <% end %>
+                      </p>
+                    <% end %>
+                    <span :if={product.unit} class="text-xs text-slate-600">
+                      per {product.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Quick Quantity Selector -->
+                <div class="grid grid-cols-3 gap-3">
+                  <button
+                    phx-click="add_product"
+                    phx-value-product-id={product.id}
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
+                  >
+                    Add 1×
+                  </button>
+                  <button
+                    phx-click="show_custom_quantity"
+                    phx-value-product-id={product.id}
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
+                  >
+                    5+
+                  </button>
+                </div>
+              </div>
+            <% else %>
+              <!-- Show Category Products -->
+              <div
+                :for={product <- filter_products(@products, @selected_category_id)}
+                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+              >
+                <div class="flex items-center gap-4 mb-3">
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                      {product.name}
+                    </h3>
+                    <%= if product.pricing_info do %>
+                      <p class="text-base font-bold text-success-dark">
+                        <%= case product.pricing_info.type do %>
+                          <% :single -> %>
+                            {format_currency(product.pricing_info.price)}
+                          <% :tiers -> %>
+                            Multiple prices
+                          <% :none -> %>
+                            —
+                        <% end %>
+                      </p>
+                    <% end %>
+                    <span :if={product.unit} class="text-xs text-slate-600">
+                      per {product.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Quick Quantity Selector -->
+                <div class="grid grid-cols-3 gap-3">
+                  <button
+                    phx-click="add_product"
+                    phx-value-product-id={product.id}
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
+                  >
+                    Add 1×
+                  </button>
+                  <button
+                    phx-click="show_custom_quantity"
+                    phx-value-product-id={product.id}
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
+                  >
+                    5+
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Order Cart -->
+      <div class="w-[450px] bg-white border-l border-slate-200 flex flex-col">
+        <div class={["px-6 py-4 border-b border-slate-200", @split_mode && "bg-amber-50"]}>
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">
+                <%= if @split_mode do %>
+                  Split Bill
+                <% else %>
+                  Current Order
+                <% end %>
+              </h2>
+              <p class="text-sm text-slate-600">
+                {Enum.count(@grouped_items)} {if Enum.count(@grouped_items) == 1,
+                  do: "item",
+                  else: "items"}
+              </p>
+            </div>
+            <%= if @split_mode do %>
+              <button
+                phx-click="exit_split_mode"
+                class="flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 text-sm font-semibold active:scale-95 transition-all"
+              >
+                <.icon name="hero-x-mark" class="w-4 h-4" /> Exit Split
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Cart Items / Split Mode -->
+        <%= if @split_mode do %>
+          <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide px-1 mb-3">
+              Select items for this person
+            </p>
+            <div class="space-y-3">
+              <div
+                :for={group <- @grouped_items}
+                class="bg-slate-50 rounded-xl p-4 border border-slate-200"
+              >
+                <% group_key = {group.product.id, group.unit_amount}
+                allocated_qty = Map.get(@split_allocated, group_key, 0)
+                total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+                available_qty = max(0, total_qty - allocated_qty)
+                selected_qty = Map.get(@split_selection, group_key, 0)
+                item_total = Decimal.mult(group.price_per_unit, Decimal.new(selected_qty)) %>
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1 min-w-0 pr-2">
+                    <h3 class="font-semibold text-slate-900 truncate">{group.product.name}</h3>
+                    <p class="text-sm text-slate-500">
+                      <%= if group.unit_amount do %>
+                        {Decimal.round(group.unit_amount, 0)}{group.unit} ·
+                      <% end %>
+                      {format_currency(group.price_per_unit)} each
+                    </p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      {available_qty}/{total_qty} available
+                      <%= if allocated_qty > 0 do %>
+                        · {allocated_qty} already split
+                      <% end %>
+                    </p>
+                  </div>
+                  <p class={[
+                    "font-bold text-lg shrink-0",
+                    if(selected_qty > 0, do: "text-success-dark", else: "text-slate-300")
+                  ]}>
+                    {format_currency(item_total)}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button
+                    phx-click="split_adjust"
+                    phx-value-product-id={group.product.id}
+                    phx-value-unit-amount={group.unit_amount || ""}
+                    phx-value-delta="-1"
+                    disabled={selected_qty == 0}
+                    class="w-10 h-10 rounded-full bg-slate-200 hover:bg-slate-300 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xl text-slate-800 flex items-center justify-center active:scale-95 transition-all"
+                  >
+                    –
+                  </button>
+                  <span class="text-2xl font-bold text-slate-900 w-8 text-center">
+                    {selected_qty}
+                  </span>
+                  <button
+                    phx-click="split_adjust"
+                    phx-value-product-id={group.product.id}
+                    phx-value-unit-amount={group.unit_amount || ""}
+                    phx-value-delta="1"
+                    disabled={selected_qty >= available_qty}
+                    class="w-10 h-10 rounded-full bg-tertiary-600 hover:bg-tertiary-700 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xl text-white flex items-center justify-center active:scale-95 transition-all"
+                  >
+                    +
+                  </button>
+                  <span class="text-sm text-slate-500">/ {available_qty}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <!-- Cart Items -->
+          <div class="flex-1 overflow-y-auto p-6">
+            <%= if @grouped_items == [] do %>
+              <div class="text-center py-12">
+                <.icon name="hero-shopping-cart" class="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p class="text-lg text-slate-400">No items yet</p>
+                <p class="text-sm text-slate-400">Tap products to add</p>
+              </div>
+            <% else %>
+              <div class="space-y-3">
+                <div :for={group <- @grouped_items} class="bg-slate-50 rounded-xl overflow-hidden">
+                  <%= if group.grouped? do %>
+                    <!-- Grouped Item Display -->
+                    <div
+                      id={"cart-group-#{Enum.join(group.item_ids, "-")}"}
+                      class="p-4"
+                    >
+                      <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                          <h3 class="font-semibold text-slate-900 mb-1">
+                            {group.product.name}
+                          </h3>
+                          <p class="text-sm text-slate-600">
+                            <%= if group.unit_amount do %>
+                              {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                                group.total_quantity,
+                                2
+                              )}
+                            <% else %>
+                              Qty: {Decimal.round(group.total_quantity, 2)}
+                            <% end %>
+                            <span class="ml-2 text-xs bg-tertiary-100 text-tertiary-800 px-2 py-1 rounded-full">
+                              {length(group.items)} items
+                            </span>
+                          </p>
+                          <p class="text-xs text-slate-500 mt-1">
+                            Added: {format_item_timestamp(
+                              Enum.max_by(group.items, & &1.inserted_at).inserted_at
+                            )}
+                          </p>
+                        </div>
+                        <div class="text-right">
+                          <p class="font-bold text-slate-900">
+                            {format_currency(group.total_price)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Expand/Collapse Button for Grouped Items -->
+                      <button
+                        phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
+                        phx-value-product-id={group.product.id}
+                        phx-value-unit-amount={group.unit_amount || ""}
+                        class="mt-3 w-full text-sm text-tertiary-600 hover:text-tertiary-800 font-medium flex items-center justify-center gap-1"
+                      >
+                        <%= if group.expanded? do %>
+                          <.icon name="hero-chevron-up" class="w-4 h-4" /> Hide individual items
+                        <% else %>
+                          <.icon name="hero-chevron-down" class="w-4 h-4" />
+                          Show {length(group.items)} individual items
+                        <% end %>
+                      </button>
+                    </div>
+                  <% else %>
+                    <!-- Single Item Display (not grouped) with delete functionality -->
+                    <div
+                      id={"cart-item-single-#{hd(group.items).id}"}
+                      phx-hook="SwipeToDelete"
+                      data-item-id={hd(group.items).id}
+                      class="relative overflow-hidden touch-pan-y"
+                    >
+                      <!-- Swipe Background -->
+                      <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
+                        <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                      </div>
+
+                      <!-- Item Content -->
+                      <div class="swipe-content relative bg-slate-50 p-4">
+                        <div class="flex justify-between items-start">
+                          <div class="flex-1">
+                            <h3 class="font-semibold text-slate-900 mb-1">
+                              {group.product.name}
+                            </h3>
+                            <p class="text-sm text-slate-600">
+                              <%= if group.unit_amount do %>
+                                {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                                  group.total_quantity,
+                                  2
+                                )}
+                              <% else %>
+                                Qty: {Decimal.round(group.total_quantity, 2)}
+                              <% end %>
+                            </p>
+                            <p class="text-xs text-slate-500 mt-1">
+                              Added: {format_item_timestamp(hd(group.items).inserted_at)}
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-3">
+                            <p class="font-bold text-slate-900">
+                              {format_currency(group.total_price)}
+                            </p>
+                            <button
+                              phx-click="delete_item"
+                              phx-value-item-id={hd(group.items).id}
+                              class="text-error hover:text-error-dark active:scale-95"
+                            >
+                              <.icon name="hero-x-mark" class="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <!-- Individual Items (when expanded) -->
+                  <%= if group.expanded? do %>
+                    <div class="border-t border-slate-200 bg-white">
+                      <div
+                        :for={item <- group.items}
+                        id={"cart-item-#{item.id}"}
+                        phx-hook="SwipeToDelete"
+                        data-item-id={item.id}
+                        class="relative overflow-hidden touch-pan-y"
+                      >
+                        <!-- Swipe Background -->
+                        <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
+                          <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                        </div>
+
+                        <!-- Item Content -->
+                        <div class="swipe-content relative bg-white p-3 border-b border-slate-100 last:border-b-0">
+                          <div class="flex justify-between items-start text-sm">
+                            <div class="flex-1">
+                              <p class="text-slate-600">
+                                <%= if item.unit_amount do %>
+                                  {Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity}
+                                <% else %>
+                                  Qty: {item.quantity}
+                                <% end %>
+                              </p>
+                              <p class="text-xs text-slate-500 mt-0.5">
+                                {format_item_timestamp(item.inserted_at)}
+                              </p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                              <p class="text-slate-700 font-medium">
+                                {format_currency(item.subtotal)}
+                              </p>
+                              <button
+                                phx-click="delete_item"
+                                phx-value-item-id={item.id}
+                                class="text-error hover:text-error-dark active:scale-95"
+                              >
+                                <.icon name="hero-x-mark" class="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        <%!-- end @split_mode --%>
+
+        <!-- Cart Summary -->
+        <div class="border-t border-slate-200 p-6 bg-slate-50">
+          <% order_total = @order.total_amount || Decimal.new("0")
+
+          total_paid =
+            Enum.reduce(@order.payments || [], Decimal.new("0"), fn p, acc ->
+              if is_nil(p.deleted_at), do: Decimal.add(acc, p.amount), else: acc
+            end)
+
+          remaining = Decimal.sub(order_total, total_paid) %>
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between text-slate-700">
+              <span>Order total</span>
+              <span class="font-semibold">{format_currency(order_total)}</span>
+            </div>
+            <div
+              :if={@order.discount_amount && Decimal.gt?(@order.discount_amount, 0)}
+              class="flex justify-between text-error"
+            >
+              <span>Discount</span>
+              <span class="font-semibold">-{format_currency(@order.discount_amount)}</span>
+            </div>
+            <%= if Decimal.gt?(total_paid, 0) do %>
+              <div class="flex justify-between text-success-dark">
+                <span>Paid so far</span>
+                <span class="font-semibold">-{format_currency(total_paid)}</span>
+              </div>
+            <% end %>
+          </div>
+          <div class={[
+            "flex justify-between items-center text-xl font-bold text-slate-900 pt-4 border-t border-slate-300 mb-4"
+          ]}>
+            <span>{if Decimal.gt?(total_paid, 0), do: "Remaining", else: "Total"}</span>
+            <span class={[
+              "text-2xl",
+              if(Decimal.gt?(total_paid, 0), do: "text-amber-600", else: "text-success-dark")
+            ]}>
+              {format_currency(if Decimal.gt?(total_paid, 0), do: remaining, else: order_total)}
+            </span>
+          </div>
+
+          <!-- Payment Button -->
+          <%= cond do %>
+            <% @split_mode -> %>
+              <% split_amount = calc_split_total(@grouped_items, @split_selection)
+              has_selection = Enum.any?(@split_selection, fn {_k, qty} -> qty > 0 end) %>
+              <button
+                phx-click="open_split_payment_modal"
+                disabled={!has_selection}
+                class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed mb-2"
+              >
+                <.icon name="hero-credit-card" class="w-6 h-6 inline-block mr-2" />
+                Collect {format_currency(split_amount)}
+              </button>
+            <% @order.status in ["open", "partially_paid"] && Decimal.gt?(order_total, 0) -> %>
+              <div class="grid grid-cols-5 gap-2">
+                <button
+                  phx-click="open_payment_modal"
+                  class="col-span-3 bg-success hover:bg-success-dark text-white font-bold py-5 px-4 rounded-2xl text-lg active:scale-95 transition-all shadow-lg"
+                >
+                  <.icon name="hero-credit-card" class="w-5 h-5 inline-block mr-1" /> Pay Order
+                </button>
+                <button
+                  phx-click="enter_split_mode"
+                  class="col-span-2 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-4 rounded-2xl text-base active:scale-95 transition-all"
+                >
+                  <.icon name="hero-users" class="w-5 h-5 inline-block" /> Split
+                </button>
+              </div>
+            <% @order.status == "paid" -> %>
+              <div class="bg-success-light border-2 border-green-600 text-success-dark font-bold py-4 px-6 rounded-2xl text-center">
+                <.icon name="hero-check-circle" class="w-6 h-6 inline-block mr-2" /> Paid
+              </div>
+            <% true -> %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unit Amount Modal -->
+    <div
+      :if={@show_unit_modal && @selected_product}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_unit_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+        id="unit-modal"
+        phx-hook="UnitAmountSelector"
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-4">
+          {@selected_product.name}
+        </h2>
+        <p class="text-lg text-slate-600 mb-6">
+          Select amount ({@selected_product.unit})
+        </p>
+
+        <!-- Quick Select Buttons -->
+        <%= if @selected_product.default_unit_amounts do %>
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Select Amount</p>
+            <div class="grid grid-cols-3 gap-3">
+              <%= for amount <- parse_default_amounts(@selected_product.default_unit_amounts) do %>
+                <button
+                  type="button"
+                  phx-click="quick_add_unit_amount"
+                  phx-value-unit_amount={amount}
+                  class="bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center"
+                >
+                  <span class="text-2xl">{amount}</span>
+                  <span class="text-sm mt-1">{@selected_product.unit}</span>
+                  <%= if price = get_price_for_amount(@selected_product, amount) do %>
+                    <span class="text-xs mt-1 opacity-90">{format_currency(price)}</span>
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <!-- For products without predefined amounts, show a simple add button -->
+          <div class="mb-6">
+            <p class="text-sm text-slate-600 mb-4">
+              This product doesn't have predefined amounts.
+            </p>
+            <button
+              type="button"
+              phx-click="quick_add_unit_amount"
+              phx-value-unit_amount="0"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+          </div>
+        <% end %>
+
+        <!-- Cancel Button -->
+        <div class="pt-4">
+          <button
+            type="button"
+            phx-click="cancel_unit_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Quantity Modal -->
+    <div
+      :if={@show_quantity_modal && @quantity_product}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_quantity_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">
+          {@quantity_product.name}
+        </h2>
+        <p class="text-lg text-slate-600 mb-6">
+          How many would you like to add?
+        </p>
+
+        <form phx-submit="add_with_quantity">
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">
+              Quantity
+            </label>
+            <input
+              type="number"
+              name="quantity"
+              min="1"
+              max="99"
+              value="5"
+              autofocus
+              class="w-full px-6 py-4 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-tertiary-200 transition-all text-2xl font-bold text-center"
+            />
+          </div>
+
+          <div class="space-y-3">
+            <button
+              type="submit"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+            <button
+              type="button"
+              phx-click="cancel_quantity_modal"
+              class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div
+      :if={@show_success}
+      phx-click="hide_success"
+      class="fixed top-20 right-6 bg-success text-white px-6 py-4 rounded-xl shadow-2xl animate-bounce-in z-50"
+    >
+      <div class="flex items-center gap-3">
+        <.icon name="hero-check-circle" class="w-6 h-6" />
+        <span class="font-semibold text-lg">Item added!</span>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      :if={@show_delete_confirm && @item_to_delete}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_delete"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-error-light rounded-full mb-4">
+            <.icon name="hero-trash" class="w-8 h-8 text-error" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 mb-2">Delete Item?</h2>
+          <p class="text-slate-600">This action cannot be undone.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-xl p-4 mb-6">
+          <h3 class="font-bold text-slate-900 text-lg mb-2">
+            {@item_to_delete.product.name}
+          </h3>
+          <div class="space-y-1 text-sm text-slate-700">
+            <p>
+              <%= if @item_to_delete.unit_amount do %>
+                Amount: {Decimal.round(@item_to_delete.unit_amount, 2)}{@item_to_delete.product.unit}
+              <% end %>
+            </p>
+            <p>Quantity: {@item_to_delete.quantity}</p>
+            <p class="font-semibold text-base text-slate-900 mt-2">
+              Price: {format_currency(@item_to_delete.subtotal)}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <button
+            phx-click="confirm_delete"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Yes, Delete Item
+          </button>
+          <button
+            phx-click="cancel_delete"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recalculation Modal -->
+    <div
+      :if={@show_recalculate_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_recalculate_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <h2 class="text-2xl font-bold text-slate-900 mb-6">Recalculate Order Total</h2>
+
+        <div class="space-y-4 mb-6">
+          <!-- Current Total -->
+          <div class="bg-slate-50 rounded-xl p-4">
+            <p class="text-sm text-slate-600 mb-1">Current Total (Database)</p>
+            <p class="text-2xl font-bold text-slate-900">
+              {format_currency(@order.total_amount || Decimal.new("0"))}
+            </p>
+          </div>
+
+          <!-- Recalculated Total -->
+          <div class={[
+            "rounded-xl p-4",
+            if(Decimal.equal?(@recalculated_total, @order.total_amount),
+              do: "bg-success-light border-2 border-green-200",
+              else: "bg-yellow-50 border-2 border-yellow-200"
+            )
+          ]}>
+            <p class="text-sm text-slate-600 mb-1">Recalculated Total (From Items)</p>
+            <p class="text-2xl font-bold text-slate-900">
+              {format_currency(@recalculated_total || Decimal.new("0"))}
+            </p>
+          </div>
+
+          <!-- Difference -->
+          <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
+            <div class="bg-error-light border-2 border-red-200 rounded-xl p-4">
+              <p class="text-sm text-error mb-1 font-semibold">Difference</p>
+              <p class="text-xl font-bold text-red-700">
+                {format_currency(Decimal.sub(@recalculated_total, @order.total_amount))}
+              </p>
+              <p class="text-xs text-error mt-2">
+                The database total doesn't match the sum of order items.
+              </p>
+            </div>
+          <% else %>
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-4">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-check-circle" class="w-5 h-5 text-success-dark" />
+                <p class="text-sm text-green-700 font-semibold">
+                  Totals match! No update needed.
+                </p>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Item Breakdown -->
+          <div class="bg-slate-50 rounded-xl p-4">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Items Breakdown</p>
+            <div class="space-y-2 text-sm">
+              <%= for item <- @order.order_items do %>
+                <div class="flex justify-between text-slate-700">
+                  <span>
+                    {item.product.name}
+                    <%= if item.unit_amount do %>
+                      ({Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity})
+                    <% else %>
+                      (× {item.quantity})
+                    <% end %>
+                  </span>
+                  <span class="font-medium">{format_currency(item.subtotal)}</span>
+                </div>
+              <% end %>
+              <div class="border-t border-slate-300 pt-2 mt-2 flex justify-between font-semibold">
+                <span>Sum of Items:</span>
+                <span>{format_currency(@recalculated_total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+          <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
+            <button
+              phx-click="apply_recalculation"
+              class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+            >
+              Update Total to {format_currency(@recalculated_total)}
+            </button>
+          <% end %>
+          <button
+            phx-click="close_recalculate_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment PIN Modal -->
+    <div
+      :if={@show_payment_pin}
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      phx-click="cancel_payment_pin"
+    >
+      <div
+        class="w-full max-w-sm rounded-2xl bg-white p-7 shadow-2xl"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="mb-6 text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <.icon name="hero-lock-closed" class="h-7 w-7" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900">PIN required to collect payment</h2>
+          <p class="mt-2 text-sm text-slate-500">Enter the staff PIN to continue with this payment.</p>
+        </div>
+
+        <%= if @payment_pin_configured do %>
+          <form id="pos-payment-pin-form" phx-submit="authorize_payment" class="space-y-4">
+            <input
+              id="pos-payment-pin"
+              type="password"
+              name="payment_pin"
+              value={@payment_pin}
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]{6,8}"
+              minlength="6"
+              maxlength="8"
+              required
+              autofocus
+              class="w-full rounded-xl border-2 border-slate-300 px-4 py-4 text-center text-3xl tracking-[0.4em] focus:border-amber-500 focus:ring-amber-200"
+            />
+            <button
+              type="submit"
+              class="w-full rounded-xl bg-amber-700 px-5 py-4 text-lg font-bold text-white transition-colors hover:bg-amber-800"
+            >
+              Continue to payment
+            </button>
+          </form>
+        <% else %>
+          <p class="rounded-lg bg-rose-50 p-4 text-sm text-rose-800">
+            Payment PIN is not configured on this server.
+          </p>
+        <% end %>
+
+        <button
+          type="button"
+          phx-click="cancel_payment_pin"
+          class="mt-3 w-full rounded-xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div
+      :if={@show_payment_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_payment_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <%= if @payment_method == "cash_success" do %>
+          <!-- Cash Payment Success -->
+          <div class="text-center">
+            <div class="mb-6">
+              <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-2">
+                <%= if @split_mode do %>
+                  Split Payment Collected!
+                <% else %>
+                  Payment Successful!
+                <% end %>
+              </h2>
+              <p class="text-lg text-slate-600 mb-2">
+                Invoice: {@payment_invoice_number}
+              </p>
+            </div>
+
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-6 mb-6">
+              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+              <p class="text-4xl font-bold text-success-dark">
+                {format_currency(@last_payment_amount || @order.total_amount)}
+              </p>
+            </div>
+
+            <.link
+              navigate={~p"/pos/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mb-3"
+            >
+              <button
+                type="button"
+                class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+              </button>
+            </.link>
+
+            <%= if @split_mode do %>
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+              >
+                <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+              </button>
+              <button
+                phx-click="exit_split_mode"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+              >
+                Exit Split Mode
+              </button>
+            <% else %>
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+              >
+                Done
+              </button>
+            <% end %>
+          </div>
+        <% else %>
+          <%= if @payment_method == "qr_preview" do %>
+            <!-- QR Code Preview — payment not yet recorded -->
+            <div class="text-center">
+              <h2 class="text-3xl font-bold text-slate-900 mb-1">Scan to Pay</h2>
+              <p class="text-sm text-slate-500 mb-5">
+                Show this QR code to the customer. Confirm once the bank transfer is complete.
+              </p>
+
+              <div class="bg-white p-6 rounded-2xl border-4 border-blue-300 mb-5 inline-block">
+                <%= if @payment_qr_svg do %>
+                  <img
+                    src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                    alt="Payment QR Code"
+                    class="w-64 h-64"
+                  />
+                <% else %>
+                  <p class="text-error">Failed to generate QR code</p>
+                <% end %>
+              </div>
+
+              <div class="bg-tertiary-50 border-2 border-blue-200 rounded-xl p-4 mb-5">
+                <p class="text-slate-700 font-semibold mb-1">Amount to Pay</p>
+                <p class="text-4xl font-bold text-success-dark">
+                  {format_currency(@payment_preview_amount || @order.total_amount)}
+                </p>
+              </div>
+
+              <div class="text-left space-y-1 text-sm text-slate-600 mb-6">
+                <p>• Open your banking app</p>
+                <p>• Scan the QR code above</p>
+                <p>• Verify the amount</p>
+                <p>• Complete the payment, then tap "Mark as Paid" below</p>
+              </div>
+
+              <button
+                phx-click="confirm_qr_payment"
+                class="w-full bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
+              >
+                <.icon name="hero-check-circle" class="w-6 h-6" /> Mark as Paid
+              </button>
+
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          <% else %>
+            <%= if @payment_method == "qr_success" do %>
+              <!-- QR Payment Success -->
+              <div class="text-center">
+                <div class="mb-5">
+                  <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                    <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+                  </div>
+                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Payment Recorded!</h2>
+                  <p class="text-lg text-slate-600 mb-1">
+                    Invoice: {@payment_invoice_number}
+                  </p>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border-4 border-slate-200 mb-5 inline-block">
+                  <%= if @payment_qr_svg do %>
+                    <img
+                      src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                      alt="Payment QR Code"
+                      class="w-48 h-48"
+                    />
+                  <% end %>
+                </div>
+
+                <div class="bg-success-light border-2 border-green-200 rounded-xl p-4 mb-5">
+                  <p class="text-slate-700 font-semibold mb-1">QR Code Payment Recorded</p>
+                  <p class="text-4xl font-bold text-success-dark">
+                    {format_currency(@last_payment_amount || @order.total_amount)}
+                  </p>
+                </div>
+
+                <.link
+                  navigate={~p"/pos/orders/#{@order}/receipt"}
+                  target="_blank"
+                  class="block mb-3"
+                >
+                  <button
+                    type="button"
+                    class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+                  </button>
+                </.link>
+
+                <%= if @split_mode do %>
+                  <button
+                    phx-click="close_payment_modal"
+                    class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+                  >
+                    <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+                  </button>
+                  <button
+                    phx-click="exit_split_mode"
+                    class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+                  >
+                    Exit Split Mode
+                  </button>
+                <% else %>
+                  <button
+                    phx-click="close_payment_modal"
+                    class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                  >
+                    Done
+                  </button>
+                <% end %>
+              </div>
+            <% else %>
+              <%= if @split_payment_amount do %>
+                <%!-- Split payment: skip tips/discount, show the selected amount only --%>
+                <div class="text-center mb-6">
+                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Collect Payment</h2>
+                  <p class="text-sm text-slate-500 mb-5">Payment for selected items</p>
+                  <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 mb-6">
+                    <p class="text-sm font-semibold text-amber-800 mb-1">Amount to Collect</p>
+                    <p class="text-5xl font-bold text-amber-900">
+                      {format_currency(@split_payment_amount)}
+                    </p>
+                  </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="cash"
+                    class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">Cash</div>
+                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="qr_code"
+                    class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">QR Code</div>
+                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  phx-click="close_payment_modal"
+                  class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+              <% else %>
+                <%!-- Normal full-order payment: tips/discount form + full total --%>
+                <!-- Payment Method Selection -->
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Payment Details</h2>
+
+                <!-- Tips and Discount Form -->
+                <div class="space-y-4 mb-6 bg-slate-50 p-6 rounded-2xl">
+                  <form phx-change="update_payment_fields">
+                    <div class="grid grid-cols-2 gap-4">
+                      <!-- Discount Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Discount Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="discount_amount"
+                          value={@discount_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <!-- Tips Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Tips Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="tips_amount"
+                          value={@tips_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Discount Reason -->
+                    <div class="mt-4">
+                      <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Discount Reason (optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="discount_reason"
+                        value={@discount_reason}
+                        class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                        placeholder="e.g., Staff discount, Promotional offer"
+                      />
+                    </div>
+                  </form>
+
+                  <!-- Total Calculation Preview -->
+                  <% items_subtotal =
+                    Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
+                      Decimal.add(acc, item.subtotal)
+                    end)
+
+                  discount_dec =
+                    case Decimal.parse(@discount_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
+
+                  tips_dec =
+                    case Decimal.parse(@tips_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
+
+                  final_total =
+                    items_subtotal
+                    |> Decimal.sub(discount_dec)
+                    |> Decimal.add(tips_dec) %>
+                  <div class="border-t-2 border-slate-200 pt-4 mt-4 space-y-2">
+                    <div class="flex justify-between text-slate-700">
+                      <span>Subtotal (Items):</span>
+                      <span class="font-semibold">
+                        {format_currency(items_subtotal)}
+                      </span>
+                    </div>
+                    <%= if Decimal.gt?(discount_dec, 0) do %>
+                      <div class="flex justify-between text-error">
+                        <span>Discount:</span>
+                        <span class="font-semibold">-{format_currency(discount_dec)}</span>
+                      </div>
+                    <% end %>
+                    <%= if Decimal.gt?(tips_dec, 0) do %>
+                      <div class="flex justify-between text-success-dark">
+                        <span>Tips:</span>
+                        <span class="font-semibold">+{format_currency(tips_dec)}</span>
+                      </div>
+                    <% end %>
+                    <div class="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t-2 border-slate-300">
+                      <span>Final Total:</span>
+                      <span class="text-success-dark">
+                        {format_currency(final_total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                  <!-- Cash Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="cash"
+                    class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">Cash</div>
+                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+
+                  <!-- QR Code Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="qr_code"
+                    class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">QR Code</div>
+                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  phx-click="close_payment_modal"
+                  class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+              <% end %>
+              <%!-- end split_payment_amount conditional --%>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.pos>
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 3 todos
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Kompiluje PIN dialog a serverové kontroly hotovostních i QR plateb.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 529 │   def handle_event("open_recalculate_modal", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:529:7
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 649 │   def handle_event("confirm_qr_payment", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:649:7
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │        
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+PIN dialog se zkompiloval. Kompilátor ale hlásí, že nové pomocné platební funkce rozdělují souvislé `handle_event/3` klauzule; přesunu je až za události, aby POS handler zůstal čistý a bez nových varování.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.ex`, lines 390 to 720
+
+**Input:**
+
+- endLine: `720`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex`
+- startLine: `390`
+
+**Result:**
+
+```
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_payment_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+    |> assign(:payment_pin_authorized, false)
+    |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      handle_cash_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp handle_cash_payment(socket) do
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: apply tips & discount, then pay the new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          item
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Přesunu tři platební implementace za poslední `handle_event/3` klauzuli. Ověření PINu i platební chování zůstane stejné; půjde o uspořádání kódu kvůli varování kompilátoru.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.ex**</summary>
+
+@@ lines 1-893 @@
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> assign(:order, nil)
+       |> assign(:grouped_items, [])
+       |> assign(:categories, [])
+       |> assign(:products, [])
+       |> assign(:popular_products, [])
+       |> assign(:show_success, false)}
+    end
+  end
+
+  @impl true
+  def handle_event("heartbeat", _params, socket) do
+    # Keep the LiveView process alive - this prevents it from being garbage collected
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => "all"}, socket) do
+    {:noreply, assign(socket, :selected_category_id, nil)}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => category_id}, socket) do
+    {:noreply, assign(socket, :selected_category_id, category_id)}
+  end
+
+  @impl true
+  def handle_event("add_product", %{"product-id" => product_id} = params, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    quantity = parse_quantity(params["quantity"])
+
+    cond do
+      # If 5+ button clicked, show quantity modal
+      params["custom"] == "true" ->
+        {:noreply,
+         socket
+         |> assign(:show_quantity_modal, true)
+         |> assign(:quantity_product, product)}
+
+      # If product has unit amounts, show unit modal
+      product && product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      # Otherwise add directly
+      true ->
+        add_multiple_items_to_order(socket, product_id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("quick_add_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("cancel_unit_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_unit_modal, false)
+     |> assign(:selected_product, nil)
+     |> assign(:pending_quantity, nil)}
+  end
+
+  @impl true
+  def handle_event("show_custom_quantity", %{"product-id" => product_id}, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, true)
+     |> assign(:quantity_product, product)}
+  end
+
+  @impl true
+  def handle_event("cancel_quantity_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, false)
+     |> assign(:quantity_product, nil)}
+  end
+
+  @impl true
+  def handle_event("add_with_quantity", %{"quantity" => quantity_str}, socket) do
+    quantity = parse_quantity(quantity_str)
+    product = socket.assigns.quantity_product
+
+    socket =
+      socket
+      |> assign(:show_quantity_modal, false)
+      |> assign(:quantity_product, nil)
+
+    if product && product.unit do
+      {:noreply,
+       socket
+       |> assign(:show_unit_modal, true)
+       |> assign(:selected_product, product)
+       |> assign(:pending_quantity, quantity)}
+    else
+      add_multiple_items_to_order(socket, product.id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("delete_item", params, socket) do
+    item_id = params["item-id"] || params["item_id"]
+    order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
+
+    if order_item do
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, true)
+       |> assign(:item_to_delete, order_item)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_delete_confirm, false)
+     |> assign(:item_to_delete, nil)}
+  end
+
+  @impl true
+  def handle_event("confirm_delete", _params, socket) do
+    order_item = socket.assigns.item_to_delete
+
+    if order_item do
+      {:ok, _} = Sales.delete_order_item(order_item)
+      {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> load_order()}
+    else
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("toggle_service_order", _params, socket) do
+    case Sales.toggle_service_order(socket.assigns.order) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> load_order()
+         |> put_flash(:info, "Order type updated successfully")}
+
+      {:error, :cannot_convert_paid_order} ->
+        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order type")}
+    end
+  end
+
+  @impl true
+  def handle_event("back_to_guests", _params, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/pos")}
+  end
+
+  @impl true
+  def handle_event("hide_success", _params, socket) do
+    {:noreply, assign(socket, :show_success, false)}
+  end
+
+  @impl true
+  def handle_event("enter_split_mode", _params, socket) do
+    # Reset selection only — keep allocated so previously-paid quantities can't be double-paid
+    {:noreply,
+     socket
+     |> assign(:split_mode, true)
+     |> assign(:split_selection, %{})}
+  end
+
+  @impl true
+  def handle_event("exit_split_mode", _params, socket) do
+    # Keep split_allocated alive so re-entering split mode still respects past payments
+    {:noreply,
+     socket
+     |> assign(:split_mode, false)
+     |> assign(:split_selection, %{})
+     |> assign(:split_payment_amount, nil)
+     |> assign(:last_payment_amount, nil)
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "split_adjust",
+        %{"product-id" => product_id, "unit-amount" => unit_amount_str, "delta" => delta_str},
+        socket
+      ) do
+    unit_amount = parse_unit_amount(unit_amount_str)
+    key = {product_id, unit_amount}
+
+    group =
+      Enum.find(socket.assigns.grouped_items, fn g ->
+        g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+      end)
+
+    if group do
+      allocated_qty = Map.get(socket.assigns.split_allocated, key, 0)
+      total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+      max_available = max(0, total_qty - allocated_qty)
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :split)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :full)}
+  end
+
+  def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    cond do
+      not AdminAuth.enabled?() ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_pin, false)
+         |> put_flash(:error, "Payment PIN is not configured")}
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin_authorized, true)
+         |> assign(:show_payment_pin, false)
+         |> assign(:payment_pin, "")
+         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_payment_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+    |> assign(:payment_pin_authorized, false)
+    |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      handle_cash_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  @impl true
+  def handle_event("open_recalculate_modal", _params, socket) do
+    # Calculate the sum from order items
+    recalculated_total =
+      socket.assigns.order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, true)
+     |> assign(:recalculated_total, recalculated_total)}
+  end
+
+  @impl true
+  def handle_event("close_recalculate_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, false)
+     |> assign(:recalculated_total, nil)}
+  end
+
+  @impl true
+  def handle_event("apply_recalculation", _params, socket) do
+    case Sales.update_order(socket.assigns.order, %{
+           total_amount: socket.assigns.recalculated_total
+         }) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> assign(:show_recalculate_modal, false)
+         |> assign(:recalculated_total, nil)
+         |> load_order()
+         |> put_flash(:info, "Order total updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      show_qr_payment_preview(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp show_qr_payment_preview(socket) do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+    case socket.assigns.split_payment_amount do
+      nil ->
+        # Full-order payment: update tips/discount, then show QR for new total
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            qr_svg =
+              QrCode.generate_qr_svg(%{
+                account_number: bank_account,
+                amount: updated_order.total_amount,
+                currency: "CZK",
+                variable_symbol: updated_order.order_number,
+                message: "Order #{updated_order.order_number}"
+              })
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "qr_preview")
+             |> assign(:payment_qr_svg, qr_svg)
+             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        # Split payment: show QR for split amount only, no order update
+        order = socket.assigns.order
+
+        qr_svg =
+          QrCode.generate_qr_svg(%{
+            account_number: bank_account,
+            amount: split_amount,
+            currency: "CZK",
+            variable_symbol: order.order_number,
+            message: "Order #{order.order_number}"
+          })
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_preview")
+         |> assign(:payment_qr_svg, qr_svg)
+         |> assign(:payment_preview_amount, split_amount)}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    if socket.assigns.payment_pin_authorized do
+      record_qr_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp record_qr_payment(socket) do
+    amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
+
+    payment_attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(amount),
+      "payment_method" => "qr_code",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(payment_attrs) do
+      {:ok, payment} ->
+        socket =
+          if socket.assigns.split_payment_amount do
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            socket
+            |> assign(:split_selection, %{})
+            |> assign(:split_allocated, new_allocated)
+            |> assign(:split_payment_amount, nil)
+          else
+            socket
+          end
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_success")
+         |> assign(:payment_pin_authorized, false)
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> assign(:last_payment_amount, amount)
+         |> load_order()}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to record payment")}
+    end
+  end
+
+  defp request_payment_pin(socket, mode) do
+    cond do
+      not AdminAuth.enabled?() ->
+        put_flash(socket, :error, "Payment PIN is not configured")
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        put_flash(socket, :error, "Too many incorrect PIN attempts. Wait one minute and try again.")
+
+      true ->
+        socket
+        |> assign(:show_payment_pin, true)
+        |> assign(:payment_pin, "")
+        |> assign(:payment_pin_mode, mode)
+        |> assign(:payment_pin_authorized, false)
+        |> assign(:show_payment_modal, false)
+    end
+  end
+
+  defp prepare_payment_modal(socket, :split) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    socket
+    |> assign(:split_payment_amount, split_amount)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+  end
+
+  defp prepare_payment_modal(socket, :full) do
+    socket
+    |> assign(:split_payment_amount, nil)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+    |> assign(:tips_amount, Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0")))
+    |> assign(
+      :discount_amount,
+      Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+    )
+    |> assign(:discount_reason, socket.assigns.order.discount_reason || "")
+  end
+
+  defp add_item_to_order(socket, product_id, unit_amount) do
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "product_id" => product_id,
+      "quantity" => "1",
+      "unit_amount" => unit_amount
+    }
+
+    case Sales.create_order_item(attrs) do
+      {:ok, _order_item} ->
+        {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        {:noreply,
+         socket
+         |> load_order()
+         |> assign(:show_success, true)
+         |> push_event("item-added", %{})}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to add item")}
+    end
+  end
+
+  defp load_order(socket) do
+    order = Sales.get_order!(socket.assigns.order_id)
+
+    page_title =
+      cond do
+        # Standalone order (no booking)
+        is_nil(order.booking_id) -> "Order: #{order.name}"
+        # Regular order with guest
+        order.guest -> "Order: #{order.guest.name}"
+        # Fallback
+        true -> "Order: #{order.name || "Unknown"}"
+      end
+
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+    socket
+    |> assign(:order, order)
+    |> assign(:grouped_items, grouped_items)
+    |> assign(:page_title, page_title)
+  end
+
+  defp load_products(socket) do
+    categories = Catalog.list_pos_categories()
+    all_products = Catalog.list_pos_products()
+
+    popular_products =
+      Sales.get_popular_products(20) |> Enum.filter(&(&1.active && &1.visible_in_pos))
+
+    # Enrich products with pricing information
+    products_with_prices = enrich_products_with_prices(all_products)
+    popular_with_prices = enrich_products_with_prices(popular_products)
+
+    socket
+    |> assign(:categories, categories)
+    |> assign(:products, products_with_prices)
+    |> assign(:popular_products, popular_with_prices)
+  end
+
+  defp enrich_products_with_prices(products) do
+    Enum.map(products, fn product ->
+      pricelist = Catalog.get_active_pricelist_for_product(product.id)
+
+      pricing_info =
+        if pricelist do
+          cond do
+            pricelist.price_tiers && pricelist.price_tiers != [] ->
+              %{type: :tiers, tiers: pricelist.price_tiers}
+
+            pricelist.price ->
+              %{type: :single, price: pricelist.price}
+
+            true ->
+              %{type: :none}
+          end
+        else
+          %{type: :none}
+        end
+
+      Map.put(product, :pricing_info, pricing_info)
+    end)
+  end
+
+  defp filter_products(products, category_id) do
+    if is_nil(category_id) do
+      products
+    else
+      Enum.filter(products, fn product -> product.category_id == category_id end)
+    end
+  end
+
+  defp parse_default_amounts(amounts_str) when is_binary(amounts_str) and amounts_str != "" do
+    case Jason.decode(amounts_str) do
+      {:ok, amounts} when is_list(amounts) -> amounts
+      _ -> []
+    end
+  end
+
+  defp parse_default_amounts(_), do: []
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
+
+  defp parse_decimal(""), do: Decimal.new("0")
+  defp parse_decimal(nil), do: Decimal.new("0")
+
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {amount, _} -> amount
+      :error -> Decimal.new("0")
+    end
+  end
+
+  defp parse_decimal(_), do: Decimal.new("0")
+
+  defp parse_quantity(nil), do: 1
+  defp parse_quantity(""), do: 1
+
+  defp parse_quantity(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {qty, _} when qty > 0 -> qty
+      _ -> 1
+    end
+  end
+
+  defp parse_quantity(value) when is_integer(value) and value > 0, do: value
+  defp parse_quantity(_), do: 1
+
+  defp add_multiple_items_to_order(socket, product_id, unit_amount, quantity) do
+    # Add items one by one (could be optimized with bulk insert later)
+    results =
+      Enum.reduce(1..quantity, {:ok, socket}, fn _i, {:ok, acc_socket} ->
+        add_item_to_order(acc_socket, product_id, unit_amount)
+        |> then(fn {:noreply, updated_socket} -> {:ok, updated_socket} end)
+      end)
+
+    case results do
+      {:ok, updated_socket} -> {:noreply, updated_socket}
+      error -> error
+    end
+  end
+
+  defp total_out_of_sync?(order) do
+    items_total =
+      order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    !Decimal.equal?(order.total_amount, items_total)
+  end
+
+  defp format_item_timestamp(datetime) do
+    if is_nil(datetime), do: "", else: do_format_timestamp(datetime)
+  end
+
+  defp do_format_timestamp(datetime) do
+    today = Date.utc_today()
+    item_date = DateTime.to_date(datetime)
+
+    if Date.compare(item_date, today) == :eq do
+      # Today: show just time
+      Calendar.strftime(datetime, "%H:%M")
+    else
+      # Other day: show date and time
+      Calendar.strftime(datetime, "%b %-d, %H:%M")
+    end
+  end
+
+  defp get_price_for_amount(product, amount) do
+    if product.pricing_info && product.pricing_info.type == :tiers do
+      tier =
+        Enum.find(product.pricing_info.tiers, fn tier ->
+          tier_amount = tier["unit_amount"] || tier[:unit_amount]
+          tier_amount == amount
+        end)
+
+      if tier do
+        price = tier["price"] || tier[:price]
+        if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+      else
+        nil
+      end
+    else
+      product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
+    end
+  end
+
+  # --- Split bill helpers ---
+
+  defp calc_split_total(grouped_items, selection) do
+    Enum.reduce(selection, Decimal.new("0"), fn {{product_id, unit_amount}, qty}, acc ->
+      if qty > 0 do
+        group =
+          Enum.find(grouped_items, fn g ->
+            g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+          end)
+
+        if group && Decimal.gt?(group.total_quantity, 0) do
+          price_per_qty = Decimal.div(group.total_price, group.total_quantity)
+          item_total = Decimal.mult(price_per_qty, Decimal.new(qty))
+          Decimal.add(acc, item_total)
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  defp merge_selection_into_allocated(allocated, selection) do
+    Enum.reduce(selection, allocated, fn {key, qty}, acc ->
+      current = Map.get(acc, key, 0)
+      Map.put(acc, key, current + qty)
+    end)
+  end
+
+  defp decimals_equal?(nil, nil), do: true
+  defp decimals_equal?(nil, _), do: false
+  defp decimals_equal?(_, nil), do: false
+  defp decimals_equal?(a, b), do: Decimal.equal?(a, b)
+end
+
+```
+
+@@ lines 893-979 @@ (deleted)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.ex**</summary>
+
+@@ lines 1-782 @@
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> assign(:order, nil)
+       |> assign(:grouped_items, [])
+       |> assign(:categories, [])
+       |> assign(:products, [])
+       |> assign(:popular_products, [])
+       |> assign(:show_success, false)}
+    end
+  end
+
+  @impl true
+  def handle_event("heartbeat", _params, socket) do
+    # Keep the LiveView process alive - this prevents it from being garbage collected
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => "all"}, socket) do
+    {:noreply, assign(socket, :selected_category_id, nil)}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => category_id}, socket) do
+    {:noreply, assign(socket, :selected_category_id, category_id)}
+  end
+
+  @impl true
+  def handle_event("add_product", %{"product-id" => product_id} = params, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    quantity = parse_quantity(params["quantity"])
+
+    cond do
+      # If 5+ button clicked, show quantity modal
+      params["custom"] == "true" ->
+        {:noreply,
+         socket
+         |> assign(:show_quantity_modal, true)
+         |> assign(:quantity_product, product)}
+
+      # If product has unit amounts, show unit modal
+      product && product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      # Otherwise add directly
+      true ->
+        add_multiple_items_to_order(socket, product_id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("quick_add_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("cancel_unit_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_unit_modal, false)
+     |> assign(:selected_product, nil)
+     |> assign(:pending_quantity, nil)}
+  end
+
+  @impl true
+  def handle_event("show_custom_quantity", %{"product-id" => product_id}, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, true)
+     |> assign(:quantity_product, product)}
+  end
+
+  @impl true
+  def handle_event("cancel_quantity_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, false)
+     |> assign(:quantity_product, nil)}
+  end
+
+  @impl true
+  def handle_event("add_with_quantity", %{"quantity" => quantity_str}, socket) do
+    quantity = parse_quantity(quantity_str)
+    product = socket.assigns.quantity_product
+
+    socket =
+      socket
+      |> assign(:show_quantity_modal, false)
+      |> assign(:quantity_product, nil)
+
+    if product && product.unit do
+      {:noreply,
+       socket
+       |> assign(:show_unit_modal, true)
+       |> assign(:selected_product, product)
+       |> assign(:pending_quantity, quantity)}
+    else
+      add_multiple_items_to_order(socket, product.id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("delete_item", params, socket) do
+    item_id = params["item-id"] || params["item_id"]
+    order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
+
+    if order_item do
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, true)
+       |> assign(:item_to_delete, order_item)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_delete_confirm, false)
+     |> assign(:item_to_delete, nil)}
+  end
+
+  @impl true
+  def handle_event("confirm_delete", _params, socket) do
+    order_item = socket.assigns.item_to_delete
+
+    if order_item do
+      {:ok, _} = Sales.delete_order_item(order_item)
+      {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> load_order()}
+    else
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("toggle_service_order", _params, socket) do
+    case Sales.toggle_service_order(socket.assigns.order) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> load_order()
+         |> put_flash(:info, "Order type updated successfully")}
+
+      {:error, :cannot_convert_paid_order} ->
+        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order type")}
+    end
+  end
+
+  @impl true
+  def handle_event("back_to_guests", _params, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/pos")}
+  end
+
+  @impl true
+  def handle_event("hide_success", _params, socket) do
+    {:noreply, assign(socket, :show_success, false)}
+  end
+
+  @impl true
+  def handle_event("enter_split_mode", _params, socket) do
+    # Reset selection only — keep allocated so previously-paid quantities can't be double-paid
+    {:noreply,
+     socket
+     |> assign(:split_mode, true)
+     |> assign(:split_selection, %{})}
+  end
+
+  @impl true
+  def handle_event("exit_split_mode", _params, socket) do
+    # Keep split_allocated alive so re-entering split mode still respects past payments
+    {:noreply,
+     socket
+     |> assign(:split_mode, false)
+     |> assign(:split_selection, %{})
+     |> assign(:split_payment_amount, nil)
+     |> assign(:last_payment_amount, nil)
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "split_adjust",
+        %{"product-id" => product_id, "unit-amount" => unit_amount_str, "delta" => delta_str},
+        socket
+      ) do
+    unit_amount = parse_unit_amount(unit_amount_str)
+    key = {product_id, unit_amount}
+
+    group =
+      Enum.find(socket.assigns.grouped_items, fn g ->
+        g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+      end)
+
+    if group do
+      allocated_qty = Map.get(socket.assigns.split_allocated, key, 0)
+      total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+      max_available = max(0, total_qty - allocated_qty)
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :split)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :full)}
+  end
+
+  def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    cond do
+      not AdminAuth.enabled?() ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_pin, false)
+         |> put_flash(:error, "Payment PIN is not configured")}
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin_authorized, true)
+         |> assign(:show_payment_pin, false)
+         |> assign(:payment_pin, "")
+         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_payment_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+    |> assign(:payment_pin_authorized, false)
+    |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      handle_cash_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  @impl true
+  def handle_event("open_recalculate_modal", _params, socket) do
+    # Calculate the sum from order items
+    recalculated_total =
+      socket.assigns.order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, true)
+     |> assign(:recalculated_total, recalculated_total)}
+  end
+
+  @impl true
+  def handle_event("close_recalculate_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, false)
+     |> assign(:recalculated_total, nil)}
+  end
+
+  @impl true
+  def handle_event("apply_recalculation", _params, socket) do
+    case Sales.update_order(socket.assigns.order, %{
+           total_amount: socket.assigns.recalculated_total
+         }) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> assign(:show_recalculate_modal, false)
+         |> assign(:recalculated_total, nil)
+         |> load_order()
+         |> put_flash(:info, "Order total updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      show_qr_payment_preview(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    if socket.assigns.payment_pin_authorized do
+      record_qr_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp request_payment_pin(socket, mode) do
+    cond do
+      not AdminAuth.enabled?() ->
+        put_flash(socket, :error, "Payment PIN is not configured")
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        put_flash(socket, :error, "Too many incorrect PIN attempts. Wait one minute and try again.")
+
+      true ->
+        socket
+        |> assign(:show_payment_pin, true)
+        |> assign(:payment_pin, "")
+        |> assign(:payment_pin_mode, mode)
+        |> assign(:payment_pin_authorized, false)
+        |> assign(:show_payment_modal, false)
+    end
+  end
+
+  defp prepare_payment_modal(socket, :split) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    socket
+    |> assign(:split_payment_amount, split_amount)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+  end
+
+  defp prepare_payment_modal(socket, :full) do
+    socket
+    |> assign(:split_payment_amount, nil)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+    |> assign(:tips_amount, Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0")))
+    |> assign(
+      :discount_amount,
+      Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+    )
+    |> assign(:discount_reason, socket.assigns.order.discount_reason || "")
+  end
+
+  defp add_item_to_order(socket, product_id, unit_amount) do
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "product_id" => product_id,
+      "quantity" => "1",
+      "unit_amount" => unit_amount
+    }
+
+    case Sales.create_order_item(attrs) do
+      {:ok, _order_item} ->
+        {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        {:noreply,
+         socket
+         |> load_order()
+         |> assign(:show_success, true)
+         |> push_event("item-added", %{})}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to add item")}
+    end
+  end
+
+  defp load_order(socket) do
+    order = Sales.get_order!(socket.assigns.order_id)
+
+    page_title =
+      cond do
+        # Standalone order (no booking)
+        is_nil(order.booking_id) -> "Order: #{order.name}"
+        # Regular order with guest
+        order.guest -> "Order: #{order.guest.name}"
+        # Fallback
+        true -> "Order: #{order.name || "Unknown"}"
+      end
+
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+    socket
+    |> assign(:order, order)
+    |> assign(:grouped_items, grouped_items)
+    |> assign(:page_title, page_title)
+  end
+
+  defp load_products(socket) do
+    categories = Catalog.list_pos_categories()
+    all_products = Catalog.list_pos_products()
+
+    popular_products =
+      Sales.get_popular_products(20) |> Enum.filter(&(&1.active && &1.visible_in_pos))
+
+    # Enrich products with pricing information
+    products_with_prices = enrich_products_with_prices(all_products)
+    popular_with_prices = enrich_products_with_prices(popular_products)
+
+    socket
+    |> assign(:categories, categories)
+    |> assign(:products, products_with_prices)
+    |> assign(:popular_products, popular_with_prices)
+  end
+
+  defp enrich_products_with_prices(products) do
+    Enum.map(products, fn product ->
+      pricelist = Catalog.get_active_pricelist_for_product(product.id)
+
+      pricing_info =
+        if pricelist do
+          cond do
+            pricelist.price_tiers && pricelist.price_tiers != [] ->
+              %{type: :tiers, tiers: pricelist.price_tiers}
+
+            pricelist.price ->
+              %{type: :single, price: pricelist.price}
+
+            true ->
+              %{type: :none}
+          end
+        else
+          %{type: :none}
+        end
+
+      Map.put(product, :pricing_info, pricing_info)
+    end)
+  end
+
+  defp filter_products(products, category_id) do
+    if is_nil(category_id) do
+      products
+    else
+      Enum.filter(products, fn product -> product.category_id == category_id end)
+    end
+  end
+
+  defp parse_default_amounts(amounts_str) when is_binary(amounts_str) and amounts_str != "" do
+    case Jason.decode(amounts_str) do
+      {:ok, amounts} when is_list(amounts) -> amounts
+      _ -> []
+    end
+  end
+
+  defp parse_default_amounts(_), do: []
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
+
+  defp parse_decimal(""), do: Decimal.new("0")
+  defp parse_decimal(nil), do: Decimal.new("0")
+
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {amount, _} -> amount
+      :error -> Decimal.new("0")
+    end
+  end
+
+  defp parse_decimal(_), do: Decimal.new("0")
+
+  defp parse_quantity(nil), do: 1
+  defp parse_quantity(""), do: 1
+
+  defp parse_quantity(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {qty, _} when qty > 0 -> qty
+      _ -> 1
+    end
+  end
+
+  defp parse_quantity(value) when is_integer(value) and value > 0, do: value
+  defp parse_quantity(_), do: 1
+
+  defp add_multiple_items_to_order(socket, product_id, unit_amount, quantity) do
+    # Add items one by one (could be optimized with bulk insert later)
+    results =
+      Enum.reduce(1..quantity, {:ok, socket}, fn _i, {:ok, acc_socket} ->
+        add_item_to_order(acc_socket, product_id, unit_amount)
+        |> then(fn {:noreply, updated_socket} -> {:ok, updated_socket} end)
+      end)
+
+    case results do
+      {:ok, updated_socket} -> {:noreply, updated_socket}
+      error -> error
+    end
+  end
+
+  defp total_out_of_sync?(order) do
+    items_total =
+      order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    !Decimal.equal?(order.total_amount, items_total)
+  end
+
+  defp format_item_timestamp(datetime) do
+    if is_nil(datetime), do: "", else: do_format_timestamp(datetime)
+  end
+
+  defp do_format_timestamp(datetime) do
+    today = Date.utc_today()
+    item_date = DateTime.to_date(datetime)
+
+    if Date.compare(item_date, today) == :eq do
+      # Today: show just time
+      Calendar.strftime(datetime, "%H:%M")
+    else
+      # Other day: show date and time
+      Calendar.strftime(datetime, "%b %-d, %H:%M")
+    end
+  end
+
+  defp get_price_for_amount(product, amount) do
+    if product.pricing_info && product.pricing_info.type == :tiers do
+      tier =
+        Enum.find(product.pricing_info.tiers, fn tier ->
+          tier_amount = tier["unit_amount"] || tier[:unit_amount]
+          tier_amount == amount
+        end)
+
+      if tier do
+        price = tier["price"] || tier[:price]
+        if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+      else
+        nil
+      end
+    else
+      product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
+    end
+  end
+
+  # --- Split bill helpers ---
+
+  defp calc_split_total(grouped_items, selection) do
+    Enum.reduce(selection, Decimal.new("0"), fn {{product_id, unit_amount}, qty}, acc ->
+      if qty > 0 do
+        group =
+          Enum.find(grouped_items, fn g ->
+            g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+          end)
+
+        if group && Decimal.gt?(group.total_quantity, 0) do
+          price_per_qty = Decimal.div(group.total_price, group.total_quantity)
+          item_total = Decimal.mult(price_per_qty, Decimal.new(qty))
+          Decimal.add(acc, item_total)
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  defp merge_selection_into_allocated(allocated, selection) do
+    Enum.reduce(selection, allocated, fn {key, qty}, acc ->
+      current = Map.get(acc, key, 0)
+      Map.put(acc, key, current + qty)
+    end)
+  end
+
+  defp decimals_equal?(nil, nil), do: true
+  defp decimals_equal?(nil, _), do: false
+  defp decimals_equal?(_, nil), do: false
+  defp decimals_equal?(a, b), do: Decimal.equal?(a, b)
+end
+
+```
+
+@@ lines 782-893 @@ (deleted)
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.ex**</summary>
+
+@@ lines 1-975 @@
+
+```
+defmodule CozyCheckoutWeb.PosLive.OrderManagement do
+  use CozyCheckoutWeb, :live_view
+
+  alias CozyCheckout.{Sales, Catalog}
+  alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
+  alias CozyCheckoutWeb.OrderItemGrouper
+
+  @impl true
+  def mount(%{"id" => order_id}, _session, socket) do
+    if connected?(socket) do
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> load_order()
+       |> load_products()
+       |> assign(:show_success, false)}
+    else
+      {:ok,
+       socket
+       |> assign(:order_id, order_id)
+       |> assign(:selected_category_id, nil)
+       |> assign(:show_unit_modal, false)
+       |> assign(:selected_product, nil)
+       |> assign(:show_payment_modal, false)
+      |> assign(:show_payment_pin, false)
+      |> assign(:payment_pin, "")
+      |> assign(:payment_pin_mode, nil)
+      |> assign(:payment_pin_authorized, false)
+      |> assign(:payment_pin_configured, AdminAuth.enabled?())
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_invoice_number, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> assign(:tips_amount, "0")
+       |> assign(:discount_amount, "0")
+       |> assign(:discount_reason, "")
+       |> assign(:show_recalculate_modal, false)
+       |> assign(:recalculated_total, nil)
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> assign(:show_quantity_modal, false)
+       |> assign(:quantity_product, nil)
+       |> assign(:split_mode, false)
+       |> assign(:split_selection, %{})
+       |> assign(:split_allocated, %{})
+       |> assign(:split_payment_amount, nil)
+       |> assign(:last_payment_amount, nil)
+       |> assign(:order, nil)
+       |> assign(:grouped_items, [])
+       |> assign(:categories, [])
+       |> assign(:products, [])
+       |> assign(:popular_products, [])
+       |> assign(:show_success, false)}
+    end
+  end
+
+  @impl true
+  def handle_event("heartbeat", _params, socket) do
+    # Keep the LiveView process alive - this prevents it from being garbage collected
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => "all"}, socket) do
+    {:noreply, assign(socket, :selected_category_id, nil)}
+  end
+
+  @impl true
+  def handle_event("select_category", %{"category-id" => category_id}, socket) do
+    {:noreply, assign(socket, :selected_category_id, category_id)}
+  end
+
+  @impl true
+  def handle_event("add_product", %{"product-id" => product_id} = params, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    quantity = parse_quantity(params["quantity"])
+
+    cond do
+      # If 5+ button clicked, show quantity modal
+      params["custom"] == "true" ->
+        {:noreply,
+         socket
+         |> assign(:show_quantity_modal, true)
+         |> assign(:quantity_product, product)}
+
+      # If product has unit amounts, show unit modal
+      product && product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      # Otherwise add directly
+      true ->
+        add_multiple_items_to_order(socket, product_id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("quick_add_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("confirm_unit_amount", %{"unit_amount" => unit_amount}, socket) do
+    product_id = socket.assigns.selected_product.id
+    quantity = socket.assigns[:pending_quantity] || 1
+
+    socket =
+      socket
+      |> assign(:show_unit_modal, false)
+      |> assign(:selected_product, nil)
+      |> assign(:pending_quantity, nil)
+
+    add_multiple_items_to_order(socket, product_id, unit_amount, quantity)
+  end
+
+  @impl true
+  def handle_event("cancel_unit_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_unit_modal, false)
+     |> assign(:selected_product, nil)
+     |> assign(:pending_quantity, nil)}
+  end
+
+  @impl true
+  def handle_event("show_custom_quantity", %{"product-id" => product_id}, socket) do
+    product =
+      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
+        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, true)
+     |> assign(:quantity_product, product)}
+  end
+
+  @impl true
+  def handle_event("cancel_quantity_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_quantity_modal, false)
+     |> assign(:quantity_product, nil)}
+  end
+
+  @impl true
+  def handle_event("add_with_quantity", %{"quantity" => quantity_str}, socket) do
+    quantity = parse_quantity(quantity_str)
+    product = socket.assigns.quantity_product
+
+    socket =
+      socket
+      |> assign(:show_quantity_modal, false)
+      |> assign(:quantity_product, nil)
+
+    if product && product.unit do
+      {:noreply,
+       socket
+       |> assign(:show_unit_modal, true)
+       |> assign(:selected_product, product)
+       |> assign(:pending_quantity, quantity)}
+    else
+      add_multiple_items_to_order(socket, product.id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("delete_item", params, socket) do
+    item_id = params["item-id"] || params["item_id"]
+    order_item = Enum.find(socket.assigns.order.order_items, &(&1.id == item_id))
+
+    if order_item do
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, true)
+       |> assign(:item_to_delete, order_item)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_delete", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_delete_confirm, false)
+     |> assign(:item_to_delete, nil)}
+  end
+
+  @impl true
+  def handle_event("confirm_delete", _params, socket) do
+    order_item = socket.assigns.item_to_delete
+
+    if order_item do
+      {:ok, _} = Sales.delete_order_item(order_item)
+      {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)
+       |> load_order()}
+    else
+      {:noreply,
+       socket
+       |> assign(:show_delete_confirm, false)
+       |> assign(:item_to_delete, nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("expand_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.expand_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("collapse_group", params, socket) do
+    product_id = params["product-id"] || params["product_id"]
+    unit_amount_str = params["unit-amount"] || params["unit_amount"] || params["value"]
+
+    unit_amount = parse_unit_amount(unit_amount_str)
+
+    grouped_items =
+      OrderItemGrouper.collapse_group(socket.assigns.grouped_items, product_id, unit_amount)
+
+    {:noreply, assign(socket, :grouped_items, grouped_items)}
+  end
+
+  @impl true
+  def handle_event("toggle_service_order", _params, socket) do
+    case Sales.toggle_service_order(socket.assigns.order) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> load_order()
+         |> put_flash(:info, "Order type updated successfully")}
+
+      {:error, :cannot_convert_paid_order} ->
+        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order type")}
+    end
+  end
+
+  @impl true
+  def handle_event("back_to_guests", _params, socket) do
+    {:noreply, push_navigate(socket, to: ~p"/pos")}
+  end
+
+  @impl true
+  def handle_event("hide_success", _params, socket) do
+    {:noreply, assign(socket, :show_success, false)}
+  end
+
+  @impl true
+  def handle_event("enter_split_mode", _params, socket) do
+    # Reset selection only — keep allocated so previously-paid quantities can't be double-paid
+    {:noreply,
+     socket
+     |> assign(:split_mode, true)
+     |> assign(:split_selection, %{})}
+  end
+
+  @impl true
+  def handle_event("exit_split_mode", _params, socket) do
+    # Keep split_allocated alive so re-entering split mode still respects past payments
+    {:noreply,
+     socket
+     |> assign(:split_mode, false)
+     |> assign(:split_selection, %{})
+     |> assign(:split_payment_amount, nil)
+     |> assign(:last_payment_amount, nil)
+     |> assign(:show_payment_modal, false)
+     |> assign(:payment_method, nil)}
+  end
+
+  @impl true
+  def handle_event(
+        "split_adjust",
+        %{"product-id" => product_id, "unit-amount" => unit_amount_str, "delta" => delta_str},
+        socket
+      ) do
+    unit_amount = parse_unit_amount(unit_amount_str)
+    key = {product_id, unit_amount}
+
+    group =
+      Enum.find(socket.assigns.grouped_items, fn g ->
+        g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+      end)
+
+    if group do
+      allocated_qty = Map.get(socket.assigns.split_allocated, key, 0)
+      total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+      max_available = max(0, total_qty - allocated_qty)
+      current_qty = Map.get(socket.assigns.split_selection, key, 0)
+      delta = String.to_integer(delta_str)
+      new_qty = (current_qty + delta) |> max(0) |> min(max_available)
+
+      new_selection = Map.put(socket.assigns.split_selection, key, new_qty)
+      {:noreply, assign(socket, :split_selection, new_selection)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("open_split_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :split)}
+  end
+
+  @impl true
+  def handle_event("open_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :full)}
+  end
+
+  def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    cond do
+      not AdminAuth.enabled?() ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_pin, false)
+         |> put_flash(:error, "Payment PIN is not configured")}
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin_authorized, true)
+         |> assign(:show_payment_pin, false)
+         |> assign(:payment_pin, "")
+         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_payment_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("close_payment_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_payment_modal, false)
+    |> assign(:payment_pin_authorized, false)
+    |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_method, nil)
+     |> assign(:payment_qr_svg, nil)
+     |> assign(:payment_invoice_number, nil)
+     |> assign(:payment_preview_amount, nil)}
+  end
+
+  @impl true
+  def handle_event("update_payment_fields", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:tips_amount, params["tips_amount"] || "0")
+     |> assign(:discount_amount, params["discount_amount"] || "0")
+     |> assign(:discount_reason, params["discount_reason"] || "")}
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      handle_cash_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  @impl true
+  def handle_event("open_recalculate_modal", _params, socket) do
+    # Calculate the sum from order items
+    recalculated_total =
+      socket.assigns.order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, true)
+     |> assign(:recalculated_total, recalculated_total)}
+  end
+
+  @impl true
+  def handle_event("close_recalculate_modal", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_recalculate_modal, false)
+     |> assign(:recalculated_total, nil)}
+  end
+
+  @impl true
+  def handle_event("apply_recalculation", _params, socket) do
+    case Sales.update_order(socket.assigns.order, %{
+           total_amount: socket.assigns.recalculated_total
+         }) do
+      {:ok, _order} ->
+        {:noreply,
+         socket
+         |> assign(:show_recalculate_modal, false)
+         |> assign(:recalculated_total, nil)
+         |> load_order()
+         |> put_flash(:info, "Order total updated successfully")}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      show_qr_payment_preview(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    if socket.assigns.payment_pin_authorized do
+      record_qr_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp handle_cash_payment(socket) do
+    case socket.assigns.split_payment_amount do
+      nil ->
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            payment_attrs = %{
+              "order_id" => socket.assigns.order_id,
+              "amount" => Decimal.to_string(updated_order.total_amount),
+              "payment_method" => "cash",
+              "payment_date" => Date.utc_today()
+            }
+
+            case Sales.create_payment(payment_attrs) do
+              {:ok, payment} ->
+                {:noreply,
+                 socket
+                 |> assign(:payment_method, "cash_success")
+                 |> assign(:payment_pin_authorized, false)
+                 |> assign(:payment_invoice_number, payment.invoice_number)
+                 |> assign(:last_payment_amount, updated_order.total_amount)
+                 |> load_order()}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            end
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        payment_attrs = %{
+          "order_id" => socket.assigns.order_id,
+          "amount" => Decimal.to_string(split_amount),
+          "payment_method" => "cash",
+          "payment_date" => Date.utc_today()
+        }
+
+        case Sales.create_payment(payment_attrs) do
+          {:ok, payment} ->
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "cash_success")
+             |> assign(:payment_pin_authorized, false)
+             |> assign(:payment_invoice_number, payment.invoice_number)
+             |> assign(:last_payment_amount, split_amount)
+             |> assign(:split_selection, %{})
+             |> assign(:split_allocated, new_allocated)
+             |> assign(:split_payment_amount, nil)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to create payment")}
+        end
+    end
+  end
+
+  defp show_qr_payment_preview(socket) do
+    bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
+
+    case socket.assigns.split_payment_amount do
+      nil ->
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            qr_svg =
+              QrCode.generate_qr_svg(%{
+                account_number: bank_account,
+                amount: updated_order.total_amount,
+                currency: "CZK",
+                variable_symbol: updated_order.order_number,
+                message: "Order #{updated_order.order_number}"
+              })
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "qr_preview")
+             |> assign(:payment_qr_svg, qr_svg)
+             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        order = socket.assigns.order
+
+        qr_svg =
+          QrCode.generate_qr_svg(%{
+            account_number: bank_account,
+            amount: split_amount,
+            currency: "CZK",
+            variable_symbol: order.order_number,
+            message: "Order #{order.order_number}"
+          })
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_preview")
+         |> assign(:payment_qr_svg, qr_svg)
+         |> assign(:payment_preview_amount, split_amount)}
+    end
+  end
+
+  defp record_qr_payment(socket) do
+    amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
+
+    payment_attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "amount" => Decimal.to_string(amount),
+      "payment_method" => "qr_code",
+      "payment_date" => Date.utc_today()
+    }
+
+    case Sales.create_payment(payment_attrs) do
+      {:ok, payment} ->
+        socket =
+          if socket.assigns.split_payment_amount do
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            socket
+            |> assign(:split_selection, %{})
+            |> assign(:split_allocated, new_allocated)
+            |> assign(:split_payment_amount, nil)
+          else
+            socket
+          end
+
+        {:noreply,
+         socket
+         |> assign(:payment_method, "qr_success")
+         |> assign(:payment_pin_authorized, false)
+         |> assign(:payment_invoice_number, payment.invoice_number)
+         |> assign(:last_payment_amount, amount)
+         |> load_order()}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to record payment")}
+    end
+  end
+
+  defp request_payment_pin(socket, mode) do
+    cond do
+      not AdminAuth.enabled?() ->
+        put_flash(socket, :error, "Payment PIN is not configured")
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        put_flash(socket, :error, "Too many incorrect PIN attempts. Wait one minute and try again.")
+
+      true ->
+        socket
+        |> assign(:show_payment_pin, true)
+        |> assign(:payment_pin, "")
+        |> assign(:payment_pin_mode, mode)
+        |> assign(:payment_pin_authorized, false)
+        |> assign(:show_payment_modal, false)
+    end
+  end
+
+  defp prepare_payment_modal(socket, :split) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    socket
+    |> assign(:split_payment_amount, split_amount)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+  end
+
+  defp prepare_payment_modal(socket, :full) do
+    socket
+    |> assign(:split_payment_amount, nil)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+    |> assign(:tips_amount, Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0")))
+    |> assign(
+      :discount_amount,
+      Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+    )
+    |> assign(:discount_reason, socket.assigns.order.discount_reason || "")
+  end
+
+  defp add_item_to_order(socket, product_id, unit_amount) do
+    attrs = %{
+      "order_id" => socket.assigns.order_id,
+      "product_id" => product_id,
+      "quantity" => "1",
+      "unit_amount" => unit_amount
+    }
+
+    case Sales.create_order_item(attrs) do
+      {:ok, _order_item} ->
+        {:ok, _order} = Sales.recalculate_order_total(socket.assigns.order)
+
+        {:noreply,
+         socket
+         |> load_order()
+         |> assign(:show_success, true)
+         |> push_event("item-added", %{})}
+
+      {:error, _changeset} ->
+        {:noreply, put_flash(socket, :error, "Failed to add item")}
+    end
+  end
+
+  defp load_order(socket) do
+    order = Sales.get_order!(socket.assigns.order_id)
+
+    page_title =
+      cond do
+        # Standalone order (no booking)
+        is_nil(order.booking_id) -> "Order: #{order.name}"
+        # Regular order with guest
+        order.guest -> "Order: #{order.guest.name}"
+        # Fallback
+        true -> "Order: #{order.name || "Unknown"}"
+      end
+
+    grouped_items = OrderItemGrouper.group_order_items(order.order_items)
+
+    socket
+    |> assign(:order, order)
+    |> assign(:grouped_items, grouped_items)
+    |> assign(:page_title, page_title)
+  end
+
+  defp load_products(socket) do
+    categories = Catalog.list_pos_categories()
+    all_products = Catalog.list_pos_products()
+
+    popular_products =
+      Sales.get_popular_products(20) |> Enum.filter(&(&1.active && &1.visible_in_pos))
+
+    # Enrich products with pricing information
+    products_with_prices = enrich_products_with_prices(all_products)
+    popular_with_prices = enrich_products_with_prices(popular_products)
+
+    socket
+    |> assign(:categories, categories)
+    |> assign(:products, products_with_prices)
+    |> assign(:popular_products, popular_with_prices)
+  end
+
+  defp enrich_products_with_prices(products) do
+    Enum.map(products, fn product ->
+      pricelist = Catalog.get_active_pricelist_for_product(product.id)
+
+      pricing_info =
+        if pricelist do
+          cond do
+            pricelist.price_tiers && pricelist.price_tiers != [] ->
+              %{type: :tiers, tiers: pricelist.price_tiers}
+
+            pricelist.price ->
+              %{type: :single, price: pricelist.price}
+
+            true ->
+              %{type: :none}
+          end
+        else
+          %{type: :none}
+        end
+
+      Map.put(product, :pricing_info, pricing_info)
+    end)
+  end
+
+  defp filter_products(products, category_id) do
+    if is_nil(category_id) do
+      products
+    else
+      Enum.filter(products, fn product -> product.category_id == category_id end)
+    end
+  end
+
+  defp parse_default_amounts(amounts_str) when is_binary(amounts_str) and amounts_str != "" do
+    case Jason.decode(amounts_str) do
+      {:ok, amounts} when is_list(amounts) -> amounts
+      _ -> []
+    end
+  end
+
+  defp parse_default_amounts(_), do: []
+
+  defp parse_unit_amount(""), do: nil
+  defp parse_unit_amount(nil), do: nil
+
+  defp parse_unit_amount(unit_amount_str) when is_binary(unit_amount_str) do
+    case Decimal.parse(unit_amount_str) do
+      {amount, _} -> amount
+      :error -> nil
+    end
+  end
+
+  defp parse_unit_amount(_), do: nil
+
+  defp parse_decimal(""), do: Decimal.new("0")
+  defp parse_decimal(nil), do: Decimal.new("0")
+
+  defp parse_decimal(value) when is_binary(value) do
+    case Decimal.parse(value) do
+      {amount, _} -> amount
+      :error -> Decimal.new("0")
+    end
+  end
+
+  defp parse_decimal(_), do: Decimal.new("0")
+
+  defp parse_quantity(nil), do: 1
+  defp parse_quantity(""), do: 1
+
+  defp parse_quantity(value) when is_binary(value) do
+    case Integer.parse(value) do
+      {qty, _} when qty > 0 -> qty
+      _ -> 1
+    end
+  end
+
+  defp parse_quantity(value) when is_integer(value) and value > 0, do: value
+  defp parse_quantity(_), do: 1
+
+  defp add_multiple_items_to_order(socket, product_id, unit_amount, quantity) do
+    # Add items one by one (could be optimized with bulk insert later)
+    results =
+      Enum.reduce(1..quantity, {:ok, socket}, fn _i, {:ok, acc_socket} ->
+        add_item_to_order(acc_socket, product_id, unit_amount)
+        |> then(fn {:noreply, updated_socket} -> {:ok, updated_socket} end)
+      end)
+
+    case results do
+      {:ok, updated_socket} -> {:noreply, updated_socket}
+      error -> error
+    end
+  end
+
+  defp total_out_of_sync?(order) do
+    items_total =
+      order.order_items
+      |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+        Decimal.add(acc, item.subtotal)
+      end)
+
+    !Decimal.equal?(order.total_amount, items_total)
+  end
+
+  defp format_item_timestamp(datetime) do
+    if is_nil(datetime), do: "", else: do_format_timestamp(datetime)
+  end
+
+  defp do_format_timestamp(datetime) do
+    today = Date.utc_today()
+    item_date = DateTime.to_date(datetime)
+
+    if Date.compare(item_date, today) == :eq do
+      # Today: show just time
+      Calendar.strftime(datetime, "%H:%M")
+    else
+      # Other day: show date and time
+      Calendar.strftime(datetime, "%b %-d, %H:%M")
+    end
+  end
+
+  defp get_price_for_amount(product, amount) do
+    if product.pricing_info && product.pricing_info.type == :tiers do
+      tier =
+        Enum.find(product.pricing_info.tiers, fn tier ->
+          tier_amount = tier["unit_amount"] || tier[:unit_amount]
+          tier_amount == amount
+        end)
+
+      if tier do
+        price = tier["price"] || tier[:price]
+        if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+      else
+        nil
+      end
+    else
+      product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
+    end
+  end
+
+  # --- Split bill helpers ---
+
+  defp calc_split_total(grouped_items, selection) do
+    Enum.reduce(selection, Decimal.new("0"), fn {{product_id, unit_amount}, qty}, acc ->
+      if qty > 0 do
+        group =
+          Enum.find(grouped_items, fn g ->
+            g.product.id == product_id && decimals_equal?(g.unit_amount, unit_amount)
+          end)
+
+        if group && Decimal.gt?(group.total_quantity, 0) do
+          price_per_qty = Decimal.div(group.total_price, group.total_quantity)
+          item_total = Decimal.mult(price_per_qty, Decimal.new(qty))
+          Decimal.add(acc, item_total)
+        else
+          acc
+        end
+      else
+        acc
+      end
+    end)
+  end
+
+  defp merge_selection_into_allocated(allocated, selection) do
+    Enum.reduce(selection, allocated, fn {key, qty}, acc ->
+      current = Map.get(acc, key, 0)
+      Map.put(acc, key, current + qty)
+    end)
+  end
+
+  defp decimals_equal?(nil, nil), do: true
+  defp decimals_equal?(nil, _), do: false
+  defp decimals_equal?(_, nil), do: false
+  defp decimals_equal?(a, b), do: Decimal.equal?(a, b)
+end
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Ověřuje přesunuté platební helpery i PIN kontrolu všech serverových platebních událostí.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Serverové PIN kontroly teď procházejí kompilací bez nových varování; hotovost i QR potvrzení odmítnou přímou událost bez oprávnění. Formátuji POS LiveView a PIN modal a pak ověřím dostupnost stránky a výsledný DOM.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format lib/cozy\_checkout\_web/live/pos\_live/order\_management.ex lib/cozy\_...`
+
+Formátuje POS serverové platební handlery a PIN modal.
+
+```bash
+mix format lib/cozy_checkout_web/live/pos_live/order_management.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !10 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Finálně kompiluje POS PIN dialog a obě chráněné platební větve.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+Compiling 1 file (.ex)
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Sav
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted lib/cozy\_checkout\_web/live/pos\_live/order\_manag...`
+
+Kontroluje formát obou upravených POS souborů.
+
+```bash
+mix format --check-formatted lib/cozy_checkout_web/live/pos_live/order_management.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\}\\n' http://localhost:4000/pos`
+
+Ověřuje, že POS zůstává po změně dostupný.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code}\n' http://localhost:4000/pos
+```
+
+**Result:**
+
+```
+200
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="get_errors"><details>
+<summary>Tool use: **get_errors**</summary>
+
+Checked `order_management.ex`, `order_management.html.heex`, no problems found
+
+**Input:**
+
+- filePaths:
+
+```
+[
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex",
+  "/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex"
+]
+```
+
+
+**Result:**
+
+```
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.ex">
+No errors found
+</errors>
+<errors path="/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex">
+No errors found
+</errors>
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Kompilace, formátování, diagnostika i veřejná POS route prošly. Ještě ověřím, že v POS neexistuje druhá cesta k `Sales.create_payment` mimo chráněné hotovostní a QR handlery, a pak uzavřu kontrolu změny.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted lib/cozy\_checkout\_web/live/pos\_live/order\_manag...`
+
+Opakuje finální formatter kontrolu obou POS souborů.
+
+```bash
+mix format --check-formatted lib/cozy_checkout_web/live/pos_live/order_management.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` git diff --check -- lib/cozy\_checkout\_web/live/pos\_live/order\_management.ex ...`
+
+Kontroluje whitespace v POS PIN změně.
+
+```bash
+git diff --check -- lib/cozy_checkout_web/live/pos_live/order_management.ex lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !10 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="search" data-tool-name="grep_search"><details>
+<summary>Tool use: **grep_search**</summary>
+
+Searched for regex `create_payment|confirm_qr_payment|select_payment_method` (`**/lib/cozy_checkout_web/live/pos_live/**`), 11 results
+
+**Input:**
+
+- includePattern: `lib/cozy_checkout_web/live/pos_live/**`
+- isRegexp: `true`
+- maxResults: `80`
+- query: `create_payment|confirm_qr_payment|select_payment_method`
+
+**Result:**
+
+```
+Found 11 matches in 2 files for "create_payment|confirm_qr_payment|select_payment_method"
+
+lib/cozy_checkout_web/live/pos_live/order_management.ex
+434:  def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
+484:  def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+493:  def handle_event("confirm_qr_payment", _params, socket) do
+534:            case Sales.create_payment(payment_attrs) do
+560:        case Sales.create_payment(payment_attrs) do
+663:    case Sales.create_payment(payment_attrs) do
+
+lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+1015:                phx-click="confirm_qr_payment"
+1112:                    phx-click="select_payment_method"
+1126:                    phx-click="select_payment_method"
+1259:                    phx-click="select_payment_method"
+1275:                    phx-click="select_payment_method"
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Implementováno v POS LiveView a jeho šabloně `lib/cozy_checkout_web/live/pos_live/order_management.html.heex`.
+
+PIN se nyní zadává před otevřením platebního procesu, ať jde o celou nebo rozdělenou platbu. Kontrola běží také přímo na serveru při výběru hotovosti, vytvoření QR a potvrzení „Mark as Paid“; přímé odeslání události bez PINu tedy platbu neprovede. Oprávnění se po platbě nebo zrušení zneplatní. Neúspěšné pokusy sdílejí limiter PINu a zablokují další pokus po pěti chybách.
+
+`mix compile`, formatter a diagnostika prošly. Testy se nepodařilo spustit, protože testovací PostgreSQL očekává chybějící roli `[REDACTED:generic-password]`. Pokud na serveru není nastavené `ADMIN_PIN_HASH`, PIN platbu záměrně zablokuje.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Starting: *Add helper functions for payment dialog* (3/3)
+</details></tool-use>
+
+---
+
+_**User (2026-09-28 20:28:48Z)**_
+
+Jak to můžu snadno otestovat na lokále? Teď běží server někde schovaně.
+
+---
+
+_**Agent (copilot/auto)**_
+
+Server běží v terminálu `beam.smp` na portu 4000, ale byl spuštěn bez PIN hashe. Nejjednodušší je nechat ho běžet a spustit druhou lokální instanci s testovacím PINem:
+
+1. V novém terminálu v kořeni projektu spusť `mix admin.pin.hash` a zadej dočasný PIN. Pokud terminál oznámí, že vstup nebude skrytý, při psaní ho uvidíš.
+2. Zkopíruj vypsanou hodnotu hashe a nastav ji v témže terminálu:
+   ```sh
+   export ADMIN_PIN_HASH='hodnota_hash'
+   ```
+3. Spusť druhý server na jiném portu:
+   ```sh
+   PORT=4001 mix phx.server
+   ```
+4. Otevři [http://localhost:4001/pos](http://localhost:4001/pos), vyber objednávku a zkus platbu. Před hotovostí i QR potvrzením se má zobrazit PIN dialog.
+
+Použij dočasný PIN, protože testovací platby se zapisují do lokální vývojové databáze. Po testu druhý server zastavíš přes `Ctrl+C`; port 4000 zůstane běžet beze změny.
+
+---
+
+_**User (2026-09-28 20:31:15Z)**_
+
+Super, ještě bych ocenil kdyby odkaz do menu z POS fungoval a přes PIN mě pustil do adminu
+
+---
+
+_**Agent (copilot/auto)**_
+
+Zkontroluju horní lištu POS a ověřím, jak její LiveView navigace přechází přes admin PIN gate. Přidám do POS viditelný, ale nenápadný odkaz „Admin“; po kliknutí má chráněná routa zobrazit PIN, nikoli obejít ověření.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_management.html.heex`, lines 1 to 85
+
+**Input:**
+
+- endLine: `85`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_management.html.heex`
+- startLine: `1`
+
+**Result:**
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div phx-hook="KeepAlive" id="pos-keep-alive" class="h-screen flex flex-col bg-slate-50">
+    <!-- Fixed Header -->
+    <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-4">
+        <button
+          phx-click="back_to_guests"
+          class="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all"
+        >
+          <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
+        </button>
+        <div>
+          <%= if @order.booking_id do %>
+            <h1 class="text-2xl font-bold text-slate-900">
+              {if @order.guest, do: @order.guest.name, else: "Unknown Guest"}
+              <span :if={@order.booking.room_number} class="text-slate-500">
+                - Room {@order.booking.room_number}
+              </span>
+            </h1>
+          <% else %>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl font-bold text-slate-900">
+                📋 {@order.name}
+              </h1>
+              <span class="px-3 py-1 bg-info-light text-purple-700 text-sm font-semibold rounded-full">
+                Standalone Order
+              </span>
+            </div>
+          <% end %>
+          <div class="flex items-center gap-3">
+            <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
+            <%= if @order.is_service_order do %>
+              <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                Service Order
+              </span>
+            <% end %>
+            <%= if @order.status != "paid" do %>
+              <button
+                phx-click="toggle_service_order"
+                class="text-xs text-purple-600 hover:text-purple-800 underline"
+              >
+                {if @order.is_service_order, do: "Convert to Standard", else: "Convert to Service"}
+              </button>
+    
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `router.ex`, lines 25 to 75
+
+**Input:**
+
+- endLine: `75`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex`
+- startLine: `25`
+
+**Result:**
+
+```
+  scope "/", CozyCheckoutWeb do
+    pipe_through :calendar
+
+    get "/calendar/bookings.ics", BookingCalendarController, :index
+  end
+
+  scope "/", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/", PosLive.GuestSelection
+  end
+
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through :browser
+
+    get "/lock", AdminSessionController, :lock
+    live "/login", AdminLoginLive
+    post "/login", AdminSessionController, :create
+    post "/logout", AdminSessionController, :delete
+  end
+
+  # Admin section - CRUD interfaces for managing the system
+  scope "/admin", CozyCheckoutWeb do
+    pipe_through [:browser, :admin_auth]
+
+    import Phoenix.LiveDashboard.Router
+
+    live_dashboard "/system",
+      metrics: CozyCheckoutWeb.Telemetry,
+      additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
+
+    live_session :admin, on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}] do
+      live "/", DashboardLive
+
+      # Categories
+      live "/categories", CategoryLive.Index, :index
+      live "/categories/new", CategoryLive.Index, :new
+      live "/categories/:id/edit", CategoryLive.Index, :edit
+
+      # Products
+      live "/products", ProductLive.Index, :index
+      live "/products/new", ProductLive.Index, :new
+      live "/products/:id/edit", ProductLive.Index, :edit
+
+      # Pricelists
+      live "/pricelists", PricelistLive.Index, :index
+      live "/pricelists/new", PricelistLive.Index, :new
+      live "/pricelists/:id/edit", PricelistLive.Index, :edit
+      live "/pricelists/management", PricelistLive.Management
+      live "/pricelists/print", PricelistLive.Printable
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `router.ex`, lines 125 to 175
+
+**Input:**
+
+- endLine: `175`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/router.ex`
+- startLine: `125`
+
+**Result:**
+
+```
+      # Economy Management
+      live "/economy", EconomyLive.Index
+
+      # Statistics
+      live "/statistics", StatisticsLive.Index
+
+      # POHODA Export
+      live "/pohoda-export", PohodaExportLive.Index, :index
+
+      # iCal Import
+      live "/ical-import", IcalImportLive.Index, :index
+
+      # Meal Planner
+      live "/meal-planner", MealPlannerLive.Index
+      live "/meal-planner/templates", MealPlannerLive.Templates, :index
+      live "/meal-planner/templates/new", MealPlannerLive.Templates, :new
+      live "/meal-planner/templates/:id/edit", MealPlannerLive.Templates, :edit
+      live "/meal-planner/print", MealPlannerLive.Print
+    end
+  end
+
+  scope "/pos", CozyCheckoutWeb do
+    pipe_through :browser
+
+    live "/orders/:id/receipt", OrderLive.Receipt
+  end
+
+  # Point of Sale (POS) - Touch-friendly interface for bar staff
+  scope "/pos", CozyCheckoutWeb.PosLive do
+    pipe_through :browser
+
+    live "/", GuestSelection
+    live "/bookings/:booking_id/orders", OrderSelection
+    live "/orders/:id", OrderManagement
+  end
+
+  # Other scopes may use custom stacks.
+  # scope "/api", CozyCheckoutWeb do
+  #   pipe_through :api
+  # end
+
+  # Enable LiveDashboard and Swoosh mailbox preview in development
+  if Application.compile_env(:cozy_checkout, :dev_routes) do
+    scope "/dev" do
+      pipe_through :browser
+
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
+    end
+  end
+end
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Doplním do hlavičky objednávky malé tlačítko „Admin“ s ikonou zámku. Použije běžný HTTP odkaz na `/admin` místo LiveView interní navigace, takže požadavek spolehlivě projde PIN gate routy.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **order_management.html.heex**</summary>
+
+@@ lines 1-1315 @@
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div phx-hook="KeepAlive" id="pos-keep-alive" class="h-screen flex flex-col bg-slate-50">
+    <!-- Fixed Header -->
+    <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <div class="flex items-center gap-4">
+        <button
+          phx-click="back_to_guests"
+          class="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all"
+        >
+          <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
+        </button>
+        <a
+          href={~p"/admin"}
+          aria-label="Open administration with PIN"
+          title="Admin"
+          class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-200 active:scale-95"
+        >
+          <.icon name="hero-lock-closed" class="h-5 w-5" />
+          <span>Admin</span>
+        </a>
+        <div>
+          <%= if @order.booking_id do %>
+            <h1 class="text-2xl font-bold text-slate-900">
+              {if @order.guest, do: @order.guest.name, else: "Unknown Guest"}
+              <span :if={@order.booking.room_number} class="text-slate-500">
+                - Room {@order.booking.room_number}
+              </span>
+            </h1>
+          <% else %>
+            <div class="flex items-center gap-3">
+              <h1 class="text-2xl font-bold text-slate-900">
+                📋 {@order.name}
+              </h1>
+              <span class="px-3 py-1 bg-info-light text-purple-700 text-sm font-semibold rounded-full">
+                Standalone Order
+              </span>
+            </div>
+          <% end %>
+          <div class="flex items-center gap-3">
+            <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
+            <%= if @order.is_service_order do %>
+              <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                Service Order
+              </span>
+            <% end %>
+            <%= if @order.status != "paid" do %>
+              <button
+                phx-click="toggle_service_order"
+                class="text-xs text-purple-600 hover:text-purple-800 underline"
+              >
+                {if @order.is_service_order, do: "Convert to Standard", else: "Convert to Service"}
+              </button>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Total -->
+      <div class="text-right">
+        <div class="flex items-center justify-end gap-2 mb-1">
+          <p class="text-sm text-slate-600">Total</p>
+          <%= if total_out_of_sync?(@order) do %>
+            <span class="px-2 py-1 bg-error-light text-red-700 text-xs font-semibold rounded-full">
+              Out of sync
+            </span>
+          <% end %>
+        </div>
+        <p class="text-3xl font-bold text-success-dark">
+          {format_currency(@order.total_amount || Decimal.new("0"))}
+        </p>
+        <button
+          phx-click="open_recalculate_modal"
+          class="text-xs text-tertiary-600 hover:text-tertiary-800 underline mt-1"
+        >
+          Recalculate total
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Area with Two Columns -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- Left Column: Products -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Category Filter Tabs -->
+        <div class="bg-white border-b border-slate-200 px-6 py-4 overflow-x-auto">
+          <div class="flex gap-3 min-w-max">
+            <button
+              phx-click="select_category"
+              phx-value-category-id="all"
+              class={[
+                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                if(is_nil(@selected_category_id),
+                  do: "bg-tertiary-600 text-white shadow-lg",
+                  else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                )
+              ]}
+            >
+              Popular
+            </button>
+            <button
+              :for={category <- @categories}
+              phx-click="select_category"
+              phx-value-category-id={category.id}
+              class={[
+                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                if(@selected_category_id == category.id,
+                  do: "bg-tertiary-600 text-white shadow-lg",
+                  else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                )
+              ]}
+            >
+              {category.name}
+            </button>
+          </div>
+        </div>
+
+        <!-- Product Grid -->
+        <div class="flex-1 overflow-y-auto p-6">
+          <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+            <%= if is_nil(@selected_category_id) do %>
+              <!-- Show Popular Products -->
+              <div
+                :for={product <- @popular_products}
+                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+              >
+                <div class="flex items-center gap-4 mb-3">
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                      {product.name}
+                    </h3>
+                    <p :if={product.category} class="text-xs text-slate-500 mb-1 truncate">
+                      {product.category.name}
+                    </p>
+                    <%= if product.pricing_info do %>
+                      <p class="text-base font-bold text-success-dark">
+                        <%= case product.pricing_info.type do %>
+                          <% :single -> %>
+                            {format_currency(product.pricing_info.price)}
+                          <% :tiers -> %>
+                            Multiple prices
+                          <% :none -> %>
+                            —
+                        <% end %>
+                      </p>
+                    <% end %>
+                    <span :if={product.unit} class="text-xs text-slate-600">
+                      per {product.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Quick Quantity Selector -->
+                <div class="grid grid-cols-3 gap-3">
+                  <button
+                    phx-click="add_product"
+                    phx-value-product-id={product.id}
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
+                  >
+                    Add 1×
+                  </button>
+                  <button
+                    phx-click="show_custom_quantity"
+                    phx-value-product-id={product.id}
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
+                  >
+                    5+
+                  </button>
+                </div>
+              </div>
+            <% else %>
+              <!-- Show Category Products -->
+              <div
+                :for={product <- filter_products(@products, @selected_category_id)}
+                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+              >
+                <div class="flex items-center gap-4 mb-3">
+                  <div class="flex-1 min-w-0">
+                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                      {product.name}
+                    </h3>
+                    <%= if product.pricing_info do %>
+                      <p class="text-base font-bold text-success-dark">
+                        <%= case product.pricing_info.type do %>
+                          <% :single -> %>
+                            {format_currency(product.pricing_info.price)}
+                          <% :tiers -> %>
+                            Multiple prices
+                          <% :none -> %>
+                            —
+                        <% end %>
+                      </p>
+                    <% end %>
+                    <span :if={product.unit} class="text-xs text-slate-600">
+                      per {product.unit}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Quick Quantity Selector -->
+                <div class="grid grid-cols-3 gap-3">
+                  <button
+                    phx-click="add_product"
+                    phx-value-product-id={product.id}
+                    phx-value-quantity={1}
+                    class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
+                  >
+                    Add 1×
+                  </button>
+                  <button
+                    phx-click="show_custom_quantity"
+                    phx-value-product-id={product.id}
+                    class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
+                  >
+                    5+
+                  </button>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Order Cart -->
+      <div class="w-[450px] bg-white border-l border-slate-200 flex flex-col">
+        <div class={["px-6 py-4 border-b border-slate-200", @split_mode && "bg-amber-50"]}>
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 class="text-xl font-bold text-slate-900">
+                <%= if @split_mode do %>
+                  Split Bill
+                <% else %>
+                  Current Order
+                <% end %>
+              </h2>
+              <p class="text-sm text-slate-600">
+                {Enum.count(@grouped_items)} {if Enum.count(@grouped_items) == 1,
+                  do: "item",
+                  else: "items"}
+              </p>
+            </div>
+            <%= if @split_mode do %>
+              <button
+                phx-click="exit_split_mode"
+                class="flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 text-sm font-semibold active:scale-95 transition-all"
+              >
+                <.icon name="hero-x-mark" class="w-4 h-4" /> Exit Split
+              </button>
+            <% end %>
+          </div>
+        </div>
+
+        <!-- Cart Items / Split Mode -->
+        <%= if @split_mode do %>
+          <div class="flex-1 overflow-y-auto p-4">
+            <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide px-1 mb-3">
+              Select items for this person
+            </p>
+            <div class="space-y-3">
+              <div
+                :for={group <- @grouped_items}
+                class="bg-slate-50 rounded-xl p-4 border border-slate-200"
+              >
+                <% group_key = {group.product.id, group.unit_amount}
+                allocated_qty = Map.get(@split_allocated, group_key, 0)
+                total_qty = Decimal.round(group.total_quantity, 0) |> Decimal.to_integer()
+                available_qty = max(0, total_qty - allocated_qty)
+                selected_qty = Map.get(@split_selection, group_key, 0)
+                item_total = Decimal.mult(group.price_per_unit, Decimal.new(selected_qty)) %>
+                <div class="flex justify-between items-start mb-3">
+                  <div class="flex-1 min-w-0 pr-2">
+                    <h3 class="font-semibold text-slate-900 truncate">{group.product.name}</h3>
+                    <p class="text-sm text-slate-500">
+                      <%= if group.unit_amount do %>
+                        {Decimal.round(group.unit_amount, 0)}{group.unit} ·
+                      <% end %>
+                      {format_currency(group.price_per_unit)} each
+                    </p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      {available_qty}/{total_qty} available
+                      <%= if allocated_qty > 0 do %>
+                        · {allocated_qty} already split
+                      <% end %>
+                    </p>
+                  </div>
+                  <p class={[
+                    "font-bold text-lg shrink-0",
+                    if(selected_qty > 0, do: "text-success-dark", else: "text-slate-300")
+                  ]}>
+                    {format_currency(item_total)}
+                  </p>
+                </div>
+                <div class="flex items-center gap-3">
+                  <button
+                    phx-click="split_adjust"
+                    phx-value-product-id={group.product.id}
+                    phx-value-unit-amount={group.unit_amount || ""}
+                    phx-value-delta="-1"
+                    disabled={selected_qty == 0}
+                    class="w-10 h-10 rounded-full bg-slate-200 hover:bg-slate-300 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xl text-slate-800 flex items-center justify-center active:scale-95 transition-all"
+                  >
+                    –
+                  </button>
+                  <span class="text-2xl font-bold text-slate-900 w-8 text-center">
+                    {selected_qty}
+                  </span>
+                  <button
+                    phx-click="split_adjust"
+                    phx-value-product-id={group.product.id}
+                    phx-value-unit-amount={group.unit_amount || ""}
+                    phx-value-delta="1"
+                    disabled={selected_qty >= available_qty}
+                    class="w-10 h-10 rounded-full bg-tertiary-600 hover:bg-tertiary-700 disabled:opacity-30 disabled:cursor-not-allowed font-bold text-xl text-white flex items-center justify-center active:scale-95 transition-all"
+                  >
+                    +
+                  </button>
+                  <span class="text-sm text-slate-500">/ {available_qty}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% else %>
+          <!-- Cart Items -->
+          <div class="flex-1 overflow-y-auto p-6">
+            <%= if @grouped_items == [] do %>
+              <div class="text-center py-12">
+                <.icon name="hero-shopping-cart" class="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                <p class="text-lg text-slate-400">No items yet</p>
+                <p class="text-sm text-slate-400">Tap products to add</p>
+              </div>
+            <% else %>
+              <div class="space-y-3">
+                <div :for={group <- @grouped_items} class="bg-slate-50 rounded-xl overflow-hidden">
+                  <%= if group.grouped? do %>
+                    <!-- Grouped Item Display -->
+                    <div
+                      id={"cart-group-#{Enum.join(group.item_ids, "-")}"}
+                      class="p-4"
+                    >
+                      <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                          <h3 class="font-semibold text-slate-900 mb-1">
+                            {group.product.name}
+                          </h3>
+                          <p class="text-sm text-slate-600">
+                            <%= if group.unit_amount do %>
+                              {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                                group.total_quantity,
+                                2
+                              )}
+                            <% else %>
+                              Qty: {Decimal.round(group.total_quantity, 2)}
+                            <% end %>
+                            <span class="ml-2 text-xs bg-tertiary-100 text-tertiary-800 px-2 py-1 rounded-full">
+                              {length(group.items)} items
+                            </span>
+                          </p>
+                          <p class="text-xs text-slate-500 mt-1">
+                            Added: {format_item_timestamp(
+                              Enum.max_by(group.items, & &1.inserted_at).inserted_at
+                            )}
+                          </p>
+                        </div>
+                        <div class="text-right">
+                          <p class="font-bold text-slate-900">
+                            {format_currency(group.total_price)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <!-- Expand/Collapse Button for Grouped Items -->
+                      <button
+                        phx-click={if group.expanded?, do: "collapse_group", else: "expand_group"}
+                        phx-value-product-id={group.product.id}
+                        phx-value-unit-amount={group.unit_amount || ""}
+                        class="mt-3 w-full text-sm text-tertiary-600 hover:text-tertiary-800 font-medium flex items-center justify-center gap-1"
+                      >
+                        <%= if group.expanded? do %>
+                          <.icon name="hero-chevron-up" class="w-4 h-4" /> Hide individual items
+                        <% else %>
+                          <.icon name="hero-chevron-down" class="w-4 h-4" />
+                          Show {length(group.items)} individual items
+                        <% end %>
+                      </button>
+                    </div>
+                  <% else %>
+                    <!-- Single Item Display (not grouped) with delete functionality -->
+                    <div
+                      id={"cart-item-single-#{hd(group.items).id}"}
+                      phx-hook="SwipeToDelete"
+                      data-item-id={hd(group.items).id}
+                      class="relative overflow-hidden touch-pan-y"
+                    >
+                      <!-- Swipe Background -->
+                      <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
+                        <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                      </div>
+
+                      <!-- Item Content -->
+                      <div class="swipe-content relative bg-slate-50 p-4">
+                        <div class="flex justify-between items-start">
+                          <div class="flex-1">
+                            <h3 class="font-semibold text-slate-900 mb-1">
+                              {group.product.name}
+                            </h3>
+                            <p class="text-sm text-slate-600">
+                              <%= if group.unit_amount do %>
+                                {Decimal.round(group.unit_amount, 2)}{group.unit} × {Decimal.round(
+                                  group.total_quantity,
+                                  2
+                                )}
+                              <% else %>
+                                Qty: {Decimal.round(group.total_quantity, 2)}
+                              <% end %>
+                            </p>
+                            <p class="text-xs text-slate-500 mt-1">
+                              Added: {format_item_timestamp(hd(group.items).inserted_at)}
+                            </p>
+                          </div>
+                          <div class="flex items-center gap-3">
+                            <p class="font-bold text-slate-900">
+                              {format_currency(group.total_price)}
+                            </p>
+                            <button
+                              phx-click="delete_item"
+                              phx-value-item-id={hd(group.items).id}
+                              class="text-error hover:text-error-dark active:scale-95"
+                            >
+                              <.icon name="hero-x-mark" class="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <!-- Individual Items (when expanded) -->
+                  <%= if group.expanded? do %>
+                    <div class="border-t border-slate-200 bg-white">
+                      <div
+                        :for={item <- group.items}
+                        id={"cart-item-#{item.id}"}
+                        phx-hook="SwipeToDelete"
+                        data-item-id={item.id}
+                        class="relative overflow-hidden touch-pan-y"
+                      >
+                        <!-- Swipe Background -->
+                        <div class="swipe-delete-bg absolute inset-0 bg-error-light flex items-center justify-end px-6">
+                          <.icon name="hero-trash" class="w-6 h-6 text-white" />
+                        </div>
+
+                        <!-- Item Content -->
+                        <div class="swipe-content relative bg-white p-3 border-b border-slate-100 last:border-b-0">
+                          <div class="flex justify-between items-start text-sm">
+                            <div class="flex-1">
+                              <p class="text-slate-600">
+                                <%= if item.unit_amount do %>
+                                  {Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity}
+                                <% else %>
+                                  Qty: {item.quantity}
+                                <% end %>
+                              </p>
+                              <p class="text-xs text-slate-500 mt-0.5">
+                                {format_item_timestamp(item.inserted_at)}
+                              </p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                              <p class="text-slate-700 font-medium">
+                                {format_currency(item.subtotal)}
+                              </p>
+                              <button
+                                phx-click="delete_item"
+                                phx-value-item-id={item.id}
+                                class="text-error hover:text-error-dark active:scale-95"
+                              >
+                                <.icon name="hero-x-mark" class="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+        <%!-- end @split_mode --%>
+
+        <!-- Cart Summary -->
+        <div class="border-t border-slate-200 p-6 bg-slate-50">
+          <% order_total = @order.total_amount || Decimal.new("0")
+
+          total_paid =
+            Enum.reduce(@order.payments || [], Decimal.new("0"), fn p, acc ->
+              if is_nil(p.deleted_at), do: Decimal.add(acc, p.amount), else: acc
+            end)
+
+          remaining = Decimal.sub(order_total, total_paid) %>
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between text-slate-700">
+              <span>Order total</span>
+              <span class="font-semibold">{format_currency(order_total)}</span>
+            </div>
+            <div
+              :if={@order.discount_amount && Decimal.gt?(@order.discount_amount, 0)}
+              class="flex justify-between text-error"
+            >
+              <span>Discount</span>
+              <span class="font-semibold">-{format_currency(@order.discount_amount)}</span>
+            </div>
+            <%= if Decimal.gt?(total_paid, 0) do %>
+              <div class="flex justify-between text-success-dark">
+                <span>Paid so far</span>
+                <span class="font-semibold">-{format_currency(total_paid)}</span>
+              </div>
+            <% end %>
+          </div>
+          <div class={[
+            "flex justify-between items-center text-xl font-bold text-slate-900 pt-4 border-t border-slate-300 mb-4"
+          ]}>
+            <span>{if Decimal.gt?(total_paid, 0), do: "Remaining", else: "Total"}</span>
+            <span class={[
+              "text-2xl",
+              if(Decimal.gt?(total_paid, 0), do: "text-amber-600", else: "text-success-dark")
+            ]}>
+              {format_currency(if Decimal.gt?(total_paid, 0), do: remaining, else: order_total)}
+            </span>
+          </div>
+
+          <!-- Payment Button -->
+          <%= cond do %>
+            <% @split_mode -> %>
+              <% split_amount = calc_split_total(@grouped_items, @split_selection)
+              has_selection = Enum.any?(@split_selection, fn {_k, qty} -> qty > 0 end) %>
+              <button
+                phx-click="open_split_payment_modal"
+                disabled={!has_selection}
+                class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed mb-2"
+              >
+                <.icon name="hero-credit-card" class="w-6 h-6 inline-block mr-2" />
+                Collect {format_currency(split_amount)}
+              </button>
+            <% @order.status in ["open", "partially_paid"] && Decimal.gt?(order_total, 0) -> %>
+              <div class="grid grid-cols-5 gap-2">
+                <button
+                  phx-click="open_payment_modal"
+                  class="col-span-3 bg-success hover:bg-success-dark text-white font-bold py-5 px-4 rounded-2xl text-lg active:scale-95 transition-all shadow-lg"
+                >
+                  <.icon name="hero-credit-card" class="w-5 h-5 inline-block mr-1" /> Pay Order
+                </button>
+                <button
+                  phx-click="enter_split_mode"
+                  class="col-span-2 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-4 rounded-2xl text-base active:scale-95 transition-all"
+                >
+                  <.icon name="hero-users" class="w-5 h-5 inline-block" /> Split
+                </button>
+              </div>
+            <% @order.status == "paid" -> %>
+              <div class="bg-success-light border-2 border-green-600 text-success-dark font-bold py-4 px-6 rounded-2xl text-center">
+                <.icon name="hero-check-circle" class="w-6 h-6 inline-block mr-2" /> Paid
+              </div>
+            <% true -> %>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unit Amount Modal -->
+    <div
+      :if={@show_unit_modal && @selected_product}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_unit_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+        id="unit-modal"
+        phx-hook="UnitAmountSelector"
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-4">
+          {@selected_product.name}
+        </h2>
+        <p class="text-lg text-slate-600 mb-6">
+          Select amount ({@selected_product.unit})
+        </p>
+
+        <!-- Quick Select Buttons -->
+        <%= if @selected_product.default_unit_amounts do %>
+          <div class="mb-6">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Select Amount</p>
+            <div class="grid grid-cols-3 gap-3">
+              <%= for amount <- parse_default_amounts(@selected_product.default_unit_amounts) do %>
+                <button
+                  type="button"
+                  phx-click="quick_add_unit_amount"
+                  phx-value-unit_amount={amount}
+                  class="bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl active:scale-95 transition-all shadow-lg flex flex-col items-center"
+                >
+                  <span class="text-2xl">{amount}</span>
+                  <span class="text-sm mt-1">{@selected_product.unit}</span>
+                  <%= if price = get_price_for_amount(@selected_product, amount) do %>
+                    <span class="text-xs mt-1 opacity-90">{format_currency(price)}</span>
+                  <% end %>
+                </button>
+              <% end %>
+            </div>
+          </div>
+        <% else %>
+          <!-- For products without predefined amounts, show a simple add button -->
+          <div class="mb-6">
+            <p class="text-sm text-slate-600 mb-4">
+              This product doesn't have predefined amounts.
+            </p>
+            <button
+              type="button"
+              phx-click="quick_add_unit_amount"
+              phx-value-unit_amount="0"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+          </div>
+        <% end %>
+
+        <!-- Cancel Button -->
+        <div class="pt-4">
+          <button
+            type="button"
+            phx-click="cancel_unit_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Quantity Modal -->
+    <div
+      :if={@show_quantity_modal && @quantity_product}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_quantity_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <h2 class="text-3xl font-bold text-slate-900 mb-2">
+          {@quantity_product.name}
+        </h2>
+        <p class="text-lg text-slate-600 mb-6">
+          How many would you like to add?
+        </p>
+
+        <form phx-submit="add_with_quantity">
+          <div class="mb-6">
+            <label class="block text-sm font-semibold text-slate-700 mb-2">
+              Quantity
+            </label>
+            <input
+              type="number"
+              name="quantity"
+              min="1"
+              max="99"
+              value="5"
+              autofocus
+              class="w-full px-6 py-4 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-tertiary-200 transition-all text-2xl font-bold text-center"
+            />
+          </div>
+
+          <div class="space-y-3">
+            <button
+              type="submit"
+              class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg"
+            >
+              Add to Order
+            </button>
+            <button
+              type="button"
+              phx-click="cancel_quantity_modal"
+              class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Success Toast -->
+    <div
+      :if={@show_success}
+      phx-click="hide_success"
+      class="fixed top-20 right-6 bg-success text-white px-6 py-4 rounded-xl shadow-2xl animate-bounce-in z-50"
+    >
+      <div class="flex items-center gap-3">
+        <.icon name="hero-check-circle" class="w-6 h-6" />
+        <span class="font-semibold text-lg">Item added!</span>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      :if={@show_delete_confirm && @item_to_delete}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="cancel_delete"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="text-center mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-error-light rounded-full mb-4">
+            <.icon name="hero-trash" class="w-8 h-8 text-error" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900 mb-2">Delete Item?</h2>
+          <p class="text-slate-600">This action cannot be undone.</p>
+        </div>
+
+        <div class="bg-slate-50 rounded-xl p-4 mb-6">
+          <h3 class="font-bold text-slate-900 text-lg mb-2">
+            {@item_to_delete.product.name}
+          </h3>
+          <div class="space-y-1 text-sm text-slate-700">
+            <p>
+              <%= if @item_to_delete.unit_amount do %>
+                Amount: {Decimal.round(@item_to_delete.unit_amount, 2)}{@item_to_delete.product.unit}
+              <% end %>
+            </p>
+            <p>Quantity: {@item_to_delete.quantity}</p>
+            <p class="font-semibold text-base text-slate-900 mt-2">
+              Price: {format_currency(@item_to_delete.subtotal)}
+            </p>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <button
+            phx-click="confirm_delete"
+            class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Yes, Delete Item
+          </button>
+          <button
+            phx-click="cancel_delete"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recalculation Modal -->
+    <div
+      :if={@show_recalculate_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_recalculate_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <h2 class="text-2xl font-bold text-slate-900 mb-6">Recalculate Order Total</h2>
+
+        <div class="space-y-4 mb-6">
+          <!-- Current Total -->
+          <div class="bg-slate-50 rounded-xl p-4">
+            <p class="text-sm text-slate-600 mb-1">Current Total (Database)</p>
+            <p class="text-2xl font-bold text-slate-900">
+              {format_currency(@order.total_amount || Decimal.new("0"))}
+            </p>
+          </div>
+
+          <!-- Recalculated Total -->
+          <div class={[
+            "rounded-xl p-4",
+            if(Decimal.equal?(@recalculated_total, @order.total_amount),
+              do: "bg-success-light border-2 border-green-200",
+              else: "bg-yellow-50 border-2 border-yellow-200"
+            )
+          ]}>
+            <p class="text-sm text-slate-600 mb-1">Recalculated Total (From Items)</p>
+            <p class="text-2xl font-bold text-slate-900">
+              {format_currency(@recalculated_total || Decimal.new("0"))}
+            </p>
+          </div>
+
+          <!-- Difference -->
+          <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
+            <div class="bg-error-light border-2 border-red-200 rounded-xl p-4">
+              <p class="text-sm text-error mb-1 font-semibold">Difference</p>
+              <p class="text-xl font-bold text-red-700">
+                {format_currency(Decimal.sub(@recalculated_total, @order.total_amount))}
+              </p>
+              <p class="text-xs text-error mt-2">
+                The database total doesn't match the sum of order items.
+              </p>
+            </div>
+          <% else %>
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-4">
+              <div class="flex items-center gap-2">
+                <.icon name="hero-check-circle" class="w-5 h-5 text-success-dark" />
+                <p class="text-sm text-green-700 font-semibold">
+                  Totals match! No update needed.
+                </p>
+              </div>
+            </div>
+          <% end %>
+
+          <!-- Item Breakdown -->
+          <div class="bg-slate-50 rounded-xl p-4">
+            <p class="text-sm font-semibold text-slate-700 mb-3">Items Breakdown</p>
+            <div class="space-y-2 text-sm">
+              <%= for item <- @order.order_items do %>
+                <div class="flex justify-between text-slate-700">
+                  <span>
+                    {item.product.name}
+                    <%= if item.unit_amount do %>
+                      ({Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity})
+                    <% else %>
+                      (× {item.quantity})
+                    <% end %>
+                  </span>
+                  <span class="font-medium">{format_currency(item.subtotal)}</span>
+                </div>
+              <% end %>
+              <div class="border-t border-slate-300 pt-2 mt-2 flex justify-between font-semibold">
+                <span>Sum of Items:</span>
+                <span>{format_currency(@recalculated_total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-3">
+          <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
+            <button
+              phx-click="apply_recalculation"
+              class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+            >
+              Update Total to {format_currency(@recalculated_total)}
+            </button>
+          <% end %>
+          <button
+            phx-click="close_recalculate_modal"
+            class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment PIN Modal -->
+    <div
+      :if={@show_payment_pin}
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      phx-click="cancel_payment_pin"
+    >
+      <div
+        class="w-full max-w-sm rounded-2xl bg-white p-7 shadow-2xl"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="mb-6 text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-800">
+            <.icon name="hero-lock-closed" class="h-7 w-7" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900">PIN required to collect payment</h2>
+          <p class="mt-2 text-sm text-slate-500">
+            Enter the staff PIN to continue with this payment.
+          </p>
+        </div>
+
+        <%= if @payment_pin_configured do %>
+          <form id="pos-payment-pin-form" phx-submit="authorize_payment" class="space-y-4">
+            <input
+              id="pos-payment-pin"
+              type="password"
+              name="payment_pin"
+              value={@payment_pin}
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              pattern="[0-9]{6,8}"
+              minlength="6"
+              maxlength="8"
+              required
+              autofocus
+              class="w-full rounded-xl border-2 border-slate-300 px-4 py-4 text-center text-3xl tracking-[0.4em] focus:border-amber-500 focus:ring-amber-200"
+            />
+            <button
+              type="submit"
+              class="w-full rounded-xl bg-amber-700 px-5 py-4 text-lg font-bold text-white transition-colors hover:bg-amber-800"
+            >
+              Continue to payment
+            </button>
+          </form>
+        <% else %>
+          <p class="rounded-lg bg-rose-50 p-4 text-sm text-rose-800">
+            Payment PIN is not configured on this server.
+          </p>
+        <% end %>
+
+        <button
+          type="button"
+          phx-click="cancel_payment_pin"
+          class="mt-3 w-full rounded-xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div
+      :if={@show_payment_modal}
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      phx-click="close_payment_modal"
+    >
+      <div
+        class="bg-white rounded-3xl shadow-2xl p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <%= if @payment_method == "cash_success" do %>
+          <!-- Cash Payment Success -->
+          <div class="text-center">
+            <div class="mb-6">
+              <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+              </div>
+              <h2 class="text-3xl font-bold text-slate-900 mb-2">
+                <%= if @split_mode do %>
+                  Split Payment Collected!
+                <% else %>
+                  Payment Successful!
+                <% end %>
+              </h2>
+              <p class="text-lg text-slate-600 mb-2">
+                Invoice: {@payment_invoice_number}
+              </p>
+            </div>
+
+            <div class="bg-success-light border-2 border-green-200 rounded-xl p-6 mb-6">
+              <p class="text-slate-700 font-semibold mb-2">Cash Payment Recorded</p>
+              <p class="text-4xl font-bold text-success-dark">
+                {format_currency(@last_payment_amount || @order.total_amount)}
+              </p>
+            </div>
+
+            <.link
+              navigate={~p"/pos/orders/#{@order}/receipt"}
+              target="_blank"
+              class="block mb-3"
+            >
+              <button
+                type="button"
+                class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+              </button>
+            </.link>
+
+            <%= if @split_mode do %>
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+              >
+                <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+              </button>
+              <button
+                phx-click="exit_split_mode"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+              >
+                Exit Split Mode
+              </button>
+            <% else %>
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+              >
+                Done
+              </button>
+            <% end %>
+          </div>
+        <% else %>
+          <%= if @payment_method == "qr_preview" do %>
+            <!-- QR Code Preview — payment not yet recorded -->
+            <div class="text-center">
+              <h2 class="text-3xl font-bold text-slate-900 mb-1">Scan to Pay</h2>
+              <p class="text-sm text-slate-500 mb-5">
+                Show this QR code to the customer. Confirm once the bank transfer is complete.
+              </p>
+
+              <div class="bg-white p-6 rounded-2xl border-4 border-blue-300 mb-5 inline-block">
+                <%= if @payment_qr_svg do %>
+                  <img
+                    src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                    alt="Payment QR Code"
+                    class="w-64 h-64"
+                  />
+                <% else %>
+                  <p class="text-error">Failed to generate QR code</p>
+                <% end %>
+              </div>
+
+              <div class="bg-tertiary-50 border-2 border-blue-200 rounded-xl p-4 mb-5">
+                <p class="text-slate-700 font-semibold mb-1">Amount to Pay</p>
+                <p class="text-4xl font-bold text-success-dark">
+                  {format_currency(@payment_preview_amount || @order.total_amount)}
+                </p>
+              </div>
+
+              <div class="text-left space-y-1 text-sm text-slate-600 mb-6">
+                <p>• Open your banking app</p>
+                <p>• Scan the QR code above</p>
+                <p>• Verify the amount</p>
+                <p>• Complete the payment, then tap "Mark as Paid" below</p>
+              </div>
+
+              <button
+                phx-click="confirm_qr_payment"
+                class="w-full bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
+              >
+                <.icon name="hero-check-circle" class="w-6 h-6" /> Mark as Paid
+              </button>
+
+              <button
+                phx-click="close_payment_modal"
+                class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          <% else %>
+            <%= if @payment_method == "qr_success" do %>
+              <!-- QR Payment Success -->
+              <div class="text-center">
+                <div class="mb-5">
+                  <div class="inline-flex items-center justify-center w-24 h-24 bg-success-light rounded-full mb-4">
+                    <.icon name="hero-check-circle" class="w-16 h-16 text-success-dark" />
+                  </div>
+                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Payment Recorded!</h2>
+                  <p class="text-lg text-slate-600 mb-1">
+                    Invoice: {@payment_invoice_number}
+                  </p>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border-4 border-slate-200 mb-5 inline-block">
+                  <%= if @payment_qr_svg do %>
+                    <img
+                      src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
+                      alt="Payment QR Code"
+                      class="w-48 h-48"
+                    />
+                  <% end %>
+                </div>
+
+                <div class="bg-success-light border-2 border-green-200 rounded-xl p-4 mb-5">
+                  <p class="text-slate-700 font-semibold mb-1">QR Code Payment Recorded</p>
+                  <p class="text-4xl font-bold text-success-dark">
+                    {format_currency(@last_payment_amount || @order.total_amount)}
+                  </p>
+                </div>
+
+                <.link
+                  navigate={~p"/pos/orders/#{@order}/receipt"}
+                  target="_blank"
+                  class="block mb-3"
+                >
+                  <button
+                    type="button"
+                    class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    <.icon name="hero-printer" class="w-6 h-6" /> Print Receipt
+                  </button>
+                </.link>
+
+                <%= if @split_mode do %>
+                  <button
+                    phx-click="close_payment_modal"
+                    class="w-full bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all mb-2"
+                  >
+                    <.icon name="hero-user-plus" class="w-5 h-5 inline-block mr-2" /> Next Person
+                  </button>
+                  <button
+                    phx-click="exit_split_mode"
+                    class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
+                  >
+                    Exit Split Mode
+                  </button>
+                <% else %>
+                  <button
+                    phx-click="close_payment_modal"
+                    class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                  >
+                    Done
+                  </button>
+                <% end %>
+              </div>
+            <% else %>
+              <%= if @split_payment_amount do %>
+                <%!-- Split payment: skip tips/discount, show the selected amount only --%>
+                <div class="text-center mb-6">
+                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Collect Payment</h2>
+                  <p class="text-sm text-slate-500 mb-5">Payment for selected items</p>
+                  <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 mb-6">
+                    <p class="text-sm font-semibold text-amber-800 mb-1">Amount to Collect</p>
+                    <p class="text-5xl font-bold text-amber-900">
+                      {format_currency(@split_payment_amount)}
+                    </p>
+                  </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="cash"
+                    class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">Cash</div>
+                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="qr_code"
+                    class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">QR Code</div>
+                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  phx-click="close_payment_modal"
+                  class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+              <% else %>
+                <%!-- Normal full-order payment: tips/discount form + full total --%>
+                <!-- Payment Method Selection -->
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Payment Details</h2>
+
+                <!-- Tips and Discount Form -->
+                <div class="space-y-4 mb-6 bg-slate-50 p-6 rounded-2xl">
+                  <form phx-change="update_payment_fields">
+                    <div class="grid grid-cols-2 gap-4">
+                      <!-- Discount Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Discount Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="discount_amount"
+                          value={@discount_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+
+                      <!-- Tips Amount -->
+                      <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                          Tips Amount
+                        </label>
+                        <input
+                          type="number"
+                          name="tips_amount"
+                          value={@tips_amount}
+                          step="0.01"
+                          min="0"
+                          class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <!-- Discount Reason -->
+                    <div class="mt-4">
+                      <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        Discount Reason (optional)
+                      </label>
+                      <input
+                        type="text"
+                        name="discount_reason"
+                        value={@discount_reason}
+                        class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
+                        placeholder="e.g., Staff discount, Promotional offer"
+                      />
+                    </div>
+                  </form>
+
+                  <!-- Total Calculation Preview -->
+                  <% items_subtotal =
+                    Enum.reduce(@order.order_items, Decimal.new("0"), fn item, acc ->
+                      Decimal.add(acc, item.subtotal)
+                    end)
+
+                  discount_dec =
+                    case Decimal.parse(@discount_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
+
+                  tips_dec =
+                    case Decimal.parse(@tips_amount || "0") do
+                      {amount, _} -> amount
+                      :error -> Decimal.new("0")
+                    end
+
+                  final_total =
+                    items_subtotal
+                    |> Decimal.sub(discount_dec)
+                    |> Decimal.add(tips_dec) %>
+                  <div class="border-t-2 border-slate-200 pt-4 mt-4 space-y-2">
+                    <div class="flex justify-between text-slate-700">
+                      <span>Subtotal (Items):</span>
+                      <span class="font-semibold">
+                        {format_currency(items_subtotal)}
+                      </span>
+                    </div>
+                    <%= if Decimal.gt?(discount_dec, 0) do %>
+                      <div class="flex justify-between text-error">
+                        <span>Discount:</span>
+                        <span class="font-semibold">-{format_currency(discount_dec)}</span>
+                      </div>
+                    <% end %>
+                    <%= if Decimal.gt?(tips_dec, 0) do %>
+                      <div class="flex justify-between text-success-dark">
+                        <span>Tips:</span>
+                        <span class="font-semibold">+{format_currency(tips_dec)}</span>
+                      </div>
+                    <% end %>
+                    <div class="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t-2 border-slate-300">
+                      <span>Final Total:</span>
+                      <span class="text-success-dark">
+                        {format_currency(final_total)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+
+                <div class="grid grid-cols-1 gap-4 mb-6">
+                  <!-- Cash Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="cash"
+                    class="bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">Cash</div>
+                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+
+                  <!-- QR Code Payment -->
+                  <button
+                    phx-click="select_payment_method"
+                    phx-value-method="qr_code"
+                    class="bg-tertiary-100 hover:bg-blue-200 border-4 border-blue-600 text-blue-900 font-bold py-8 px-6 rounded-2xl text-2xl active:scale-95 transition-all text-left"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div>
+                        <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
+                        <div class="text-2xl font-bold">QR Code</div>
+                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                      </div>
+                      <.icon name="hero-arrow-right" class="w-8 h-8" />
+                    </div>
+                  </button>
+                </div>
+
+                <button
+                  phx-click="close_payment_modal"
+                  class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+              <% end %>
+              <%!-- end split_payment_amount conditional --%>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</Layouts.pos>
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Kompiluje novou POS položku menu odkazující na chráněný admin.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Saving...">Save Category</
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted lib/cozy\_checkout\_web/live/pos\_live/order\_manag...`
+
+Kontroluje formát upravené POS šablony.
+
+```bash
+mix format --check-formatted lib/cozy_checkout_web/live/pos_live/order_management.html.heex >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS http://localhost:4000/pos | rg -n -C 1 'href="/admin"|Open administ...`
+
+Ověřuje vykreslení nového odkazu v POS HTML.
+
+```bash
+curl -sS http://localhost:4000/pos | rg -n -C 1 'href="/admin"|Open administration with PIN'
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !10 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+Command exited with code 1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\} %\{redirect\_url\}\\n' http://localhost:4...`
+
+Potvrzuje, že cílová admin route odkaz přesměruje na PIN gate.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' http://localhost:4000/admin
+```
+
+**Result:**
+
+```
+302 http://localhost:4000/admin/login
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+PIN gate cíle je ověřený: `/admin` stále vrací 302 na přihlášení. První kontrola odkazu hledala v úvodní obrazovce výběru účtu, zatímco tlačítko je v hlavičce konkrétní objednávky; ověřím ještě, že se vykreslí i na této obrazovce.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS http://localhost:4000/pos/orders/3e91ecb8-a234-41e5-a7df-4b76a5d27e...`
+
+Kontroluje nový Admin odkaz na obrazovce konkrétní POS objednávky.
+
+```bash
+curl -sS http://localhost:4000/pos/orders/3e91ecb8-a234-41e5-a7df-4b76a5d27ed4 | rg -n -C 2 'href="/admin"|Open administration with PIN'
+```
+
+**Result:**
+
+```
+
+╭─    ~/p/E/cozy_checkout  on   main ⇡1 !10 ?6 
+╰─                                                                           ─╯
+
+Output exceeded terminal scrollback; beginning of output was lost
+Command exited with code 1
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `order_selection.html.heex`, lines 1 to 90
+
+**Input:**
+
+- endLine: `90`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/order_selection.html.heex`
+- startLine: `1`
+
+**Result:**
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div class="min-h-screen bg-secondary-50 p-6">
+    <!-- Header with Back Button -->
+    <div class="mb-8">
+      <button
+        phx-click="back"
+        class="mb-4 inline-flex items-center gap-2 text-primary-400 hover:text-primary-500 text-lg active:scale-95 transition-transform"
+      >
+        <.icon name="hero-arrow-left" class="w-6 h-6" />
+        <span>Back to Bookings</span>
+      </button>
+
+      <h1 class="text-4xl font-bold text-primary-500 mb-2">
+        {@booking.guest.name}
+        <span :if={@booking.room_number} class="text-primary-300">
+          - Room {@booking.room_number}
+        </span>
+      </h1>
+      <div class="flex items-center gap-4">
+        <p class="text-lg text-primary-400">
+          <%= if @orders == [] do %>
+            Create an order for a guest
+          <% else %>
+            Select an order or create a new one
+          <% end %>
+        </p>
+        <span
+          :if={@total_guests > 1}
+          class="px-3 py-1 bg-tertiary-100 text-tertiary-800 text-sm font-semibold rounded-full"
+        >
+          {length(@orders)} / {@total_guests} guests with orders
+        </span>
+      </div>
+    </div>
+
+    <!-- Orders Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+      <div
+        :for={order <- @orders}
+        phx-click="select_order"
+        phx-value-order-id={order.id}
+        class={[
+          "bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-200",
+          "p-8 cursor-pointer active:scale-95 border-4 border-transparent hover:border-tertiary-500"
+        ]}
+      >
+        <!-- Guest Name -->
+        <div class="mb-4">
+          <p class="text-sm text-primary-300 mb-1">Guest</p>
+          <p class="text-lg font-semibold text-primary-500">
+            {if order.guest, do: order.guest.name, else: "Unknown"}
+          </p>
+        </div>
+
+        <!-- Order Number -->
+        <div class="mb-4">
+          <p class="text-sm 
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="read" data-tool-name="read_file"><details>
+<summary>Tool use: **read_file**</summary>
+
+Read `guest_selection.html.heex`, lines 1 to 115
+
+**Input:**
+
+- endLine: `115`
+- filePath: `/Users/michalhorcic/projects/ELIXIR/cozy_checkout/lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex`
+- startLine: `1`
+
+**Result:**
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div class="min-h-screen bg-secondary-50 p-6">
+    <!-- Header -->
+    <div class="mb-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-primary-500 mb-1">Select Booking</h1>
+        <p class="text-base text-primary-400">Tap a booking to manage orders</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Service Mode Toggle -->
+        <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 shadow-md">
+          <span class={[
+            "text-sm font-semibold transition-colors duration-200",
+            (@service_mode && "text-gray-400") || "text-primary-600"
+          ]}>
+            Standard
+          </span>
+          <button
+            phx-click="toggle_service_mode"
+            class={[
+              "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+              (@service_mode && "bg-purple-600") || "bg-gray-300"
+            ]}
+          >
+            <span class={[
+              "inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out",
+              (@service_mode && "translate-x-8") || "translate-x-1"
+            ]}></span>
+          </button>
+          <span class={[
+            "text-sm font-semibold transition-colors duration-200",
+            (@service_mode && "text-purple-600") || "text-gray-400"
+          ]}>
+            Service
+          </span>
+        </div>
+        <.link
+          navigate={~p"/"}
+          class="px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors duration-200 flex items-center gap-2"
+        >
+          <.icon name="hero-arrow-left" class="w-5 h-5" /> Menu
+        </.link>
+      </div>
+    </div>
+
+    <!-- Quick Order Button -->
+    <div class="mb-6">
+      <button
+        phx-click="show_quick_order_
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Našel jsem konkrétní příčinu: tlačítko „Menu“ na obrazovce výběru hosta stále vede na `/`, ale tu jsme změnili na POS, takže se jen vrací samo na sebe. Přesměruju ho na `/admin` běžným HTTP odkazem; existující ochranný plug ho pak pošle na PIN.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="write" data-tool-name="textEditGroup"><details>
+<summary>Edit: **guest_selection.html.heex**</summary>
+
+@@ lines 1-205 @@
+
+```
+<Layouts.pos page_title={@page_title}>
+  <div class="min-h-screen bg-secondary-50 p-6">
+    <!-- Header -->
+    <div class="mb-4 flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl font-bold text-primary-500 mb-1">Select Booking</h1>
+        <p class="text-base text-primary-400">Tap a booking to manage orders</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Service Mode Toggle -->
+        <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 shadow-md">
+          <span class={[
+            "text-sm font-semibold transition-colors duration-200",
+            (@service_mode && "text-gray-400") || "text-primary-600"
+          ]}>
+            Standard
+          </span>
+          <button
+            phx-click="toggle_service_mode"
+            class={[
+              "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+              (@service_mode && "bg-purple-600") || "bg-gray-300"
+            ]}
+          >
+            <span class={[
+              "inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ease-in-out",
+              (@service_mode && "translate-x-8") || "translate-x-1"
+            ]}></span>
+          </button>
+          <span class={[
+            "text-sm font-semibold transition-colors duration-200",
+            (@service_mode && "text-purple-600") || "text-gray-400"
+          ]}>
+            Service
+          </span>
+        </div>
+        <.link
+          href={~p"/admin"}
+          class="px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors duration-200 flex items-center gap-2"
+        >
+          <.icon name="hero-lock-closed" class="w-5 h-5" /> Admin
+        </.link>
+      </div>
+    </div>
+
+    <!-- Quick Order Button -->
+    <div class="mb-6">
+      <button
+        phx-click="show_quick_order_modal"
+        class="w-full px-6 py-4 bg-tertiary-500 text-white rounded-xl hover:bg-tertiary-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-98"
+      >
+        <.icon name="hero-plus-circle" class="w-7 h-7" />
+        <span class="text-xl font-bold">Quick Order (No Booking)</span>
+      </button>
+    </div>
+
+    <!-- Standalone Orders Section -->
+    <div :if={@standalone_orders != []} class="mb-6">
+      <h2 class="text-2xl font-bold text-primary-500 mb-3">Standalone Orders</h2>
+      <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        <div
+          :for={order <- @standalone_orders}
+          phx-click="select_order"
+          phx-value-order-id={order.id}
+          class={[
+            "bg-tertiary-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
+            "p-4 cursor-pointer active:scale-95 border-2 border-tertiary-200 hover:border-tertiary-400",
+            "min-h-[120px] flex flex-col justify-between"
+          ]}
+        >
+          <div>
+            <div class="flex items-center gap-2">
+              <.icon name="hero-shopping-cart" class="w-5 h-5 text-tertiary-600" />
+              <span class="px-2 py-0.5 bg-tertiary-200 text-tertiary-800 text-xs font-semibold rounded-full">
+                Standalone
+              </span>
+            </div>
+            <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
+              {order.name}
+            </h2>
+            <div class="text-xs text-primary-300">
+              Order #{order.order_number}
+            </div>
+          </div>
+
+          <div class="mt-2 pt-2 border-t border-tertiary-200">
+            <div class="text-sm font-semibold text-tertiary-700">
+              {format_currency(order.total_amount)}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bookings Section -->
+    <h2 :if={@bookings != []} class="text-2xl font-bold text-primary-500 mb-3">
+      Active Bookings
+    </h2>
+
+    <!-- Bookings Grid -->
+    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+      <div
+        :for={booking <- @bookings}
+        phx-click="select_booking"
+        phx-value-booking_id={booking.id}
+        class={[
+          "bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
+          "p-4 cursor-pointer active:scale-95 border-2 border-transparent hover:border-tertiary-500",
+          "min-h-[120px] flex flex-col justify-between"
+        ]}
+      >
+        <div>
+          <!-- Guest Name -->
+          <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
+            {booking.guest.name}
+          </h2>
+
+          <!-- Room Number -->
+          <div :if={booking.room_number} class="flex items-center gap-1.5 mt-1">
+            <.icon name="hero-home" class="w-4 h-4 text-primary-300" />
+            <span class="text-sm text-primary-400">Room {booking.room_number}</span>
+          </div>
+
+          <!-- Check-in Period -->
+          <div
+            :if={booking.check_in_date}
+            class="flex items-center gap-1.5 text-xs text-primary-300"
+          >
+            <.icon name="hero-calendar" class="w-3.5 h-3.5" />
+            <span>
+              {Calendar.strftime(booking.check_in_date, "%b %d")}
+              {if booking.check_out_date,
+                do: " - #{Calendar.strftime(booking.check_out_date, "%b %d")}",
+                else: ""}
+            </span>
+          </div>
+        </div>
+
+        <!-- Open Orders Badge -->
+        <div :if={booking.open_orders_count > 0} class="mt-2 pt-2 border-t border-secondary-200">
+          <div class="inline-flex items-center gap-1.5 bg-success-light text-success-dark px-2.5 py-1 rounded-full text-xs font-semibold">
+            <.icon name="hero-shopping-cart" class="w-3.5 h-3.5" />
+            <span>
+              {booking.open_orders_count} {if booking.open_orders_count == 1,
+                do: "order",
+                else: "orders"}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div :if={@bookings == []} class="text-center py-20">
+      <.icon name="hero-calendar-days" class="w-24 h-24 text-secondary-300 mx-auto mb-6" />
+      <h2 class="text-3xl font-bold text-primary-300 mb-2">No Active Bookings</h2>
+      <p class="text-xl text-primary-300">Check in guests to start taking orders</p>
+    </div>
+
+    <!-- Quick Order Modal -->
+    <%= if @show_quick_order_modal do %>
+      <div class="fixed inset-0 bg-primary-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-in fade-in zoom-in duration-200">
+          <h3 class="text-3xl font-bold text-primary-500 mb-6">Create Quick Order</h3>
+
+          <div class="mb-8">
+            <label class="block text-lg font-semibold text-primary-500 mb-3">
+              Order Name
+            </label>
+            <input
+              type="text"
+              name="order_name"
+              placeholder="e.g., Kids - Room 5, Staff lunch, Walk-in"
+              class="w-full px-4 py-4 text-lg border-2 border-secondary-300 rounded-xl focus:border-tertiary-500 focus:outline-none transition-colors"
+              value={@quick_order_name}
+              phx-keyup="update_quick_order_name"
+              autofocus
+            />
+            <p class="mt-2 text-sm text-primary-300">
+              Enter a descriptive name for this order
+            </p>
+          </div>
+
+          <div class="flex gap-4">
+            <button
+              phx-click="hide_quick_order_modal"
+              class="flex-1 px-6 py-4 bg-secondary-200 text-primary-500 rounded-xl hover:bg-secondary-300 transition-colors text-lg font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              phx-click="create_quick_order"
+              disabled={String.trim(@quick_order_name) == ""}
+              class="flex-1 px-6 py-4 bg-tertiary-500 text-white rounded-xl hover:bg-tertiary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
+            >
+              Create Order
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</Layouts.pos>
+
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix compile`
+
+Kompiluje opravený odkaz Admin na POS výběru hosta.
+
+```bash
+mix compile
+```
+
+**Result:**
+
+```
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 181 │           <.button type="submit" phx-disable-with="Saving...">Save Booking</.button>
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/booking_live/form_component.ex:181: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 37 │           <.button type="submit" phx-disable-with="Saving...">Save Room</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/room_live/form_component.ex:37: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 50 │           <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/meal_planner_live/template_form_component.ex:50: (file)
+
+     warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+     │
+ 141 │           <.button type="submit" phx-disable-with="Saving...">
+     │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     │
+     └─ lib/cozy_checkout_web/live/stock_adjustment_live/form_component.ex:141: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 94 │           <.button type="submit" phx-disable-with="Saving...">Save Pricelist</.button>
+    │           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    │
+    └─ lib/cozy_checkout_web/live/pricelist_live/form_component.ex:94: (file)
+
+    warning: undefined attribute "type" for component CozyCheckoutWeb.CoreComponents.button/1
+    │
+ 31 │           <.button type="submit" phx-disable-with="Saving...">Save Category</
+… (output truncated)
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` mix format --check-formatted lib/cozy\_checkout\_web/live/pos\_live/guest\_selec...`
+
+Kontroluje formát šablony výběru hosta.
+
+```bash
+mix format --check-formatted lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex >/dev/null 2>&1; echo $?
+```
+
+**Result:**
+
+```
+0
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS http://localhost:4000/pos | rg -n -C 1 'href="/admin"|Admin'`
+
+Ověřuje, že POS menu skutečně vykreslí odkaz do PIN chráněné administrace.
+
+```bash
+curl -sS http://localhost:4000/pos | rg -n -C 1 'href="/admin"|Admin'
+```
+
+**Result:**
+
+```
+45-        </div>
+46:        <!-- @caller lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex:37 (cozy_checkout) --><!-- <Phoenix.Component.link> lib/phoenix_component.ex:3138 (phoenix_live_view) --><a data-phx-loc="3139" href="/admin" class="px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors duration-200 flex items-center gap-2"><!-- <:inner_block> lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex:37 (cozy_checkout) -->
+47:          <!-- @caller lib/cozy_checkout_web/live/pos_live/guest_selection.html.heex:41 (cozy_checkout) --><!-- <CozyCheckoutWeb.CoreComponents.icon> lib/cozy_checkout_web/components/core_components.ex:418 (cozy_checkout) --><span data-phx-loc="419" class="hero-lock-closed w-5 h-5"></span><!-- </CozyCheckoutWeb.CoreComponents.icon> --> Admin
+48-        <!-- </:inner_block> --></a><!-- </Phoenix.Component.link> -->
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="generic" data-tool-name="run_in_terminal"><details>
+<summary>Tool use: **run_in_terminal**</summary>
+
+Running ` curl -sS -o /dev/null -w '%\{http\_code\} %\{redirect\_url\}\\n' http://localhost:4...`
+
+Potvrzuje, že odkaz vede na admin gate, který vyžaduje PIN.
+
+```bash
+curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' http://localhost:4000/admin
+```
+
+**Result:**
+
+```
+302 http://localhost:4000/admin/login
+```
+</details></tool-use>
+
+_**Agent (copilot/auto)**_
+
+Opraveno. Tlačítko „Menu“ na výběru hosta teď vede do administrace jako „Admin“ se zámkem. Odkaz provede běžné načtení `/admin`, takže se spustí PIN gate; současně zůstává odkaz Admin i v hlavičce objednávky.
+
+Ověřeno: odkaz se vykresluje, `/admin` přesměruje na PIN stránku a POS se zkompiluje.
+
+_**Agent (copilot/auto)**_
+
+<tool-use data-tool-type="task" data-tool-name="manage_todo_list"><details>
+<summary>Tool use: **manage_todo_list**</summary>
+
+Created 2 todos
+</details></tool-use>
+
+---
+
+_**User (2026-09-29 08:43:31Z)**_
+
+[Terminal 98574e07-d749-4c02-b65a-e7a609532e57 notification: terminal exited. The terminal process ended before the command could complete normally; further commands cannot be sent to this terminal ID.]
+Terminal output:
+[debug] QUERY OK source="bookings" db=1.6ms idle=1762.2ms
+SELECT b0."id", b0."room_number", b0."check_in_date", b0."check_out_date", b0."status", b0."notes", b0."[REDACTED:generic-password]_note", b0."dietary_restrictions", b0."deleted_at", b0."guest_id", b0."inserted_at", b0."updated_at" FROM "bookings" AS b0 WHERE (b0."deleted_at" IS NULL) AND (b0."status" = 'active') AND (b0."check_in_date" <= $1) AND ((b0."check_out_date" IS NULL) OR (b0."check_out_date" >= $2)) ORDER BY b0."check_in_date", b0."room_number" [~D[2026-09-28], ~D[2026-09-28]]
+↳ CozyCheckout.Sales.list_active_bookings_with_orders/0, at: lib/cozy_checkout/sales.ex:21
+[debug] QUERY OK source="orders" db=5.8ms idle=1764.2ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."booking_id" IS NULL) AND (o0."deleted_at" IS NULL) AND (o0."status" IN ('open','partially_paid')) AND (o0."is_service_order" = $1) ORDER BY o0."name" [false]
+↳ CozyCheckoutWeb.PosLive.GuestSelection.load_standalone_orders/1, at: lib/cozy_checkout_web/live/pos_live/guest_selection.ex:131
+[debug] Replied in 8ms
+Done in 22ms
+Done in 1ms
+[debug] Live reload: lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+[debug] Live reload: lib/cozy_checkout_web/live/dashboard_live.ex
+[debug] Live reload: lib/cozy_checkout_web/router.ex
+[debug] Live reload: lib/cozy_checkout_web/controllers/admin_session_controller.ex
+[debug] Live reload: lib/cozy_checkout_web/live/admin_login_live.ex
+[info] GET /pos
+[debug] Processing with CozyCheckoutWeb.PosLive.GuestSelection.__live__/0
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 16ms
+[info] CONNECTED TO Phoenix.LiveView.Socket in 27µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "[FILTERED]", "_live_referer" => "undefined", "_mount_attempts" => "0", "_mounts" => "0", "_track_static" => %{"0" => "http://localhost:4000/assets/css/app.css", "1" => "http://localhost:4000/assets/js/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT CozyCheckoutWeb.PosLive.GuestSelection
+  Parameters: %{}
+  Session: %{"_csrf_token" => "UNK89USVIoZdJo2Rmnii2nB2", "admin_return_to" => "/admin"}
+[debug] QUERY OK source="bookings" db=4.2ms idle=1504.9ms
+SELECT b0."id", b0."room_number", b0."check_in_date", b0."check_out_date", b0."status", b0."notes", b0."[REDACTED:generic-password]_note", b0."dietary_restrictions", b0."deleted_at", b0."guest_id", b0."inserted_at", b0."updated_at" FROM "bookings" AS b0 WHERE (b0."deleted_at" IS NULL) AND (b0."status" = 'active') AND (b0."check_in_date" <= $1) AND ((b0."check_out_date" IS NULL) OR (b0."check_out_date" >= $2)) ORDER BY b0."check_in_date", b0."room_number" [~D[2026-09-28], ~D[2026-09-28]]
+↳ CozyCheckout.Sales.list_active_bookings_with_orders/0, at: lib/cozy_checkout/sales.ex:21
+[debug] QUERY OK source="orders" db=25.3ms idle=916.6ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."booking_id" IS NULL) AND (o0."deleted_at" IS NULL) AND (o0."status" IN ('open','partially_paid')) AND (o0."is_service_order" = $1) ORDER BY o0."name" [false]
+↳ CozyCheckoutWeb.PosLive.GuestSelection.load_standalone_orders/1, at: lib/cozy_checkout_web/live/pos_live/guest_selection.ex:131
+[debug] Replied in 33ms
+[debug] Live reload: lib/cozy_checkout_web/live/pos_live/order_management.ex
+Done in 576ms
+Compiling 1 file (.ex)
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 529 │   def handle_event("open_recalculate_modal", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:529:7
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 649 │   def handle_event("confirm_qr_payment", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:649:7
+
+     error: undefined function prepare_payment_modal/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 389 │          |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+     │             ^^^^^^^^^^^^^^^^^^^^^
+     │
+     └─ (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.ex:389:13: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+     error: undefined function request_payment_pin/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 364 │     {:noreply, request_payment_pin(socket, :full)}
+     │                ^^^^^^^^^^^^^^^^^^^
+     │
+     └─ (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.ex:364:16: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+     error: undefined function request_payment_pin/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 359 │     {:noreply, request_payment_pin(socket, :split)}
+     │                ^^^^^^^^^^^^^^^^^^^
+     │
+     └─ (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.ex:359:16: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+
+== Compilation error in file lib/cozy_checkout_web/live/pos_live/order_management.ex ==
+** (CompileError) lib/cozy_checkout_web/live/pos_live/order_management.ex: cannot compile module CozyCheckoutWeb.PosLive.OrderManagement (errors have been logged)
+
+Compiling 1 file (.ex)
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 529 │   def handle_event("open_recalculate_modal", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:529:7
+
+     warning: clauses with the same name and arity (number of arguments) should be grouped together, "def handle_event/3" was previously defined (lib/cozy_checkout_web/live/pos_live/order_management.ex:86)
+     │
+ 649 │   def handle_event("confirm_qr_payment", _params, socket) do
+     │       ~
+     │
+     └─ lib/cozy_checkout_web/live/pos_live/order_management.ex:649:7
+
+     error: undefined function prepare_payment_modal/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 389 │          |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+     │             ^^^^^^^^^^^^^^^^^^^^^
+     │
+     └─ (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.ex:389:13: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+     error: undefined function request_payment_pin/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 364 │     {:noreply, request_payment_pin(socket, :full)}
+     │                ^^^^^^^^^^^^^^^^^^^
+     │
+     └─ (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.ex:364:16: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+     error: undefined function request_payment_pin/2 (expected CozyCheckoutWeb.PosLive.OrderManagement to define such a function or for it to be imported, but none are available)
+     │
+ 359 │     {:noreply, request_payment_pin(socket, :split)}
+     │                ^^^^^^^^^^^^^^^^^^^
+     │
+     └─ (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.ex:359:16: CozyCheckoutWeb.PosLive.OrderManagement.handle_event/3
+
+
+== Compilation error in file lib/cozy_checkout_web/live/pos_live/order_management.ex ==
+** (CompileError) lib/cozy_checkout_web/live/pos_live/order_management.ex: cannot compile module CozyCheckoutWeb.PosLive.OrderManagement (errors have been logged)
+
+Done in 8ms
+[debug] Live reload: lib/cozy_checkout_web/live/pos_live/order_management.ex
+[debug] Live reload: lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+Done in 1s
+[debug] Live reload: priv/static/assets/css/app.css
+Done in 15ms
+Done in 6ms
+Done in 16ms
+[watch] build started (change: "../_build/dev/phoenix-colocated/cozy_checkout")
+[watch] build finished
+Done in 6ms
+[info] GET /pos
+[debug] Processing with CozyCheckoutWeb.PosLive.GuestSelection.__live__/0
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 26ms
+[info] GET /pos
+[debug] Processing with CozyCheckoutWeb.PosLive.GuestSelection.__live__/0
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 4ms
+[info] CONNECTED TO Phoenix.LiveView.Socket in 24µs
+  Transport: :websocket
+  Serializer: Phoenix.Socket.V2.JSONSerializer
+  Parameters: %{"_csrf_token" => "[FILTERED]", "_live_referer" => "undefined", "_mount_attempts" => "0", "_mounts" => "0", "_track_static" => %{"0" => "http://localhost:4000/assets/css/app.css", "1" => "http://localhost:4000/assets/js/app.js"}, "vsn" => "2.0.0"}
+[debug] MOUNT CozyCheckoutWeb.PosLive.GuestSelection
+  Parameters: %{}
+  Session: %{"_csrf_token" => "UNK89USVIoZdJo2Rmnii2nB2", "admin_return_to" => "/admin"}
+[debug] QUERY OK source="bookings" db=7.0ms idle=1050.0ms
+SELECT b0."id", b0."room_number", b0."check_in_date", b0."check_out_date", b0."status", b0."notes", b0."[REDACTED:generic-password]_note", b0."dietary_restrictions", b0."deleted_at", b0."guest_id", b0."inserted_at", b0."updated_at" FROM "bookings" AS b0 WHERE (b0."deleted_at" IS NULL) AND (b0."status" = 'active') AND (b0."check_in_date" <= $1) AND ((b0."check_out_date" IS NULL) OR (b0."check_out_date" >= $2)) ORDER BY b0."check_in_date", b0."room_number" [~D[2026-09-28], ~D[2026-09-28]]
+↳ CozyCheckout.Sales.list_active_bookings_with_orders/0, at: lib/cozy_checkout/sales.ex:21
+[debug] QUERY OK source="orders" db=18.9ms idle=1060.0ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."booking_id" IS NULL) AND (o0."deleted_at" IS NULL) AND (o0."status" IN ('open','partially_paid')) AND (o0."is_service_order" = $1) ORDER BY o0."name" [false]
+↳ CozyCheckoutWeb.PosLive.GuestSelection.load_standalone_orders/1, at: lib/cozy_checkout_web/live/pos_live/guest_selection.ex:131
+[debug] Replied in 30ms
+[debug] HANDLE EVENT "select_order" in CozyCheckoutWeb.PosLive.GuestSelection
+  Parameters: %{"order-id" => "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"}
+[debug] Replied in 10ms
+[debug] MOUNT CozyCheckoutWeb.PosLive.OrderManagement
+  Parameters: %{"id" => "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"}
+  Session: %{"_csrf_token" => "UNK89USVIoZdJo2Rmnii2nB2", "admin_return_to" => "/admin"}
+[debug] QUERY OK source="orders" db=6.2ms idle=1813.8ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."deleted_at" IS NULL) AND (o0."id" = $1) ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order!/1, at: lib/cozy_checkout/sales.ex:343
+[debug] QUERY OK source="order_items" db=1.4ms idle=1821.1ms
+SELECT o0."id", o0."quantity", o0."unit_amount", o0."unit_price", o0."vat_rate", o0."subtotal", o0."deleted_at", o0."order_id", o0."product_id", o0."inserted_at", o0."updated_at", o0."order_id" FROM "order_items" AS o0 WHERE (o0."order_id" = $1) ORDER BY o0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order!/1, at: lib/cozy_checkout/sales.ex:343
+[debug] QUERY OK source="payments" db=2.6ms idle=1821.3ms
+SELECT p0."id", p0."amount", p0."payment_method", p0."payment_date", p0."notes", p0."invoice_number", p0."deleted_at", p0."order_id", p0."inserted_at", p0."updated_at", p0."order_id" FROM "payments" AS p0 WHERE (p0."order_id" = $1) ORDER BY p0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order!/1, at: lib/cozy_checkout/sales.ex:343
+[debug] QUERY OK source="products" db=1.0ms idle=1767.1ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at", p0."id" FROM "products" AS p0 WHERE (p0."id" = $1) ["f949e43c-b8e1-4522-a258-5089caf0da19"]
+↳ CozyCheckout.Sales.get_order!/1, at: lib/cozy_checkout/sales.ex:343
+[debug] QUERY OK source="categories" db=1.9ms idle=1746.9ms
+SELECT c0."id", c0."name", c0."description", c0."order", c0."visible_in_pos", c0."deleted_at", c0."inserted_at", c0."updated_at" FROM "categories" AS c0 WHERE ((c0."deleted_at" IS NULL) AND (c0."visible_in_pos" = TRUE)) ORDER BY c0."order", c0."name" []
+↳ CozyCheckoutWeb.PosLive.OrderManagement.load_products/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:792
+[debug] QUERY OK source="products" db=1.7ms idle=1524.6ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at" FROM "products" AS p0 WHERE (((p0."deleted_at" IS NULL) AND (p0."active" = TRUE)) AND (p0."visible_in_pos" = TRUE)) ORDER BY p0."name" []
+↳ CozyCheckoutWeb.PosLive.OrderManagement.load_products/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:793
+[debug] QUERY OK source="categories" db=0.5ms idle=829.6ms
+SELECT c0."id", c0."name", c0."description", c0."order", c0."visible_in_pos", c0."deleted_at", c0."inserted_at", c0."updated_at", c0."id" FROM "categories" AS c0 WHERE (c0."id" = ANY($1)) [["a100e085-4038-48c5-8333-b1e8f91c0a61", "25071c42-6694-4d50-b755-68627544e7a3"]]
+↳ CozyCheckoutWeb.PosLive.OrderManagement.load_products/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:793
+[debug] QUERY OK source="order_items" db=2.7ms idle=830.7ms
+SELECT o0."product_id", count(o0."id") FROM "order_items" AS o0 WHERE (o0."deleted_at" IS NULL) GROUP BY o0."product_id" ORDER BY count(o0."id") DESC LIMIT $1 [20]
+↳ CozyCheckout.Sales.get_popular_products/1, at: lib/cozy_checkout/sales.ex:447
+[debug] QUERY OK source="products" db=3.2ms idle=834.1ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at" FROM "products" AS p0 WHERE (p0."deleted_at" IS NULL) ORDER BY p0."name" []
+↳ CozyCheckout.Sales.get_popular_products/1, at: lib/cozy_checkout/sales.ex:451
+[debug] QUERY OK source="categories" db=1.1ms idle=529.4ms
+SELECT c0."id", c0."name", c0."description", c0."order", c0."visible_in_pos", c0."deleted_at", c0."inserted_at", c0."updated_at", c0."id" FROM "categories" AS c0 WHERE (c0."id" = ANY($1)) [["13ee9c1d-ff48-4711-845e-3dadba49adcc", "a100e085-4038-48c5-8333-b1e8f91c0a61", "25071c42-6694-4d50-b755-68627544e7a3", "ec17fa2e-e766-4681-a885-218a53abed5c", "54463aa6-c35d-4ac5-9491-3e632cbbe732"]]
+↳ CozyCheckout.Sales.get_popular_products/1, at: lib/cozy_checkout/sales.ex:451
+[debug] QUERY OK source="pricelists" db=4.9ms idle=18.9ms
+SELECT p0."id", p0."price", p0."price_tiers", p0."vat_rate", p0."valid_from", p0."valid_to", p0."active", p0."deleted_at", p0."product_id", p0."inserted_at", p0."updated_at" FROM "pricelists" AS p0 WHERE (p0."product_id" = $1) AND (p0."deleted_at" IS NULL) AND (p0."active" = TRUE) AND (p0."valid_from" <= $2) AND ((p0."valid_to" IS NULL) OR (p0."valid_to" >= $3)) ORDER BY p0."valid_from" DESC LIMIT 1 ["f949e43c-b8e1-4522-a258-5089caf0da19", ~D[2026-09-28], ~D[2026-09-28]]
+↳ anonymous fn/1 in CozyCheckoutWeb.PosLive.OrderManagement.enrich_products_with_prices/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:810
+[debug] QUERY OK source="pricelists" db=1.3ms idle=21.4ms
+SELECT p0."id", p0."price", p0."price_tiers", p0."vat_rate", p0."valid_from", p0."valid_to", p0."active", p0."deleted_at", p0."product_id", p0."inserted_at", p0."updated_at" FROM "pricelists" AS p0 WHERE (p0."product_id" = $1) AND (p0."deleted_at" IS NULL) AND (p0."active" = TRUE) AND (p0."valid_from" <= $2) AND ((p0."valid_to" IS NULL) OR (p0."valid_to" >= $3)) ORDER BY p0."valid_from" DESC LIMIT 1 ["2addf0ae-6a69-44cf-9701-41fdf3638f46", ~D[2026-09-28], ~D[2026-09-28]]
+↳ anonymous fn/1 in CozyCheckoutWeb.PosLive.OrderManagement.enrich_products_with_prices/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:810
+[debug] QUERY OK source="pricelists" db=1.4ms idle=21.8ms
+SELECT p0."id", p0."price", p0."price_tiers", p0."vat_rate", p0."valid_from", p0."valid_to", p0."active", p0."deleted_at", p0."product_id", p0."inserted_at", p0."updated_at" FROM "pricelists" AS p0 WHERE (p0."product_id" = $1) AND (p0."deleted_at" IS NULL) AND (p0."active" = TRUE) AND (p0."valid_from" <= $2) AND ((p0."valid_to" IS NULL) OR (p0."valid_to" >= $3)) ORDER BY p0."valid_from" DESC LIMIT 1 ["7956d628-c2a6-4fca-8c74-2adf767fe120", ~D[2026-09-28], ~D[2026-09-28]]
+↳ anonymous fn/1 in CozyCheckoutWeb.PosLive.OrderManagement.enrich_products_with_prices/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:810
+[debug] QUERY OK source="pricelists" db=1.1ms idle=22.3ms
+SELECT p0."id", p0."price", p0."price_tiers", p0."vat_rate", p0."valid_from", p0."valid_to", p0."active", p0."deleted_at", p0."product_id", p0."inserted_at", p0."updated_at" FROM "pricelists" AS p0 WHERE (p0."product_id" = $1) AND (p0."deleted_at" IS NULL) AND (p0."active" = TRUE) AND (p0."valid_from" <= $2) AND ((p0."valid_to" IS NULL) OR (p0."valid_to" >= $3)) ORDER BY p0."valid_from" DESC LIMIT 1 ["f949e43c-b8e1-4522-a258-5089caf0da19", ~D[2026-09-28], ~D[2026-09-28]]
+↳ anonymous fn/1 in CozyCheckoutWeb.PosLive.OrderManagement.enrich_products_with_prices/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:810
+[debug] QUERY OK source="pricelists" db=1.1ms idle=20.9ms
+SELECT p0."id", p0."price", p0."price_tiers", p0."vat_rate", p0."valid_from", p0."valid_to", p0."active", p0."deleted_at", p0."product_id", p0."inserted_at", p0."updated_at" FROM "pricelists" AS p0 WHERE (p0."product_id" = $1) AND (p0."deleted_at" IS NULL) AND (p0."active" = TRUE) AND (p0."valid_from" <= $2) AND ((p0."valid_to" IS NULL) OR (p0."valid_to" >= $3)) ORDER BY p0."valid_from" DESC LIMIT 1 ["2addf0ae-6a69-44cf-9701-41fdf3638f46", ~D[2026-09-28], ~D[2026-09-28]]
+↳ anonymous fn/1 in CozyCheckoutWeb.PosLive.OrderManagement.enrich_products_with_prices/1, at: lib/cozy_checkout_web/live/pos_live/order_management.ex:810
+[debug] Replied in 37ms
+[debug] HANDLE EVENT "heartbeat" in CozyCheckoutWeb.PosLive.OrderManagement
+  Parameters: %{}
+[debug] Replied in 147µs
+[debug] HANDLE EVENT "open_payment_modal" in CozyCheckoutWeb.PosLive.OrderManagement
+  Parameters: %{"value" => ""}
+[debug] Replied in 218µs
+[debug] HANDLE EVENT "open_payment_modal" in CozyCheckoutWeb.PosLive.OrderManagement
+  Parameters: %{"value" => ""}
+[debug] Replied in 195µs
+[debug] HANDLE EVENT "open_payment_modal" in CozyCheckoutWeb.PosLive.OrderManagement
+  Parameters: %{"value" => ""}
+[debug] Replied in 166µs
+[debug] HANDLE EVENT "open_payment_modal" in CozyCheckoutWeb.PosLive.OrderManagement
+  Parameters: %{"value" => ""}
+[debug] Replied in 1ms
+Done in 28ms
+[debug] Live reload: lib/cozy_checkout_web/live/pos_live/order_management.html.heex
+[debug] Live reload: lib/cozy_checkout_web/live/pos_live/order_management.ex
+[info] GET /pos/orders/3e91ecb8-a234-41e5-a7df-4b76a5d27ed4
+[debug] Processing with CozyCheckoutWeb.PosLive.OrderManagement.__live__/0
+  Parameters: %{"id" => "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"}
+  Pipelines: [:browser]
+[info] Sent 500 in 27ms
+[error] ** (KeyError) key :page_title not found in:
+
+    %{
+      discount_reason: "",
+      item_to_delete: nil,
+      last_payment_amount: nil,
+      selected_product: nil,
+      show_payment_modal: false,
+      selected_category_id: nil,
+      payment_pin: "",
+      quantity_product: nil,
+      tips_amount: "0",
+      payment_qr_svg: nil,
+      payment_invoice_number: nil,
+      show_payment_pin: false,
+      categories: [],
+      socket: #Phoenix.LiveView.Socket<
+        id: "phx-GNmWDRnMGvKaZici",
+        endpoint: CozyCheckoutWeb.Endpoint,
+        view: CozyCheckoutWeb.PosLive.OrderManagement,
+        parent_pid: nil,
+        root_pid: nil,
+        router: CozyCheckoutWeb.Router,
+        assigns: #Phoenix.LiveView.Socket.AssignsNotInSocket<>,
+        transport_pid: nil,
+        sticky?: false,
+        ...
+      >,
+      show_delete_confirm: false,
+      products: [],
+      order: nil,
+      payment_method: nil,
+      order_id: "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4",
+      payment_pin_mode: nil,
+      live_action: nil,
+      show_unit_modal: false,
+      show_success: false,
+      discount_amount: "0",
+      __changed__: %{
+        discount_reason: true,
+        item_to_delete: true,
+        last_payment_amount: true,
+        selected_product: true,
+        show_payment_modal: true,
+        selected_category_id: true,
+        payment_pin: true,
+        quantity_product: true,
+        tips_amount: true,
+        payment_qr_svg: true,
+        payment_invoice_number: true,
+        show_payment_pin: true,
+        categories: true,
+        show_delete_confirm: true,
+        products: true,
+        order: true,
+        payment_method: true,
+        order_id: true,
+        payment_pin_mode: true,
+        show_unit_modal: true,
+        show_success: true,
+        discount_amount: true,
+        split_selection: true,
+        popular_products: true,
+        payment_pin_authorized: true,
+        recalculated_total: true,
+        payment_preview_amount: true,
+        payment_pin_configured: true,
+        show_quantity_modal: true,
+        split_mode: true,
+        split_payment_amount: true,
+        split_allocated: true,
+        show_recalculate_modal: true,
+        grouped_items: true
+      },
+      flash: %{},
+      split_selection: %{},
+      popular_products: [],
+      payment_pin_authorized: false,
+      recalculated_total: nil,
+      payment_preview_amount: nil,
+      payment_pin_configured: false,
+      show_quantity_modal: false,
+      split_mode: false,
+      split_payment_amount: nil,
+      split_allocated: %{},
+      show_recalculate_modal: false,
+      grouped_items: []
+    }
+
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.html.heex:1: anonymous fn/2 in CozyCheckoutWeb.PosLive.OrderManagement.render/1
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/diff.ex:458: Phoenix.LiveView.Diff.traverse/6
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/diff.ex:163: Phoenix.LiveView.Diff.render/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/static.ex:291: Phoenix.LiveView.Static.to_rendered_content_tag/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/static.ex:171: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.8.9) lib/phoenix/router.ex:428: Phoenix.Router.__call__/5
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/endpoint.ex:1: CozyCheckoutWeb.Endpoint.plug_builder_call/2
+    (cozy_checkout 0.1.0) deps/plug/lib/plug/debugger.ex:155: CozyCheckoutWeb.Endpoint."call (overridable 3)"/2
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/endpoint.ex:1: CozyCheckoutWeb.Endpoint.call/2
+    (phoenix 1.8.9) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.12.4) lib/bandit/pipeline.ex:129: Bandit.Pipeline.call_plug!/2
+    (bandit 1.12.4) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.12.4) lib/bandit/http1/handler.ex:23: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.12.4) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.12.4) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_info/2
+    (stdlib 8.1) gen_server.erl:2434: :gen_server.try_handle_info/3
+    (stdlib 8.1) gen_server.erl:2420: :gen_server.handle_msg/3
+    (stdlib 8.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+
+[debug] Live reload: priv/static/assets/js/app.js
+[info] GET /pos/orders/3e91ecb8-a234-41e5-a7df-4b76a5d27ed4
+[debug] Processing with CozyCheckoutWeb.PosLive.OrderManagement.__live__/0
+  Parameters: %{"id" => "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"}
+  Pipelines: [:browser]
+[info] Sent 500 in 12ms
+[error] ** (KeyError) key :page_title not found in:
+
+    %{
+      discount_reason: "",
+      item_to_delete: nil,
+      last_payment_amount: nil,
+      selected_product: nil,
+      show_payment_modal: false,
+      selected_category_id: nil,
+      payment_pin: "",
+      quantity_product: nil,
+      tips_amount: "0",
+      payment_qr_svg: nil,
+      payment_invoice_number: nil,
+      show_payment_pin: false,
+      categories: [],
+      socket: #Phoenix.LiveView.Socket<
+        id: "phx-GNmWHl2mWfAuoDxh",
+        endpoint: CozyCheckoutWeb.Endpoint,
+        view: CozyCheckoutWeb.PosLive.OrderManagement,
+        parent_pid: nil,
+        root_pid: nil,
+        router: CozyCheckoutWeb.Router,
+        assigns: #Phoenix.LiveView.Socket.AssignsNotInSocket<>,
+        transport_pid: nil,
+        sticky?: false,
+        ...
+      >,
+      show_delete_confirm: false,
+      products: [],
+      order: nil,
+      payment_method: nil,
+      order_id: "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4",
+      payment_pin_mode: nil,
+      live_action: nil,
+      show_unit_modal: false,
+      show_success: false,
+      discount_amount: "0",
+      __changed__: %{
+        discount_reason: true,
+        item_to_delete: true,
+        last_payment_amount: true,
+        selected_product: true,
+        show_payment_modal: true,
+        selected_category_id: true,
+        payment_pin: true,
+        quantity_product: true,
+        tips_amount: true,
+        payment_qr_svg: true,
+        payment_invoice_number: true,
+        show_payment_pin: true,
+        categories: true,
+        show_delete_confirm: true,
+        products: true,
+        order: true,
+        payment_method: true,
+        order_id: true,
+        payment_pin_mode: true,
+        show_unit_modal: true,
+        show_success: true,
+        discount_amount: true,
+        split_selection: true,
+        popular_products: true,
+        payment_pin_authorized: true,
+        recalculated_total: true,
+        payment_preview_amount: true,
+        payment_pin_configured: true,
+        show_quantity_modal: true,
+        split_mode: true,
+        split_payment_amount: true,
+        split_allocated: true,
+        show_recalculate_modal: true,
+        grouped_items: true
+      },
+      flash: %{},
+      split_selection: %{},
+      popular_products: [],
+      payment_pin_authorized: false,
+      recalculated_total: nil,
+      payment_preview_amount: nil,
+      payment_pin_configured: false,
+      show_quantity_modal: false,
+      split_mode: false,
+      split_payment_amount: nil,
+      split_allocated: %{},
+      show_recalculate_modal: false,
+      grouped_items: []
+    }
+
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.html.heex:1: anonymous fn/2 in CozyCheckoutWeb.PosLive.OrderManagement.render/1
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/diff.ex:458: Phoenix.LiveView.Diff.traverse/6
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/diff.ex:163: Phoenix.LiveView.Diff.render/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/static.ex:291: Phoenix.LiveView.Static.to_rendered_content_tag/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/static.ex:171: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.8.9) lib/phoenix/router.ex:428: Phoenix.Router.__call__/5
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/endpoint.ex:1: CozyCheckoutWeb.Endpoint.plug_builder_call/2
+    (cozy_checkout 0.1.0) deps/plug/lib/plug/debugger.ex:155: CozyCheckoutWeb.Endpoint."call (overridable 3)"/2
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/endpoint.ex:1: CozyCheckoutWeb.Endpoint.call/2
+    (phoenix 1.8.9) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.12.4) lib/bandit/pipeline.ex:129: Bandit.Pipeline.call_plug!/2
+    (bandit 1.12.4) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.12.4) lib/bandit/http1/handler.ex:23: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.12.4) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.12.4) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 8.1) gen_server.erl:2424: :gen_server.try_handle_continue/3
+    (stdlib 8.1) gen_server.erl:2291: :gen_server.loop/4
+    (stdlib 8.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+
+[debug] Live reload: priv/static/assets/css/app.css
+[debug] QUERY OK source="orders" db=9.2ms idle=1187.1ms
+UPDATE "orders" AS o0 SET "abra_sync_attempts" = o0."abra_sync_attempts" + $1 WHERE (o0."id" = $2) [1, "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Workers.AbraSyncWorker.perform/1, at: lib/cozy_checkout/workers/abra_sync_worker.ex:14
+[debug] QUERY OK source="orders" db=8.9ms idle=1207.5ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."deleted_at" IS NULL) AND (o0."id" = $1) ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="payments" db=2.0ms idle=270.3ms
+SELECT p0."id", p0."amount", p0."payment_method", p0."payment_date", p0."notes", p0."invoice_number", p0."deleted_at", p0."order_id", p0."inserted_at", p0."updated_at", p0."order_id" FROM "payments" AS p0 WHERE (p0."order_id" = $1) ORDER BY p0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="order_items" db=3.7ms idle=468.7ms
+SELECT o0."id", o0."quantity", o0."unit_amount", o0."unit_price", o0."vat_rate", o0."subtotal", o0."deleted_at", o0."order_id", o0."product_id", o0."inserted_at", o0."updated_at", o0."order_id" FROM "order_items" AS o0 WHERE (o0."order_id" = $1) ORDER BY o0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="products" db=1.6ms idle=221.6ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at", p0."id" FROM "products" AS p0 WHERE (p0."id" = $1) ["f949e43c-b8e1-4522-a258-5089caf0da19"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[warning] [Abra] Invoice creation failed: HTTP 401
+[debug] QUERY OK source="orders" db=9.2ms idle=1106.2ms
+UPDATE "orders" AS o0 SET "abra_sync_attempts" = o0."abra_sync_attempts" + $1 WHERE (o0."id" = $2) [1, "e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Workers.AbraSyncWorker.perform/1, at: lib/cozy_checkout/workers/abra_sync_worker.ex:14
+[debug] QUERY OK source="orders" db=1.1ms idle=1116.8ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."deleted_at" IS NULL) AND (o0."id" = $1) ["e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="payments" db=1.4ms idle=1118.8ms
+SELECT p0."id", p0."amount", p0."payment_method", p0."payment_date", p0."notes", p0."invoice_number", p0."deleted_at", p0."order_id", p0."inserted_at", p0."updated_at", p0."order_id" FROM "payments" AS p0 WHERE (p0."order_id" = $1) ORDER BY p0."order_id" ["e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="order_items" db=2.7ms idle=1035.1ms
+SELECT o0."id", o0."quantity", o0."unit_amount", o0."unit_price", o0."vat_rate", o0."subtotal", o0."deleted_at", o0."order_id", o0."product_id", o0."inserted_at", o0."updated_at", o0."order_id" FROM "order_items" AS o0 WHERE (o0."order_id" = $1) ORDER BY o0."order_id" ["e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="products" db=0.8ms idle=122.3ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at", p0."id" FROM "products" AS p0 WHERE (p0."id" = $1) ["f949e43c-b8e1-4522-a258-5089caf0da19"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[warning] [Abra] Invoice creation failed: HTTP 401
+[debug] QUERY OK source="orders" db=3.4ms idle=1923.9ms
+UPDATE "orders" AS o0 SET "abra_sync_attempts" = o0."abra_sync_attempts" + $1 WHERE (o0."id" = $2) [1, "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Workers.AbraSyncWorker.perform/1, at: lib/cozy_checkout/workers/abra_sync_worker.ex:14
+[debug] QUERY OK source="orders" db=3.4ms idle=1928.7ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."deleted_at" IS NULL) AND (o0."id" = $1) ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="payments" db=0.9ms idle=1932.9ms
+SELECT p0."id", p0."amount", p0."payment_method", p0."payment_date", p0."notes", p0."invoice_number", p0."deleted_at", p0."order_id", p0."inserted_at", p0."updated_at", p0."order_id" FROM "payments" AS p0 WHERE (p0."order_id" = $1) ORDER BY p0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="order_items" db=0.9ms idle=1933.1ms
+SELECT o0."id", o0."quantity", o0."unit_amount", o0."unit_price", o0."vat_rate", o0."subtotal", o0."deleted_at", o0."order_id", o0."product_id", o0."inserted_at", o0."updated_at", o0."order_id" FROM "order_items" AS o0 WHERE (o0."order_id" = $1) ORDER BY o0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="products" db=2.3ms idle=1934.3ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at", p0."id" FROM "products" AS p0 WHERE (p0."id" = $1) ["f949e43c-b8e1-4522-a258-5089caf0da19"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[warning] [Abra] Invoice creation failed: HTTP 401
+[debug] QUERY OK source="orders" db=1.6ms idle=1232.0ms
+UPDATE "orders" AS o0 SET "abra_sync_attempts" = o0."abra_sync_attempts" + $1 WHERE (o0."id" = $2) [1, "e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Workers.AbraSyncWorker.perform/1, at: lib/cozy_checkout/workers/abra_sync_worker.ex:14
+[debug] QUERY OK source="orders" db=3.2ms idle=1235.4ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."deleted_at" IS NULL) AND (o0."id" = $1) ["e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="payments" db=0.8ms idle=1037.5ms
+SELECT p0."id", p0."amount", p0."payment_method", p0."payment_date", p0."notes", p0."invoice_number", p0."deleted_at", p0."order_id", p0."inserted_at", p0."updated_at", p0."order_id" FROM "payments" AS p0 WHERE (p0."order_id" = $1) ORDER BY p0."order_id" ["e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="order_items" db=3.3ms idle=239.2ms
+SELECT o0."id", o0."quantity", o0."unit_amount", o0."unit_price", o0."vat_rate", o0."subtotal", o0."deleted_at", o0."order_id", o0."product_id", o0."inserted_at", o0."updated_at", o0."order_id" FROM "order_items" AS o0 WHERE (o0."order_id" = $1) ORDER BY o0."order_id" ["e60d6b69-ff11-4403-9a34-3cb13fab59ba"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="products" db=0.9ms idle=242.8ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at", p0."id" FROM "products" AS p0 WHERE (p0."id" = $1) ["f949e43c-b8e1-4522-a258-5089caf0da19"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[warning] [Abra] Invoice creation failed: HTTP 401
+[debug] QUERY OK source="orders" db=1.1ms idle=774.1ms
+UPDATE "orders" AS o0 SET "abra_sync_attempts" = o0."abra_sync_attempts" + $1 WHERE (o0."id" = $2) [1, "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Workers.AbraSyncWorker.perform/1, at: lib/cozy_checkout/workers/abra_sync_worker.ex:14
+[debug] QUERY OK source="orders" db=1.1ms queue=0.1ms idle=46.5ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."deleted_at" IS NULL) AND (o0."id" = $1) ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="order_items" db=2.3ms idle=49.8ms
+SELECT o0."id", o0."quantity", o0."unit_amount", o0."unit_price", o0."vat_rate", o0."subtotal", o0."deleted_at", o0."order_id", o0."product_id", o0."inserted_at", o0."updated_at", o0."order_id" FROM "order_items" AS o0 WHERE (o0."order_id" = $1) ORDER BY o0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="payments" db=5.8ms queue=1.3ms idle=48.2ms
+SELECT p0."id", p0."amount", p0."payment_method", p0."payment_date", p0."notes", p0."invoice_number", p0."deleted_at", p0."order_id", p0."inserted_at", p0."updated_at", p0."order_id" FROM "payments" AS p0 WHERE (p0."order_id" = $1) ORDER BY p0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="products" db=0.5ms idle=55.8ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at", p0."id" FROM "products" AS p0 WHERE (p0."id" = $1) ["f949e43c-b8e1-4522-a258-5089caf0da19"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[warning] [Abra] Invoice creation failed: HTTP 401
+[debug] QUERY OK source="orders" db=0.6ms idle=774.5ms
+UPDATE "orders" AS o0 SET "abra_sync_attempts" = o0."abra_sync_attempts" + $1 WHERE (o0."id" = $2) [1, "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Workers.AbraSyncWorker.perform/1, at: lib/cozy_checkout/workers/abra_sync_worker.ex:14
+[debug] QUERY OK source="orders" db=1.0ms idle=158.7ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."deleted_at" IS NULL) AND (o0."id" = $1) ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="payments" db=0.6ms idle=160.3ms
+SELECT p0."id", p0."amount", p0."payment_method", p0."payment_date", p0."notes", p0."invoice_number", p0."deleted_at", p0."order_id", p0."inserted_at", p0."updated_at", p0."order_id" FROM "payments" AS p0 WHERE (p0."order_id" = $1) ORDER BY p0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="order_items" db=0.9ms idle=160.4ms
+SELECT o0."id", o0."quantity", o0."unit_amount", o0."unit_price", o0."vat_rate", o0."subtotal", o0."deleted_at", o0."order_id", o0."product_id", o0."inserted_at", o0."updated_at", o0."order_id" FROM "order_items" AS o0 WHERE (o0."order_id" = $1) ORDER BY o0."order_id" ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[debug] QUERY OK source="products" db=0.9ms idle=161.6ms
+SELECT p0."id", p0."name", p0."description", p0."active", p0."track_stock", p0."visible_in_pos", p0."unit", p0."default_unit_amounts", p0."low_stock_threshold", p0."track_bar_stock", p0."bar_stock_threshold", p0."deleted_at", p0."category_id", p0."inserted_at", p0."updated_at", p0."id" FROM "products" AS p0 WHERE (p0."id" = $1) ["f949e43c-b8e1-4522-a258-5089caf0da19"]
+↳ CozyCheckout.Sales.get_order_for_abra_sync!/1, at: lib/cozy_checkout/sales.ex:768
+[warning] [Abra] Invoice creation failed: HTTP 401
+[debug] QUERY OK source="orders" db=4.2ms idle=221.0ms
+SELECT o0."id", o0."order_number", o0."name", o0."status", o0."total_amount", o0."discount_amount", o0."tips_amount", o0."discount_reason", o0."notes", o0."is_service_order", o0."deleted_at", o0."abra_sync_status", o0."abra_sync_attempts", o0."abra_document_id", o0."abra_synced_at", o0."abra_sync_error", o0."guest_id", o0."booking_id", o0."inserted_at", o0."updated_at" FROM "orders" AS o0 WHERE (o0."id" = $1) ["3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Sales.mark_order_abra_failed/2, at: lib/cozy_checkout/sales.ex:792
+[debug] QUERY OK source="orders" db=0.9ms queue=0.6ms idle=228.7ms
+UPDATE "orders" SET "abra_sync_status" = $1, "abra_sync_error" = $2, "updated_at" = $3 WHERE "id" = $4 ["failed", "HTTP 401", ~U[2026-09-28 20:31:45Z], "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"]
+↳ CozyCheckout.Workers.AbraSyncWorker.perform/1, at: lib/cozy_checkout/workers/abra_sync_worker.ex:22
+Done in 137ms
+[info] GET /pos
+[debug] Processing with CozyCheckoutWeb.PosLive.GuestSelection.__live__/0
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 7ms
+[info] GET /admin
+[debug] Processing with CozyCheckoutWeb.DashboardLive.__live__/0
+  Parameters: %{}
+  Pipelines: [:browser, :admin_auth]
+[info] Sent 302 in 833µs
+[debug] Phoenix.Router halted in :admin_auth/2
+[info] GET /pos/orders/3e91ecb8-a234-41e5-a7df-4b76a5d27ed4
+[debug] Processing with CozyCheckoutWeb.PosLive.OrderManagement.__live__/0
+  Parameters: %{"id" => "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4"}
+  Pipelines: [:browser]
+[info] Sent 500 in 29ms
+[error] ** (KeyError) key :page_title not found in:
+
+    %{
+      discount_reason: "",
+      item_to_delete: nil,
+      last_payment_amount: nil,
+      selected_product: nil,
+      show_payment_modal: false,
+      selected_category_id: nil,
+      payment_pin: "",
+      quantity_product: nil,
+      tips_amount: "0",
+      payment_qr_svg: nil,
+      payment_invoice_number: nil,
+      show_payment_pin: false,
+      categories: [],
+      socket: #Phoenix.LiveView.Socket<
+        id: "phx-GNmWSDbbBNwaRz7h",
+        endpoint: CozyCheckoutWeb.Endpoint,
+        view: CozyCheckoutWeb.PosLive.OrderManagement,
+        parent_pid: nil,
+        root_pid: nil,
+        router: CozyCheckoutWeb.Router,
+        assigns: #Phoenix.LiveView.Socket.AssignsNotInSocket<>,
+        transport_pid: nil,
+        sticky?: false,
+        ...
+      >,
+      show_delete_confirm: false,
+      products: [],
+      order: nil,
+      payment_method: nil,
+      order_id: "3e91ecb8-a234-41e5-a7df-4b76a5d27ed4",
+      payment_pin_mode: nil,
+      live_action: nil,
+      show_unit_modal: false,
+      show_success: false,
+      discount_amount: "0",
+      __changed__: %{
+        discount_reason: true,
+        item_to_delete: true,
+        last_payment_amount: true,
+        selected_product: true,
+        show_payment_modal: true,
+        selected_category_id: true,
+        payment_pin: true,
+        quantity_product: true,
+        tips_amount: true,
+        payment_qr_svg: true,
+        payment_invoice_number: true,
+        show_payment_pin: true,
+        categories: true,
+        show_delete_confirm: true,
+        products: true,
+        order: true,
+        payment_method: true,
+        order_id: true,
+        payment_pin_mode: true,
+        show_unit_modal: true,
+        show_success: true,
+        discount_amount: true,
+        split_selection: true,
+        popular_products: true,
+        payment_pin_authorized: true,
+        recalculated_total: true,
+        payment_preview_amount: true,
+        payment_pin_configured: true,
+        show_quantity_modal: true,
+        split_mode: true,
+        split_payment_amount: true,
+        split_allocated: true,
+        show_recalculate_modal: true,
+        grouped_items: true
+      },
+      flash: %{},
+      split_selection: %{},
+      popular_products: [],
+      payment_pin_authorized: false,
+      recalculated_total: nil,
+      payment_preview_amount: nil,
+      payment_pin_configured: false,
+      show_quantity_modal: false,
+      split_mode: false,
+      split_payment_amount: nil,
+      split_allocated: %{},
+      show_recalculate_modal: false,
+      grouped_items: []
+    }
+
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/live/pos_live/order_management.html.heex:1: anonymous fn/2 in CozyCheckoutWeb.PosLive.OrderManagement.render/1
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/diff.ex:458: Phoenix.LiveView.Diff.traverse/6
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/diff.ex:163: Phoenix.LiveView.Diff.render/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/static.ex:291: Phoenix.LiveView.Static.to_rendered_content_tag/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/static.ex:171: Phoenix.LiveView.Static.do_render/4
+    (phoenix_live_view 1.2.8) lib/phoenix_live_view/controller.ex:39: Phoenix.LiveView.Controller.live_render/3
+    (phoenix 1.8.9) lib/phoenix/router.ex:428: Phoenix.Router.__call__/5
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/endpoint.ex:1: CozyCheckoutWeb.Endpoint.plug_builder_call/2
+    (cozy_checkout 0.1.0) deps/plug/lib/plug/debugger.ex:155: CozyCheckoutWeb.Endpoint."call (overridable 3)"/2
+    (cozy_checkout 0.1.0) lib/cozy_checkout_web/endpoint.ex:1: CozyCheckoutWeb.Endpoint.call/2
+    (phoenix 1.8.9) lib/phoenix/endpoint/sync_code_reload_plug.ex:22: Phoenix.Endpoint.SyncCodeReloadPlug.do_call/4
+    (bandit 1.12.4) lib/bandit/pipeline.ex:129: Bandit.Pipeline.call_plug!/2
+    (bandit 1.12.4) lib/bandit/pipeline.ex:42: Bandit.Pipeline.run/5
+    (bandit 1.12.4) lib/bandit/http1/handler.ex:23: Bandit.HTTP1.Handler.handle_data/3
+    (bandit 1.12.4) lib/bandit/delegating_handler.ex:18: Bandit.DelegatingHandler.handle_data/3
+    (bandit 1.12.4) lib/bandit/delegating_handler.ex:8: Bandit.DelegatingHandler.handle_continue/2
+    (stdlib 8.1) gen_server.erl:2424: :gen_server.try_handle_continue/3
+    (stdlib 8.1) gen_server.erl:2291: :gen_server.loop/4
+    (stdlib 8.1) proc_lib.erl:333: :proc_lib.init_p_do_apply/3
+
+Done in 17ms
+[info] GET /pos
+[debug] Processing with CozyCheckoutWeb.PosLive.GuestSelection.__live__/0
+  Parameters: %{}
+  Pipelines: [:browser]
+[info] Sent 200 in 6ms
+[info] GET /admin
+[debug] Processing with CozyCheckoutWeb.DashboardLive.__live__/0
+  Parameters: %{}
+  Pipelines: [:browser, :admin_auth]
+[info] Sent 302 in 493µs
+[debug] Phoenix.Router halted in :admin_auth/2
+Done in 9ms

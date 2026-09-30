@@ -1,5 +1,6 @@
 defmodule CozyCheckoutWeb.DashboardLive do
   use CozyCheckoutWeb, :live_view
+  import Phoenix.Controller, only: [get_csrf_token: 0]
 
   def mount(_params, _session, socket) do
     {:ok,
@@ -27,12 +28,23 @@ defmodule CozyCheckoutWeb.DashboardLive do
             <h1 class="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
             <p class="text-lg text-gray-600">Jindřichův dům Management</p>
           </div>
-          <.link
-            navigate={~p"/"}
-            class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2"
-          >
-            <.icon name="hero-arrow-left" class="w-4 h-4" /> Back
-          </.link>
+          <div class="flex items-center gap-3">
+            <form action={~p"/admin/logout"} method="post">
+              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+              <button
+                type="submit"
+                class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+              >
+                <.icon name="hero-lock-closed" class="h-4 w-4" /> Lock Admin
+              </button>
+            </form>
+            <.link
+              navigate={~p"/pos"}
+              class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+            >
+              <.icon name="hero-arrow-left" class="h-4 w-4" /> POS
+            </.link>
+          </div>
         </div>
 
         <%!-- Quick Actions (Most Used) --%>

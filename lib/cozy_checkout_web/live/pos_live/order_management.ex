@@ -3,6 +3,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   alias CozyCheckout.{Sales, Catalog}
   alias CozyCheckout.Payments.QrCode
+  alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
   alias CozyCheckoutWeb.OrderItemGrouper
 
   @impl true
@@ -15,6 +16,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:show_unit_modal, false)
        |> assign(:selected_product, nil)
        |> assign(:show_payment_modal, false)
+       |> assign(:show_payment_pin, false)
+       |> assign(:payment_pin, "")
+       |> assign(:payment_pin_mode, nil)
+       |> assign(:payment_pin_authorized, false)
+       |> assign(:payment_pin_configured, AdminAuth.enabled?())
        |> assign(:payment_method, nil)
        |> assign(:payment_qr_svg, nil)
        |> assign(:payment_invoice_number, nil)
@@ -44,6 +50,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:show_unit_modal, false)
        |> assign(:selected_product, nil)
        |> assign(:show_payment_modal, false)
+       |> assign(:show_payment_pin, false)
+       |> assign(:payment_pin, "")
+       |> assign(:payment_pin_mode, nil)
+       |> assign(:payment_pin_authorized, false)
+       |> assign(:payment_pin_configured, AdminAuth.enabled?())
        |> assign(:payment_method, nil)
        |> assign(:payment_qr_svg, nil)
        |> assign(:payment_invoice_number, nil)
@@ -345,36 +356,56 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("open_split_payment_modal", _params, socket) do
-    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
-
-    {:noreply,
-     socket
-     |> assign(:split_payment_amount, split_amount)
-     |> assign(:show_payment_modal, true)
-     |> assign(:payment_method, nil)
-     |> assign(:payment_qr_svg, nil)
-     |> assign(:payment_invoice_number, nil)
-     |> assign(:payment_preview_amount, nil)}
+    {:noreply, request_payment_pin(socket, :split)}
   end
 
   @impl true
   def handle_event("open_payment_modal", _params, socket) do
+    {:noreply, request_payment_pin(socket, :full)}
+  end
+
+  def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    cond do
+      not AdminAuth.enabled?() ->
+        {:noreply,
+         socket
+         |> assign(:show_payment_pin, false)
+         |> put_flash(:error, "Payment PIN is not configured")}
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+
+      AdminAuth.verify_pin(pin) ->
+        AdminAuthRateLimiter.reset(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin_authorized, true)
+         |> assign(:show_payment_pin, false)
+         |> assign(:payment_pin, "")
+         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+
+      true ->
+        AdminAuthRateLimiter.record_failure(:pos_payment)
+
+        {:noreply,
+         socket
+         |> assign(:payment_pin, "")
+         |> put_flash(:error, "Incorrect PIN")}
+    end
+  end
+
+  def handle_event("cancel_payment_pin", _params, socket) do
     {:noreply,
      socket
-     |> assign(:show_payment_modal, true)
-     |> assign(:payment_method, nil)
-     |> assign(:payment_qr_svg, nil)
-     |> assign(:payment_invoice_number, nil)
-     |> assign(:payment_preview_amount, nil)
-     |> assign(
-       :tips_amount,
-       Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0"))
-     )
-     |> assign(
-       :discount_amount,
-       Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
-     )
-     |> assign(:discount_reason, socket.assigns.order.discount_reason || "")}
+     |> assign(:show_payment_pin, false)
+     |> assign(:payment_pin, "")
+     |> assign(:payment_pin_mode, nil)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:split_payment_amount, nil)}
   end
 
   @impl true
@@ -382,6 +413,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     {:noreply,
      socket
      |> assign(:show_payment_modal, false)
+     |> assign(:payment_pin_authorized, false)
+     |> assign(:payment_pin_mode, nil)
      |> assign(:payment_method, nil)
      |> assign(:payment_qr_svg, nil)
      |> assign(:payment_invoice_number, nil)
@@ -399,86 +432,10 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("select_payment_method", %{"method" => "cash"}, socket) do
-    case socket.assigns.split_payment_amount do
-      nil ->
-        # Full-order payment: apply tips & discount, then pay the new total
-        tips = parse_decimal(socket.assigns.tips_amount)
-        discount = parse_decimal(socket.assigns.discount_amount)
-
-        items_total =
-          socket.assigns.order.order_items
-          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
-            Decimal.add(acc, item.subtotal)
-          end)
-
-        new_total =
-          items_total
-          |> Decimal.sub(discount)
-          |> Decimal.add(tips)
-
-        order_update_attrs = %{
-          "tips_amount" => Decimal.to_string(tips),
-          "discount_amount" => Decimal.to_string(discount),
-          "discount_reason" => socket.assigns.discount_reason,
-          "total_amount" => Decimal.to_string(new_total)
-        }
-
-        case Sales.update_order(socket.assigns.order, order_update_attrs) do
-          {:ok, updated_order} ->
-            payment_attrs = %{
-              "order_id" => socket.assigns.order_id,
-              "amount" => Decimal.to_string(updated_order.total_amount),
-              "payment_method" => "cash",
-              "payment_date" => Date.utc_today()
-            }
-
-            case Sales.create_payment(payment_attrs) do
-              {:ok, payment} ->
-                {:noreply,
-                 socket
-                 |> assign(:payment_method, "cash_success")
-                 |> assign(:payment_invoice_number, payment.invoice_number)
-                 |> assign(:last_payment_amount, updated_order.total_amount)
-                 |> load_order()}
-
-              {:error, _changeset} ->
-                {:noreply, put_flash(socket, :error, "Failed to create payment")}
-            end
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to update order")}
-        end
-
-      split_amount ->
-        # Split payment: pay only the selected amount, no tips/discount changes
-        payment_attrs = %{
-          "order_id" => socket.assigns.order_id,
-          "amount" => Decimal.to_string(split_amount),
-          "payment_method" => "cash",
-          "payment_date" => Date.utc_today()
-        }
-
-        case Sales.create_payment(payment_attrs) do
-          {:ok, payment} ->
-            new_allocated =
-              merge_selection_into_allocated(
-                socket.assigns.split_allocated,
-                socket.assigns.split_selection
-              )
-
-            {:noreply,
-             socket
-             |> assign(:payment_method, "cash_success")
-             |> assign(:payment_invoice_number, payment.invoice_number)
-             |> assign(:last_payment_amount, split_amount)
-             |> assign(:split_selection, %{})
-             |> assign(:split_allocated, new_allocated)
-             |> assign(:split_payment_amount, nil)
-             |> load_order()}
-
-          {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to create payment")}
-        end
+    if socket.assigns.payment_pin_authorized do
+      handle_cash_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
     end
   end
 
@@ -525,11 +482,111 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("select_payment_method", %{"method" => "qr_code"}, socket) do
+    if socket.assigns.payment_pin_authorized do
+      show_qr_payment_preview(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  @impl true
+  def handle_event("confirm_qr_payment", _params, socket) do
+    if socket.assigns.payment_pin_authorized do
+      record_qr_payment(socket)
+    else
+      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+    end
+  end
+
+  defp handle_cash_payment(socket) do
+    case socket.assigns.split_payment_amount do
+      nil ->
+        tips = parse_decimal(socket.assigns.tips_amount)
+        discount = parse_decimal(socket.assigns.discount_amount)
+
+        items_total =
+          socket.assigns.order.order_items
+          |> Enum.reduce(Decimal.new("0"), fn item, acc ->
+            Decimal.add(acc, item.subtotal)
+          end)
+
+        new_total =
+          items_total
+          |> Decimal.sub(discount)
+          |> Decimal.add(tips)
+
+        order_update_attrs = %{
+          "tips_amount" => Decimal.to_string(tips),
+          "discount_amount" => Decimal.to_string(discount),
+          "discount_reason" => socket.assigns.discount_reason,
+          "total_amount" => Decimal.to_string(new_total)
+        }
+
+        case Sales.update_order(socket.assigns.order, order_update_attrs) do
+          {:ok, updated_order} ->
+            payment_attrs = %{
+              "order_id" => socket.assigns.order_id,
+              "amount" => Decimal.to_string(updated_order.total_amount),
+              "payment_method" => "cash",
+              "payment_date" => Date.utc_today()
+            }
+
+            case Sales.create_payment(payment_attrs) do
+              {:ok, payment} ->
+                {:noreply,
+                 socket
+                 |> assign(:payment_method, "cash_success")
+                 |> assign(:payment_pin_authorized, false)
+                 |> assign(:payment_invoice_number, payment.invoice_number)
+                 |> assign(:last_payment_amount, updated_order.total_amount)
+                 |> load_order()}
+
+              {:error, _changeset} ->
+                {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            end
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to update order")}
+        end
+
+      split_amount ->
+        payment_attrs = %{
+          "order_id" => socket.assigns.order_id,
+          "amount" => Decimal.to_string(split_amount),
+          "payment_method" => "cash",
+          "payment_date" => Date.utc_today()
+        }
+
+        case Sales.create_payment(payment_attrs) do
+          {:ok, payment} ->
+            new_allocated =
+              merge_selection_into_allocated(
+                socket.assigns.split_allocated,
+                socket.assigns.split_selection
+              )
+
+            {:noreply,
+             socket
+             |> assign(:payment_method, "cash_success")
+             |> assign(:payment_pin_authorized, false)
+             |> assign(:payment_invoice_number, payment.invoice_number)
+             |> assign(:last_payment_amount, split_amount)
+             |> assign(:split_selection, %{})
+             |> assign(:split_allocated, new_allocated)
+             |> assign(:split_payment_amount, nil)
+             |> load_order()}
+
+          {:error, _changeset} ->
+            {:noreply, put_flash(socket, :error, "Failed to create payment")}
+        end
+    end
+  end
+
+  defp show_qr_payment_preview(socket) do
     bank_account = Application.get_env(:cozy_checkout, :bank_account, "123456789/0100")
 
     case socket.assigns.split_payment_amount do
       nil ->
-        # Full-order payment: update tips/discount, then show QR for new total
         tips = parse_decimal(socket.assigns.tips_amount)
         discount = parse_decimal(socket.assigns.discount_amount)
 
@@ -574,7 +631,6 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         end
 
       split_amount ->
-        # Split payment: show QR for split amount only, no order update
         order = socket.assigns.order
 
         qr_svg =
@@ -594,8 +650,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     end
   end
 
-  @impl true
-  def handle_event("confirm_qr_payment", _params, socket) do
+  defp record_qr_payment(socket) do
     amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
 
     payment_attrs = %{
@@ -626,6 +681,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         {:noreply,
          socket
          |> assign(:payment_method, "qr_success")
+         |> assign(:payment_pin_authorized, false)
          |> assign(:payment_invoice_number, payment.invoice_number)
          |> assign(:last_payment_amount, amount)
          |> load_order()}
@@ -633,6 +689,59 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to record payment")}
     end
+  end
+
+  defp request_payment_pin(socket, mode) do
+    cond do
+      not AdminAuth.enabled?() ->
+        put_flash(socket, :error, "Payment PIN is not configured")
+
+      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+        put_flash(
+          socket,
+          :error,
+          "Too many incorrect PIN attempts. Wait one minute and try again."
+        )
+
+      true ->
+        socket
+        |> assign(:show_payment_pin, true)
+        |> assign(:payment_pin, "")
+        |> assign(:payment_pin_mode, mode)
+        |> assign(:payment_pin_authorized, false)
+        |> assign(:show_payment_modal, false)
+    end
+  end
+
+  defp prepare_payment_modal(socket, :split) do
+    split_amount = calc_split_total(socket.assigns.grouped_items, socket.assigns.split_selection)
+
+    socket
+    |> assign(:split_payment_amount, split_amount)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+  end
+
+  defp prepare_payment_modal(socket, :full) do
+    socket
+    |> assign(:split_payment_amount, nil)
+    |> assign(:show_payment_modal, true)
+    |> assign(:payment_method, nil)
+    |> assign(:payment_qr_svg, nil)
+    |> assign(:payment_invoice_number, nil)
+    |> assign(:payment_preview_amount, nil)
+    |> assign(
+      :tips_amount,
+      Decimal.to_string(socket.assigns.order.tips_amount || Decimal.new("0"))
+    )
+    |> assign(
+      :discount_amount,
+      Decimal.to_string(socket.assigns.order.discount_amount || Decimal.new("0"))
+    )
+    |> assign(:discount_reason, socket.assigns.order.discount_reason || "")
   end
 
   defp add_item_to_order(socket, product_id, unit_amount) do
