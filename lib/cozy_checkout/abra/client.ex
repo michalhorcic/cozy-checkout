@@ -34,13 +34,46 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
-  defp parse_abra_id(%{"winstrom" => %{"results" => [%{"id" => id} | _]}}),
-    do: {:ok, to_string(id)}
+  defp parse_abra_id(%{"winstrom" => %{"results" => [%{} = result | _]}}) do
+    case Map.get(result, "errors") do
+      [error | _] = errors ->
+        reason = error_message(error)
+        Logger.warning("[Abra] Invoice import failed: #{inspect(errors)}")
+        {:error, reason}
+
+      errors when errors in [nil, []] ->
+        case valid_document_id(Map.get(result, "id")) do
+          {:ok, id} ->
+            {:ok, id}
+
+          :error ->
+            Logger.warning("[Abra] Response did not contain a valid document ID")
+            {:error, "unexpected_response"}
+        end
+
+      _ ->
+        Logger.warning("[Abra] Unexpected response errors: #{inspect(result)}")
+        {:error, "unexpected_response"}
+    end
+  end
 
   defp parse_abra_id(body) do
     Logger.warning("[Abra] Unexpected response body: #{inspect(body)}")
     {:error, "unexpected_response"}
   end
+
+  defp valid_document_id(id) when is_integer(id) and id > 0, do: {:ok, Integer.to_string(id)}
+
+  defp valid_document_id(id) when is_binary(id) do
+    if String.trim(id) == "", do: :error, else: {:ok, id}
+  end
+
+  defp valid_document_id(_), do: :error
+
+  defp error_message(%{"message" => message}) when is_binary(message) and message != "",
+    do: message
+
+  defp error_message(_), do: "import_error"
 
   defp extract_error(
          %{"winstrom" => %{"results" => [%{"errors" => [%{"message" => msg} | _]} | _]}},

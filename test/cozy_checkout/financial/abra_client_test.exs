@@ -73,7 +73,6 @@ defmodule CozyCheckout.AbraClientTest do
     assert is_binary(reason)
   end
 
-  @tag :known_bug
   test "HTTP 200 with import errors is not considered a successful invoice" do
     Req.Test.expect(Client, fn conn ->
       Req.Test.json(conn, %{
@@ -81,15 +80,14 @@ defmodule CozyCheckout.AbraClientTest do
       })
     end)
 
-    assert {:error, _} = Client.create_invoice(%{})
+    assert {:error, "Invalid"} = Client.create_invoice(%{})
   end
 
-  @tag :known_bug
   test "HTTP 200 without a valid document ID is not considered success" do
     Req.Test.expect(Client, fn conn ->
       Req.Test.json(conn, %{"winstrom" => %{"results" => [%{"id" => nil}]}})
     end)
 
-    assert {:error, _} = Client.create_invoice(%{})
+    assert {:error, "unexpected_response"} = Client.create_invoice(%{})
   end
 end
