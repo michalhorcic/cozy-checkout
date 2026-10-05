@@ -169,11 +169,11 @@
         <div style="font-weight: bold; margin-bottom: 5px;">REKAPITULACE DPH:</div>
         <%= for vat <- @vat_breakdown do %>
           <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-            <span>Základ DPH {vat.vat_rate}%:</span>
+            <span>Základ DPH {Decimal.to_string(Decimal.normalize(vat.vat_rate))}%:</span>
             <span>{format_currency(vat.base)}</span>
           </div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-            <span>DPH {vat.vat_rate}%:</span>
+            <span>DPH {Decimal.to_string(Decimal.normalize(vat.vat_rate))}%:</span>
             <span>{format_currency(vat.vat_amount)}</span>
           </div>
         <% end %>

@@ -13,7 +13,6 @@ defmodule CozyCheckoutWeb.ReceiptAmountsTest do
     assert_amount(receipt_tax_total(view), "333")
   end
 
-  @tag :known_bug
   test "receipt VAT includes proportional discount and zero-VAT tips", %{conn: conn} do
     order = paid_order(%{"discount_amount" => "33.30", "tips_amount" => "20"})
     {:ok, view, _} = live(conn, "/pos/orders/#{order.id}/receipt")
@@ -25,6 +24,23 @@ defmodule CozyCheckoutWeb.ReceiptAmountsTest do
     assert_amount(amounts["DPH 12%:"], "10.80")
     assert_amount(amounts["Základ DPH 21%:"], "90")
     assert_amount(amounts["DPH 21%:"], "18.90")
+  end
+
+  test "tips appear under zero VAT when the order has no zero-rated items", %{conn: conn} do
+    order = order_fixture()
+    item_fixture(order, "121", "21")
+
+    {:ok, order} =
+      Sales.update_order(Sales.get_order!(order.id), %{tips_amount: "20", total_amount: "141"})
+
+    {:ok, _} = Sales.create_payment(payment_attrs(order, "141"))
+
+    {:ok, view, _} = live(conn, "/pos/orders/#{order.id}/receipt")
+
+    amounts = vat_amounts(view)
+    assert_amount(amounts["Základ DPH 0%:"], "20")
+    assert_amount(amounts["DPH 0%:"], "0")
+    assert_amount(receipt_tax_total(view), "141")
   end
 
   test "deleted items and payments are omitted from receipt", %{conn: conn} do

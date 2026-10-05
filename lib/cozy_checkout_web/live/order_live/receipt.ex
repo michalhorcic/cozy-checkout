@@ -11,8 +11,7 @@ defmodule CozyCheckoutWeb.OrderLive.Receipt do
 
     grouped_items = OrderItemGrouper.group_order_items(order.order_items)
 
-    # Group items by VAT rate for VAT breakdown
-    vat_breakdown = calculate_vat_breakdown(order.order_items)
+    vat_breakdown = calculate_vat_breakdown(order)
 
     total_paid =
       Enum.reduce(payments, Decimal.new("0"), fn payment, acc ->
@@ -37,32 +36,89 @@ defmodule CozyCheckoutWeb.OrderLive.Receipt do
     {:noreply, push_event(socket, "print", %{})}
   end
 
-  defp calculate_vat_breakdown(order_items) do
-    active_items = Enum.filter(order_items, &is_nil(&1.deleted_at))
+  defp calculate_vat_breakdown(order) do
+    groups =
+      order.order_items
+      |> Enum.reject(& &1.deleted_at)
+      |> Enum.group_by(& &1.vat_rate, & &1.subtotal)
+      |> Enum.map(fn {vat_rate, subtotals} ->
+        total_incl_vat = Enum.reduce(subtotals, Decimal.new("0"), &Decimal.add/2)
+        %{vat_rate: vat_rate, total_incl_vat: total_incl_vat}
+      end)
+      |> Enum.sort_by(& &1.vat_rate)
 
-    active_items
-    |> Enum.group_by(& &1.vat_rate)
-    |> Enum.map(fn {vat_rate, items} ->
-      # Calculate total for this VAT rate group
-      total_incl_vat =
-        Enum.reduce(items, Decimal.new("0"), fn item, acc ->
-          Decimal.add(acc, item.subtotal)
-        end)
+    items_total =
+      Enum.reduce(groups, Decimal.new("0"), fn group, total ->
+        Decimal.add(total, group.total_incl_vat)
+      end)
 
-      # Calculate base (without VAT) and VAT amount
-      # Formula: base = total / (1 + vat_rate/100)
-      # vat_amount = total - base
-      divisor = Decimal.add(Decimal.new("1"), Decimal.div(vat_rate, 100))
-      base = Decimal.div(total_incl_vat, divisor)
-      vat_amount = Decimal.sub(total_incl_vat, base)
+    discount = order.discount_amount || Decimal.new("0")
+    discount = if Decimal.gt?(discount, items_total), do: items_total, else: discount
+    tips = order.tips_amount || Decimal.new("0")
+    last_index = length(groups) - 1
 
-      %{
-        vat_rate: vat_rate,
-        base: Decimal.round(base, 2),
-        vat_amount: Decimal.round(vat_amount, 2),
-        total_incl_vat: total_incl_vat
-      }
-    end)
-    |> Enum.sort_by(& &1.vat_rate)
+    {breakdown, _allocated_discount} =
+      groups
+      |> Enum.with_index()
+      |> Enum.map_reduce(Decimal.new("0"), fn {group, index}, allocated_discount ->
+        discount_share =
+          if index == last_index do
+            Decimal.sub(discount, allocated_discount)
+          else
+            discount
+            |> Decimal.mult(group.total_incl_vat)
+            |> Decimal.div(items_total)
+            |> Decimal.round(2)
+          end
+
+        adjusted_total = Decimal.sub(group.total_incl_vat, discount_share)
+        divisor = Decimal.add(Decimal.new("1"), Decimal.div(group.vat_rate, 100))
+
+        base =
+          adjusted_total
+          |> Decimal.div(divisor)
+          |> Decimal.round(2)
+
+        base =
+          if Decimal.equal?(group.vat_rate, 0), do: Decimal.add(base, tips), else: base
+
+        vat_amount =
+          if Decimal.equal?(group.vat_rate, 0) do
+            Decimal.new("0")
+          else
+            adjusted_total
+            |> Decimal.sub(Decimal.div(adjusted_total, divisor) |> Decimal.round(2))
+            |> Decimal.round(2)
+          end
+
+        result = %{
+          vat_rate: group.vat_rate,
+          base: base,
+          vat_amount: vat_amount,
+          total_incl_vat:
+            Decimal.add(
+              adjusted_total,
+              if(Decimal.equal?(group.vat_rate, 0), do: tips, else: Decimal.new("0"))
+            )
+        }
+
+        {result, Decimal.add(allocated_discount, discount_share)}
+      end)
+
+    has_zero_rate = Enum.any?(breakdown, &Decimal.equal?(&1.vat_rate, 0))
+
+    if Decimal.gt?(tips, 0) and not has_zero_rate do
+      [
+        %{
+          vat_rate: Decimal.new("0"),
+          base: tips,
+          vat_amount: Decimal.new("0"),
+          total_incl_vat: tips
+        }
+        | breakdown
+      ]
+    else
+      breakdown
+    end
   end
 end
