@@ -67,7 +67,6 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     assert_amount(updated.tips_amount, "0")
   end
 
-  @tag :known_bug
   test "QR confirmation rejects an amount changed after the customer saw the QR", %{order: order} do
     socket = order |> mounted() |> authorize() |> qr()
     item_fixture(order, "50")

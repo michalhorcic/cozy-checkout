@@ -629,38 +629,52 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   defp record_qr_payment(socket) do
+    socket = load_order(socket)
+
     amount =
       socket.assigns.split_payment_amount || socket.assigns.payment_preview_amount ||
         outstanding_balance(socket.assigns.order)
 
-    order_result =
-      if socket.assigns.split_payment_amount do
-        {:ok, socket.assigns.order}
-      else
-        tips = parse_decimal(socket.assigns.tips_amount)
-        discount = parse_decimal(socket.assigns.discount_amount)
+    if not Decimal.equal?(amount, current_qr_payment_amount(socket)) do
+      {:noreply,
+       socket
+       |> assign(:payment_method, nil)
+       |> assign(:payment_qr_svg, nil)
+       |> assign(:payment_preview_amount, nil)
+       |> put_flash(
+         :error,
+         "Order changed after the QR code was generated. Create a new QR code."
+       )}
+    else
+      order_result =
+        if socket.assigns.split_payment_amount do
+          {:ok, socket.assigns.order}
+        else
+          tips = parse_decimal(socket.assigns.tips_amount)
+          discount = parse_decimal(socket.assigns.discount_amount)
 
-        Sales.update_order(socket.assigns.order, %{
-          "tips_amount" => Decimal.to_string(tips),
-          "discount_amount" => Decimal.to_string(discount),
-          "discount_reason" => socket.assigns.discount_reason,
-          "total_amount" => Decimal.to_string(adjusted_order_total(socket))
-        })
+          Sales.update_order(socket.assigns.order, %{
+            "tips_amount" => Decimal.to_string(tips),
+            "discount_amount" => Decimal.to_string(discount),
+            "discount_reason" => socket.assigns.discount_reason,
+            "total_amount" => Decimal.to_string(adjusted_order_total(socket))
+          })
+        end
+
+      case order_result do
+        {:ok, _updated_order} ->
+          payment_attrs = %{
+            "order_id" => socket.assigns.order_id,
+            "amount" => Decimal.to_string(amount),
+            "payment_method" => "qr_code",
+            "payment_date" => Date.utc_today()
+          }
+
+          record_qr_payment(socket, amount, payment_attrs)
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, "Failed to update order")}
       end
-
-    case order_result do
-      {:ok, _updated_order} ->
-        payment_attrs = %{
-          "order_id" => socket.assigns.order_id,
-          "amount" => Decimal.to_string(amount),
-          "payment_method" => "qr_code",
-          "payment_date" => Date.utc_today()
-        }
-
-        record_qr_payment(socket, amount, payment_attrs)
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update order")}
     end
   end
 
@@ -717,6 +731,18 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     items_total
     |> Decimal.sub(parse_decimal(socket.assigns.discount_amount))
     |> Decimal.add(parse_decimal(socket.assigns.tips_amount))
+  end
+
+  defp current_qr_payment_amount(%{assigns: %{split_payment_amount: split_amount} = assigns})
+       when not is_nil(split_amount) do
+    calc_split_total(assigns.grouped_items, assigns.split_selection)
+  end
+
+  defp current_qr_payment_amount(socket) do
+    outstanding_balance(%{
+      socket.assigns.order
+      | total_amount: adjusted_order_total(socket)
+    })
   end
 
   defp request_payment_pin(socket, mode) do
