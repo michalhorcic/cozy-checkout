@@ -47,7 +47,6 @@ defmodule CozyCheckout.SalesMoneyTest do
     assert {:error, _} = Sales.create_payment(payment_attrs(order, "100"))
   end
 
-  @tag :known_bug
   test "recalculation updates payment status when the outstanding total changes" do
     order = order_fixture()
     item_fixture(order, "300")

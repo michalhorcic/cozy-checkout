@@ -589,9 +589,21 @@ defmodule CozyCheckout.Sales do
     total = if Decimal.lt?(total, 0), do: Decimal.new("0"), else: total
     total = Decimal.add(total, order.tips_amount || Decimal.new("0"))
 
-    order
-    |> Ecto.Changeset.change(total_amount: total)
-    |> Repo.update()
+    Repo.transaction(fn ->
+      case order |> Ecto.Changeset.change(total_amount: total) |> Repo.update() do
+        {:ok, %Order{status: "cancelled"} = updated_order} ->
+          updated_order
+
+        {:ok, updated_order} ->
+          case update_order_payment_status(updated_order.id) do
+            {:ok, order} -> order
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+
+        {:error, changeset} ->
+          Repo.rollback(changeset)
+      end
+    end)
   end
 
   ## Payments
