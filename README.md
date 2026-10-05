@@ -26,6 +26,8 @@ HTML těla šablon jsou verzovaná v `priv/email_templates/pre_arrival/`. Pro p�
 
 V administraci lze místo šablony napsat vlastní prostý text; v emailu se bezpečně převede do HTML a zároveň zůstane dostupný jako textová alternativa. Při zařazení do fronty se uloží přesný obsah zobrazený v náhledu, takže pozdější úprava souboru šablony již nezařazené emaily nezmění. V development prostředí se emaily zachytávají lokálně a lze je zobrazit na `/dev/mailbox`; skutečné odesílání přes Resend je nakonfigurované pouze v produkci.
 
+Katalogové šablony podporují proměnné `{{guest_name}}`, `{{check_in_date}}` a `{{check_out_date}}` v těle i předmětu. Datum je ve formátu `DD.MM.RRRR`; chybějící datum odjezdu má český nebo německý fallback. V editoru lze u více vybraných rezervací přepínat, pro kterou z nich se zobrazuje náhled. Historie se ukládá pro každého příjemce zvlášť a zobrazuje se v detailu rezervace. Ukládá se předmět a metadata odeslání, nikoli tělo e-mailu; záznamy se automaticky nemažou. Stav „Accepted by provider“ znamená, že Resend požadavek přijal, nikoli že byl e-mail potvrzeně doručen.
+
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).

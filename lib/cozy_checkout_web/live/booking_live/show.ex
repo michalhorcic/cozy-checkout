@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.Bookings
+  alias CozyCheckout.GuestEmails
 
   import CozyCheckoutWeb.FlopComponents, only: [build_path_with_params: 2]
 
@@ -14,6 +15,7 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
   def handle_params(%{"id" => id} = params, _, socket) do
     booking = Bookings.get_booking!(id)
     rooms = Bookings.list_booking_rooms(booking.id)
+    email_deliveries = GuestEmails.list_booking_deliveries(booking.id)
 
     # Extract filter params (all params except "id")
     filter_params = Map.delete(params, "id")
@@ -23,6 +25,7 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
      |> assign(:page_title, "Booking Details")
      |> assign(:booking, booking)
      |> assign(:rooms, rooms)
+     |> assign(:email_deliveries, email_deliveries)
      |> assign(:filter_params, filter_params)}
   end
 
@@ -136,6 +139,54 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
           </div>
         </div>
 
+        <%!-- Email History --%>
+        <section id="booking-email-history" class="rounded-lg bg-white p-6 shadow-lg">
+          <h2 class="mb-4 text-2xl font-bold text-primary-500">Email History</h2>
+          <p :if={@email_deliveries == []} class="text-primary-400">
+            No emails have been queued for this booking.
+          </p>
+          <div :if={@email_deliveries != []} class="space-y-3">
+            <article
+              :for={delivery <- @email_deliveries}
+              id={"booking-email-delivery-#{delivery.id}"}
+              class="rounded-lg border border-secondary-200 p-4"
+            >
+              <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="break-all font-semibold text-primary-700">{delivery.recipient_email}</p>
+                  <p class="mt-1 text-sm text-primary-500">{delivery.subject}</p>
+                  <p class="mt-1 text-xs text-primary-400">
+                    {email_content_label(delivery.content_mode, delivery.template_id)} · Queued {format_email_datetime(
+                      delivery.inserted_at
+                    )}
+                  </p>
+                  <p :if={delivery.started_at} class="mt-1 text-xs text-primary-400">
+                    Attempt started {format_email_datetime(delivery.started_at)}
+                  </p>
+                  <p :if={delivery.accepted_at} class="mt-1 text-xs text-primary-400">
+                    Accepted by provider {format_email_datetime(delivery.accepted_at)}
+                  </p>
+                  <p
+                    :if={delivery.completed_at && delivery.state != "accepted"}
+                    class="mt-1 text-xs text-primary-400"
+                  >
+                    Finished {format_email_datetime(delivery.completed_at)}
+                  </p>
+                  <p :if={delivery.last_error} class="mt-1 text-sm text-error">
+                    {delivery.last_error}
+                  </p>
+                </div>
+                <span class={[
+                  "rounded-full px-3 py-1 text-xs font-semibold",
+                  email_delivery_badge_class(delivery.state)
+                ]}>
+                  {email_delivery_state_label(delivery.state)}
+                </span>
+              </div>
+            </article>
+          </div>
+        </section>
+
         <%!-- Associated Orders --%>
         <div class="bg-white shadow-lg rounded-lg p-6">
           <h2 class="text-2xl font-bold text-primary-500 mb-4">Orders</h2>
@@ -213,4 +264,24 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
   defp order_status_badge_class("partially_paid"), do: "bg-tertiary-100 text-tertiary-800"
   defp order_status_badge_class("cancelled"), do: "bg-error-light text-error-dark"
   defp order_status_badge_class(_), do: "bg-secondary-100 text-primary-500"
+
+  defp email_content_label("template", template_id), do: "Template: #{template_id}"
+  defp email_content_label("custom", _template_id), do: "Custom message"
+  defp email_content_label(_mode, _template_id), do: "Email"
+
+  defp email_delivery_state_label("queued"), do: "Queued"
+  defp email_delivery_state_label("sending"), do: "Sending"
+  defp email_delivery_state_label("retrying"), do: "Retrying"
+  defp email_delivery_state_label("accepted"), do: "Accepted by provider"
+  defp email_delivery_state_label("failed"), do: "Failed"
+  defp email_delivery_state_label(_state), do: "Unknown"
+
+  defp email_delivery_badge_class("accepted"), do: "bg-success-light text-success-dark"
+  defp email_delivery_badge_class("failed"), do: "bg-error-light text-error-dark"
+  defp email_delivery_badge_class("sending"), do: "bg-info-light text-tertiary-800"
+  defp email_delivery_badge_class("retrying"), do: "bg-warning-light text-warning-dark"
+  defp email_delivery_badge_class(_state), do: "bg-secondary-100 text-primary-500"
+
+  defp format_email_datetime(datetime),
+    do: Calendar.strftime(datetime, "%d.%m.%Y %H:%M")
 end

@@ -57,7 +57,7 @@ defmodule CozyCheckoutWeb.GuestEmailLiveTest do
 
     assert render(view) =~ "V létě je možné"
     refute render(view) =~ "V zimním období"
-    assert render(view) =~ "Informace k vašemu letnímu pobytu"
+    assert render(view) =~ "Informace k pobytu od bude upřesněno"
 
     view
     |> element("#email-content-form")
@@ -142,6 +142,89 @@ defmodule CozyCheckoutWeb.GuestEmailLiveTest do
     assert job.args["subject"] == "Testovací zpráva"
     assert job.args["text_body"] == "Vlastní text rezervace"
     assert job.args["html_body"] =~ "Vlastní text rezervace"
+  end
+
+  test "personalized preview defaults to the first selected booking and can switch", %{conn: conn} do
+    first = insert_booking("První host", "first@example.com", ~D[2026-10-08])
+    second = insert_booking("Druhý host", "second@example.com", ~D[2026-11-09])
+
+    {:ok, view, _html} = live(conn, "/admin/emails")
+
+    view
+    |> element("#email-booking-#{first.id}")
+    |> render_click()
+
+    view
+    |> element("#email-booking-#{second.id}")
+    |> render_click()
+
+    assert has_element?(view, "#email-preview-booking")
+    assert has_element?(view, "#email-preview-booking option[value='#{first.id}'][selected]")
+
+    view
+    |> element("#email-content-form")
+    |> render_change(%{
+      "email_content" => %{
+        "mode" => "template",
+        "template_id" => "cs_winter",
+        "preview_booking_id" => second.id,
+        "subject" => "Příjezd {{check_in_date}}",
+        "custom_body" => ""
+      }
+    })
+
+    assert has_element?(view, "#email-preview-booking option[value='#{second.id}'][selected]")
+    assert render(view) =~ "Druhý host"
+    assert render(view) =~ "Předmět: Příjezd 09.11.2026"
+    assert render(view) =~ "10.11.2026"
+    assert has_element?(view, "#email-greeting-name")
+
+    view
+    |> element("#email-greeting-form")
+    |> render_change(%{"greeting" => %{"booking_id" => second.id, "name" => "Petře Nováku"}})
+
+    assert render(view) =~ "Dobrý den, Petře Nováku"
+    assert has_element?(view, "#email-greeting-name[value='Petře Nováku']")
+
+    view
+    |> element("#queue-booking-emails")
+    |> render_click()
+
+    job =
+      Repo.one!(
+        from job in Oban.Job,
+          where: fragment("? ->> 'recipient_email' = ?", job.args, "second@example.com")
+      )
+
+    assert job.args["html_body"] =~ "Dobrý den, Petře Nováku"
+    assert job.args["html_body"] =~ "09.11.2026"
+  end
+
+  test "booking details show the durable recipient-level email history", %{conn: conn} do
+    booking = insert_booking("History Host", "history@example.com", Date.add(Date.utc_today(), 3))
+
+    assert {:ok, _batch} =
+             CozyCheckout.GuestEmails.enqueue_batch("cs_summer", "Pobyt", [
+               %{
+                 booking_id: booking.id,
+                 booking_name: "History Host",
+                 recipient_email: "history@example.com"
+               }
+             ])
+
+    delivery =
+      Repo.one!(
+        from delivery in CozyCheckout.GuestEmails.Delivery,
+          where: delivery.booking_id == ^booking.id
+      )
+
+    {:ok, view, _html} = live(conn, "/admin/bookings/#{booking.id}")
+
+    assert has_element?(view, "#booking-email-history")
+    assert has_element?(view, "#booking-email-delivery-#{delivery.id}")
+    assert render(view) =~ "history@example.com"
+    assert render(view) =~ "Pobyt"
+    assert render(view) =~ "Queued"
   end
 
   defp insert_booking(name, email, check_in_date, status \\ "upcoming") do

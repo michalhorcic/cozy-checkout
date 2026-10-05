@@ -19,6 +19,9 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
      |> assign(:custom_body, "")
      |> assign(:subject, first_template.subject)
      |> assign(:preview_html, rendered_template.html)
+     |> assign(:preview_subject, rendered_template.subject)
+     |> assign(:preview_booking_id, nil)
+     |> assign(:preview_booking, nil)
      |> assign(:mailer_configured?, GuestEmails.configured?())
      |> assign(:email_from_address, Application.fetch_env!(:cozy_checkout, :email_from_address))
      |> assign(:period, :upcoming)
@@ -27,12 +30,23 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
      |> assign(:selected_booking_ids, MapSet.new())
      |> assign(:selected_bookings_by_id, %{})
      |> assign(:selected_bookings, [])
+     |> assign(:greeting_names, %{})
      |> assign(:extra_emails, %{})
      |> assign(:batch_id, nil)
      |> assign(:batch_complete?, false)
      |> assign(:batch_jobs_empty?, true)
      |> stream(:bookings, [])
      |> stream(:batch_jobs, [])}
+  end
+
+  defp refresh_preview_or_flash(socket) do
+    case refresh_content_preview(socket) do
+      {:ok, socket} ->
+        socket
+
+      {:error, reason, socket} ->
+        put_flash(socket, :error, "Náhled emailu se nepodařilo obnovit: #{inspect(reason)}")
+    end
   end
 
   @impl true
@@ -98,6 +112,29 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
      assign(socket, :extra_emails, Map.put(socket.assigns.extra_emails, booking_id, emails))}
   end
 
+  def handle_event(
+        "update_greeting_name",
+        %{"greeting" => %{"booking_id" => booking_id, "name" => name}},
+        socket
+      ) do
+    if Map.has_key?(socket.assigns.selected_bookings_by_id, booking_id) do
+      greeting_names =
+        case String.trim(name) do
+          "" -> Map.delete(socket.assigns.greeting_names, booking_id)
+          trimmed_name -> Map.put(socket.assigns.greeting_names, booking_id, trimmed_name)
+        end
+
+      socket =
+        socket
+        |> assign(:greeting_names, greeting_names)
+        |> refresh_preview_or_flash()
+
+      {:noreply, socket}
+    else
+      {:noreply, socket}
+    end
+  end
+
   def handle_event("update_email_content", %{"email_content" => params}, socket) do
     template_id = params["template_id"] || socket.assigns.template_id
 
@@ -112,6 +149,7 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
           end
 
         custom_body = params["custom_body"] || socket.assigns.custom_body
+        preview_booking_id = params["preview_booking_id"] || socket.assigns.preview_booking_id
 
         subject =
           if template_id != socket.assigns.template_id do
@@ -120,17 +158,19 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
             params["subject"] || socket.assigns.subject
           end
 
-        case preview_content(mode, template_id, custom_body) do
-          {:ok, preview_html} ->
-            {:noreply,
-             socket
-             |> assign(:template_id, template_id)
-             |> assign(:content_mode, mode)
-             |> assign(:custom_body, custom_body)
-             |> assign(:subject, subject)
-             |> assign(:preview_html, preview_html)}
+        socket =
+          socket
+          |> assign(:template_id, template_id)
+          |> assign(:content_mode, mode)
+          |> assign(:custom_body, custom_body)
+          |> assign(:subject, subject)
+          |> assign_preview_booking(preview_booking_id)
 
-          {:error, reason} ->
+        case refresh_content_preview(socket) do
+          {:ok, socket} ->
+            {:noreply, socket}
+
+          {:error, reason, socket} ->
             {:noreply,
              put_flash(socket, :error, "Obsah emailu se nepodařilo připravit: #{inspect(reason)}")}
         end
@@ -143,9 +183,8 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
   def handle_event("clear_selection", _params, socket) do
     {:noreply,
      socket
-     |> assign(:selected_booking_ids, MapSet.new())
-     |> assign(:selected_bookings_by_id, %{})
-     |> assign(:selected_bookings, [])}
+     |> assign(:greeting_names, %{})
+     |> assign_selected_bookings(MapSet.new(), %{})}
   end
 
   def handle_event("send_emails", _params, socket) do
@@ -171,7 +210,11 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
 
   defp enqueue_selected_emails(socket) do
     with {:ok, deliveries} <-
-           build_deliveries(socket.assigns.selected_bookings, socket.assigns.extra_emails),
+           build_deliveries(
+             socket.assigns.selected_bookings,
+             socket.assigns.extra_emails,
+             socket.assigns.greeting_names
+           ),
          {:ok, batch} <-
            GuestEmails.enqueue_batch(
              selected_content(socket.assigns),
@@ -219,23 +262,84 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
   defp selected_content(%{template_id: template_id}),
     do: %{type: :template, template_id: template_id}
 
-  defp preview_content(:template, template_id, _body) do
-    case TemplateCatalog.render(template_id) do
-      {:ok, template} -> {:ok, template.html}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp preview_content(:custom, _template_id, body) do
+  defp preview_content(:custom, body, subject) do
     preview_body = if String.trim(body) == "", do: "Náhled vlastního textu emailu", else: body
 
     case TemplateCatalog.render_custom(preview_body) do
-      {:ok, rendered} -> {:ok, rendered.html}
+      {:ok, rendered} -> {:ok, rendered.html, subject}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  defp build_deliveries(bookings, extra_emails) do
+  defp assign_selected_bookings(socket, selected_ids, selected_by_id) do
+    selected_bookings =
+      selected_by_id
+      |> Map.values()
+      |> Enum.sort_by(&{&1.check_in_date, &1.guest.name})
+
+    socket =
+      socket
+      |> assign(:selected_booking_ids, selected_ids)
+      |> assign(:selected_bookings_by_id, selected_by_id)
+      |> assign(:selected_bookings, selected_bookings)
+      |> assign_preview_booking(socket.assigns.preview_booking_id)
+
+    case refresh_content_preview(socket) do
+      {:ok, socket} ->
+        socket
+
+      {:error, reason, socket} ->
+        put_flash(socket, :error, "Náhled emailu se nepodařilo obnovit: #{inspect(reason)}")
+    end
+  end
+
+  defp assign_preview_booking(socket, requested_id) do
+    booking =
+      Enum.find(socket.assigns.selected_bookings, &(&1.id == requested_id)) ||
+        List.first(socket.assigns.selected_bookings)
+
+    socket
+    |> assign(:preview_booking, booking)
+    |> assign(:preview_booking_id, booking && booking.id)
+  end
+
+  defp greeting_name(_assigns, nil), do: nil
+
+  defp greeting_name(assigns, booking) do
+    Map.get(assigns.greeting_names, booking.id)
+  end
+
+  defp refresh_content_preview(socket) do
+    result =
+      case socket.assigns.content_mode do
+        :template ->
+          case TemplateCatalog.render(
+                 socket.assigns.template_id,
+                 socket.assigns.preview_booking,
+                 socket.assigns.subject,
+                 greeting_name(socket.assigns, socket.assigns.preview_booking)
+               ) do
+            {:ok, template} -> {:ok, template.html, template.subject}
+            {:error, reason} -> {:error, reason}
+          end
+
+        :custom ->
+          preview_content(:custom, socket.assigns.custom_body, socket.assigns.subject)
+      end
+
+    case result do
+      {:ok, html, preview_subject} ->
+        {:ok,
+         socket
+         |> assign(:preview_html, html)
+         |> assign(:preview_subject, preview_subject)}
+
+      {:error, reason} ->
+        {:error, reason, socket}
+    end
+  end
+
+  defp build_deliveries(bookings, extra_emails, greeting_names) do
     Enum.reduce_while(bookings, {:ok, []}, fn booking, {:ok, acc} ->
       primary_email = booking.guest.email
       extras = split_emails(Map.get(extra_emails, booking.id, ""))
@@ -256,6 +360,7 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
               %{
                 booking_id: booking.id,
                 booking_name: booking.guest.name,
+                greeting_name: Map.get(greeting_names, booking.id),
                 recipient_email: email
               }
             end)
@@ -271,18 +376,6 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
   end
 
   defp split_emails(_value), do: []
-
-  defp assign_selected_bookings(socket, selected_ids, selected_by_id) do
-    selected_bookings =
-      selected_by_id
-      |> Map.values()
-      |> Enum.sort_by(&{&1.check_in_date, &1.guest.name})
-
-    socket
-    |> assign(:selected_booking_ids, selected_ids)
-    |> assign(:selected_bookings_by_id, selected_by_id)
-    |> assign(:selected_bookings, selected_bookings)
-  end
 
   defp load_batch(socket, batch_id) do
     case Ecto.UUID.cast(batch_id || "") do
@@ -628,6 +721,56 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
                     maxlength="255"
                     class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
                   />
+
+                  <label
+                    :if={length(@selected_bookings) > 0}
+                    for="email-preview-booking"
+                    class="mb-1.5 mt-4 block text-sm font-semibold text-slate-700"
+                  >Náhled pro rezervaci</label>
+                  <select
+                    :if={length(@selected_bookings) > 0}
+                    id="email-preview-booking"
+                    name="email_content[preview_booking_id]"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  >
+                    <option
+                      :for={booking <- @selected_bookings}
+                      value={booking.id}
+                      selected={booking.id == @preview_booking_id}
+                    >
+                      {booking.guest.name} · {Calendar.strftime(booking.check_in_date, "%d.%m.%Y")}
+                    </option>
+                  </select>
+                </form>
+
+                <form
+                  :if={@preview_booking && @content_mode == :template}
+                  id="email-greeting-form"
+                  phx-change="update_greeting_name"
+                  class="mt-4"
+                >
+                  <input
+                    type="hidden"
+                    name="greeting[booking_id]"
+                    value={@preview_booking.id}
+                  />
+                  <label
+                    for="email-greeting-name"
+                    class="mb-1.5 block text-sm font-semibold text-slate-700"
+                  >Jméno v pozdravu</label>
+                  <input
+                    id="email-greeting-name"
+                    name="greeting[name]"
+                    type="text"
+                    value={Map.get(@greeting_names, @preview_booking.id, @preview_booking.guest.name)}
+                    autocomplete="off"
+                    phx-debounce="300"
+                    placeholder={@preview_booking.guest.name}
+                    class="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-900 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-200"
+                  />
+                  <p class="mt-1.5 text-xs text-slate-500">
+                    Upravte oslovení (např. „Petře Nováku“). Prázdné pole použije jméno hosta z rezervace. Změna platí jen pro tento email.
+                  </p>
                 </form>
 
                 <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-3">
@@ -638,7 +781,10 @@ defmodule CozyCheckoutWeb.GuestEmailLive.Index do
                     </span>
                   </div>
                   <p id="email-preview-subject" class="mb-2 text-sm font-medium text-slate-700">
-                    Předmět: {@subject}
+                    Předmět: {@preview_subject}
+                  </p>
+                  <p :if={@preview_booking} class="mb-2 text-xs text-slate-500">
+                    Náhled pro: {@preview_booking.guest.name}
                   </p>
                   <iframe
                     id="email-template-preview"

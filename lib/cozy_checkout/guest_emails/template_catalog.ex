@@ -9,7 +9,7 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
       label: "Před příjezdem – česky, zima",
       language: "cs",
       season: :winter,
-      subject: "Informace k vašemu zimnímu pobytu – Jindřichův dům",
+      subject: "Informace k pobytu od {{check_in_date}} – Jindřichův dům",
       file: "cs_winter.html"
     },
     %{
@@ -17,7 +17,7 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
       label: "Před příjezdem – česky, léto",
       language: "cs",
       season: :summer,
-      subject: "Informace k vašemu letnímu pobytu – Jindřichův dům",
+      subject: "Informace k pobytu od {{check_in_date}} – Jindřichův dům",
       file: "cs_summer.html"
     },
     %{
@@ -25,7 +25,7 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
       label: "Před příjezdem – německy, zima",
       language: "de",
       season: :winter,
-      subject: "Informationen zu Ihrem Winteraufenthalt – Jindřichův dům",
+      subject: "Informationen zum Aufenthalt ab {{check_in_date}} – Jindřichův dům",
       file: "de_winter.html"
     },
     %{
@@ -33,7 +33,7 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
       label: "Před příjezdem – německy, léto",
       language: "de",
       season: :summer,
-      subject: "Informationen zu Ihrem Sommeraufenthalt – Jindřichův dům",
+      subject: "Informationen zum Aufenthalt ab {{check_in_date}} – Jindřichův dům",
       file: "de_summer.html"
     }
   ]
@@ -49,10 +49,18 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
 
   def fetch(_id), do: {:error, :unknown_template}
 
-  def render(id) do
+  def render(id, booking \\ nil, subject_override \\ nil, guest_name_override \\ nil) do
     with {:ok, template} <- fetch(id),
-         {:ok, body} <- read_body(template) do
-      {:ok, Map.merge(template, %{html: wrap_html(template, body), text: nil})}
+         {:ok, body} <- read_body(template),
+         values <- personalization_values(template, booking, guest_name_override),
+         html_body <- interpolate_html(body, values),
+         subject <- interpolate_text(subject_override || template.subject, values) do
+      {:ok,
+       Map.merge(template, %{
+         html: wrap_html(template, html_body),
+         text: nil,
+         subject: subject
+       })}
     end
   end
 
@@ -88,6 +96,48 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
       {:ok, body} -> {:ok, body}
       {:error, reason} -> {:error, {:template_read_failed, template.id, reason}}
     end
+  end
+
+  defp personalization_values(template, booking, guest_name_override) do
+    language = template.language
+
+    guest_name =
+      case guest_name_override do
+        name when is_binary(name) and name != "" -> name
+        _name when not is_nil(booking) -> booking.guest.name
+        _name -> guest_fallback(language)
+      end
+
+    %{
+      "guest_name" => guest_name,
+      "check_in_date" => date_value(booking && booking.check_in_date, language),
+      "check_out_date" => date_value(booking && booking.check_out_date, language)
+    }
+  end
+
+  defp guest_fallback("de"), do: "Gast"
+  defp guest_fallback(_language), do: "hoste"
+
+  defp date_value(%Date{} = date, _language), do: Calendar.strftime(date, "%d.%m.%Y")
+  defp date_value(nil, "de"), do: "wird noch bekannt gegeben"
+  defp date_value(nil, _language), do: "bude upřesněno"
+
+  defp interpolate_html(body, values) do
+    Enum.reduce(values, body, fn {key, value}, html ->
+      String.replace(html, "{{#{key}}}", escaped_html(value))
+    end)
+  end
+
+  defp interpolate_text(text, values) do
+    Enum.reduce(values, text, fn {key, value}, subject ->
+      String.replace(subject, "{{#{key}}}", value)
+    end)
+  end
+
+  defp escaped_html(value) do
+    value
+    |> Phoenix.HTML.html_escape()
+    |> Phoenix.HTML.safe_to_string()
   end
 
   defp wrap_html(template, body) do

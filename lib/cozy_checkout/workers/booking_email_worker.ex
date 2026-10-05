@@ -14,7 +14,31 @@ defmodule CozyCheckout.Workers.BookingEmailWorker do
   require Logger
 
   @impl Oban.Worker
-  def perform(%Oban.Job{args: args, id: job_id}) do
+  def perform(%Oban.Job{args: args, id: job_id} = job) do
+    delivery_id = args["delivery_id"]
+    :ok = GuestEmails.mark_sending(delivery_id, job.attempt)
+
+    case deliver_job(job_id, args) do
+      :ok ->
+        :ok = GuestEmails.mark_accepted(delivery_id)
+        :ok
+
+      {:discard, reason} ->
+        :ok = GuestEmails.mark_failed(delivery_id, reason)
+        {:discard, reason}
+
+      {:error, reason} ->
+        if job.attempt >= job.max_attempts do
+          :ok = GuestEmails.mark_failed(delivery_id, reason)
+        else
+          :ok = GuestEmails.mark_retrying(delivery_id, reason)
+        end
+
+        {:error, reason}
+    end
+  end
+
+  defp deliver_job(job_id, args) do
     with true <- GuestEmails.configured?(),
          {:ok, content} <- content_for_delivery(args),
          {:ok, _response} <-
@@ -70,6 +94,7 @@ defmodule CozyCheckout.Workers.BookingEmailWorker do
     email =
       new()
       |> from(Application.fetch_env!(:cozy_checkout, :email_from_address))
+      |> reply_to(Application.fetch_env!(:cozy_checkout, :email_from_address))
       |> to(recipient_email)
       |> subject(subject)
       |> html_body(html)
