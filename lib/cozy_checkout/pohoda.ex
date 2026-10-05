@@ -32,7 +32,7 @@ defmodule CozyCheckout.Pohoda do
     date = format_date(order.inserted_at)
     {account_no, bank_code} = parse_bank_account()
     {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
-    items = order |> active_order_items() |> group_items()
+    items = order |> active_order_items() |> group_items() |> apply_adjustments(order)
 
     {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat,
      price_high_sum} = calculate_vat_totals(items)
@@ -121,7 +121,8 @@ defmodule CozyCheckout.Pohoda do
   end
 
   defp order_item_to_xml(item) do
-    product_name = if item.product, do: item.product.name, else: "Unknown Product"
+    product_name =
+      Map.get(item, :name) || if(item.product, do: item.product.name, else: "Unknown Product")
 
     """
             <inv:invoiceItem xmlns:typ="http://www.stormware.cz/schema/version_2/type.xsd">
@@ -141,9 +142,9 @@ defmodule CozyCheckout.Pohoda do
   defp group_items(order_items) do
     order_items
     |> Enum.group_by(fn item ->
-      {item.product_id, item.unit_amount, item.unit_price}
+      {item.product_id, item.unit_amount, item.unit_price, item.vat_rate}
     end)
-    |> Enum.map(fn {{_product_id, _unit_amount, _unit_price}, items} ->
+    |> Enum.map(fn {{_product_id, _unit_amount, _unit_price, _vat_rate}, items} ->
       first = hd(items)
 
       total_quantity =
@@ -165,6 +166,88 @@ defmodule CozyCheckout.Pohoda do
         subtotal: total_subtotal
       }
     end)
+  end
+
+  defp apply_adjustments(items, order) do
+    items_total =
+      Enum.reduce(items, Decimal.new("0"), fn item, total ->
+        Decimal.add(total, item.subtotal)
+      end)
+
+    discount = order.discount_amount || Decimal.new("0")
+    discount = if Decimal.gt?(discount, items_total), do: items_total, else: discount
+
+    items ++
+      build_discount_lines(items, discount, items_total) ++
+      build_tips_line(order.tips_amount)
+  end
+
+  defp build_discount_lines(items, discount, items_total) do
+    if Decimal.gt?(discount, 0) and Decimal.gt?(items_total, 0) do
+      groups =
+        items
+        |> Enum.group_by(& &1.vat_rate)
+        |> Enum.map(fn {vat_rate, rate_items} ->
+          subtotal =
+            Enum.reduce(rate_items, Decimal.new("0"), fn item, total ->
+              Decimal.add(total, item.subtotal)
+            end)
+
+          {vat_rate, subtotal}
+        end)
+        |> Enum.sort_by(fn {vat_rate, _subtotal} -> vat_rate end)
+
+      last_index = length(groups) - 1
+
+      {discounts, _allocated} =
+        groups
+        |> Enum.with_index()
+        |> Enum.map_reduce(Decimal.new("0"), fn {{vat_rate, subtotal}, index}, allocated ->
+          amount =
+            if index == last_index do
+              Decimal.sub(discount, allocated)
+            else
+              discount
+              |> Decimal.mult(subtotal)
+              |> Decimal.div(items_total)
+              |> Decimal.round(2)
+            end
+
+          {{vat_rate, amount}, Decimal.add(allocated, amount)}
+        end)
+
+      Enum.map(discounts, fn {vat_rate, amount} ->
+        %{
+          name: "Sleva",
+          product: nil,
+          unit_amount: nil,
+          unit_price: Decimal.negate(amount),
+          vat_rate: vat_rate,
+          quantity: Decimal.new("1"),
+          subtotal: Decimal.negate(amount)
+        }
+      end)
+    else
+      []
+    end
+  end
+
+  defp build_tips_line(tips) do
+    if tips && Decimal.gt?(tips, Decimal.new("0")) do
+      [
+        %{
+          name: "Spropitné",
+          product: nil,
+          unit_amount: nil,
+          unit_price: tips,
+          vat_rate: Decimal.new("0"),
+          quantity: Decimal.new("1"),
+          subtotal: tips
+        }
+      ]
+    else
+      []
+    end
   end
 
   defp active_order_items(order) do

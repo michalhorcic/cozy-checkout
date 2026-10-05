@@ -18,7 +18,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert_amount(sum_abra_lines(abra_invoice(order)), "319.70")
   end
 
-  @tag :known_bug
   test "discount and tips are reflected in POHODA lines and summary" do
     order = paid_order(%{"discount_amount" => "33.30", "tips_amount" => "20"})
     xml = Pohoda.export_orders([order.id]) |> parse_xml()
@@ -47,7 +46,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     end
   end
 
-  @tag :known_bug
   test "discount and tips adjust the POHODA VAT breakdown" do
     order = paid_order(%{"discount_amount" => "33.30", "tips_amount" => "20"})
     xml = Pohoda.export_orders([order.id]) |> parse_xml()
@@ -56,7 +54,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert_amount(xml_number(xml, "//typ:priceHighVAT"), "18.90")
   end
 
-  @tag :known_bug
   test "one-cent discount does not get lost when allocated across VAT rates" do
     order = paid_order(%{"discount_amount" => "0.01"})
     assert_exports_match(order, "332.99")
@@ -71,7 +68,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
              ["typSzbDph.dphSniz", "typSzbDph.dphZakl"]
   end
 
-  @tag :known_bug
   test "same product and price with different historical VAT remain separate POHODA lines" do
     order = same_product_different_vat_order()
     xml = Pohoda.export_orders([order.id]) |> parse_xml()
