@@ -63,7 +63,6 @@ defmodule CozyCheckout.CatalogPricingTest do
     assert {:error, :no_price_for_amount} = Pricelist.get_price_for_amount(pricelist, "750")
   end
 
-  @tag :known_bug
   test "missing tier cannot silently use a legacy price on a product with predefined sizes" do
     {product, pricelist} = tier_product()
     {:ok, _} = Catalog.update_pricelist(pricelist, %{price: "1"})

@@ -284,8 +284,9 @@ defmodule CozyCheckout.Catalog do
             {:ok, price, pricelist.vat_rate, pricelist}
 
           {:error, :no_price_for_amount} ->
-            # Fallback to single price if no price tier matches
-            if pricelist.price do
+            product = Repo.get(Product, product_id)
+
+            if pricelist.price && not has_default_unit_amounts?(product) do
               {:ok, pricelist.price, pricelist.vat_rate, pricelist}
             else
               {:error, :no_price_for_amount}
@@ -293,6 +294,16 @@ defmodule CozyCheckout.Catalog do
         end
     end
   end
+
+  defp has_default_unit_amounts?(%Product{default_unit_amounts: amounts})
+       when is_binary(amounts) do
+    case Jason.decode(amounts) do
+      {:ok, [_ | _]} -> true
+      _ -> false
+    end
+  end
+
+  defp has_default_unit_amounts?(_product), do: false
 
   @doc """
   Creates a pricelist.
