@@ -24,7 +24,15 @@ if admin_pin_hash = System.get_env("ADMIN_PIN_HASH") do
   config :cozy_checkout, :admin_pin_hash, admin_pin_hash
 end
 
+config :cozy_checkout,
+       :email_from_address,
+       System.get_env("EMAIL_FROM_ADDRESS", "jindrichuvdum@jindrichuvdum.cz")
+
 if config_env() == :prod do
+  config :cozy_checkout, CozyCheckout.Mailer,
+    adapter: Swoosh.Adapters.Resend,
+    api_key: System.get_env("RESEND_API_KEY")
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

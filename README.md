@@ -11,6 +11,21 @@ The root URL opens the POS. All `/admin` pages require a PIN; the POS remains pu
 
 The PIN must contain 6 to 8 digits. Five incorrect attempts from the same client address trigger a one-minute lockout. An authenticated admin session expires after 12 hours and locks after 15 minutes without activity in an admin LiveView. Use **Lock Admin** on the dashboard to end the session immediately.
 
+## Emaily hostům
+
+Rozesílání hostům je dostupné v administraci v sekci **Email Guests**. Zprávy se řadí do Oban fronty; stránka po zařazení zobrazuje stav aktuální rozesílky. Každý příjemce obdrží samostatný email.
+
+Produkční nasazení potřebuje následující proměnné:
+
+* `RESEND_API_KEY` – tajný API klíč účtu Resend.
+* `EMAIL_FROM_ADDRESS` – ověřená adresa odesílatele; výchozí hodnota je `jindrichuvdum@jindrichuvdum.cz`.
+
+Před prvním odesláním přidejte doménu `jindrichuvdum.cz` do Resendu a nastavte DNS záznamy, které Resend pro ověření domény zobrazí. Bez platného API klíče je odesílání v produkci vypnuté; chybějící secret nebrání startu aplikace.
+
+HTML těla šablon jsou verzovaná v `priv/email_templates/pre_arrival/`. Pro přidání další šablony přidejte HTML soubor vhodný pro emailové klienty a její metadata (identifikátor, popis, výchozí předmět, jazyk a sezónu) do `CozyCheckout.GuestEmails.TemplateCatalog`. Interaktivní náhled `priv/static/email_pred_prijezdem.html` slouží pouze jako zdroj obsahu a není přímo odesílán.
+
+V administraci lze místo šablony napsat vlastní prostý text; v emailu se bezpečně převede do HTML a zároveň zůstane dostupný jako textová alternativa. Při zařazení do fronty se uloží přesný obsah zobrazený v náhledu, takže pozdější úprava souboru šablony již nezařazené emaily nezmění. V development prostředí se emaily zachytávají lokálně a lze je zobrazit na `/dev/mailbox`; skutečné odesílání přes Resend je nakonfigurované pouze v produkci.
+
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).

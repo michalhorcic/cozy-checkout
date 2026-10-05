@@ -1,3 +1,44 @@
+# Cozy Checkout
+
+Cozy Checkout is a self-service POS system for a mountain guesthouse.
+
+## Stack
+- Elixir
+- Phoenix
+- PostgreSQL
+- Oban for background jobs
+- Docker
+- Production deployment through Coolify
+
+## Product principles
+- UI must be extremely simple because guests operate the POS themselves.
+- Prefer large touch-friendly controls.
+- Minimize the number of steps required to record a purchase.
+- Guests should not need to understand accounting or inventory concepts.
+- Administrative complexity belongs in the admin interface, not guest UI.
+
+## Architecture
+- Keep business logic outside controllers/LiveViews.
+- Database changes must use Ecto migrations.
+- Background/retryable operations should use Oban where appropriate.
+- External integrations must tolerate temporary failures.
+
+## Development rules
+- Before changing code, inspect existing implementation and follow existing patterns.
+- Do not introduce a new dependency unless there is a strong reason.
+- Prefer simple solutions over abstractions that are not currently needed.
+- Do not silently change existing business behaviour.
+- Add or update tests when changing business logic.
+- Never hardcode secrets, credentials or production URLs.
+
+## Before completing a task
+- Run relevant tests.
+- Check formatting.
+- Explain what was changed.
+- Mention migrations, configuration changes and possible breaking changes.
+
+
+
 ---
 description: AI rules derived by SpecStory from the project AI interaction history
 globs: *

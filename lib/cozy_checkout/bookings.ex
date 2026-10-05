@@ -28,6 +28,48 @@ defmodule CozyCheckout.Bookings do
   end
 
   @doc """
+  Lists bookings for the admin email composer, defaulting to future arrivals.
+  """
+  def list_bookings_for_email(period \\ :upcoming, search \\ "") do
+    today = Date.utc_today()
+    search_pattern = "%#{String.trim(search)}%"
+    period_filter = email_period_filter(period, today)
+    search_filter = email_search_filter(search_pattern, search)
+
+    Booking
+    |> join(:inner, [b], g in assoc(b, :guest))
+    |> where([b, g], is_nil(b.deleted_at) and is_nil(g.deleted_at))
+    |> where([b], b.status != "cancelled")
+    |> where(^period_filter)
+    |> where(^search_filter)
+    |> preload([_b, g], guest: g)
+    |> order_by([b, g], asc: b.check_in_date, asc: g.name)
+    |> Repo.all()
+  end
+
+  defp email_period_filter(:upcoming, today), do: dynamic([b], b.check_in_date >= ^today)
+
+  defp email_period_filter(:past, today) do
+    dynamic(
+      [b],
+      b.status == "completed" or
+        (not is_nil(b.check_out_date) and b.check_out_date < ^today)
+    )
+  end
+
+  defp email_period_filter(:all, _today), do: dynamic(true)
+
+  defp email_search_filter(_search_pattern, ""), do: dynamic(true)
+
+  defp email_search_filter(search_pattern, search) do
+    if String.trim(search) == "" do
+      dynamic(true)
+    else
+      dynamic([_b, g], ilike(g.name, ^search_pattern) or ilike(g.email, ^search_pattern))
+    end
+  end
+
+  @doc """
   Returns booking data needed by the private iCalendar feed.
   """
   def list_bookings_for_calendar do

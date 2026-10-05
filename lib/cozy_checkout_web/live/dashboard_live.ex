@@ -52,7 +52,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
           <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
             Quick Actions
           </h2>
-          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
             <.quick_action_card
               title="Bookings"
               icon="hero-calendar-days"
@@ -78,6 +78,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
               icon="hero-beaker"
               navigate={~p"/admin/bar-stock"}
             />
+            <.quick_action_card
+              title="Email Guests"
+              icon="hero-envelope"
+              navigate={~p"/admin/emails"}
+            />
           </div>
         </div>
 
@@ -88,7 +93,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             title="Catalog & Pricing"
             section="catalog"
             expanded={@expanded_sections["catalog"]}
-            count={5}
+            count={6}
           >
             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
               <.compact_card
@@ -209,6 +214,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
                 icon="hero-clipboard-document-list"
                 navigate={~p"/admin/meal-planner"}
               />
+              <.compact_card title="Email Guests" icon="hero-envelope" navigate={~p"/admin/emails"} />
             </div>
           </.expandable_section>
         </div>

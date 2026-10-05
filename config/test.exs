@@ -6,9 +6,9 @@ import Config
 # to provide built-in test partitioning in CI environment.
 # Run `mix help test` for more information.
 config :cozy_checkout, CozyCheckout.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
+  username: System.get_env("PGUSER", "postgres"),
+  password: System.get_env("PGPASSWORD", "postgres"),
+  hostname: System.get_env("PGHOST", "localhost"),
   database: "cozy_checkout_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: System.schedulers_online() * 2
@@ -22,6 +22,7 @@ config :cozy_checkout, CozyCheckoutWeb.Endpoint,
 
 # In test we don't send emails
 config :cozy_checkout, CozyCheckout.Mailer, adapter: Swoosh.Adapters.Test
+config :cozy_checkout, Oban, testing: :manual
 
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false

@@ -75,7 +75,10 @@ config :cozy_checkout,
 # Oban background job processing
 config :cozy_checkout, Oban,
   repo: CozyCheckout.Repo,
-  queues: [abra_sync: 3]
+  queues: [abra_sync: 3, booking_emails: 5]
+
+config :cozy_checkout,
+  email_from_address: "jindrichuvdum@jindrichuvdum.cz"
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
