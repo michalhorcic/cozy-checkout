@@ -464,6 +464,9 @@ defmodule CozyCheckout.Sales do
     product_id = Map.get(attrs, "product_id") || Map.get(attrs, :product_id)
 
     attrs =
+      Map.drop(attrs, ["unit_price", :unit_price, "vat_rate", :vat_rate, "subtotal", :subtotal])
+
+    attrs =
       if product_id do
         quantity =
           case Map.get(attrs, "quantity") do

@@ -108,7 +108,6 @@ defmodule CozyCheckout.SalesMoneyTest do
            ) == 1
   end
 
-  @tag :known_bug
   test "missing prices cannot be replaced by caller supplied amounts" do
     order = order_fixture()
     {:ok, product} = CozyCheckout.Catalog.create_product(%{name: "Unpriced"})
