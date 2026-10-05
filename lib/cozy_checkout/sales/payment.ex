@@ -23,6 +23,13 @@ defmodule CozyCheckout.Sales.Payment do
     |> cast(attrs, [:order_id, :amount, :payment_method, :payment_date, :notes, :invoice_number])
     |> validate_required([:order_id, :amount, :payment_method, :payment_date, :invoice_number])
     |> validate_number(:amount, greater_than: 0)
+    |> validate_change(:amount, fn :amount, amount ->
+      if Decimal.equal?(amount, Decimal.round(amount, 2)) do
+        []
+      else
+        [amount: "must have at most two decimal places"]
+      end
+    end)
     |> validate_inclusion(:payment_method, ["cash", "qr_code"])
     |> unique_constraint(:invoice_number)
     |> foreign_key_constraint(:order_id)
