@@ -26,7 +26,6 @@ defmodule CozyCheckout.SalesConcurrencyTest do
     assert_amount(Enum.reduce(payments, Decimal.new(0), &Decimal.add(&2, &1.amount)), "100")
   end
 
-  @tag :known_bug
   test "concurrent payments on different orders all receive distinct generated document numbers" do
     orders = committed_orders(6)
     results = race(orders, fn order -> Sales.create_payment(payment_attrs(order, "100")) end)

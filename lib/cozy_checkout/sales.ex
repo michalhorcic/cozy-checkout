@@ -645,10 +645,15 @@ defmodule CozyCheckout.Sales do
   Enqueues an Abra sync job when the order transitions to "paid".
   """
   def create_payment(attrs \\ %{}) do
-    # Generate invoice number if not provided
-    attrs = Map.put_new(attrs, "invoice_number", generate_invoice_number())
-
     case Repo.transaction(fn ->
+           attrs =
+             if Map.has_key?(attrs, "invoice_number") or Map.has_key?(attrs, :invoice_number) do
+               attrs
+             else
+               Repo.query!("SELECT pg_advisory_xact_lock(73829104)")
+               Map.put(attrs, "invoice_number", generate_invoice_number())
+             end
+
            with {:ok, payment} <- do_create_payment(attrs),
                 {:ok, order} <- update_order_payment_status(payment.order_id) do
              {payment, order}
