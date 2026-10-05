@@ -34,7 +34,6 @@ defmodule CozyCheckout.SalesMoneyTest do
     assert {:error, _} = Sales.create_payment(payment_attrs(order, "100.01"))
   end
 
-  @tag :known_bug
   test "a paid order cannot be paid a second time through the context" do
     order = order_fixture()
     item_fixture(order)
