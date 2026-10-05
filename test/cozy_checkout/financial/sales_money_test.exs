@@ -4,7 +4,6 @@ defmodule CozyCheckout.SalesMoneyTest do
   import CozyCheckout.SalesFixtures
   alias CozyCheckout.Sales
 
-  @tag :known_bug
   test "recalculation includes discount and tips and ignores deleted items" do
     order = order_fixture(%{"discount_amount" => "30", "tips_amount" => "20"})
     item_fixture(order, "300")
