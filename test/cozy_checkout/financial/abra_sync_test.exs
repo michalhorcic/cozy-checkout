@@ -67,7 +67,6 @@ defmodule CozyCheckout.AbraSyncTest do
     assert {:error, _} = Abra.sync_order(order.id)
   end
 
-  @tag :known_bug
   test "lost success response and retry do not create two remote invoices" do
     order = paid_order()
     {:ok, remote} = Agent.start_link(fn -> %{documents: %{}, sequence: 0} end)
@@ -76,6 +75,8 @@ defmodule CozyCheckout.AbraSyncTest do
     Req.Test.stub(Client, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       [invoice] = Jason.decode!(body)["winstrom"]["faktura-vydana"]
+      assert invoice["id"] == "ext:cozy-checkout:order:#{order.id}"
+
       # Simulate ABRA accepting an external ID as an idempotent invoice identity.
       id =
         Agent.get_and_update(remote, fn state ->

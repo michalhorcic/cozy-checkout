@@ -19,6 +19,7 @@ defmodule CozyCheckout.Abra.InvoiceBuilder do
         "typDokl" => "code:BAR",
         "rada" => "code:#{cfg[:document_series_code]}",
         "typUcOp" => "code:TRŽBA ZBOŽÍ",
+        "id" => "ext:cozy-checkout:order:#{order.id}",
         "varSym" => sanitize_sym_var(order.order_number),
         "datVyst" => date,
         "duzpPuv" => date,
