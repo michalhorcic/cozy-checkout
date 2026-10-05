@@ -17,7 +17,7 @@ defmodule CozyCheckout.Inventory.BarStockMovement do
     belongs_to :product, CozyCheckout.Catalog.Product
     belongs_to :order_item, CozyCheckout.Sales.OrderItem
 
-    timestamps(type: :utc_datetime)
+    timestamps(type: :utc_datetime_usec)
   end
 
   def changeset(movement, attrs) do
