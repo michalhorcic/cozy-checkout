@@ -32,6 +32,7 @@ Cozy Checkout is a self-service POS system for a mountain guesthouse.
 - Never hardcode secrets, credentials or production URLs.
 
 ## Before completing a task
+- Do ask any needed questions before making changes.
 - Run relevant tests.
 - Check formatting.
 - Explain what was changed.

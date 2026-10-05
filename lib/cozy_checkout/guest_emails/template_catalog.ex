@@ -38,15 +38,16 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
   # "<name>_<season>"; all others are shared by every season of a language.
   @sections [
     :intro,
-    :group,
     {:seasonal, :parking},
     :checkin,
-    :what_to_bring,
+    :group,
     :guestbook,
-    :payments,
-    {:seasonal, :storage},
-    :wifi,
+    :what_to_bring,
     :meals,
+    :payments,
+    :wifi,
+    {:seasonal, :storage},
+    :rules,
     :checkout,
     :footer
   ]
