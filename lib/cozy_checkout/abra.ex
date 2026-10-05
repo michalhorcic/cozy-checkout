@@ -17,16 +17,26 @@ defmodule CozyCheckout.Abra do
       # Already synced — skip API call to prevent duplicate invoices.
       {:ok, order.abra_document_id}
     else
-      payload = InvoiceBuilder.build(order)
+      case build_invoice(order) do
+        {:ok, payload} ->
+          case Client.create_invoice(payload) do
+            {:ok, abra_id} ->
+              Sales.mark_order_abra_synced(order, abra_id)
+              {:ok, abra_id}
 
-      case Client.create_invoice(payload) do
-        {:ok, abra_id} ->
-          Sales.mark_order_abra_synced(order, abra_id)
-          {:ok, abra_id}
+            {:error, reason} ->
+              {:error, reason}
+          end
 
         {:error, reason} ->
           {:error, reason}
       end
     end
+  end
+
+  defp build_invoice(order) do
+    {:ok, InvoiceBuilder.build(order)}
+  rescue
+    error in ArgumentError -> {:error, Exception.message(error)}
   end
 end

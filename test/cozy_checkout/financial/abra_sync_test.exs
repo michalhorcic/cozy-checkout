@@ -57,7 +57,6 @@ defmodule CozyCheckout.AbraSyncTest do
     end
   end
 
-  @tag :known_bug
   test "mismatched line total is rejected before contacting ABRA" do
     order = paid_order()
     order |> Ecto.Changeset.change(total_amount: Decimal.new("99")) |> Repo.update!()

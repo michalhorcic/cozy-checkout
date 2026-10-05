@@ -12,6 +12,7 @@ defmodule CozyCheckout.Abra.InvoiceBuilder do
     date = format_date(order.inserted_at)
     items = order |> active_items() |> group_items() |> apply_adjustments(order)
     validate_order_total!(items, order)
+    validate_order_payments!(order)
 
     invoice =
       %{
@@ -122,6 +123,23 @@ defmodule CozyCheckout.Abra.InvoiceBuilder do
             "order #{order.order_number} total does not match its exported invoice lines"
     end
   end
+
+  defp validate_order_payments!(%{status: "paid"} = order) do
+    active_payments =
+      Enum.reject(order.payments, & &1.deleted_at)
+
+    paid_total =
+      Enum.reduce(active_payments, Decimal.new("0"), fn payment, total ->
+        Decimal.add(total, payment.amount)
+      end)
+
+    unless Decimal.equal?(paid_total, order.total_amount) do
+      raise ArgumentError,
+            "paid order #{order.order_number} does not have active payments matching its total"
+    end
+  end
+
+  defp validate_order_payments!(_order), do: :ok
 
   defp build_discount_lines(items, discount, items_total) do
     if Decimal.gt?(discount, 0) and Decimal.gt?(items_total, 0) do

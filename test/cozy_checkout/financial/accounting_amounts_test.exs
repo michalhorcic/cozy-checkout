@@ -91,7 +91,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert_rejected(fn -> Pohoda.export_orders([order.id]) end)
   end
 
-  @tag :known_bug
   test "ABRA refuses a paid flag without matching active payments" do
     order = paid_order()
     assert_rejected(fn -> InvoiceBuilder.build(%{order | payments: []}) end)
