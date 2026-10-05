@@ -13,7 +13,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert_amount(xml_number(xml, "//typ:priceHighVAT"), "21")
   end
 
-  @tag :known_bug
   test "discount and tips are reflected in ABRA lines, total and payments" do
     order = paid_order(%{"discount_amount" => "33.30", "tips_amount" => "20"})
     assert_amount(sum_abra_lines(abra_invoice(order)), "319.70")
@@ -27,7 +26,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert_amount(xml_summary_total(xml), "319.70")
   end
 
-  @tag :known_bug
   test "discount is allocated proportionally across original VAT rates and tips are exempt" do
     order = paid_order(%{"discount_amount" => "33.30", "tips_amount" => "20"})
     invoice = abra_invoice(order)
@@ -64,7 +62,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert_exports_match(order, "332.99")
   end
 
-  @tag :known_bug
   test "same product and price with different historical VAT remain separate ABRA lines" do
     order = same_product_different_vat_order()
     invoice = abra_invoice(order)
