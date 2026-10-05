@@ -44,7 +44,6 @@ defmodule CozyCheckout.AbraSyncTest do
   end
 
   for status <- ["open", "partially_paid", "cancelled"] do
-    @tag :known_bug
     test "#{status} orders are rejected before contacting ABRA" do
       order = order_fixture(%{"status" => unquote(status)})
       item_fixture(order)

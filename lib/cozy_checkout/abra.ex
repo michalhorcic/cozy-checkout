@@ -13,24 +13,29 @@ defmodule CozyCheckout.Abra do
   def sync_order(order_id) when is_binary(order_id) do
     order = Sales.get_order_for_abra_sync!(order_id)
 
-    if order.abra_document_id do
-      # Already synced — skip API call to prevent duplicate invoices.
-      {:ok, order.abra_document_id}
-    else
-      case build_invoice(order) do
-        {:ok, payload} ->
-          case Client.create_invoice(payload) do
-            {:ok, abra_id} ->
-              Sales.mark_order_abra_synced(order, abra_id)
-              {:ok, abra_id}
+    cond do
+      order.status != "paid" ->
+        {:error, "Only paid orders can be synced to ABRA"}
 
-            {:error, reason} ->
-              {:error, reason}
-          end
+      order.abra_document_id ->
+        # Already synced — skip API call to prevent duplicate invoices.
+        {:ok, order.abra_document_id}
 
-        {:error, reason} ->
-          {:error, reason}
-      end
+      true ->
+        case build_invoice(order) do
+          {:ok, payload} ->
+            case Client.create_invoice(payload) do
+              {:ok, abra_id} ->
+                Sales.mark_order_abra_synced(order, abra_id)
+                {:ok, abra_id}
+
+              {:error, reason} ->
+                {:error, reason}
+            end
+
+          {:error, reason} ->
+            {:error, reason}
+        end
     end
   end
 
