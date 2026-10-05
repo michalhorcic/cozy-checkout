@@ -41,7 +41,6 @@ defmodule CozyCheckout.SalesMoneyTest do
     assert {:error, _} = Sales.create_payment(payment_attrs(order, "100"))
   end
 
-  @tag :known_bug
   test "cancelled orders cannot receive a payment" do
     order = order_fixture(%{"status" => "cancelled"})
     item_fixture(order)

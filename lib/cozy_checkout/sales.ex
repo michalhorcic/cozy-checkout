@@ -664,6 +664,9 @@ defmodule CozyCheckout.Sales do
       order_id = Ecto.Changeset.get_field(changeset, :order_id)
 
       case Repo.get(Order, order_id) do
+        %Order{status: "cancelled"} ->
+          {:error, Ecto.Changeset.add_error(changeset, :order_id, "is cancelled")}
+
         %Order{} = order ->
           total_paid =
             order.id
