@@ -74,11 +74,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:split_allocated, %{})
        |> assign(:split_payment_amount, nil)
        |> assign(:last_payment_amount, nil)
-       |> assign(:order, nil)
-       |> assign(:grouped_items, [])
-       |> assign(:categories, [])
-       |> assign(:products, [])
-       |> assign(:popular_products, [])
+       |> load_order()
+       |> load_products()
        |> assign(:show_success, false)}
     end
   end

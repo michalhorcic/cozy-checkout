@@ -25,7 +25,6 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     %{order: order}
   end
 
-  @tag :known_bug
   test "POS payment screen can mount through the real route", %{conn: conn, order: order} do
     {:ok, view, _} = live(conn, "/pos/orders/#{order.id}")
     assert has_element?(view, "#pos-keep-alive")
