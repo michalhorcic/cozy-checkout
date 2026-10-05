@@ -56,7 +56,6 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     assert_paid_amount(order, "300")
   end
 
-  @tag :known_bug
   test "QR preview is not a payment and cancelling does not persist adjustments", %{order: order} do
     socket = order |> mounted() |> authorize() |> adjust("30", "20") |> qr()
     assert Sales.list_payments_for_order(order.id) == []
