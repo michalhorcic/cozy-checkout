@@ -1,0 +1,62 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: Elixir tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    env:
+      MIX_ENV: test
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Elixir and Erlang
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.18.3'
+          otp-version: '27.3'
+
+      - name: Cache dependencies and compiled test code
+        uses: actions/cache@v4
+        with:
+          path: |
+            deps
+            _build/test
+          key: ${{ runner.os }}-elixir-1.18.3-otp-27.3-test-${{ hashFiles('mix.lock') }}
+
+      - name: Install dependencies
+        run: mix deps.get
+
+      # The project's test alias creates the database and runs migrations.
+      # Run every test, including known_bug regressions, so failures block CI.
+      - name: Run all tests
+        run: mix test
