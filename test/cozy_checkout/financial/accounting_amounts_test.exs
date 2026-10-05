@@ -76,7 +76,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert_amount(xml_number(xml, "//typ:priceHighSum"), "100")
   end
 
-  @tag :known_bug
   test "ABRA refuses a cached total that does not match invoice lines" do
     order = paid_order()
 

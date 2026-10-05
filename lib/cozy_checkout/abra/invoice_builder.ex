@@ -11,6 +11,7 @@ defmodule CozyCheckout.Abra.InvoiceBuilder do
     cfg = Application.fetch_env!(:cozy_checkout, :abra)
     date = format_date(order.inserted_at)
     items = order |> active_items() |> group_items() |> apply_adjustments(order)
+    validate_order_total!(items, order)
 
     invoice =
       %{
@@ -108,6 +109,18 @@ defmodule CozyCheckout.Abra.InvoiceBuilder do
     tips_line = build_tips_line(order.tips_amount)
 
     items ++ discount_lines ++ tips_line
+  end
+
+  defp validate_order_total!(items, order) do
+    exported_total =
+      Enum.reduce(items, Decimal.new("0"), fn item, total ->
+        Decimal.add(total, Decimal.mult(item.unit_price, item.quantity))
+      end)
+
+    unless Decimal.equal?(exported_total, order.total_amount) do
+      raise ArgumentError,
+            "order #{order.order_number} total does not match its exported invoice lines"
+    end
   end
 
   defp build_discount_lines(items, discount, items_total) do
