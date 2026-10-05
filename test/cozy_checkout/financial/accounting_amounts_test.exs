@@ -84,7 +84,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     end)
   end
 
-  @tag :known_bug
   test "POHODA refuses a cached total that does not match invoice lines" do
     order = paid_order()
     order |> Ecto.Changeset.change(total_amount: Decimal.new("332")) |> Repo.update!()

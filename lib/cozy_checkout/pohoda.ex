@@ -33,6 +33,7 @@ defmodule CozyCheckout.Pohoda do
     {account_no, bank_code} = parse_bank_account()
     {payment_ids, payment_type} = payment_type_to_pohoda(order.payments)
     items = order |> active_order_items() |> group_items() |> apply_adjustments(order)
+    validate_order_total!(items, order)
 
     {price_none, price_low, price_low_vat, price_low_sum, price_high, price_high_vat,
      price_high_sum} = calculate_vat_totals(items)
@@ -180,6 +181,18 @@ defmodule CozyCheckout.Pohoda do
     items ++
       build_discount_lines(items, discount, items_total) ++
       build_tips_line(order.tips_amount)
+  end
+
+  defp validate_order_total!(items, order) do
+    exported_total =
+      Enum.reduce(items, Decimal.new("0"), fn item, total ->
+        Decimal.add(total, Decimal.mult(item.unit_price, item.quantity))
+      end)
+
+    unless Decimal.equal?(exported_total, order.total_amount) do
+      raise ArgumentError,
+            "order #{order.order_number} total does not match its exported invoice lines"
+    end
   end
 
   defp build_discount_lines(items, discount, items_total) do
