@@ -6,7 +6,6 @@ defmodule CozyCheckout.SalesConcurrencyTest do
   alias CozyCheckout.{Repo, Sales}
   alias Ecto.Adapters.SQL.Sandbox
 
-  @tag :known_bug
   test "two independent connections cannot pay the same remaining balance twice" do
     [order] = committed_orders(1)
 

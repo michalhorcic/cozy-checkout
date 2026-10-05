@@ -679,7 +679,7 @@ defmodule CozyCheckout.Sales do
     if changeset.valid? do
       order_id = Ecto.Changeset.get_field(changeset, :order_id)
 
-      case Repo.get(Order, order_id) do
+      case Repo.one(from(o in Order, where: o.id == ^order_id, lock: "FOR UPDATE")) do
         %Order{status: "cancelled"} ->
           {:error, Ecto.Changeset.add_error(changeset, :order_id, "is cancelled")}
 
