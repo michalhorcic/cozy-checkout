@@ -133,26 +133,29 @@ defmodule CozyCheckout.Payments.QrCode do
   defp account_to_iban(account_str) when is_binary(account_str) do
     case String.split(account_str, "/") do
       [account, bank_code] ->
-        # Pad account number to 16 digits and bank code to 4 digits
-        account_padded = String.pad_leading(account, 16, "0")
-        bank_code_padded = String.pad_leading(bank_code, 4, "0")
+        with {:ok, prefix, account_number} <- split_account_number(account),
+             true <- valid_account_component?(bank_code, 4),
+             true <- prefix == "" or valid_account_component?(prefix, 6),
+             true <- valid_account_component?(account_number, 10) do
+          bank_code_padded = String.pad_leading(bank_code, 4, "0")
+          prefix_padded = String.pad_leading(prefix, 6, "0")
+          account_padded = String.pad_leading(account_number, 10, "0")
+          bban = "#{bank_code_padded}#{prefix_padded}#{account_padded}"
 
-        # Calculate IBAN check digits using mod-97 algorithm
-        # 1. Create base IBAN with CZ00
-        base_iban = "#{bank_code_padded}#{account_padded}CZ00"
+          base_iban = "#{bban}CZ00"
 
-        # 2. Replace letters with numbers (C=12, Z=35)
-        numeric_iban =
-          base_iban
-          |> String.replace("C", "12")
-          |> String.replace("Z", "35")
+          numeric_iban =
+            base_iban
+            |> String.replace("C", "12")
+            |> String.replace("Z", "35")
 
-        # 3. Calculate mod 97
-        check_digits = 98 - mod97(numeric_iban)
-        check_digits_str = String.pad_leading("#{check_digits}", 2, "0")
+          check_digits = 98 - mod97(numeric_iban)
+          check_digits_str = String.pad_leading("#{check_digits}", 2, "0")
 
-        # 4. Return complete IBAN
-        "CZ#{check_digits_str}#{bank_code_padded}#{account_padded}"
+          "CZ#{check_digits_str}#{bban}"
+        else
+          _ -> account_str
+        end
 
       _ ->
         # Invalid format, return as is
@@ -161,6 +164,18 @@ defmodule CozyCheckout.Payments.QrCode do
   end
 
   defp account_to_iban(nil), do: ""
+
+  defp split_account_number(account) do
+    case String.split(account, "-") do
+      [account_number] -> {:ok, "", account_number}
+      [prefix, account_number] -> {:ok, prefix, account_number}
+      _ -> :error
+    end
+  end
+
+  defp valid_account_component?(value, max_length) do
+    String.length(value) <= max_length and Regex.match?(~r/\A\d+\z/, value)
+  end
 
   # Calculate mod 97 for large numbers (IBAN check digit algorithm)
   defp mod97(numeric_string) do

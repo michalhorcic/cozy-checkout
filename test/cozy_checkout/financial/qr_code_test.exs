@@ -16,7 +16,6 @@ defmodule CozyCheckout.Payments.QrCodeTest do
              "SPD*1.0*ACC:CZ1801000000000123456789*AM:150.50*CC:CZK*MSG:Order payment*X-VS:2610051234"
   end
 
-  @tag :known_bug
   test "Czech account prefixes are converted to a valid known IBAN" do
     data =
       QrCode.generate_qr_data(%{
