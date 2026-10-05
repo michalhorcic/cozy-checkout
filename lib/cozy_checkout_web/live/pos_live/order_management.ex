@@ -522,9 +522,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
         case Sales.update_order(socket.assigns.order, order_update_attrs) do
           {:ok, updated_order} ->
+            payment_amount = outstanding_balance(updated_order)
+
             payment_attrs = %{
               "order_id" => socket.assigns.order_id,
-              "amount" => Decimal.to_string(updated_order.total_amount),
+              "amount" => Decimal.to_string(payment_amount),
               "payment_method" => "cash",
               "payment_date" => Date.utc_today()
             }
@@ -536,7 +538,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
                  |> assign(:payment_method, "cash_success")
                  |> assign(:payment_pin_authorized, false)
                  |> assign(:payment_invoice_number, payment.invoice_number)
-                 |> assign(:last_payment_amount, updated_order.total_amount)
+                 |> assign(:last_payment_amount, payment_amount)
                  |> load_order()}
 
               {:error, _changeset} ->
@@ -687,6 +689,17 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       {:error, _changeset} ->
         {:noreply, put_flash(socket, :error, "Failed to record payment")}
     end
+  end
+
+  defp outstanding_balance(order) do
+    total_paid =
+      order.id
+      |> Sales.list_payments_for_order()
+      |> Enum.reduce(Decimal.new("0"), fn payment, total ->
+        Decimal.add(total, payment.amount)
+      end)
+
+    Decimal.sub(order.total_amount, total_paid)
   end
 
   defp request_payment_pin(socket, mode) do

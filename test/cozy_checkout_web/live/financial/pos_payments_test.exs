@@ -43,7 +43,6 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     assert socket.assigns.payment_invoice_number == payment.invoice_number
   end
 
-  @tag :known_bug
   test "cash settlement collects only the outstanding balance", %{order: order} do
     {:ok, _} = Sales.create_payment(payment_attrs(order, "100"))
     order |> mounted() |> authorize() |> cash()
