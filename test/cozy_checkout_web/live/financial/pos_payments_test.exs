@@ -49,7 +49,6 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     assert_paid_amount(order, "300")
   end
 
-  @tag :known_bug
   test "QR settlement collects only the outstanding balance", %{order: order} do
     {:ok, _} = Sales.create_payment(payment_attrs(order, "100"))
     socket = order |> mounted() |> authorize() |> qr()

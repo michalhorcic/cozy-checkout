@@ -610,10 +610,12 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
         case Sales.update_order(socket.assigns.order, order_update_attrs) do
           {:ok, updated_order} ->
+            payment_amount = outstanding_balance(updated_order)
+
             qr_svg =
               QrCode.generate_qr_svg(%{
                 account_number: bank_account,
-                amount: updated_order.total_amount,
+                amount: payment_amount,
                 currency: "CZK",
                 variable_symbol: updated_order.order_number,
                 message: "Order #{updated_order.order_number}"
@@ -623,7 +625,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
              socket
              |> assign(:payment_method, "qr_preview")
              |> assign(:payment_qr_svg, qr_svg)
-             |> assign(:payment_preview_amount, updated_order.total_amount)
+             |> assign(:payment_preview_amount, payment_amount)
              |> load_order()}
 
           {:error, _changeset} ->
@@ -651,7 +653,9 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   defp record_qr_payment(socket) do
-    amount = socket.assigns.split_payment_amount || socket.assigns.order.total_amount
+    amount =
+      socket.assigns.split_payment_amount || socket.assigns.payment_preview_amount ||
+        outstanding_balance(socket.assigns.order)
 
     payment_attrs = %{
       "order_id" => socket.assigns.order_id,
