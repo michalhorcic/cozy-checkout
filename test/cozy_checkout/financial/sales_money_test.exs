@@ -123,7 +123,6 @@ defmodule CozyCheckout.SalesMoneyTest do
              })
   end
 
-  @tag :known_bug
   test "changing unit price recalculates subtotal rather than trusting the caller" do
     order = order_fixture()
     item = item_fixture(order, "50", "21", 2)
