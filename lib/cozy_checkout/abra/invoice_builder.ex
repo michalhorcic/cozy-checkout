@@ -221,9 +221,17 @@ defmodule CozyCheckout.Abra.InvoiceBuilder do
   # typSzbDphK is the correct field for VAT rate on invoice items; szbDph only accepts a plain number.
   defp vat_type_key(rate) when is_struct(rate, Decimal) do
     cond do
-      Decimal.equal?(rate, Decimal.new(21)) -> "typSzbDph.dphZakl"
-      Decimal.equal?(rate, Decimal.new(12)) -> "typSzbDph.dphSniz"
-      true -> "typSzbDph.dphOsv"
+      Decimal.equal?(rate, Decimal.new(21)) ->
+        "typSzbDph.dphZakl"
+
+      Decimal.equal?(rate, Decimal.new(12)) ->
+        "typSzbDph.dphSniz"
+
+      Decimal.equal?(rate, Decimal.new(0)) ->
+        "typSzbDph.dphOsv"
+
+      true ->
+        raise ArgumentError, "unsupported VAT rate for ABRA export: #{Decimal.to_string(rate)}"
     end
   end
 

@@ -126,7 +126,6 @@ defmodule CozyCheckout.AccountingAmountsTest do
     assert invoice["bankovniUcet"] != nil
   end
 
-  @tag :known_bug
   test "unsupported VAT is rejected rather than silently exported as exempt" do
     order = order_fixture()
     item_fixture(order, "100", "15")
