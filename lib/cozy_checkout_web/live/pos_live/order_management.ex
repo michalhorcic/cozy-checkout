@@ -30,6 +30,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:discount_reason, "")
        |> assign(:show_recalculate_modal, false)
        |> assign(:recalculated_total, nil)
+       |> assign(:recalculated_items_total, nil)
        |> assign(:show_delete_confirm, false)
        |> assign(:item_to_delete, nil)
        |> assign(:show_quantity_modal, false)
@@ -65,6 +66,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:discount_reason, "")
        |> assign(:show_recalculate_modal, false)
        |> assign(:recalculated_total, nil)
+       |> assign(:recalculated_items_total, nil)
        |> assign(:show_delete_confirm, false)
        |> assign(:item_to_delete, nil)
        |> assign(:show_quantity_modal, false)
@@ -439,8 +441,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("open_recalculate_modal", _params, socket) do
-    # Calculate the sum from order items
-    recalculated_total =
+    items_total =
       socket.assigns.order.order_items
       |> Enum.reduce(Decimal.new("0"), fn item, acc ->
         Decimal.add(acc, item.subtotal)
@@ -449,7 +450,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     {:noreply,
      socket
      |> assign(:show_recalculate_modal, true)
-     |> assign(:recalculated_total, recalculated_total)}
+     |> assign(:recalculated_items_total, items_total)
+     |> assign(:recalculated_total, Sales.calculate_order_total(socket.assigns.order))}
   end
 
   @impl true
@@ -457,19 +459,19 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     {:noreply,
      socket
      |> assign(:show_recalculate_modal, false)
-     |> assign(:recalculated_total, nil)}
+     |> assign(:recalculated_total, nil)
+     |> assign(:recalculated_items_total, nil)}
   end
 
   @impl true
   def handle_event("apply_recalculation", _params, socket) do
-    case Sales.update_order(socket.assigns.order, %{
-           total_amount: socket.assigns.recalculated_total
-         }) do
+    case Sales.recalculate_order_total(socket.assigns.order) do
       {:ok, _order} ->
         {:noreply,
          socket
          |> assign(:show_recalculate_modal, false)
          |> assign(:recalculated_total, nil)
+         |> assign(:recalculated_items_total, nil)
          |> load_order()
          |> put_flash(:info, "Order total updated successfully")}
 

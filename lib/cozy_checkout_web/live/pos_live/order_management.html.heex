@@ -782,7 +782,7 @@
               else: "bg-yellow-50 border-2 border-yellow-200"
             )
           ]}>
-            <p class="text-sm text-slate-600 mb-1">Recalculated Total (From Items)</p>
+            <p class="text-sm text-slate-600 mb-1">Recalculated Total (Items, Discount & Tips)</p>
             <p class="text-2xl font-bold text-slate-900">
               {format_currency(@recalculated_total || Decimal.new("0"))}
             </p>
@@ -829,7 +829,15 @@
               <% end %>
               <div class="border-t border-slate-300 pt-2 mt-2 flex justify-between font-semibold">
                 <span>Sum of Items:</span>
-                <span>{format_currency(@recalculated_total)}</span>
+                <span>{format_currency(@recalculated_items_total)}</span>
+              </div>
+              <div class="flex justify-between text-red-700">
+                <span>Discount:</span>
+                <span>-{format_currency(@order.discount_amount || Decimal.new("0"))}</span>
+              </div>
+              <div class="flex justify-between text-slate-700">
+                <span>Tips:</span>
+                <span>{format_currency(@order.tips_amount || Decimal.new("0"))}</span>
               </div>
             </div>
           </div>

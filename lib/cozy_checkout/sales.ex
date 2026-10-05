@@ -576,9 +576,9 @@ defmodule CozyCheckout.Sales do
   end
 
   @doc """
-  Recalculates order total based on active items, discount, and tips.
+  Calculates the order total from active items, discount, and tips.
   """
-  def recalculate_order_total(%Order{} = order) do
+  def calculate_order_total(%Order{} = order) do
     order = Repo.preload(order, :order_items, force: true)
 
     items_total =
@@ -591,7 +591,14 @@ defmodule CozyCheckout.Sales do
     discount = order.discount_amount || Decimal.new("0")
     total = Decimal.sub(items_total, discount)
     total = if Decimal.lt?(total, 0), do: Decimal.new("0"), else: total
-    total = Decimal.add(total, order.tips_amount || Decimal.new("0"))
+    Decimal.add(total, order.tips_amount || Decimal.new("0"))
+  end
+
+  @doc """
+  Recalculates and persists an order total, then synchronizes its payment status.
+  """
+  def recalculate_order_total(%Order{} = order) do
+    total = calculate_order_total(order)
 
     Repo.transaction(fn ->
       case order |> Ecto.Changeset.change(total_amount: total) |> Repo.update() do

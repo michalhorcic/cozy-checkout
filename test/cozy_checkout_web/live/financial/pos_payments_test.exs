@@ -150,7 +150,6 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     assert Sales.list_payments_for_order(order.id) == []
   end
 
-  @tag :known_bug
   test "manual recalculation preserves discount and tips", %{order: order} do
     {:ok, _} =
       Sales.update_order(Sales.get_order!(order.id), %{
