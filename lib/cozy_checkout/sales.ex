@@ -658,9 +658,36 @@ defmodule CozyCheckout.Sales do
   defp maybe_enqueue_abra_sync(_order), do: :ok
 
   defp do_create_payment(attrs) do
-    %Payment{}
-    |> Payment.changeset(attrs)
-    |> Repo.insert()
+    changeset = Payment.changeset(%Payment{}, attrs)
+
+    if changeset.valid? do
+      order_id = Ecto.Changeset.get_field(changeset, :order_id)
+
+      case Repo.get(Order, order_id) do
+        %Order{} = order ->
+          total_paid =
+            order.id
+            |> list_payments_for_order()
+            |> Enum.reduce(Decimal.new("0"), fn payment, total ->
+              Decimal.add(total, payment.amount)
+            end)
+
+          remaining = Decimal.sub(order.total_amount, total_paid)
+          amount = Ecto.Changeset.get_field(changeset, :amount)
+
+          if Decimal.gt?(amount, remaining) do
+            {:error,
+             Ecto.Changeset.add_error(changeset, :amount, "exceeds the remaining balance")}
+          else
+            Repo.insert(changeset)
+          end
+
+        nil ->
+          Repo.insert(changeset)
+      end
+    else
+      {:error, changeset}
+    end
   end
 
   @doc """

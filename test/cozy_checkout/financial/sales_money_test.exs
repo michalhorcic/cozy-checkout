@@ -28,7 +28,6 @@ defmodule CozyCheckout.SalesMoneyTest do
     assert Sales.get_order!(order.id).status == "open"
   end
 
-  @tag :known_bug
   test "overpayment is rejected" do
     order = order_fixture()
     item_fixture(order)
