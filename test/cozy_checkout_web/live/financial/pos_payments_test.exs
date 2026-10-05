@@ -3,7 +3,7 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
   @moduletag :financial
   import Phoenix.LiveViewTest
   import CozyCheckout.SalesFixtures
-  alias CozyCheckout.{Repo, Sales}
+  alias CozyCheckout.Sales
   alias CozyCheckoutWeb.{AdminAuth, AdminAuthRateLimiter}
   alias CozyCheckoutWeb.PosLive.OrderManagement
 
@@ -120,23 +120,29 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     assert_paid_amount(order, "300")
   end
 
-  @tag :known_bug
   test "failed payment leaves the original total, discount and tips unchanged", %{order: order} do
     socket = order |> mounted() |> authorize() |> adjust("30", "20")
-    other = order_fixture()
-    item_fixture(other, "1")
 
-    reserved =
-      Repo.insert!(
-        Sales.Payment.changeset(
-          %Sales.Payment{},
-          Map.put(payment_attrs(other, "1"), "invoice_number", "PLACEHOLDER")
-        )
-      )
+    {:ok, _cancelled_order} =
+      Sales.update_order(Sales.get_order!(order.id), %{"status" => "cancelled"})
 
-    number = Sales.generate_invoice_number()
-    reserved |> Ecto.Changeset.change(invoice_number: number) |> Repo.update!()
     cash(socket)
+    updated = Sales.get_order!(order.id)
+    assert_amount(updated.total_amount, "300")
+    assert_amount(updated.discount_amount, "0")
+    assert_amount(updated.tips_amount, "0")
+    assert Sales.list_payments_for_order(order.id) == []
+  end
+
+  test "failed QR payment leaves the original total, discount and tips unchanged", %{
+    order: order
+  } do
+    socket = order |> mounted() |> authorize() |> adjust("30", "20") |> qr()
+
+    {:ok, _cancelled_order} =
+      Sales.update_order(Sales.get_order!(order.id), %{"status" => "cancelled"})
+
+    event(socket, "confirm_qr_payment")
     updated = Sales.get_order!(order.id)
     assert_amount(updated.total_amount, "300")
     assert_amount(updated.discount_amount, "0")

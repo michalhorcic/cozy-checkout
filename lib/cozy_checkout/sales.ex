@@ -645,28 +645,49 @@ defmodule CozyCheckout.Sales do
   Enqueues an Abra sync job when the order transitions to "paid".
   """
   def create_payment(attrs \\ %{}) do
-    case Repo.transaction(fn ->
-           attrs =
-             if Map.has_key?(attrs, "invoice_number") or Map.has_key?(attrs, :invoice_number) do
-               attrs
-             else
-               Repo.query!("SELECT pg_advisory_xact_lock(73829104)")
-               Map.put(attrs, "invoice_number", generate_invoice_number())
-             end
-
-           with {:ok, payment} <- do_create_payment(attrs),
-                {:ok, order} <- update_order_payment_status(payment.order_id) do
-             {payment, order}
-           else
-             {:error, changeset} -> Repo.rollback(changeset)
-           end
-         end) do
+    case Repo.transaction(fn -> create_payment_and_update_status(attrs) end) do
       {:ok, {payment, order}} ->
         maybe_enqueue_abra_sync(order)
         {:ok, payment}
 
       {:error, changeset} ->
         {:error, changeset}
+    end
+  end
+
+  @doc """
+  Updates an order and records its payment atomically.
+  """
+  def create_payment_with_order_update(%Order{} = order, order_attrs, payment_attrs) do
+    case Repo.transaction(fn ->
+           case update_order(order, order_attrs) do
+             {:ok, _updated_order} -> create_payment_and_update_status(payment_attrs)
+             {:error, changeset} -> Repo.rollback(changeset)
+           end
+         end) do
+      {:ok, {payment, updated_order}} ->
+        maybe_enqueue_abra_sync(updated_order)
+        {:ok, payment}
+
+      {:error, changeset} ->
+        {:error, changeset}
+    end
+  end
+
+  defp create_payment_and_update_status(attrs) do
+    attrs =
+      if Map.has_key?(attrs, "invoice_number") or Map.has_key?(attrs, :invoice_number) do
+        attrs
+      else
+        Repo.query!("SELECT pg_advisory_xact_lock(73829104)")
+        Map.put(attrs, "invoice_number", generate_invoice_number())
+      end
+
+    with {:ok, payment} <- do_create_payment(attrs),
+         {:ok, order} <- update_order_payment_status(payment.order_id) do
+      {payment, order}
+    else
+      {:error, changeset} -> Repo.rollback(changeset)
     end
   end
 
