@@ -5,14 +5,23 @@ defmodule CozyCheckoutWeb.BarStockLive do
 
   @impl true
   def mount(_params, _session, socket) do
+    today = Date.utc_today()
+    default_start_date = Date.add(today, -30) |> Date.to_iso8601()
+    default_end_date = Date.to_iso8601(today)
+
     {:ok,
      socket
      |> assign(:product_search, "")
      |> assign(:product_search_results, [])
      |> assign(:selected_product, nil)
      |> assign(:show_product_results, false)
-     |> assign(:loss_start_date, "")
-     |> assign(:loss_end_date, "")
+     |> assign(:loss_start_date, default_start_date)
+     |> assign(:loss_end_date, default_end_date)
+     |> assign(:movement_search, "")
+     |> assign(:movement_type, "")
+     |> assign(:movement_start_date, default_start_date)
+     |> assign(:movement_end_date, default_end_date)
+     |> assign(:movement_page, 1)
      |> load_stock()}
   end
 
@@ -205,23 +214,95 @@ defmodule CozyCheckoutWeb.BarStockLive do
      |> load_stock()}
   end
 
+  def handle_event("filter_movements", params, socket) do
+    {:noreply,
+     socket
+     |> assign(:movement_search, params["search"] || "")
+     |> assign(:movement_type, params["movement_type"] || "")
+     |> assign(:movement_start_date, params["start_date"] || "")
+     |> assign(:movement_end_date, params["end_date"] || "")
+     |> assign(:movement_page, 1)
+     |> load_stock()}
+  end
+
+  def handle_event("clear_movement_filter", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:movement_search, "")
+     |> assign(:movement_type, "")
+     |> assign(:movement_start_date, "")
+     |> assign(:movement_end_date, "")
+     |> assign(:movement_page, 1)
+     |> load_stock()}
+  end
+
+  def handle_event("movements_page", %{"page" => page_str}, socket) do
+    {:noreply,
+     socket
+     |> assign(:movement_page, String.to_integer(page_str))
+     |> load_stock()}
+  end
+
   defp load_stock(socket) do
+    movement_filters = movement_filters(socket)
+    movement_page_size = 50
+    movement_total_count = Inventory.count_bar_stock_movements(movement_filters)
+    movement_total_pages = movement_total_pages(movement_total_count, movement_page_size)
+    movement_page = clamp(socket.assigns[:movement_page] || 1, 1, movement_total_pages)
+
     socket
     |> assign(:bar_stock_items, Inventory.list_bar_stock_products())
     |> assign(:bar_stock_candidates, Inventory.list_bar_stock_candidates())
-    |> assign(:recent_movements, Inventory.list_recent_bar_stock_movements())
+    |> assign(:movement_page, movement_page)
+    |> assign(:movement_total_pages, movement_total_pages)
+    |> assign(:movement_total_count, movement_total_count)
+    |> assign(
+      :recent_movements,
+      Inventory.list_recent_bar_stock_movements(movement_filters,
+        page: movement_page,
+        page_size: movement_page_size
+      )
+    )
     |> assign(:loss_summary, Inventory.get_bar_stock_loss_summary(loss_filters(socket)))
     |> assign(:waste_reasons, Inventory.bar_stock_waste_reasons())
   end
 
   defp loss_filters(socket) do
     %{}
-    |> maybe_put_loss_date(:start_date, parse_filter_date(socket.assigns[:loss_start_date]))
-    |> maybe_put_loss_date(:end_date, parse_filter_date(socket.assigns[:loss_end_date]))
+    |> maybe_put_filter(:start_date, parse_filter_date(socket.assigns[:loss_start_date]))
+    |> maybe_put_filter(:end_date, parse_filter_date(socket.assigns[:loss_end_date]))
   end
 
-  defp maybe_put_loss_date(filters, _key, nil), do: filters
-  defp maybe_put_loss_date(filters, key, date), do: Map.put(filters, key, date)
+  defp movement_filters(socket) do
+    %{}
+    |> maybe_put_filter(:product_search, String.trim(socket.assigns[:movement_search] || ""))
+    |> maybe_put_filter(:movement_type, socket.assigns[:movement_type] || "")
+    |> maybe_put_filter(:start_date, parse_filter_date(socket.assigns[:movement_start_date]))
+    |> maybe_put_filter(:end_date, parse_filter_date(socket.assigns[:movement_end_date]))
+  end
+
+  defp movement_total_pages(0, _page_size), do: 1
+
+  defp movement_total_pages(total_count, page_size),
+    do: div(total_count + page_size - 1, page_size)
+
+  defp clamp(value, min, max), do: value |> max(min) |> min(max)
+
+  defp maybe_put_filter(filters, _key, nil), do: filters
+  defp maybe_put_filter(filters, _key, ""), do: filters
+  defp maybe_put_filter(filters, key, value), do: Map.put(filters, key, value)
+
+  defp movement_type_options do
+    [
+      {"All types", ""},
+      {"Opening stock", "opening"},
+      {"Restock", "restock"},
+      {"Account entry", "sale"},
+      {"Account correction", "sale_reversal"},
+      {"Stock count", "count_adjustment"},
+      {"Loss recorded", "waste"}
+    ]
+  end
 
   defp parse_filter_date(nil), do: nil
   defp parse_filter_date(""), do: nil
@@ -728,6 +809,79 @@ defmodule CozyCheckoutWeb.BarStockLive do
 
         <section class="mt-10">
           <h2 class="mb-3 text-lg font-semibold text-gray-900">Recent movements</h2>
+
+          <.form
+            for={%{}}
+            as={:movement_filter}
+            phx-submit="filter_movements"
+            class="mb-4 flex flex-wrap items-end gap-3 rounded-lg bg-gray-50 p-4"
+          >
+            <div>
+              <label for="movement-search" class="mb-1 block text-xs font-medium text-gray-600">
+                Product
+              </label>
+              <input
+                id="movement-search"
+                type="text"
+                name="search"
+                value={@movement_search}
+                placeholder="Search by product name..."
+                class="w-48 rounded-md border-gray-300 text-sm shadow-sm"
+              />
+            </div>
+            <div>
+              <label for="movement-type" class="mb-1 block text-xs font-medium text-gray-600">
+                Movement type
+              </label>
+              <select
+                id="movement-type"
+                name="movement_type"
+                class="rounded-md border-gray-300 text-sm shadow-sm"
+              >
+                <%= for {label, value} <- movement_type_options() do %>
+                  <option value={value} selected={@movement_type == value}>{label}</option>
+                <% end %>
+              </select>
+            </div>
+            <div>
+              <label for="movement-start-date" class="mb-1 block text-xs font-medium text-gray-600">
+                From
+              </label>
+              <input
+                id="movement-start-date"
+                type="date"
+                name="start_date"
+                value={@movement_start_date}
+                class="rounded-md border-gray-300 text-sm shadow-sm"
+              />
+            </div>
+            <div>
+              <label for="movement-end-date" class="mb-1 block text-xs font-medium text-gray-600">
+                To
+              </label>
+              <input
+                id="movement-end-date"
+                type="date"
+                name="end_date"
+                value={@movement_end_date}
+                class="rounded-md border-gray-300 text-sm shadow-sm"
+              />
+            </div>
+            <button
+              type="submit"
+              class="inline-flex items-center gap-2 rounded-lg bg-tertiary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-tertiary-700"
+            >
+              <.icon name="hero-magnifying-glass" class="h-4 w-4" /> Search
+            </button>
+            <button
+              type="button"
+              phx-click="clear_movement_filter"
+              class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+            >
+              Clear
+            </button>
+          </.form>
+
           <div class="overflow-x-auto border-y border-gray-200">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
               <thead class="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
@@ -764,12 +918,38 @@ defmodule CozyCheckoutWeb.BarStockLive do
                 <%= if @recent_movements == [] do %>
                   <tr>
                     <td colspan="5" class="px-4 py-8 text-center text-gray-500">
-                      No bar stock movements yet.
+                      No bar stock movements found.
                     </td>
                   </tr>
                 <% end %>
               </tbody>
             </table>
+          </div>
+
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-sm text-gray-600">
+            <span>
+              Page {@movement_page} of {@movement_total_pages} · {@movement_total_count} movements
+            </span>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                phx-click="movements_page"
+                phx-value-page={@movement_page - 1}
+                disabled={@movement_page <= 1}
+                class="rounded-lg bg-gray-100 px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                ← Previous
+              </button>
+              <button
+                type="button"
+                phx-click="movements_page"
+                phx-value-page={@movement_page + 1}
+                disabled={@movement_page >= @movement_total_pages}
+                class="rounded-lg bg-gray-100 px-3 py-1.5 font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next →
+              </button>
+            </div>
           </div>
         </section>
       </div>

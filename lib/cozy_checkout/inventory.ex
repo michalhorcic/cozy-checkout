@@ -437,12 +437,51 @@ defmodule CozyCheckout.Inventory do
     ) || Decimal.new("0")
   end
 
-  def list_recent_bar_stock_movements(limit \\ 50) do
-    BarStockMovement
+  def list_recent_bar_stock_movements(filters \\ %{}, opts \\ []) do
+    page = max(Keyword.get(opts, :page, 1), 1)
+    page_size = Keyword.get(opts, :page_size, 50)
+    movement_offset = (page - 1) * page_size
+
+    filters
+    |> bar_stock_movement_query()
     |> order_by([m], desc: m.inserted_at)
-    |> limit(^limit)
+    |> limit(^page_size)
+    |> offset(^movement_offset)
     |> preload([:product, order_item: :order])
     |> Repo.all()
+  end
+
+  def count_bar_stock_movements(filters \\ %{}) do
+    filters
+    |> bar_stock_movement_query()
+    |> select([m], count(m.id))
+    |> Repo.one()
+  end
+
+  defp bar_stock_movement_query(filters) do
+    BarStockMovement
+    |> join(:inner, [m], p in assoc(m, :product), as: :product)
+    |> apply_movement_date_filter(filters)
+    |> apply_movement_type_filter(filters)
+    |> apply_product_search_filter(filters)
+  end
+
+  defp apply_movement_type_filter(query, filters) do
+    case Map.get(filters, :movement_type) do
+      value when value in [nil, ""] -> query
+      movement_type -> where(query, [m], m.movement_type == ^movement_type)
+    end
+  end
+
+  defp apply_product_search_filter(query, filters) do
+    case Map.get(filters, :product_search) do
+      value when value in [nil, ""] ->
+        query
+
+      search ->
+        pattern = "%#{search}%"
+        where(query, [product: p], ilike(p.name, ^pattern))
+    end
   end
 
   def record_bar_stock_sale(%CozyCheckout.Sales.OrderItem{} = item) do
