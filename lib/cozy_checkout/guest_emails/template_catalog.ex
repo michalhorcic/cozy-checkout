@@ -9,33 +9,46 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
       label: "Před příjezdem – česky, zima",
       language: "cs",
       season: :winter,
-      subject: "Informace k pobytu od {{check_in_date}} – Jindřichův dům",
-      file: "cs_winter.html"
+      subject: "Informace k pobytu od {{check_in_date}} – Jindřichův dům"
     },
     %{
       id: "cs_summer",
       label: "Před příjezdem – česky, léto",
       language: "cs",
       season: :summer,
-      subject: "Informace k pobytu od {{check_in_date}} – Jindřichův dům",
-      file: "cs_summer.html"
+      subject: "Informace k pobytu od {{check_in_date}} – Jindřichův dům"
     },
     %{
       id: "de_winter",
       label: "Před příjezdem – německy, zima",
       language: "de",
       season: :winter,
-      subject: "Informationen zum Aufenthalt ab {{check_in_date}} – Jindřichův dům",
-      file: "de_winter.html"
+      subject: "Informationen zum Aufenthalt ab {{check_in_date}} – Jindřichův dům"
     },
     %{
       id: "de_summer",
       label: "Před příjezdem – německy, léto",
       language: "de",
       season: :summer,
-      subject: "Informationen zum Aufenthalt ab {{check_in_date}} – Jindřichův dům",
-      file: "de_summer.html"
+      subject: "Informationen zum Aufenthalt ab {{check_in_date}} – Jindřichův dům"
     }
+  ]
+
+  # Section order of the pre-arrival email. Seasonal sections are resolved to
+  # "<name>_<season>"; all others are shared by every season of a language.
+  @sections [
+    :intro,
+    :group,
+    {:seasonal, :parking},
+    :checkin,
+    :what_to_bring,
+    :guestbook,
+    :payments,
+    {:seasonal, :storage},
+    :wifi,
+    :meals,
+    :checkout,
+    :footer
   ]
 
   def list, do: @templates
@@ -89,14 +102,30 @@ defmodule CozyCheckout.GuestEmails.TemplateCatalog do
   def render_custom(_body), do: {:error, :empty_body}
 
   defp read_body(template) do
-    path =
-      Path.join(:code.priv_dir(:cozy_checkout), "email_templates/pre_arrival/#{template.file}")
+    @sections
+    |> Enum.map(&section_file(&1, template))
+    |> Enum.reduce_while({:ok, []}, fn file, {:ok, acc} ->
+      path =
+        Path.join([
+          :code.priv_dir(:cozy_checkout),
+          "email_templates/pre_arrival",
+          template.language,
+          file
+        ])
 
-    case File.read(path) do
-      {:ok, body} -> {:ok, body}
-      {:error, reason} -> {:error, {:template_read_failed, template.id, reason}}
+      case File.read(path) do
+        {:ok, content} -> {:cont, {:ok, [content | acc]}}
+        {:error, reason} -> {:halt, {:error, {:template_read_failed, template.id, reason}}}
+      end
+    end)
+    |> case do
+      {:ok, parts} -> {:ok, parts |> Enum.reverse() |> Enum.join()}
+      error -> error
     end
   end
+
+  defp section_file({:seasonal, name}, template), do: "#{name}_#{template.season}.html"
+  defp section_file(name, _template), do: "#{name}.html"
 
   defp personalization_values(template, booking, guest_name_override) do
     language = template.language
