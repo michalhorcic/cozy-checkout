@@ -73,10 +73,6 @@ defmodule CozyCheckout.SalesMoneyTest do
   end
 
   for amount <- ["0", "-1", "1.001", "10abc", "100000000", "NaN", "Infinity"] do
-    if amount == "100000000" do
-      @tag :known_bug
-    end
-
     test "invalid monetary input #{amount} is rejected without creating a payment" do
       order = order_fixture()
       item_fixture(order)

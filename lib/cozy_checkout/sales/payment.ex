@@ -23,6 +23,7 @@ defmodule CozyCheckout.Sales.Payment do
     |> cast(attrs, [:order_id, :amount, :payment_method, :payment_date, :notes, :invoice_number])
     |> validate_required([:order_id, :amount, :payment_method, :payment_date, :invoice_number])
     |> validate_number(:amount, greater_than: 0)
+    |> validate_number(:amount, less_than: 100_000_000)
     |> validate_change(:amount, fn :amount, amount ->
       if Decimal.equal?(amount, Decimal.round(amount, 2)) do
         []
