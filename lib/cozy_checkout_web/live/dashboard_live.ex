@@ -107,6 +107,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
                 navigate={~p"/admin/products"}
               />
               <.compact_card
+                title="POS Shortcuts"
+                icon="hero-bolt"
+                navigate={~p"/admin/pos-shortcuts"}
+              />
+              <.compact_card
                 title="Pricelists"
                 icon="hero-currency-dollar"
                 navigate={~p"/admin/pricelists"}

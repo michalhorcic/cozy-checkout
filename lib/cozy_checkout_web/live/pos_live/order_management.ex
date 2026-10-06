@@ -37,6 +37,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:empty_order_delete_pin_authorized, false)
        |> assign(:show_quantity_modal, false)
        |> assign(:quantity_product, nil)
+       |> assign(:quantity_unit_amount, nil)
        |> assign(:split_mode, false)
        |> assign(:split_selection, %{})
        |> assign(:split_allocated, %{})
@@ -75,6 +76,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:empty_order_delete_pin_authorized, false)
        |> assign(:show_quantity_modal, false)
        |> assign(:quantity_product, nil)
+       |> assign(:quantity_unit_amount, nil)
        |> assign(:split_mode, false)
        |> assign(:split_selection, %{})
        |> assign(:split_allocated, %{})
@@ -104,19 +106,20 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("add_product", %{"product-id" => product_id} = params, socket) do
-    product =
-      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
-        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
-
+    product = Enum.find(socket.assigns.products, &(&1.id == product_id))
     quantity = parse_quantity(params["quantity"])
 
     cond do
+      is_nil(product) ->
+        {:noreply, put_flash(socket, :error, "This product is no longer available.")}
+
       # If 5+ button clicked, show quantity modal
       params["custom"] == "true" ->
         {:noreply,
          socket
          |> assign(:show_quantity_modal, true)
-         |> assign(:quantity_product, product)}
+         |> assign(:quantity_product, product)
+         |> assign(:quantity_unit_amount, nil)}
 
       # If product has unit amounts, show unit modal
       product && product.unit ->
@@ -129,6 +132,53 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       # Otherwise add directly
       true ->
         add_multiple_items_to_order(socket, product_id, nil, quantity)
+    end
+  end
+
+  @impl true
+  def handle_event("add_pos_shortcut", %{"shortcut-id" => shortcut_id}, socket) do
+    case Enum.find(socket.assigns.popular_shortcuts, &(&1.id == shortcut_id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "This POS shortcut is no longer available.")}
+
+      shortcut when not is_nil(shortcut.unit_amount) ->
+        if shortcut_amount_available?(shortcut) do
+          add_multiple_items_to_order(socket, shortcut.product.id, shortcut.unit_amount, 1)
+        else
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "This shortcut size is no longer configured for the product. Update the shortcut."
+           )}
+        end
+
+      shortcut ->
+        add_product_to_order(socket, shortcut.product, 1)
+    end
+  end
+
+  @impl true
+  def handle_event("show_shortcut_quantity", %{"shortcut-id" => shortcut_id}, socket) do
+    case Enum.find(socket.assigns.popular_shortcuts, &(&1.id == shortcut_id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "This POS shortcut is no longer available.")}
+
+      shortcut ->
+        if is_nil(shortcut.unit_amount) || shortcut_amount_available?(shortcut) do
+          {:noreply,
+           socket
+           |> assign(:show_quantity_modal, true)
+           |> assign(:quantity_product, shortcut.product)
+           |> assign(:quantity_unit_amount, shortcut.unit_amount)}
+        else
+          {:noreply,
+           put_flash(
+             socket,
+             :error,
+             "This shortcut size is no longer configured for the product. Update the shortcut."
+           )}
+        end
     end
   end
 
@@ -171,14 +221,17 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   @impl true
   def handle_event("show_custom_quantity", %{"product-id" => product_id}, socket) do
-    product =
-      Enum.find(socket.assigns.products, &(&1.id == product_id)) ||
-        Enum.find(socket.assigns.popular_products, &(&1.id == product_id))
+    product = Enum.find(socket.assigns.products, &(&1.id == product_id))
 
-    {:noreply,
-     socket
-     |> assign(:show_quantity_modal, true)
-     |> assign(:quantity_product, product)}
+    if product do
+      {:noreply,
+       socket
+       |> assign(:show_quantity_modal, true)
+       |> assign(:quantity_product, product)
+       |> assign(:quantity_unit_amount, nil)}
+    else
+      {:noreply, put_flash(socket, :error, "This product is no longer available.")}
+    end
   end
 
   @impl true
@@ -186,27 +239,38 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     {:noreply,
      socket
      |> assign(:show_quantity_modal, false)
-     |> assign(:quantity_product, nil)}
+     |> assign(:quantity_product, nil)
+     |> assign(:quantity_unit_amount, nil)}
   end
 
   @impl true
   def handle_event("add_with_quantity", %{"quantity" => quantity_str}, socket) do
     quantity = parse_quantity(quantity_str)
     product = socket.assigns.quantity_product
+    unit_amount = socket.assigns[:quantity_unit_amount]
 
     socket =
       socket
       |> assign(:show_quantity_modal, false)
       |> assign(:quantity_product, nil)
+      |> assign(:quantity_unit_amount, nil)
 
-    if product && product.unit do
-      {:noreply,
-       socket
-       |> assign(:show_unit_modal, true)
-       |> assign(:selected_product, product)
-       |> assign(:pending_quantity, quantity)}
-    else
-      add_multiple_items_to_order(socket, product.id, nil, quantity)
+    cond do
+      unit_amount ->
+        add_multiple_items_to_order(socket, product.id, unit_amount, quantity)
+
+      product && product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      product ->
+        add_multiple_items_to_order(socket, product.id, nil, quantity)
+
+      true ->
+        {:noreply, put_flash(socket, :error, "Select a product before adding a quantity.")}
     end
   end
 
@@ -939,17 +1003,45 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     categories = Catalog.list_pos_categories()
     all_products = Catalog.list_pos_products()
 
-    popular_products =
-      Sales.get_popular_products(20) |> Enum.filter(&(&1.active && &1.visible_in_pos))
-
-    # Enrich products with pricing information
     products_with_prices = enrich_products_with_prices(all_products)
-    popular_with_prices = enrich_products_with_prices(popular_products)
+    products_by_id = Map.new(products_with_prices, &{&1.id, &1})
+
+    popular_shortcuts =
+      Catalog.list_pos_shortcuts()
+      |> Enum.map(fn shortcut ->
+        product = Map.fetch!(products_by_id, shortcut.product.id)
+        Map.put(shortcut, :product, product)
+      end)
 
     socket
     |> assign(:categories, categories)
     |> assign(:products, products_with_prices)
-    |> assign(:popular_products, popular_with_prices)
+    |> assign(:popular_shortcuts, popular_shortcuts)
+  end
+
+  defp add_product_to_order(socket, product, quantity) do
+    cond do
+      product.unit ->
+        {:noreply,
+         socket
+         |> assign(:show_unit_modal, true)
+         |> assign(:selected_product, product)
+         |> assign(:pending_quantity, quantity)}
+
+      true ->
+        add_multiple_items_to_order(socket, product.id, nil, quantity)
+    end
+  end
+
+  defp shortcut_amount_available?(shortcut) do
+    shortcut.product.default_unit_amounts
+    |> parse_default_amounts()
+    |> Enum.any?(fn amount ->
+      case decimal_amount(amount) do
+        %Decimal{} = decimal -> Decimal.equal?(decimal, shortcut.unit_amount)
+        nil -> false
+      end
+    end)
   end
 
   defp enrich_products_with_prices(products) do
@@ -1073,22 +1165,44 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
   defp get_price_for_amount(product, amount) do
     if product.pricing_info && product.pricing_info.type == :tiers do
-      tier =
-        Enum.find(product.pricing_info.tiers, fn tier ->
-          tier_amount = tier["unit_amount"] || tier[:unit_amount]
-          tier_amount == amount
-        end)
+      case decimal_amount(amount) do
+        nil ->
+          nil
 
-      if tier do
-        price = tier["price"] || tier[:price]
-        if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
-      else
-        nil
+        amount ->
+          tier =
+            Enum.find(product.pricing_info.tiers, fn tier ->
+              tier_amount = tier["unit_amount"] || tier[:unit_amount]
+
+              case decimal_amount(tier_amount) do
+                nil -> false
+                decimal -> Decimal.equal?(decimal, amount)
+              end
+            end)
+
+          if tier do
+            price = tier["price"] || tier[:price]
+            if is_struct(price, Decimal), do: price, else: Decimal.new(to_string(price))
+          end
       end
     else
       product.pricing_info && product.pricing_info.type == :single && product.pricing_info.price
     end
   end
+
+  defp decimal_amount(%Decimal{} = amount), do: amount
+
+  defp decimal_amount(amount) when is_integer(amount) or is_float(amount),
+    do: Decimal.new(to_string(amount))
+
+  defp decimal_amount(amount) when is_binary(amount) do
+    case Decimal.parse(amount) do
+      {decimal, _} -> decimal
+      :error -> nil
+    end
+  end
+
+  defp decimal_amount(_), do: nil
 
   # --- Split bill helpers ---
 

@@ -65,6 +65,9 @@ defmodule CozyCheckoutWeb.Router do
       live "/products", ProductLive.Index, :index
       live "/products/new", ProductLive.Index, :new
       live "/products/:id/edit", ProductLive.Index, :edit
+      live "/pos-shortcuts", PosShortcutLive.Index, :index
+      live "/pos-shortcuts/new", PosShortcutLive.Index, :new
+      live "/pos-shortcuts/:id/edit", PosShortcutLive.Index, :edit
 
       # Pricelists
       live "/pricelists", PricelistLive.Index, :index

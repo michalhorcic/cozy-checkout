@@ -25,6 +25,7 @@ defmodule CozyCheckout.Catalog.Product do
     belongs_to :category, CozyCheckout.Catalog.Category
     has_many :pricelists, CozyCheckout.Catalog.Pricelist
     has_many :order_items, CozyCheckout.Sales.OrderItem
+    has_many :pos_product_shortcuts, CozyCheckout.Catalog.PosProductShortcut
 
     timestamps(type: :utc_datetime)
   end

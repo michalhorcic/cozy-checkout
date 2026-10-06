@@ -6,7 +6,7 @@ defmodule CozyCheckout.Catalog do
   import Ecto.Query, warn: false
   alias CozyCheckout.Repo
 
-  alias CozyCheckout.Catalog.{Category, Product, Pricelist}
+  alias CozyCheckout.Catalog.{Category, PosProductShortcut, Product, Pricelist}
 
   ## Categories
 
@@ -97,6 +97,114 @@ defmodule CozyCheckout.Catalog do
     |> preload(:category)
     |> order_by([p], p.name)
     |> Repo.all()
+  end
+
+  def list_pos_shortcuts do
+    PosProductShortcut
+    |> join(:inner, [s], p in assoc(s, :product))
+    |> where(
+      [s, p],
+      is_nil(s.deleted_at) and is_nil(p.deleted_at) and p.active and p.visible_in_pos
+    )
+    |> order_by([s, _p], asc: s.position, asc: s.inserted_at)
+    |> preload([_s, p], product: {p, :category})
+    |> Repo.all()
+  end
+
+  def list_pos_shortcuts_for_admin do
+    PosProductShortcut
+    |> where([s], is_nil(s.deleted_at))
+    |> order_by([s], asc: s.position, asc: s.inserted_at)
+    |> preload(product: :category)
+    |> Repo.all()
+  end
+
+  def next_pos_shortcut_position do
+    max_position =
+      PosProductShortcut
+      |> where([s], is_nil(s.deleted_at))
+      |> select([s], max(s.position))
+      |> Repo.one()
+
+    if max_position, do: max_position + 1, else: 0
+  end
+
+  def get_pos_shortcut!(id) do
+    PosProductShortcut
+    |> where([s], is_nil(s.deleted_at))
+    |> preload(product: :category)
+    |> Repo.get!(id)
+  end
+
+  def create_pos_shortcut(attrs \\ %{}) do
+    attrs =
+      if Map.has_key?(attrs, "position") || Map.has_key?(attrs, :position) do
+        attrs
+      else
+        Map.put(attrs, :position, next_pos_shortcut_position())
+      end
+
+    %PosProductShortcut{}
+    |> PosProductShortcut.changeset(attrs)
+    |> validate_pos_shortcut_amount()
+    |> Repo.insert()
+  end
+
+  def update_pos_shortcut(%PosProductShortcut{} = shortcut, attrs) do
+    shortcut
+    |> PosProductShortcut.changeset(attrs)
+    |> validate_pos_shortcut_amount()
+    |> Repo.update()
+  end
+
+  def delete_pos_shortcut(%PosProductShortcut{} = shortcut) do
+    shortcut
+    |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+    |> Repo.update()
+  end
+
+  def change_pos_shortcut(%PosProductShortcut{} = shortcut, attrs \\ %{}) do
+    PosProductShortcut.changeset(shortcut, attrs)
+  end
+
+  defp validate_pos_shortcut_amount(changeset) do
+    product_id = Ecto.Changeset.get_field(changeset, :product_id)
+    unit_amount = Ecto.Changeset.get_field(changeset, :unit_amount)
+
+    if product_id && unit_amount do
+      case Repo.get(Product, product_id) do
+        %Product{default_unit_amounts: encoded_amounts} ->
+          amount_is_predefined? =
+            case Jason.decode(encoded_amounts || "[]") do
+              {:ok, amounts} when is_list(amounts) ->
+                Enum.any?(amounts, fn
+                  amount when is_number(amount) ->
+                    Decimal.equal?(Decimal.new(to_string(amount)), unit_amount)
+
+                  _ ->
+                    false
+                end)
+
+              _ ->
+                false
+            end
+
+          if amount_is_predefined? do
+            changeset
+          else
+            Ecto.Changeset.add_error(
+              changeset,
+              :unit_amount,
+              "must be a preset amount for this product"
+            )
+          end
+
+        nil ->
+          changeset
+      end
+    else
+      changeset
+    end
   end
 
   def list_trackable_products do

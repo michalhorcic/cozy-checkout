@@ -120,31 +120,53 @@
             <%= if is_nil(@selected_category_id) do %>
               <!-- Show Popular Products -->
               <div
-                :for={product <- @popular_products}
+                :for={shortcut <- @popular_shortcuts}
                 class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
               >
                 <div class="flex items-center gap-4 mb-3">
                   <div class="flex-1 min-w-0">
                     <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
-                      {product.name}
+                      {shortcut.product.name}
                     </h3>
-                    <p :if={product.category} class="text-xs text-slate-500 mb-1 truncate">
-                      {product.category.name}
+                    <p
+                      :if={shortcut.product.category}
+                      class="text-xs text-slate-500 mb-1 truncate"
+                    >
+                      {shortcut.product.category.name}
                     </p>
-                    <%= if product.pricing_info do %>
+                    <p
+                      :if={shortcut.unit_amount}
+                      class="mb-1 text-sm font-semibold text-tertiary-700"
+                    >
+                      {Decimal.to_string(Decimal.normalize(shortcut.unit_amount), :normal)} {shortcut.product.unit}
+                    </p>
+                    <%= if shortcut.unit_amount do %>
                       <p class="text-base font-bold text-success-dark">
-                        <%= case product.pricing_info.type do %>
-                          <% :single -> %>
-                            {format_currency(product.pricing_info.price)}
-                          <% :tiers -> %>
-                            Multiple prices
-                          <% :none -> %>
-                            —
+                        <%= if price = get_price_for_amount(shortcut.product, shortcut.unit_amount) do %>
+                          {format_currency(price)}
+                        <% else %>
+                          —
                         <% end %>
                       </p>
+                    <% else %>
+                      <%= if shortcut.product.pricing_info do %>
+                        <p class="text-base font-bold text-success-dark">
+                          <%= case shortcut.product.pricing_info.type do %>
+                            <% :single -> %>
+                              {format_currency(shortcut.product.pricing_info.price)}
+                            <% :tiers -> %>
+                              Multiple prices
+                            <% :none -> %>
+                              —
+                          <% end %>
+                        </p>
+                      <% end %>
                     <% end %>
-                    <span :if={product.unit} class="text-xs text-slate-600">
-                      per {product.unit}
+                    <span
+                      :if={shortcut.product.unit && is_nil(shortcut.unit_amount)}
+                      class="text-xs text-slate-600"
+                    >
+                      per {shortcut.product.unit}
                     </span>
                   </div>
                 </div>
@@ -152,22 +174,27 @@
                 <!-- Quick Quantity Selector -->
                 <div class="grid grid-cols-3 gap-3">
                   <button
-                    phx-click="add_product"
-                    phx-value-product-id={product.id}
-                    phx-value-quantity={1}
+                    phx-click="add_pos_shortcut"
+                    phx-value-shortcut-id={shortcut.id}
                     class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
                   >
-                    Add 1×
+                    {if shortcut.unit_amount, do: "Add", else: "Add 1×"}
                   </button>
                   <button
-                    phx-click="show_custom_quantity"
-                    phx-value-product-id={product.id}
+                    phx-click="show_shortcut_quantity"
+                    phx-value-shortcut-id={shortcut.id}
                     class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
                   >
                     5+
                   </button>
                 </div>
               </div>
+              <p
+                :if={@popular_shortcuts == []}
+                class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-slate-500"
+              >
+                No quick products configured. Choose a category above.
+              </p>
             <% else %>
               <!-- Show Category Products -->
               <div
@@ -659,6 +686,9 @@
           {@quantity_product.name}
         </h2>
         <p class="text-lg text-slate-600 mb-6">
+          <%= if @quantity_unit_amount do %>
+            {Decimal.to_string(Decimal.normalize(@quantity_unit_amount), :normal)} {@quantity_product.unit} ·
+          <% end %>
           How many would you like to add?
         </p>
 
