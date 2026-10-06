@@ -11,6 +11,7 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     previous = Application.get_env(:cozy_checkout, :admin_pin_hash)
     Application.put_env(:cozy_checkout, :admin_pin_hash, AdminAuth.hash_pin("482731"))
     AdminAuthRateLimiter.reset(:pos_payment)
+    AdminAuthRateLimiter.reset(:pos_empty_order_delete)
 
     on_exit(fn ->
       if previous,
@@ -18,6 +19,7 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
         else: Application.delete_env(:cozy_checkout, :admin_pin_hash)
 
       AdminAuthRateLimiter.reset(:pos_payment)
+      AdminAuthRateLimiter.reset(:pos_empty_order_delete)
     end)
 
     order = order_fixture()
@@ -79,6 +81,47 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     socket = mounted(order)
     socket |> cash() |> qr() |> event("confirm_qr_payment")
     assert Sales.list_payments_for_order(order.id) == []
+  end
+
+  test "deleting an empty POS account requires PIN and confirmation" do
+    order = order_fixture()
+    socket = mounted(order)
+
+    socket = event(socket, "confirm_delete_empty_order")
+    assert Enum.any?(Sales.list_orders(), &(&1.id == order.id))
+
+    socket = event(socket, "request_delete_empty_order")
+    assert socket.assigns.show_payment_pin
+
+    socket = event(socket, "authorize_payment", %{"payment_pin" => "482732"})
+    refute socket.assigns.empty_order_delete_pin_authorized
+    assert Enum.any?(Sales.list_orders(), &(&1.id == order.id))
+
+    socket = event(socket, "authorize_payment", %{"payment_pin" => "482731"})
+    assert socket.assigns.show_empty_order_delete_confirm
+    assert socket.assigns.empty_order_delete_pin_authorized
+    assert Enum.any?(Sales.list_orders(), &(&1.id == order.id))
+
+    socket = event(socket, "confirm_delete_empty_order")
+    refute socket.assigns.empty_order_delete_pin_authorized
+    refute Enum.any?(Sales.list_orders(), &(&1.id == order.id))
+  end
+
+  test "a zero-total order with items cannot be deleted as an empty account" do
+    order = order_fixture()
+    item_fixture(order, "0")
+    order = Sales.get_order!(order.id)
+
+    assert {:error, :order_not_empty_or_not_deletable} = Sales.delete_empty_order(order)
+
+    socket =
+      order
+      |> mounted()
+      |> event("request_delete_empty_order")
+      |> event("confirm_delete_empty_order")
+
+    refute socket.assigns.empty_order_delete_pin_authorized
+    assert Enum.any?(Sales.list_orders(), &(&1.id == order.id))
   end
 
   test "wrong PIN cannot authorize payment and five failures block it", %{order: order} do

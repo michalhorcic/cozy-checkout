@@ -563,6 +563,14 @@
               </div>
             <% true -> %>
           <% end %>
+          <button
+            :if={deletable_empty_order?(@order)}
+            id="delete-empty-order-button"
+            phx-click="request_delete_empty_order"
+            class="mt-3 w-full rounded-2xl border-2 border-rose-300 bg-white px-5 py-4 text-lg font-bold text-rose-700 transition-colors hover:bg-rose-50 active:scale-95"
+          >
+            <.icon name="hero-trash" class="mr-2 inline-block h-5 w-5" /> Delete empty account
+          </button>
         </div>
       </div>
     </div>
@@ -877,9 +885,13 @@
           <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-800">
             <.icon name="hero-lock-closed" class="h-7 w-7" />
           </div>
-          <h2 class="text-2xl font-bold text-slate-900">PIN required to collect payment</h2>
+          <h2 class="text-2xl font-bold text-slate-900">
+            PIN required to {if @payment_pin_mode == :delete_empty_order,
+              do: "delete an empty account",
+              else: "collect payment"}
+          </h2>
           <p class="mt-2 text-sm text-slate-500">
-            Enter the staff PIN to continue with this payment.
+            Enter the staff PIN to continue.
           </p>
         </div>
 
@@ -903,12 +915,14 @@
               type="submit"
               class="w-full rounded-xl bg-amber-700 px-5 py-4 text-lg font-bold text-white transition-colors hover:bg-amber-800"
             >
-              Continue to payment
+              {if @payment_pin_mode == :delete_empty_order,
+                do: "Continue to delete account",
+                else: "Continue to payment"}
             </button>
           </form>
         <% else %>
           <p class="rounded-lg bg-rose-50 p-4 text-sm text-rose-800">
-            Payment PIN is not configured on this server.
+            Staff PIN is not configured on this server.
           </p>
         <% end %>
 
@@ -919,6 +933,44 @@
         >
           Cancel
         </button>
+      </div>
+    </div>
+
+    <!-- Empty Order Delete Confirmation Modal -->
+    <div
+      :if={@show_empty_order_delete_confirm}
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      phx-click="cancel_empty_order_delete"
+    >
+      <div
+        class="w-full max-w-md rounded-2xl bg-white p-7 shadow-2xl"
+        phx-click={JS.exec("phx:stop-propagation")}
+      >
+        <div class="mb-6 text-center">
+          <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-700">
+            <.icon name="hero-trash" class="h-7 w-7" />
+          </div>
+          <h2 class="text-2xl font-bold text-slate-900">Delete empty account?</h2>
+          <p class="mt-2 text-sm text-slate-600">
+            This account has no items or payments and a zero total. It will be removed from the POS.
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <button
+            id="confirm-delete-empty-order"
+            phx-click="confirm_delete_empty_order"
+            class="w-full rounded-2xl bg-rose-700 px-5 py-4 text-lg font-bold text-white transition-colors hover:bg-rose-800 active:scale-95"
+          >
+            Delete account
+          </button>
+          <button
+            phx-click="cancel_empty_order_delete"
+            class="w-full rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
 

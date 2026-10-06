@@ -33,6 +33,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:recalculated_items_total, nil)
        |> assign(:show_delete_confirm, false)
        |> assign(:item_to_delete, nil)
+       |> assign(:show_empty_order_delete_confirm, false)
+       |> assign(:empty_order_delete_pin_authorized, false)
        |> assign(:show_quantity_modal, false)
        |> assign(:quantity_product, nil)
        |> assign(:split_mode, false)
@@ -69,6 +71,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:recalculated_items_total, nil)
        |> assign(:show_delete_confirm, false)
        |> assign(:item_to_delete, nil)
+       |> assign(:show_empty_order_delete_confirm, false)
+       |> assign(:empty_order_delete_pin_authorized, false)
        |> assign(:show_quantity_modal, false)
        |> assign(:quantity_product, nil)
        |> assign(:split_mode, false)
@@ -299,6 +303,53 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   @impl true
+  def handle_event("request_delete_empty_order", _params, socket) do
+    if deletable_empty_order?(socket.assigns.order) do
+      {:noreply, request_payment_pin(socket, :delete_empty_order)}
+    else
+      {:noreply,
+       put_flash(socket, :error, "Only an empty, unpaid account with a zero total can be deleted")}
+    end
+  end
+
+  @impl true
+  def handle_event("cancel_empty_order_delete", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_empty_order_delete_confirm, false)
+     |> assign(:empty_order_delete_pin_authorized, false)}
+  end
+
+  @impl true
+  def handle_event("confirm_delete_empty_order", _params, socket) do
+    if socket.assigns.empty_order_delete_pin_authorized and
+         deletable_empty_order?(socket.assigns.order) do
+      case Sales.delete_empty_order(socket.assigns.order) do
+        {:ok, _deleted_order} ->
+          {:noreply,
+           socket
+           |> assign(:show_empty_order_delete_confirm, false)
+           |> assign(:empty_order_delete_pin_authorized, false)
+           |> push_navigate(to: ~p"/pos")
+           |> put_flash(:info, "Empty account deleted")}
+
+        {:error, _reason} ->
+          {:noreply,
+           socket
+           |> assign(:show_empty_order_delete_confirm, false)
+           |> assign(:empty_order_delete_pin_authorized, false)
+           |> put_flash(:error, "This account can no longer be deleted")}
+      end
+    else
+      {:noreply,
+       socket
+       |> assign(:show_empty_order_delete_confirm, false)
+       |> assign(:empty_order_delete_pin_authorized, false)
+       |> put_flash(:error, "A staff PIN is required to delete an empty account")}
+    end
+  end
+
+  @impl true
   def handle_event("hide_success", _params, socket) do
     {:noreply, assign(socket, :show_success, false)}
   end
@@ -365,31 +416,55 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   def handle_event("authorize_payment", %{"payment_pin" => pin}, socket) do
+    rate_limit_key = pin_rate_limit_key(socket.assigns.payment_pin_mode)
+
     cond do
       not AdminAuth.enabled?() ->
         {:noreply,
          socket
          |> assign(:show_payment_pin, false)
-         |> put_flash(:error, "Payment PIN is not configured")}
+         |> put_flash(:error, "Staff PIN is not configured")}
 
-      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+      not AdminAuthRateLimiter.allowed?(rate_limit_key) ->
         {:noreply,
          socket
          |> assign(:payment_pin, "")
          |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
 
       AdminAuth.verify_pin(pin) ->
-        AdminAuthRateLimiter.reset(:pos_payment)
+        AdminAuthRateLimiter.reset(rate_limit_key)
 
-        {:noreply,
-         socket
-         |> assign(:payment_pin_authorized, true)
-         |> assign(:show_payment_pin, false)
-         |> assign(:payment_pin, "")
-         |> prepare_payment_modal(socket.assigns.payment_pin_mode)}
+        case socket.assigns.payment_pin_mode do
+          :delete_empty_order ->
+            {:noreply,
+             socket
+             |> assign(:payment_pin_authorized, false)
+             |> assign(:empty_order_delete_pin_authorized, true)
+             |> assign(:show_payment_pin, false)
+             |> assign(:payment_pin, "")
+             |> assign(:payment_pin_mode, nil)
+             |> assign(:show_empty_order_delete_confirm, true)}
+
+          mode when mode in [:split, :full] ->
+            {:noreply,
+             socket
+             |> assign(:payment_pin_authorized, true)
+             |> assign(:show_payment_pin, false)
+             |> assign(:payment_pin, "")
+             |> prepare_payment_modal(mode)}
+
+          _ ->
+            {:noreply,
+             socket
+             |> assign(:payment_pin_authorized, false)
+             |> assign(:show_payment_pin, false)
+             |> assign(:payment_pin, "")
+             |> assign(:payment_pin_mode, nil)
+             |> put_flash(:error, "No action is waiting for PIN authorization")}
+        end
 
       true ->
-        AdminAuthRateLimiter.record_failure(:pos_payment)
+        AdminAuthRateLimiter.record_failure(rate_limit_key)
 
         {:noreply,
          socket
@@ -405,6 +480,8 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
      |> assign(:payment_pin, "")
      |> assign(:payment_pin_mode, nil)
      |> assign(:payment_pin_authorized, false)
+     |> assign(:empty_order_delete_pin_authorized, false)
+     |> assign(:show_empty_order_delete_confirm, false)
      |> assign(:split_payment_amount, nil)}
   end
 
@@ -749,11 +826,13 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   end
 
   defp request_payment_pin(socket, mode) do
+    rate_limit_key = pin_rate_limit_key(mode)
+
     cond do
       not AdminAuth.enabled?() ->
-        put_flash(socket, :error, "Payment PIN is not configured")
+        put_flash(socket, :error, "Staff PIN is not configured")
 
-      not AdminAuthRateLimiter.allowed?(:pos_payment) ->
+      not AdminAuthRateLimiter.allowed?(rate_limit_key) ->
         put_flash(
           socket,
           :error,
@@ -766,8 +845,19 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         |> assign(:payment_pin, "")
         |> assign(:payment_pin_mode, mode)
         |> assign(:payment_pin_authorized, false)
+        |> assign(:empty_order_delete_pin_authorized, false)
+        |> assign(:show_empty_order_delete_confirm, false)
         |> assign(:show_payment_modal, false)
     end
+  end
+
+  defp pin_rate_limit_key(:delete_empty_order), do: :pos_empty_order_delete
+  defp pin_rate_limit_key(_mode), do: :pos_payment
+
+  defp deletable_empty_order?(order) do
+    order.status == "open" and Decimal.equal?(order.total_amount, Decimal.new("0")) and
+      order.order_items == [] and
+      Enum.all?(order.payments, & &1.deleted_at)
   end
 
   defp prepare_payment_modal(socket, :split) do

@@ -414,6 +414,45 @@ defmodule CozyCheckout.Sales do
   end
 
   @doc """
+  Soft deletes an open order that has no items or payments and a zero total.
+  """
+  def delete_empty_order(%Order{id: order_id}) do
+    Repo.transaction(fn ->
+      order =
+        Order
+        |> where([o], o.id == ^order_id and is_nil(o.deleted_at))
+        |> lock("FOR UPDATE")
+        |> Repo.one()
+
+      if deletable_empty_order?(order) do
+        order
+        |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+        |> Repo.update()
+        |> case do
+          {:ok, deleted_order} -> deleted_order
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      else
+        Repo.rollback(:order_not_empty_or_not_deletable)
+      end
+    end)
+  end
+
+  defp deletable_empty_order?(%Order{} = order) do
+    order.status == "open" and Decimal.equal?(order.total_amount, Decimal.new("0")) and
+      not Repo.exists?(
+        from i in OrderItem,
+          where: i.order_id == ^order.id and is_nil(i.deleted_at)
+      ) and
+      not Repo.exists?(
+        from p in Payment,
+          where: p.order_id == ^order.id and is_nil(p.deleted_at)
+      )
+  end
+
+  defp deletable_empty_order?(_), do: false
+
+  @doc """
   Returns an `%Ecto.Changeset{}` for tracking order changes.
   """
   def change_order(%Order{} = order, attrs \\ %{}) do
