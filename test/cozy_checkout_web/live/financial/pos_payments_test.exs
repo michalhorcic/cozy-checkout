@@ -107,9 +107,9 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     refute Enum.any?(Sales.list_orders(), &(&1.id == order.id))
   end
 
-  test "a zero-total order with items cannot be deleted as an empty account" do
+  test "an order with items cannot be deleted as an empty account" do
     order = order_fixture()
-    item_fixture(order, "0")
+    item_fixture(order)
     order = Sales.get_order!(order.id)
 
     assert {:error, :order_not_empty_or_not_deletable} = Sales.delete_empty_order(order)
