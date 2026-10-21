@@ -7,6 +7,8 @@ defmodule CozyCheckout.Meals.MenuVariantItem do
   schema "menu_variant_items" do
     field :day_number, :integer
     field :meal_type, :string
+    belongs_to :recipe, CozyCheckout.Recipes.Recipe
+    has_many :recipe_supplements, CozyCheckout.Recipes.VariantSupplement
     field :menu_text, :string
     field :supplements, :string
     belongs_to :menu_variant, CozyCheckout.Meals.MenuVariant

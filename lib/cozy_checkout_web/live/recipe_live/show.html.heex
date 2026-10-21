@@ -1,0 +1,114 @@
+<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
+  <div class="min-h-screen bg-slate-50 px-4 py-8 font-sans sm:px-8">
+    <div class="mx-auto max-w-7xl">
+      <.kitchen_header
+        title={@recipe.name}
+        subtitle={"Základní dávka: #{Decimal.to_string(Decimal.normalize(@recipe.base_servings),:normal)} porcí · #{length(@recipe.lines)} surovin"}
+      >
+        <:actions>
+          <.link
+            id="edit-recipe"
+            navigate={~p"/admin/recipes/#{@recipe.id}/edit"}
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-emerald-300"
+          ><.icon name="hero-pencil-square" class="h-4 w-4" />Upravit recept</.link>
+        </:actions>
+      </.kitchen_header>
+      <div class="grid items-start gap-6 lg:grid-cols-[20rem_1fr]">
+        <aside class="space-y-5 lg:sticky lg:top-6">
+          <section class="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm">
+            <span class="inline-flex rounded-xl bg-emerald-50 p-3 text-emerald-700"><.icon
+              name="hero-calculator"
+              class="h-6 w-6"
+            /></span><h2 class="mt-4 text-lg font-bold text-slate-900">Pro kolik lidí vaříte?</h2><p class="mt-2 text-sm leading-relaxed text-slate-500">
+              Upravte počty. Suroviny se ihned přepočítají pro celou skupinu.
+            </p>
+            <.form
+              for={@calculator}
+              id="recipe-calculator"
+              phx-change="calculate"
+              class="mt-5 space-y-4"
+            >
+              <div class="grid grid-cols-2 gap-3">
+                <.input
+                  field={@calculator[:adults]}
+                  type="number"
+                  min="0"
+                  step="1"
+                  label="Dospělí"
+                  class={field_class()}
+                /><.input
+                  field={@calculator[:children]}
+                  type="number"
+                  min="0"
+                  step="1"
+                  label="Děti"
+                  class={field_class()}
+                />
+              </div><.input
+                field={@calculator[:percent]}
+                type="number"
+                min="0"
+                max="100"
+                step="any"
+                label="Dětská porce (% dospělé)"
+                class={field_class()}
+              /><p :if={@error} id="calculator-error" class="text-sm text-red-700">{@error}</p>
+            </.form>
+            <div class="mt-5 rounded-xl bg-emerald-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                Připravíte
+              </p><p id="actual-portions" class="mt-1 text-3xl font-bold text-emerald-900">
+                {@result.actual} <span class="text-base font-medium">porcí</span>
+              </p><p class="mt-2 text-xs leading-relaxed text-emerald-800">
+                Dětský koeficient upravuje množství surovin, nikoliv počet vydaných porcí.
+              </p>
+            </div>
+          </section>
+          <section
+            :if={@recipe.source_reference || @recipe.notes}
+            class="rounded-2xl border border-slate-200 bg-white p-5"
+          >
+            <h2 class="text-sm font-bold text-slate-900">Zdroj a poznámky</h2>
+            <p
+              :if={@recipe.source_reference && is_nil(CozyCheckout.Recipes.source_url(@recipe))}
+              id="recipe-source-attribution"
+              class="mt-3 text-sm text-slate-600"
+            >
+              {@recipe.source_reference}
+            </p><p
+              :if={@recipe.notes}
+              class="mt-3 whitespace-pre-line text-sm leading-relaxed text-slate-500"
+            >
+              {@recipe.notes}
+            </p><a
+              :if={CozyCheckout.Recipes.source_url(@recipe)}
+              href={CozyCheckout.Recipes.source_url(@recipe)}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-emerald-700"
+            >Původní recept <.icon name="hero-arrow-top-right-on-square" class="h-4 w-4" /></a>
+          </section>
+        </aside>
+        <div class="space-y-6">
+          <.consumption_table result={@result} />
+          <details class="rounded-2xl border border-slate-200 bg-white p-5">
+            <summary class="cursor-pointer text-sm font-semibold text-slate-700">
+              Původní dávka a poznámky k surovinám
+            </summary><div id="recipe-source-lines" class="mt-4 divide-y divide-slate-100">
+              <div :for={line <- @recipe.lines} class="py-3">
+                <div class="flex justify-between gap-4 text-sm">
+                  <span class="font-medium text-slate-800">{line.ingredient.name}</span><span class="font-semibold text-slate-700">{CozyCheckout.Recipes.format_quantity(
+                    line.quantity,
+                    line.unit
+                  )}</span>
+                </div><p :if={line.notes} class="mt-1 text-xs leading-relaxed text-slate-500">
+                  {line.notes}
+                </p>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layouts.app>

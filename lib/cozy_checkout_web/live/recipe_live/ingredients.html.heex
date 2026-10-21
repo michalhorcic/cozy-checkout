@@ -1,0 +1,107 @@
+<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
+  <div class="min-h-screen bg-slate-50 px-4 py-8 font-sans sm:px-8">
+    <div class="mx-auto max-w-7xl">
+      <.kitchen_header
+        title="Suroviny přehledně"
+        subtitle="Jeden katalog pro všechny recepty. Přehledné jednotky a poznámky pro kuchyň."
+        active="ingredients"
+      >
+        <:actions>
+          <.link
+            id="new-ingredient"
+            patch={~p"/admin/ingredients/new"}
+            class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800"
+          ><.icon name="hero-plus" class="h-4 w-4" />Nová surovina</.link>
+        </:actions>
+      </.kitchen_header>
+      <.form
+        for={%{}}
+        id="ingredient-search-form"
+        phx-change="search"
+        class="mb-6 flex flex-wrap items-center justify-between gap-4"
+      >
+        <div class="relative w-full max-w-xl">
+          <.icon
+            name="hero-magnifying-glass"
+            class="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-slate-400"
+          /><input
+            id="ingredient-search"
+            type="search"
+            name="search"
+            value={@search}
+            phx-debounce="200"
+            placeholder="Hledat surovinu nebo kategorii…"
+            aria-label="Hledat surovinu"
+            class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+          />
+        </div><span id="ingredient-count" class="text-sm text-slate-500">{@result_count} surovin</span>
+      </.form>
+      <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="grid grid-cols-[1fr_6rem_3rem] gap-4 border-b border-slate-100 bg-slate-50 px-5 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 sm:grid-cols-[1fr_12rem_6rem_4rem]">
+          <span>Surovina</span><span class="hidden sm:block">Kategorie</span><span>Jednotka</span><span></span>
+        </div><div id="ingredient-list" phx-update="stream" class="divide-y divide-slate-100">
+          <div id="ingredients-empty" class="hidden p-10 text-center text-slate-500 only:block">
+            Žádná surovina neodpovídá hledání.
+          </div><article
+            :for={{id, row} <- @streams.ingredients}
+            id={id}
+            class="grid grid-cols-[1fr_6rem_3rem] items-center gap-4 px-5 py-4 transition hover:bg-slate-50 sm:grid-cols-[1fr_12rem_6rem_4rem]"
+          >
+            <div>
+              <h2 class="font-semibold text-slate-800">{row.name}</h2><p
+                :if={row.notes}
+                class="mt-1 text-xs text-slate-500"
+              >
+                {row.notes}
+              </p>
+            </div><span class="hidden text-sm text-slate-500 sm:block">{row.category}</span><span class="w-fit rounded-lg bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-600">{row.base_unit}</span><.link
+              patch={~p"/admin/ingredients/#{row.id}/edit"}
+              aria-label={"Upravit "<>row.name}
+              class="rounded-lg p-2 text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-700"
+            ><.icon name="hero-pencil-square" class="h-5 w-5" /></.link>
+          </article>
+        </div>
+      </section>
+    </div>
+  </div>
+  <.modal
+    :if={@ingredient}
+    id="ingredient-modal"
+    show
+    on_cancel={JS.patch(~p"/admin/ingredients")}
+  >
+    <h2 class="mb-5 text-xl font-bold text-slate-900">
+      {if @ingredient.id, do: "Upravit surovinu", else: "Nová surovina"}
+    </h2><.form for={@form} id="ingredient-form" phx-change="validate" phx-submit="save">
+      <.input field={@form[:name]} label="Název suroviny" class={field_class()} required /><div class="mt-4 grid grid-cols-2 gap-4">
+        <.input
+          field={@form[:category]}
+          label="Kategorie"
+          placeholder="Např. Zelenina"
+          class={field_class()}
+          required
+        /><.input
+          field={@form[:base_unit]}
+          type="select"
+          label="Základní jednotka"
+          options={[{"Kilogram (kg)", "kg"}, {"Litr (l)", "l"}, {"Kus (ks)", "ks"}]}
+          class={field_class()}
+        />
+      </div><p class="my-3 text-xs text-slate-500">
+        Recept může používat g místo kg nebo ml místo l. Hmotnost, objem a kusy se vzájemně nepřevádějí.
+      </p><.input
+        field={@form[:notes]}
+        type="textarea"
+        label="Poznámka"
+        rows="2"
+        class={field_class()}
+      /><div class="mt-5 flex justify-end">
+        <button
+          type="submit"
+          phx-disable-with="Ukládám…"
+          class="rounded-xl bg-emerald-700 px-5 py-2.5 font-semibold text-white"
+        >Uložit surovinu</button>
+      </div>
+    </.form>
+  </.modal>
+</Layouts.app>

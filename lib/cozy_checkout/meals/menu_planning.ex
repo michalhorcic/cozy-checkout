@@ -18,18 +18,41 @@ defmodule CozyCheckout.Meals.MenuPlanning do
   end
 
   def get_variant!(id) do
-    MenuVariant |> where([v], is_nil(v.deleted_at)) |> Repo.get!(id) |> Repo.preload(:items)
+    MenuVariant
+    |> where([v], is_nil(v.deleted_at))
+    |> Repo.get!(id)
+    |> CozyCheckout.Recipes.Links.preload_variant()
   end
 
   def create_variant(attrs) do
-    %MenuVariant{items: []} |> MenuVariant.changeset(attrs) |> Repo.insert()
+    Repo.transaction(fn ->
+      case %MenuVariant{items: []} |> MenuVariant.changeset(attrs) |> Repo.insert() do
+        {:ok, variant} -> CozyCheckout.Recipes.Links.infer_variant(variant)
+        {:error, cs} -> Repo.rollback(cs)
+      end
+    end)
   end
 
   def update_variant(variant, attrs) do
-    variant
-    |> MenuVariant.changeset(attrs)
-    |> Changeset.optimistic_lock(:lock_version)
-    |> Repo.update()
+    Repo.transaction(fn ->
+      case variant
+           |> MenuVariant.changeset(attrs)
+           |> Changeset.optimistic_lock(:lock_version)
+           |> Repo.update() do
+        {:ok, saved} ->
+          previous = Map.new(variant.items, &{&1.id, &1})
+
+          for item <- saved.items,
+              before = previous[item.id],
+              not is_nil(before),
+              do: CozyCheckout.Recipes.Links.clear_text_changes(before, item, "variant")
+
+          get_variant!(saved.id)
+
+        {:error, cs} ->
+          Repo.rollback(cs)
+      end
+    end)
   rescue
     Ecto.StaleEntryError -> {:error, :stale_variant}
   end
@@ -100,8 +123,13 @@ defmodule CozyCheckout.Meals.MenuPlanning do
 
   def get_booking_menu(booking_id) do
     case Repo.get_by(BookingMenu, booking_id: booking_id) do
-      nil -> nil
-      menu -> menu |> Repo.preload(:items) |> Map.update!(:items, &sort_items/1)
+      nil ->
+        nil
+
+      menu ->
+        menu
+        |> Repo.preload(items: [:recipe, recipe_supplements: :recipe])
+        |> Map.update!(:items, &sort_items/1)
     end
   end
 
@@ -119,8 +147,11 @@ defmodule CozyCheckout.Meals.MenuPlanning do
     booking = get_booking!(booking_id)
 
     case Repo.one(from v in MenuVariant, where: v.id == ^variant_id and is_nil(v.deleted_at)) do
-      nil -> {:error, :variant_unavailable}
-      variant -> {:ok, build_preview(booking, Repo.preload(variant, :items))}
+      nil ->
+        {:error, :variant_unavailable}
+
+      variant ->
+        {:ok, build_preview(booking, CozyCheckout.Recipes.Links.preload_variant(variant))}
     end
   end
 
@@ -137,7 +168,7 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         )
 
       if is_nil(variant), do: Repo.rollback(:variant_unavailable)
-      variant = Repo.preload(variant, :items)
+      variant = CozyCheckout.Recipes.Links.preload_variant(variant)
       preview = build_preview(booking, variant)
 
       cond do
@@ -198,6 +229,7 @@ defmodule CozyCheckout.Meals.MenuPlanning do
             supplements: supplements,
             source_text: source.menu_text,
             source_supplements: source.supplements,
+            source_item: source,
             existing: old,
             preserve: preserve == true,
             counts:
@@ -322,6 +354,7 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         })
         |> Changeset.put_change(:day_number, row.day_number)
         |> Repo.insert_or_update!()
+        |> then(&CozyCheckout.Recipes.Links.copy(row.source_item, &1))
       end
     end)
 
@@ -338,7 +371,7 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         item |> BookingMenuItem.changeset(attrs) |> Changeset.put_change(:manually_edited, true)
 
       case Repo.update(cs) do
-        {:ok, updated} -> updated
+        {:ok, updated} -> CozyCheckout.Recipes.Links.clear_text_changes(item, updated, "booking")
         {:error, cs} -> Repo.rollback(cs)
       end
     end)
@@ -354,15 +387,7 @@ defmodule CozyCheckout.Meals.MenuPlanning do
   end
 
   # Content is included because UTC timestamps have second precision.
-  def item_version(item),
-    do:
-      :crypto.hash(
-        :sha256,
-        :erlang.term_to_binary(
-          Map.take(item, [:id, :updated_at, :menu_text, :supplements, :manually_edited])
-        )
-      )
-      |> Base.url_encode64(padding: false)
+  def item_version(item), do: CozyCheckout.Recipes.Links.version(item)
 
   defp get_scoped_item(booking_id, item_id) do
     Repo.one(

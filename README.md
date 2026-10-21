@@ -84,6 +84,44 @@ přepočítá rovnou. Plánovač i tisk zobrazují každou skupinu zvlášť, v�
 odjezdové snídaně. Celkové porce nahoře již zahrnují jednotlivé skupiny; nesčítejte
 je znovu. Rezervace bez přiřazené varianty nebo se změněným rozpisem mají upozornění.
 
+## Receptury a suroviny
+
+V **Meal Planner → Recepty a suroviny** je knihovna receptů s hledáním bez diakritiky,
+katalog surovin a přepočet pro dospělé a děti. U receptu se zadává počet porcí z jedné
+dávky a množství všech surovin na tuto dávku. Formulář umožňuje přidávat a odebírat
+suroviny přímo v receptu, upravit zdroj či odkaz a uchovat poznámky k pracovním odhadům.
+
+Migrace `20261021210000` automaticky načte verzovaný snímek tabulky z
+`priv/recipes/drive_reference.json`: **56 receptur, 172 surovin a 600 řádků receptur**.
+Zachovává dávky, množství, jednotky, kategorie, zdroje, poznámky i údaje o nákupním
+balení. Google Sheets nijak nemění a aplikace na jejich dostupnosti nezávisí.
+Vzorce jsou převzaté jako vypočtené hodnoty ke dni snímku; například odvozené
+suroviny lasagní se později nepřepočítávají podle jiné receptury automaticky.
+Import proběhne při nasazení a spuštění migrací, žádné ruční kopírování v UI není nutné.
+
+U uloženého jídla varianty nebo rezervace klikněte na **Recepty a suroviny**.
+Vyberte jeden hlavní recept a případné doplňky (například polévku). Každý doplněk
+se počítá pro stejnou skupinu a nezvyšuje počet vydávaných porcí. Shodné názvy
+z tabulky se propojí automaticky; ostatní texty a snídaňové bufety bez receptu
+zobrazují upozornění na neúplný výpočet. Text menu se při výběru receptu nemění. Pozdější změna textu hlavního jídla
+nebo doplňků odpojí příslušné recepty, aby nezůstalo množství pro jiné jídlo.
+Při použití varianty se vazby zkopírují do menu rezervace; ruční změna vazeb
+rezervace je chráněná stejně jako ruční úprava jejího menu. Různé skupiny mohou
+mít různé recepty a vlastní přepočet surovin.
+
+**Porce dětí** nastavují samostatně koeficient pro teplá jídla a snídaně, obojí
+výchozí **70 %** podle tabulky. Počet porcí pro výdej je stále dospělí + děti.
+Suroviny používají `(dospělí + děti × koeficient) / porcí v dávce`.
+Převádí se pouze g na kg a ml na l; kusy, hmotnost a objem se vzájemně nepřevádějí.
+Používané surovině nelze změnit základní jednotku. Výpočet používá aktuální receptury
+a přesná desetinná čísla, zaokrouhluje se až zobrazení. Není to historická kalkulace ceny.
+Nákupní balení, rezervy, sklad a společný nákupní seznam jsou předmětem další etapy.
+
+Nové testy pokrývají úplnost importu, receptury a suroviny, přepočty, ochranu při
+souběžných úpravách, vazby variant a rezervací i ovládání knihovny přes LiveView.
+Spusťte `PGUSER=elixir PGPASSWORD='' mix precommit`.
+
+
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).

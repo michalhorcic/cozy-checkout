@@ -1,0 +1,6034 @@
+{
+  "source_url": "https://docs.google.com/spreadsheets/d/1JR0l8wY-bGOwVDOgandNU-_2HfgMOYH8L03AjJ_inmw/edit",
+  "snapshot_date": "2026-10-21",
+  "hot_child_factor": "0.7",
+  "breakfast_child_factor": "0.7",
+  "ingredients": [
+    {
+      "name": "Rýže",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Těstoviny",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mouka hladká",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mouka polohrubá",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mouka hrubá",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Strouhanka",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Ovesné vločky",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Krupice",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Čočka",
+      "category": "Luštěniny",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hrách",
+      "category": "Luštěniny",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Fazole konzervované",
+      "category": "Konzervy",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rajčata konzervovaná",
+      "category": "Konzervy",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rajčatový protlak",
+      "category": "Konzervy",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Olej slunečnicový",
+      "category": "Tuky",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cukr krystal",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cukr moučka",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Sůl",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Paprika sladká",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kmín celý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pepř černý mletý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Ocet",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hořčice",
+      "category": "Dochucovadla",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Marmeláda",
+      "category": "Bufet",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Med",
+      "category": "Bufet",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cereálie",
+      "category": "Bufet",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Čaj",
+      "category": "Nápoje",
+      "base_unit": "ks",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Káva",
+      "category": "Nápoje",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kakao",
+      "category": "Nápoje",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hrášek mražený",
+      "category": "Mražené",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Zeleninová směs mražená",
+      "category": "Mražené",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Brambory",
+      "category": "Zelenina",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cibule",
+      "category": "Zelenina",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Česnek",
+      "category": "Zelenina",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Maso čerstvé",
+      "category": "Maso",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mléko",
+      "category": "Mléčné",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Máslo",
+      "category": "Mléčné",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vejce",
+      "category": "Vejce",
+      "base_unit": "ks",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pečivo",
+      "category": "Pečivo",
+      "base_unit": "ks",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřový bůček bez kosti",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřové maso mleté",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Sádlo",
+      "category": "Tuky",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Celer řapíkatý",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mrkev",
+      "category": "Zelenina",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřová krkovice uzená",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Tymián sušený",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Bobkový list",
+      "category": "Koření",
+      "base_unit": "ks",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Slepice",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Nové koření celé",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pepř černý celý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Petržel kořenová",
+      "category": "Zelenina",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Zázvor",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Těstoviny polévkové",
+      "category": "Přílohy a mouky",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Petržel nať čerstvá",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Těstoviny fleky",
+      "category": "Přílohy a mouky",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Uzené maso",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Smetana ke šlehání",
+      "category": "Mléčné a chlazené",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": "Pro sezonní nákup zvol UHT s dostatečnou zbývající trvanlivostí. Převod 1 g ≈ 1 ml je pracovní odhad."
+    },
+    {
+      "name": "Smetana zakysaná",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vývar masový",
+      "category": "Základy",
+      "base_unit": "l",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": "Řeší se zvlášť podle dostupnosti; do sezonního nákupu není zahrnuto."
+    },
+    {
+      "name": "Párky frankfurtské",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kuře celé",
+      "category": "Maso a uzeniny",
+      "base_unit": "ks",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Chléb",
+      "category": "Pečivo a přílohy",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kmín drcený",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Majoránka sušená",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hovězí plec",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Karlovarský knedlík",
+      "category": "Pečivo a přílohy",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Fazole suché",
+      "category": "Luštěniny",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Špek",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Jedlá soda",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Klobása",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hovězí maso mleté",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Anglická slanina",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřová pečeně bez kosti",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Víno bílé",
+      "category": "Na vaření",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Koření pěti vůní",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cuketa",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Jarní cibulka",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Sójová omáčka světlá",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rybí omáčka",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Ocet rýžový",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kuřecí stehenní řízky",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Chilli sušené celé",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Arašídy",
+      "category": "Ořechy a semena",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Bramborový škrob",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pepř sečuánský celý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pepř bílý mletý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Voda",
+      "category": "Základy",
+      "base_unit": "l",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": "Řeší se zvlášť podle dostupnosti; do sezonního nákupu není zahrnuto."
+    },
+    {
+      "name": "Sójová omáčka tmavá",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Víno Shaoxing",
+      "category": "Na vaření",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cizrna suchá",
+      "category": "Luštěniny",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Tahini",
+      "category": "Dochucovadla",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kmín římský mletý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Citronová šťáva",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Olej olivový",
+      "category": "Tuky",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Těstoviny lasagne",
+      "category": "Přílohy a mouky",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Parmazán",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mozzarella",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Muškátový květ",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hořčice dijonská",
+      "category": "Dochucovadla",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Čedar",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hovězí zadní",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Celer bulvový",
+      "category": "Zelenina",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Citron",
+      "category": "Zelenina a ovoce",
+      "base_unit": "ks",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Houskový knedlík",
+      "category": "Pečivo a přílohy",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Droždí čerstvé",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Citronová kůra",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vanilkový lusk",
+      "category": "Koření",
+      "base_unit": "ks",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hovězí přední",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Okurky sterilované",
+      "category": "Konzervy",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": "Hmotnost do receptu; velikost balení zadávej jako využitelný pevný podíl, nikoli včetně nálevu."
+    },
+    {
+      "name": "Kuřecí skelet a odřezky",
+      "category": "Maso a uzeniny",
+      "base_unit": "ks",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rajčata čerstvá",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Hřebíček celý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřová plec",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mák mletý",
+      "category": "Ořechy a semena",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřová kýta",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Paprika čerstvá červená",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Chilli mleté",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Passata",
+      "category": "Konzervy",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cukr třtinový",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Bageta",
+      "category": "Pečivo a přílohy",
+      "base_unit": "ks",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Salát hlávkový",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Chilli čerstvé",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Majonéza",
+      "category": "Dochucovadla",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mangové pyré",
+      "category": "Dochucovadla",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Špenát listový mražený",
+      "category": "Mražené",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Ocet vinný bílý",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřová krkovice",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cukr hnědý",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Paprika uzená",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cibule sušená",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Česnek sušený",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pivo světlé",
+      "category": "Na vaření",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "BBQ omáčka",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Bulka",
+      "category": "Pečivo a přílohy",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pórek",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rohlík",
+      "category": "Pečivo a přílohy",
+      "base_unit": "ks",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vývar zeleninový",
+      "category": "Základy",
+      "base_unit": "l",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": "Řeší se zvlášť podle dostupnosti; do sezonního nákupu není zahrnuto."
+    },
+    {
+      "name": "Čubrica",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Houby sušené",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Květák",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kopr čerstvý",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Tymián čerstvý",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Šunka",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Čočka červená",
+      "category": "Luštěniny",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cizrna konzervovaná",
+      "category": "Konzervy",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": "Hmotnost do receptu; velikost balení zadávej jako využitelný pevný podíl, nikoli včetně nálevu."
+    },
+    {
+      "name": "Garam masala",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Mléko kokosové",
+      "category": "Suché",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Skořice mletá",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rýže parboiled",
+      "category": "Přílohy a mouky",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Gouda",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rýžové nudle",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Limetková šťáva",
+      "category": "Dochucovadla",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Zelí kysané",
+      "category": "Konzervy",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Ementál",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kuřecí stehna s kostí",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Tvaroh měkký kostka",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Meruňky čerstvé",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Cukr kostkový",
+      "category": "Suché",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Tvaroh tvrdý",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kuřecí prsa",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Rýže basmati",
+      "category": "Přílohy a mouky",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Jogurt bílý tučný",
+      "category": "Mléčné a chlazené",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kurkuma mletá",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kešu ořechy",
+      "category": "Ořechy a semena",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kardamom mletý",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Koriandr nať čerstvá",
+      "category": "Zelenina a ovoce",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Vepřová žebra",
+      "category": "Maso a uzeniny",
+      "base_unit": "kg",
+      "purchase_mode": "Průběžně",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Pivo černé",
+      "category": "Na vaření",
+      "base_unit": "l",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Kečup",
+      "category": "Dochucovadla",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Chilli drcené",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": null
+    },
+    {
+      "name": "Knedlíky plněné masem – mražené",
+      "category": "Mražené",
+      "base_unit": "ks",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": "Celý kupovaný výrobek včetně náplně. Porce 3 ks. Velikost balení zadat v kusech."
+    },
+    {
+      "name": "Knedlíky ovocné – mražené",
+      "category": "Mražené",
+      "base_unit": "ks",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": "Celý kupovaný výrobek včetně náplně. Porce 3 ks. Velikost balení zadat v kusech."
+    },
+    {
+      "name": "Vanilkový cukr",
+      "category": "Koření",
+      "base_unit": "kg",
+      "purchase_mode": "Sezona",
+      "package_size": null,
+      "notes": "Pracovní volba formy vanilky do jogurtové polevy; upravit podle používaného výrobku."
+    }
+  ],
+  "recipes": [
+    {
+      "name": "Vepřové výpečky",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřový bůček bez kosti",
+          "quantity": "0.65",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 6
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "3 stroužky × 5 g",
+          "source_row": 7
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 8
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 zarovnaná lžička",
+          "source_row": 9
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 10
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 11
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/veprove-vypecky/"
+    },
+    {
+      "name": "Boloňská omáčka podle Florentýny",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřové maso mleté",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 12
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce × 15 g",
+          "source_row": 13
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 14
+        },
+        {
+          "ingredient_name": "Celer řapíkatý",
+          "quantity": "0.04",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 stonek",
+          "source_row": 15
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "1 ks × 100 g",
+          "source_row": 16
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.07",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 17
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.00375",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 0,5–1 lžičky × 5 g",
+          "source_row": 18
+        },
+        {
+          "ingredient_name": "Těstoviny",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 19
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/bolonska-omacka/"
+    },
+    {
+      "name": "Čočková polévka",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Čočka",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 20
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "střed 2–3 ks × 100 g",
+          "source_row": 21
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.6",
+          "unit": "kg",
+          "notes": "4 ks × 150 g",
+          "source_row": 22
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 23
+        },
+        {
+          "ingredient_name": "Vepřová krkovice uzená",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 24
+        },
+        {
+          "ingredient_name": "Tymián sušený",
+          "quantity": "0.0005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky × 1 g",
+          "source_row": 25
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 26
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 lžička × 5 g",
+          "source_row": 27
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/cockova-polevka/"
+    },
+    {
+      "name": "Slepičí polévka",
+      "base_servings": "8",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Slepice",
+          "quantity": "1.75",
+          "unit": "kg",
+          "notes": "střed 1,5–2 kg",
+          "source_row": 28
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 lžička",
+          "source_row": 29
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 30
+        },
+        {
+          "ingredient_name": "Nové koření celé",
+          "quantity": "0.0005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček × 0,1 g",
+          "source_row": 31
+        },
+        {
+          "ingredient_name": "Pepř černý celý",
+          "quantity": "0.000375",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 5–10 kuliček × 0,05 g",
+          "source_row": 32
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "výslovná gramáž receptu má přednost před kusem",
+          "source_row": 33
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 34
+        },
+        {
+          "ingredient_name": "Celer řapíkatý",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 stonky × 40 g",
+          "source_row": 35
+        },
+        {
+          "ingredient_name": "Petržel kořenová",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "1 ks × 80 g",
+          "source_row": 36
+        },
+        {
+          "ingredient_name": "Zázvor",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. kousek 2 cm",
+          "source_row": 37
+        },
+        {
+          "ingredient_name": "Těstoviny polévkové",
+          "quantity": "0.07",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 6–8 lžic × 10 g",
+          "source_row": 38
+        },
+        {
+          "ingredient_name": "Petržel nať čerstvá",
+          "quantity": "0.003",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 3 snítky × 1 g",
+          "source_row": 39
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/slepici-polevka/"
+    },
+    {
+      "name": "Šunkofleky",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Těstoviny fleky",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 40
+        },
+        {
+          "ingredient_name": "Uzené maso",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 41
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "4",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 42
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "Pracovní odhad. 200 g ≈ 200 ml",
+          "source_row": 43
+        },
+        {
+          "ingredient_name": "Smetana zakysaná",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 44
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "2 lžičky",
+          "source_row": 45
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "2 stroužky × 5 g",
+          "source_row": 46
+        },
+        {
+          "ingredient_name": "Petržel nať čerstvá",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 snítek × 1 g",
+          "source_row": 47
+        },
+        {
+          "ingredient_name": "Strouhanka",
+          "quantity": "0.035",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 15 g + 2 lžíce × 10 g",
+          "source_row": 48
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce × 15 g",
+          "source_row": 49
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/sunkofleky/"
+    },
+    {
+      "name": "Frankfurtská polévka",
+      "base_servings": "6",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 50
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 3 lžíce × 15 g",
+          "source_row": 51
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.75",
+          "unit": "kg",
+          "notes": "střed výslovných 700–800 g",
+          "source_row": 52
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 vrchovatá lžíce",
+          "source_row": 53
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 54
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "1.2",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 55
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "střed 1–2 stroužků × 5 g",
+          "source_row": 56
+        },
+        {
+          "ingredient_name": "Párky frankfurtské",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 57
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.00375",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 0,5–1 lžičky",
+          "source_row": 58
+        },
+        {
+          "ingredient_name": "Petržel nať čerstvá",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 hrst",
+          "source_row": 59
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/frankfurtska-polevka/"
+    },
+    {
+      "name": "Kuře na paprice",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Kuře celé",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "první alternativa z exportu",
+          "source_row": 60
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 61
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 vrchovatá lžička",
+          "source_row": 62
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "1 lžíce",
+          "source_row": 63
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 lžička",
+          "source_row": 64
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 65
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.23",
+          "unit": "l",
+          "notes": "výslovný objem kelímku",
+          "source_row": 66
+        },
+        {
+          "ingredient_name": "Těstoviny",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 67
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/kure-na-paprice/"
+    },
+    {
+      "name": "Česnečka",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "4 stroužky × 5 g",
+          "source_row": 68
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "2 ks × 150 g",
+          "source_row": 69
+        },
+        {
+          "ingredient_name": "Chléb",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 krajíce × 40 g",
+          "source_row": 70
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 71
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "0.5",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 72
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "0,5 lžičky",
+          "source_row": 73
+        },
+        {
+          "ingredient_name": "Kmín celý",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky",
+          "source_row": 74
+        },
+        {
+          "ingredient_name": "Petržel nať čerstvá",
+          "quantity": "0.008",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 75
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/cesnecka-recept/"
+    },
+    {
+      "name": "Hovězí guláš s karlovarským knedlíkem",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 4 lžíce",
+          "source_row": 76
+        },
+        {
+          "ingredient_name": "Kmín drcený",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 77
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 78
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce × 7,5 g",
+          "source_row": 79
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce × 15 g",
+          "source_row": 80
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "4",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 81
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 82
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 83
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 84
+        },
+        {
+          "ingredient_name": "Hovězí plec",
+          "quantity": "1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 85
+        },
+        {
+          "ingredient_name": "Karlovarský knedlík",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 86
+        }
+      ],
+      "source_reference": "https://www.rohlik.cz/chef/10-hovezi-gulas-s-karlovarskym-knedlikem"
+    },
+    {
+      "name": "Fazolová polévka",
+      "base_servings": "6",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Fazole suché",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 87
+        },
+        {
+          "ingredient_name": "Špek",
+          "quantity": "0.07",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 88
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "1 ks × 100 g",
+          "source_row": 89
+        },
+        {
+          "ingredient_name": "Petržel kořenová",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "1 ks × 80 g",
+          "source_row": 90
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 91
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.375",
+          "unit": "kg",
+          "notes": "3 × střed 100–150 g dle receptu",
+          "source_row": 92
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 vrchovatá lžíce",
+          "source_row": 93
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 94
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 lžička",
+          "source_row": 95
+        },
+        {
+          "ingredient_name": "Jedlá soda",
+          "quantity": "0.00625",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 1–1,5 lžičky × 5 g",
+          "source_row": 96
+        },
+        {
+          "ingredient_name": "Klobása",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 1–2 klobás × 100 g",
+          "source_row": 97
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/fazolova-polevka/"
+    },
+    {
+      "name": "Babiččina sekaná",
+      "base_servings": "6",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Hovězí maso mleté",
+          "quantity": "0.375",
+          "unit": "kg",
+          "notes": "polovina z 750 g směsi",
+          "source_row": 98
+        },
+        {
+          "ingredient_name": "Vepřové maso mleté",
+          "quantity": "0.375",
+          "unit": "kg",
+          "notes": "polovina z 750 g směsi",
+          "source_row": 99
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.28",
+          "unit": "kg",
+          "notes": "2 ks × 140 g",
+          "source_row": 100
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0125",
+          "unit": "kg",
+          "notes": "střed 2–3 stroužků × 5 g",
+          "source_row": 101
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 102
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 lžička",
+          "source_row": 103
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.0015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 1–2 lžiček",
+          "source_row": 104
+        },
+        {
+          "ingredient_name": "Strouhanka",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 6 hrstí × 20 g",
+          "source_row": 105
+        },
+        {
+          "ingredient_name": "Anglická slanina",
+          "quantity": "0.21",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 14 plátků × 15 g",
+          "source_row": 106
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.75",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 107
+        }
+      ],
+      "source_reference": "Mr. Cook – vlastní recept"
+    },
+    {
+      "name": "Perfektní čína – recept pro jednu pánev a pět minut času",
+      "base_servings": "1",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřová pečeně bez kosti",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 108
+        },
+        {
+          "ingredient_name": "Víno bílé",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "první alternativa, 1 lžíce",
+          "source_row": 109
+        },
+        {
+          "ingredient_name": "Koření pěti vůní",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 špetky × 0,2 g",
+          "source_row": 110
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0008",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 špetky × 0,4 g",
+          "source_row": 111
+        },
+        {
+          "ingredient_name": "Cuketa",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "0,5 ks × 300 g",
+          "source_row": 112
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "1 ks × 100 g",
+          "source_row": 113
+        },
+        {
+          "ingredient_name": "Jarní cibulka",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "1 ks × 30 g",
+          "source_row": 114
+        },
+        {
+          "ingredient_name": "Sójová omáčka světlá",
+          "quantity": "0.005",
+          "unit": "l",
+          "notes": "výslovně 5 ml",
+          "source_row": 115
+        },
+        {
+          "ingredient_name": "Rybí omáčka",
+          "quantity": "0.005",
+          "unit": "l",
+          "notes": "1 lžička",
+          "source_row": 116
+        },
+        {
+          "ingredient_name": "Ocet rýžový",
+          "quantity": "0.005",
+          "unit": "l",
+          "notes": "1 lžička",
+          "source_row": 117
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.045",
+          "unit": "l",
+          "notes": "3 lžíce",
+          "source_row": 118
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.125",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 119
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/cina-recept/"
+    },
+    {
+      "name": "Vyhlášené kuřecí kung pao z restaurace Sia",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Kuřecí stehenní řízky",
+          "quantity": "0.48",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 120
+        },
+        {
+          "ingredient_name": "Jarní cibulka",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "4 ks × 30 g",
+          "source_row": 121
+        },
+        {
+          "ingredient_name": "Chilli sušené celé",
+          "quantity": "0.008",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 8 papriček × 1 g",
+          "source_row": 122
+        },
+        {
+          "ingredient_name": "Arašídy",
+          "quantity": "0.16",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 123
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "4 stroužky × 5 g",
+          "source_row": 124
+        },
+        {
+          "ingredient_name": "Zázvor",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 125
+        },
+        {
+          "ingredient_name": "Bramborový škrob",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. obalení a zahuštění",
+          "source_row": 126
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.04",
+          "unit": "l",
+          "notes": "Pracovní odhad.",
+          "source_row": 127
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.034999999999999996",
+          "unit": "kg",
+          "notes": "Pracovní odhad. cukr na maso, navíc k odměřenému cukru v omáčce; Pracovní odhad. 2 lžíce × 15 g",
+          "source_row": 128
+        },
+        {
+          "ingredient_name": "Pepř sečuánský celý",
+          "quantity": "0.003",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžíce",
+          "source_row": 129
+        },
+        {
+          "ingredient_name": "Pepř bílý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 130
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 131
+        },
+        {
+          "ingredient_name": "Sójová omáčka světlá",
+          "quantity": "0.05",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 132
+        },
+        {
+          "ingredient_name": "Voda",
+          "quantity": "0.075",
+          "unit": "l",
+          "notes": "první alternativa",
+          "source_row": 133
+        },
+        {
+          "ingredient_name": "Sójová omáčka tmavá",
+          "quantity": "0.03",
+          "unit": "l",
+          "notes": "2 lžíce",
+          "source_row": 134
+        },
+        {
+          "ingredient_name": "Víno Shaoxing",
+          "quantity": "0.045",
+          "unit": "l",
+          "notes": "3 lžíce",
+          "source_row": 135
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 136
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/recepty/vyhlasene-kureci-kung-pao-z-restaurace-sia"
+    },
+    {
+      "name": "Bramboráky, po kterých se můžu utlouct",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.75",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 137
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 138
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 139
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 140
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "6 stroužků × 5 g",
+          "source_row": 141
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.003",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 142
+        },
+        {
+          "ingredient_name": "Kmín drcený",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky",
+          "source_row": 143
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 lžička",
+          "source_row": 144
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "Pracovní odhad. odhad spotřeby na smažení, ne náplň pánve",
+          "source_row": 145
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/bramboraky-recept/"
+    },
+    {
+      "name": "Hummus",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Cizrna suchá",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 146
+        },
+        {
+          "ingredient_name": "Jedlá soda",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 špetka",
+          "source_row": 147
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "střed 1–2 stroužků",
+          "source_row": 148
+        },
+        {
+          "ingredient_name": "Tahini",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce × 15 g",
+          "source_row": 149
+        },
+        {
+          "ingredient_name": "Kmín římský mletý",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky",
+          "source_row": 150
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "0,5 lžičky",
+          "source_row": 151
+        },
+        {
+          "ingredient_name": "Citronová šťáva",
+          "quantity": "0.02",
+          "unit": "l",
+          "notes": "Pracovní odhad. šťáva z 0,5 citronu",
+          "source_row": 152
+        },
+        {
+          "ingredient_name": "Olej olivový",
+          "quantity": "0.045",
+          "unit": "l",
+          "notes": "3 lžíce",
+          "source_row": 153
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/hummus-recept/"
+    },
+    {
+      "name": "Lasagne",
+      "base_servings": "8",
+      "notes": "Množství navazující v tabulce na jinou recepturu jsou převzata k datu importu. Původní poznámky jsou u jednotlivých surovin.",
+      "lines": [
+        {
+          "ingredient_name": "Těstoviny lasagne",
+          "quantity": "0.35",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 154
+        },
+        {
+          "ingredient_name": "Parmazán",
+          "quantity": "0.05",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 155
+        },
+        {
+          "ingredient_name": "Mozzarella",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 156
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 + 1 lžíce",
+          "source_row": 157
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 vrchovaté lžíce",
+          "source_row": 158
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.5",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 159
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 špetka",
+          "source_row": 160
+        },
+        {
+          "ingredient_name": "Muškátový květ",
+          "quantity": "0.0001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. první alternativa, špetka",
+          "source_row": 161
+        },
+        {
+          "ingredient_name": "Vepřové maso mleté",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "2 porce boloňské omáčky podle zadání; vzorec navazuje na množství ve zdrojové receptuře. ",
+          "source_row": 162
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "2 porce boloňské omáčky podle zadání; vzorec navazuje na množství ve zdrojové receptuře. Pracovní odhad. 2 lžíce × 15 g",
+          "source_row": 163
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.07",
+          "unit": "kg",
+          "notes": "2 porce boloňské omáčky podle zadání; vzorec navazuje na množství ve zdrojové receptuře. 1 ks × 140 g",
+          "source_row": 164
+        },
+        {
+          "ingredient_name": "Celer řapíkatý",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "2 porce boloňské omáčky podle zadání; vzorec navazuje na množství ve zdrojové receptuře. Pracovní odhad. 1 stonek",
+          "source_row": 165
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.05",
+          "unit": "kg",
+          "notes": "2 porce boloňské omáčky podle zadání; vzorec navazuje na množství ve zdrojové receptuře. 1 ks × 100 g",
+          "source_row": 166
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.035",
+          "unit": "kg",
+          "notes": "2 porce boloňské omáčky podle zadání; vzorec navazuje na množství ve zdrojové receptuře. ",
+          "source_row": 167
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.001875",
+          "unit": "kg",
+          "notes": "2 porce boloňské omáčky podle zadání; vzorec navazuje na množství ve zdrojové receptuře. Pracovní odhad. střed 0,5–1 lžičky × 5 g",
+          "source_row": 168
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/lasagne-recept/"
+    },
+    {
+      "name": "Omáčka Mornay pro zapékání",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 169
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 170
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.6",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 171
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 špetka",
+          "source_row": 172
+        },
+        {
+          "ingredient_name": "Hořčice dijonská",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 1 lžička až 1 lžíce",
+          "source_row": 173
+        },
+        {
+          "ingredient_name": "Čedar",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 174
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "2 žloutky = 2 celá vejce do nákupu",
+          "source_row": 175
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/zapekani-tepelna-uprava/"
+    },
+    {
+      "name": "Hovězí pečeně na smetaně - svíčková",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Hovězí zadní",
+          "quantity": "0.8",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 176
+        },
+        {
+          "ingredient_name": "Špek",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 177
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "střed 2–3 ks × 100 g",
+          "source_row": 178
+        },
+        {
+          "ingredient_name": "Celer bulvový",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "0,5 ks × 600 g",
+          "source_row": 179
+        },
+        {
+          "ingredient_name": "Petržel kořenová",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "střed 1–2 ks × 80 g",
+          "source_row": 180
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.28",
+          "unit": "kg",
+          "notes": "2 ks × 140 g",
+          "source_row": 181
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "0.5",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 182
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 183
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.055",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce × 15 g + 25 g",
+          "source_row": 184
+        },
+        {
+          "ingredient_name": "Ocet",
+          "quantity": "0.0375",
+          "unit": "l",
+          "notes": "střed 2–3 lžic × 15 ml",
+          "source_row": 185
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 3 lžíce",
+          "source_row": 186
+        },
+        {
+          "ingredient_name": "Hořčice",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 187
+        },
+        {
+          "ingredient_name": "Pepř černý celý",
+          "quantity": "0.00025",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček",
+          "source_row": 188
+        },
+        {
+          "ingredient_name": "Nové koření celé",
+          "quantity": "0.0005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček",
+          "source_row": 189
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Pracovní odhad.",
+          "source_row": 190
+        },
+        {
+          "ingredient_name": "Citron",
+          "quantity": "0.5",
+          "unit": "ks",
+          "notes": "0,5 citronu",
+          "source_row": 191
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.025",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 192
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "první alternativa",
+          "source_row": 193
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 194
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 195
+        },
+        {
+          "ingredient_name": "Houskový knedlík",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 196
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/svickova-na-smetane-recept/"
+    },
+    {
+      "name": "Buchtičky s krémem",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 197
+        },
+        {
+          "ingredient_name": "Droždí čerstvé",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 198
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "60 g do těsta + 80 g do krému",
+          "source_row": 199
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 200
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.6",
+          "unit": "l",
+          "notes": "100 ml těsto + 500 ml krém",
+          "source_row": 201
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "10",
+          "unit": "ks",
+          "notes": "2 celá + 8 žloutků, první velikostní varianta",
+          "source_row": 202
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka",
+          "source_row": 203
+        },
+        {
+          "ingredient_name": "Citronová kůra",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky",
+          "source_row": 204
+        },
+        {
+          "ingredient_name": "Muškátový květ",
+          "quantity": "0.0001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka",
+          "source_row": 205
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "Pracovní odhad. 200 g ≈ 200 ml",
+          "source_row": 206
+        },
+        {
+          "ingredient_name": "Vanilkový lusk",
+          "quantity": "0.5",
+          "unit": "ks",
+          "notes": "první alternativa",
+          "source_row": 207
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/buchticky-s-kremem/"
+    },
+    {
+      "name": "Gulášová polévka – Prima Fresh",
+      "base_servings": "5",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Hovězí přední",
+          "quantity": "0.7",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 208
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 209
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 210
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.45",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 211
+        },
+        {
+          "ingredient_name": "Kmín celý",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 212
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 213
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 214
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "1.15",
+          "unit": "l",
+          "notes": "střed 1–1,3 l",
+          "source_row": 215
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.85",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 216
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0175",
+          "unit": "kg",
+          "notes": "střed 3–4 stroužků × 5 g",
+          "source_row": 217
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.003",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 218
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 219
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.00075",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 220
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/hospodska-klasika-jidla-ktera-doma-chutnaji-jeste-lepe/gulasova-polevka"
+    },
+    {
+      "name": "Francouzské brambory",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 221
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 222
+        },
+        {
+          "ingredient_name": "Uzené maso",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 223
+        },
+        {
+          "ingredient_name": "Hrášek mražený",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 224
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 4 lžíce",
+          "source_row": 225
+        },
+        {
+          "ingredient_name": "Strouhanka",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 vrchovaté lžíce",
+          "source_row": 226
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "3",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 227
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.1",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 228
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "Pracovní odhad. 200 g ≈ 200 ml",
+          "source_row": 229
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 zarovnaná lžička",
+          "source_row": 230
+        },
+        {
+          "ingredient_name": "Okurky sterilované",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "Pracovní odhad. k podávání",
+          "source_row": 231
+        },
+        {
+          "ingredient_name": "Petržel nať čerstvá",
+          "quantity": "0.008",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 232
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/francouzske-brambory/"
+    },
+    {
+      "name": "Kuřecí vývar",
+      "base_servings": "7",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Kuřecí skelet a odřezky",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "zbytky z jednoho kuřete, bez přepočtu na hmotnost",
+          "source_row": 233
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "0,5 lžičky",
+          "source_row": 234
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 235
+        },
+        {
+          "ingredient_name": "Celer bulvový",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 236
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "1 ks × 100 g",
+          "source_row": 237
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "2 stroužky × 5 g",
+          "source_row": 238
+        },
+        {
+          "ingredient_name": "Rajčata čerstvá",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "1 ks × 120 g",
+          "source_row": 239
+        },
+        {
+          "ingredient_name": "Hřebíček celý",
+          "quantity": "0.0003",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 kusy × 0,15 g",
+          "source_row": 240
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 241
+        },
+        {
+          "ingredient_name": "Pepř černý celý",
+          "quantity": "0.00025",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček",
+          "source_row": 242
+        },
+        {
+          "ingredient_name": "Nové koření celé",
+          "quantity": "0.0005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček",
+          "source_row": 243
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/recepty-z-kureciho-masa/"
+    },
+    {
+      "name": "Vepřový guláš: nejlepší recept na pravou hospodskou klasiku",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřová plec",
+          "quantity": "0.8",
+          "unit": "kg",
+          "notes": "první alternativa",
+          "source_row": 244
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 245
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 3 lžíce",
+          "source_row": 246
+        },
+        {
+          "ingredient_name": "Kmín celý",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 247
+        },
+        {
+          "ingredient_name": "Nové koření celé",
+          "quantity": "0.0003",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 3 kuličky",
+          "source_row": 248
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 249
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 250
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "3 stroužky × 5 g",
+          "source_row": 251
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 252
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 253
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "1",
+          "unit": "l",
+          "notes": "Pracovní odhad.",
+          "source_row": 254
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 255
+        },
+        {
+          "ingredient_name": "Pepř černý celý",
+          "quantity": "0.00025",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček",
+          "source_row": 256
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 257
+        },
+        {
+          "ingredient_name": "Houskový knedlík",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 258
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/recepty/veprovy-gulas-nejlepsi-recept-na-pravou-hospodskou-klasiku"
+    },
+    {
+      "name": "Domácí nudle s mákem",
+      "base_servings": "2",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Mouka polohrubá",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 259
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka",
+          "source_row": 260
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 261
+        },
+        {
+          "ingredient_name": "Mák mletý",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 262
+        },
+        {
+          "ingredient_name": "Cukr moučka",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 263
+        }
+      ],
+      "source_reference": "https://www.apetitonline.cz/recept/domaci-nudle-s-makem"
+    },
+    {
+      "name": "Rajská omáčka s hovězím masem",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 264
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 265
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.23",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 266
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 267
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 268
+        },
+        {
+          "ingredient_name": "Ocet",
+          "quantity": "0.075",
+          "unit": "l",
+          "notes": "5 lžic",
+          "source_row": 269
+        },
+        {
+          "ingredient_name": "Pepř černý celý",
+          "quantity": "0.0005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 10 kuliček",
+          "source_row": 270
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 271
+        },
+        {
+          "ingredient_name": "Nové koření celé",
+          "quantity": "0.0005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček",
+          "source_row": 272
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 273
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 274
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "1.2",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 275
+        },
+        {
+          "ingredient_name": "Houskový knedlík",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 276
+        },
+        {
+          "ingredient_name": "Hovězí zadní",
+          "quantity": "0.68",
+          "unit": "kg",
+          "notes": "Doplněné maso chybějící v exportu: 170 g syrového masa na dospělou porci.",
+          "source_row": 277
+        }
+      ],
+      "source_reference": "https://www.rohlik.cz/chef/59-rajska-omacka-s-hovezim-masem"
+    },
+    {
+      "name": "Přírodní řízek z vepřového masa",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřová kýta",
+          "quantity": "0.6",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 278
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "0,5 lžičky",
+          "source_row": 279
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "0.3",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 280
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 hrst",
+          "source_row": 281
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce, první alternativa",
+          "source_row": 282
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 283
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 284
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/prirodni-rizek/"
+    },
+    {
+      "name": "Vydatné chilli con carne",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "1 lžíce",
+          "source_row": 285
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 286
+        },
+        {
+          "ingredient_name": "Paprika čerstvá červená",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "1 ks × 150 g",
+          "source_row": 287
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "2 stroužky × 5 g",
+          "source_row": 288
+        },
+        {
+          "ingredient_name": "Chilli mleté",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 289
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 290
+        },
+        {
+          "ingredient_name": "Kmín římský mletý",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 291
+        },
+        {
+          "ingredient_name": "Hovězí maso mleté",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 292
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "0.3",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 293
+        },
+        {
+          "ingredient_name": "Rajčata konzervovaná",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 294
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.0012",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 295
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžičky",
+          "source_row": 296
+        },
+        {
+          "ingredient_name": "Fazole konzervované",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "pracovně konzervované fazole, hmotnost do receptu",
+          "source_row": 297
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 298
+        }
+      ],
+      "source_reference": "https://www.apetitonline.cz/recept/vydatne-chilli-con-carne"
+    },
+    {
+      "name": "Trhané hovězí maso na grilu",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Hovězí plec",
+          "quantity": "0.8",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 299
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 zarovnaná lžička",
+          "source_row": 300
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 301
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "1 lžíce",
+          "source_row": 302
+        },
+        {
+          "ingredient_name": "Passata",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "; součást domácí grilovací omáčky, hotová BBQ omáčka se navíc nenakupuje",
+          "source_row": 303
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g; součást domácí grilovací omáčky, hotová BBQ omáčka se navíc nenakupuje",
+          "source_row": 304
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 stroužek × 5 g; součást domácí grilovací omáčky, hotová BBQ omáčka se navíc nenakupuje",
+          "source_row": 305
+        },
+        {
+          "ingredient_name": "Cukr třtinový",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka; součást domácí grilovací omáčky, hotová BBQ omáčka se navíc nenakupuje",
+          "source_row": 306
+        },
+        {
+          "ingredient_name": "Bageta",
+          "quantity": "4",
+          "unit": "ks",
+          "notes": "první alternativa",
+          "source_row": 307
+        },
+        {
+          "ingredient_name": "Salát hlávkový",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Pracovní odhad. srdíčko salátu, první alternativa",
+          "source_row": 308
+        },
+        {
+          "ingredient_name": "Chilli čerstvé",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 paprička",
+          "source_row": 309
+        },
+        {
+          "ingredient_name": "Majonéza",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 vrchovatá lžíce",
+          "source_row": 310
+        },
+        {
+          "ingredient_name": "Mangové pyré",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce, první alternativa",
+          "source_row": 311
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/trhane-hovezi-maso-na-grilu/"
+    },
+    {
+      "name": "Krémový špenát se sázeným vejcem",
+      "base_servings": "2",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.05",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 312
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 313
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 PL",
+          "source_row": 314
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "smetana na vaření sjednocena dle zadání",
+          "source_row": 315
+        },
+        {
+          "ingredient_name": "Špenát listový mražený",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 316
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "2 stroužky × 5 g",
+          "source_row": 317
+        },
+        {
+          "ingredient_name": "Parmazán",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 4 PL strouhaného sýra × 5 g",
+          "source_row": 318
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 319
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 320
+        }
+      ],
+      "source_reference": "https://www.apetitonline.cz/recept/kremovy-spenat-se-sazenym-vejcem"
+    },
+    {
+      "name": "Čočka na kyselo – fantastický výsledek zaručen",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Čočka",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "zelená čočka sjednocena s běžnou čočkou",
+          "source_row": 321
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.007",
+          "unit": "kg",
+          "notes": "1 lžička; Pracovní odhad. dodatečné dochucení",
+          "source_row": 322
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 323
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.28",
+          "unit": "kg",
+          "notes": "2 × 1 ks, základ a smažená cibulka",
+          "source_row": 324
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.05",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 20 g + 2 lžíce × 15 g",
+          "source_row": 325
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 326
+        },
+        {
+          "ingredient_name": "Ocet vinný bílý",
+          "quantity": "0.0375",
+          "unit": "l",
+          "notes": "střed 2–3 lžic",
+          "source_row": 327
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka",
+          "source_row": 328
+        },
+        {
+          "ingredient_name": "Chléb",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 329
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/cocka-na-kyselo/"
+    },
+    {
+      "name": "Trhané vepřové maso z trouby (pulled pork)",
+      "base_servings": "8",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřová krkovice",
+          "quantity": "1.75",
+          "unit": "kg",
+          "notes": "střed 1,5–2 kg",
+          "source_row": 330
+        },
+        {
+          "ingredient_name": "Cukr hnědý",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 3 lžíce",
+          "source_row": 331
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "1 lžíce",
+          "source_row": 332
+        },
+        {
+          "ingredient_name": "Paprika uzená",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžičky",
+          "source_row": 333
+        },
+        {
+          "ingredient_name": "Kmín římský mletý",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 334
+        },
+        {
+          "ingredient_name": "Cibule sušená",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 335
+        },
+        {
+          "ingredient_name": "Česnek sušený",
+          "quantity": "0.003",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 336
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0012",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 337
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.03",
+          "unit": "l",
+          "notes": "2 lžíce",
+          "source_row": 338
+        },
+        {
+          "ingredient_name": "Pivo světlé",
+          "quantity": "0.33",
+          "unit": "l",
+          "notes": "první alternativa",
+          "source_row": 339
+        },
+        {
+          "ingredient_name": "BBQ omáčka",
+          "quantity": "0.16",
+          "unit": "l",
+          "notes": "Pracovní odhad.",
+          "source_row": 340
+        },
+        {
+          "ingredient_name": "Bulka",
+          "quantity": "1",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 341
+        }
+      ],
+      "source_reference": "https://megvkuchyni.cz/recepty/hlavni-jidla/z-veproveho-masa/nase-oblibene-trhane-veprove-maso-z-trouby-pulled-pork/"
+    },
+    {
+      "name": "Pórková polévka",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Pórek",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "2 ks × 250 g",
+          "source_row": 342
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.45",
+          "unit": "kg",
+          "notes": "3 ks × 150 g",
+          "source_row": 343
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 344
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 345
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "1",
+          "unit": "l",
+          "notes": "první alternativa kuřecí",
+          "source_row": 346
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "2 stroužky × 5 g",
+          "source_row": 347
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 348
+        },
+        {
+          "ingredient_name": "Rohlík",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 349
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/porkova-polevka/"
+    },
+    {
+      "name": "Jemný hráškový krém podle Zdeňka Pohlreicha",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vývar zeleninový",
+          "quantity": "0.5",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 350
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 351
+        },
+        {
+          "ingredient_name": "Pórek",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "1 ks × 250 g",
+          "source_row": 352
+        },
+        {
+          "ingredient_name": "Hrášek mražený",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 353
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 354
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 355
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 356
+        },
+        {
+          "ingredient_name": "Olej olivový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "Pracovní odhad.",
+          "source_row": 357
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 358
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 359
+        },
+        {
+          "ingredient_name": "Bageta",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Pracovní odhad.",
+          "source_row": 360
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/hraskovy-krem-6"
+    },
+    {
+      "name": "České kopečkové rizoto s kuřecím masem",
+      "base_servings": "6",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Kuřecí stehenní řízky",
+          "quantity": "0.8",
+          "unit": "kg",
+          "notes": "pracovní upřesnění obecného kuřecího masa",
+          "source_row": 361
+        },
+        {
+          "ingredient_name": "Zeleninová směs mražená",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "mrkev, hrášek, kukuřice",
+          "source_row": 362
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 363
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 364
+        },
+        {
+          "ingredient_name": "Čubrica",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 365
+        },
+        {
+          "ingredient_name": "Sójová omáčka světlá",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "1 lžíce",
+          "source_row": 366
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.06",
+          "unit": "l",
+          "notes": "Pracovní odhad.",
+          "source_row": 367
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.45",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2,5 hrnku × 180 g suché rýže",
+          "source_row": 368
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0009",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 369
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.009",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 370
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/recepty/ceske-rizoto"
+    },
+    {
+      "name": "Bramboračka",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 371
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "2 ks × 100 g",
+          "source_row": 372
+        },
+        {
+          "ingredient_name": "Petržel kořenová",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "1 ks × 80 g",
+          "source_row": 373
+        },
+        {
+          "ingredient_name": "Celer bulvový",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "0,25 ks × 600 g",
+          "source_row": 374
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 375
+        },
+        {
+          "ingredient_name": "Houby sušené",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 hrst",
+          "source_row": 376
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0125",
+          "unit": "kg",
+          "notes": "střed 2–3 stroužků",
+          "source_row": 377
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 378
+        },
+        {
+          "ingredient_name": "Kmín celý",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky",
+          "source_row": 379
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 380
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 381
+        },
+        {
+          "ingredient_name": "Petržel nať čerstvá",
+          "quantity": "0.008",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 382
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.008",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 vrchovatá lžička",
+          "source_row": 383
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/bramboracka/"
+    },
+    {
+      "name": "Smetanová květáková polévka s bramborem a mrkví",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 384
+        },
+        {
+          "ingredient_name": "Pórek",
+          "quantity": "0.125",
+          "unit": "kg",
+          "notes": "0,5 ks × 250 g",
+          "source_row": 385
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "1 ks × 100 g",
+          "source_row": 386
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 387
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "1.2",
+          "unit": "l",
+          "notes": "první alternativa drůbeží",
+          "source_row": 388
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.45",
+          "unit": "kg",
+          "notes": "3 ks × 150 g",
+          "source_row": 389
+        },
+        {
+          "ingredient_name": "Květák",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "0,5 ks × 800 g",
+          "source_row": 390
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 391
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 392
+        },
+        {
+          "ingredient_name": "Muškátový květ",
+          "quantity": "0.0002",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 393
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.1",
+          "unit": "l",
+          "notes": "Pracovní odhad. 100 g ≈ 100 ml",
+          "source_row": 394
+        },
+        {
+          "ingredient_name": "Kopr čerstvý",
+          "quantity": "0.008",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 395
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/smetanova-kvetakova-polevka-s-bramborem-a-mrkvi-367249"
+    },
+    {
+      "name": "Zeleninový vývar krok za krokem",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.07",
+          "unit": "kg",
+          "notes": "0,5 ks × 140 g",
+          "source_row": 396
+        },
+        {
+          "ingredient_name": "Celer řapíkatý",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 397
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 398
+        },
+        {
+          "ingredient_name": "Pórek",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 399
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "1 lžíce",
+          "source_row": 400
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "překlep cůl opraven, 0,5 lžičky",
+          "source_row": 401
+        },
+        {
+          "ingredient_name": "Rajčata čerstvá",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 402
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "2 stroužky × 5 g",
+          "source_row": 403
+        },
+        {
+          "ingredient_name": "Pepř černý celý",
+          "quantity": "0.00025",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 5 kuliček",
+          "source_row": 404
+        },
+        {
+          "ingredient_name": "Petržel nať čerstvá",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 snítka",
+          "source_row": 405
+        },
+        {
+          "ingredient_name": "Tymián čerstvý",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 snítka",
+          "source_row": 406
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/zeleninovy-vyvar/"
+    },
+    {
+      "name": "Bramborový salát",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "1.5",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 407
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 lžička",
+          "source_row": 408
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "4 ks × 100 g",
+          "source_row": 409
+        },
+        {
+          "ingredient_name": "Hrášek mražený",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 410
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "6",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 411
+        },
+        {
+          "ingredient_name": "Šunka",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 412
+        },
+        {
+          "ingredient_name": "Okurky sterilované",
+          "quantity": "0.35",
+          "unit": "kg",
+          "notes": "Pracovní odhad. odhad pevného podílu ze sklenice 700 ml",
+          "source_row": 413
+        },
+        {
+          "ingredient_name": "Majonéza",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 414
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/bramborovy-salat-recept/"
+    },
+    {
+      "name": "Dhal z červené čočky s cizrnou",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Čočka červená",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 415
+        },
+        {
+          "ingredient_name": "Cizrna konzervovaná",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 416
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 417
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.03",
+          "unit": "l",
+          "notes": "2 lžíce",
+          "source_row": 418
+        },
+        {
+          "ingredient_name": "Rajčata konzervovaná",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 plechovka",
+          "source_row": 419
+        },
+        {
+          "ingredient_name": "Garam masala",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 420
+        },
+        {
+          "ingredient_name": "Zázvor",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce strouhaného zázvoru",
+          "source_row": 421
+        },
+        {
+          "ingredient_name": "Kmín římský mletý",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 422
+        },
+        {
+          "ingredient_name": "Mléko kokosové",
+          "quantity": "0.15",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 423
+        },
+        {
+          "ingredient_name": "Chilli mleté",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 424
+        },
+        {
+          "ingredient_name": "Vývar zeleninový",
+          "quantity": "0.5",
+          "unit": "l",
+          "notes": "první alternativa",
+          "source_row": 425
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 426
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 427
+        }
+      ],
+      "source_reference": "https://www.dumazahrada.cz/clanek/zdrave-jidlo-do-krabicky-zkuste-vynikajici-cockovy-dhal-20230708.html"
+    },
+    {
+      "name": "Veganská boloňská omáčka s čočkou",
+      "base_servings": "5",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Čočka",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "zelená čočka sjednocena s běžnou čočkou",
+          "source_row": 428
+        },
+        {
+          "ingredient_name": "Olej olivový",
+          "quantity": "0.03",
+          "unit": "l",
+          "notes": "2 lžíce",
+          "source_row": 429
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 430
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 431
+        },
+        {
+          "ingredient_name": "Celer řapíkatý",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 432
+        },
+        {
+          "ingredient_name": "Cuketa",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 433
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "1 stroužek × 5 g",
+          "source_row": 434
+        },
+        {
+          "ingredient_name": "Rajčata konzervovaná",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 konzerva",
+          "source_row": 435
+        },
+        {
+          "ingredient_name": "Houby sušené",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 hrst",
+          "source_row": 436
+        },
+        {
+          "ingredient_name": "Skořice mletá",
+          "quantity": "0.0002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka",
+          "source_row": 437
+        },
+        {
+          "ingredient_name": "Chilli mleté",
+          "quantity": "0.0002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka",
+          "source_row": 438
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 439
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.00075",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 440
+        },
+        {
+          "ingredient_name": "Těstoviny",
+          "quantity": "0.625",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 441
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/veganska-bolonska-omacka-s-cockou-191870?utm_source=perplexity"
+    },
+    {
+      "name": "Klasické srbské rizoto s rýží",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Rýže parboiled",
+          "quantity": "0.36",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 442
+        },
+        {
+          "ingredient_name": "Vepřová plec",
+          "quantity": "0.32",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 443
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.28",
+          "unit": "kg",
+          "notes": "2 ks × 140 g",
+          "source_row": 444
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 445
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.04",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 446
+        },
+        {
+          "ingredient_name": "Hrášek mražený",
+          "quantity": "0.08",
+          "unit": "kg",
+          "notes": "sjednocení formy hrášku pro nákup",
+          "source_row": 447
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.008",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 448
+        },
+        {
+          "ingredient_name": "Vývar zeleninový",
+          "quantity": "0.58",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 449
+        },
+        {
+          "ingredient_name": "Paprika čerstvá červená",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "pracovní upřesnění barvy",
+          "source_row": 450
+        },
+        {
+          "ingredient_name": "Mrkev",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 451
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 452
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 453
+        },
+        {
+          "ingredient_name": "Gouda",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "pracovní volba neurčeného sýra",
+          "source_row": 454
+        }
+      ],
+      "source_reference": "https://www.ceskyobed.cz/recept/srbske-rizoto-jako-ze-skolni-jidelny/"
+    },
+    {
+      "name": "Bún chả – grilovaný vietnamský bůček s rýžovými nudlemi",
+      "base_servings": "2",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřový bůček bez kosti",
+          "quantity": "0.3",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 455
+        },
+        {
+          "ingredient_name": "Rýžové nudle",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "Pracovní odhad. doplněná příloha 125 g / porci",
+          "source_row": 456
+        },
+        {
+          "ingredient_name": "Cukr třtinový",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 3 lžíce",
+          "source_row": 457
+        },
+        {
+          "ingredient_name": "Rybí omáčka",
+          "quantity": "0.045",
+          "unit": "l",
+          "notes": "2 + 1 lžíce",
+          "source_row": 458
+        },
+        {
+          "ingredient_name": "Sójová omáčka světlá",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "1 lžíce",
+          "source_row": 459
+        },
+        {
+          "ingredient_name": "Limetková šťáva",
+          "quantity": "0.03",
+          "unit": "l",
+          "notes": "2 lžíce",
+          "source_row": 460
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0175",
+          "unit": "kg",
+          "notes": "2 + střed 1–2 stroužků × 5 g",
+          "source_row": 461
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 462
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 463
+        },
+        {
+          "ingredient_name": "Ocet rýžový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "1 lžíce",
+          "source_row": 464
+        },
+        {
+          "ingredient_name": "Voda",
+          "quantity": "0.0375",
+          "unit": "l",
+          "notes": "střed 2–3 lžic",
+          "source_row": 465
+        },
+        {
+          "ingredient_name": "Chilli čerstvé",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 466
+        }
+      ],
+      "source_reference": "https://fresh.iprima.cz/recepty/bun-cha-grilovany-vietnamsky-bucek"
+    },
+    {
+      "name": "Zelňačka",
+      "base_servings": "6",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "0.6",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 467
+        },
+        {
+          "ingredient_name": "Zelí kysané",
+          "quantity": "0.6",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 468
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 469
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce",
+          "source_row": 470
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 vrchovatá lžíce",
+          "source_row": 471
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 vrchovatá lžička",
+          "source_row": 472
+        },
+        {
+          "ingredient_name": "Kmín celý",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 473
+        },
+        {
+          "ingredient_name": "Klobása",
+          "quantity": "0.45",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 474
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/zelnacka-recept/"
+    },
+    {
+      "name": "Šunkofleky podle Zdeňka Pohlreicha",
+      "base_servings": "8",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Těstoviny fleky",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "první alternativa",
+          "source_row": 475
+        },
+        {
+          "ingredient_name": "Ementál",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "první alternativa sýra",
+          "source_row": 476
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.2",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 477
+        },
+        {
+          "ingredient_name": "Šunka",
+          "quantity": "0.2",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 4 silné plátky × 50 g",
+          "source_row": 478
+        },
+        {
+          "ingredient_name": "Parmazán",
+          "quantity": "0.025",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 479
+        },
+        {
+          "ingredient_name": "Jarní cibulka",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "1 ks × 30 g",
+          "source_row": 480
+        },
+        {
+          "ingredient_name": "Strouhanka",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 hrst",
+          "source_row": 481
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.012",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 482
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0012",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 483
+        }
+      ],
+      "source_reference": "https://www.denik.cz/gastronomie/sunkofleky-zdenek-polreich-recept.html?utm_source=google&utm_medium=cpc&utm_campaign=109-25-magaziny-rodina&utm_id=23285754925&gad_source=1&gad_campaignid=23281509344&gbraid=0AAAAADCmz3dBmzB_4lwV--GO0bfx9Z-6W&gclid=CjwKCAiA"
+    },
+    {
+      "name": "Pečené kuře",
+      "base_servings": "38",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Kuřecí stehna s kostí",
+          "quantity": "15",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 484
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "první alternativa",
+          "source_row": 485
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "Pracovní odhad. pracovní norma 10 g/kg masa s kostí",
+          "source_row": 486
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0057",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 487
+        },
+        {
+          "ingredient_name": "Tymián sušený",
+          "quantity": "0.0114",
+          "unit": "kg",
+          "notes": "Pracovní odhad. pracovní volba bylinky, 0,3 g / porci",
+          "source_row": 488
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "4.75",
+          "unit": "kg",
+          "notes": "Doplněná příloha: pracovní norma 125 g na dospělou porci. U rýže/těstovin suchá hmotnost, brambory syrové, knedlíky a pečivo hotový výrobek.",
+          "source_row": 489
+        }
+      ],
+      "source_reference": "Mr. Cook – vlastní recept"
+    },
+    {
+      "name": "Ovocné knedlíky z tvarohového těsta",
+      "base_servings": "3",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Tvaroh měkký kostka",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 490
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 491
+        },
+        {
+          "ingredient_name": "Krupice",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "dětská krupička sjednocena do Krupice",
+          "source_row": 492
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0004",
+          "unit": "kg",
+          "notes": "Pracovní odhad. špetka",
+          "source_row": 493
+        },
+        {
+          "ingredient_name": "Meruňky čerstvé",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Pracovní odhad: 20 půlek × 25 g. První alternativa čerstvé; pro zimní provoz lze ručně změnit na mražené.",
+          "source_row": 494
+        },
+        {
+          "ingredient_name": "Cukr kostkový",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 20 mokka kostek × 3 g",
+          "source_row": 495
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 15 g / porci na přelití",
+          "source_row": 496
+        },
+        {
+          "ingredient_name": "Cukr moučka",
+          "quantity": "0.045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 15 g / porci",
+          "source_row": 497
+        },
+        {
+          "ingredient_name": "Tvaroh tvrdý",
+          "quantity": "0.09",
+          "unit": "kg",
+          "notes": "Pracovní odhad. první alternativa posypu, 30 g / porci",
+          "source_row": 498
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/ovocne-knedliky-tvarohove/"
+    },
+    {
+      "name": "Máslové kuře",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Kuřecí prsa",
+          "quantity": "0.6",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 499
+        },
+        {
+          "ingredient_name": "Rýže basmati",
+          "quantity": "0.25",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 500
+        },
+        {
+          "ingredient_name": "Jogurt bílý tučný",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 4 lžíce × 15 g",
+          "source_row": 501
+        },
+        {
+          "ingredient_name": "Zázvor",
+          "quantity": "0.0045",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 + 0,5 lžičky × 3 g",
+          "source_row": 502
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "2 + 2 stroužky × 5 g",
+          "source_row": 503
+        },
+        {
+          "ingredient_name": "Garam masala",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 + 1 lžička × 2,5 g",
+          "source_row": 504
+        },
+        {
+          "ingredient_name": "Kurkuma mletá",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 + 1 lžička × 2,5 g",
+          "source_row": 505
+        },
+        {
+          "ingredient_name": "Kmín římský mletý",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 + 0,5 lžičky",
+          "source_row": 506
+        },
+        {
+          "ingredient_name": "Cukr třtinový",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 507
+        },
+        {
+          "ingredient_name": "Citronová šťáva",
+          "quantity": "0.021",
+          "unit": "l",
+          "notes": "Pracovní odhad. šťáva z 0,5 citronu + pár kapek",
+          "source_row": 508
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 509
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Pracovní odhad.",
+          "source_row": 510
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "1 ks × 140 g",
+          "source_row": 511
+        },
+        {
+          "ingredient_name": "Kešu ořechy",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 80 g + hrst 20 g na ozdobu",
+          "source_row": 512
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 lžíce × 15 g + 30 g",
+          "source_row": 513
+        },
+        {
+          "ingredient_name": "Kardamom mletý",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky",
+          "source_row": 514
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžíce",
+          "source_row": 515
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 lžička",
+          "source_row": 516
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "0.35",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 517
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.25",
+          "unit": "l",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 518
+        },
+        {
+          "ingredient_name": "Chilli čerstvé",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 paprička",
+          "source_row": 519
+        },
+        {
+          "ingredient_name": "Koriandr nať čerstvá",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 1 hrst",
+          "source_row": 520
+        }
+      ],
+      "source_reference": "Mr. Cook – vlastní recept"
+    },
+    {
+      "name": "Vepřová žebra metodou 3-2-1",
+      "base_servings": "8",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřová žebra",
+          "quantity": "1.36",
+          "unit": "kg",
+          "notes": "Pracovní odhad. chybí hmotnost pásů, pracovní norma 170 g / osobu",
+          "source_row": 521
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.05",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 522
+        },
+        {
+          "ingredient_name": "Pivo černé",
+          "quantity": "0.1",
+          "unit": "l",
+          "notes": "první alternativa",
+          "source_row": 523
+        },
+        {
+          "ingredient_name": "Cukr hnědý",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "výslovných 60 g + 60 g",
+          "source_row": 524
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.02",
+          "unit": "kg",
+          "notes": "výslovných 10 g + 10 g",
+          "source_row": 525
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 + 1 lžička × 2,5 g",
+          "source_row": 526
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0012",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 2 velké špetky × 0,6 g",
+          "source_row": 527
+        },
+        {
+          "ingredient_name": "Skořice mletá",
+          "quantity": "0.0001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. malá špetka",
+          "source_row": 528
+        },
+        {
+          "ingredient_name": "Rajčata konzervovaná",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 529
+        },
+        {
+          "ingredient_name": "Kečup",
+          "quantity": "0.1",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 530
+        },
+        {
+          "ingredient_name": "Ocet vinný bílý",
+          "quantity": "0.06",
+          "unit": "l",
+          "notes": "první alternativa",
+          "source_row": 531
+        },
+        {
+          "ingredient_name": "Med",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 532
+        },
+        {
+          "ingredient_name": "Chilli drcené",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Pracovní odhad. 0,5 lžičky, povinná část omáčky",
+          "source_row": 533
+        }
+      ],
+      "source_reference": "https://www.kucharkaprodceru.cz/veprova-zebra/"
+    },
+    {
+      "name": "Krkonošské sejkory",
+      "base_servings": "20",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "5",
+          "unit": "kg",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 534
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "střed 450–550 g",
+          "source_row": 535
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "5",
+          "unit": "ks",
+          "notes": "Množství z exportu; sjednocené jednotky.",
+          "source_row": 536
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0275",
+          "unit": "kg",
+          "notes": "střed 5–6 stroužků × 5 g",
+          "source_row": 537
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0375",
+          "unit": "kg",
+          "notes": "střed 35–40 g",
+          "source_row": 538
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "Pracovní odhad. střed 2–3 lžiček",
+          "source_row": 539
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.175",
+          "unit": "l",
+          "notes": "střed 100–250 ml",
+          "source_row": 540
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.175",
+          "unit": "kg",
+          "notes": "střed 150–200 g",
+          "source_row": 541
+        }
+      ],
+      "source_reference": "Mr. Cook – vlastní recept"
+    },
+    {
+      "name": "Plněné masové knedlíky se zelím",
+      "base_servings": "1",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Knedlíky plněné masem – mražené",
+          "quantity": "3",
+          "unit": "ks",
+          "notes": "Potvrzeno: 3 celé kupované knedlíky na 1 dospělou porci. Nerozepisovat náplň ani těsto.",
+          "source_row": 542
+        },
+        {
+          "ingredient_name": "Zelí kysané",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 543
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.025",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 544
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 545
+        }
+      ],
+      "source_reference": "Vlastní recept – zadání provozovatele"
+    },
+    {
+      "name": "Plněné ovocné knedlíky s jogurtovou polevou",
+      "base_servings": "1",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Knedlíky ovocné – mražené",
+          "quantity": "3",
+          "unit": "ks",
+          "notes": "Potvrzeno: 3 celé kupované knedlíky na 1 dospělou porci. Nerozepisovat náplň ani těsto.",
+          "source_row": 546
+        },
+        {
+          "ingredient_name": "Jogurt bílý tučný",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 547
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.03",
+          "unit": "l",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 548
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 549
+        },
+        {
+          "ingredient_name": "Vanilkový cukr",
+          "quantity": "0.003",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 porci. Vanilka pracovně jako vanilkový cukr (3 g); upravit podle používaného výrobku.",
+          "source_row": 550
+        },
+        {
+          "ingredient_name": "Strouhanka",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 551
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Pracovní odhad na 1 dospělou porci; upravit podle reality.",
+          "source_row": 552
+        }
+      ],
+      "source_reference": "Vlastní recept – zadání provozovatele"
+    },
+    {
+      "name": "Kuře na paprice s rýží",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Kuře celé",
+          "quantity": "1",
+          "unit": "ks",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 553
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 554
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.004",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 555
+        },
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 556
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 557
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 558
+        },
+        {
+          "ingredient_name": "Smetana ke šlehání",
+          "quantity": "0.23",
+          "unit": "l",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 559
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 560
+        }
+      ],
+      "source_reference": "Varianta stávající receptury"
+    },
+    {
+      "name": "Přírodní vepřové s rýží",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Vepřová kýta",
+          "quantity": "0.6",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 561
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.0025",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 562
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "0.3",
+          "unit": "l",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 563
+        },
+        {
+          "ingredient_name": "Mouka hladká",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 564
+        },
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 565
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 566
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 567
+        }
+      ],
+      "source_reference": "Varianta stávající receptury"
+    },
+    {
+      "name": "Hovězí guláš s rýží",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Sádlo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 568
+        },
+        {
+          "ingredient_name": "Kmín drcený",
+          "quantity": "0.002",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 569
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 570
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.015",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 571
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 572
+        },
+        {
+          "ingredient_name": "Bobkový list",
+          "quantity": "4",
+          "unit": "ks",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 573
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.001",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 574
+        },
+        {
+          "ingredient_name": "Pepř černý mletý",
+          "quantity": "0.0006",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 575
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "1",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 576
+        },
+        {
+          "ingredient_name": "Hovězí plec",
+          "quantity": "1",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 577
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 578
+        }
+      ],
+      "source_reference": "Varianta stávající receptury"
+    },
+    {
+      "name": "Chilli con carne s rýží",
+      "base_servings": "4",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Olej slunečnicový",
+          "quantity": "0.015",
+          "unit": "l",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 579
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.14",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 580
+        },
+        {
+          "ingredient_name": "Paprika čerstvá červená",
+          "quantity": "0.15",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 581
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 582
+        },
+        {
+          "ingredient_name": "Chilli mleté",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 583
+        },
+        {
+          "ingredient_name": "Paprika sladká",
+          "quantity": "0.0075",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 584
+        },
+        {
+          "ingredient_name": "Kmín římský mletý",
+          "quantity": "0.006",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 585
+        },
+        {
+          "ingredient_name": "Hovězí maso mleté",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 586
+        },
+        {
+          "ingredient_name": "Vývar masový",
+          "quantity": "0.3",
+          "unit": "l",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 587
+        },
+        {
+          "ingredient_name": "Rajčata konzervovaná",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 588
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.0012",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 589
+        },
+        {
+          "ingredient_name": "Rajčatový protlak",
+          "quantity": "0.01",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 590
+        },
+        {
+          "ingredient_name": "Fazole konzervované",
+          "quantity": "0.4",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 591
+        },
+        {
+          "ingredient_name": "Cukr krystal",
+          "quantity": "0.03",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 592
+        },
+        {
+          "ingredient_name": "Rýže",
+          "quantity": "0.5",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 593
+        }
+      ],
+      "source_reference": "Varianta stávající receptury"
+    },
+    {
+      "name": "Sekaná s bramborovou kaší",
+      "base_servings": "6",
+      "notes": null,
+      "lines": [
+        {
+          "ingredient_name": "Hovězí maso mleté",
+          "quantity": "0.375",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 594
+        },
+        {
+          "ingredient_name": "Vepřové maso mleté",
+          "quantity": "0.375",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 595
+        },
+        {
+          "ingredient_name": "Cibule",
+          "quantity": "0.28",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 596
+        },
+        {
+          "ingredient_name": "Česnek",
+          "quantity": "0.0125",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 597
+        },
+        {
+          "ingredient_name": "Vejce",
+          "quantity": "2",
+          "unit": "ks",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 598
+        },
+        {
+          "ingredient_name": "Sůl",
+          "quantity": "0.005",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 599
+        },
+        {
+          "ingredient_name": "Majoránka sušená",
+          "quantity": "0.0015",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 600
+        },
+        {
+          "ingredient_name": "Strouhanka",
+          "quantity": "0.12",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 601
+        },
+        {
+          "ingredient_name": "Anglická slanina",
+          "quantity": "0.21",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 602
+        },
+        {
+          "ingredient_name": "Brambory",
+          "quantity": "1.8",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 603
+        },
+        {
+          "ingredient_name": "Mléko",
+          "quantity": "0.3",
+          "unit": "l",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 604
+        },
+        {
+          "ingredient_name": "Máslo",
+          "quantity": "0.06",
+          "unit": "kg",
+          "notes": "Změněná příloha / pracovní odhad; ostatní množství ze zdrojové receptury.",
+          "source_row": 605
+        }
+      ],
+      "source_reference": "Varianta stávající receptury"
+    }
+  ]
+}
