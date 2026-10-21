@@ -9,8 +9,22 @@ defmodule CozyCheckout.Recipes.Links do
 
   def preload(item), do: Repo.preload(item, [:recipe, recipe_supplements: :recipe])
 
-  def preload_variant(variant),
-    do: Repo.preload(variant, items: [:recipe, recipe_supplements: :recipe])
+  def preload_variant(variant) do
+    variant
+    |> Repo.preload(items: [:recipe, recipe_supplements: :recipe])
+    |> order_variant()
+  end
+
+  defp order_variant(variant) do
+    %{
+      variant
+      | items:
+          Enum.sort_by(
+            variant.items,
+            &{&1.day_number, CozyCheckout.Meals.SlotSchedule.rank(&1.meal_type)}
+          )
+    }
+  end
 
   def supplement_ids(item) do
     item = preload(item)
@@ -54,6 +68,7 @@ defmodule CozyCheckout.Recipes.Links do
     end)
 
     Repo.preload(variant, [items: [:recipe, recipe_supplements: :recipe]], force: true)
+    |> order_variant()
   end
 
   # Changed menu wording must never silently keep quantities for a different dish.

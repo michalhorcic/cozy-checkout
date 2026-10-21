@@ -163,4 +163,14 @@ defmodule CozyCheckout.Recipes.LinksTest do
     assert changed.recipe_id == main.id
     assert Links.supplement_ids(changed) == []
   end
+
+  test "preloaded variants order services by day and meal even when input is shuffled" do
+    attrs = variant_attrs()
+    {:ok, variant} = MenuPlanning.create_variant(%{attrs | items: Enum.reverse(attrs.items)})
+    expected = [{1, "dinner"}, {2, "breakfast"}, {2, "lunch"}, {2, "dinner"}, {3, "breakfast"}]
+    assert Enum.map(variant.items, &{&1.day_number, &1.meal_type}) == expected
+
+    assert Enum.map(MenuPlanning.get_variant!(variant.id).items, &{&1.day_number, &1.meal_type}) ==
+             expected
+  end
 end
