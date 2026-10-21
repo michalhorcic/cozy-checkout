@@ -299,7 +299,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
      |> assign(:selected_guest_name, guest.name)
      |> assign(:guest_search_text, guest.name)
      |> assign(:show_guest_modal, false)
-     |> put_flash(:info, "Guest created successfully")}
+     |> put_flash(:success, "Guest created successfully")}
   end
 
   @impl true
@@ -409,7 +409,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
 
             {:noreply,
              socket
-             |> put_flash(:info, "Booking updated successfully")
+             |> put_flash(:success, "Booking updated successfully")
              |> push_patch(to: socket.assigns.patch)}
 
           {:error, {:rooms_not_available, _unavailable_rooms}} ->
@@ -437,7 +437,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
 
             {:noreply,
              socket
-             |> put_flash(:info, "Booking created successfully")
+             |> put_flash(:success, "Booking created successfully")
              |> push_navigate(to: ~p"/admin/bookings/#{booking}")}
 
           {:error, {:rooms_not_available, _unavailable_rooms}} ->

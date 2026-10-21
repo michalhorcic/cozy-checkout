@@ -42,8 +42,8 @@ defmodule CozyCheckoutWeb.CoreComponents do
   attr :id, :string, doc: "the optional id of flash container"
   attr :flash, :map, default: %{}, doc: "the map of flash messages to display"
   attr :title, :string, default: nil
-  attr :kind, :atom, values: [:info, :error], doc: "used for styling and flash lookup"
-  attr :info_class, :string, default: "alert-info"
+  attr :kind, :atom, values: [:success, :info, :error], doc: "used for styling and flash lookup"
+  attr :info_class, :string, default: nil
   attr :rest, :global, doc: "the arbitrary HTML attributes to add to the flash container"
 
   slot :inner_block, doc: "the optional inner block that renders the flash message"
@@ -55,16 +55,17 @@ defmodule CozyCheckoutWeb.CoreComponents do
     <div
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
-      phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
-      role="alert"
-      class="toast toast-top toast-end z-50"
+      role={if @kind == :error, do: "alert", else: "status"}
+      class="pointer-events-auto"
       {@rest}
     >
       <div class={[
-        "alert w-80 sm:w-96 max-w-80 sm:max-w-96 text-wrap",
-        @kind == :info && @info_class,
-        @kind == :error && "alert-error"
+        "flex items-start gap-3 rounded-xl border p-4 text-sm shadow-lg",
+        @kind == :success && "border-emerald-200 bg-emerald-50 text-emerald-900",
+        @kind == :info && info_flash_class(@info_class),
+        @kind == :error && "border-red-200 bg-red-50 text-red-900"
       ]}>
+        <.icon :if={@kind == :success} name="hero-check-circle" class="size-5 shrink-0" />
         <.icon :if={@kind == :info} name="hero-information-circle" class="size-5 shrink-0" />
         <.icon :if={@kind == :error} name="hero-exclamation-circle" class="size-5 shrink-0" />
         <div>
@@ -72,13 +73,26 @@ defmodule CozyCheckoutWeb.CoreComponents do
           <p>{msg}</p>
         </div>
         <div class="flex-1" />
-        <button type="button" class="group self-start cursor-pointer" aria-label={gettext("close")}>
+        <button
+          type="button"
+          phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
+          class="group self-start cursor-pointer"
+          aria-label={gettext("close")}
+        >
           <.icon name="hero-x-mark" class="size-5 opacity-40 group-hover:opacity-70" />
         </button>
       </div>
     </div>
     """
   end
+
+  # Keep the older layout override working for existing stock screens.
+  defp info_flash_class("alert-success"), do: "border-emerald-200 bg-emerald-50 text-emerald-900"
+
+  defp info_flash_class(value) when value in [nil, "alert-info"],
+    do: "border-blue-200 bg-blue-50 text-blue-900"
+
+  defp info_flash_class(value), do: value
 
   @doc """
   Renders a button with navigation support.

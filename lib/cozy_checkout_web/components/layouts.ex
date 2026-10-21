@@ -34,7 +34,7 @@ defmodule CozyCheckoutWeb.Layouts do
   attr :content_class, :string, default: "mx-auto max-w-2xl space-y-4"
   attr :main_class, :string, default: "px-4 py-20 sm:px-6 lg:px-8"
   attr :show_header, :boolean, default: true
-  attr :flash_info_class, :string, default: "alert-info"
+  attr :flash_info_class, :string, default: nil
 
   slot :inner_block, required: true
 
@@ -107,11 +107,16 @@ defmodule CozyCheckoutWeb.Layouts do
   """
   attr :flash, :map, required: true, doc: "the map of flash messages"
   attr :id, :string, default: "flash-group", doc: "the optional id of flash container"
-  attr :info_class, :string, default: "alert-info"
+  attr :info_class, :string, default: nil
 
   def flash_group(assigns) do
     ~H"""
-    <div id={@id} aria-live="polite">
+    <div
+      id={@id}
+      aria-live="polite"
+      class="pointer-events-none fixed right-4 top-4 z-50 flex w-[calc(100%-2rem)] max-w-sm flex-col gap-3"
+    >
+      <.flash kind={:success} flash={@flash} />
       <.flash kind={:info} flash={@flash} info_class={@info_class} />
       <.flash kind={:error} flash={@flash} />
 

@@ -114,7 +114,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
       {:ok, _} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Recepty přiřazeny. Text menu zůstal zachován.")
+         |> put_flash(:success, "Recepty přiřazeny. Text menu zůstal zachován.")
          |> push_navigate(to: socket.assigns.back)}
 
       {:error, _} ->

@@ -54,7 +54,9 @@ defmodule CozyCheckoutWeb.RecipeLive.Ingredients do
     case result do
       {:ok, _} ->
         {:noreply,
-         socket |> put_flash(:info, "Surovina uložena") |> push_patch(to: ~p"/admin/ingredients")}
+         socket
+         |> put_flash(:success, "Surovina uložena")
+         |> push_patch(to: ~p"/admin/ingredients")}
 
       {:error, %Ecto.Changeset{} = cs} ->
         {:noreply, assign(socket, :form, to_form(cs))}

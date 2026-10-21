@@ -44,6 +44,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     assert MenuPlanning.get_booking_menu(booking.id) == nil
     view |> element("#apply-booking-menu") |> render_click()
     refute has_element?(view, "#booking-menu-unassigned")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Menu přiřazeno")
     menu = MenuPlanning.get_booking_menu(booking.id)
     item = hd(menu.items)
     assert has_element?(view, "#assigned-portions-#{item.id}", "15 porcí")
@@ -56,6 +57,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     |> render_submit()
 
     assert has_element?(view, "#manual-menu-item-#{item.id}")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Ruční úprava uložena")
     preview(view, variant)
     assert has_element?(view, "#booking-menu-preview", "Ruční úprava bude zachována")
     assert has_element?(view, "#booking-menu-preview", "Dietní ruční večeře")
@@ -84,7 +86,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     {:ok, _} = Bookings.update_booking(booking, %{meal_children: 8})
     view |> element("#apply-booking-menu") |> render_click()
     refute has_element?(view, "#booking-menu-preview")
-    assert has_element?(view, "#flash-error", "Podklady se od náhledu změnily")
+    assert has_element?(view, "#flash-error .bg-red-50", "Podklady se od náhledu změnily")
     assert MenuPlanning.get_booking_menu(booking.id) == nil
     preview(view, variant)
     assert has_element?(view, "#preview-portions-2027-01-09-lunch", "18 porcí")

@@ -31,6 +31,8 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
      |> assign(:recipe, recipe)
      |> assign(:form, if(recipe, do: to_form(Recipe.changeset(recipe, %{}))))
      |> assign(:ingredients, Recipes.list_ingredients("", true))
+     |> assign(:ingredient_queries, %{})
+     |> assign(:active_ingredient, nil)
      |> assign(:result_count, length(all))
      |> stream(:recipes, all, reset: true)}
   end
@@ -58,13 +60,79 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
          )
        )}
 
+  def handle_event("open_ingredient_search", %{"index" => index}, socket),
+    do: {:noreply, assign(socket, :active_ingredient, index)}
+
+  def handle_event("close_ingredient_search", _, socket),
+    do: {:noreply, assign(socket, :active_ingredient, nil)}
+
+  def handle_event(
+        "search_ingredients",
+        %{"ingredient_search" => queries, "_target" => ["ingredient_search", index]},
+        socket
+      ) do
+    params = line_params(socket)
+
+    case params["lines"][index] do
+      nil ->
+        {:noreply, socket}
+
+      line ->
+        # A typed name must be selected before saving; never keep a previous ID
+        # behind a different search query.
+        lines = Map.put(params["lines"], index, Map.put(line, "ingredient_id", ""))
+
+        {:noreply,
+         socket
+         |> assign(
+           :ingredient_queries,
+           Map.put(socket.assigns.ingredient_queries, index, queries[index])
+         )
+         |> assign(:active_ingredient, index)
+         |> assign(
+           :form,
+           to_form(Recipe.changeset(socket.assigns.recipe, Map.put(params, "lines", lines)))
+         )}
+    end
+  end
+
+  def handle_event("select_ingredient", %{"index" => index, "id" => id}, socket) do
+    params = line_params(socket)
+    ingredient = Enum.find(socket.assigns.ingredients, &(&1.id == id && is_nil(&1.archived_at)))
+
+    case {params["lines"][index], ingredient} do
+      {line, ingredient} when not is_nil(line) and not is_nil(ingredient) ->
+        unit =
+          if Recipes.compatible?(line["unit"], ingredient.base_unit),
+            do: line["unit"],
+            else: ingredient.base_unit
+
+        line = Map.merge(line, %{"ingredient_id" => ingredient.id, "unit" => unit})
+        lines = Map.put(params["lines"], index, line)
+
+        {:noreply,
+         socket
+         |> assign(:ingredient_queries, Map.delete(socket.assigns.ingredient_queries, index))
+         |> assign(:active_ingredient, nil)
+         |> assign(
+           :form,
+           to_form(Recipe.changeset(socket.assigns.recipe, Map.put(params, "lines", lines)))
+         )}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
   def handle_event("add_line", _, socket) do
     params = line_params(socket)
     lines = Map.put(params["lines"], to_string(map_size(params["lines"])), %{})
 
     {:noreply,
-     assign(
-       socket,
+     socket
+     |> assign(:ingredient_queries, %{})
+     |> assign(:active_ingredient, nil)
+     |> assign(
        :form,
        to_form(Recipe.changeset(socket.assigns.recipe, Map.put(params, "lines", lines)))
      )}
@@ -72,6 +140,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
 
   def handle_event("remove_line", %{"index" => index}, socket) do
     params = line_params(socket)
+    socket = assign(socket, ingredient_queries: %{}, active_ingredient: nil)
 
     {:noreply,
      assign(
@@ -100,7 +169,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
       {:ok, recipe} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Recept uložen")
+         |> put_flash(:success, "Recept uložen")
          |> push_navigate(to: ~p"/admin/recipes/#{recipe.id}")}
 
       {:error, %Ecto.Changeset{} = cs} ->
@@ -138,6 +207,8 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
         {:noreply,
          socket
          |> assign(:quick_ingredient_open, false)
+         |> assign(:ingredient_queries, %{})
+         |> assign(:active_ingredient, nil)
          |> assign(:ingredients, Recipes.list_ingredients("", true))
          |> assign(:form, to_form(Recipe.changeset(socket.assigns.recipe, params)))}
 
@@ -180,7 +251,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
       {:noreply,
        socket
        |> assign(:settings_open, false)
-       |> put_flash(:info, "Velikost dětských porcí uložena")}
+       |> put_flash(:success, "Velikost dětských porcí uložena")}
     else
       _ ->
         {:noreply,

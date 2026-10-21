@@ -81,7 +81,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent do
 
         {:noreply,
          socket
-         |> put_flash(:info, "Template updated successfully")
+         |> put_flash(:success, "Template updated successfully")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -96,7 +96,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent do
 
         {:noreply,
          socket
-         |> put_flash(:info, "Template created successfully")
+         |> put_flash(:success, "Template created successfully")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->

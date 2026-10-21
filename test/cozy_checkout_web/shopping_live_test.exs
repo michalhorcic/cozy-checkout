@@ -111,6 +111,7 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
     assert has_element?(view, "#shopping-purchase-form")
     view |> form("#shopping-purchase-form", ingredient: %{package_size: "2.5"}) |> render_submit()
     refute has_element?(view, "#shopping-purchase-form")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Nákupní nastavení uloženo")
     assert has_element?(view, "#shopping-buy-#{ingredient.id}", "15 kg")
     assert Decimal.equal?(Recipes.get_ingredient!(ingredient.id).package_size, "2.5")
     view |> element("#shopping-item-settings-#{ingredient.id}") |> render_click()

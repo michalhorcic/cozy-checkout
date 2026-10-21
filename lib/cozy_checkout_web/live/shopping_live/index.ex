@@ -136,7 +136,10 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
         case load(p["from"], p["to"], p["booking"]) do
           {:ok, result} ->
             {:noreply,
-             socket |> assign(:edit_ingredient, nil) |> assign_result(result, p["booking"])}
+             socket
+             |> assign(:edit_ingredient, nil)
+             |> assign_result(result, p["booking"])
+             |> put_flash(:success, "Nákupní nastavení uloženo.")}
 
           {:error, error} ->
             {:noreply,
