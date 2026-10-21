@@ -1,0 +1,145 @@
+<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
+  <div class="mx-auto max-w-6xl px-4 py-8">
+    <.link navigate={~p"/admin/meal-planner"} class="text-tertiary-600 underline">← Plánovač jídel</.link>
+    <div class="my-6 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h1 class="text-3xl font-bold text-primary-500">Varianty menu</h1>
+        <p class="mt-2 text-primary-400">
+          Rozpis podle dnů pobytu. Polévka, příloha ani dezert nezvyšují počet podání.
+        </p>
+      </div>
+      <.link
+        :if={is_nil(@variant)}
+        patch={~p"/admin/meal-planner/variants/new"}
+        id="new-menu-variant"
+        class="rounded-lg bg-tertiary-600 px-4 py-2 font-semibold text-white"
+      >Nová varianta</.link>
+    </div>
+
+    <section :if={is_nil(@variant)} class="rounded-lg bg-white p-6 shadow">
+      <div class="mb-6 rounded-lg bg-secondary-50 p-4">
+        <p class="text-sm text-primary-400">
+          Výchozí podklady: 9 variant z tabulky Jindřichova domu, stav k 21. 10. 2026. Snídaně doplňuje bufet. Existující názvy se nepřepisují.
+        </p>
+        <button
+          id="import-menu-variants"
+          type="button"
+          phx-click="import_reference"
+          phx-disable-with="Načítám…"
+          class="mt-3 rounded-lg border border-tertiary-600 px-4 py-2 text-tertiary-600"
+        >Přidat varianty z podkladové tabulky</button>
+      </div>
+      <div id="menu-variants" phx-update="stream" class="divide-y divide-secondary-200">
+        <div id="menu-variants-empty" class="hidden py-4 text-primary-400 only:block">
+          Zatím nejsou vytvořené žádné varianty.
+        </div>
+        <article
+          :for={{id, variant} <- @streams.variants}
+          id={id}
+          class="flex flex-wrap items-center justify-between gap-4 py-4"
+        >
+          <div>
+            <h2 class="font-semibold text-primary-500">{variant.name}</h2>
+            <p class="text-sm text-primary-400">
+              {variant.days} dnů · {meal_plan_label(variant.meal_plan)} · {meal_label(
+                variant.first_meal
+              )} → {meal_label(variant.last_meal)}
+            </p>
+          </div>
+          <div class="flex gap-4">
+            <.link
+              patch={~p"/admin/meal-planner/variants/#{variant.id}/edit"}
+              class="text-tertiary-600 underline"
+            >Upravit</.link>
+            <button
+              type="button"
+              phx-click="delete"
+              phx-value-id={variant.id}
+              class="text-primary-400 underline"
+            >Archivovat</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <.form
+      :if={@variant}
+      for={@form}
+      id="menu-variant-form"
+      phx-change="validate"
+      phx-submit="save"
+      class="rounded-lg bg-white p-6 shadow"
+    >
+      <.input field={@form[:name]} label="Název varianty" required />
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <.input
+          field={@form[:days]}
+          type="number"
+          label="Počet dnů včetně příjezdu a odjezdu"
+          min="1"
+          max="366"
+          step="1"
+          required
+        />
+        <.input
+          field={@form[:meal_plan]}
+          type="select"
+          label="Stravování"
+          options={[{"Plná penze", "full_board"}, {"Polopenze", "half_board"}]}
+        />
+        <.input
+          field={@form[:first_meal]}
+          type="select"
+          label="První jídlo"
+          options={meal_options()}
+        />
+        <.input
+          field={@form[:last_meal]}
+          type="select"
+          label="Poslední jídlo"
+          options={meal_options()}
+        />
+      </div>
+      <button
+        id="build-menu-variant"
+        type="button"
+        phx-click="build"
+        class="my-4 rounded-lg border border-tertiary-600 px-4 py-2 text-tertiary-600"
+      >Aktualizovat rozpis podle nastavení</button>
+      <p class="mb-4 text-sm text-primary-400">
+        Po změně délky nebo hranic jídel aktualizujte rozpis. Texty na stejném dni a jídle se zachovají. Již přiřazená menu rezervací se touto úpravou nemění.
+      </p>
+      <p :for={{message, _} <- @form[:items].errors} class="mb-3 text-error">{message}</p>
+      <div class="space-y-4">
+        <.inputs_for :let={item} field={@form[:items]}>
+          <fieldset class="rounded-lg border border-secondary-200 p-4">
+            <legend class="px-2 font-semibold text-primary-500">
+              Den {item[:day_number].value} · {meal_label(item[:meal_type].value)}
+            </legend>
+            <input type="hidden" name={item[:day_number].name} value={item[:day_number].value} />
+            <input type="hidden" name={item[:meal_type].name} value={item[:meal_type].value} />
+            <div class="grid gap-4 sm:grid-cols-2">
+              <.input
+                field={item[:menu_text]}
+                type="textarea"
+                label="Hlavní jídlo / snídaňový bufet"
+                rows="2"
+                required
+              />
+              <.input
+                field={item[:supplements]}
+                type="textarea"
+                label="Doplňky: polévka, příloha, dezert"
+                rows="2"
+              />
+            </div>
+          </fieldset>
+        </.inputs_for>
+      </div>
+      <div class="mt-6 flex items-center justify-end gap-4">
+        <.link patch={~p"/admin/meal-planner/variants"} class="text-primary-400 underline">Zrušit</.link>
+        <.button id="save-menu-variant" type="submit" phx-disable-with="Ukládám…">Uložit variantu</.button>
+      </div>
+    </.form>
+  </div>
+</Layouts.app>

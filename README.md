@@ -48,6 +48,42 @@ Nevyplněné rezervace jsou uvedeny v upozornění s odkazem na doplnění a sou
 příslušných dnů jsou označené jako neúplné. Receptury, přepočty spotřeby,
 nákup, smíšené režimy a denní výjimky jsou určeny pro další etapy.
 
+## Varianty menu a jídelníčky skupin
+
+V **Meal Planner → Varianty menu** vytvořte rozpis podle dnů pobytu. Počet dnů
+zahrnuje příjezd i odjezd (3 dny = 2 noci). Nastavte penzi, první a poslední
+jídlo, aktualizujte rozpis a doplňte hlavní jídlo nebo bufet pro každé podání.
+Polévky, přílohy a dezerty patří do doplňků daného jídla; počet podání nezvyšují.
+Editor podporuje pobyty na 1–366 dnů. Starší jednodenní textové šablony zůstávají dostupné samostatně.
+
+Tlačítko **Přidat varianty z podkladové tabulky** výslovně načte devět variant
+z uloženého podkladu Drive ze dne 21. 10. 2026. Data jsou v
+`priv/menu_variants/drive_reference.json` včetně odkazu na zdroj. Snídaně jsou
+zastoupené textem „Snídaňový bufet“. Existující názvy včetně archivovaných se
+přeskočí; import je opakovatelný a žádné dosavadní menu nepřepisuje. Tabulka na
+Drive se nemění a aplikace na ní při běžném provozu není závislá. Receptury,
+suroviny, množství a hosté se tímto tlačítkem neimportují.
+
+V detailu rezervace otevřete **Menu rezervace**, vyberte variantu a zobrazte
+náhled konkrétních dat, jídel a porcí. Varianta musí přesně odpovídat délce,
+penzi i prvnímu a poslednímu jídlu. Náhled upozorní na odlišné společné menu i
+souběžná menu jiných skupin. Použití mění pouze jídelníček dané rezervace;
+společný denní plán a ostatní skupiny zachová. Pokud se od náhledu změní
+podklady, aplikace vyžádá nový náhled.
+
+Přiřazený jídelníček je samostatná kopie. Pozdější úprava nebo archivace
+varianty ho nepřepíše. Jídla lze ručně upravit; tato úprava je při dalším použití
+varianty chráněná. Pro její nahrazení použijte **Povolit přepsání při použití
+varianty** a znovu zkontrolujte náhled. Ručně upravené jídlo mimo nový rozpis
+zablokuje použití varianty, dokud jeho přepsání výslovně nepovolíte.
+
+Po změně termínu, penze nebo prvního/posledního jídla se uložený jídelníček označí
+k nové kontrole a do kuchyňského přehledu se nepoužívá, dokud znovu neprojdete
+náhled a použití odpovídající varianty. Samotná změna počtů dospělých/dětí porce
+přepočítá rovnou. Plánovač i tisk zobrazují každou skupinu zvlášť, včetně
+odjezdové snídaně. Celkové porce nahoře již zahrnují jednotlivé skupiny; nesčítejte
+je znovu. Rezervace bez přiřazené varianty nebo se změněným rozpisem mají upozornění.
+
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).

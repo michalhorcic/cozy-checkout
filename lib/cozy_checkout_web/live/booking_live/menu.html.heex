@@ -1,0 +1,182 @@
+<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
+  <div class="mx-auto max-w-6xl space-y-6 px-4 py-8">
+    <.link navigate={~p"/admin/bookings/#{@booking.id}"} class="text-tertiary-600 underline">← Detail rezervace</.link>
+    <header>
+      <h1 class="text-3xl font-bold text-primary-500">Menu rezervace · {@booking.guest.name}</h1>
+      <p class="mt-2 text-primary-400">
+        {Calendar.strftime(@booking.check_in_date, "%d.%m.%Y")} – {if @booking.check_out_date,
+          do: Calendar.strftime(@booking.check_out_date, "%d.%m.%Y"),
+          else: "odjezd nevyplněn"} · {meal_plan_label(@booking.meal_plan)}
+      </p>
+    </header>
+    <section class="rounded-lg bg-white p-6 shadow">
+      <h2 class="text-xl font-semibold text-primary-500">Přiřadit variantu</h2>
+      <p class="my-3 text-sm text-primary-400">
+        Náhled nic neukládá. Použití mění pouze menu této rezervace. Společné menu a jídelníčky ostatních skupin zůstávají zachované.
+      </p>
+      <.form
+        for={@selection_form}
+        id="booking-menu-selection"
+        phx-change="select_variant"
+        phx-submit="preview"
+      >
+        <.input
+          name="selection[variant_id]"
+          id="booking-menu-variant"
+          type="select"
+          label="Varianta menu"
+          value={@selected_variant}
+          prompt="Vyberte variantu"
+          options={Enum.map(@variants, &{&1.name, &1.id})}
+        />
+        <div class="mt-4 flex items-center gap-4">
+          <.button id="preview-booking-menu" type="submit">Zobrazit náhled</.button>
+          <.link navigate={~p"/admin/meal-planner/variants"} class="text-tertiary-600 underline">Spravovat varianty</.link>
+          <.link
+            navigate={~p"/admin/bookings/#{@booking.id}/edit"}
+            class="text-tertiary-600 underline"
+          >Upravit stravování rezervace</.link>
+        </div>
+      </.form>
+    </section>
+
+    <section
+      :if={@preview}
+      id="booking-menu-preview"
+      class="rounded-lg border border-tertiary-200 bg-white p-6 shadow"
+    >
+      <h2 class="text-xl font-semibold text-primary-500">Náhled · {@preview.variant.name}</h2>
+      <ul
+        :if={@preview.errors != []}
+        id="booking-menu-preview-errors"
+        class="my-4 list-inside list-disc text-error"
+      >
+        <li :for={message <- @preview.errors}>{message}</li>
+      </ul>
+      <p class="my-3 text-sm text-primary-400">
+        Doplňky patří ke stejným porcím. Odlišná menu jiných skupin se vaří souběžně a nepřepisují se.
+      </p>
+      <div
+        id="booking-menu-preview-rows"
+        phx-update="stream"
+        class="divide-y divide-secondary-200"
+      >
+        <article
+          :for={{id, row} <- @streams.preview_rows}
+          id={id}
+          class="grid gap-3 py-4 sm:grid-cols-[10rem_1fr_10rem]"
+        >
+          <div class="font-semibold text-primary-500">
+            {Calendar.strftime(row.date, "%d.%m.%Y")}<br />{meal_label(row.meal_type)}
+          </div>
+          <div>
+            <p class="whitespace-pre-line text-primary-500">{row.menu_text}</p>
+            <p :if={row.supplements} class="mt-1 whitespace-pre-line text-sm text-primary-400">
+              {row.supplements}
+            </p>
+            <p :if={row.preserve} class="mt-2 font-semibold text-tertiary-600">
+              Ruční úprava bude zachována
+            </p>
+            <div
+              :if={row.shared_conflict}
+              class="mt-2 rounded bg-warning-light p-2 text-sm text-primary-500"
+            >
+              <strong>Společné menu se liší a zůstane zachováno:</strong> {row.shared_text}
+            </div>
+            <p :if={row.other_groups != []} class="mt-2 text-sm text-warning">
+              Odlišné menu souběžných skupin: {Enum.join(row.other_groups, ", ")}
+            </p>
+          </div>
+          <.portion_count id={"preview-portions-#{row.id}"} counts={row.counts} />
+        </article>
+      </div>
+      <.button
+        id="apply-booking-menu"
+        type="button"
+        phx-click="apply"
+        disabled={@preview.errors != []}
+        phx-disable-with="Používám…"
+      >Použít variantu pro tuto rezervaci</.button>
+    </section>
+
+    <section id="assigned-booking-menu" class="rounded-lg bg-white p-6 shadow">
+      <h2 class="text-xl font-semibold text-primary-500">Uložené menu rezervace</h2>
+      <p :if={is_nil(@menu)} id="booking-menu-unassigned" class="mt-3 text-primary-400">
+        Menu ještě není přiřazené. Vyberte variantu a zkontrolujte náhled.
+      </p>
+      <p :if={@menu} class="mt-3 text-sm text-primary-400">
+        Výchozí varianta: {@menu.variant_name}. Změna šablony se sem automaticky nepřenáší.
+      </p>
+      <p
+        :if={@stale_menu}
+        id="booking-menu-stale"
+        class="my-3 rounded-lg bg-warning-light p-3 font-semibold text-primary-500"
+      >
+        Termín nebo stravování rezervace se změnilo. Toto menu se v kuchyňském přehledu nepoužívá, dokud znovu nezkontrolujete a nepoužijete variantu.
+      </p>
+      <div
+        id="assigned-booking-menu-items"
+        phx-update="stream"
+        class="mt-4 divide-y divide-secondary-200"
+      >
+        <article
+          :for={{id, item} <- @streams.menu_items}
+          id={id}
+          class="grid gap-3 py-4 sm:grid-cols-[10rem_1fr_10rem]"
+        >
+          <div class="font-semibold text-primary-500">
+            {Calendar.strftime(item.date, "%d.%m.%Y")}<br />{meal_label(item.meal_type)}
+          </div>
+          <div>
+            <p class="whitespace-pre-line text-primary-500">{item.menu_text}</p>
+            <p :if={item.supplements} class="mt-1 whitespace-pre-line text-sm text-primary-400">
+              {item.supplements}
+            </p>
+            <p
+              :if={item.manually_edited}
+              id={"manual-menu-item-#{item.id}"}
+              class="mt-2 text-sm font-semibold text-tertiary-600"
+            >
+              Ruční úprava – při použití varianty se zachová
+            </p>
+            <div class="mt-3 flex flex-wrap gap-4 text-sm">
+              <button
+                id={"edit-menu-item-#{item.id}"}
+                type="button"
+                phx-click="edit_item"
+                phx-value-id={item.id}
+                class="text-tertiary-600 underline"
+              >Upravit jídlo</button>
+              <button
+                :if={item.manually_edited}
+                id={"allow-replacement-#{item.id}"}
+                type="button"
+                phx-click="allow_replacement"
+                phx-value-id={item.id}
+                class="text-primary-400 underline"
+              >Povolit přepsání při použití varianty</button>
+            </div>
+          </div>
+          <.portion_count id={"assigned-portions-#{item.id}"} counts={item.counts} />
+        </article>
+      </div>
+    </section>
+  </div>
+  <.modal :if={@edit_item} id="booking-menu-item-modal" show on_cancel={JS.push("close_item")}>
+    <h2 class="mb-4 text-xl font-semibold text-primary-500">Upravit jídlo rezervace</h2>
+    <.form for={@edit_form} id="booking-menu-item-form" phx-submit="save_item">
+      <.input
+        field={@edit_form[:menu_text]}
+        type="textarea"
+        label="Hlavní jídlo / snídaňový bufet"
+        rows="3"
+        required
+      />
+      <.input field={@edit_form[:supplements]} type="textarea" label="Doplňky" rows="3" />
+      <p class="my-4 text-sm text-primary-400">
+        Ruční úprava bude chráněná před dalším použitím varianty.
+      </p>
+      <.button type="submit" phx-disable-with="Ukládám…">Uložit ruční úpravu</.button>
+    </.form>
+  </.modal>
+</Layouts.app>

@@ -260,7 +260,14 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
           </div>
 
           <section id="booking-meals" class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-primary-500 mb-4">Stravování</h2>
+            <div class="mb-4 flex items-center justify-between gap-4">
+              <h2 class="text-2xl font-bold text-primary-500">Stravování</h2>
+              <.link
+                id="booking-menu-link"
+                navigate={~p"/admin/bookings/#{@booking.id}/menu"}
+                class="font-semibold text-tertiary-600 underline"
+              >Menu rezervace</.link>
+            </div>
             <p id="booking-meal-plan" class="font-semibold">{meal_plan_label(@booking.meal_plan)}</p>
             <p
               :if={is_nil(@booking.meal_plan)}
