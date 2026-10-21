@@ -52,7 +52,10 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
        assign(
          socket,
          :form,
-         to_form(Recipe.changeset(socket.assigns.recipe, attrs), action: :validate)
+         to_form(
+           Recipe.changeset(socket.assigns.recipe, Map.put_new(attrs, "lines", %{})),
+           action: :validate
+         )
        )}
 
   def handle_event("add_line", _, socket) do
@@ -84,6 +87,10 @@ defmodule CozyCheckoutWeb.RecipeLive.Index do
   end
 
   def handle_event("save", %{"recipe" => attrs}, socket) do
+    # A form without nested fields means the last line was removed. Keep the
+    # empty association explicit so Ecto validates it instead of restoring it.
+    attrs = Map.put_new(attrs, "lines", %{})
+
     result =
       if socket.assigns.recipe.id,
         do: Recipes.update_recipe(socket.assigns.recipe, attrs),

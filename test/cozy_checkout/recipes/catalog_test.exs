@@ -118,4 +118,91 @@ defmodule CozyCheckout.Recipes.CatalogTest do
     assert Decimal.equal?(saved.hot_child_factor, "0.5")
     assert {:error, :stale} = Recipes.update_settings(settings, %{hot_child_factor: "0.6"})
   end
+
+  test "an existing ingredient line can be removed without rebuilding deletion changesets" do
+    ingredient = ingredient_fixture()
+
+    recipe =
+      recipe_fixture(ingredient, %{
+        lines: [
+          %{ingredient_id: ingredient.id, quantity: "1", unit: "kg"},
+          %{ingredient_id: ingredient.id, quantity: "2", unit: "kg"}
+        ]
+      })
+
+    [removed, retained] = recipe.lines
+
+    assert {:ok, saved} =
+             Recipes.update_recipe(recipe, %{
+               lines: [
+                 %{id: retained.id, ingredient_id: ingredient.id, quantity: "2", unit: "kg"}
+               ]
+             })
+
+    assert Enum.map(saved.lines, & &1.id) == [retained.id]
+    refute Repo.get(RecipeLine, removed.id)
+  end
+
+  test "invalid remaining lines roll back a requested ingredient removal" do
+    ingredient = ingredient_fixture()
+
+    recipe =
+      recipe_fixture(ingredient, %{
+        lines: [
+          %{ingredient_id: ingredient.id, quantity: "1", unit: "kg"},
+          %{ingredient_id: ingredient.id, quantity: "2", unit: "kg"}
+        ]
+      })
+
+    [_removed, retained] = recipe.lines
+
+    assert {:error, %Ecto.Changeset{valid?: false} = cs} =
+             Recipes.update_recipe(recipe, %{
+               lines: [
+                 %{id: retained.id, ingredient_id: ingredient.id, quantity: "2", unit: "l"}
+               ]
+             })
+
+    assert Enum.any?(Ecto.Changeset.get_change(cs, :lines), fn line ->
+             Keyword.has_key?(line.errors, :unit)
+           end)
+
+    assert Recipes.get_recipe!(recipe.id).lines == recipe.lines
+  end
+
+  test "archived ingredients can remain in a recipe but cannot be newly selected" do
+    ingredient = ingredient_fixture()
+    other = ingredient_fixture()
+    recipe = recipe_fixture(ingredient)
+    [line] = recipe.lines
+    assert {:ok, _} = Recipes.archive_ingredient(ingredient)
+
+    assert {:ok, saved} =
+             Recipes.update_recipe(recipe, %{
+               lines: [
+                 %{id: line.id, ingredient_id: ingredient.id, quantity: "3", unit: "kg"}
+               ]
+             })
+
+    assert Decimal.equal?(hd(saved.lines).quantity, "3")
+
+    assert {:error, %Ecto.Changeset{valid?: false}} =
+             Recipes.create_recipe(%{
+               name: "New archived ingredient",
+               base_servings: "4",
+               lines: [
+                 %{ingredient_id: ingredient.id, quantity: "1", unit: "kg"}
+               ]
+             })
+
+    other_recipe = recipe_fixture(other)
+    [other_line] = other_recipe.lines
+
+    assert {:error, %Ecto.Changeset{valid?: false}} =
+             Recipes.update_recipe(other_recipe, %{
+               lines: [
+                 %{id: other_line.id, ingredient_id: ingredient.id, quantity: "1", unit: "kg"}
+               ]
+             })
+  end
 end

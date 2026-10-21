@@ -129,9 +129,15 @@
             <h2 class="text-lg font-bold text-slate-900">Suroviny na celou dávku</h2><p class="mt-1 text-sm text-slate-500">
               Zadejte množství pro počet porcí výše. Gramy a mililitry se při výpočtu převedou automaticky.
             </p>
-          </div><p :for={{message, _} <- @form[:lines].errors} class="mb-3 text-sm text-red-700">
-            {message}
-          </p>
+          </div>
+          <div
+            :if={@form[:lines].errors != []}
+            id="recipe-lines-errors"
+            role="alert"
+            class="mb-3 text-sm text-red-700"
+          >
+            <p :for={{message, _} <- @form[:lines].errors}>{message}</p>
+          </div>
           <div class="space-y-3">
             <.inputs_for :let={line} field={@form[:lines]}>
               <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-4">

@@ -15,7 +15,7 @@ defmodule CozyCheckout.Recipes.Recipe do
     timestamps(type: :utc_datetime)
   end
 
-  def changeset(recipe, attrs) do
+  def changeset(recipe, attrs, validate_line \\ fn line -> line end) do
     recipe
     |> cast(attrs, [:name, :base_servings, :source_reference, :notes])
     |> validate_required([:name, :base_servings])
@@ -26,6 +26,7 @@ defmodule CozyCheckout.Recipes.Recipe do
       with: fn line, attrs, position ->
         CozyCheckout.Recipes.RecipeLine.changeset(line, attrs)
         |> put_change(:position, position)
+        |> validate_line.()
       end,
       sort_param: :lines_sort,
       drop_param: :lines_drop
