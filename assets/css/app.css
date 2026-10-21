@@ -262,7 +262,7 @@ h1, h2, h3, h4, h5, h6,
 .shopping-row[data-checked="true"] > div { background-color: #f8fafc; }
 @page kitchen-shopping { size: A4; margin: 12mm; }
 @media print {
-  .kitchen-shopping { page: kitchen-shopping; }
+  body:has(.kitchen-shopping) { page: kitchen-shopping; }
   .kitchen-shopping .shopping-row { break-inside: avoid; margin-top: 0; }
   .kitchen-shopping .shopping-row > h2 { margin-top: 10px; margin-bottom: 3px; }
   .kitchen-shopping .shopping-row > div > div { padding: 5px; }
