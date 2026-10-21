@@ -142,16 +142,12 @@
             <.inputs_for :let={line} field={@form[:lines]}>
               <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
                 <div class="grid items-end gap-3 sm:grid-cols-[1fr_8rem_6rem_auto]">
-                  <.input
+                  <.ingredient_picker
                     field={line[:ingredient_id]}
-                    type="select"
-                    label="Surovina"
-                    prompt="Vyberte surovinu"
-                    options={
-                      Enum.map(@ingredients, &{&1.name <> " (" <> &1.base_unit <> ")", &1.id})
-                    }
-                    class={field_class()}
-                    required
+                    ingredients={@ingredients}
+                    index={to_string(line.index)}
+                    query={@ingredient_queries[to_string(line.index)]}
+                    open={@active_ingredient == to_string(line.index)}
                   /><.input
                     field={line[:quantity]}
                     type="number"

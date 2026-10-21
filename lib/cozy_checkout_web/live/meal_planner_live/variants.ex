@@ -46,7 +46,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Variants do
       {:ok, _} ->
         {:noreply,
          socket
-         |> put_flash(:info, "Varianta uložena. Již přiřazená menu zůstala beze změny.")
+         |> put_flash(:success, "Varianta uložena. Již přiřazená menu zůstala beze změny.")
          |> push_patch(to: ~p"/admin/meal-planner/variants")}
 
       {:error, %Ecto.Changeset{} = cs} ->
@@ -77,7 +77,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Variants do
         {:noreply,
          socket
          |> put_flash(
-           :info,
+           :success,
            "Přidáno #{counts.created} variant, přeskočeno #{counts.skipped} existujících."
          )
          |> stream(:variants, MenuPlanning.list_variants(), reset: true)}

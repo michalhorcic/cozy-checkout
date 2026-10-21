@@ -25,6 +25,7 @@ defmodule CozyCheckoutWeb.MenuVariantsLiveTest do
     assert has_element?(view, "#import-menu-variants")
     view |> element("#import-menu-variants") |> render_click()
     assert length(MenuPlanning.list_variants()) == 9
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Přidáno")
     assert has_element?(view, "#menu-variants", "Víkend 3 dny")
     view |> element("#import-menu-variants") |> render_click()
     assert length(MenuPlanning.list_variants()) == 9
@@ -37,6 +38,7 @@ defmodule CozyCheckoutWeb.MenuVariantsLiveTest do
     params = params(attrs)
     view |> form("#menu-variant-form", menu_variant: params) |> render_submit()
     assert_patch(view, "/admin/meal-planner/variants")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Varianta uložena")
     [variant] = MenuPlanning.list_variants()
     assert has_element?(view, "#variants-#{variant.id}", "Testovací víkend")
     view |> element("#variants-#{variant.id} a", "Upravit") |> render_click()

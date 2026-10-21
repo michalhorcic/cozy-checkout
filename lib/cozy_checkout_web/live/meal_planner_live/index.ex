@@ -131,7 +131,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
         socket =
           socket
           |> assign(:edit_modal_open, false)
-          |> put_flash(:info, "Meal saved successfully")
+          |> put_flash(:success, "Meal saved successfully")
           |> load_week_data()
 
         {:noreply, socket}
@@ -180,7 +180,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
           {:ok, count} ->
             socket =
               socket
-              |> put_flash(:info, "Meal copied to #{count} days")
+              |> put_flash(:success, "Meal copied to #{count} days")
               |> load_week_data()
 
             {:noreply, socket}

@@ -131,7 +131,7 @@ defmodule CozyCheckoutWeb.GuestEmailLiveTest do
     assert has_element?(view, "#current-email-batch")
     assert render(view) =~ "partner@example.com"
     assert render(view) =~ "Čeká ve frontě"
-    assert render(view) =~ "alert-success"
+    assert has_element?(view, "#flash-info .bg-emerald-50")
 
     job =
       Repo.one!(

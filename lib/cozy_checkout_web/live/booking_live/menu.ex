@@ -47,7 +47,7 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
         {:noreply,
          socket
          |> load_state()
-         |> put_flash(:info, "Menu přiřazeno. Ruční úpravy i společné menu byly zachovány.")}
+         |> put_flash(:success, "Menu přiřazeno. Ruční úpravy i společné menu byly zachovány.")}
 
       {:error, :stale_preview} ->
         {:noreply,
@@ -96,7 +96,7 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
         {:noreply,
          socket
          |> load_state()
-         |> put_flash(:info, "Ruční úprava uložena a chráněna před přepsáním variantou.")}
+         |> put_flash(:success, "Ruční úprava uložena a chráněna před přepsáním variantou.")}
 
       {:error, %Ecto.Changeset{} = cs} ->
         {:noreply, assign(socket, :edit_form, to_form(cs))}
@@ -121,7 +121,10 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
         {:noreply,
          socket
          |> load_state()
-         |> put_flash(:info, "Přepsání povoleno. Text se změní až po náhledu a použití varianty.")}
+         |> put_flash(
+           :success,
+           "Přepsání povoleno. Text se změní až po náhledu a použití varianty."
+         )}
 
       {:error, _} ->
         {:noreply,

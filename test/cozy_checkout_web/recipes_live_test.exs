@@ -112,6 +112,8 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     |> render_submit()
 
     assert_patch(view, "/admin/ingredients")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Surovina uložena")
+    refute has_element?(view, "#flash-error")
     [ingredient] = Recipes.list_ingredients("Nová UI surovina")
     assert has_element?(view, "#ingredients-#{ingredient.id}")
     recipe_fixture(ingredient)
@@ -130,6 +132,7 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     |> render_submit()
 
     refute has_element?(view, "#portion-settings-form")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Velikost dětských porcí uložena")
     assert Decimal.equal?(Recipes.settings().hot_child_factor, "0.5")
     assert Decimal.equal?(Recipes.settings().breakfast_child_factor, "0.8")
   end
@@ -312,5 +315,172 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     assert [line] = Recipes.get_recipe!(recipe.id).lines
     assert line.id != hd(recipe.lines).id
     assert Decimal.equal?(line.quantity, "5")
+  end
+
+  test "ingredient picker exposes search controls and preserves archived ingredients only in existing lines",
+       %{conn: conn} do
+    ingredient = ingredient_fixture(%{name: "Červená čočka výběr"})
+    archived = ingredient_fixture(%{name: "Archivovaná surovina výběr"})
+    recipe = recipe_fixture(archived)
+    {:ok, _} = Recipes.archive_ingredient(archived)
+
+    {:ok, editor, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+
+    assert has_element?(
+             editor,
+             "#recipe_lines_0_ingredient_id-picker"
+           )
+
+    assert has_element?(
+             editor,
+             "#recipe_lines_0_ingredient_id-search[phx-change='search_ingredients'][phx-debounce='150']"
+           )
+
+    assert has_element?(editor, "#recipe_lines_0_ingredient_id-search[aria-expanded='false']")
+
+    assert has_element?(
+             editor,
+             "#recipe_lines_0_ingredient_id option[value='#{archived.id}'][selected]"
+           )
+
+    assert has_element?(
+             editor,
+             "#recipe_lines_0_ingredient_id option[value='#{ingredient.id}']",
+             ingredient.name
+           )
+
+    editor |> element("#add-recipe-line") |> render_click()
+    refute has_element?(editor, "#recipe_lines_1_ingredient_id option[value='#{archived.id}']")
+
+    assert has_element?(
+             editor,
+             "#recipe_lines_1_ingredient_id-search[phx-change='search_ingredients']"
+           )
+  end
+
+  test "recipe save shows a green success confirmation after navigation", %{conn: conn} do
+    recipe = recipe_fixture(ingredient_fixture())
+    {:ok, editor, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+    result = editor |> form("#recipe-form", recipe: %{notes: "Úspěšná úprava"}) |> render_submit()
+    {:ok, detail, _} = follow_redirect(result, conn, "/admin/recipes/#{recipe.id}")
+    assert has_element?(detail, "#flash-success .bg-emerald-50", "Recept uložen")
+    refute has_element?(detail, "#flash-error")
+    detail |> element("#flash-success button") |> render_click()
+    refute has_element?(detail, "#flash-success")
+  end
+
+  test "LiveView ingredient search ignores accents, selects a result and preserves drafted quantities",
+       %{conn: conn} do
+    ingredient = ingredient_fixture(%{name: "Červená čočka hledání"})
+    milk = ingredient_fixture(%{name: "Čerstvé mléko hledání", base_unit: "l"})
+    archived = ingredient_fixture(%{name: "Červená čočka archiv hledání"})
+    {:ok, _} = Recipes.archive_ingredient(archived)
+    {:ok, view, _} = live(conn, "/admin/recipes/new")
+
+    view
+    |> form("#recipe-form",
+      recipe: %{
+        name: "Recept s hledáním",
+        base_servings: "4",
+        notes: "Zachovat",
+        lines: %{"0" => %{quantity: "500", unit: "g"}}
+      }
+    )
+    |> render_change()
+
+    view
+    |> element("#recipe_lines_0_ingredient_id-search")
+    |> render_change(%{
+      "ingredient_search" => %{"0" => "hledani cocka cervena"},
+      "_target" => ["ingredient_search", "0"]
+    })
+
+    assert has_element?(view, "#recipe_lines_0_ingredient_id-option-#{ingredient.id}")
+    refute has_element?(view, "#recipe_lines_0_ingredient_id-option-#{milk.id}")
+    refute has_element?(view, "#recipe_lines_0_ingredient_id-option-#{archived.id}")
+    assert has_element?(view, "#recipe_lines_0_quantity[value='500']")
+    view |> element("#recipe_lines_0_ingredient_id-option-#{ingredient.id}") |> render_click()
+    assert has_element?(view, "#recipe_lines_0_ingredient_id-search[value='#{ingredient.name}']")
+    assert has_element?(view, "#recipe_lines_0_unit option[value='g'][selected]")
+    refute has_element?(view, "#recipe_lines_0_ingredient_id-options")
+    view |> form("#recipe-form") |> render_submit()
+    [recipe] = Recipes.list_recipes("Recept s hledáním")
+    assert recipe.notes == "Zachovat"
+    assert hd(recipe.lines).ingredient_id == ingredient.id
+    assert Decimal.equal?(hd(recipe.lines).quantity, "500")
+  end
+
+  test "a typed search never silently saves the previous ingredient, and empty results can be corrected",
+       %{conn: conn} do
+    ingredient = ingredient_fixture()
+    milk = ingredient_fixture(%{name: "Čerstvé mléko náhrada", base_unit: "l"})
+    recipe = recipe_fixture(ingredient)
+    {:ok, view, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+
+    view
+    |> element("#recipe_lines_0_ingredient_id-search")
+    |> render_change(%{
+      "ingredient_search" => %{"0" => "neexistujici_surovina"},
+      "_target" => ["ingredient_search", "0"]
+    })
+
+    assert has_element?(
+             view,
+             "#recipe_lines_0_ingredient_id-options",
+             "Žádná surovina nenalezena"
+           )
+
+    view |> form("#recipe-form") |> render_submit()
+
+    assert has_element?(
+             view,
+             "#recipe_lines_0_ingredient_id-error[role='alert']",
+             "Vyberte surovinu z nabídky"
+           )
+
+    assert hd(Recipes.get_recipe!(recipe.id).lines).ingredient_id == ingredient.id
+
+    view
+    |> element("#recipe_lines_0_ingredient_id-search")
+    |> render_change(%{
+      "ingredient_search" => %{"0" => "cerstve mleko nahrada"},
+      "_target" => ["ingredient_search", "0"]
+    })
+
+    view |> element("#recipe_lines_0_ingredient_id-option-#{milk.id}") |> render_click()
+    assert has_element?(view, "#recipe_lines_0_unit option[value='l'][selected]")
+    view |> form("#recipe-form") |> render_submit()
+    assert_redirect(view, "/admin/recipes/#{recipe.id}")
+    assert hd(Recipes.get_recipe!(recipe.id).lines).ingredient_id == milk.id
+  end
+
+  test "a searched ingredient in a newly added line survives removing an earlier persisted line",
+       %{conn: conn} do
+    recipe = recipe_fixture(ingredient_fixture())
+    milk = ingredient_fixture(%{name: "Mléko pro nový řádek", base_unit: "l"})
+    {:ok, view, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+    view |> element("#add-recipe-line") |> render_click()
+
+    view
+    |> form("#recipe-form", recipe: %{lines: %{"1" => %{quantity: "2.5"}}})
+    |> render_change()
+
+    view
+    |> element("#recipe_lines_1_ingredient_id-search")
+    |> render_change(%{
+      "ingredient_search" => %{"1" => "mleko novy radek"},
+      "_target" => ["ingredient_search", "1"]
+    })
+
+    view |> element("#recipe_lines_1_ingredient_id-option-#{milk.id}") |> render_click()
+    view |> element("button[phx-click='remove_line'][phx-value-index='0']") |> render_click()
+    assert has_element?(view, "#recipe_lines_0_ingredient_id-search[value='#{milk.name}']")
+    assert has_element?(view, "#recipe_lines_0_quantity[value='2.5']")
+    view |> form("#recipe-form") |> render_submit()
+    assert_redirect(view, "/admin/recipes/#{recipe.id}")
+    assert [line] = Recipes.get_recipe!(recipe.id).lines
+    assert line.ingredient_id == milk.id
+    assert line.unit == "l"
+    assert Decimal.equal?(line.quantity, "2.5")
   end
 end
