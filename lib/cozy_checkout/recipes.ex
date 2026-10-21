@@ -81,34 +81,9 @@ defmodule CozyCheckout.Recipes do
         Repo.all(from i in Ingredient, where: i.id in ^ids, lock: "FOR SHARE")
         |> Map.new(&{&1.id, &1})
 
-      cs =
-        update_change(cs, :lines, fn lines ->
-          Enum.map(lines, fn line ->
-            ingredient = ingredients[get_field(line, :ingredient_id)]
-
-            cond do
-              line.action in [:replace, :delete] ->
-                line
-
-              is_nil(ingredient) ->
-                add_error(line, :ingredient_id, "Vyberte existující surovinu")
-
-              ingredient.archived_at && line.action == :insert ->
-                add_error(line, :ingredient_id, "Surovina je archivovaná")
-
-              not compatible?(get_field(line, :unit), ingredient.base_unit) ->
-                add_error(line, :unit, "Jednotka neodpovídá surovině (#{ingredient.base_unit})")
-
-              true ->
-                line
-            end
-          end)
-        end)
-
-      cs =
-        if Enum.any?(get_change(cs, :lines, []), &(!&1.valid?)),
-          do: %{cs | valid?: false},
-          else: cs
+      # Validate during a fresh cast. Re-putting an association after cast_assoc/3
+      # reprocesses :replace actions and crashes when a persisted line is removed.
+      cs = Recipe.changeset(recipe, attrs, &validate_ingredient_line(&1, ingredients))
 
       cs = if recipe.id, do: optimistic_lock(cs, :lock_version), else: cs
 
@@ -119,6 +94,25 @@ defmodule CozyCheckout.Recipes do
     end)
   rescue
     Ecto.StaleEntryError -> {:error, :stale}
+  end
+
+  defp validate_ingredient_line(line, ingredients) do
+    ingredient = ingredients[get_field(line, :ingredient_id)]
+
+    cond do
+      is_nil(ingredient) ->
+        add_error(line, :ingredient_id, "Vyberte existující surovinu")
+
+      ingredient.archived_at &&
+          (is_nil(line.data.id) or line.data.ingredient_id != ingredient.id) ->
+        add_error(line, :ingredient_id, "Surovina je archivovaná")
+
+      not compatible?(get_field(line, :unit), ingredient.base_unit) ->
+        add_error(line, :unit, "Jednotka neodpovídá surovině (#{ingredient.base_unit})")
+
+      true ->
+        line
+    end
   end
 
   def compatible?(unit, base),

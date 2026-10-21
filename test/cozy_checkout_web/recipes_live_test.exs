@@ -235,4 +235,82 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     assert Recipes.source_url(%{source_reference: "https://example.com/recept"}) ==
              "https://example.com/recept"
   end
+
+  test "removing persisted ingredient lines keeps edits and saves the remaining line", %{
+    conn: conn
+  } do
+    ingredient = ingredient_fixture()
+
+    recipe =
+      recipe_fixture(ingredient, %{
+        lines: [
+          %{ingredient_id: ingredient.id, quantity: "1", unit: "kg"},
+          %{ingredient_id: ingredient.id, quantity: "2", unit: "kg"},
+          %{ingredient_id: ingredient.id, quantity: "3", unit: "kg"}
+        ]
+      })
+
+    last_id = List.last(recipe.lines).id
+    {:ok, view, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+
+    view
+    |> form("#recipe-form",
+      recipe: %{notes: "Zachovat poznámku", lines: %{"2" => %{quantity: "4"}}}
+    )
+    |> render_change()
+
+    view |> element("button[phx-click='remove_line'][phx-value-index='0']") |> render_click()
+    view |> element("button[phx-click='remove_line'][phx-value-index='0']") |> render_click()
+    refute has_element?(view, "#recipe_lines_1_quantity")
+    view |> form("#recipe-form") |> render_submit()
+    assert_redirect(view, "/admin/recipes/#{recipe.id}")
+    saved = Recipes.get_recipe!(recipe.id)
+    assert [line] = saved.lines
+    assert line.id == last_id
+    assert Decimal.equal?(line.quantity, "4")
+    assert saved.notes == "Zachovat poznámku"
+  end
+
+  test "removing the last ingredient shows an error and allows adding a replacement", %{
+    conn: conn
+  } do
+    ingredient = ingredient_fixture()
+    recipe = recipe_fixture(ingredient)
+    {:ok, view, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+
+    view |> element("button[phx-click='remove_line'][phx-value-index='0']") |> render_click()
+    refute has_element?(view, "#recipe_lines_0_quantity")
+    view |> form("#recipe-form", recipe: %{notes: "Bez surovin"}) |> render_change()
+    refute has_element?(view, "#recipe_lines_0_quantity")
+    view |> form("#recipe-form") |> render_submit()
+
+    assert has_element?(
+             view,
+             "#recipe-lines-errors[role='alert']",
+             "Přidejte alespoň jednu surovinu"
+           )
+
+    assert Recipes.get_recipe!(recipe.id).lines == recipe.lines
+
+    view |> element("#add-recipe-line") |> render_click()
+
+    view
+    |> form("#recipe-form",
+      recipe: %{
+        lines: %{
+          "0" => %{
+            ingredient_id: ingredient.id,
+            quantity: "5",
+            unit: "kg"
+          }
+        }
+      }
+    )
+    |> render_submit()
+
+    assert_redirect(view, "/admin/recipes/#{recipe.id}")
+    assert [line] = Recipes.get_recipe!(recipe.id).lines
+    assert line.id != hd(recipe.lines).id
+    assert Decimal.equal?(line.quantity, "5")
+  end
 end
