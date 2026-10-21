@@ -21,6 +21,7 @@ defmodule CozyCheckout.Recipes.Ingredient do
     |> validate_required([:name, :category, :base_unit])
     |> validate_inclusion(:base_unit, ["kg", "l", "ks"])
     |> validate_number(:package_size, greater_than: 0)
+    |> validate_inclusion(:purchase_mode, ["Sezona", "Průběžně"])
     |> validate_length(:name, max: 200)
     |> validate_length(:category, max: 100)
     |> unique_constraint(:name, name: :kitchen_ingredients_name_index)

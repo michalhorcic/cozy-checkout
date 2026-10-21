@@ -115,11 +115,61 @@ Suroviny používají `(dospělí + děti × koeficient) / porcí v dávce`.
 Převádí se pouze g na kg a ml na l; kusy, hmotnost a objem se vzájemně nepřevádějí.
 Používané surovině nelze změnit základní jednotku. Výpočet používá aktuální receptury
 a přesná desetinná čísla, zaokrouhluje se až zobrazení. Není to historická kalkulace ceny.
-Nákupní balení, rezervy, sklad a společný nákupní seznam jsou předmětem další etapy.
+Nákupní seznam a balení popisuje následující část; rezervy a sklad se zde nepoužívají.
 
 Nové testy pokrývají úplnost importu, receptury a suroviny, přepočty, ochranu při
 souběžných úpravách, vazby variant a rezervací i ovládání knihovny přes LiveView.
 Spusťte `PGUSER=elixir PGPASSWORD='' mix precommit`.
+
+
+## Nákup pro kuchyň
+
+Otevřete **Meal Planner → Nákupní seznam**, případně **Nákup pro pobyt** v detailu
+rezervace. Výchozí období je nejbližší pátek až neděle. Nastavte první a poslední
+den (včetně) a vyberte jednu skupinu nebo všechny skupiny. Období může mít až 366 dnů.
+Odkaz zachovává období i skupinu a lze ho uložit do záložek.
+
+Seznam sčítá aktuální recepty hlavních chodů i doplňků všech skutečně podávaných
+jídel. Respektuje příjezd, odjezd, penzi a samostatné dětské koeficienty pro
+teplá jídla a snídaně. **Na co surovinu potřebujete?** rozbalí množství podle
+receptů, konkrétního jídla, data a skupiny. Odkaz na recept otevře kalkulačku se
+stejným počtem dospělých a dětí i koeficientem jako v daném jídle.
+
+Primární množství je určeno k nákupu; přesná spotřeba zůstává viditelná pod ním.
+Pro způsob **Sezona / Na celé období** se až po celkovém součtu zaokrouhlí počet
+balení nahoru: `ROUNDUP(ROUND(spotřeba / balení; 10); 0)`, stejně jako v tabulce.
+Volitelná velikost balení je v základní jednotce suroviny (kg/l/ks). **Průběžně**
+se zobrazuje samostatně jako spotřeba pro zvolené období, bez sezonního
+zaokrouhlování balení. Kusy k nákupu se zaokrouhlují nahoru na celé kusy.
+Způsob nákupu a velikost balení lze změnit přímo u položky nebo v katalogu surovin.
+Bez rezervy a bez odečítání skladu; modul nezakládá skladové ani finanční doklady.
+
+Chybějící stravování, menu, recepty, doplňky nebo nákupní nastavení jsou viditelné
+v upozornění s odkazem na opravu. Menu po změně termínu či penze se nezapočítá,
+dokud není znovu potvrzené. Zrušené, odstraněné a výslovně nestravované pobyty
+jsou vynechány. Po opravě podkladů použijte **Přepočítat z aktuálního menu**.
+Pokud je vybraná rezervace nově nedostupná, starý seznam se již nezobrazí.
+
+Odškrtávání se ukládá pouze v daném prohlížeči pro konkrétní období a skupinu;
+nejde o sdílené označení nákupu pro celou obsluhu. Přežije hledání i obnovení
+stránky. Změna množství, balení nebo zdrojů položky její odškrtnutí zruší.
+Bez dostupného úložiště prohlížeče funguje odškrtávání alespoň během otevření
+stránky. **Tisk celého seznamu** zahrnuje všechny položky zvoleného období a
+skupiny, včetně upozornění; vyhledávací filtry se do tisku nepřenášejí.
+
+### Snídaňový bufet pro první víkend
+
+Migrace `20261021220000` přidá upravitelný recept **Snídaňový bufet** a propojí
+stejnojmenné snídaně ve variantách i uložených menu, pokud ještě recept nemají.
+Existující vlastní recept ani explicitní vazby nepřepíše. Původní list Bufet
+obsahoval pouze názvy a jednotky; uživatel schválil doplnění rozumných pracovních
+odhadů pro první vyzkoušení. Tyto hodnoty proto nejsou vydávány za množství z tabulky.
+
+Na jednu dospělou snídani: marmeláda 20 g, med 5 g, cereálie 30 g, čaj 1 sáček,
+káva 8 g, kakao 5 g, mléko 150 ml, máslo 15 g a pečivo 2 ks. Snídaňový dětský
+koeficient se uplatní samostatně. Normy jsou v `priv/recipes/breakfast_buffet.json`.
+Před prvním víkendem je zkontrolujte přes **Upravit normy bufetu**; nepoužívané
+položky lze nastavit na 0, další suroviny přidat běžným formulářem receptu.
 
 
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.

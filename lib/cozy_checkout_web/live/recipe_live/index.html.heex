@@ -80,7 +80,8 @@
             </h2>
             <p class="mt-3 text-sm text-slate-500">
               {length(recipe.lines)} surovin
-              <span :if={recipe.source_key}>· z podkladové tabulky</span>
+              <span :if={recipe.source_key == "kitchen:breakfast-buffet:v1"}>· pracovní norma bufetu</span>
+              <span :if={recipe.source_key && recipe.source_key != "kitchen:breakfast-buffet:v1"}>· z podkladové tabulky</span>
             </p>
             <.link
               navigate={~p"/admin/recipes/#{recipe.id}"}

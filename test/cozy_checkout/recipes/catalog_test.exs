@@ -10,7 +10,7 @@ defmodule CozyCheckout.Recipes.CatalogTest do
       |> File.read!()
       |> Jason.decode!()
 
-    assert Repo.aggregate(from(r in Recipe, where: not is_nil(r.source_key)), :count) == 56
+    assert Repo.aggregate(from(r in Recipe, where: like(r.source_key, "drive:%")), :count) == 56
     assert Repo.aggregate(from(i in Ingredient, where: not is_nil(i.source_key)), :count) == 172
     assert Repo.aggregate(from(l in RecipeLine, where: not is_nil(l.source_row)), :count) == 600
 

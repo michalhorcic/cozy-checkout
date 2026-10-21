@@ -253,3 +253,19 @@ h1, h2, h3, h4, h5, h6,
 .font-serif {
   font-family: var(--font-serif);
 }
+
+/* Kitchen shopping keeps calculation, completion and print styles scoped to this screen. */
+.shopping-row[data-checked="true"] [data-ingredient-name] {
+  color: #64748b;
+  text-decoration: line-through;
+}
+.shopping-row[data-checked="true"] > div { background-color: #f8fafc; }
+@page kitchen-shopping { size: A4; margin: 12mm; }
+@media print {
+  .kitchen-shopping { page: kitchen-shopping; }
+  .kitchen-shopping .shopping-row { break-inside: avoid; margin-top: 0; }
+  .kitchen-shopping .shopping-row > h2 { margin-top: 10px; margin-bottom: 3px; }
+  .kitchen-shopping .shopping-row > div > div { padding: 5px; }
+  .kitchen-shopping h2 { break-after: avoid; }
+  .kitchen-shopping [hidden] { display: none !important; }
+}

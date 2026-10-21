@@ -87,6 +87,24 @@
           options={[{"Kilogram (kg)", "kg"}, {"Litr (l)", "l"}, {"Kus (ks)", "ks"}]}
           class={field_class()}
         />
+      </div>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <.input
+          field={@form[:purchase_mode]}
+          type="select"
+          label="Způsob nákupu"
+          prompt="Zvolte způsob nákupu"
+          options={[{"Na celé období (Sezona)", "Sezona"}, {"Průběžně", "Průběžně"}]}
+          class={field_class()}
+        />
+        <.input
+          field={@form[:package_size]}
+          type="number"
+          step="any"
+          min="0.000001"
+          label="Velikost balení v základní jednotce (volitelné)"
+          class={field_class()}
+        />
       </div><p class="my-3 text-xs text-slate-500">
         Recept může používat g místo kg nebo ml místo l. Hmotnost, objem a kusy se vzájemně nepřevádějí.
       </p><.input
