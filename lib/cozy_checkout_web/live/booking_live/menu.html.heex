@@ -140,6 +140,11 @@
               Ruční úprava – při použití varianty se zachová
             </p>
             <div class="mt-3 flex flex-wrap gap-4 text-sm">
+              <.link
+                id={"item-recipes-#{item.id}"}
+                navigate={~p"/admin/recipes/menu/booking/#{item.id}"}
+                class="font-semibold text-emerald-700 underline"
+              >Recepty a suroviny</.link>
               <button
                 id={"edit-menu-item-#{item.id}"}
                 type="button"
@@ -173,6 +178,9 @@
         required
       />
       <.input field={@edit_form[:supplements]} type="textarea" label="Doplňky" rows="3" />
+      <p class="mt-3 text-sm text-slate-500">
+        Změna textu odpojí recepty příslušného chodu nebo doplňků. Potom je znovu vyberte přes Recepty a suroviny.
+      </p>
       <p class="my-4 text-sm text-primary-400">
         Ruční úprava bude chráněná před dalším použitím varianty.
       </p>

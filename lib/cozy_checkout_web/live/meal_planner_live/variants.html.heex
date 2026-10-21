@@ -71,6 +71,9 @@
       class="rounded-lg bg-white p-6 shadow"
     >
       <.input field={@form[:name]} label="Název varianty" required />
+      <p class="mt-3 text-sm text-slate-500">
+        Při změně textu jídla nebo doplňků znovu vyberte jejich recepty. Uložené rezervace mají vlastní kopii menu.
+      </p>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <.input
           field={@form[:days]}
@@ -133,6 +136,12 @@
                 rows="2"
               />
             </div>
+            <.link
+              :if={item[:id].value}
+              id={"variant-item-recipes-#{item[:id].value}"}
+              navigate={~p"/admin/recipes/menu/variant/#{item[:id].value}"}
+              class="mt-3 inline-block text-sm font-semibold text-emerald-700 underline"
+            >Propojit recepty a zobrazit suroviny</.link>
           </fieldset>
         </.inputs_for>
       </div>

@@ -93,6 +93,11 @@ defmodule CozyCheckoutWeb.MealComponents do
         <p :if={group.supplements} class="mt-1 whitespace-pre-line text-xs text-primary-400">
           {group.supplements}
         </p>
+        <.link
+          navigate={~p"/admin/recipes/menu/booking/#{group.id}"}
+          phx-click="noop"
+          class="mt-2 inline-block text-xs font-semibold text-emerald-700 underline"
+        >Suroviny pro skupinu</.link>
         <p :if={group.manually_edited} class="mt-1 text-xs font-semibold text-tertiary-600">
           Ruční úprava
         </p>

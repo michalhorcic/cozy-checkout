@@ -9,6 +9,8 @@ defmodule CozyCheckout.Meals.BookingMenuItem do
     field :day_number, :integer
     field :date, :date
     field :meal_type, :string
+    belongs_to :recipe, CozyCheckout.Recipes.Recipe
+    has_many :recipe_supplements, CozyCheckout.Recipes.BookingSupplement
     field :menu_text, :string
     field :supplements, :string
     field :manually_edited, :boolean, default: false
