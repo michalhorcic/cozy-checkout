@@ -139,12 +139,12 @@
             >
               Ruční úprava – při použití varianty se zachová
             </p>
+            <.menu_recipe_links
+              id={"item-recipes-#{item.id}"}
+              item={item}
+              href={~p"/admin/recipes/menu/booking/#{item.id}"}
+            />
             <div class="mt-3 flex flex-wrap gap-4 text-sm">
-              <.link
-                id={"item-recipes-#{item.id}"}
-                navigate={~p"/admin/recipes/menu/booking/#{item.id}"}
-                class="font-semibold text-emerald-700 underline"
-              >Recepty a suroviny</.link>
               <button
                 id={"edit-menu-item-#{item.id}"}
                 type="button"

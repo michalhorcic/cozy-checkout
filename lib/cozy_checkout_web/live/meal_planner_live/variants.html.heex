@@ -136,12 +136,11 @@
                 rows="2"
               />
             </div>
-            <.link
-              :if={item[:id].value}
-              id={"variant-item-recipes-#{item[:id].value}"}
-              navigate={~p"/admin/recipes/menu/variant/#{item[:id].value}"}
-              class="mt-3 inline-block text-sm font-semibold text-emerald-700 underline"
-            >Propojit recepty a zobrazit suroviny</.link>
+            <.menu_recipe_links
+              id={"variant-item-recipes-#{item[:id].value || "new-#{item.index}"}"}
+              item={item.source}
+              href={item[:id].value && ~p"/admin/recipes/menu/variant/#{item[:id].value}"}
+            />
           </fieldset>
         </.inputs_for>
       </div>

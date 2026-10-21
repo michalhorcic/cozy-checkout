@@ -161,6 +161,11 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
     |> assign(:main, main)
     |> assign(:extras, extras)
     |> assign(:result, result)
+    |> assign(
+      :links_changed?,
+      socket.assigns.main_id != socket.assigns.item.recipe_id ||
+        socket.assigns.extra_ids != Links.supplement_ids(socket.assigns.item)
+    )
     |> assign(:result_count, length(rows))
     |> stream(:choices, rows, reset: true)
   end

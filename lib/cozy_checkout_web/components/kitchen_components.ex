@@ -5,6 +5,76 @@ defmodule CozyCheckoutWeb.KitchenComponents do
     do:
       "block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
 
+  attr :id, :string, required: true
+  attr :item, :any, required: true
+  attr :href, :string, default: nil
+
+  def menu_recipe_links(assigns) do
+    {item, main_changed?, extras_changed?} =
+      case assigns.item do
+        %Ecto.Changeset{} = cs ->
+          {Ecto.Changeset.apply_changes(cs),
+           not is_nil(cs.data.id) &&
+             Ecto.Changeset.get_field(cs, :menu_text) != cs.data.menu_text,
+           not is_nil(cs.data.id) &&
+             Ecto.Changeset.get_field(cs, :supplements) != cs.data.supplements}
+
+        item ->
+          {item, false, false}
+      end
+
+    main = if item.recipe_id && not main_changed?, do: item.recipe
+
+    extras =
+      if Ecto.assoc_loaded?(item.recipe_supplements) && not extras_changed?,
+        do: item.recipe_supplements |> Enum.sort_by(& &1.position) |> Enum.map(& &1.recipe),
+        else: []
+
+    assigns =
+      assigns
+      |> assign(:main, main)
+      |> assign(:extras, extras)
+      |> assign(:has_links?, not is_nil(main) || extras != [])
+      |> assign(:text_changed?, main_changed? || extras_changed?)
+      |> assign(:has_supplements?, String.trim(item.supplements || "") != "")
+
+    ~H"""
+    <div id={@id} class="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm">
+      <p :if={@main} class="flex items-start gap-2 text-emerald-800" data-linked-main>
+        <.icon name="hero-check-circle" class="mt-0.5 h-4 w-4 shrink-0" />
+        <span><span class="font-semibold">Hlavní recept:</span> {@main.name}</span>
+      </p>
+      <p :if={is_nil(@main)} class="flex items-center gap-2 text-amber-800" data-missing-main>
+        <.icon name="hero-exclamation-circle" class="h-4 w-4 shrink-0" /> Chybí hlavní recept
+      </p>
+      <p :if={@extras != []} class="text-slate-600" data-linked-extras>
+        <span class="font-semibold">Připojené doplňky:</span> {Enum.map_join(
+          @extras,
+          " · ",
+          & &1.name
+        )}
+      </p>
+      <p :if={@has_supplements? && @extras == []} class="text-amber-800" data-missing-extras>
+        Doplňky zatím nemají připojené recepty.
+      </p>
+      <p :if={@text_changed?} class="text-amber-800" data-text-changed>
+        Nejdřív uložte změny textu. Recepty změněného chodu nebo doplňků se odpojí.
+      </p>
+      <.link
+        :if={@href && not @text_changed?}
+        navigate={@href}
+        class="inline-flex items-center gap-1.5 font-semibold text-emerald-700 underline decoration-emerald-300 underline-offset-4 transition hover:text-emerald-900"
+      >
+        <.icon name="hero-link" class="h-4 w-4" />
+        {if @has_links?, do: "Upravit připojené recepty", else: "Připojit recepty"}
+      </.link>
+      <p :if={is_nil(@href)} class="text-xs text-slate-500">
+        Recepty připojíte po uložení varianty.
+      </p>
+    </div>
+    """
+  end
+
   attr :field, Phoenix.HTML.FormField, required: true
   attr :ingredients, :list, required: true
   attr :index, :string, required: true

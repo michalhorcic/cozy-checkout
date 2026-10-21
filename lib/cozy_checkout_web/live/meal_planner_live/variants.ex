@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Variants do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Meals.{MenuPlanning, MenuVariant}
   import CozyCheckoutWeb.MealComponents
+  import CozyCheckoutWeb.KitchenComponents, only: [menu_recipe_links: 1]
 
   @impl true
   def mount(_params, _session, socket), do: {:ok, socket}
