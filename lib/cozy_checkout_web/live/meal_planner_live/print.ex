@@ -3,6 +3,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
 
   alias CozyCheckout.Meals
   alias CozyCheckout.Bookings
+  alias CozyCheckout.Meals.MenuPlanning
   import CozyCheckoutWeb.MealComponents
 
   @impl true
@@ -35,6 +36,9 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
     {:noreply, socket}
   end
 
+  @impl true
+  def handle_event("noop", _, socket), do: {:noreply, socket}
+
   defp load_week_data(socket) do
     week_start = socket.assigns.week_start
     week_end = Date.add(week_start, 6)
@@ -43,6 +47,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
     meals_by_date = Meals.get_meals_for_week(week_start)
 
     portion_counts = Meals.get_portion_counts_for_range(week_start, week_end)
+    kitchen = MenuPlanning.kitchen_for_range(week_start, week_end)
 
     # Load guest counts for the week
     occupancy_map = Bookings.get_occupancy_for_range(week_start, week_end)
@@ -58,12 +63,17 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
           date: date,
           guest_count: Map.get(occupancy_map, date, 0),
           portions: Map.fetch!(portion_counts, date),
+          group_menus:
+            Map.new(["breakfast", "lunch", "dinner"], fn type ->
+              {type, Map.get(kitchen.groups, {date, type}, [])}
+            end),
           meals: Map.get(meals_by_date, date, []) |> meals_to_map()
         }
       end)
 
     socket
     |> assign(:week_days, week_days)
+    |> assign(:menu_issues, kitchen.issues)
     |> assign(
       :incomplete_bookings,
       portion_counts

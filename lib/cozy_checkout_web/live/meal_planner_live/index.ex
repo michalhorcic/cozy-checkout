@@ -3,6 +3,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
 
   alias CozyCheckout.Meals
   alias CozyCheckout.Bookings
+  alias CozyCheckout.Meals.MenuPlanning
   import CozyCheckoutWeb.MealComponents
 
   @impl true
@@ -214,6 +215,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     meals_by_date = Meals.get_meals_for_week(week_start)
 
     portion_counts = Meals.get_portion_counts_for_range(week_start, week_end)
+    kitchen = MenuPlanning.kitchen_for_range(week_start, week_end)
 
     # Load guest counts for the week
     occupancy_map = Bookings.get_occupancy_for_range(week_start, week_end)
@@ -232,12 +234,17 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
           date: date,
           guest_count: Map.get(occupancy_map, date, 0),
           portions: Map.fetch!(portion_counts, date),
+          group_menus:
+            Map.new(["breakfast", "lunch", "dinner"], fn type ->
+              {type, Map.get(kitchen.groups, {date, type}, [])}
+            end),
           meals: Map.get(meals_by_date, date, []) |> meals_to_map()
         }
       end)
 
     socket
     |> assign(:week_days, week_days)
+    |> assign(:menu_issues, kitchen.issues)
     |> assign(
       :incomplete_bookings,
       portion_counts
@@ -296,6 +303,11 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
 
   defp has_dietary_notes?(meal) do
     meal && meal.dietary_notes && meal.dietary_notes != ""
+  end
+
+  defp uncovered_count(day, type) do
+    assigned = day.group_menus[type] |> Enum.map(& &1.counts.total) |> Enum.sum()
+    max(day.portions[type].total - assigned, 0)
   end
 
   defp needs_planning?(guest_count, meal) do

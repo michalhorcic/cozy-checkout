@@ -13,7 +13,10 @@
           <span>🍽️</span> Meal Planner
         </h1>
       </div>
-      <div class="flex gap-3">
+      <div class="flex flex-wrap gap-3">
+        <.link id="menu-variants-link" navigate={~p"/admin/meal-planner/variants"}>
+          <.button type="button">Varianty menu</.button>
+        </.link>
         <.link navigate={~p"/admin/meal-planner/templates"}>
           <.button type="button">
             <.icon name="hero-bookmark" class="w-5 h-5 mr-2" /> Templates
@@ -62,6 +65,10 @@
         </div>
 
         <.incomplete_catering_notice bookings={@incomplete_bookings} />
+        <.menu_issues issues={@menu_issues} />
+        <p class="mb-4 text-sm text-primary-400">
+          Celkové porce zahrnují všechny skupiny níže. Každá skupina má vlastní menu; společné menu lze upravovat samostatně.
+        </p>
 
         <%!-- Desktop: Weekly Grid --%>
         <div class="hidden lg:block bg-white shadow-lg rounded-lg overflow-hidden">
@@ -118,6 +125,7 @@
                         counts={Map.fetch!(day.portions, meal_type)}
                         incomplete={day.portions.incomplete_bookings != []}
                       />
+                      <p class="mb-1 text-xs font-semibold text-primary-400">Společné menu</p>
                       <%= if meal && meal.menu_text && meal.menu_text != "" do %>
                         <div class="space-y-1">
                           <div class="text-sm text-primary-500 whitespace-pre-line">
@@ -132,12 +140,17 @@
                         </div>
                       <% else %>
                         <div class="flex items-center gap-2 text-sm text-primary-300">
-                          <%= if needs_planning?(Map.fetch!(day.portions, meal_type).total, meal) do %>
+                          <%= if needs_planning?(uncovered_count(day, meal_type), meal) do %>
                             <span class="text-warning">⚠️</span>
                           <% end %>
                           <span>Click to plan</span>
                         </div>
                       <% end %>
+                      <.group_menus
+                        id={"group-menus-#{day.date}-#{meal_type}"}
+                        groups={day.group_menus[meal_type]}
+                        shared_text={if meal, do: meal.menu_text}
+                      />
                     </td>
                   <% end %>
                 </tr>
@@ -185,6 +198,7 @@
                         <div class="font-medium text-primary-500 mb-1">
                           {meal_type_label(meal_type)}
                         </div>
+                        <p class="mb-1 text-xs font-semibold text-primary-400">Společné menu</p>
                         <.portion_count
                           id={"mobile-portions-#{day.date}-#{meal_type}"}
                           counts={Map.fetch!(day.portions, meal_type)}
@@ -202,12 +216,17 @@
                           <% end %>
                         <% else %>
                           <div class="flex items-center gap-2 text-sm text-primary-300">
-                            <%= if needs_planning?(Map.fetch!(day.portions, meal_type).total, meal) do %>
+                            <%= if needs_planning?(uncovered_count(day, meal_type), meal) do %>
                               <span class="text-warning">⚠️</span>
                             <% end %>
                             <span>Tap to plan</span>
                           </div>
                         <% end %>
+                        <.group_menus
+                          id={"mobile-group-menus-#{day.date}-#{meal_type}"}
+                          groups={day.group_menus[meal_type]}
+                          shared_text={if meal, do: meal.menu_text}
+                        />
                       </div>
                     </div>
                   </div>

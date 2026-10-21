@@ -1,0 +1,662 @@
+{
+  "source_url": "https://docs.google.com/spreadsheets/d/1JR0l8wY-bGOwVDOgandNU-_2HfgMOYH8L03AjJ_inmw/edit",
+  "source_sheets": [
+    "Varianty menu",
+    "Menu"
+  ],
+  "snapshot_date": "2026-10-21",
+  "note": "Breakfast slots are represented as Snídaňový bufet; quantities and recipes are not imported.",
+  "variants": [
+    {
+      "name": "Víkend 3 dny – plná penze – méně práce",
+      "days": 3,
+      "meal_plan": "full_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Kuře na paprice s rýží",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "lunch",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k obědu: Pórková polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "České kopečkové rizoto s kuřecím masem",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Víkend 3 dny – polopenze – méně práce",
+      "days": 3,
+      "meal_plan": "half_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Kuře na paprice s rýží",
+          "supplements": "Polévka k večeři: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k večeři: Pórková polévka"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Škola 5 dní – méně práce",
+      "days": 5,
+      "meal_plan": "full_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Boloňská omáčka podle Florentýny",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "lunch",
+          "menu_text": "Chilli con carne s rýží",
+          "supplements": "Polévka k obědu: Slepičí polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Plněné masové knedlíky se zelím",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "lunch",
+          "menu_text": "Plněné ovocné knedlíky s jogurtovou polevou",
+          "supplements": "Polévka k obědu: Bramboračka"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "dinner",
+          "menu_text": "Kuře na paprice",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "lunch",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k obědu: Pórková polévka"
+        },
+        {
+          "day_number": 4,
+          "meal_type": "dinner",
+          "menu_text": "České kopečkové rizoto s kuřecím masem",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Škola 6 dní – méně práce",
+      "days": 6,
+      "meal_plan": "full_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Boloňská omáčka podle Florentýny",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "lunch",
+          "menu_text": "Chilli con carne s rýží",
+          "supplements": "Polévka k obědu: Slepičí polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Plněné masové knedlíky se zelím",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "lunch",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k obědu: Pórková polévka"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "dinner",
+          "menu_text": "České kopečkové rizoto s kuřecím masem",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "lunch",
+          "menu_text": "Kuře na paprice",
+          "supplements": "Polévka k obědu: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 4,
+          "meal_type": "dinner",
+          "menu_text": "Krémový špenát se sázeným vejcem",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "lunch",
+          "menu_text": "Plněné ovocné knedlíky s jogurtovou polevou",
+          "supplements": "Polévka k obědu: Bramboračka"
+        },
+        {
+          "day_number": 5,
+          "meal_type": "dinner",
+          "menu_text": "Hovězí guláš s rýží",
+          "supplements": null
+        },
+        {
+          "day_number": 6,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Škola 7 dní – méně práce",
+      "days": 7,
+      "meal_plan": "full_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Boloňská omáčka podle Florentýny",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "lunch",
+          "menu_text": "Chilli con carne s rýží",
+          "supplements": "Polévka k obědu: Slepičí polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Plněné masové knedlíky se zelím",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "lunch",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k obědu: Pórková polévka"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "dinner",
+          "menu_text": "České kopečkové rizoto s kuřecím masem",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "lunch",
+          "menu_text": "Kuře na paprice",
+          "supplements": "Polévka k obědu: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 4,
+          "meal_type": "dinner",
+          "menu_text": "Krémový špenát se sázeným vejcem",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "lunch",
+          "menu_text": "Plněné ovocné knedlíky s jogurtovou polevou",
+          "supplements": "Polévka k obědu: Bramboračka"
+        },
+        {
+          "day_number": 5,
+          "meal_type": "dinner",
+          "menu_text": "Hovězí guláš s rýží",
+          "supplements": null
+        },
+        {
+          "day_number": 6,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 6,
+          "meal_type": "lunch",
+          "menu_text": "Rajská omáčka s hovězím masem",
+          "supplements": "Polévka k obědu: Česnečka"
+        },
+        {
+          "day_number": 6,
+          "meal_type": "dinner",
+          "menu_text": "Šunkofleky",
+          "supplements": null
+        },
+        {
+          "day_number": 7,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Skupiny 5 dní – polopenze – méně práce",
+      "days": 5,
+      "meal_plan": "half_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Kuře na paprice",
+          "supplements": "Polévka k večeři: Slepičí polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Chilli con carne s rýží",
+          "supplements": "Polévka k večeři: Smetanová květáková polévka s bramborem a mrkví"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "dinner",
+          "menu_text": "Plněné masové knedlíky se zelím",
+          "supplements": "Polévka k večeři: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 4,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "dinner",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k večeři: Jemný hráškový krém podle Zdeňka Pohlreicha"
+        },
+        {
+          "day_number": 5,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Skupiny 6 dní – polopenze – méně práce",
+      "days": 6,
+      "meal_plan": "half_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Kuře na paprice",
+          "supplements": "Polévka k večeři: Slepičí polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Hovězí guláš s rýží",
+          "supplements": "Polévka k večeři: Pórková polévka"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "dinner",
+          "menu_text": "Plněné masové knedlíky se zelím",
+          "supplements": "Polévka k večeři: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 4,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "dinner",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k večeři: Jemný hráškový krém podle Zdeňka Pohlreicha"
+        },
+        {
+          "day_number": 5,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "dinner",
+          "menu_text": "Chilli con carne s rýží",
+          "supplements": "Polévka k večeři: Smetanová květáková polévka s bramborem a mrkví"
+        },
+        {
+          "day_number": 6,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Skupiny 7 dní – polopenze – méně práce",
+      "days": 7,
+      "meal_plan": "half_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Kuře na paprice",
+          "supplements": "Polévka k večeři: Slepičí polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Hovězí guláš s rýží",
+          "supplements": "Polévka k večeři: Pórková polévka"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "dinner",
+          "menu_text": "Plněné masové knedlíky se zelím",
+          "supplements": "Polévka k večeři: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 4,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "dinner",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k večeři: Jemný hráškový krém podle Zdeňka Pohlreicha"
+        },
+        {
+          "day_number": 5,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "dinner",
+          "menu_text": "Boloňská omáčka podle Florentýny",
+          "supplements": "Polévka k večeři: Česnečka"
+        },
+        {
+          "day_number": 6,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 6,
+          "meal_type": "dinner",
+          "menu_text": "Chilli con carne s rýží",
+          "supplements": "Polévka k večeři: Smetanová květáková polévka s bramborem a mrkví"
+        },
+        {
+          "day_number": 7,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    },
+    {
+      "name": "Skupiny 8 dní – polopenze – méně práce",
+      "days": 8,
+      "meal_plan": "half_board",
+      "first_meal": "dinner",
+      "last_meal": "breakfast",
+      "items": [
+        {
+          "day_number": 1,
+          "meal_type": "dinner",
+          "menu_text": "Kuře na paprice",
+          "supplements": "Polévka k večeři: Slepičí polévka"
+        },
+        {
+          "day_number": 2,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 2,
+          "meal_type": "dinner",
+          "menu_text": "Hovězí guláš s rýží",
+          "supplements": "Polévka k večeři: Pórková polévka"
+        },
+        {
+          "day_number": 3,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 3,
+          "meal_type": "dinner",
+          "menu_text": "Plněné masové knedlíky se zelím",
+          "supplements": "Polévka k večeři: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 4,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 4,
+          "meal_type": "dinner",
+          "menu_text": "Pečené kuře",
+          "supplements": "Polévka k večeři: Jemný hráškový krém podle Zdeňka Pohlreicha"
+        },
+        {
+          "day_number": 5,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 5,
+          "meal_type": "dinner",
+          "menu_text": "Boloňská omáčka podle Florentýny",
+          "supplements": "Polévka k večeři: Česnečka"
+        },
+        {
+          "day_number": 6,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 6,
+          "meal_type": "dinner",
+          "menu_text": "Chilli con carne s rýží",
+          "supplements": "Polévka k večeři: Smetanová květáková polévka s bramborem a mrkví"
+        },
+        {
+          "day_number": 7,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        },
+        {
+          "day_number": 7,
+          "meal_type": "dinner",
+          "menu_text": "Šunkofleky",
+          "supplements": "Polévka k večeři: Zeleninový vývar krok za krokem"
+        },
+        {
+          "day_number": 8,
+          "meal_type": "breakfast",
+          "menu_text": "Snídaňový bufet",
+          "supplements": null
+        }
+      ]
+    }
+  ]
+}

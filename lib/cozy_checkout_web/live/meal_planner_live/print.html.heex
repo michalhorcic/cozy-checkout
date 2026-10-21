@@ -11,6 +11,8 @@
     </div>
 
     <.incomplete_catering_notice bookings={@incomplete_bookings} />
+    <.menu_issues issues={@menu_issues} />
+    <p class="mb-4 text-sm text-gray-600">Celkové porce zahrnují všechny uvedené skupiny.</p>
 
     <%!-- Daily Meals --%>
     <div class="space-y-6 mb-8">
@@ -32,7 +34,7 @@
                   counts={Map.fetch!(day.portions, meal_type)}
                   incomplete={day.portions.incomplete_bookings != []}
                 />
-                <span class="font-semibold text-gray-800">{meal_type_label(meal_type)}:</span>
+                <span class="font-semibold text-gray-800">{meal_type_label(meal_type)} · společné menu:</span>
                 <span class="text-gray-700 ml-2">{if meal,
                   do: meal.menu_text,
                   else: "Menu nevyplněno"}</span>
@@ -41,6 +43,11 @@
                     ⚠️ {meal.dietary_notes}
                   </div>
                 <% end %>
+                <.group_menus
+                  id={"print-group-menus-#{day.date}-#{meal_type}"}
+                  groups={day.group_menus[meal_type]}
+                  shared_text={if meal, do: meal.menu_text}
+                />
               </div>
             <% end %>
           </div>

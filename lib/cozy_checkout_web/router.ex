@@ -114,6 +114,7 @@ defmodule CozyCheckoutWeb.Router do
       live "/bookings/:id", BookingLive.Show
       live "/bookings/:id/edit", BookingLive.Index, :edit
       live "/bookings/:booking_id/guests", BookingLive.ManageGuests
+      live "/bookings/:booking_id/menu", BookingLive.Menu
 
       # Orders
       live "/orders", OrderLive.Index, :index
@@ -144,6 +145,9 @@ defmodule CozyCheckoutWeb.Router do
       live "/meal-planner/templates/new", MealPlannerLive.Templates, :new
       live "/meal-planner/templates/:id/edit", MealPlannerLive.Templates, :edit
       live "/meal-planner/print", MealPlannerLive.Print
+      live "/meal-planner/variants", MealPlannerLive.Variants, :index
+      live "/meal-planner/variants/new", MealPlannerLive.Variants, :new
+      live "/meal-planner/variants/:id/edit", MealPlannerLive.Variants, :edit
     end
   end
 

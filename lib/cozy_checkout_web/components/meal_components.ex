@@ -70,4 +70,70 @@ defmodule CozyCheckoutWeb.MealComponents do
     </aside>
     """
   end
+
+  attr :id, :string, required: true
+  attr :groups, :list, required: true
+  attr :shared_text, :string, default: nil
+
+  def group_menus(assigns) do
+    ~H"""
+    <div :if={@groups != []} id={@id} class="mt-3 space-y-3 border-t border-secondary-200 pt-3">
+      <article
+        :for={group <- @groups}
+        id={"#{@id}-#{group.id}"}
+        class="rounded-lg bg-secondary-50 p-3"
+      >
+        <.link
+          navigate={~p"/admin/bookings/#{group.booking.id}/menu"}
+          phx-click="noop"
+          class="text-sm font-semibold text-tertiary-600 underline"
+        >{group.booking.guest.name}</.link>
+        <.portion_count id={"#{@id}-portions-#{group.id}"} counts={group.counts} />
+        <p class="whitespace-pre-line text-sm text-primary-500">{group.menu_text}</p>
+        <p :if={group.supplements} class="mt-1 whitespace-pre-line text-xs text-primary-400">
+          {group.supplements}
+        </p>
+        <p :if={group.manually_edited} class="mt-1 text-xs font-semibold text-tertiary-600">
+          Ruční úprava
+        </p>
+        <p :if={different_shared_menu?(@shared_text, group)} class="mt-1 text-xs text-warning">
+          Odlišné od společného menu
+        </p>
+      </article>
+    </div>
+    """
+  end
+
+  attr :issues, :list, required: true
+
+  def menu_issues(assigns) do
+    ~H"""
+    <aside
+      :if={@issues != []}
+      id="booking-menu-issues"
+      class="mb-6 rounded-lg border border-secondary-200 bg-white p-4"
+    >
+      <p class="font-semibold text-primary-500">Menu skupin vyžaduje doplnění</p>
+      <ul class="mt-2 space-y-1">
+        <li
+          :for={issue <- @issues}
+          id={"booking-menu-issue-#{issue.booking.id}"}
+          class="text-sm text-primary-400"
+        >
+          <.link
+            navigate={~p"/admin/bookings/#{issue.booking.id}/menu"}
+            class="text-tertiary-600 underline"
+          >{issue.booking.guest.name}</.link>
+          · {issue.reason}
+        </li>
+      </ul>
+    </aside>
+    """
+  end
+
+  defp different_shared_menu?(text, group) do
+    text not in [nil, ""] and
+      String.trim(text) !=
+        CozyCheckout.Meals.MenuPlanning.menu_text(group.menu_text, group.supplements)
+  end
 end
