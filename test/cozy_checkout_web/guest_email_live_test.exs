@@ -150,6 +150,11 @@ defmodule CozyCheckoutWeb.GuestEmailLiveTest do
 
     {:ok, view, _html} = live(conn, "/admin/emails")
 
+    # This preview test uses fixed dates; make both stays visible as time advances.
+    view
+    |> form("#booking-email-filters", filters: %{period: "all", search: ""})
+    |> render_change()
+
     view
     |> element("#email-booking-#{first.id}")
     |> render_click()

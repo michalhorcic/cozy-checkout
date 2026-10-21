@@ -3,6 +3,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
 
   alias CozyCheckout.Meals
   alias CozyCheckout.Bookings
+  import CozyCheckoutWeb.MealComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -212,6 +213,8 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     # Load meals for the week
     meals_by_date = Meals.get_meals_for_week(week_start)
 
+    portion_counts = Meals.get_portion_counts_for_range(week_start, week_end)
+
     # Load guest counts for the week
     occupancy_map = Bookings.get_occupancy_for_range(week_start, week_end)
 
@@ -228,12 +231,21 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
         %{
           date: date,
           guest_count: Map.get(occupancy_map, date, 0),
+          portions: Map.fetch!(portion_counts, date),
           meals: Map.get(meals_by_date, date, []) |> meals_to_map()
         }
       end)
 
     socket
     |> assign(:week_days, week_days)
+    |> assign(
+      :incomplete_bookings,
+      portion_counts
+      |> Map.values()
+      |> Enum.flat_map(& &1.incomplete_bookings)
+      |> Enum.uniq_by(& &1.id)
+      |> Enum.sort_by(& &1.check_in_date, Date)
+    )
     |> assign(:dietary_restrictions, dietary_restrictions)
     |> assign(:bookings, bookings)
     |> assign(:page_title, "Meal Planner - Week of #{Calendar.strftime(week_start, "%B %d, %Y")}")

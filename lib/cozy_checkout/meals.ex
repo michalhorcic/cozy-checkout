@@ -10,6 +10,17 @@ defmodule CozyCheckout.Meals do
   alias CozyCheckout.Meals.MealTemplate
   alias CozyCheckout.Bookings.Booking
 
+  @doc "Daily actual portions, including departure meals and incomplete-booking warnings."
+  def get_portion_counts_for_range(start_date, end_date) do
+    Booking
+    |> where([b], is_nil(b.deleted_at) and b.status != "cancelled")
+    |> where([b], b.check_in_date <= ^end_date)
+    |> where([b], is_nil(b.check_out_date) or b.check_out_date >= ^start_date)
+    |> preload(:guest)
+    |> Repo.all()
+    |> CozyCheckout.Meals.PortionCounts.for_range(start_date, end_date)
+  end
+
   @doc """
   Returns meals for a specific week (Sunday to Saturday).
   Returns a map with date as key and list of meals for that date.
@@ -178,9 +189,9 @@ defmodule CozyCheckout.Meals do
     Booking
     |> join(:inner, [b], g in assoc(b, :guest))
     |> where([b], is_nil(b.deleted_at))
-    |> where([b], b.status in ["upcoming", "active"])
+    |> where([b], b.status != "cancelled")
     |> where([b], b.check_in_date <= ^end_date)
-    |> where([b], is_nil(b.check_out_date) or b.check_out_date > ^start_date)
+    |> where([b], is_nil(b.check_out_date) or b.check_out_date >= ^start_date)
     |> where([b], not is_nil(b.dietary_restrictions) and b.dietary_restrictions != "")
     |> select([b, g], %{
       booking_id: b.id,

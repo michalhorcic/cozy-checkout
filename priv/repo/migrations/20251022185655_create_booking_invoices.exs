@@ -29,7 +29,8 @@ defmodule CozyCheckout.Repo.Migrations.CreateBookingInvoices do
       add :id, :binary_id, primary_key: true
 
       add :booking_invoice_id,
-          references(:booking_invoices, on_delete: :delete_all, type: :binary_id), null: false
+          references(:booking_invoices, on_delete: :delete_all, type: :binary_id),
+          null: false
 
       # Line item details
       add :name, :string, null: false
