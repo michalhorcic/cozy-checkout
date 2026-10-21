@@ -67,16 +67,6 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
   end
 
   @impl true
-  def handle_info({:abra_sync_updated, order_id}, socket) do
-    updated_orders =
-      Enum.map(socket.assigns.orders, fn o ->
-        if o.id == order_id, do: Sales.get_order!(order_id), else: o
-      end)
-
-    {:noreply, assign(socket, :orders, updated_orders)}
-  end
-
-  @impl true
   def handle_event("delete", %{"id" => id}, socket) do
     order = Sales.get_order!(id)
 
@@ -95,6 +85,16 @@ defmodule CozyCheckoutWeb.OrderLive.Index do
   def handle_event("filter", params, socket) do
     # Push patch to update URL with filter params
     {:noreply, push_patch(socket, to: ~p"/admin/orders?#{build_filter_params(params)}")}
+  end
+
+  @impl true
+  def handle_info({:abra_sync_updated, order_id}, socket) do
+    updated_orders =
+      Enum.map(socket.assigns.orders, fn o ->
+        if o.id == order_id, do: Sales.get_order!(order_id), else: o
+      end)
+
+    {:noreply, assign(socket, :orders, updated_orders)}
   end
 
   # Helper to build filter params from form

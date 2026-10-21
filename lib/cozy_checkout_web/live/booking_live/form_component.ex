@@ -4,6 +4,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
   alias CozyCheckout.Bookings
   alias CozyCheckout.Guests
   alias CozyCheckout.Rooms
+  import CozyCheckoutWeb.MealComponents
 
   @impl true
   def render(assigns) do
@@ -169,6 +170,58 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
 
         <.input field={@form[:notes]} type="textarea" label="Notes" rows="3" />
 
+        <fieldset id="booking-catering" class="my-6 rounded-lg border border-secondary-200 p-4">
+          <legend class="px-2 font-semibold text-primary-500">Stravování</legend>
+          <p class="mb-3 text-sm text-primary-400">
+            Jeden režim pro celý pobyt. Počty strávníků jsou nezávislé na faktuře.
+          </p>
+          <.input
+            field={@form[:meal_plan]}
+            type="select"
+            label="Režim stravování"
+            options={meal_plan_options()}
+          />
+          <div :if={@form[:meal_plan].value in ["half_board", "full_board"]}>
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <.input
+                field={@form[:meal_adults]}
+                type="number"
+                label="Dospělí ke stravování"
+                min="0"
+                step="1"
+                required
+              />
+              <.input
+                field={@form[:meal_children]}
+                type="number"
+                label="Děti ke stravování"
+                min="0"
+                step="1"
+                required
+              />
+              <.input
+                field={@form[:first_meal]}
+                type="select"
+                label="První jídlo (den příjezdu)"
+                prompt="Vyberte jídlo"
+                options={meal_options()}
+                required
+              />
+              <.input
+                field={@form[:last_meal]}
+                type="select"
+                label="Poslední jídlo (den odjezdu)"
+                prompt="Vyberte jídlo"
+                options={meal_options()}
+                required
+              />
+            </div>
+            <p class="mt-3 text-sm text-primary-400">
+              Vyplňte i nulové počty a datum odjezdu. Polopenze zahrnuje snídani a večeři.
+            </p>
+          </div>
+        </fieldset>
+
         <.input
           field={@form[:dietary_restrictions]}
           type="textarea"
@@ -308,9 +361,14 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
   end
 
   @impl true
-  def handle_event("validate", %{"booking" => booking_params}, socket) do
+  def handle_event("validate", %{"booking" => booking_params} = params, socket) do
     # Auto-update check-out date when check-in date changes
-    booking_params = maybe_update_checkout_date(booking_params, socket.assigns.booking)
+    booking_params =
+      if params["_target"] == ["booking", "check_in_date"] do
+        maybe_update_checkout_date(booking_params, socket.assigns.booking)
+      else
+        booking_params
+      end
 
     changeset = Bookings.change_booking(socket.assigns.booking, booking_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}

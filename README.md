@@ -28,6 +28,26 @@ V administraci lze místo šablony napsat vlastní prostý text; v emailu se bez
 
 Katalogové šablony podporují proměnné `{{guest_name}}`, `{{check_in_date}}` a `{{check_out_date}}` v těle i předmětu. Datum je ve formátu `DD.MM.RRRR`; chybějící datum odjezdu má český nebo německý fallback. V editoru lze u více vybraných rezervací přepínat, pro kterou z nich se zobrazuje náhled. Historie se ukládá pro každého příjemce zvlášť a zobrazuje se v detailu rezervace. Ukládá se předmět a metadata odeslání, nikoli tělo e-mailu; záznamy se automaticky nemažou. Stav „Accepted by provider“ znamená, že Resend požadavek přijal, nikoli že byl e-mail potvrzeně doručen.
 
+## Stravování rezervací
+
+V rezervaci lze vybrat **Stravování nevyplněno**, **Bez stravy**, **Polopenze**
+nebo **Plná penze**. Původní rezervace a rezervace z iCal importu zůstávají
+nevyplněné. Pro penzi je potřeba zadat datum odjezdu, dospělé a děti ke
+stravování (včetně nul) a první/poslední jídlo v den příjezdu/odjezdu.
+Polopenze zahrnuje snídani a večeři. Jeden režim a stejné počty platí pro celý pobyt.
+Přepnutí na bez stravy nebo nevyplněno odstraní původní údaje o porcích a hranicích jídel.
+
+Detail rezervace, týdenní plánovač i tisk počítají skutečné porce pro každé jídlo
+samostatně, včetně posledního jídla v den odjezdu. Počty jsou nezávislé na faktuře,
+obsazenosti a textu menu; dětské porce se zde nezmenšují koeficientem.
+Například pátek–neděle, večeře–snídaně, 10 dospělých a 5 dětí s plnou penzí
+znamená 15 pátečních večeří, 15 sobotních snídaní/obědů/večeří a 15 nedělních snídaní.
+
+Zrušené a smazané rezervace se nepočítají; dokončené zůstávají v historii.
+Nevyplněné rezervace jsou uvedeny v upozornění s odkazem na doplnění a součty
+příslušných dnů jsou označené jako neúplné. Receptury, přepočty spotřeby,
+nákup, smíšené režimy a denní výjimky jsou určeny pro další etapy.
+
 Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
 
 Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
