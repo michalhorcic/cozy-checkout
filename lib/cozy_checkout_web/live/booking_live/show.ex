@@ -267,6 +267,17 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
                 navigate={~p"/admin/bookings/#{@booking.id}/menu"}
                 class="font-semibold text-tertiary-600 underline"
               >Menu rezervace</.link>
+              <.link
+                :if={
+                  @booking.check_out_date && @booking.meal_plan != "none" &&
+                    @booking.status != "cancelled"
+                }
+                id="booking-shopping-link"
+                navigate={
+                  ~p"/admin/kitchen-shopping?#{%{from: Date.to_iso8601(@booking.check_in_date), to: Date.to_iso8601(@booking.check_out_date), booking: @booking.id}}"
+                }
+                class="ml-3 text-sm font-semibold text-emerald-700 underline"
+              >Nákup pro pobyt</.link>
             </div>
             <p id="booking-meal-plan" class="font-semibold">{meal_plan_label(@booking.meal_plan)}</p>
             <p

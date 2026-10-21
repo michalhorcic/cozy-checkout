@@ -139,6 +139,9 @@ defmodule CozyCheckoutWeb.Router do
       # iCal Import
       live "/ical-import", IcalImportLive.Index, :index
 
+      live "/kitchen-shopping", ShoppingLive.Index, :index
+      live "/kitchen-shopping/print", ShoppingLive.Index, :print
+
       # Kitchen recipes and ingredients
       live "/recipes", RecipeLive.Index, :index
       live "/recipes/new", RecipeLive.Index, :new

@@ -13,6 +13,13 @@
           ><.icon name="hero-pencil-square" class="h-4 w-4" />Upravit recept</.link>
         </:actions>
       </.kitchen_header>
+      <p
+        :if={@recipe.source_key == "kitchen:breakfast-buffet:v1"}
+        id="buffet-estimate-label"
+        class="mb-6 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-950"
+      >
+        Normy tohoto bufetu jsou pracovní odhad pro první vyzkoušení. Můžete je upravit podle zkušenosti; nepoužívané suroviny nastavte na 0.
+      </p>
       <div class="grid items-start gap-6 lg:grid-cols-[20rem_1fr]">
         <aside class="space-y-5 lg:sticky lg:top-6">
           <section class="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm">

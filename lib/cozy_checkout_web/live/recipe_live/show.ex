@@ -6,10 +6,23 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
   @impl true
   def mount(_, _, socket), do: {:ok, socket}
   @impl true
-  def handle_params(%{"id" => id}, _, socket) do
+  def handle_params(%{"id" => id} = params, _, socket) do
     recipe = Recipes.get_recipe!(id)
     factor = Recipes.settings().hot_child_factor
-    adults = max(Decimal.to_integer(recipe.base_servings), 1)
+
+    defaults = %{
+      "adults" => to_string(max(Decimal.to_integer(recipe.base_servings), 1)),
+      "children" => "0",
+      "percent" => Decimal.to_string(Decimal.mult(factor, 100), :normal)
+    }
+
+    values = Map.merge(defaults, Map.take(params, ["adults", "children", "percent"]))
+
+    {values, adults, children, factor} =
+      case parse_calculator(values) do
+        {:ok, a, c, f} -> {values, a, c, f}
+        _ -> {defaults, String.to_integer(defaults["adults"]), 0, factor}
+      end
 
     {:noreply,
      socket
@@ -19,23 +32,16 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
      |> assign(
        :calculator,
        to_form(
-         %{
-           "adults" => to_string(adults),
-           "children" => "0",
-           "percent" => Decimal.to_string(Decimal.mult(factor, 100), :normal)
-         },
+         values,
          as: :calculator
        )
      )
-     |> assign(:result, Consumption.calculate([recipe], adults, 0, factor))}
+     |> assign(:result, Consumption.calculate([recipe], adults, children, factor))}
   end
 
   @impl true
   def handle_event("calculate", %{"calculator" => params}, socket) do
-    with {adults, ""} when adults >= 0 <- Integer.parse(params["adults"]),
-         {children, ""} when children >= 0 <- Integer.parse(params["children"]),
-         {percent, ""} <- Decimal.parse(String.replace(params["percent"], ",", ".")),
-         true <- Decimal.compare(percent, 0) != :lt and Decimal.compare(percent, 100) != :gt do
+    with {:ok, adults, children, factor} <- parse_calculator(params) do
       {:noreply,
        socket
        |> assign(:error, nil)
@@ -46,7 +52,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
            [socket.assigns.recipe],
            adults,
            children,
-           Decimal.div(percent, 100)
+           factor
          )
        )}
     else
@@ -57,6 +63,17 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
            :error,
            "Zadejte celé nezáporné počty osob a velikost dětské porce od 0 do 100 %."
          )}
+    end
+  end
+
+  defp parse_calculator(params) do
+    with {adults, ""} when adults >= 0 <- Integer.parse(params["adults"] || ""),
+         {children, ""} when children >= 0 <- Integer.parse(params["children"] || ""),
+         {percent, ""} <- Decimal.parse(String.replace(params["percent"] || "", ",", ".")),
+         true <- Decimal.compare(percent, 0) != :lt and Decimal.compare(percent, 100) != :gt do
+      {:ok, adults, children, Decimal.div(percent, 100)}
+    else
+      _ -> :error
     end
   end
 end

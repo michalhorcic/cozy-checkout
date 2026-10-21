@@ -24,11 +24,13 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import {hooks as colocatedHooks} from "phoenix-colocated/cozy_checkout"
 import topbar from "../vendor/topbar"
+import {ShoppingChecklist} from "./hooks/shopping_checklist"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 // Custom hooks
 const Hooks = {
+  ShoppingChecklist,
   SwipeToDelete: {
     mounted() {
       let startX = 0
@@ -238,6 +240,8 @@ window.addEventListener("phx:download_csv", (event) => {
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
 })
+
+window.addEventListener("kitchen:print", () => window.print())
 
 // connect if there are any LiveViews on the page
 liveSocket.connect()

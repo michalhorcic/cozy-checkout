@@ -27,7 +27,18 @@ defmodule CozyCheckoutWeb.KitchenComponents do
         </div>
         <div class="flex items-center gap-3">{render_slot(@actions)}</div>
       </div>
-      <nav class="mt-7 flex gap-2 border-b border-slate-200 pb-3" aria-label="Kuchyně">
+      <nav class="mt-7 flex flex-wrap gap-2 border-b border-slate-200 pb-3" aria-label="Kuchyně">
+        <.link
+          id="kitchen-shopping"
+          navigate={~p"/admin/kitchen-shopping"}
+          class={[
+            "rounded-xl px-4 py-2 text-sm font-semibold transition",
+            if(@active == "shopping",
+              do: "bg-emerald-100 text-emerald-800",
+              else: "text-slate-500 hover:bg-white"
+            )
+          ]}
+        >Nákup</.link>
         <.link
           id="kitchen-recipes"
           navigate={~p"/admin/recipes"}

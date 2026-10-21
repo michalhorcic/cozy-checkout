@@ -1,0 +1,478 @@
+<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
+  <div
+    id="kitchen-shopping-page"
+    class="kitchen-shopping min-h-screen bg-slate-50 px-4 py-7 font-sans sm:px-8 print:bg-white print:p-0"
+  >
+    <div class="mx-auto max-w-6xl">
+      <div :if={@live_action != :print} class="print:hidden">
+        <.kitchen_header
+          title="Co nakoupit?"
+          subtitle="Všechna jídla, jeden přehledný seznam. U každé suroviny zjistíte, na co a pro koho ji potřebujete."
+          active="shopping"
+        >
+          <:actions>
+            <.link
+              :if={@result}
+              id="print-shopping-list"
+              navigate={shopping_path(:print, @range_form.params)}
+              target="_blank"
+              class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:border-emerald-400"
+            ><.icon name="hero-printer" class="h-5 w-5" />Tisk celého seznamu</.link>
+          </:actions>
+        </.kitchen_header>
+      </div>
+      <header :if={@live_action == :print} class="mb-6">
+        <div class="mb-5 flex justify-between gap-4 print:hidden">
+          <.link
+            navigate={shopping_path(:index, @range_form.params)}
+            class="text-sm text-emerald-700"
+          >← Zpět na nákup</.link>
+          <button
+            id="print-shopping"
+            type="button"
+            phx-click={JS.dispatch("kitchen:print")}
+            class="rounded-xl bg-emerald-700 px-5 py-2 font-semibold text-white"
+          >Vytisknout</button>
+        </div>
+        <h1 class="text-3xl font-bold text-slate-900">Nákup pro kuchyň</h1>
+        <p :if={@result} class="mt-2 text-sm text-slate-600">
+          {ShoppingList.date_label(@result.start_date)} – {ShoppingList.date_label(
+            @result.end_date
+          )} · {Enum.find_value(@booking_options, fn {name, id} ->
+            if id == @booking_id, do: name
+          end)}
+        </p>
+      </header>
+      <details
+        :if={@live_action != :print}
+        id="shopping-selection"
+        open={is_nil(@result) || @result.rows == []}
+        class="mb-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      >
+        <summary class="cursor-pointer p-5 text-sm font-semibold text-slate-700 hover:text-emerald-800">
+          <span :if={@result}>{ShoppingList.date_label(@result.start_date)} – {ShoppingList.date_label(
+            @result.end_date
+          )} · {Enum.find_value(@booking_options, fn {name, id} ->
+            if id == @booking_id, do: name
+          end)}</span>
+          <span :if={is_nil(@result)}>Vyberte období a skupinu</span>
+          <span class="ml-2 text-xs font-medium text-emerald-700 underline">Upravit výběr</span>
+        </summary>
+        <.form
+          for={@range_form}
+          id="shopping-range-form"
+          phx-submit="apply_range"
+          class="grid grid-cols-2 items-end gap-4 border-t border-slate-100 p-5 lg:grid-cols-[10rem_10rem_1fr_auto]"
+        >
+          <.input
+            field={@range_form[:from]}
+            type="date"
+            label="Od"
+            class={field_class()}
+            required
+          />
+          <.input
+            field={@range_form[:to]}
+            type="date"
+            label="Do (včetně)"
+            class={field_class()}
+            required
+          />
+          <div class="col-span-2 lg:col-span-1">
+            <.input
+              field={@range_form[:booking]}
+              type="select"
+              label="Pro koho nakupujete?"
+              options={@booking_options}
+              class={field_class()}
+            />
+          </div>
+          <button
+            id="generate-shopping-list"
+            type="submit"
+            phx-disable-with="Počítám…"
+            class="col-span-2 mb-2 rounded-xl bg-emerald-700 lg:col-span-1 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800"
+          >Zobrazit nákup</button>
+        </.form>
+      </details>
+      <p
+        :if={@range_error}
+        id="shopping-range-error"
+        role="alert"
+        class="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+      >
+        {@range_error}
+      </p>
+      <div :if={@result}>
+        <div
+          :if={@result.issues != []}
+          id="shopping-warnings"
+          class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-amber-950"
+        >
+          <div class="flex items-start gap-3">
+            <.icon name="hero-exclamation-triangle" class="mt-0.5 h-5 w-5 shrink-0" /><div>
+              <h2 class="font-bold">Seznam zatím není úplný</h2>
+              <p class="mt-1 text-sm">
+                Některé podklady chybí. Níže vidíte pouze to, co lze spočítat; chybějící jídla nejsou započtená.
+              </p>
+            </div>
+          </div>
+          <details id="shopping-issues" open class="mt-3 text-sm">
+            <summary class="cursor-pointer font-semibold underline">
+              Co je potřeba doplnit ({length(@result.issues)})
+            </summary>
+            <ul class="mt-3 space-y-2">
+              <li
+                :for={issue <- @result.issues}
+                id={"shopping-#{issue.id}"}
+                class="rounded-lg bg-white/60 p-3"
+              >
+                <span :if={issue.booking} class="font-semibold">{issue.booking.guest.name}: </span>
+                <span :if={issue.item}>{ShoppingList.date_label(issue.item.date)} · {ShoppingList.label(
+                  issue.item.meal_type
+                )} · </span>
+                <span :if={issue.ingredient} class="font-semibold">{issue.ingredient.name}: </span>{issue.message}
+                <.link
+                  :if={issue.item}
+                  navigate={~p"/admin/recipes/menu/booking/#{issue.item.id}"}
+                  class="ml-2 font-semibold underline print:hidden"
+                >Vybrat recept</.link>
+                <.link
+                  :if={issue.booking && is_nil(issue.item)}
+                  navigate={~p"/admin/bookings/#{issue.booking.id}/menu"}
+                  class="ml-2 font-semibold underline print:hidden"
+                >Otevřít rezervaci</.link>
+                <button
+                  :if={issue.ingredient}
+                  type="button"
+                  phx-click="edit_purchase"
+                  phx-value-id={issue.ingredient.id}
+                  class="ml-2 font-semibold underline print:hidden"
+                >Doplnit nákup</button>
+              </li>
+            </ul>
+          </details>
+        </div>
+        <div
+          :if={@result.buffet? && @buffet_recipe}
+          id="buffet-estimate-note"
+          class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-sky-100 bg-sky-50 px-5 py-4 text-sm text-sky-950"
+        >
+          <p>
+            Snídaňový bufet používá upravitelné pracovní normy. Před prvním víkendem je zkontrolujte.
+          </p>
+          <.link
+            id="edit-buffet-norms"
+            navigate={~p"/admin/recipes/#{@buffet_recipe.id}/edit"}
+            target="_blank"
+            class="shrink-0 font-semibold underline print:hidden"
+          >Upravit normy bufetu →</.link>
+        </div>
+        <div
+          id="shopping-checklist"
+          phx-hook="ShoppingChecklist"
+          data-scope={@checklist_scope}
+          data-signatures={@signatures}
+        >
+          <div :if={@live_action != :print} class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Surovin</p><p
+                id="shopping-total"
+                class="mt-2 text-3xl font-bold text-slate-900"
+              >
+                {length(@result.rows)}
+              </p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                Jídel s recepty
+              </p><p id="shopping-coverage" class="mt-2 text-3xl font-bold text-slate-900">
+                {@result.covered_services}<span class="text-base font-medium text-slate-400"> / {@result.services}</span>
+              </p>
+            </div>
+            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Skupin</p><p
+                id="shopping-groups"
+                class="mt-2 text-3xl font-bold text-slate-900"
+              >
+                {@result.groups}
+              </p>
+            </div>
+            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                Odškrtnuto
+              </p><p class="mt-2 text-3xl font-bold text-emerald-900">
+                <span id="shopping-checked-count" data-checked-count>0</span><span class="text-base font-medium text-emerald-600"> / {length(
+                  @result.rows
+                )}</span>
+              </p>
+            </div>
+          </div>
+          <.form
+            :if={@live_action != :print}
+            for={@filter_form}
+            id="shopping-filter-form"
+            phx-change="filter"
+            class="mb-4 grid gap-3 sm:grid-cols-[1fr_11rem_11rem]"
+          >
+            <.input
+              field={@filter_form[:search]}
+              type="search"
+              label="Najít surovinu"
+              placeholder="Třeba máslo nebo brambory…"
+              phx-debounce="150"
+              class={field_class()}
+            />
+            <.input
+              field={@filter_form[:category]}
+              type="select"
+              label="Kategorie"
+              options={[{"Všechny kategorie", ""} | Enum.map(@categories, &{&1, &1})]}
+              class={field_class()}
+            />
+            <.input
+              field={@filter_form[:mode]}
+              type="select"
+              label="Způsob nákupu"
+              options={[
+                {"Všechny položky", ""},
+                {"Na celé období", "Sezona"},
+                {"Průběžně", "Průběžně"}
+              ]}
+              class={field_class()}
+            />
+          </.form>
+          <div
+            :if={@live_action != :print}
+            class="mb-5 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500"
+          >
+            <span id="shopping-visible-count">Zobrazeno {@visible_count} z {length(@result.rows)} surovin</span>
+            <div class="flex flex-wrap gap-4">
+              <button
+                type="button"
+                data-hide-checked
+                aria-pressed="false"
+                class="font-semibold text-slate-600 underline"
+              >Skrýt odškrtnuté</button>
+              <button
+                id="refresh-shopping"
+                type="button"
+                phx-click="refresh"
+                phx-disable-with="Obnovuji…"
+                class="font-semibold text-emerald-700 underline"
+              >Přepočítat z aktuálního menu</button>
+            </div>
+          </div>
+          <div id="shopping-rows" phx-update="stream" class="space-y-3">
+            <div
+              id="shopping-empty"
+              class="hidden rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center only:block"
+            >
+              <.icon name="hero-shopping-bag" class="mx-auto mb-4 h-10 w-10 text-emerald-600" />
+              <h2 class="text-lg font-bold text-slate-800">
+                {(@result.rows == [] && "Zatím není co sečíst") ||
+                  "Žádná surovina neodpovídá filtru"}
+              </h2>
+              <p class="mt-2 text-sm text-slate-500">
+                {(@result.rows == [] &&
+                    "Vyberte období s pobytem a přiřazeným menu. Případné chybějící podklady najdete nahoře.") ||
+                  "Zkuste kratší název nebo jinou kategorii."}
+              </p>
+            </div>
+            <article
+              :for={{id, row} <- @streams.rows}
+              id={id}
+              data-shopping-row={row.id}
+              class="shopping-row group"
+            >
+              <h2
+                :if={row.category_start}
+                class="mb-3 mt-7 text-xs font-bold uppercase tracking-[0.15em] text-slate-500"
+              >
+                {row.ingredient.category}
+              </h2>
+              <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-emerald-300 print:rounded-none print:border-0 print:border-b print:shadow-none">
+                <div class="flex items-start gap-3 p-4 sm:gap-4 sm:p-5 print:p-2">
+                  <input
+                    id={"shopping-check-#{row.id}"}
+                    type="checkbox"
+                    disabled={is_nil(row.buy_quantity)}
+                    data-shopping-check={row.id}
+                    data-fingerprint={row.fingerprint}
+                    aria-label={"Odškrtnout " <> row.ingredient.name}
+                    class="mt-1 h-6 w-6 shrink-0 cursor-pointer rounded-lg border-slate-300 accent-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 print:hidden"
+                  />
+                  <span
+                    aria-hidden="true"
+                    class="mt-1 hidden h-3 w-3 shrink-0 border border-slate-400 print:inline-block"
+                  ></span>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <h3
+                          data-ingredient-name
+                          class="break-words text-lg font-bold text-slate-900 print:text-sm"
+                        >
+                          {row.ingredient.name}
+                        </h3>
+                        <p class="mt-1 text-xs text-slate-500">
+                          {(row.ingredient.purchase_mode == "Sezona" && "Na celé období") ||
+                            row.ingredient.purchase_mode || "Nákup není nastavený"}
+                        </p>
+                      </div>
+                      <div class="text-right">
+                        <p
+                          id={"shopping-buy-#{row.id}"}
+                          class="text-2xl font-bold tabular-nums text-emerald-800 print:text-sm"
+                        >
+                          {(row.buy_quantity && quantity(row.buy_quantity, row.unit)) ||
+                            "Doplnit nákup"}
+                        </p>
+                        <p :if={row.packages} class="mt-1 text-xs text-slate-500">
+                          {number(row.packages)} balení × {quantity(
+                            row.ingredient.package_size,
+                            row.unit
+                          )}
+                        </p>
+                        <p
+                          id={"shopping-consumption-#{row.id}"}
+                          class="mt-1 text-xs text-slate-500"
+                        >
+                          Spotřeba {quantity(row.quantity, row.unit)}
+                        </p>
+                      </div>
+                    </div>
+                    <div id={"shopping-sources-#{row.id}"} class="mt-4 text-sm print:hidden">
+                      <button
+                        type="button"
+                        phx-click="toggle_sources"
+                        phx-value-id={row.id}
+                        aria-expanded={to_string(row.expanded)}
+                        aria-controls={"shopping-breakdown-#{row.id}"}
+                        class="w-fit cursor-pointer text-left font-semibold text-emerald-700 transition hover:text-emerald-900"
+                      >
+                        <.icon
+                          name="hero-chevron-down"
+                          class={
+                            if(row.expanded,
+                              do: "mr-1 inline h-4 w-4 rotate-180 transition",
+                              else: "mr-1 inline h-4 w-4 transition"
+                            )
+                          }
+                        />Na co surovinu potřebujete?
+                        <span class="ml-1 font-normal text-slate-400">({length(row.sources)})</span>
+                      </button>
+                      <div
+                        :if={row.expanded}
+                        id={"shopping-breakdown-#{row.id}"}
+                        class="mt-4 space-y-3 border-t border-slate-100 pt-4"
+                      >
+                        <div
+                          :for={{source, index} <- Enum.with_index(row.sources)}
+                          id={"shopping-source-#{row.id}-#{index}"}
+                          class="rounded-xl bg-slate-50 p-3"
+                        >
+                          <div class="flex flex-wrap items-start justify-between gap-2">
+                            <.link
+                              navigate={recipe_path(source)}
+                              target="_blank"
+                              rel="noopener"
+                              class="font-semibold text-slate-900 underline decoration-slate-300 underline-offset-4 hover:text-emerald-700"
+                            >{source.recipe.name}
+                            <.icon
+                              name="hero-arrow-top-right-on-square"
+                              class="ml-1 inline h-3.5 w-3.5"
+                            /></.link>
+                            <span class="font-semibold tabular-nums text-slate-800">{quantity(
+                              source.quantity,
+                              row.unit
+                            )}</span>
+                          </div>
+                          <p class="mt-2 text-xs text-slate-500">
+                            {ShoppingList.date_label(source.date)} · {ShoppingList.label(
+                              source.meal_type
+                            )} · {source.booking.guest.name}
+                          </p>
+                          <p class="mt-1 text-xs text-slate-500">
+                            {source.adults} dospělých + {source.children} dětí · přepočet {number(
+                              source.effective
+                            )} porcí
+                          </p>
+                          <.link
+                            navigate={~p"/admin/recipes/menu/booking/#{source.item.id}"}
+                            target="_blank"
+                            class="mt-2 inline-block text-xs font-semibold text-emerald-700 underline"
+                          >Otevřít jídlo skupiny</.link>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      :if={@live_action != :print}
+                      id={"shopping-item-settings-#{row.id}"}
+                      type="button"
+                      phx-click="edit_purchase"
+                      phx-value-id={row.id}
+                      class="mt-3 text-xs font-medium text-slate-400 underline hover:text-slate-700"
+                    >Nastavit balení a nákup</button>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+          <p
+            id="shopping-all-checked"
+            data-all-checked
+            hidden
+            class="mt-5 rounded-xl bg-emerald-50 p-5 text-center font-semibold text-emerald-800"
+          >
+            Všechny zobrazené suroviny máte odškrtnuté.
+          </p>
+          <p :if={@live_action != :print} class="mt-6 text-xs text-slate-500">
+            Odškrtnutí se ukládá v tomto prohlížeči pro vybrané období a skupinu. Když se podklady položky změní, odškrtnutí se zruší.
+          </p>
+        </div>
+        <p class="mt-6 text-xs leading-relaxed text-slate-500">
+          Bez rezervy a bez odečítání skladových zásob. Množství vychází z aktuálních receptur. Balení se zaokrouhlují až po sečtení celé spotřeby, kusy pro nákup na celé kusy; průběžný nákup ukazuje spotřebu pro vybrané období.
+        </p>
+      </div>
+    </div>
+  </div>
+  <.modal
+    :if={@edit_ingredient}
+    id="purchase-settings-modal"
+    show
+    on_cancel={JS.push("close_purchase")}
+  >
+    <h2 class="text-xl font-bold text-slate-900">{@edit_ingredient.name}</h2>
+    <p class="mb-5 mt-2 text-sm text-slate-500">
+      Nastavení platí pro tuto surovinu ve všech nákupních seznamech.
+    </p>
+    <.form for={@purchase_form} id="shopping-purchase-form" phx-submit="save_purchase">
+      <.input
+        field={@purchase_form[:purchase_mode]}
+        type="select"
+        label="Jak surovinu nakupujete?"
+        prompt="Vyberte způsob nákupu"
+        options={[{"Na celé období (Sezona)", "Sezona"}, {"Průběžně podle spotřeby", "Průběžně"}]}
+        class={field_class()}
+        required
+      />
+      <.input
+        field={@purchase_form[:package_size]}
+        type="number"
+        step="any"
+        min="0.000001"
+        label={"Velikost jednoho balení (#{@edit_ingredient.base_unit}), volitelné"}
+        class={field_class()}
+      />
+      <p class="mt-3 text-xs text-slate-500">
+        Bez balení se použije celková spotřeba. Na balení zaokrouhlujeme pouze nákup na celé období, stejně jako v podkladové tabulce.
+      </p>
+      <button
+        type="submit"
+        phx-disable-with="Ukládám…"
+        class="mt-6 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+      >Uložit a přepočítat</button>
+    </.form>
+  </.modal>
+</Layouts.app>

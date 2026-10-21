@@ -1,0 +1,55 @@
+{
+  "source_url": "https://docs.google.com/spreadsheets/d/1JR0l8wY-bGOwVDOgandNU-_2HfgMOYH8L03AjJ_inmw/edit",
+  "source_range": "Bufet!A6:C14",
+  "snapshot_date": "2026-10-21",
+  "quantity_origin": "Pracovní odhady schválené uživatelem; množství v původní tabulce jsou prázdná.",
+  "name": "Snídaňový bufet",
+  "base_servings": "1",
+  "lines": [
+    {
+      "ingredient_name": "Marmeláda",
+      "quantity": "20",
+      "unit": "g"
+    },
+    {
+      "ingredient_name": "Med",
+      "quantity": "5",
+      "unit": "g"
+    },
+    {
+      "ingredient_name": "Cereálie",
+      "quantity": "30",
+      "unit": "g"
+    },
+    {
+      "ingredient_name": "Čaj",
+      "quantity": "1",
+      "unit": "ks"
+    },
+    {
+      "ingredient_name": "Káva",
+      "quantity": "8",
+      "unit": "g"
+    },
+    {
+      "ingredient_name": "Kakao",
+      "quantity": "5",
+      "unit": "g"
+    },
+    {
+      "ingredient_name": "Mléko",
+      "quantity": "150",
+      "unit": "ml"
+    },
+    {
+      "ingredient_name": "Máslo",
+      "quantity": "15",
+      "unit": "g"
+    },
+    {
+      "ingredient_name": "Pečivo",
+      "quantity": "2",
+      "unit": "ks"
+    }
+  ]
+}
