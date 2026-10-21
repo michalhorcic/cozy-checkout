@@ -3,6 +3,7 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
   alias CozyCheckout.Bookings
   alias CozyCheckout.Meals.{MenuPlanning, BookingMenuItem, PortionCounts}
   import CozyCheckoutWeb.MealComponents
+  import CozyCheckoutWeb.KitchenComponents, only: [menu_recipe_links: 1]
 
   @impl true
   def mount(%{"booking_id" => id}, _, socket) do
