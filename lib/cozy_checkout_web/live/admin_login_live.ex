@@ -11,7 +11,7 @@ defmodule CozyCheckoutWeb.AdminLoginLive do
     else
       {:ok,
        socket
-       |> assign(:page_title, "Admin PIN")
+       |> assign(:page_title, "Přihlášení")
        |> assign(:pin_configured, AdminAuth.enabled?())}
     end
   end
@@ -22,13 +22,14 @@ defmodule CozyCheckoutWeb.AdminLoginLive do
     <Layouts.app
       flash={@flash}
       content_class="mx-auto w-full max-w-sm"
-      main_class="flex min-h-screen items-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8"
+      main_class="flex min-h-screen items-center bg-secondary-50 px-4 py-12 sm:px-6 lg:px-8"
       show_header={false}
     >
-      <section class="rounded-lg bg-white p-8 shadow-lg">
+      <section class="rounded-xl border border-secondary-200 bg-white p-8 shadow-sm">
         <div class="mb-6 text-center">
-          <.icon name="hero-lock-closed" class="mx-auto mb-3 h-9 w-9 text-primary-600" />
-          <h1 class="text-2xl font-bold text-gray-900">Administration</h1>
+          <img src={~p"/images/cozy-knot.svg"} alt="" width="56" height="56" class="mx-auto mb-4" />
+          <h1 class="text-2xl font-bold text-primary-500">Cozy Checkout</h1>
+          <p class="mt-2 text-sm text-primary-400">Jindřichův dům · Administrace</p>
         </div>
 
         <%= if @pin_configured do %>
@@ -36,7 +37,7 @@ defmodule CozyCheckoutWeb.AdminLoginLive do
             <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
             <div>
               <label for="admin-pin" class="mb-1 block text-sm font-medium text-gray-700">
-                Enter PIN
+                Zadejte PIN
               </label>
               <input
                 id="admin-pin"
@@ -56,7 +57,7 @@ defmodule CozyCheckoutWeb.AdminLoginLive do
               type="submit"
               class="w-full rounded-md bg-primary-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-primary-700"
             >
-              Unlock
+              Odemknout
             </button>
           </form>
         <% else %>
@@ -70,7 +71,7 @@ defmodule CozyCheckoutWeb.AdminLoginLive do
           navigate={~p"/pos"}
           class="mt-5 block text-center text-sm text-gray-500 hover:text-gray-800"
         >
-          Return to POS
+          Zpět do pokladny
         </.link>
       </section>
     </Layouts.app>

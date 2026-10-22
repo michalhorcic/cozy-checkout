@@ -339,3 +339,6 @@ h1, h2, h3, h4, h5, h6,
 @media (min-width: 640px) { .food-layout h1 { font-size: 2.25rem; } }
 .food-layout summary::-webkit-details-marker { display: none; }
 @media print { #food-sidebar, #food-mobile-navigation, #flash-group { display: none !important; } .food-layout { background: white; } #food-main { padding: 0; max-width: none; } }
+
+/* Food pages carry the internal brand in their navigation instead of a second header. */
+body:has(#food-layout) #admin-brand-header { display: none; }
