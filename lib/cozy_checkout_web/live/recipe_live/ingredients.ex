@@ -7,6 +7,8 @@ defmodule CozyCheckoutWeb.RecipeLive.Ingredients do
   def mount(_, _, socket), do: {:ok, assign(socket, :search, "")}
   @impl true
   def handle_params(params, _, socket) do
+    socket = assign(socket, :food_context, CozyCheckoutWeb.FoodNavigation.context(params))
+
     ingredient =
       case socket.assigns.live_action do
         :new -> %Ingredient{}
@@ -56,7 +58,9 @@ defmodule CozyCheckoutWeb.RecipeLive.Ingredients do
         {:noreply,
          socket
          |> put_flash(:success, "Surovina uložena")
-         |> push_patch(to: ~p"/admin/ingredients")}
+         |> push_patch(
+           to: CozyCheckoutWeb.FoodNavigation.path(:ingredients, socket.assigns.food_context)
+         )}
 
       {:error, %Ecto.Changeset{} = cs} ->
         {:noreply, assign(socket, :form, to_form(cs))}

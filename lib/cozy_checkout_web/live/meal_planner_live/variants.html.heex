@@ -1,20 +1,34 @@
-<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
-  <div class="mx-auto max-w-6xl px-4 py-8">
-    <.link navigate={~p"/admin/meal-planner"} class="text-tertiary-600 underline">← Plánovač jídel</.link>
-    <div class="my-6 flex flex-wrap items-center justify-between gap-4">
-      <div>
-        <h1 class="text-3xl font-bold text-primary-500">Varianty menu</h1>
-        <p class="mt-2 text-primary-400">
-          Rozpis podle dnů pobytu. Polévka, příloha ani dezert nezvyšují počet podání.
-        </p>
-      </div>
-      <.link
-        :if={is_nil(@variant)}
-        patch={~p"/admin/meal-planner/variants/new"}
-        id="new-menu-variant"
-        class="rounded-lg bg-tertiary-600 px-4 py-2 font-semibold text-white"
-      >Nová varianta</.link>
-    </div>
+<Layouts.app
+  food_section={:variants}
+  food_context={@food_context}
+  flash={@flash}
+  show_header={false}
+  main_class=""
+  content_class=""
+>
+  <div class="w-full">
+    <.kitchen_header
+      title={
+        if @variant,
+          do: if(@variant.id, do: "Upravit variantu menu", else: "Nová varianta menu"),
+          else: "Varianty menu"
+      }
+      subtitle="Předlohy jídelníčků pro celý pobyt. Menu konkrétní rezervace má vlastní kopii."
+    >
+      <:actions>
+        <.link
+          :if={is_nil(@variant)}
+          patch={
+            CozyCheckoutWeb.FoodNavigation.with_context(
+              ~p"/admin/meal-planner/variants/new",
+              @food_context
+            )
+          }
+          id="new-menu-variant"
+          class="rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600"
+        >Nová varianta</.link>
+      </:actions>
+    </.kitchen_header>
 
     <section :if={is_nil(@variant)} class="rounded-lg bg-white p-6 shadow">
       <div class="mb-6 rounded-lg bg-secondary-50 p-4">
@@ -48,7 +62,12 @@
           </div>
           <div class="flex gap-4">
             <.link
-              patch={~p"/admin/meal-planner/variants/#{variant.id}/edit"}
+              patch={
+                CozyCheckoutWeb.FoodNavigation.with_context(
+                  ~p"/admin/meal-planner/variants/#{variant.id}/edit",
+                  @food_context
+                )
+              }
               class="text-tertiary-600 underline"
             >Upravit</.link>
             <button
@@ -71,7 +90,7 @@
       class="rounded-lg bg-white p-6 shadow"
     >
       <.input field={@form[:name]} label="Název varianty" required />
-      <p class="mt-3 text-sm text-slate-500">
+      <p class="mt-3 text-sm text-primary-400">
         Při změně textu jídla nebo doplňků znovu vyberte jejich recepty. Uložené rezervace mají vlastní kopii menu.
       </p>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -139,13 +158,27 @@
             <.menu_recipe_links
               id={"variant-item-recipes-#{item[:id].value || "new-#{item.index}"}"}
               item={item.source}
-              href={item[:id].value && ~p"/admin/recipes/menu/variant/#{item[:id].value}"}
+              href={
+                item[:id].value &&
+                  CozyCheckoutWeb.FoodNavigation.with_context(
+                    ~p"/admin/recipes/menu/variant/#{item[:id].value}",
+                    Map.merge(@food_context, %{"origin" => "variant", "variant" => @variant.id})
+                  )
+              }
             />
           </fieldset>
         </.inputs_for>
       </div>
       <div class="mt-6 flex items-center justify-end gap-4">
-        <.link patch={~p"/admin/meal-planner/variants"} class="text-primary-400 underline">Zrušit</.link>
+        <.link
+          patch={
+            CozyCheckoutWeb.FoodNavigation.with_context(
+              ~p"/admin/meal-planner/variants",
+              @food_context
+            )
+          }
+          class="text-primary-400 underline"
+        >Zrušit</.link>
         <.button id="save-menu-variant" type="submit" phx-disable-with="Ukládám…">Uložit variantu</.button>
       </div>
     </.form>

@@ -7,6 +7,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
   def mount(_, _, socket), do: {:ok, socket}
   @impl true
   def handle_params(%{"id" => id} = params, _, socket) do
+    socket = assign(socket, :food_context, CozyCheckoutWeb.FoodNavigation.context(params))
     recipe = Recipes.get_recipe!(id)
     factor = Recipes.settings().hot_child_factor
 
@@ -26,6 +27,8 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
 
     {:noreply,
      socket
+     |> assign(:back, CozyCheckoutWeb.FoodNavigation.back_path(params, "/admin/recipes"))
+     |> assign(:back_label, CozyCheckoutWeb.FoodNavigation.back_label(params, "Zpět na recepty"))
      |> assign(:page_title, recipe.name)
      |> assign(:recipe, recipe)
      |> assign(:error, nil)

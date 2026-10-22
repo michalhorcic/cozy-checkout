@@ -124,14 +124,15 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
 
   test "portion settings accept percentages but leave actual portions independent", %{conn: conn} do
     {:ok, view, _} = live(conn, "/admin/recipes")
-    view |> element("#portion-settings") |> render_click()
+    result = view |> element("#portion-settings") |> render_click()
+    {:ok, view, _} = follow_redirect(result, conn, "/admin/meal-planner/portion-settings")
     assert has_element?(view, "#portion-settings-form")
 
     view
     |> form("#portion-settings-form", portions: %{hot: "50", breakfast: "80"})
     |> render_submit()
 
-    refute has_element?(view, "#portion-settings-form")
+    assert has_element?(view, "#portion-settings-form")
     assert has_element?(view, "#flash-success .bg-emerald-50", "Velikost dětských porcí uložena")
     assert Decimal.equal?(Recipes.settings().hot_child_factor, "0.5")
     assert Decimal.equal?(Recipes.settings().breakfast_child_factor, "0.8")

@@ -4,7 +4,8 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
   alias CozyCheckout.Recipes.{Links, Consumption}
   import CozyCheckoutWeb.KitchenComponents
   @impl true
-  def mount(%{"kind" => kind, "item_id" => id}, _, socket) when kind in ["variant", "booking"] do
+  def mount(%{"kind" => kind, "item_id" => id} = params, _, socket)
+      when kind in ["variant", "booking"] do
     item = Links.load!(kind, id)
     settings = Recipes.settings()
 
@@ -35,13 +36,22 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
 
     {:ok,
      socket
+     |> assign(:food_context, CozyCheckoutWeb.FoodNavigation.context(params))
+     |> assign(
+       :food_section,
+       if(params["origin"] == "shopping",
+         do: :shopping,
+         else: if(kind == "variant", do: :variants, else: :planner)
+       )
+     )
+     |> assign(:back_label, CozyCheckoutWeb.FoodNavigation.back_label(params, "Zpět k menu"))
      |> assign(:page_title, "Recepty k jídlu")
      |> assign(:kind, kind)
      |> assign(:item, item)
      |> assign(:version, Links.version(item))
      |> assign(:main_id, item.recipe_id)
      |> assign(:extra_ids, Links.supplement_ids(item))
-     |> assign(:back, back)
+     |> assign(:back, CozyCheckoutWeb.FoodNavigation.back_path(params, back))
      |> assign(:search, "")
      |> assign(:blocked, blocked)
      |> assign(:factor, factor)

@@ -1,19 +1,31 @@
-<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
-  <div class="min-h-screen bg-slate-50 px-4 py-8 font-sans sm:px-8">
-    <div class="mx-auto max-w-7xl">
+<Layouts.app
+  food_section={@food_section}
+  food_context={@food_context}
+  flash={@flash}
+  show_header={false}
+  main_class=""
+  content_class=""
+>
+  <div class="food-page">
+    <div class="w-full">
       <.link
+        id="food-back"
         navigate={@back}
-        class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-emerald-700"
-      ><.icon name="hero-arrow-left" class="h-4 w-4" />Zpět k menu</.link>
+        class="inline-flex items-center gap-2 text-sm font-medium text-primary-400 hover:text-tertiary-700"
+      ><.icon name="hero-arrow-left" class="h-4 w-4" />{@back_label}</.link>
       <header class="my-7">
-        <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
-          Sestavit jídlo
-        </p><h1 class="mt-2 text-3xl font-bold text-slate-900">{@item.menu_text}</h1><p
+        <p class="text-xs font-bold uppercase tracking-[0.2em] text-tertiary-600">
+          Recepty k jídlu · {if @kind == "variant", do: "předloha menu", else: "menu rezervace"}
+        </p><p id="recipe-link-context" class="mt-2 text-sm text-primary-400">
+          {if @kind == "variant",
+            do: @item.menu_variant.name,
+            else: @item.booking_menu.booking.guest.name} · den {@item.day_number}
+        </p><h1 class="mt-2 text-3xl font-bold text-primary-500">{@item.menu_text}</h1><p
           :if={@item.supplements}
-          class="mt-2 whitespace-pre-line text-slate-500"
+          class="mt-2 whitespace-pre-line text-primary-400"
         >
           {@item.supplements}
-        </p><p class="mt-3 text-sm text-slate-500">
+        </p><p class="mt-3 text-sm text-primary-400">
           Vyberte hlavní recept a případné doplňky. Text jídelníčku se nepřepisuje. Výběr potvrďte tlačítkem Uložit.
         </p>
         <p
@@ -23,7 +35,7 @@
             "mt-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold",
             if(@links_changed?,
               do: "bg-amber-50 text-amber-800",
-              else: "bg-slate-100 text-slate-600"
+              else: "bg-secondary-100 text-primary-400"
             )
           ]}
         >
@@ -41,12 +53,12 @@
       <p
         :if={@blocked}
         id="recipe-link-blocked"
-        class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"
+        class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900"
       >
         {@blocked}
       </p>
       <div class="grid items-start gap-6 xl:grid-cols-[1fr_24rem]">
-        <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section class="rounded-lg border border-secondary-200 bg-white p-5 shadow-sm">
           <.form for={%{}} id="link-search-form" phx-change="search">
             <input
               id="link-recipe-search"
@@ -58,7 +70,7 @@
               aria-label="Najít recept k jídlu"
               class={field_class()}
             />
-          </.form><p class="my-4 text-xs text-slate-500">
+          </.form><p class="my-4 text-xs text-primary-400">
             {@result_count} receptů · každý doplněk se počítá pro stejnou skupinu
           </p><div
             id="recipe-choices"
@@ -67,7 +79,7 @@
           >
             <div
               id="recipe-choices-empty"
-              class="hidden py-10 text-center text-sm text-slate-500 only:block"
+              class="hidden py-10 text-center text-sm text-primary-400 only:block"
             >
               Žádný recept nenalezen.
             </div><article
@@ -81,15 +93,15 @@
                 end
               }
               class={[
-                "rounded-xl border p-4 transition",
+                "rounded-lg border p-4 transition",
                 if(recipe.id == @main_id || recipe.id in @extra_ids,
                   do: "border-emerald-300 bg-emerald-50",
-                  else: "border-slate-100 hover:border-emerald-200 hover:bg-emerald-50/40"
+                  else: "border-secondary-200 hover:border-secondary-200 hover:bg-tertiary-50/40"
                 )
               ]}
             >
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <h2 class="font-semibold text-slate-800">{recipe.name}</h2>
+                <h2 class="font-semibold text-primary-500">{recipe.name}</h2>
                 <span
                   :if={recipe.id == @main_id || recipe.id in @extra_ids}
                   id={"recipe-role-#{recipe.id}"}
@@ -106,7 +118,7 @@
                   phx-value-id={recipe.id}
                   aria-pressed={to_string(recipe.id == @main_id)}
                   disabled={recipe.id == @main_id}
-                  class="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-default disabled:bg-emerald-100 disabled:text-emerald-800"
+                  class="rounded-lg bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-600 disabled:cursor-default disabled:bg-emerald-100 disabled:text-emerald-800"
                 >{if recipe.id == @main_id, do: "Hlavní recept vybrán", else: "Jako hlavní recept"}</button><button
                   id={"choose-extra-#{recipe.id}"}
                   type="button"
@@ -114,50 +126,50 @@
                   phx-value-id={recipe.id}
                   aria-pressed={to_string(recipe.id in @extra_ids)}
                   disabled={recipe.id == @main_id || recipe.id in @extra_ids}
-                  class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 transition hover:border-emerald-300 disabled:cursor-default disabled:bg-emerald-100 disabled:text-emerald-800"
+                  class="rounded-lg border border-secondary-200 bg-white px-3 py-1.5 text-xs font-semibold text-primary-400 transition hover:border-tertiary-300 disabled:cursor-default disabled:bg-emerald-100 disabled:text-emerald-800"
                 >{if recipe.id in @extra_ids, do: "Doplněk přidán", else: "+ Doplněk"}</button><.link
                   navigate={~p"/admin/recipes/#{recipe.id}"}
                   target="_blank"
-                  class="self-center px-2 text-xs text-slate-500 underline"
+                  class="self-center px-2 text-xs text-primary-400 underline"
                 >Zobrazit recept</.link>
               </div>
             </article>
           </div>
         </section>
         <aside class="space-y-5 xl:sticky xl:top-5">
-          <section class="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
-            <h2 class="font-bold text-slate-900">Vybrané recepty</h2><p class="mb-3 mt-4 text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <section class="rounded-lg border border-secondary-200 bg-white p-5 shadow-sm">
+            <h2 class="font-bold text-primary-500">Vybrané recepty</h2><p class="mb-3 mt-4 text-xs font-semibold uppercase tracking-wide text-primary-400">
               Hlavní chod / bufet
             </p><div
               :if={@main}
               id="selected-main-recipe"
-              class="flex items-start justify-between gap-3 rounded-xl bg-emerald-50 p-3"
+              class="flex items-start justify-between gap-3 rounded-lg bg-emerald-50 p-3"
             >
               <span class="text-sm font-semibold text-emerald-900">{@main.name}</span><button
                 type="button"
                 phx-click="remove_main"
                 aria-label="Odebrat hlavní recept"
-                class="text-emerald-700"
+                class="text-tertiary-600"
               ><.icon name="hero-x-mark" class="h-4 w-4" /></button>
             </div><p
               :if={is_nil(@main)}
-              class="rounded-xl border border-dashed border-slate-300 p-3 text-sm text-slate-400"
+              class="rounded-lg border border-dashed border-secondary-300 p-3 text-sm text-primary-300"
             >
               Zatím není vybraný hlavní recept
-            </p><p class="mb-3 mt-5 text-xs font-semibold uppercase tracking-wide text-slate-500">
+            </p><p class="mb-3 mt-5 text-xs font-semibold uppercase tracking-wide text-primary-400">
               Doplňky
             </p><div class="space-y-2">
               <div
                 :for={recipe <- @extras}
                 id={"selected-extra-#{recipe.id}"}
-                class="flex items-start justify-between gap-3 rounded-xl bg-slate-50 p-3"
+                class="flex items-start justify-between gap-3 rounded-lg bg-secondary-50 p-3"
               >
-                <span class="text-sm font-medium text-slate-700">{recipe.name}</span><button
+                <span class="text-sm font-medium text-primary-500">{recipe.name}</span><button
                   type="button"
                   phx-click="remove_extra"
                   phx-value-id={recipe.id}
                   aria-label={"Odebrat "<>recipe.name}
-                  class="text-slate-400"
+                  class="text-primary-300"
                 ><.icon name="hero-x-mark" class="h-4 w-4" /></button>
               </div>
             </div>
@@ -174,14 +186,14 @@
               phx-click="save"
               disabled={not is_nil(@blocked)}
               phx-disable-with="Ukládám…"
-              class="mt-6 w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:opacity-40"
+              class="mt-6 w-full rounded-lg bg-primary-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-600 disabled:opacity-40"
             >Uložit recepty k jídlu</button>
           </section>
           <section
             :if={@kind == "variant"}
-            class="rounded-2xl border border-slate-200 bg-white p-5"
+            class="rounded-lg border border-secondary-200 bg-white p-5"
           >
-            <h2 class="mb-4 font-semibold text-slate-900">Náhled pro skupinu</h2><.form
+            <h2 class="mb-4 font-semibold text-primary-500">Náhled pro skupinu</h2><.form
               for={@calculator}
               id="variant-consumption-calculator"
               phx-change="calculate"
@@ -209,7 +221,7 @@
         </aside>
       </div>
       <div :if={is_nil(@blocked)} class="mt-6">
-        <p class="mb-3 text-sm font-medium text-slate-500">
+        <p class="mb-3 text-sm font-medium text-primary-400">
           Náhled podle aktuálního výběru receptů
         </p><.consumption_table id="menu-consumption" result={@result} />
       </div>

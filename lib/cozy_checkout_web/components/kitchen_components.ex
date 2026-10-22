@@ -3,7 +3,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
 
   def field_class,
     do:
-      "block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+      "block w-full rounded-lg border border-secondary-300 bg-white px-3 py-2.5 text-sm text-primary-500 shadow-sm outline-none transition focus:border-tertiary-400 focus:ring-4 focus:ring-tertiary-50"
 
   attr :id, :string, required: true
   attr :item, :any, required: true
@@ -39,7 +39,10 @@ defmodule CozyCheckoutWeb.KitchenComponents do
       |> assign(:has_supplements?, String.trim(item.supplements || "") != "")
 
     ~H"""
-    <div id={@id} class="mt-3 space-y-2 rounded-xl border border-slate-200 bg-slate-50/80 p-3 text-sm">
+    <div
+      id={@id}
+      class="mt-3 space-y-2 rounded-lg border border-secondary-200 bg-secondary-50/80 p-3 text-sm"
+    >
       <p :if={@main} class="flex items-start gap-2 text-emerald-800" data-linked-main>
         <.icon name="hero-check-circle" class="mt-0.5 h-4 w-4 shrink-0" />
         <span><span class="font-semibold">Hlavní recept:</span> {@main.name}</span>
@@ -47,7 +50,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
       <p :if={is_nil(@main)} class="flex items-center gap-2 text-amber-800" data-missing-main>
         <.icon name="hero-exclamation-circle" class="h-4 w-4 shrink-0" /> Chybí hlavní recept
       </p>
-      <p :if={@extras != []} class="text-slate-600" data-linked-extras>
+      <p :if={@extras != []} class="text-primary-400" data-linked-extras>
         <span class="font-semibold">Připojené doplňky:</span> {Enum.map_join(
           @extras,
           " · ",
@@ -63,12 +66,12 @@ defmodule CozyCheckoutWeb.KitchenComponents do
       <.link
         :if={@href && not @text_changed?}
         navigate={@href}
-        class="inline-flex items-center gap-1.5 font-semibold text-emerald-700 underline decoration-emerald-300 underline-offset-4 transition hover:text-emerald-900"
+        class="inline-flex items-center gap-1.5 font-semibold text-tertiary-600 underline decoration-tertiary-300 underline-offset-4 transition hover:text-tertiary-800"
       >
         <.icon name="hero-link" class="h-4 w-4" />
         {if @has_links?, do: "Upravit připojené recepty", else: "Připojit recepty"}
       </.link>
-      <p :if={is_nil(@href)} class="text-xs text-slate-500">
+      <p :if={is_nil(@href)} class="text-xs text-primary-400">
         Recepty připojíte po uložení varianty.
       </p>
     </div>
@@ -139,7 +142,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
       <div
         :if={@open}
         id={"#{@field.id}-options"}
-        class="absolute left-0 right-0 z-30 max-h-72 overflow-y-auto overscroll-contain rounded-xl border border-slate-200 bg-white p-1 shadow-xl"
+        class="absolute left-0 right-0 z-30 max-h-72 overflow-y-auto overscroll-contain rounded-lg border border-secondary-200 bg-white p-1 shadow-xl"
         aria-label="Nalezené suroviny"
       >
         <button
@@ -149,16 +152,16 @@ defmodule CozyCheckoutWeb.KitchenComponents do
           phx-click={JS.push("select_ingredient") |> JS.focus(to: "##{@field.form[:quantity].id}")}
           phx-value-index={@index}
           phx-value-id={ingredient.id}
-          class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-slate-800 transition hover:bg-emerald-50 focus:bg-emerald-100 focus:outline-none"
+          class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-primary-500 transition hover:bg-tertiary-50 focus:bg-secondary-100 focus:outline-none"
         >
-          <span>{ingredient.name}</span><span class="shrink-0 text-xs text-slate-500">{ingredient.base_unit}</span>
+          <span>{ingredient.name}</span><span class="shrink-0 text-xs text-primary-400">{ingredient.base_unit}</span>
         </button>
-        <p :if={@match_count == 0} class="px-3 py-3 text-sm text-slate-500" role="status">
+        <p :if={@match_count == 0} class="px-3 py-3 text-sm text-primary-400" role="status">
           Žádná surovina nenalezena. Zkuste jiný název nebo založte novou surovinu dole ve formuláři.
         </p>
         <p
           :if={@match_count > 8}
-          class="border-t border-slate-100 px-3 py-2 text-xs text-slate-500"
+          class="border-t border-secondary-200 px-3 py-2 text-xs text-primary-400"
           role="status"
         >
           Zobrazeno 8 z {@match_count} surovin. Upřesněte název.
@@ -183,66 +186,33 @@ defmodule CozyCheckoutWeb.KitchenComponents do
 
   attr :title, :string, required: true
   attr :subtitle, :string, default: ""
-  attr :active, :string, default: "recipes"
+  attr :back, :string, default: nil
+  attr :back_label, :string, default: "Zpět"
   slot :actions
 
   def kitchen_header(assigns) do
     ~H"""
-    <div class="mb-8">
+    <header class="mb-7">
       <.link
-        navigate={~p"/admin/meal-planner"}
-        class="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-emerald-700"
-      ><.icon name="hero-arrow-left" class="h-4 w-4" />Plánovač jídel</.link>
-      <div class="mt-5 flex flex-wrap items-end justify-between gap-5">
-        <div>
-          <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">
-            Kuchyně Jindřichova domu
-          </p><h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            {@title}
-          </h1><p class="mt-3 max-w-2xl text-slate-500">{@subtitle}</p>
+        :if={@back}
+        id="food-back"
+        navigate={@back}
+        class="mb-4 inline-flex items-center gap-2 text-sm text-tertiary-600 hover:underline"
+      >
+        <.icon name="hero-arrow-left" class="h-4 w-4" />{@back_label}
+      </.link>
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div class="min-w-0">
+          <h1 class="text-3xl font-bold text-primary-500">{@title}</h1>
+          <p :if={@subtitle != ""} class="mt-3 max-w-2xl text-sm leading-relaxed text-primary-400">
+            {@subtitle}
+          </p>
         </div>
-        <div class="flex items-center gap-3">{render_slot(@actions)}</div>
+        <div :if={@actions != []} class="flex flex-wrap items-center gap-3">
+          {render_slot(@actions)}
+        </div>
       </div>
-      <nav class="mt-7 flex flex-wrap gap-2 border-b border-slate-200 pb-3" aria-label="Kuchyně">
-        <.link
-          id="kitchen-shopping"
-          navigate={~p"/admin/kitchen-shopping"}
-          class={[
-            "rounded-xl px-4 py-2 text-sm font-semibold transition",
-            if(@active == "shopping",
-              do: "bg-emerald-100 text-emerald-800",
-              else: "text-slate-500 hover:bg-white"
-            )
-          ]}
-        >Nákup</.link>
-        <.link
-          id="kitchen-recipes"
-          navigate={~p"/admin/recipes"}
-          class={[
-            "rounded-xl px-4 py-2 text-sm font-semibold transition",
-            if(@active == "recipes",
-              do: "bg-emerald-100 text-emerald-800",
-              else: "text-slate-500 hover:bg-white"
-            )
-          ]}
-        >Recepty</.link>
-        <.link
-          id="kitchen-ingredients"
-          navigate={~p"/admin/ingredients"}
-          class={[
-            "rounded-xl px-4 py-2 text-sm font-semibold transition",
-            if(@active == "ingredients",
-              do: "bg-emerald-100 text-emerald-800",
-              else: "text-slate-500 hover:bg-white"
-            )
-          ]}
-        >Suroviny</.link>
-        <.link
-          navigate={~p"/admin/meal-planner/variants"}
-          class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 transition hover:bg-white"
-        >Varianty menu</.link>
-      </nav>
-    </div>
+    </header>
     """
   end
 
@@ -251,17 +221,20 @@ defmodule CozyCheckoutWeb.KitchenComponents do
 
   def consumption_table(assigns) do
     ~H"""
-    <section id={@id} class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 p-5">
+    <section
+      id={@id}
+      class="overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-sm"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-4 border-b border-secondary-200 p-5">
         <div>
-          <h2 class="font-bold text-slate-900">Potřebné suroviny</h2><p class="mt-1 text-sm text-slate-500">
+          <h2 class="font-bold text-primary-500">Potřebné suroviny</h2><p class="mt-1 text-sm text-primary-400">
             {@result.actual} porcí pro výdej · přepočet {Decimal.to_string(
               Decimal.normalize(@result.effective),
               :normal
             )} dospělých porcí
           </p>
         </div>
-        <span class="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Dětská porce {Decimal.to_string(
+        <span class="rounded-full bg-secondary-50 px-3 py-1 text-xs font-semibold text-tertiary-600">Dětská porce {Decimal.to_string(
           Decimal.mult(@result.factor, 100),
           :normal
         )} %</span>
@@ -276,24 +249,24 @@ defmodule CozyCheckoutWeb.KitchenComponents do
         </p>
       </div>
       <table class="w-full text-left text-sm">
-        <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+        <thead class="bg-secondary-50 text-xs uppercase tracking-wide text-primary-400">
           <tr>
             <th class="px-5 py-3">Surovina</th><th class="px-5 py-3 text-right">Množství</th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-100">
+        <tbody class="divide-y divide-secondary-200">
           <tr
             :for={row <- @result.quantities}
             id={"#{@id}-#{row.id}"}
-            class="transition hover:bg-slate-50"
+            class="transition hover:bg-secondary-50"
           >
-            <td class="px-5 py-3.5 font-medium text-slate-800">{row.ingredient.name}</td><td class="px-5 py-3.5 text-right font-semibold tabular-nums text-slate-900">
+            <td class="px-5 py-3.5 font-medium text-primary-500">{row.ingredient.name}</td><td class="px-5 py-3.5 text-right font-semibold tabular-nums text-primary-500">
               {CozyCheckout.Recipes.format_quantity(row.quantity, row.unit)}
             </td>
           </tr>
         </tbody>
       </table>
-      <p class="border-t border-slate-100 px-5 py-4 text-xs leading-relaxed text-slate-500">
+      <p class="border-t border-secondary-200 px-5 py-4 text-xs leading-relaxed text-primary-400">
         Množství vychází z aktuálních receptur. Výpočet je bez nákupních balení a rezervy; zobrazení je zaokrouhlené, výpočet používá přesné hodnoty.
       </p>
     </section>
