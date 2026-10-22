@@ -1,22 +1,20 @@
 <Layouts.pos page_title={@page_title}>
   <div class="min-h-screen bg-secondary-50 p-6">
-    <!-- Header -->
-    <div class="mb-4 flex justify-between items-center">
-      <div>
-        <p class="mb-2 text-sm font-semibold tracking-wide text-primary-400">Jindřichův dům</p>
-        <h1 class="text-3xl font-bold text-primary-500 mb-1">Select Booking</h1>
-        <p class="text-base text-primary-400">Tap a booking to manage orders</p>
-      </div>
+    <header class="mb-4 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm font-semibold text-primary-400">Samoobslužný bar</p>
       <div class="flex items-center gap-4">
-        <!-- Service Mode Toggle -->
+        <!-- Obsluha Mode Toggle -->
         <div class="flex items-center gap-3 bg-white rounded-xl px-4 py-2.5 shadow-md">
           <span class={[
             "text-sm font-semibold transition-colors duration-200",
             (@service_mode && "text-gray-400") || "text-primary-600"
           ]}>
-            Standard
+            Hosté
           </span>
           <button
+            aria-label="Režim obsluhy"
+            role="switch"
+            aria-checked={to_string(@service_mode)}
             phx-click="toggle_service_mode"
             class={[
               "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
@@ -32,33 +30,65 @@
             "text-sm font-semibold transition-colors duration-200",
             (@service_mode && "text-purple-600") || "text-gray-400"
           ]}>
-            Service
+            Obsluha
           </span>
         </div>
         <.link
           href={~p"/admin"}
           class="px-5 py-2.5 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors duration-200 flex items-center gap-2"
         >
-          <.icon name="hero-lock-closed" class="w-5 h-5" /> Admin
+          <.icon name="hero-lock-closed" class="w-5 h-5" /> Správa
         </.link>
       </div>
-    </div>
+    </header>
 
-    <!-- Quick Order Button -->
-    <div class="mb-6">
+    <section
+      id="pos-welcome"
+      aria-labelledby="pos-house-name"
+      class="mb-5 overflow-hidden rounded-2xl border border-secondary-200 bg-white sm:grid sm:grid-cols-[1.1fr_1fr]"
+    >
+      <div class="flex flex-col justify-center px-5 py-5 sm:px-7">
+        <p class="mb-2 text-xs font-semibold tracking-wide text-primary-400">
+          Pec pod Sněžkou · 1 030 m n. m.
+        </p>
+        <h1 id="pos-house-name" class="text-3xl font-bold text-primary-500">Jindřichův dům</h1>
+        <p class="mt-3 text-base text-primary-400">Vítejte u našeho samoobslužného baru.</p>
+      </div>
+      <figure class="relative h-40 sm:h-[180px]">
+        <img
+          src={~p"/images/rano-nad-udolim.webp"}
+          alt="Jindřichův dům nad údolím zahaleným ranní mlhou"
+          width="1280"
+          height="960"
+          fetchpriority="high"
+          class="h-full w-full object-cover object-[center_60%]"
+        />
+        <figcaption class="absolute bottom-3 right-3 rounded-md bg-primary-900/75 px-2.5 py-1 text-xs text-white">
+          Ráno nad údolím
+        </figcaption>
+      </figure>
+    </section>
+
+    <div class="mb-5 flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <h2 class="text-xl font-bold text-primary-500">Vyberte svůj pobyt</h2>
+        <p class="mt-1 text-sm text-primary-400">Otevřete svůj účet nebo založte nový.</p>
+      </div>
+
       <button
         phx-click="show_quick_order_modal"
-        class="w-full px-6 py-4 bg-tertiary-500 text-white rounded-xl hover:bg-tertiary-600 transition-all duration-200 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl active:scale-98"
+        id="pos-new-account"
+        class="min-h-12 w-full sm:w-auto px-5 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 transition-colors flex items-center justify-center gap-2 active:scale-98"
       >
         <.icon name="hero-plus-circle" class="w-7 h-7" />
-        <span class="text-xl font-bold">Quick Order (No Booking)</span>
+        <span class="text-base font-semibold">Nový účet bez pobytu</span>
       </button>
     </div>
 
-    <!-- Standalone Orders Section -->
+    <!-- Účty bez pobytu Section -->
     <div :if={@standalone_orders != []} class="mb-6">
-      <h2 class="text-2xl font-bold text-primary-500 mb-3">Standalone Orders</h2>
-      <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+      <h2 class="text-2xl font-bold text-primary-500 mb-3">Účty bez pobytu</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         <div
           :for={order <- @standalone_orders}
           phx-click="select_order"
@@ -73,14 +103,14 @@
             <div class="flex items-center gap-2">
               <.icon name="hero-shopping-cart" class="w-5 h-5 text-tertiary-600" />
               <span class="px-2 py-0.5 bg-tertiary-200 text-tertiary-800 text-xs font-semibold rounded-full">
-                Standalone
+                Bez pobytu
               </span>
             </div>
             <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
               {order.name}
             </h2>
             <div class="text-xs text-primary-300">
-              Order #{order.order_number}
+              Účet #{order.order_number}
             </div>
           </div>
 
@@ -95,11 +125,11 @@
 
     <!-- Bookings Section -->
     <h2 :if={@bookings != []} class="text-2xl font-bold text-primary-500 mb-3">
-      Active Bookings
+      Ubytovaní hosté
     </h2>
 
     <!-- Bookings Grid -->
-    <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
       <div
         :for={booking <- @bookings}
         phx-click="select_booking"
@@ -119,7 +149,7 @@
           <!-- Room Number -->
           <div :if={booking.room_number} class="flex items-center gap-1.5 mt-1">
             <.icon name="hero-home" class="w-4 h-4 text-primary-300" />
-            <span class="text-sm text-primary-400">Room {booking.room_number}</span>
+            <span class="text-sm text-primary-400">Pokoj {booking.room_number}</span>
           </div>
 
           <!-- Check-in Period -->
@@ -129,9 +159,9 @@
           >
             <.icon name="hero-calendar" class="w-3.5 h-3.5" />
             <span>
-              {Calendar.strftime(booking.check_in_date, "%b %d")}
+              {Calendar.strftime(booking.check_in_date, "%d. %m.")}
               {if booking.check_out_date,
-                do: " - #{Calendar.strftime(booking.check_out_date, "%b %d")}",
+                do: " - #{Calendar.strftime(booking.check_out_date, "%d. %m.")}",
                 else: ""}
             </span>
           </div>
@@ -142,9 +172,11 @@
           <div class="inline-flex items-center gap-1.5 bg-success-light text-success-dark px-2.5 py-1 rounded-full text-xs font-semibold">
             <.icon name="hero-shopping-cart" class="w-3.5 h-3.5" />
             <span>
-              {booking.open_orders_count} {if booking.open_orders_count == 1,
-                do: "order",
-                else: "orders"}
+              {booking.open_orders_count} {cond do
+                booking.open_orders_count == 1 -> "otevřený účet"
+                booking.open_orders_count in 2..4 -> "otevřené účty"
+                true -> "otevřených účtů"
+              end}
             </span>
           </div>
         </div>
@@ -154,31 +186,37 @@
     <!-- Empty State -->
     <div :if={@bookings == []} class="text-center py-20">
       <.icon name="hero-calendar-days" class="w-24 h-24 text-secondary-300 mx-auto mb-6" />
-      <h2 class="text-3xl font-bold text-primary-300 mb-2">No Active Bookings</h2>
-      <p class="text-xl text-primary-300">Check in guests to start taking orders</p>
+      <h2 class="text-3xl font-bold text-primary-300 mb-2">
+        Zatím tu nejsou žádné aktivní pobyty
+      </h2>
+      <p class="text-xl text-primary-300">Účet bez pobytu můžete založit tlačítkem výše.</p>
     </div>
 
     <!-- Quick Order Modal -->
     <%= if @show_quick_order_modal do %>
       <div class="fixed inset-0 bg-primary-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-in fade-in zoom-in duration-200">
-          <h3 class="text-3xl font-bold text-primary-500 mb-6">Create Quick Order</h3>
+          <h3 class="text-3xl font-bold text-primary-500 mb-6">Nový účet bez pobytu</h3>
 
           <div class="mb-8">
-            <label class="block text-lg font-semibold text-primary-500 mb-3">
-              Order Name
+            <label
+              for="pos-account-name"
+              class="block text-lg font-semibold text-primary-500 mb-3"
+            >
+              Název účtu
             </label>
             <input
               type="text"
+              id="pos-account-name"
               name="order_name"
-              placeholder="e.g., Kids - Room 5, Staff lunch, Walk-in"
+              placeholder="Např. Novákovi, pokoj 5 nebo návštěva"
               class="w-full px-4 py-4 text-lg border-2 border-secondary-300 rounded-xl focus:border-tertiary-500 focus:outline-none transition-colors"
               value={@quick_order_name}
               phx-keyup="update_quick_order_name"
               autofocus
             />
             <p class="mt-2 text-sm text-primary-300">
-              Enter a descriptive name for this order
+              Zadejte jméno nebo název, podle kterého svůj účet poznáte.
             </p>
           </div>
 
@@ -187,14 +225,14 @@
               phx-click="hide_quick_order_modal"
               class="flex-1 px-6 py-4 bg-secondary-200 text-primary-500 rounded-xl hover:bg-secondary-300 transition-colors text-lg font-semibold"
             >
-              Cancel
+              Zrušit
             </button>
             <button
               phx-click="create_quick_order"
               disabled={String.trim(@quick_order_name) == ""}
               class="flex-1 px-6 py-4 bg-tertiary-500 text-white rounded-xl hover:bg-tertiary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-lg font-semibold"
             >
-              Create Order
+              Založit účet
             </button>
           </div>
         </div>

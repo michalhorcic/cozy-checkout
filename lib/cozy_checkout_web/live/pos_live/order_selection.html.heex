@@ -1,5 +1,6 @@
 <Layouts.pos page_title={@page_title}>
   <div class="min-h-screen bg-secondary-50 p-6">
+    <p class="mb-3 text-sm font-semibold text-primary-400">Jindřichův dům</p>
     <!-- Header with Back Button -->
     <div class="mb-8">
       <button
@@ -7,7 +8,7 @@
         class="mb-4 inline-flex items-center gap-2 text-primary-400 hover:text-primary-500 text-lg active:scale-95 transition-transform"
       >
         <.icon name="hero-arrow-left" class="w-6 h-6" />
-        <span>Back to Bookings</span>
+        <span>Zpět na pobyty</span>
       </button>
 
       <h1 class="text-4xl font-bold text-primary-500 mb-2">
@@ -19,9 +20,9 @@
       <div class="flex items-center gap-4">
         <p class="text-lg text-primary-400">
           <%= if @orders == [] do %>
-            Create an order for a guest
+            Založte si účet
           <% else %>
-            Select an order or create a new one
+            Vyberte svůj účet nebo založte nový
           <% end %>
         </p>
         <span

@@ -81,6 +81,7 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 ## Application identity
 
 - Cozy Checkout and `priv/static/images/cozy-knot.svg` identify the internal application. The authenticated admin LiveView session owns the shared brand header; `Layouts.app` does not show another header by default. Food pages show the brand in their navigation and hide the shared header. Keep internal branding out of printed documents and guest-facing POS content, where Jindřichův dům is the primary identity.
+- The landscape-tablet POS welcome uses the locally bundled `priv/static/images/rano-nad-udolim.webp` photograph (source: `michalhorcic/Moruska`, `img/gallery/web/rano-nad-mlhou.webp`), captioned “Ráno nad údolím”. Keep it on the welcome screen only; ordering screens use the house name and confirmed cash/QR payments show the personal thank-you. Do not show the payment thank-you on QR preview.
 - Keep favicon and Apple touch icon consistent with the cozy knot. When changing the SVG, regenerate the opaque 180px touch icon on a white background with generous padding.
 
 ## Validation and handoff
