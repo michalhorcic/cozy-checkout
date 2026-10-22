@@ -1,310 +1,323 @@
 defmodule CozyCheckoutWeb.DashboardLive do
   use CozyCheckoutWeb, :live_view
-  import Phoenix.Controller, only: [get_csrf_token: 0]
 
+  alias CozyCheckout.Dashboard
+
+  @impl true
   def mount(_params, _session, socket) do
-    {:ok,
-     socket
-     |> assign(:expanded_sections, %{
-       "catalog" => false,
-       "inventory" => false,
-       "sales" => false,
-       "other" => false
-     })}
+    {:ok, load_overview(socket)}
   end
 
-  def handle_event("toggle_section", %{"section" => section}, socket) do
-    expanded = socket.assigns.expanded_sections
-    {:noreply, assign(socket, :expanded_sections, Map.update!(expanded, section, &(!&1)))}
+  @impl true
+  def handle_info(:refresh_overview, socket), do: {:noreply, load_overview(socket)}
+
+  defp load_overview(socket) do
+    if connected?(socket), do: Process.send_after(self(), :refresh_overview, 60_000)
+    assign(socket, page_title: "Přehled", overview: Dashboard.overview())
   end
 
+  @impl true
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} main_class="min-h-screen bg-secondary-50" content_class="">
-      <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        <%!-- Header --%>
-        <div class="flex justify-between items-center mb-8">
+    <Layouts.app
+      flash={@flash}
+      main_class="px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+      content_class="mx-auto max-w-7xl"
+    >
+      <div id="operations-dashboard">
+        <header class="mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">Administrace</h1>
-            <p class="text-lg text-gray-600">Jindřichův dům</p>
+            <p class="mb-1 text-sm text-primary-400">Jindřichův dům · {date(@overview.today)}</p>
+            <h1 class="text-3xl font-bold tracking-tight text-primary-500">Přehled provozu</h1>
           </div>
-          <div class="flex items-center gap-3">
-            <form action={~p"/admin/logout"} method="post">
-              <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
-              <button
-                type="submit"
-                class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
+          <.link
+            id="new-booking"
+            navigate={~p"/admin/bookings/new"}
+            class="inline-flex min-h-11 items-center gap-2 rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-600"
+          >
+            <.icon name="hero-plus" class="h-4 w-4" />Nová rezervace
+          </.link>
+        </header>
+
+        <div class="mb-7 grid gap-3 sm:grid-cols-3">
+          <.summary
+            label="Dnešní příjezdy"
+            value={@overview.arrivals}
+            detail="rezervací"
+            icon="hero-arrow-right-end-on-rectangle"
+          />
+          <.summary
+            label="Dnešní odjezdy"
+            value={@overview.departures}
+            detail="rezervací"
+            icon="hero-arrow-right-start-on-rectangle"
+          />
+          <.summary
+            label="Dnešní obsazenost"
+            value={@overview.occupancy}
+            detail={"z #{@overview.capacity} osob · dle pobytových položek"}
+            icon="hero-user-group"
+          />
+        </div>
+
+        <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <section
+            aria-labelledby="stays-heading"
+            class="overflow-hidden rounded-2xl border border-secondary-200 bg-white shadow-sm"
+          >
+            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-secondary-100 p-5 sm:p-6">
+              <div>
+                <h2 id="stays-heading" class="text-lg font-semibold text-primary-500">
+                  Probíhající a nejbližší pobyty
+                </h2>
+                <p class="mt-1 text-sm text-primary-400">
+                  Příjezdy do {date(@overview.last_date)} · následující měsíc
+                </p>
+              </div>
+              <.link
+                id="open-calendar"
+                navigate={~p"/admin/bookings/calendar"}
+                class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-tertiary-600 hover:underline"
               >
-                <.icon name="hero-lock-closed" class="h-4 w-4" /> Lock Admin
-              </button>
-            </form>
-            <.link
-              navigate={~p"/pos"}
-              class="inline-flex items-center gap-2 rounded-lg bg-gray-800 px-4 py-2 text-white transition-colors hover:bg-gray-700"
-            >
-              <.icon name="hero-arrow-left" class="h-4 w-4" /> POS
-            </.link>
-          </div>
-        </div>
-
-        <%!-- Quick Actions (Most Used) --%>
-        <div class="mb-8">
-          <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            Quick Actions
-          </h2>
-          <div class="grid grid-cols-2 md:grid-cols-6 gap-4">
-            <.quick_action_card
-              title="Bookings"
-              icon="hero-calendar-days"
-              navigate={~p"/admin/bookings"}
-            />
-            <.quick_action_card
-              title="Calendar"
-              icon="hero-calendar"
-              navigate={~p"/admin/bookings/calendar"}
-            />
-            <.quick_action_card
-              title="Products"
-              icon="hero-cube"
-              navigate={~p"/admin/products"}
-            />
-            <.quick_action_card
-              title="Pricelists"
-              icon="hero-currency-dollar"
-              navigate={~p"/admin/pricelists"}
-            />
-            <.quick_action_card
-              title="Bar Stock"
-              icon="hero-beaker"
-              navigate={~p"/admin/bar-stock"}
-            />
-            <.quick_action_card
-              title="Stravování"
-              icon="hero-clipboard-document-list"
-              navigate={~p"/admin/meal-planner"}
-            />
-            <.quick_action_card
-              title="Email Guests"
-              icon="hero-envelope"
-              navigate={~p"/admin/emails"}
-            />
-          </div>
-        </div>
-
-        <%!-- Expandable Sections --%>
-        <div class="space-y-4">
-          <%!-- Catalog Management --%>
-          <.expandable_section
-            title="Catalog & Pricing"
-            section="catalog"
-            expanded={@expanded_sections["catalog"]}
-            count={6}
-          >
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
-              <.compact_card
-                title="Categories"
-                icon="hero-tag"
-                navigate={~p"/admin/categories"}
-              />
-              <.compact_card
-                title="Products"
-                icon="hero-cube"
-                navigate={~p"/admin/products"}
-              />
-              <.compact_card
-                title="POS Shortcuts"
-                icon="hero-bolt"
-                navigate={~p"/admin/pos-shortcuts"}
-              />
-              <.compact_card
-                title="Pricelists"
-                icon="hero-currency-dollar"
-                navigate={~p"/admin/pricelists"}
-              />
-              <.compact_card
-                title="Price Management"
-                icon="hero-chart-bar"
-                navigate={~p"/admin/pricelists/management"}
-              />
-              <.compact_card
-                title="Print Pricelist"
-                icon="hero-printer"
-                navigate={~p"/admin/pricelists/print"}
-              />
+                <.icon name="hero-calendar-days" class="h-4 w-4" />Kalendář
+              </.link>
             </div>
-          </.expandable_section>
-
-          <%!-- Inventory --%>
-          <.expandable_section
-            title="Inventory & Stock"
-            section="inventory"
-            expanded={@expanded_sections["inventory"]}
-            count={5}
-          >
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
-              <.compact_card
-                title="Purchase Orders"
-                icon="hero-archive-box"
-                navigate={~p"/admin/purchase_orders"}
-              />
-              <.compact_card
-                title="Stock Overview"
-                icon="hero-chart-bar"
-                navigate={~p"/admin/stock"}
-              />
-              <.compact_card
-                title="Bar Stock"
-                icon="hero-beaker"
-                navigate={~p"/admin/bar-stock"}
-              />
-              <.compact_card
-                title="Stock Adjustments"
-                icon="hero-adjustments-horizontal"
-                navigate={~p"/admin/stock-adjustments"}
-              />
-              <.compact_card
-                title="Inventory Reports"
-                icon="hero-chart-pie"
-                navigate={~p"/admin/inventory-reports"}
-              />
+            <div :if={@overview.bookings == []} id="stays-empty" class="px-6 py-12 text-center">
+              <.icon name="hero-calendar-days" class="mb-3 h-9 w-9 text-secondary-400" />
+              <p class="font-medium text-primary-500">Na následující měsíc tu nejsou žádné pobyty.</p>
+              <p class="mt-1 text-sm text-primary-400">Novou rezervaci přidáte tlačítkem nahoře.</p>
             </div>
-          </.expandable_section>
-
-          <%!-- Sales & Payments --%>
-          <.expandable_section
-            title="Sales & Finance"
-            section="sales"
-            expanded={@expanded_sections["sales"]}
-            count={6}
-          >
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
-              <.compact_card title="Orders" icon="hero-shopping-cart" navigate={~p"/admin/orders"} />
-              <.compact_card title="Payments" icon="hero-banknotes" navigate={~p"/admin/payments"} />
-              <.compact_card title="Economy" icon="hero-chart-pie" navigate={~p"/admin/economy"} />
-              <.compact_card
-                title="Statistics"
-                icon="hero-chart-bar-square"
-                navigate={~p"/admin/statistics"}
-              />
-              <.compact_card
-                title="POHODA Export"
-                icon="hero-arrow-down-tray"
-                navigate={~p"/admin/pohoda-export"}
-              />
-              <.compact_card
-                title="Job Queue (Oban)"
-                icon="hero-queue-list"
-                navigate="/admin/system?page=oban"
-              />
+            <div id="dashboard-stays" class="divide-y divide-secondary-100">
+              <.link
+                :for={booking <- @overview.bookings}
+                id={"dashboard-booking-#{booking.id}"}
+                navigate={~p"/admin/bookings/#{booking.id}"}
+                class="group flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500 sm:px-6"
+              >
+                <div class="min-w-0 flex-1 basis-48">
+                  <p class="font-semibold text-primary-500 group-hover:text-tertiary-700">
+                    {booking.guest.name}
+                  </p>
+                  <p class="mt-1 text-sm text-primary-400">
+                    {date(booking.check_in_date)} – {date(booking.check_out_date)}
+                  </p>
+                  <p class="mt-1 text-xs text-primary-400">{rooms(booking)}</p>
+                  <p :if={booking.short_note} class="mt-1 text-xs text-primary-400">
+                    {booking.short_note}
+                  </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <span
+                    :if={booking.check_in_date == @overview.today}
+                    class="rounded-full bg-success-light px-2.5 py-1 text-xs font-semibold text-success-dark"
+                  >Dnes příjezd</span>
+                  <span
+                    :if={booking.check_out_date == @overview.today}
+                    class="rounded-full bg-tertiary-100 px-2.5 py-1 text-xs font-semibold text-tertiary-800"
+                  >Dnes odjezd</span>
+                  <span class="rounded-full bg-secondary-100 px-2.5 py-1 text-xs font-medium text-primary-500">{stay_label(
+                    booking,
+                    @overview.today
+                  )}</span>
+                  <.icon name="hero-chevron-right" class="h-4 w-4 text-primary-300" />
+                </div>
+              </.link>
             </div>
-          </.expandable_section>
-
-          <%!-- Other Tools --%>
-          <.expandable_section
-            title="Guest Management & Tools"
-            section="other"
-            expanded={@expanded_sections["other"]}
-            count={5}
-          >
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-4">
-              <.compact_card title="Guests" icon="hero-user-group" navigate={~p"/admin/guests"} />
-              <.compact_card title="Rooms" icon="hero-home" navigate={~p"/admin/rooms"} />
-              <.compact_card
-                title="Bookings"
-                icon="hero-calendar-days"
+            <div class="border-t border-secondary-100 px-6 py-4">
+              <.link
                 navigate={~p"/admin/bookings"}
-              />
-              <.compact_card
-                title="Import Bookings"
-                icon="hero-arrow-up-tray"
-                navigate={~p"/admin/ical-import"}
-              />
-              <.compact_card
-                title="Stravování"
-                icon="hero-clipboard-document-list"
-                navigate={~p"/admin/meal-planner"}
-              />
-              <.compact_card title="Email Guests" icon="hero-envelope" navigate={~p"/admin/emails"} />
+                class="text-sm font-medium text-tertiary-600 hover:underline"
+              >Všechny rezervace →</.link>
             </div>
-          </.expandable_section>
+          </section>
+
+          <div class="space-y-5">
+            <section
+              aria-labelledby="food-heading"
+              class="rounded-2xl border border-secondary-200 bg-white p-5 shadow-sm sm:p-6"
+            >
+              <div class="mb-4 flex items-center gap-3">
+                <span class="rounded-xl bg-secondary-100 p-2.5"><.icon
+                  name="hero-clipboard-document-list"
+                  class="h-5 w-5 text-primary-500"
+                /></span>
+                <div>
+                  <h2 id="food-heading" class="font-semibold text-primary-500">Stravování</h2><p class="text-xs text-primary-400">
+                    Dnešní porce
+                  </p>
+                </div>
+              </div>
+              <dl
+                id="today-portions"
+                class="mb-4 grid grid-cols-3 gap-2 rounded-xl bg-secondary-50 p-3"
+              >
+                <div :for={
+                  {type, title} <- [
+                    {"breakfast", "Snídaně"},
+                    {"lunch", "Obědy"},
+                    {"dinner", "Večeře"}
+                  ]
+                }>
+                  <dt class="text-xs text-primary-400">{title}</dt><dd
+                    id={"dashboard-#{type}"}
+                    class="mt-1 text-xl font-semibold text-primary-500"
+                  >
+                    {@overview.portions[type].total}
+                  </dd>
+                </div>
+              </dl>
+              <p
+                :if={@overview.portions.incomplete_bookings != []}
+                id="portions-incomplete"
+                class="mb-4 rounded-lg bg-warning-light px-3 py-2 text-xs text-primary-500"
+              >
+                Počty jsou neúplné. U některých pobytů chybí údaje o stravování.
+              </p>
+              <.action
+                id="open-meal-planner"
+                path={~p"/admin/meal-planner"}
+                label="Plán jídel"
+                icon="hero-calendar-days"
+              />
+              <.action
+                id="open-kitchen-shopping"
+                path={~p"/admin/kitchen-shopping"}
+                label="Nákup pro kuchyň"
+                icon="hero-shopping-cart"
+              />
+            </section>
+            <section
+              aria-labelledby="bar-heading"
+              class="rounded-2xl border border-secondary-200 bg-white p-5 shadow-sm sm:p-6"
+            >
+              <h2 id="bar-heading" class="mb-2 font-semibold text-primary-500">Barový sklad</h2>
+              <p class="mb-4 text-sm leading-relaxed text-primary-400">
+                Zásoby na baru, doplnění a evidence spotřeby.
+              </p>
+              <.action
+                id="open-bar-stock"
+                path={~p"/admin/bar-stock"}
+                label="Otevřít barový sklad"
+                icon="hero-beaker"
+              />
+            </section>
+            <div class="px-1">
+              <.action
+                id="open-emails"
+                path={~p"/admin/emails"}
+                label="Emaily hostům"
+                icon="hero-envelope"
+              />
+              <.action
+                id="open-payments"
+                path={~p"/admin/payments"}
+                label="Proběhlé barové platby"
+                icon="hero-banknotes"
+              />
+            </div>
+          </div>
         </div>
+
+        <section
+          :if={@overview.issues != []}
+          id="dashboard-attention"
+          aria-labelledby="attention-heading"
+          class="mt-6 overflow-hidden rounded-2xl border border-warning bg-white shadow-sm"
+        >
+          <div class="flex items-center gap-3 border-b border-secondary-100 px-6 py-4">
+            <.icon name="hero-exclamation-triangle" class="h-5 w-5 text-warning" />
+            <h2 id="attention-heading" class="font-semibold text-primary-500">
+              Vyžaduje pozornost
+              <span class="ml-2 text-sm font-normal text-primary-400">{length(@overview.issues)}</span>
+            </h2>
+          </div>
+          <p class="px-6 pt-3 text-xs text-primary-400">
+            Stravování probíhajících pobytů a příjezdů v následujícím měsíci
+          </p>
+          <ul class="divide-y divide-secondary-100">
+            <li :for={issue <- @overview.issues}>
+              <.link
+                id={"dashboard-issue-#{issue.kind}-#{issue.booking.id}"}
+                navigate={issue_path(issue)}
+                class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm hover:bg-secondary-50"
+              >
+                <div>
+                  <span class="font-semibold text-primary-500">{issue.booking.guest.name}</span><span class="ml-2 text-xs text-primary-400">{date(
+                    issue.booking.check_in_date
+                  )}</span><p class="mt-1 text-primary-400">{issue.reason}</p>
+                </div>
+                <span class="font-medium text-tertiary-600">{if issue.kind == :details,
+                  do: "Doplnit údaje",
+                  else: "Zkontrolovat menu"} →</span>
+              </.link>
+            </li>
+          </ul>
+        </section>
       </div>
     </Layouts.app>
     """
   end
 
-  # Quick Action Card (Larger, more prominent)
-  attr :title, :string, required: true
+  attr :label, :string, required: true
+  attr :value, :integer, required: true
+  attr :detail, :string, required: true
   attr :icon, :string, required: true
-  attr :navigate, :string, required: true
 
-  defp quick_action_card(assigns) do
+  defp summary(assigns) do
     ~H"""
-    <.link
-      navigate={@navigate}
-      class="group block p-6 bg-white rounded-xl shadow-md hover:shadow-xl transform transition-all duration-200 hover:-translate-y-1 border-2 border-transparent hover:border-blue-500"
-    >
-      <div class="flex flex-col items-center text-center space-y-3">
-        <div class="p-3 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors">
-          <.icon name={@icon} class="w-8 h-8 text-blue-600" />
-        </div>
-        <h3 class="text-lg font-bold text-gray-900">{@title}</h3>
-      </div>
-    </.link>
-    """
-  end
-
-  # Expandable Section
-  attr :title, :string, required: true
-  attr :section, :string, required: true
-  attr :expanded, :boolean, required: true
-  attr :count, :integer, required: true
-  slot :inner_block, required: true
-
-  defp expandable_section(assigns) do
-    ~H"""
-    <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-      <button
-        type="button"
-        phx-click="toggle_section"
-        phx-value-section={@section}
-        class="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-      >
-        <div class="flex items-center gap-3">
-          <h3 class="text-lg font-semibold text-gray-900">{@title}</h3>
-          <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-            {@count}
-          </span>
-        </div>
-        <.icon
-          name={if @expanded, do: "hero-chevron-up", else: "hero-chevron-down"}
-          class="w-5 h-5 text-gray-400"
-        />
-      </button>
-
-      <div class={["px-6 pb-4", !@expanded && "hidden"]}>
-        {render_slot(@inner_block)}
+    <div class="flex items-start gap-4 rounded-xl border border-secondary-200 bg-white p-4 sm:p-5">
+      <span class="rounded-lg bg-secondary-50 p-2"><.icon
+        name={@icon}
+        class="h-5 w-5 text-primary-400"
+      /></span>
+      <div>
+        <p class="text-sm text-primary-400">{@label}</p><p class="mt-1 text-3xl font-semibold tracking-tight text-primary-500">
+          {@value}
+        </p><p class="mt-1 text-xs text-primary-400">{@detail}</p>
       </div>
     </div>
     """
   end
 
-  # Compact Card (For collapsed sections)
-  attr :title, :string, required: true
+  attr :id, :string, required: true
+  attr :path, :string, required: true
+  attr :label, :string, required: true
   attr :icon, :string, required: true
-  attr :navigate, :string, required: true
 
-  defp compact_card(assigns) do
+  defp action(assigns) do
     ~H"""
     <.link
-      navigate={@navigate}
-      class="group flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-blue-50 hover:shadow-md transition-all duration-150"
-    >
-      <div class="p-2 rounded-lg bg-white group-hover:bg-blue-100 transition-colors">
-        <.icon name={@icon} class="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
-      </div>
-      <span class="text-sm font-medium text-gray-900 group-hover:text-blue-700">{@title}</span>
-    </.link>
+      id={@id}
+      navigate={@path}
+      class="mt-2 flex min-h-11 items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-tertiary-700 transition-colors hover:bg-tertiary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
+    ><.icon name={@icon} class="h-5 w-5 shrink-0" />{@label}<.icon
+      name="hero-arrow-right"
+      class="ml-auto h-4 w-4 shrink-0"
+    /></.link>
     """
   end
+
+  defp date(nil), do: "bez data odjezdu"
+  defp date(date), do: Calendar.strftime(date, "%d. %m. %Y")
+
+  defp rooms(booking) do
+    numbers = booking.rooms |> Enum.map(& &1.room_number) |> Enum.sort()
+
+    case numbers do
+      [] ->
+        if booking.room_number in [nil, ""],
+          do: "Pokoje zatím nepřiřazeny",
+          else: "Pokoje: #{booking.room_number}"
+
+      numbers ->
+        "Pokoje: #{Enum.join(numbers, ", ")}"
+    end
+  end
+
+  defp stay_label(booking, today) do
+    if Date.compare(booking.check_in_date, today) == :gt, do: "Nadcházející", else: "Probíhající"
+  end
+
+  defp issue_path(%{kind: :details, booking: booking}), do: ~p"/admin/bookings/#{booking.id}/edit"
+  defp issue_path(%{booking: booking}), do: ~p"/admin/bookings/#{booking.id}/menu"
 end

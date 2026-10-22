@@ -348,3 +348,11 @@ h1, h2, h3, h4, h5, h6,
 
 /* Food pages carry the internal brand in their navigation instead of a second header. */
 body:has(#food-layout) #admin-brand-header { display: none; }
+
+/* Food keeps its focused sidebar and offers the main navigation within it. */
+#admin-shell:has(#food-layout) > #admin-sidebar,
+#admin-workspace:has(#food-layout) > #admin-mobile-navigation { display: none; }
+#admin-shell:has(#food-layout) { display: block; }
+@media print {
+  #admin-shell { display: block; background: white; }
+}

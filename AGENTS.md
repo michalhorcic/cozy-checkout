@@ -78,6 +78,14 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 - Keep the shopping list compact, with an inline summary and rows retaining purchase quantity, packaging, consumption, checkboxes, purchase settings and expandable recipe/group provenance.
 - The dedicated print route uses an explicit two-column CSS grid on screen and A4 paper (read left to right, then down), with category headings spanning both columns. Avoid CSS multicolumn flow for this checklist because paged printing can differ from the screen preview. It is a checklist with blank paper checkboxes, full ingredient names, purchase quantities, packaging and ongoing-purchase labels. Preserve the selected date/group scope and incomplete-data warnings; omit interactive controls, recipe breakdowns and duplicate consumption figures. Browser-local completion must not remove ingredients from the printed list.
 
+## Admin navigation and operational dashboard
+
+- The authenticated admin LiveView layout owns the shared sidebar, mobile navigation and header controls (Pokladna / Zamknout). `CozyCheckoutWeb.AdminNavigation` tracks the current route through an on-mount `handle_params` hook; keep it in the authenticated session after `AdminAuth`.
+- Main navigation prioritizes the reservation calendar, food, bar stock, guest emails and bar accounts/payments. Keep all secondary administration reachable in named groups under Další agenda; technical diagnostics belong under Systém.
+- Food screens retain their focused navigation and expose the main administration through Přejít do jiné oblasti. Hide the outer admin sidebar/mobile menu on food screens and all navigation/controls on print.
+- `CozyCheckout.Dashboard.overview/1` is a read-only overview. Its stay list includes nondeleted upcoming/active stays overlapping today through the same day of the following month, inclusive, clamped at month end. Include today's departures and ongoing stays; exclude cancelled/completed stays from the list and attention items.
+- Reuse calendar occupancy (invoice person items, including personal stays) and planner portion calculations (including departure meals). These are different measures; do not substitute meal counts for bed occupancy. Attention items use existing incomplete-catering and missing/stale-menu rules, scoped to displayed stays. The connected dashboard refreshes once per minute.
+
 ## Application identity
 
 - Cozy Checkout and `priv/static/images/cozy-knot.svg` identify the internal application. The authenticated admin LiveView session owns the shared brand header; `Layouts.app` does not show another header by default. Food pages show the brand in their navigation and hide the shared header. Keep internal branding out of printed documents and guest-facing POS content, where Jindřichův dům is the primary identity.
