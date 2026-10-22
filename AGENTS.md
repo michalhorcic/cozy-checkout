@@ -1,20 +1,94 @@
-This is a web application written using the Phoenix web framework.
+# Cozy Checkout — agent instructions
 
-## Project guidelines
+Cozy Checkout is a self-service POS and guesthouse management application for
+Jindřichův dům. It uses Elixir, Phoenix 1.8 / LiveView, PostgreSQL, Oban,
+Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 
-- Use `mix precommit` alias when you are done with all changes and fix any pending issues
-- Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
+## Instruction ownership and maintenance
+
+- `AGENTS.md` is the single source of truth for repository-wide development instructions. `.github/copilot-instructions.md` points here so Copilot and other agents follow the same rules.
+- Read these instructions before changing code. Inspect the existing implementation, schemas, migrations and tests before applying a rule to a particular feature.
+- **Whenever you make substantial changes during development, review and update these instructions as part of the same change.** This includes changes to architecture, business rules, data models, integrations, configuration, build/test commands, deployment or development workflow.
+- Keep `AGENTS.md` accurate and keep `.github/copilot-instructions.md` aligned with it. Put shared rules here rather than duplicating them in the Copilot file; update that file when its reference or Copilot-specific guidance changes.
+- Remove obsolete or contradictory instructions and record the final supported behaviour. Do not turn historical feature requests or speculative ideas into implementation tasks.
+- Before completing a task, check whether the instructions need updating and mention any material documentation changes in the handoff.
+
+## Product and development principles
+
+- Keep guest-facing POS flows extremely simple, with large touch-friendly controls and as few steps as possible. Accounting, inventory and other administrative complexity belongs in the admin interface.
+- Keep business logic in contexts, outside controllers and LiveViews. Follow existing patterns and prefer simple solutions over unnecessary abstractions.
+- Do not silently change business behaviour. Ask for clarification when a requirement materially affects the implementation and cannot be resolved from the repository.
+- Use Ecto migrations for database changes. Use Oban for retryable/background operations where appropriate; external integrations must tolerate temporary failures.
+- Use the included `Req` HTTP client, not `:httpoison`, `:tesla` or `:httpc`. Add dependencies only with a strong reason.
+- Never hardcode secrets, credentials or production URLs.
+
+## Data and financial rules
+
+- Follow the existing `:binary_id` primary/foreign key convention. Include `inserted_at` / `updated_at` timestamps, indexes on foreign keys and database unique indexes for unique values.
+- Preserve soft deletes on business records using an indexed `deleted_at` field. For `:utc_datetime`, truncate timestamps to seconds; preserve the precision of fields explicitly using microseconds.
+- Capture the unit price, unit amount and VAT rate on order items at purchase time. Later catalog changes must not alter historical financial records.
+- Use `Decimal` and the existing financial helpers for monetary calculations. Preserve proportional discount allocation across VAT rates and report voluntary tips separately without VAT.
+- Use `CozyCheckoutWeb.CurrencyHelper.format_currency/1` for money and `format_number/1` for numbers in templates/LiveViews. Currency defaults to CZK and is configured by `@currency_symbol` in that helper; do not hardcode currency symbols in new UI.
+- The default VAT rate is zero. Preserve explicit per-item VAT rates, payment validation and concurrency protection for payments and document numbering.
+- Keep ABRA synchronization retryable and idempotent. Test external HTTP through `Req.Test`; tests must not create real accounting documents.
+
+## Guests, bookings and rooms
+
+- Guests represent people who may return; bookings represent individual stays. Keep booking-specific notes, short notes and dietary restrictions on bookings.
+- Preserve booking statuses `upcoming`, `active`, `completed` and `cancelled`; default booking sorting is ascending `check_in_date`.
+- `booking_guests` links people to a stay. Create the primary guest association automatically, show the primary guest in booking/calendar summaries, and allow managing additional guests without removing the primary guest.
+- `booking_rooms` links rooms to stays. Keep room availability and capacity rules in the booking/room contexts; show booked room numbers in booking and calendar views. Do not assume `booking_rooms` contains a historical snapshot of room fields.
+- iCal imports find or create guests and import stay dates, contact details and notes from VEVENTs. See `ICAL_IMPORT.md`.
+- Redirect newly created bookings to their detail page (`/admin/bookings/:id`).
+- Cottage capacity is 45 people, defined in `CozyCheckout.Bookings`. Occupancy counts invoice items with `item_type = "person"`, including personal stays. Calendar thresholds are green below 30, yellow 30–39, orange 40–44 and red at 45 or more.
+
+## Orders and POS
+
+- Standalone orders are valid without a booking or guest. `guest_id` and `booking_id` are nullable; an order must have either a guest or a nonblank name. Keep standalone orders payable in POS.
+- In order lists/details, payments, receipts and accounting exports, handle missing bookings/guests safely: use the booking guest when available, otherwise the order name with the standalone indicator. Exports may fall back to "Unknown Customer" if neither is available.
+- Keep individual `order_items` records while grouping their UI presentation by product and unit amount. Allow expanding groups and deleting individual items; POS must not delete whole groups.
+- Show order names in order selection and prices on product cards or amount choices. For products with `default_unit_amounts`, offer only predefined amounts; preserve the existing fallback for products without presets.
+- Prefer Flop for admin filtering, sorting and pagination without adding `flop_phoenix` unless compatibility is established. Keep reusable UI separate from query logic, encode filters in URLs and handle empty results.
+- Orders support status, name, guest, order-number, creation-date range and booking guest-name filters. Order-number search uses ILIKE. Support sorting by creation time and status, defaulting to newest first.
+- Preserve the 80mm receipt at `/admin/orders/:id/receipt`, accessible from order details and POS cash/QR payment success. Include items, total, payment date, document number and VAT breakdown.
+- Printed company details are Moruška s.r.o., IČO 23741457, Jindřichův dům, Pec pod Sněžkou 24.
+
+## Catalog and pricelists
+
+- Products have an optional unit and optional `default_unit_amounts`, currently stored as a JSON-encoded string. Decode/validate it rather than assuming a native PostgreSQL array.
+- Tiered pricing belongs to `CozyCheckout.Catalog.Pricelist` / `pricelists`, not a separate `pricelist_items` model. `price_tiers` is `{:array, :map}`, default `[]`, with string keys `"unit_amount"` and `"price"`.
+- Preserve single `price` support for products without presets. Validate that a price or tiers exist; tier amounts must be positive and prices nonnegative. Use `Pricelist.get_price_for_amount/2` and `Catalog.get_price_for_product/3` for amount pricing.
+- Show all preset amounts in tier forms and require complete pricing. Show tiers in indexes, a single price when appropriate, or an em dash when absent. Sort a product's pricelists by `valid_to` descending (not `valid_until`).
+- Product autocomplete searches product/category names with a 300ms debounce, shows category/unit context, and supports clearing the selection. Keep product selection disabled when editing an existing pricelist.
+- Price management (`/admin/pricelists/management`) distinguishes missing, expired/invalid and incomplete tier prices with red, yellow and orange indicators and quick-edit forms.
+- Categories use explicit `order`, with name as tie-breaker; new categories go last. Preserve this ordering in POS.
+- Printable pricelists (`/admin/pricelists/print`) include only currently valid prices, category selection (all by default), an empty-selection warning and a custom title defaulting to "Ceník".
+- Preserve portrait A4 printing, two flowing columns, category blocks without internal breaks, Czech alphabetical product sorting, cottage/company details and the generation date (`Date.utc_today()`). Hide selection controls on print. Show tiers in corresponding amount/price order, e.g. `Product (300/500 ml) 45/70 CZK`.
+
+## Booking invoices
+
+- Accommodation invoices and bar orders are separate. Keep an invoice header with cached totals and editable line items with quantity, nights, price and per-item VAT; quantity may be zero, and `nights` defaults to 1.
+- Invoice item types are `person` and `extra`; only person items contribute to occupancy.
+- Use the current schema states: `draft` (the initial state), `personal`, `generated`, `sent`, `advance_paid` and `paid`. Do not reintroduce the historical `created` state. Preserve the existing context's transition validation and admin controls/badges.
+- Personal stays retain items, prices, VAT and recalculation, count toward capacity and do not generate an invoice number merely by becoming personal.
+- Invoice numbers use `YY08XXXXX`: year suffix, literal `08` (not the current month), and a five-digit sequence starting at `00001` each year. Preserve unique constraints and concurrency protection.
+
+## Validation and handoff
+
+- Add or update tests for business-logic changes. Run relevant tests, check formatting and run `mix precommit` before completing changes; fix issues introduced by the change and report any blockers.
+- `mix precommit` compiles with warnings as errors, checks unused dependencies, formats and runs tests. See `test/FINANCIAL_TESTS.md` for the financial regression suite.
+- Explain the resulting behaviour and validation performed. Mention migrations, configuration changes and possible breaking changes when applicable.
+
+## Framework guidelines
 
 ### Phoenix v1.8 guidelines
 
 - **Always** begin your LiveView templates with `<Layouts.app flash={@flash} ...>` which wraps all inner content
-- The `MyAppWeb.Layouts` module is aliased in the `my_app_web.ex` file, so you can use it without needing to alias it again
-- Anytime you run into errors with no `current_scope` assign:
-  - You failed to follow the Authenticated Routes guidelines, or you failed to pass `current_scope` to `<Layouts.app>`
-  - **Always** fix the `current_scope` error by moving your routes to the proper `live_session` and ensure you pass `current_scope` as needed
+- The `CozyCheckoutWeb.Layouts` module is aliased in the `cozy_checkout_web.ex` file, so you can use it without needing to alias it again
+- Preserve the existing admin authentication: the `:admin_auth` pipeline and `live_session :admin` with `CozyCheckoutWeb.AdminAuth` on-mount validation. `Layouts.app` accepts an optional `current_scope`; do not assume Phoenix-generated account authentication is installed or move public POS routes into the admin session to satisfy an assign.
 - Phoenix v1.8 moved the `<.flash_group>` component to the `Layouts` module. You are **forbidden** from calling `<.flash_group>` outside of the `layouts.ex` module
-- Out of the box, `core_components.ex` imports an `<.icon name="hero-x-mark" class="w-5 h-5"/>` component for for hero icons. **Always** use the `<.icon>` component for icons, **never** use `Heroicons` modules or similar
-- **Always** use the imported `<.input>` component for form inputs from `core_components.ex` when available. `<.input>` is imported and using it will will save steps and prevent errors
+- Out of the box, `core_components.ex` imports an `<.icon name="hero-x-mark" class="w-5 h-5"/>` component for Heroicons. **Always** use the `<.icon>` component for icons, **never** use `Heroicons` modules or similar
+- Use the imported `<.input>` component from `core_components.ex` for form fields. Dynamic price-tier inputs may use plain HTML inputs with explicit `name` attributes when they are not changeset fields.
 - If you override the default input classes (`<.input class="myclass px-2 py-1 rounded-lg">)`) class with your own values, no default classes are inherited, so your
 custom classes must fully style the input
 
@@ -26,15 +100,15 @@ custom classes must fully style the input
       @import "tailwindcss" source(none);
       @source "../css";
       @source "../js";
-      @source "../../lib/my_app_web";
+      @source "../../lib/cozy_checkout_web";
 
 - **Always use and maintain this import syntax** in the app.css file for projects generated with `phx.new`
 - **Never** use `@apply` when writing raw css
-- **Always** manually write your own tailwind-based components instead of using daisyUI for a unique, world-class design
+- Follow the existing Tailwind CSS v4 and daisyUI components and theme in `assets/css/app.css`; use custom styles where needed. Keep the application light-themed (`prefersdark: false`) and preserve the existing design system.
 - Out of the box **only the app.js and app.css bundles are supported**
   - You cannot reference an external vendor'd script `src` or link `href` in the layouts
   - You must import the vendor deps into app.js and app.css to use them
-  - **Never write inline <script>custom js</script> tags within templates**
+  - Put new JavaScript in `assets/js` and import it through `app.js`; do not add inline scripts to templates. The existing root-layout light-theme bootstrap is an exception.
 
 ### UI/UX & design guidelines
 
@@ -129,7 +203,7 @@ custom classes must fully style the input
 - **Always** use the imported `Phoenix.Component.form/1` and `Phoenix.Component.inputs_for/1` function to build forms. **Never** use `Phoenix.HTML.form_for` or `Phoenix.HTML.inputs_for` as they are outdated
 - When building forms **always** use the already imported `Phoenix.Component.to_form/2` (`assign(socket, form: to_form(...))` and `<.form for={@form} id="msg-form">`), then access those forms in the template via `@form[:field]`
 - **Always** add unique DOM IDs to key elements (like forms, buttons, etc) when writing templates, these IDs can later be used in tests (`<.form for={@form} id="product-form">`)
-- For "app wide" template imports, you can import/alias into the `my_app_web.ex`'s `html_helpers` block, so they will be available to all LiveViews, LiveComponent's, and all modules that do `use MyAppWeb, :html` (replace "my_app" by the actual app name)
+- For "app wide" template imports, you can import/alias into the `cozy_checkout_web.ex`'s `html_helpers` block, so they will be available to all LiveViews, LiveComponent's, and all modules that do `use CozyCheckoutWeb, :html`
 
 - Elixir supports `if/else` but **does NOT support `if/else if` or `if/elsif`. **Never use `else if` or `elseif` in Elixir**, **always** use `cond` or `case` for multiple conditionals.
 
@@ -215,7 +289,7 @@ custom classes must fully style the input
 - **Always** use LiveView streams for collections for assigning regular lists to avoid memory ballooning and runtime termination with the following operations:
   - basic append of N items - `stream(socket, :messages, [new_msg])`
   - resetting stream with new items - `stream(socket, :messages, [new_msg], reset: true)` (e.g. for filtering items)
-  - prepend to stream - `stream(socket, :messages, [new_msg], at: -1)`
+  - prepend to stream - `stream(socket, :messages, [new_msg], at: 0)`
   - deleting items - `stream_delete(socket, :messages, msg)`
 
 - When using the `stream/3` interfaces in the LiveView, the LiveView template must 1) always set `phx-update="stream"` on the parent element, with a DOM id on the parent element like `id="messages"` and 2) consume the `@streams.stream_name` collection and use the id as the DOM id for each child. For a call like `stream(socket, :messages, [new_msg])` in the LiveView, the template would be:
@@ -243,7 +317,7 @@ custom classes must fully style the input
 
       <div id="tasks" phx-update="stream">
         <div class="hidden only:block">No tasks yet</div>
-        <div :for={{id, task} <- @stream.tasks} id={id}>
+        <div :for={{id, task} <- @streams.tasks} id={id}>
           {task.name}
         </div>
       </div>
