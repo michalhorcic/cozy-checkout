@@ -39,6 +39,9 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
        editing: nil,
        pricing: nil,
        preview: nil,
+       email_document: nil,
+       email_form: nil,
+       email_error: nil,
        issue_form:
          to_form(
            %{
@@ -57,6 +60,47 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   end
 
   def handle_event("refresh", _, socket), do: {:noreply, refresh(socket)}
+
+  def handle_event("compose-email", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.documents, &(&1.id == id)) do
+      nil ->
+        {:noreply, put_flash(socket, :error, "Doklad nepatří k této rezervaci")}
+
+      document ->
+        {:noreply,
+         assign(socket,
+           email_document: document,
+           email_form: to_form(Helpers.email_defaults(document), as: :email),
+           email_error: nil
+         )}
+    end
+  end
+
+  def handle_event("close-email", _, socket),
+    do: {:noreply, assign(socket, email_document: nil, email_form: nil, email_error: nil)}
+
+  def handle_event("email", _, %{assigns: %{email_document: nil}} = socket),
+    do: {:noreply, socket}
+
+  def handle_event("email", %{"email" => attrs}, socket) do
+    request_id = socket.assigns.email_form[:request_id].value
+    attrs = Map.put(attrs, "request_id", request_id)
+
+    case Billing.enqueue_email(socket.assigns.email_document.id, attrs, request_id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> assign(email_document: nil, email_form: nil, email_error: nil)
+         |> put_flash(:info, "E-mail zařazen k odeslání")}
+
+      {:error, error} ->
+        {:noreply,
+         assign(socket,
+           email_form: to_form(attrs, as: :email),
+           email_error: Helpers.error(error)
+         )}
+    end
+  end
 
   def handle_event("customer", %{"buyer" => attrs}, socket),
     do:
@@ -221,22 +265,30 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
-      <div class="max-w-6xl mx-auto space-y-6">
+    <Layouts.app
+      flash={@flash}
+      content_class="mx-auto w-full max-w-7xl space-y-6"
+      main_class="px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
+      <div id="billing-workspace" class="min-w-0 space-y-6">
         <div class="flex justify-between flex-wrap gap-3">
           <h1 class="text-3xl font-bold">Fakturace pobytu – {@booking.guest.name}</h1><.link
             navigate={~p"/admin/bookings/#{@booking.id}"}
             class="btn"
           >Zpět na rezervaci</.link>
         </div>
-        <p>{@booking.check_in_date} – {@booking.check_out_date || "odjezd není vyplněný"}</p>
-        <nav class="flex gap-3">
+        <p class="text-primary-400">
+          {Presentation.date(@booking.check_in_date)} – {if @booking.check_out_date,
+            do: Presentation.date(@booking.check_out_date),
+            else: "Odjezd není vyplněný"}
+        </p>
+        <nav class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
           <.link navigate={~p"/admin/accommodation-prices"} class="link">Ceník ubytování</.link><.link
             navigate={~p"/admin/billing/settings"}
             class="link"
           >Dodavatel a číselné řady</.link><button class="link" phx-click="refresh">Obnovit přehled</button>
         </nav>
-        <div class="bg-emerald-50 rounded-xl p-5 flex flex-wrap gap-8">
+        <div class="grid gap-4 rounded-xl border border-secondary-200 bg-secondary-50 p-5 sm:grid-cols-2 xl:grid-cols-4">
           <p><b>{Billing.payment_state(@balance)}</b></p>
           <p>
             Cena:
@@ -248,7 +300,10 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <b>{Presentation.balance_amount(@balance.outstanding)}</b>
           </p>
         </div>
-        <section class="bg-white p-6 rounded-xl space-y-4">
+        <section
+          id="billing-calculation"
+          class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-5 sm:p-6"
+        >
           <h2 class="text-xl font-bold">Kalkulace a počty hostů</h2>
           <p>Upravitelný podklad pobytu. Změny neovlivňují již vystavené doklady.</p>
           <button :if={!@calculation} class="btn btn-primary" phx-click="create">Založit kalkulaci</button>
@@ -258,7 +313,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 "nepřiděleno"}, stav {@calculation.state}. Nejde o nově vystavený doklad ani potvrzení platby.
             </p>
             <p :if={@calculation.pricing_basis == "gross"}>
-              Ceny včetně DPH. Naceněno pro příjezd {@calculation.priced_on}.
+              Ceny včetně DPH. Naceněno pro příjezd {Presentation.date(@calculation.priced_on)}.
             </p>
             <p :if={@pricing_hint.changed_date} class="alert alert-warning">
               Datum příjezdu se změnilo. Zkontrolujte ceník a počet nocí; ceny nebyly automaticky změněny.
@@ -269,7 +324,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <p :if={!@pricing_hint.season} class="alert alert-warning">
               Pro datum příjezdu chybí sezonní ceník. Ceny můžete doplnit ručně.
             </p>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
               <button class="btn" phx-click="pricing">Použít aktuální ceník – náhled</button><button
                 :if={@documents == []}
                 class="btn"
@@ -281,31 +336,41 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <p :if={@calculation.state == "personal"} class="alert">
               Osobní pobyt počítá hosty do obsazenosti; nevystavuje doklady.
             </p>
-            <div class="overflow-x-auto">
-              <table class="table">
+            <div class="overflow-x-auto rounded-lg border border-secondary-200">
+              <table id="billing-items" class="table w-full min-w-[760px]">
                 <thead>
                   <tr>
-                    <th>Položka</th><th>Počet</th><th>Nocí / jednotek</th><th>Cena</th><th>DPH</th><th>
+                    <th class="w-1/4">Položka</th><th class="text-right">Počet</th><th class="whitespace-nowrap text-right">
+                      Nocí / jednotek
+                    </th><th class="text-right">Cena</th><th class="text-right">DPH</th><th class="text-right">
                       Celkem
-                    </th><th></th>
+                    </th><th><span class="sr-only">Akce</span></th>
                   </tr>
                 </thead><tbody>
-                  <tr :for={item <- @calculation.items}>
+                  <tr :for={item <- @calculation.items} id={"billing-item-#{item.id}"}>
                     <td>
-                      {item.name} <span :if={item.item_type == "person"} class="badge">Osoby</span>
-                    </td><td>{item.quantity}</td><td>{item.nights}</td><td>
+                      <span class="font-medium">{item.name}</span>
+                    </td><td class="text-right tabular-nums">{item.quantity}</td><td class="text-right tabular-nums">
+                      {item.nights}
+                    </td><td class="whitespace-nowrap text-right tabular-nums">
                       {if item.price_per_night,
                         do: Presentation.amount(item.price_per_night),
                         else: "Chybí cena"}
+                    </td><td class="whitespace-nowrap text-right">
+                      {if item.tax_mode == "outside",
+                        do: "Mimo DPH",
+                        else: "#{Presentation.number(item.vat_rate)} %"}
+                    </td><td class="whitespace-nowrap text-right font-semibold tabular-nums">
+                      {if item.total, do: Presentation.amount(item.total), else: "—"}
                     </td><td>
-                      {if item.tax_mode == "outside", do: "Mimo DPH", else: "#{item.vat_rate} %"}
-                    </td><td>{if item.total, do: Presentation.amount(item.total), else: "—"}</td><td>
-                      <button class="btn btn-sm" phx-click="edit-item" phx-value-id={item.id}>Upravit</button><button
-                        class="btn btn-sm"
-                        phx-click="delete-item"
-                        phx-value-id={item.id}
-                        data-confirm="Odstranit položku kalkulace? U osob se změní obsazenost."
-                      >Odstranit</button>
+                      <div class="flex justify-end gap-2 whitespace-nowrap">
+                        <button class="btn btn-sm" phx-click="edit-item" phx-value-id={item.id}>Upravit</button><button
+                          class="btn btn-sm"
+                          phx-click="delete-item"
+                          phx-value-id={item.id}
+                          data-confirm="Odstranit položku kalkulace? U osob se změní obsazenost."
+                        >Odstranit</button>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -315,12 +380,14 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               for={@item_form}
               id="billing-item"
               phx-submit="save-item"
-              class="grid md:grid-cols-4 gap-3"
+              class="grid gap-x-4 gap-y-3 rounded-lg bg-secondary-50 p-4 sm:grid-cols-2 lg:grid-cols-4"
             >
-              <h3 class="font-bold md:col-span-4">
+              <h3 class="font-bold sm:col-span-2 lg:col-span-4">
                 {if @editing, do: "Upravit položku", else: "Přidat položku / poplatek z pobytu"}
               </h3>
-              <.input field={@item_form[:name]} label="Název" required />
+              <div class="sm:col-span-2">
+                <.input field={@item_form[:name]} label="Název" required />
+              </div>
               <.input
                 field={@item_form[:item_type]}
                 type="select"
@@ -358,7 +425,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 label="Režim (poplatek: mimo DPH)"
                 options={[{"Zdanitelné", "taxable"}, {"Mimo předmět DPH", "outside"}]}
               />
-              <div class="flex gap-2 items-end">
+              <div class="flex flex-wrap gap-2 items-end sm:col-span-2 lg:col-span-4">
                 <button class="btn btn-primary">Uložit</button><button
                   class="btn"
                   type="button"
@@ -380,113 +447,154 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <button :if={@pricing.season} class="btn btn-primary" phx-click="apply-pricing">Potvrdit nové ceny a počet nocí</button>
           </div>
         </section>
-        <section class="bg-white rounded-xl p-6">
-          <h2 class="text-xl font-bold mb-4">Odběratel</h2>
-          <.form
-            for={@buyer_form}
-            id="billing-customer"
-            phx-submit="customer"
-            class="grid md:grid-cols-2 gap-3"
-          >
-            <.input :for={{key, label} <- @buyer_fields} field={@buyer_form[key]} label={label} /><button class="btn btn-primary md:col-span-2">Uložit odběratele</button>
-          </.form>
-        </section>
-        <section class="bg-white rounded-xl p-6 space-y-4">
-          <h2 class="text-xl font-bold">Vystavit doklad</h2>
-          <.form
-            for={@issue_form}
-            id="billing-issue"
-            phx-submit="preview"
-            class="grid md:grid-cols-3 gap-3"
-          >
-            <.input
-              field={@issue_form[:kind]}
-              type="select"
-              label="Druh"
-              options={[{"Zálohová výzva", "advance"}, {"Konečná faktura", "final"}]}
-            />
-            <.input
-              field={@issue_form[:percent]}
-              type="number"
-              step="0.01"
-              label="Záloha v %"
-              min="0"
-              max="100"
-            />
-            <.input
-              field={@issue_form[:amount]}
-              type="number"
-              step="0.01"
-              label="Nebo částka zálohy (má přednost)"
-              min="0"
-            />
-            <.input
-              field={@issue_form[:tax_date]}
-              type="date"
-              label="DUZP konečné faktury"
-              required
-            />
-            <.input
-              field={@issue_form[:due_on]}
-              type="date"
-              label="Splatnost (prázdné = výchozí)"
-            />
-            <button class="btn btn-primary self-end">Zkontrolovat náhled</button>
-          </.form>
+        <div class="grid items-start gap-6 xl:grid-cols-2">
+          <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 sm:p-6">
+            <h2 class="text-xl font-bold mb-4">Odběratel</h2>
+            <.form
+              for={@buyer_form}
+              id="billing-customer"
+              phx-submit="customer"
+              class="grid md:grid-cols-2 gap-3"
+            >
+              <.input :for={{key, label} <- @buyer_fields} field={@buyer_form[key]} label={label} /><button class="btn btn-primary md:col-span-2">Uložit odběratele</button>
+            </.form>
+          </section>
+          <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6">
+            <h2 class="text-xl font-bold">Vystavit doklad</h2>
+            <.form
+              for={@issue_form}
+              id="billing-issue"
+              phx-submit="preview"
+              class="grid gap-4 sm:grid-cols-2"
+            >
+              <.input
+                field={@issue_form[:kind]}
+                type="select"
+                label="Druh"
+                options={[{"Zálohová výzva", "advance"}, {"Konečná faktura", "final"}]}
+              />
+              <.input
+                field={@issue_form[:percent]}
+                type="number"
+                step="0.01"
+                label="Záloha v %"
+                min="0"
+                max="100"
+              />
+              <.input
+                field={@issue_form[:amount]}
+                type="number"
+                step="0.01"
+                label="Nebo částka zálohy (má přednost)"
+                min="0"
+              />
+              <.input
+                field={@issue_form[:tax_date]}
+                type="date"
+                label="DUZP konečné faktury"
+                required
+              />
+              <.input
+                field={@issue_form[:due_on]}
+                type="date"
+                label="Splatnost (prázdné = výchozí)"
+              />
+              <button class="btn btn-primary self-end sm:col-span-2">Zkontrolovat náhled</button>
+            </.form>
+            <div
+              :if={@preview}
+              class="border-2 border-emerald-300 rounded-xl p-4 space-y-3"
+              id="document-preview"
+            >
+              <h3 class="font-bold">NÁHLED – {Billing.kind_label(@preview.kind)}</h3>
+              <p>
+                Odběratel: {@preview.snapshot["customer"]["name"]}. Datum vystavení: {Presentation.date(
+                  @preview.issued_on
+                )}.
+                <span :if={@preview.kind != "tax_receipt"}>Splatnost: {Presentation.date(
+                  @preview.due_on
+                )}.</span>
+                Pobyt: {Presentation.date(@preview.snapshot["check_in"])} – {Presentation.date(
+                  @preview.snapshot["check_out"]
+                )}.
+              </p>
+              <p :for={line <- Presentation.lines(@preview)}>
+                {Presentation.line_label(line, @preview.kind)}:
+                <span :if={@preview.kind not in ["advance", "tax_receipt"]}>
+                  {Presentation.number(line["quantity"])} × {Presentation.number(line["nights"])} —
+                </span>
+                {Presentation.amount(line["gross"])}
+                <span :if={@preview.kind != "advance"}>
+                  {if line["tax_mode"] == "outside",
+                    do: "(mimo předmět DPH)",
+                    else: "(#{Presentation.number(line["vat_rate"])} % DPH)"}
+                </span>
+              </p>
+              <p :for={line <- @preview.snapshot["deductions"]}>
+                {line["name"]}: {Presentation.amount(line["gross"])}
+              </p>
+              <p class="font-bold">
+                Celkem {Presentation.amount(@preview.total)}; po odpočtech {Presentation.amount(
+                  Decimal.add(
+                    @preview.total,
+                    CozyCheckout.Billing.Money.total(@preview.snapshot["deductions"])
+                  )
+                )}
+              </p>
+              <p>Vystavený doklad se uzamkne. PDF a odeslání e-mailem najdete níže u dokladu.</p>
+              <button class="btn btn-primary" phx-click="issue" phx-disable-with="Vystavuji…">Vystavit doklad</button>
+            </div>
+          </section>
+        </div>
+        <section
+          id="billing-documents"
+          class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-xl font-bold">Doklady</h2>
+            <span class="text-sm text-primary-400">Počet: {length(@documents)}</span>
+          </div>
+          <p :if={@documents == []} class="text-primary-400">Zatím nebyl vystaven žádný doklad.</p>
           <div
-            :if={@preview}
-            class="border-2 border-emerald-300 rounded-xl p-4 space-y-3"
-            id="document-preview"
+            :for={doc <- @documents}
+            id={"billing-document-#{doc.id}"}
+            class="flex flex-col gap-4 rounded-lg border border-secondary-200 p-4 lg:flex-row lg:items-center lg:justify-between"
           >
-            <h3 class="font-bold">NÁHLED – {Billing.kind_label(@preview.kind)}</h3>
-            <p>
-              Odběratel: {@preview.snapshot["customer"]["name"]}. Datum vystavení: {Presentation.date(
-                @preview.issued_on
-              )}.
-              <span :if={@preview.kind != "tax_receipt"}>Splatnost: {Presentation.date(
-                @preview.due_on
-              )}.</span>
-              Pobyt: {Presentation.date(@preview.snapshot["check_in"])} – {Presentation.date(
-                @preview.snapshot["check_out"]
-              )}.
-            </p>
-            <p :for={line <- Presentation.lines(@preview)}>
-              {Presentation.line_label(line, @preview.kind)}:
-              <span :if={@preview.kind not in ["advance", "tax_receipt"]}>
-                {Presentation.number(line["quantity"])} × {Presentation.number(line["nights"])} —
-              </span>
-              {Presentation.amount(line["gross"])}
-              <span :if={@preview.kind != "advance"}>
-                {if line["tax_mode"] == "outside",
-                  do: "(mimo předmět DPH)",
-                  else: "(#{Presentation.number(line["vat_rate"])} % DPH)"}
-              </span>
-            </p>
-            <p :for={line <- @preview.snapshot["deductions"]}>
-              {line["name"]}: {Presentation.amount(line["gross"])}
-            </p>
-            <p class="font-bold">
-              Celkem {Presentation.amount(@preview.total)}; po odpočtech {Presentation.amount(
-                Decimal.add(
-                  @preview.total,
-                  CozyCheckout.Billing.Money.total(@preview.snapshot["deductions"])
-                )
-              )}
-            </p>
-            <p>Vystavený doklad se uzamkne. PDF bude dostupné v detailu.</p>
-            <button class="btn btn-primary" phx-click="issue" phx-disable-with="Vystavuji…">Vystavit doklad</button>
+            <div class="min-w-0">
+              <p class="font-semibold break-words">{doc.number}</p>
+              <p class="mt-1 text-sm text-primary-400">
+                {Billing.kind_label(doc.kind)} · {Presentation.date(doc.issued_on)}
+              </p>
+              <p class="mt-2 font-semibold tabular-nums">{Presentation.amount(doc.total)}</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <.link
+                id={"billing-document-pdf-#{doc.id}"}
+                href={~p"/admin/billing/documents/#{doc.id}/pdf"}
+                target="_blank"
+                rel="noopener"
+                class="btn btn-sm"
+              >
+                <.icon name="hero-arrow-down-tray" class="size-4" />Stáhnout PDF
+              </.link>
+              <button
+                id={"billing-document-email-#{doc.id}"}
+                type="button"
+                class="btn btn-sm btn-primary"
+                phx-click="compose-email"
+                phx-value-id={doc.id}
+              >
+                <.icon name="hero-envelope" class="size-4" />Odeslat e-mailem
+              </button>
+              <.link
+                id={"billing-document-detail-#{doc.id}"}
+                navigate={~p"/admin/billing/documents/#{doc.id}"}
+                class="btn btn-sm btn-ghost"
+              >Detail a historie</.link>
+            </div>
           </div>
         </section>
-        <section class="bg-white rounded-xl p-6 space-y-4">
-          <h2 class="text-xl font-bold">Doklady</h2>
-          <p :if={@documents == []}>Zatím nebyl vystaven žádný doklad.</p>
-          <div :for={doc <- @documents} class="flex justify-between flex-wrap border-b py-3">
-            <div>
-              <b>{doc.number}</b> – {Billing.kind_label(doc.kind)} · {Presentation.amount(doc.total)}
-            </div><.link navigate={~p"/admin/billing/documents/#{doc.id}"} class="link">Detail, PDF, odeslání a oprava</.link>
-          </div>
-        </section>
-        <section class="bg-white rounded-xl p-6 space-y-4">
+        <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6">
           <h2 class="text-xl font-bold">Skutečně přijaté platby a vratky</h2>
           <p>
             Před vyúčtováním vznikne k přijaté záloze daňový doklad. Při vracení zdaněné zálohy nejprve vystavte opravu. Vratka pouze eviduje provedený převod.
@@ -543,6 +651,21 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             > · zkontrolujte včasnost daňového dokladu</span>
           </div>
         </section>
+        <.modal :if={@email_document} id="billing-email-modal" show on_cancel={JS.push("close-email")}>
+          <h2 id="billing-email-modal-title" class="pr-10 text-xl font-bold">
+            Odeslat doklad e-mailem
+          </h2>
+          <p id="billing-email-modal-description" class="mt-2 mb-6 text-sm text-primary-400">
+            {Billing.kind_label(@email_document.kind)} {@email_document.number} · {Presentation.amount(
+              @email_document.total
+            )}
+          </p>
+          <CozyCheckoutWeb.BillingComponents.email_form
+            id="billing-booking-email"
+            form={@email_form}
+            error={@email_error}
+          />
+        </.modal>
       </div>
     </Layouts.app>
     """

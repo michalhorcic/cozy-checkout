@@ -76,6 +76,14 @@ bankovní převody; zrušení rezervace také automaticky nevrací peníze.
 
 ## PDF, pošta a provoz
 
+Kalkulace pobytu zůstává na samostatné stránce dostupné z rezervace. Přehled
+**Doklady** na této stránce nabízí u každého dokladu přímo **Stáhnout PDF**
+a **Odeslat e-mailem**. Odeslání otevře dialog s předvyplněným příjemcem,
+předmětem a zprávou; údaje lze před potvrzením změnit. Je potřeba potvrdit
+souhlas s elektronickou podobou dokladu. Zpráva se zařadí do fronty bez
+opuštění kalkulace. **Detail a historie** nadále zpřístupňuje historii pokusů
+a opravy dokladu.
+
 PDF vytváří ChromicPDF s lokálním Chromium, bez externích fontů či vzdálených
 podkladů. Docker runtime obsahuje Chromium a fonty DejaVu. Dokumenty A4 se ukládají
 jako binární data v PostgreSQL spolu s SHA-256. Opakované stažení a e-mail vždy

@@ -7,7 +7,6 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
 
   def handle_params(%{"id" => id}, _, socket) do
     doc = Billing.get_document!(id)
-    buyer = doc.snapshot["customer"]
 
     {:noreply,
      assign(socket,
@@ -18,18 +17,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
            %{"request_id" => Ecto.UUID.generate(), "tax_date" => to_string(Billing.today())},
            as: :correction
          ),
-       email_form:
-         to_form(
-           %{
-             "request_id" => Ecto.UUID.generate(),
-             "recipient" => buyer["email"] || "",
-             "subject" => "#{Billing.kind_label(doc.kind)} #{doc.number}",
-             "body" =>
-               "Dobrý den,\n\nv příloze zasíláme doklad k Vašemu pobytu.\n\nJindřichův dům",
-             "consent" => "false"
-           },
-           as: :email
-         )
+       email_form: to_form(Helpers.email_defaults(doc), as: :email)
      )}
   end
 
@@ -179,20 +167,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
           </section>
           <section class="bg-white p-6 rounded-xl space-y-4">
             <h2 class="text-xl font-bold">Odeslat e-mailem</h2>
-            <.form for={@email_form} id="billing-email" phx-submit="email" class="space-y-3">
-              <input type="hidden" name="email[request_id]" value={@email_form[:request_id].value} />
-              <.input field={@email_form[:recipient]} type="email" label="Příjemce" required /><.input
-                field={@email_form[:subject]}
-                label="Předmět"
-                required
-              /><.input field={@email_form[:body]} type="textarea" label="Zpráva" required />
-              <.input
-                field={@email_form[:consent]}
-                type="checkbox"
-                label="Odběratel souhlasí s elektronickou podobou daňového dokladu"
-              />
-              <button class="btn btn-primary" phx-disable-with="Zařazuji…">Odeslat s uloženým PDF</button>
-            </.form>
+            <CozyCheckoutWeb.BillingComponents.email_form id="billing-email" form={@email_form} />
             <button class="link" phx-click="refresh">Obnovit historii</button>
             <div :for={d <- @deliveries} class="border-b py-2">
               {d.recipient} · {delivery_label(d.state)} · pokusů {d.attempts}
