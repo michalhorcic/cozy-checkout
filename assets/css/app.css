@@ -356,3 +356,14 @@ body:has(#food-layout) #admin-brand-header { display: none; }
 @media print {
   #admin-shell { display: block; background: white; }
 }
+
+/* Billing details float in the browser's top layer and never increase row height. */
+.booking-billing-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(20rem, calc(100vw - 1.5rem));
+  max-height: calc(100dvh - 1.5rem);
+  overflow: auto;
+}
+.booking-billing-popover::backdrop { background: transparent; }

@@ -709,45 +709,102 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   attr :summary, :map, required: true
 
   defp billing_summary(assigns) do
+    assigns = assign(assigns, :status, assigns.summary.payment_state || assigns.summary.state)
+
     ~H"""
-    <.link
-      id={"booking-billing-#{@booking.id}"}
-      navigate={~p"/admin/bookings/#{@booking.id}/billing"}
-      class={["block space-y-1 rounded text-xs hover:opacity-80 focus-visible:outline-2"]}
-      title="Otevřít kalkulaci, doklady a platby"
-    >
-      <span class={["flex items-center gap-1.5"]}>
-        <.icon name="hero-document-currency-dollar" class="size-3.5 shrink-0 text-primary-400" />
-        <span class={[
-          "inline-block rounded-full px-2 font-semibold leading-5",
-          billing_badge_class(@summary.state)
-        ]}>{BookingSummary.label(@summary.state)}</span>
-      </span>
-      <span
-        :if={@summary.payment_state}
-        id={"booking-payment-#{@booking.id}"}
+    <div id={"booking-billing-#{@booking.id}"} phx-hook="BillingPopover" class={["text-xs"]}>
+      <button
+        id={"booking-billing-trigger-#{@booking.id}"}
+        type="button"
+        popovertarget={"booking-billing-details-#{@booking.id}"}
+        aria-haspopup="dialog"
+        aria-controls={"booking-billing-details-#{@booking.id}"}
+        aria-expanded="false"
+        aria-label={"Podrobnosti fakturace: " <> BookingSummary.label(@status)}
         class={[
-          "ml-5 inline-block rounded-full px-2 font-semibold leading-5",
-          billing_badge_class(@summary.payment_state)
+          "group inline-flex max-w-full cursor-help items-center gap-1.5 rounded-md text-left transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-tertiary-500"
         ]}
-      >{BookingSummary.label(@summary.payment_state)}</span>
-      <span :if={@summary.final_number} class={["ml-5 block text-primary-400"]}>
-        {@summary.final_number}
-      </span>
-      <span
-        :if={@summary.outstanding && not Decimal.equal?(@summary.outstanding, 0)}
-        id={"booking-balance-#{@booking.id}"}
-        class={["ml-5 block text-primary-500"]}
       >
-        {if Decimal.lt?(@summary.outstanding, 0), do: "Přeplatek:", else: "K úhradě:"}
-        {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.abs(@summary.outstanding))}
-      </span>
-      <span
-        :if={@summary.overdue}
-        id={"booking-overdue-#{@booking.id}"}
-        class={["ml-5 block font-semibold text-error"]}
-      >Po splatnosti</span>
-    </.link>
+        <.icon
+          name="hero-document-currency-dollar"
+          class="hidden size-3.5 shrink-0 text-primary-400 2xl:inline-block"
+        />
+        <span
+          id={if @summary.payment_state, do: "booking-payment-#{@booking.id}"}
+          class={[
+            "inline-flex min-w-0 items-center gap-1 rounded-full px-2 font-semibold leading-5",
+            billing_badge_class(@status)
+          ]}
+        >
+          <span class={["truncate"]}>{BookingSummary.label(@status)}</span>
+          <.icon
+            :if={@summary.overdue}
+            name="hero-exclamation-circle"
+            class="size-3.5 shrink-0 text-error"
+          />
+        </span>
+      </button>
+      <div
+        id={"booking-billing-details-#{@booking.id}"}
+        popover="auto"
+        role="dialog"
+        aria-labelledby={"booking-billing-heading-#{@booking.id}"}
+        class={[
+          "booking-billing-popover rounded-xl border border-secondary-200 bg-white p-0 text-primary-500 shadow-xl"
+        ]}
+      >
+        <div class={["border-b border-secondary-200 bg-secondary-50 px-4 py-3"]}>
+          <p id={"booking-billing-heading-#{@booking.id}"} class={["font-semibold"]}>
+            {BookingSummary.label(@summary.state)}
+          </p>
+          <p :if={@summary.final_number} class={["mt-1 break-all font-mono text-xs text-primary-400"]}>
+            {@summary.final_number}
+          </p>
+        </div>
+        <div class={["space-y-3 px-4 py-3 text-sm"]}>
+          <p :if={@summary.payment_state} class={["flex items-center justify-between gap-4"]}>
+            <span class={["text-primary-400"]}>Stav úhrady</span>
+            <span class={[
+              "rounded-full px-2 text-xs font-semibold leading-5",
+              billing_badge_class(@status)
+            ]}>
+              {BookingSummary.label(@status)}
+            </span>
+          </p>
+          <p
+            :if={@summary.outstanding && not Decimal.equal?(@summary.outstanding, 0)}
+            id={"booking-balance-#{@booking.id}"}
+            class={["flex items-center justify-between gap-4"]}
+          >
+            <span class={["text-primary-400"]}>
+              {if Decimal.lt?(@summary.outstanding, 0), do: "Přeplatek", else: "K úhradě"}
+            </span>
+            <span class={["whitespace-nowrap font-semibold tabular-nums"]}>
+              {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.abs(@summary.outstanding))}
+            </span>
+          </p>
+          <p
+            :if={@summary.overdue}
+            id={"booking-overdue-#{@booking.id}"}
+            class={["flex items-center gap-1.5 text-xs font-medium text-error"]}
+          >
+            <.icon name="hero-exclamation-circle" class="size-4 shrink-0" />Po splatnosti
+          </p>
+          <p :if={@summary.state == "personal"} class={["text-xs text-primary-400"]}>
+            Bez finanční evidence. Obsazenost a stravování zůstávají zachované.
+          </p>
+          <.link
+            id={"booking-billing-link-#{@booking.id}"}
+            navigate={~p"/admin/bookings/#{@booking.id}/billing"}
+            class={[
+              "flex items-center justify-between gap-3 border-t border-secondary-200 pt-3 font-medium text-tertiary-700 hover:text-tertiary-800 focus-visible:outline-2 focus-visible:outline-offset-2"
+            ]}
+          >
+            Kalkulace, doklady a platby <.icon name="hero-arrow-up-right" class="size-4" />
+          </.link>
+        </div>
+      </div>
+    </div>
     """
   end
 

@@ -69,7 +69,10 @@ faktury se zobrazuje stav úhrady, číslo dokladu, nedoplatek nebo přeplatek a
 kladném nedoplatku po datu splatnosti také **Po splatnosti**. Datum splatnosti
 samo se ještě nepovažuje za prodlení. Změna kalkulace nezmění částku vydané
 faktury. Filtr **Doklady a úhrady** používá stejná pravidla jako zobrazení.
-Finanční stav v seznamu nelze ručně přepsat; kliknutí otevře evidenci pobytu.
+V řádku je pouze kompaktní štítek stavu úhrady (před vyúčtováním stav zálohy).
+Číslo dokladu, částky a podrobnosti jsou v plovoucí kartě po najetí myší,
+při zaměření klávesnicí nebo po klepnutí na štítek. Odtud lze otevřít evidenci
+pobytu. Kartu zavře Escape nebo kliknutí mimo ni. Finanční stav nelze ručně přepsat.
 Přehled se aktualizuje při otevření seznamu nebo změně filtru. Bankovní párování
 zatím není zapojené.
 
