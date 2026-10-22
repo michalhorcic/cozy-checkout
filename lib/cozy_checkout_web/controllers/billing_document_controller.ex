@@ -10,10 +10,13 @@ defmodule CozyCheckoutWeb.BillingDocumentController do
         |> put_resp_header("content-disposition", "attachment; filename=\"#{doc.number}.pdf\"")
         |> send_resp(200, doc.pdf)
 
-      {:error, _} ->
+      {:error, reason} ->
         conn
         |> put_resp_content_type("text/plain")
-        |> send_resp(503, "PDF se nepodařilo připravit. Zkuste stažení znovu.")
+        |> send_resp(
+          503,
+          "PDF se nepodařilo připravit. #{CozyCheckoutWeb.BillingLive.Helpers.error(reason)}"
+        )
     end
   end
 end

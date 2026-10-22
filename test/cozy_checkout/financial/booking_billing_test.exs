@@ -366,5 +366,16 @@ defmodule CozyCheckout.BookingBillingTest do
     refute Billing.pricing_preview(booking.id).changed_nights
   end
 
+  test "an overlong Czech account is rejected instead of being stored as an IBAN" do
+    assert {:error, reason} =
+             Billing.save_profile(
+               supplier_attrs()
+               |> Map.put("bank_account", "1234567890123/2010")
+               |> Map.put("iban", "")
+             )
+
+    assert reason =~ "10 číslic"
+  end
+
   defp assert_amount(actual, expected), do: assert(Decimal.equal?(actual, Decimal.new(expected)))
 end

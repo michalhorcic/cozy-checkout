@@ -86,3 +86,6 @@ config :phoenix_live_view,
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+
+# Keep local Chrome launch errors visible when preparing invoice PDFs.
+config :cozy_checkout, :pdf_discard_stderr, false

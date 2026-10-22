@@ -73,4 +73,12 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert redirected_to(conn) == "/admin/login"
     assert {:error, {:redirect, %{to: "/admin/login"}}} = live(build_conn(), "/admin/billing")
   end
+
+  test "authenticated PDF download generates a real advance PDF", %{conn: conn, booking: booking} do
+    doc = issue!(booking, "advance")
+    conn = get(conn, "/admin/billing/documents/#{doc.id}/pdf")
+    assert response(conn, 200) =~ "%PDF-"
+    assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
+    assert Billing.get_document!(doc.id).pdf == conn.resp_body
+  end
 end

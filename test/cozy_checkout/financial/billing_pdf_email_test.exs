@@ -89,4 +89,117 @@ defmodule CozyCheckout.BillingPdfEmailTest do
     assert {:ok, stored} = Billing.ensure_pdf(final.id)
     assert length(Regex.scan(~r{/Type /Page\b}, stored.pdf)) >= 2
   end
+
+  test "Chrome exits and renderer timeouts return errors without killing the caller", %{
+    booking: booking
+  } do
+    doc = issue!(booking, "advance")
+
+    for renderer <- [
+          CozyCheckout.BillingPdfFailures.Shutdown,
+          CozyCheckout.BillingPdfFailures.Killed
+        ] do
+      assert {:error, reason} = CozyCheckout.Billing.Pdf.render(doc, renderer: renderer)
+      assert reason =~ "PDF:"
+      assert reason =~ "CHROME_EXECUTABLE"
+    end
+
+    assert {:error, reason} =
+             CozyCheckout.Billing.Pdf.render(doc,
+               renderer: CozyCheckout.BillingPdfFailures.Slow,
+               timeout: 20
+             )
+
+    assert reason =~ "časový limit"
+  end
+
+  test "a missing Chrome binary is reported through the real ChromicPDF startup", %{
+    booking: booking
+  } do
+    start_supervised!(
+      {CozyCheckout.BillingPdfFailures.MissingChrome,
+       on_demand: true,
+       no_sandbox: true,
+       chrome_executable: "/missing/cozy-billing-chrome",
+       session_pool: [init_timeout: 1000, checkout_timeout: 1000]}
+    )
+
+    doc = issue!(booking, "advance")
+
+    assert {:error, reason} =
+             CozyCheckout.Billing.Pdf.render(doc,
+               renderer: CozyCheckout.BillingPdfFailures.MissingChrome,
+               timeout: 5000
+             )
+
+    assert reason =~ "Chrome"
+    refute Billing.get_document!(doc.id).pdf
+  end
+
+  test "an asynchronous worker delivers an advance PDF to the dev mailbox storage", %{
+    booking: booking
+  } do
+    config = Application.fetch_env!(:cozy_checkout, CozyCheckout.Mailer)
+    Application.put_env(:cozy_checkout, CozyCheckout.Mailer, adapter: Swoosh.Adapters.Local)
+    on_exit(fn -> Application.put_env(:cozy_checkout, CozyCheckout.Mailer, config) end)
+    doc = issue!(booking, "advance")
+
+    {:ok, delivery} =
+      Billing.enqueue_email(
+        doc.id,
+        %{
+          "recipient" => "local@example.com",
+          "subject" => "Lokální záloha #{doc.number}",
+          "body" => "Doklad v příloze",
+          "consent" => "true"
+        },
+        Ecto.UUID.generate()
+      )
+
+    parent = self()
+
+    {pid, ref} =
+      spawn_monitor(fn ->
+        Process.flag(:trap_exit, false)
+
+        result =
+          BillingEmailWorker.perform(%Oban.Job{
+            args: %{"delivery_id" => delivery.id},
+            attempt: 1,
+            max_attempts: 5
+          })
+
+        send(parent, {:mail_result, self(), result})
+      end)
+
+    assert_receive {:mail_result, ^pid, :ok}, 15_000
+    assert_receive {:DOWN, ^ref, :process, ^pid, :normal}, 5000
+    stored = Billing.get_document!(doc.id)
+
+    email =
+      Enum.find(
+        Swoosh.Adapters.Local.Storage.Memory.all(),
+        &(&1.subject == "Lokální záloha #{doc.number}")
+      )
+
+    assert email
+    assert hd(email.attachments).data == stored.pdf
+    assert Repo.get!(Delivery, delivery.id).state == "accepted"
+    Swoosh.Adapters.Local.Storage.Memory.delete_all()
+  end
+
+  test "an old snapshot with an invalid account cannot produce a misleading payment QR", %{
+    booking: booking
+  } do
+    doc = issue!(booking, "advance")
+
+    doc = %{
+      doc
+      | snapshot: put_in(doc.snapshot, ["supplier", "bank_account"], "1234567890123/2010")
+    }
+
+    html = CozyCheckout.Billing.Pdf.html(doc)
+    assert html =~ "Platební údaje ověřte s vystavovatelem"
+    refute html =~ "data:image/svg+xml"
+  end
 end

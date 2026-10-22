@@ -7,7 +7,11 @@ defmodule CozyCheckout.Application do
 
   @impl true
   def start(_type, _args) do
-    pdf_options = [on_demand: true, no_sandbox: true]
+    pdf_options = [
+      on_demand: true,
+      no_sandbox: true,
+      discard_stderr: Application.get_env(:cozy_checkout, :pdf_discard_stderr, true)
+    ]
 
     pdf_options =
       case Application.get_env(:cozy_checkout, :chrome_executable) do
@@ -18,7 +22,8 @@ defmodule CozyCheckout.Application do
     children = [
       CozyCheckoutWeb.Telemetry,
       CozyCheckout.Repo,
-      {ChromicPDF, pdf_options},
+      {Task.Supervisor, name: CozyCheckout.Billing.PdfTasks},
+      {CozyCheckout.Billing.PdfBrowser, pdf_options},
       {DNSCluster, query: Application.get_env(:cozy_checkout, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: CozyCheckout.PubSub},
       CozyCheckoutWeb.AdminAuthRateLimiter,
