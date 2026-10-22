@@ -6,7 +6,20 @@
     <meta name="csrf-token" content={get_csrf_token()} />
     <link rel="icon" type="image/svg+xml" href={~p"/images/cozy-knot.svg"} />
     <link rel="alternate icon" type="image/x-icon" href={~p"/favicon.ico"} />
-    <.live_title default="CozyCheckout" suffix=" · Phoenix Framework">
+    <link rel="apple-touch-icon" sizes="180x180" href={~p"/images/apple-touch-icon.png"} />
+    <meta name="apple-mobile-web-app-title" content="Jindřichův dům" />
+    <.live_title
+      default={
+        if String.starts_with?(@conn.request_path, "/admin"),
+          do: "Administrace",
+          else: "Pokladna"
+      }
+      suffix={
+        if String.starts_with?(@conn.request_path, "/admin"),
+          do: " · Cozy Checkout",
+          else: " · Jindřichův dům"
+      }
+    >
       {assigns[:page_title]}
     </.live_title>
     <%!-- Google Fonts --%>

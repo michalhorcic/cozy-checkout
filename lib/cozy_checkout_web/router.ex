@@ -53,7 +53,9 @@ defmodule CozyCheckoutWeb.Router do
       metrics: CozyCheckoutWeb.Telemetry,
       additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
 
-    live_session :admin, on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}] do
+    live_session :admin,
+      on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}],
+      layout: {CozyCheckoutWeb.Layouts, :admin} do
       live "/", DashboardLive
 
       # Categories

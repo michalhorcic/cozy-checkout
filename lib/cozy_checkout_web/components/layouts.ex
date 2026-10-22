@@ -33,7 +33,7 @@ defmodule CozyCheckoutWeb.Layouts do
 
   attr :content_class, :string, default: "mx-auto max-w-2xl space-y-4"
   attr :main_class, :string, default: "px-4 py-20 sm:px-6 lg:px-8"
-  attr :show_header, :boolean, default: true
+  attr :show_header, :boolean, default: false
   attr :flash_info_class, :string, default: nil
   attr :food_section, :atom, default: nil
   attr :food_context, :map, default: %{}
@@ -42,32 +42,7 @@ defmodule CozyCheckoutWeb.Layouts do
 
   def app(assigns) do
     ~H"""
-    <header :if={@show_header} class="navbar px-4 sm:px-6 lg:px-8">
-      <div class="flex-1">
-        <a href="/" class="flex-1 flex w-fit items-center gap-2">
-          <img src={~p"/images/logo.svg"} width="36" />
-          <span class="text-sm font-semibold">v{Application.spec(:phoenix, :vsn)}</span>
-        </a>
-      </div>
-      <div class="flex-none">
-        <ul class="flex flex-column px-1 space-x-4 items-center">
-          <li>
-            <a href="https://phoenixframework.org/" class="btn btn-ghost">Website</a>
-          </li>
-          <li>
-            <a href="https://github.com/phoenixframework/phoenix" class="btn btn-ghost">GitHub</a>
-          </li>
-          <li>
-            <.theme_toggle />
-          </li>
-          <li>
-            <a href="https://hexdocs.pm/phoenix/overview.html" class="btn btn-primary">
-              Get Started <span aria-hidden="true">&rarr;</span>
-            </a>
-          </li>
-        </ul>
-      </div>
-    </header>
+    <.admin_header :if={@show_header} />
 
     <div
       :if={@food_section}
@@ -88,7 +63,12 @@ defmodule CozyCheckoutWeb.Layouts do
           phx-key="Escape"
         >
           <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 text-sm font-semibold">
-            <span class="flex items-center gap-2"><.icon name="hero-bars-3" class="h-5 w-5" />Stravování</span>
+            <span class="flex items-center gap-3"><img
+              src={~p"/images/cozy-knot.svg"}
+              alt=""
+              width="28"
+              height="28"
+            /><span>Stravování</span><.icon name="hero-bars-3" class="h-5 w-5 text-primary-400" /></span>
             <span class="text-tertiary-600">{food_label(@food_section)}</span>
           </summary>
           <div class="max-h-[75dvh] overflow-y-auto">
@@ -148,9 +128,10 @@ defmodule CozyCheckoutWeb.Layouts do
     <nav id={@id} aria-label="Stravování" class="p-4">
       <.link
         navigate={CozyCheckoutWeb.FoodNavigation.path(:planner, @context)}
-        class="mb-6 flex items-center gap-3 px-2 py-2 font-bold text-primary-500"
+        class="mb-6 hidden items-center gap-3 px-2 py-2 font-bold text-primary-500 lg:flex"
       >
-        <img src={~p"/images/logo.svg"} alt="" width="28" height="28" />Stravování
+        <img src={~p"/images/cozy-knot.svg"} alt="" width="28" height="28" class="shrink-0" />
+        <span><span class="block text-sm">Cozy Checkout</span><span class="block text-xs font-normal text-primary-400">Stravování</span></span>
       </.link>
       <div :for={{label, entries} <- @groups} class="mb-5">
         <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-primary-400">
@@ -194,6 +175,40 @@ defmodule CozyCheckoutWeb.Layouts do
         templates: "Šablony textů jídel",
         settings: "Nastavení porcí"
       }[section]
+
+  @doc "Renders the shared internal header around authenticated admin pages."
+  def admin(assigns) do
+    ~H"""
+    <.admin_header />
+    {@inner_content}
+    """
+  end
+
+  def admin_header(assigns) do
+    ~H"""
+    <header
+      id="admin-brand-header"
+      class="border-b border-secondary-200 bg-white px-4 py-3 sm:px-6 lg:px-8 print:hidden"
+    >
+      <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+        <.link
+          navigate={~p"/admin"}
+          class="inline-flex min-h-11 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-tertiary-500"
+          aria-label="Cozy Checkout — administrace"
+        >
+          <img src={~p"/images/cozy-knot.svg"} alt="" width="32" height="32" class="shrink-0" />
+          <span><span class="block text-sm font-semibold text-primary-500">Cozy Checkout</span><span class="block text-xs text-primary-400">Jindřichův dům</span></span>
+        </.link>
+        <.link
+          navigate={~p"/pos"}
+          class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 transition-colors hover:bg-secondary-50 hover:text-primary-500 focus-visible:outline-2 focus-visible:outline-tertiary-500"
+        >
+          <.icon name="hero-arrow-top-right-on-square" class="h-4 w-4" />Pokladna
+        </.link>
+      </div>
+    </header>
+    """
+  end
 
   @doc """
   Renders the POS layout for touch-friendly interface.

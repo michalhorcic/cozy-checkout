@@ -20,13 +20,13 @@ defmodule CozyCheckoutWeb.DashboardLive do
 
   def render(assigns) do
     ~H"""
-    <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <Layouts.app flash={@flash} main_class="min-h-screen bg-secondary-50" content_class="">
       <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <%!-- Header --%>
         <div class="flex justify-between items-center mb-8">
           <div>
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-            <p class="text-lg text-gray-600">Jindřichův dům Management</p>
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Administrace</h1>
+            <p class="text-lg text-gray-600">Jindřichův dům</p>
           </div>
           <div class="flex items-center gap-3">
             <form action={~p"/admin/logout"} method="post">
@@ -229,7 +229,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
           </.expandable_section>
         </div>
       </div>
-    </div>
+    </Layouts.app>
     """
   end
 
