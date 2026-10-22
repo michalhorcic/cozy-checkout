@@ -189,6 +189,21 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     final = issue!(booking, "final", %{"due_on" => to_string(Date.add(Billing.today(), -1))})
     {:ok, view, _} = live(conn, "/admin/bookings?invoice_state=unpaid&show_all=true")
     assert has_element?(view, "#booking-billing-#{booking.id}", final.number)
+
+    assert has_element?(
+             view,
+             "#booking-billing-details-#{booking.id}[popover='auto']",
+             final.number
+           )
+
+    assert has_element?(
+             view,
+             "#booking-billing-trigger-#{booking.id}[aria-haspopup='dialog']",
+             "Neuhrazeno"
+           )
+
+    refute has_element?(view, "#booking-billing-trigger-#{booking.id}", final.number)
+    refute has_element?(view, "#booking-billing-trigger-#{booking.id}", "5 700")
     assert has_element?(view, "#booking-payment-#{booking.id}", "Neuhrazeno")
     assert has_element?(view, "#booking-overdue-#{booking.id}", "Po splatnosti")
     assert has_element?(view, "#booking-balance-#{booking.id}", "5 700")
@@ -204,7 +219,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
 
     assert has_element?(
              view,
-             "#booking-billing-#{booking.id}[href='/admin/bookings/#{booking.id}/billing']"
+             "#booking-billing-link-#{booking.id}[href='/admin/bookings/#{booking.id}/billing']"
            )
   end
 
