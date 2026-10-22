@@ -3,12 +3,13 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   alias CozyCheckout.Bookings
   alias CozyCheckout.Bookings.Booking
+  alias CozyCheckout.Meals.MenuPlanning
 
   import CozyCheckoutWeb.FlopComponents
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    {:ok, assign(socket, :catering_errors, %{})}
   end
 
   # Apply default filter to show only current and future bookings
@@ -54,12 +55,19 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
           socket
           |> assign(:bookings, bookings_with_rooms)
+          |> assign(:menu_variants, MenuPlanning.list_variants())
+          |> assign(
+            :booking_menus,
+            MenuPlanning.booking_menu_summaries(Enum.map(bookings, & &1.id))
+          )
           |> assign(:meta, meta)
           |> assign(:current_params, params)
 
         {:error, meta} ->
           socket
           |> assign(:bookings, [])
+          |> assign(:menu_variants, [])
+          |> assign(:booking_menus, %{})
           |> assign(:meta, meta)
           |> assign(:current_params, params)
       end
@@ -103,6 +111,48 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     )
 
     {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event(
+        "update_catering",
+        %{"id" => id, "inline" => attrs, "_target" => ["inline", field]},
+        socket
+      )
+      when field in ["meal_plan", "meal_adults", "meal_children"] do
+    booking = Bookings.get_booking!(id)
+
+    attrs = Map.take(attrs, [field])
+
+    attrs =
+      if field == "meal_plan" and attrs[field] in ["half_board", "full_board"] do
+        attrs
+        |> Map.put("first_meal", booking.first_meal || "dinner")
+        |> Map.put("last_meal", booking.last_meal || "breakfast")
+      else
+        attrs
+      end
+
+    result =
+      if booking.status == "cancelled",
+        do: {:error, :cancelled},
+        else: Bookings.update_booking(booking, attrs)
+
+    catering_result(socket, id, result)
+  end
+
+  def handle_event(
+        "assign_menu",
+        %{"id" => id, "selection" => %{"variant_id" => variant_id}},
+        socket
+      ) do
+    result =
+      case Ecto.UUID.cast(variant_id) do
+        {:ok, variant_id} -> MenuPlanning.assign_variant(id, variant_id)
+        :error -> {:error, :variant_unavailable}
+      end
+
+    catering_result(socket, id, result)
   end
 
   @impl true
@@ -367,6 +417,15 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                 <.sortable_header meta={@meta} field={:check_out_date} path={~p"/admin/bookings"}>
                   Check-out
                 </.sortable_header>
+                <th class="px-4 py-3 text-left text-xs font-medium text-primary-400 uppercase">
+                  Stravování
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-primary-400 uppercase">
+                  Menu
+                </th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-primary-400 uppercase">
+                  Počty osob
+                </th>
                 <.sortable_header meta={@meta} field={:status} path={~p"/admin/bookings"}>
                   Status
                 </.sortable_header>
@@ -381,7 +440,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             <tbody class="bg-white divide-y divide-gray-200">
               <%= if @bookings == [] do %>
                 <tr>
-                  <td colspan="7" class="px-6 py-12 text-center text-primary-400">
+                  <td colspan="10" class="px-6 py-12 text-center text-primary-400">
                     No bookings found.
                   </td>
                 </tr>
@@ -412,6 +471,12 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                       do: Calendar.strftime(booking.check_out_date, "%b %d, %Y"),
                       else: "—"}
                   </td>
+                  <.catering_cells
+                    booking={booking}
+                    variants={@menu_variants}
+                    menu={@booking_menus[booking.id]}
+                    error={@catering_errors[booking.id]}
+                  />
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div
                       class="relative"
@@ -711,5 +776,175 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       _ ->
         params
     end
+  end
+
+  defp catering_result(socket, id, {:ok, _}) do
+    {:noreply,
+     socket
+     |> assign(:catering_errors, Map.delete(socket.assigns.catering_errors, id))
+     |> push_patch(to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params))}
+  end
+
+  defp catering_result(socket, id, {:error, reason}) do
+    message =
+      case reason do
+        %Ecto.Changeset{} = cs ->
+          cond do
+            Keyword.has_key?(cs.errors, :check_out_date) ->
+              "Nejdřív doplňte datum odjezdu v detailu."
+
+            Keyword.has_key?(cs.errors, :first_meal) or Keyword.has_key?(cs.errors, :last_meal) ->
+              "Upravte první a poslední jídlo v detailu rezervace."
+
+            true ->
+              "Počet musí být celé nezáporné číslo. Prázdné pole znamená neznámý počet."
+          end
+
+        {:invalid_menu, errors} ->
+          Enum.join(errors, " ")
+
+        :cancelled ->
+          "Zrušené rezervaci nelze měnit stravování."
+
+        _ ->
+          "Menu nelze přiřadit. Obnovte seznam a zkontrolujte termín a stravování."
+      end
+
+    {:noreply,
+     assign(socket, :catering_errors, Map.put(socket.assigns.catering_errors, id, message))}
+  end
+
+  attr :booking, :map, required: true
+  attr :variants, :list, required: true
+  attr :menu, :any, default: nil
+  attr :error, :string, default: nil
+
+  defp catering_cells(assigns) do
+    suitable = MenuPlanning.suitable_variants(assigns.booking, assigns.variants)
+    catered = assigns.booking.meal_plan in ["half_board", "full_board"]
+    stale = MenuPlanning.stale?(assigns.menu, assigns.booking)
+
+    selected =
+      if assigns.menu && not stale &&
+           Enum.any?(suitable, &(&1.id == assigns.menu.menu_variant_id)),
+         do: assigns.menu.menu_variant_id,
+         else: ""
+
+    assigns =
+      assigns
+      |> assign(:suitable, suitable)
+      |> assign(:catered, catered)
+      |> assign(:stale, stale)
+      |> assign(:disabled, assigns.booking.status == "cancelled")
+      |> assign(
+        :catering_form,
+        to_form(
+          Map.take(assigns.booking, [:meal_plan, :meal_adults, :meal_children])
+          |> Map.new(fn {k, v} -> {to_string(k), v || ""} end),
+          as: :inline
+        )
+      )
+      |> assign(:menu_form, to_form(%{"variant_id" => selected}, as: :selection))
+
+    ~H"""
+    <td class="px-4 py-4 align-top text-sm min-w-44">
+      <.form
+        for={@catering_form}
+        id={"catering-plan-#{@booking.id}"}
+        phx-change="update_catering"
+        phx-value-id={@booking.id}
+      >
+        <.input
+          field={@catering_form[:meal_plan]}
+          id={"catering-plan-input-#{@booking.id}"}
+          type="select"
+          aria-label="Stravování"
+          disabled={@disabled}
+          options={[
+            {"Nezadáno", ""},
+            {"Bez stravy", "none"},
+            {"Polopenze", "half_board"},
+            {"Plná penze", "full_board"}
+          ]}
+        />
+      </.form>
+      <.link
+        navigate={~p"/admin/bookings/#{@booking.id}/edit"}
+        class="text-xs text-tertiary-600 underline"
+      >Upravit podrobnosti</.link>
+      <p :if={@error} id={"catering-error-#{@booking.id}"} role="alert" class="mt-2 text-error">
+        {@error}
+      </p>
+    </td>
+    <td class="px-4 py-4 align-top text-sm min-w-56">
+      <.form
+        :if={@catered}
+        for={@menu_form}
+        id={"catering-menu-#{@booking.id}"}
+        phx-change="assign_menu"
+        phx-value-id={@booking.id}
+      >
+        <.input
+          field={@menu_form[:variant_id]}
+          id={"catering-menu-input-#{@booking.id}"}
+          type="select"
+          aria-label="Menu rezervace"
+          disabled={@disabled or @suitable == []}
+          prompt={if @suitable == [], do: "Žádné vhodné menu", else: "Vybrat menu"}
+          options={Enum.map(@suitable, &{"#{&1.name} · #{&1.days} dnů / #{&1.days - 1} nocí", &1.id})}
+        />
+      </.form>
+      <span :if={not @catered}>—</span>
+      <p :if={@catered and @stale} id={"catering-stale-#{@booking.id}"} class="mt-1 text-warning">
+        {if @menu, do: @menu.variant_name} · Menu vyžaduje nový výběr
+      </p>
+      <.link
+        :if={not is_nil(@menu) and @catered}
+        navigate={~p"/admin/bookings/#{@booking.id}/menu"}
+        class="text-xs text-tertiary-600 underline"
+      >Zobrazit menu</.link>
+    </td>
+    <td class="px-4 py-4 align-top text-sm min-w-52">
+      <.form
+        :if={@catered}
+        for={@catering_form}
+        id={"catering-counts-#{@booking.id}"}
+        phx-change="update_catering"
+        phx-value-id={@booking.id}
+        class="grid grid-cols-2 gap-2"
+      >
+        <.input
+          field={@catering_form[:meal_adults]}
+          id={"catering-adults-#{@booking.id}"}
+          type="number"
+          label="Dospělí"
+          min="0"
+          step="1"
+          placeholder="?"
+          phx-debounce="blur"
+          disabled={@disabled}
+        />
+        <.input
+          field={@catering_form[:meal_children]}
+          id={"catering-children-#{@booking.id}"}
+          type="number"
+          label="Děti"
+          min="0"
+          step="1"
+          placeholder="?"
+          phx-debounce="blur"
+          disabled={@disabled}
+        />
+      </.form>
+      <p
+        :if={@catered and (is_nil(@booking.meal_adults) or is_nil(@booking.meal_children))}
+        id={"catering-missing-counts-#{@booking.id}"}
+        class="mt-1 text-warning"
+      >
+        Chybí počty · porce se zatím nezapočítávají
+      </p>
+      <span :if={not @catered}>—</span>
+    </td>
+    """
   end
 end

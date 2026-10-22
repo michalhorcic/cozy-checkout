@@ -49,9 +49,9 @@ defmodule CozyCheckout.BookingMealsTest do
     assert Bookings.get_invoice_by_booking_id(booking.id) == nil
   end
 
-  test "catered bookings require departure, counts including explicit zeros, and both boundaries",
+  test "catered bookings require departure and boundaries but allow unknown counts",
        %{guest: guest} do
-    for field <- [:check_out_date, :meal_adults, :meal_children, :first_meal, :last_meal] do
+    for field <- [:check_out_date, :first_meal, :last_meal] do
       changeset = Booking.changeset(%Booking{}, attrs(guest, %{field => nil}))
       refute changeset.valid?
       assert "can't be blank" in errors_on(changeset)[field]
@@ -61,6 +61,15 @@ defmodule CozyCheckout.BookingMealsTest do
              Bookings.create_booking(attrs(guest, %{meal_adults: 0, meal_children: 5}))
 
     assert booking.meal_adults == 0
+
+    assert {:ok, pending} =
+             Bookings.update_booking(booking, %{meal_adults: nil, meal_children: nil})
+
+    assert Booking.meal_schedule_complete?(pending)
+    refute Booking.meal_details_complete?(pending)
+    day = Meals.get_portion_counts_for_range(~D[2027-01-09], ~D[2027-01-09])[~D[2027-01-09]]
+    assert day["dinner"].total == 0
+    assert Enum.any?(day.incomplete_bookings, &(&1.id == pending.id))
   end
 
   test "rejects negative, fractional and unknown catering values", %{guest: guest} do

@@ -73,6 +73,29 @@ defmodule CozyCheckout.Recipes.ConsumptionTest do
     assert Decimal.equal?(updated.effective, "15")
   end
 
+  test "a menu planned without counts retains recipe links and becomes calculable after counts arrive" do
+    recipe = recipe_fixture()
+    variant = variant_fixture()
+
+    for item <- variant.items do
+      assert {:ok, _} = Links.save("variant", item.id, recipe.id, [], Links.version(item))
+    end
+
+    booking = menu_booking_fixture(%{meal_adults: nil, meal_children: nil})
+    assert {:ok, menu} = MenuPlanning.assign_variant(booking.id, variant.id)
+    [item | _] = menu.items
+    assert item.recipe_id == recipe.id
+    assert {:error, :incomplete_booking} = Consumption.for_booking_item(item.id)
+
+    assert {:ok, _} =
+             CozyCheckout.Bookings.update_booking(booking, %{meal_adults: 8, meal_children: 0})
+
+    assert {:ok, result} = Consumption.for_booking_item(item.id)
+    assert result.actual == 8
+    assert result.issues == []
+    assert result.quantities != []
+  end
+
   test "unlinked menu warns, stale and cancelled bookings cannot be calculated or linked" do
     booking = menu_booking_fixture()
     [item | _] = assign_variant(booking, variant_fixture()).items

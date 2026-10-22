@@ -9,6 +9,17 @@
           else: "odjezd nevyplněn"} · {meal_plan_label(@booking.meal_plan)}
       </p>
     </header>
+    <p
+      :if={
+        @booking.meal_plan in ["half_board", "full_board"] and
+          (is_nil(@booking.meal_adults) or is_nil(@booking.meal_children))
+      }
+      id="booking-menu-missing-counts"
+      class="rounded-lg bg-warning-light p-3 text-primary-500"
+    >
+      Menu lze přiřadit předem. Chybí počty osob: dokud nedoplníte dospělé i děti
+      (včetně nul), porce se nezapočítávají do kuchyňského přehledu ani nákupů.
+    </p>
     <section class="rounded-lg bg-white p-6 shadow">
       <h2 class="text-xl font-semibold text-primary-500">Přiřadit variantu</h2>
       <p class="my-3 text-sm text-primary-400">

@@ -17,6 +17,32 @@ defmodule CozyCheckout.Meals.MenuPlanning do
     Repo.all(from v in MenuVariant, where: is_nil(v.deleted_at), order_by: v.name)
   end
 
+  @doc "Menu choices matching the actual inclusive stay and service boundaries."
+  def suitable_variants(booking, variants) do
+    if Booking.meal_schedule_complete?(booking) and booking.status != "cancelled" do
+      Enum.filter(variants, fn variant ->
+        is_nil(variant.deleted_at) and
+          variant.days == Date.diff(booking.check_out_date, booking.check_in_date) + 1 and
+          variant.meal_plan == booking.meal_plan and
+          variant.first_meal == booking.first_meal and variant.last_meal == booking.last_meal
+      end)
+    else
+      []
+    end
+  end
+
+  def booking_menu_summaries(booking_ids) do
+    Repo.all(from m in BookingMenu, where: m.booking_id in ^booking_ids)
+    |> Map.new(&{&1.booking_id, &1})
+  end
+
+  @doc "Immediate selection; application still rechecks compatibility and preserves manual edits."
+  def assign_variant(booking_id, variant_id) do
+    with {:ok, preview} <- preview(booking_id, variant_id) do
+      apply_variant(booking_id, variant_id, preview.token)
+    end
+  end
+
   def get_variant!(id) do
     MenuVariant
     |> where([v], is_nil(v.deleted_at))
@@ -199,7 +225,7 @@ defmodule CozyCheckout.Meals.MenuPlanning do
     existing = if menu, do: Map.new(menu.items, &{{&1.date, &1.meal_type}, &1}), else: %{}
 
     rows =
-      if Booking.meal_details_complete?(booking) do
+      if Booking.meal_schedule_complete?(booking) do
         portions =
           PortionCounts.for_range([booking], booking.check_in_date, booking.check_out_date)
 
@@ -293,11 +319,11 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         else: errors
 
     errors =
-      if not Booking.meal_details_complete?(booking),
+      if not Booking.meal_schedule_complete?(booking),
         do: errors ++ ["Nejdřív doplňte stravování a termín rezervace."],
         else: errors
 
-    if Booking.meal_details_complete?(booking) do
+    if Booking.meal_schedule_complete?(booking) do
       checks = [
         {Date.diff(booking.check_out_date, booking.check_in_date) + 1 == variant.days,
          "Nesouhlasí počet dnů pobytu a varianty."},
