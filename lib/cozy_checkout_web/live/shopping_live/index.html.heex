@@ -8,13 +8,16 @@
 >
   <div
     id="kitchen-shopping-page"
-    class="kitchen-shopping food-page print:bg-white print:p-0"
+    class={[
+      "kitchen-shopping food-page print:bg-white print:p-0",
+      @live_action == :print && "shopping-print"
+    ]}
   >
     <div class="w-full">
       <div :if={@live_action != :print} class="print:hidden">
         <.kitchen_header
           title="Nákup"
-          subtitle="Všechna jídla, jeden přehledný seznam. U každé suroviny zjistíte, na co a pro koho ji potřebujete."
+          subtitle="Množství k nákupu a rozbalovací přehled použití."
         >
           <:actions>
             <.link
@@ -27,7 +30,7 @@
           </:actions>
         </.kitchen_header>
       </div>
-      <header :if={@live_action == :print} class="mb-6">
+      <header :if={@live_action == :print} class="shopping-print-header mb-4">
         <div class="mb-5 flex justify-between gap-4 print:hidden">
           <.link
             navigate={shopping_path(:index, @range_form.params)}
@@ -53,9 +56,9 @@
         :if={@live_action != :print}
         id="shopping-selection"
         open={is_nil(@result) || @result.rows == []}
-        class="mb-6 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-sm"
+        class="mb-3 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-sm"
       >
-        <summary class="cursor-pointer p-5 text-sm font-semibold text-primary-500 hover:text-primary-500">
+        <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-primary-500 hover:text-primary-500">
           <span :if={@result}>{ShoppingList.date_label(@result.start_date)} – {ShoppingList.date_label(
             @result.end_date
           )} · {Enum.find_value(@booking_options, fn {name, id} ->
@@ -190,57 +193,43 @@
           data-scope={@checklist_scope}
           data-signatures={@signatures}
         >
-          <div :if={@live_action != :print} class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div class="rounded-lg border border-secondary-200 bg-white p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-primary-400">
-                Surovin
-              </p><p
-                id="shopping-total"
-                class="mt-2 text-3xl font-bold text-primary-500"
-              >
-                {length(@result.rows)}
-              </p>
-            </div>
-            <div class="rounded-lg border border-secondary-200 bg-white p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-primary-400">
-                Jídel s recepty
-              </p><p id="shopping-coverage" class="mt-2 text-3xl font-bold text-primary-500">
-                {@result.covered_services}<span class="text-base font-medium text-primary-300"> / {@result.services}</span>
-              </p>
-            </div>
-            <div class="rounded-lg border border-secondary-200 bg-white p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-primary-400">Skupin</p><p
-                id="shopping-groups"
-                class="mt-2 text-3xl font-bold text-primary-500"
-              >
-                {@result.groups}
-              </p>
-            </div>
-            <div class="rounded-lg border border-secondary-200 bg-secondary-50 p-4">
-              <p class="text-xs font-semibold uppercase tracking-wide text-tertiary-600">
-                Odškrtnuto
-              </p><p class="mt-2 text-3xl font-bold text-primary-500">
-                <span id="shopping-checked-count" data-checked-count>0</span><span class="text-base font-medium text-primary-400"> / {length(
-                  @result.rows
-                )}</span>
-              </p>
-            </div>
+          <div
+            :if={@live_action != :print}
+            id="shopping-summary"
+            class="mb-3 flex flex-wrap gap-x-5 gap-y-1 rounded-lg border border-secondary-200 bg-white px-4 py-2 text-xs text-primary-400 print:hidden"
+          >
+            <span>Surovin
+            <strong id="shopping-total" class="ml-1 text-sm text-primary-500">{length(
+              @result.rows
+            )}</strong></span>
+            <span>Jídel s recepty
+            <strong id="shopping-coverage" class="ml-1 text-sm text-primary-500">{@result.covered_services} / {@result.services}</strong></span>
+            <span>Skupin
+            <strong id="shopping-groups" class="ml-1 text-sm text-primary-500">{@result.groups}</strong></span>
+            <span>Odškrtnuto
+            <strong class="ml-1 text-sm text-primary-500"><span
+              id="shopping-checked-count"
+              data-checked-count
+            >0</span>
+            / {length(@result.rows)}</strong></span>
           </div>
           <.form
             :if={@live_action != :print}
             for={@filter_form}
             id="shopping-filter-form"
             phx-change="filter"
-            class="mb-4 grid gap-3 sm:grid-cols-[1fr_11rem_11rem]"
+            class="shopping-filters mb-2 grid grid-cols-2 gap-x-3 gap-y-1 sm:grid-cols-[1fr_11rem_11rem] print:hidden"
           >
-            <.input
-              field={@filter_form[:search]}
-              type="search"
-              label="Najít surovinu"
-              placeholder="Třeba máslo nebo brambory…"
-              phx-debounce="150"
-              class={field_class()}
-            />
+            <div class="col-span-2 sm:col-span-1">
+              <.input
+                field={@filter_form[:search]}
+                type="search"
+                label="Najít surovinu"
+                placeholder="Třeba máslo nebo brambory…"
+                phx-debounce="150"
+                class={field_class()}
+              />
+            </div>
             <.input
               field={@filter_form[:category]}
               type="select"
@@ -262,7 +251,7 @@
           </.form>
           <div
             :if={@live_action != :print}
-            class="mb-5 flex flex-wrap items-center justify-between gap-3 text-xs text-primary-400"
+            class="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-primary-400 print:hidden"
           >
             <span id="shopping-visible-count">Zobrazeno {@visible_count} z {length(@result.rows)} surovin</span>
             <div class="flex flex-wrap gap-4">
@@ -281,7 +270,7 @@
               >Přepočítat z aktuálního menu</button>
             </div>
           </div>
-          <div id="shopping-rows" phx-update="stream" class="space-y-3">
+          <div id="shopping-rows" phx-update="stream" class="shopping-rows">
             <div
               id="shopping-empty"
               class="hidden rounded-lg border border-dashed border-secondary-300 bg-white p-10 text-center only:block"
@@ -305,138 +294,141 @@
             >
               <h2
                 :if={row.category_start}
-                class="mb-3 mt-7 text-xs font-bold uppercase tracking-[0.15em] text-primary-400"
+                class="shopping-category mb-1 mt-3 text-xs font-bold uppercase tracking-wide text-primary-400"
               >
                 {row.ingredient.category}
               </h2>
-              <div class="overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-sm transition hover:border-tertiary-300 print:rounded-none print:border-0 print:border-b print:shadow-none">
-                <div class="flex items-start gap-3 p-4 sm:gap-4 sm:p-5 print:p-2">
+              <div class="shopping-item border-b border-secondary-200 bg-white transition hover:bg-secondary-50">
+                <div class="shopping-item-summary">
                   <input
+                    :if={@live_action != :print}
                     id={"shopping-check-#{row.id}"}
                     type="checkbox"
                     disabled={is_nil(row.buy_quantity)}
                     data-shopping-check={row.id}
                     data-fingerprint={row.fingerprint}
                     aria-label={"Odškrtnout " <> row.ingredient.name}
-                    class="mt-1 h-6 w-6 shrink-0 cursor-pointer rounded-lg border-secondary-300 accent-tertiary-600 disabled:cursor-not-allowed disabled:opacity-40 print:hidden"
+                    class="shopping-check h-5 w-5 cursor-pointer rounded border-secondary-300 accent-tertiary-600 disabled:cursor-not-allowed disabled:opacity-40 print:hidden"
                   />
-                  <span
-                    aria-hidden="true"
-                    class="mt-1 hidden h-3 w-3 shrink-0 border border-primary-300 print:inline-block"
-                  ></span>
-                  <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <h3
-                          data-ingredient-name
-                          class="break-words text-lg font-bold text-primary-500 print:text-sm"
-                        >
-                          {row.ingredient.name}
-                        </h3>
-                        <p class="mt-1 text-xs text-primary-400">
-                          {(row.ingredient.purchase_mode == "Sezona" && "Na celé období") ||
-                            row.ingredient.purchase_mode || "Nákup není nastavený"}
-                        </p>
-                      </div>
-                      <div class="text-right">
-                        <p
-                          id={"shopping-buy-#{row.id}"}
-                          class="text-2xl font-bold tabular-nums text-primary-500 print:text-sm"
-                        >
-                          {(row.buy_quantity && quantity(row.buy_quantity, row.unit)) ||
-                            "Doplnit nákup"}
-                        </p>
-                        <p :if={row.packages} class="mt-1 text-xs text-primary-400">
-                          {number(row.packages)} balení × {quantity(
-                            row.ingredient.package_size,
-                            row.unit
-                          )}
-                        </p>
-                        <p
-                          id={"shopping-consumption-#{row.id}"}
-                          class="mt-1 text-xs text-primary-400"
-                        >
-                          Spotřeba {quantity(row.quantity, row.unit)}
-                        </p>
-                      </div>
-                    </div>
-                    <div id={"shopping-sources-#{row.id}"} class="mt-4 text-sm print:hidden">
-                      <button
-                        type="button"
-                        phx-click="toggle_sources"
-                        phx-value-id={row.id}
-                        aria-expanded={to_string(row.expanded)}
-                        aria-controls={"shopping-breakdown-#{row.id}"}
-                        class="w-fit cursor-pointer text-left font-semibold text-tertiary-600 transition hover:text-tertiary-800"
-                      >
-                        <.icon
-                          name="hero-chevron-down"
-                          class={
-                            if(row.expanded,
-                              do: "mr-1 inline h-4 w-4 rotate-180 transition",
-                              else: "mr-1 inline h-4 w-4 transition"
-                            )
-                          }
-                        />Na co surovinu potřebujete?
-                        <span class="ml-1 font-normal text-primary-300">({length(row.sources)})</span>
-                      </button>
-                      <div
-                        :if={row.expanded}
-                        id={"shopping-breakdown-#{row.id}"}
-                        class="mt-4 space-y-3 border-t border-secondary-200 pt-4"
-                      >
-                        <div
-                          :for={{source, index} <- Enum.with_index(row.sources)}
-                          id={"shopping-source-#{row.id}-#{index}"}
-                          class="rounded-lg bg-secondary-50 p-3"
-                        >
-                          <div class="flex flex-wrap items-start justify-between gap-2">
-                            <.link
-                              navigate={recipe_path(source, @range_form.params)}
-                              target="_blank"
-                              rel="noopener"
-                              class="font-semibold text-primary-500 underline decoration-tertiary-300 underline-offset-4 hover:text-tertiary-700"
-                            >{source.recipe.name}
-                            <.icon
-                              name="hero-arrow-top-right-on-square"
-                              class="ml-1 inline h-3.5 w-3.5"
-                            /></.link>
-                            <span class="font-semibold tabular-nums text-primary-500">{quantity(
-                              source.quantity,
-                              row.unit
-                            )}</span>
-                          </div>
-                          <p class="mt-2 text-xs text-primary-400">
-                            {ShoppingList.date_label(source.date)} · {ShoppingList.label(
-                              source.meal_type
-                            )} · {source.booking.guest.name}
-                          </p>
-                          <p class="mt-1 text-xs text-primary-400">
-                            {source.adults} dospělých + {source.children} dětí · přepočet {number(
-                              source.effective
-                            )} porcí
-                          </p>
-                          <.link
-                            navigate={
-                              CozyCheckoutWeb.FoodNavigation.with_context(
-                                ~p"/admin/recipes/menu/booking/#{source.item.id}",
-                                Map.put(@food_context, "origin", "shopping")
-                              )
-                            }
-                            target="_blank"
-                            class="mt-2 inline-block text-xs font-semibold text-tertiary-600 underline"
-                          >Otevřít jídlo skupiny</.link>
-                        </div>
-                      </div>
-                    </div>
-                    <button
+                  <span aria-hidden="true" class="shopping-paper-check"></span>
+                  <div class="shopping-item-name min-w-0">
+                    <h3
+                      data-ingredient-name
+                      class="break-words text-sm font-semibold text-primary-500"
+                    >
+                      {row.ingredient.name}
+                    </h3>
+                    <p class={[
+                      "shopping-mode text-xs text-primary-400",
+                      row.ingredient.purchase_mode == "Průběžně" && "shopping-mode-recurring"
+                    ]}>
+                      {(row.ingredient.purchase_mode == "Sezona" && "Na celé období") ||
+                        row.ingredient.purchase_mode || "Nákup není nastavený"}
+                    </p>
+                  </div>
+                  <div class="shopping-item-quantity text-right">
+                    <p
+                      id={"shopping-buy-#{row.id}"}
+                      class="text-base font-bold tabular-nums text-primary-500"
+                    >
+                      {(row.buy_quantity && quantity(row.buy_quantity, row.unit)) ||
+                        "Doplnit nákup"}
+                    </p>
+                    <p :if={row.packages} class="shopping-packages text-xs text-primary-400">
+                      {number(row.packages)} balení × {quantity(
+                        row.ingredient.package_size,
+                        row.unit
+                      )}
+                    </p>
+                    <p
                       :if={@live_action != :print}
-                      id={"shopping-item-settings-#{row.id}"}
-                      type="button"
-                      phx-click="edit_purchase"
-                      phx-value-id={row.id}
-                      class="mt-3 text-xs font-medium text-primary-300 underline hover:text-primary-500"
-                    >Nastavit balení a nákup</button>
+                      id={"shopping-consumption-#{row.id}"}
+                      class="shopping-consumption text-xs text-primary-400 print:hidden"
+                    >
+                      Spotřeba {quantity(row.quantity, row.unit)}
+                    </p>
+                  </div>
+                  <button
+                    :if={@live_action != :print}
+                    id={"shopping-item-settings-#{row.id}"}
+                    type="button"
+                    phx-click="edit_purchase"
+                    phx-value-id={row.id}
+                    aria-label={"Nastavit balení a nákup: " <> row.ingredient.name}
+                    title="Nastavit balení a nákup"
+                    class="shopping-settings flex h-9 w-9 items-center justify-center rounded-lg text-primary-400 hover:bg-secondary-100 hover:text-primary-500 print:hidden"
+                  ><.icon name="hero-adjustments-horizontal" class="h-4 w-4" /></button>
+                </div>
+                <div
+                  :if={@live_action != :print}
+                  id={"shopping-sources-#{row.id}"}
+                  class="shopping-sources text-xs print:hidden"
+                >
+                  <button
+                    type="button"
+                    phx-click="toggle_sources"
+                    phx-value-id={row.id}
+                    aria-expanded={to_string(row.expanded)}
+                    aria-controls={"shopping-breakdown-#{row.id}"}
+                    aria-label={"Použití suroviny: " <> row.ingredient.name}
+                    class="inline-flex min-h-8 items-center gap-1 font-semibold text-tertiary-600 hover:text-tertiary-800"
+                  >
+                    <.icon
+                      name="hero-chevron-down"
+                      class={
+                        if row.expanded,
+                          do: "h-3.5 w-3.5 transition rotate-180",
+                          else: "h-3.5 w-3.5 transition"
+                      }
+                    /> Použití ({length(row.sources)})
+                  </button>
+                  <div
+                    :if={row.expanded}
+                    id={"shopping-breakdown-#{row.id}"}
+                    class="mt-4 space-y-3 border-t border-secondary-200 pt-4"
+                  >
+                    <div
+                      :for={{source, index} <- Enum.with_index(row.sources)}
+                      id={"shopping-source-#{row.id}-#{index}"}
+                      class="rounded-lg bg-secondary-50 p-3"
+                    >
+                      <div class="flex flex-wrap items-start justify-between gap-2">
+                        <.link
+                          navigate={recipe_path(source, @range_form.params)}
+                          target="_blank"
+                          rel="noopener"
+                          class="font-semibold text-primary-500 underline decoration-tertiary-300 underline-offset-4 hover:text-tertiary-700"
+                        >{source.recipe.name}
+                        <.icon
+                          name="hero-arrow-top-right-on-square"
+                          class="ml-1 inline h-3.5 w-3.5"
+                        /></.link>
+                        <span class="font-semibold tabular-nums text-primary-500">{quantity(
+                          source.quantity,
+                          row.unit
+                        )}</span>
+                      </div>
+                      <p class="mt-2 text-xs text-primary-400">
+                        {ShoppingList.date_label(source.date)} · {ShoppingList.label(
+                          source.meal_type
+                        )} · {source.booking.guest.name}
+                      </p>
+                      <p class="mt-1 text-xs text-primary-400">
+                        {source.adults} dospělých + {source.children} dětí · přepočet {number(
+                          source.effective
+                        )} porcí
+                      </p>
+                      <.link
+                        navigate={
+                          CozyCheckoutWeb.FoodNavigation.with_context(
+                            ~p"/admin/recipes/menu/booking/#{source.item.id}",
+                            Map.put(@food_context, "origin", "shopping")
+                          )
+                        }
+                        target="_blank"
+                        class="mt-2 inline-block text-xs font-semibold text-tertiary-600 underline"
+                      >Otevřít jídlo skupiny</.link>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -454,8 +446,14 @@
             Odškrtnutí se ukládá v tomto prohlížeči pro vybrané období a skupinu. Když se podklady položky změní, odškrtnutí se zruší.
           </p>
         </div>
-        <p class="mt-6 text-xs leading-relaxed text-primary-400">
+        <p
+          :if={@live_action != :print}
+          class="mt-4 text-xs leading-relaxed text-primary-400 print:hidden"
+        >
           Bez rezervy a bez odečítání skladových zásob. Množství vychází z aktuálních receptur. Balení se zaokrouhlují až po sečtení celé spotřeby, kusy pro nákup na celé kusy; průběžný nákup ukazuje spotřebu pro vybrané období.
+        </p>
+        <p :if={@live_action == :print} class="shopping-print-footer">
+          Bez rezervy a odečtení zásob · Průběžně = spotřeba za celé období.
         </p>
       </div>
     </div>

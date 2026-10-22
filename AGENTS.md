@@ -73,8 +73,14 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 - Personal stays retain items, prices, VAT and recalculation, count toward capacity and do not generate an invoice number merely by becoming personal.
 - Invoice numbers use `YY08XXXXX`: year suffix, literal `08` (not the current month), and a five-digit sequence starting at `00001` each year. Preserve unique constraints and concurrency protection.
 
+## Kitchen shopping presentation
+
+- Keep the shopping list compact, with an inline summary and rows retaining purchase quantity, packaging, consumption, checkboxes, purchase settings and expandable recipe/group provenance.
+- The dedicated print route is an A4 two-column checklist with blank paper checkboxes, full ingredient names, purchase quantities, packaging and ongoing-purchase labels. Preserve the selected date/group scope and incomplete-data warnings; omit interactive controls, recipe breakdowns and duplicate consumption figures. Browser-local completion must not remove ingredients from the printed list.
+
 ## Validation and handoff
 
+- After completing and validating repository changes, automatically create a feature branch, commit and push the changes, and open a pull request without asking for additional confirmation, unless the user explicitly requests otherwise. Include the completed checks and any verification limits in the PR description.
 - Add or update tests for business-logic changes. Run relevant tests, check formatting and run `mix precommit` before completing changes; fix issues introduced by the change and report any blockers.
 - `mix precommit` compiles with warnings as errors, checks unused dependencies, formats and runs tests. See `test/FINANCIAL_TESTS.md` for the financial regression suite.
 - Explain the resulting behaviour and validation performed. Mention migrations, configuration changes and possible breaking changes when applicable.
