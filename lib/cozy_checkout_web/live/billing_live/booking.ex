@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.BillingLive.Booking do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.{Billing, Bookings}
+  alias CozyCheckout.Billing.Presentation
   alias CozyCheckout.Bookings.BookingInvoiceItem
   alias CozyCheckoutWeb.BillingLive.Helpers
 
@@ -238,11 +239,13 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         <div class="bg-emerald-50 rounded-xl p-5 flex flex-wrap gap-8">
           <p><b>{Billing.payment_state(@balance)}</b></p>
           <p>
-            Cena: <b>{if @balance.total, do: format_currency(@balance.total), else: "Chybí ceny"}</b>
-          </p><p>Přijato po vratkách: <b>{format_currency(@balance.received)}</b></p><p :if={
+            Cena:
+            <b>{if @balance.total, do: Presentation.amount(@balance.total), else: "Chybí ceny"}</b>
+          </p><p>Přijato po vratkách: <b>{Presentation.amount(@balance.received)}</b></p><p :if={
             @balance.outstanding
           }>
-            Zbývá / přeplatek: <b>{format_currency(@balance.outstanding)}</b>
+            {Presentation.balance_label(@balance.outstanding)}:
+            <b>{Presentation.balance_amount(@balance.outstanding)}</b>
           </p>
         </div>
         <section class="bg-white p-6 rounded-xl space-y-4">
@@ -292,11 +295,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                       {item.name} <span :if={item.item_type == "person"} class="badge">Osoby</span>
                     </td><td>{item.quantity}</td><td>{item.nights}</td><td>
                       {if item.price_per_night,
-                        do: format_currency(item.price_per_night),
+                        do: Presentation.amount(item.price_per_night),
                         else: "Chybí cena"}
                     </td><td>
                       {if item.tax_mode == "outside", do: "Mimo DPH", else: "#{item.vat_rate} %"}
-                    </td><td>{if item.total, do: format_currency(item.total), else: "—"}</td><td>
+                    </td><td>{if item.total, do: Presentation.amount(item.total), else: "—"}</td><td>
                       <button class="btn btn-sm" phx-click="edit-item" phx-value-id={item.id}>Upravit</button><button
                         class="btn btn-sm"
                         phx-click="delete-item"
@@ -370,8 +373,8 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               Sezona {@pricing.season.name}, {@pricing.nights} nocí. Nové ceny jsou včetně DPH. Počty osob zůstanou zachované.
             </p>
             <p :for={row <- @pricing.rows}>
-              {row.name}: {if row.old, do: format_currency(row.old), else: "chybí"} → {if row.price,
-                do: format_currency(row.price),
+              {row.name}: {if row.old, do: Presentation.amount(row.old), else: "chybí"} → {if row.price,
+                do: Presentation.amount(row.price),
                 else: "chybí"}
             </p>
             <button :if={@pricing.season} class="btn btn-primary" phx-click="apply-pricing">Potvrdit nové ceny a počet nocí</button>
@@ -437,16 +440,33 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
           >
             <h3 class="font-bold">NÁHLED – {Billing.kind_label(@preview.kind)}</h3>
             <p>
-              Odběratel: {@preview.snapshot["customer"]["name"]}. Datum vystavení: {@preview.issued_on}. Splatnost: {@preview.due_on}.
+              Odběratel: {@preview.snapshot["customer"]["name"]}. Datum vystavení: {Presentation.date(
+                @preview.issued_on
+              )}.
+              <span :if={@preview.kind != "tax_receipt"}>Splatnost: {Presentation.date(
+                @preview.due_on
+              )}.</span>
+              Pobyt: {Presentation.date(@preview.snapshot["check_in"])} – {Presentation.date(
+                @preview.snapshot["check_out"]
+              )}.
             </p>
-            <p :for={line <- @preview.lines}>
-              {line["name"]}: {line["quantity"]} × {line["nights"]} — {line["gross"]} CZK ({line[
-                "vat_rate"
-              ]} % DPH)
+            <p :for={line <- Presentation.lines(@preview)}>
+              {Presentation.line_label(line, @preview.kind)}:
+              <span :if={@preview.kind not in ["advance", "tax_receipt"]}>
+                {Presentation.number(line["quantity"])} × {Presentation.number(line["nights"])} —
+              </span>
+              {Presentation.amount(line["gross"])}
+              <span :if={@preview.kind != "advance"}>
+                {if line["tax_mode"] == "outside",
+                  do: "(mimo předmět DPH)",
+                  else: "(#{Presentation.number(line["vat_rate"])} % DPH)"}
+              </span>
             </p>
-            <p :for={line <- @preview.snapshot["deductions"]}>{line["name"]}: {line["gross"]} CZK</p>
+            <p :for={line <- @preview.snapshot["deductions"]}>
+              {line["name"]}: {Presentation.amount(line["gross"])}
+            </p>
             <p class="font-bold">
-              Celkem {format_currency(@preview.total)}; po odpočtech {format_currency(
+              Celkem {Presentation.amount(@preview.total)}; po odpočtech {Presentation.amount(
                 Decimal.add(
                   @preview.total,
                   CozyCheckout.Billing.Money.total(@preview.snapshot["deductions"])
@@ -462,7 +482,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
           <p :if={@documents == []}>Zatím nebyl vystaven žádný doklad.</p>
           <div :for={doc <- @documents} class="flex justify-between flex-wrap border-b py-3">
             <div>
-              <b>{doc.number}</b> – {Billing.kind_label(doc.kind)} · {format_currency(doc.total)}
+              <b>{doc.number}</b> – {Billing.kind_label(doc.kind)} · {Presentation.amount(doc.total)}
             </div><.link navigate={~p"/admin/billing/documents/#{doc.id}"} class="link">Detail, PDF, odeslání a oprava</.link>
           </div>
         </section>
@@ -513,7 +533,9 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <button class="btn btn-primary md:col-span-3" phx-disable-with="Ukládám…">Zapsat skutečnou platbu</button>
           </.form>
           <div :for={p <- @payments} class="border-b py-2">
-            <b>{if p.kind == "refund", do: "Vratka", else: "Příjem"}</b> {format_currency(p.amount)} · {p.paid_on} · {p.method} · {p.reference}<span :if={
+            <b>{if p.kind == "refund", do: "Vratka", else: "Příjem"}</b> {Presentation.amount(
+              p.amount
+            )} · {Presentation.date(p.paid_on)} · {p.method} · {p.reference}<span :if={
               p.tax_document_id
             }> · doklad k platbě vystaven</span><span
               :if={p.tax_document_id && Date.diff(Billing.today(), p.paid_on) > 15}

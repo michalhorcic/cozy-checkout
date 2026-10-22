@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
   use CozyCheckoutWeb, :live_component
   alias CozyCheckout.Billing
+  alias CozyCheckout.Billing.Presentation
 
   def update(assigns, socket) do
     {:ok,
@@ -18,11 +19,12 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
         <p><strong>{Billing.payment_state(@balance)}</strong></p>
         <p>
           Cena:
-          <strong>{if @balance.total, do: format_currency(@balance.total), else: "Nedoplněná"}</strong>
+          <strong>{if @balance.total, do: Presentation.amount(@balance.total), else: "Nedoplněná"}</strong>
         </p>
-        <p>Přijato po vratkách: <strong>{format_currency(@balance.received)}</strong></p>
+        <p>Přijato po vratkách: <strong>{Presentation.amount(@balance.received)}</strong></p>
         <p :if={@balance.outstanding}>
-          Zbývá / přeplatek: <strong>{format_currency(@balance.outstanding)}</strong>
+          {Presentation.balance_label(@balance.outstanding)}:
+          <strong>{Presentation.balance_amount(@balance.outstanding)}</strong>
         </p>
       </div>
       <p>{length(@documents)} vystavených dokladů</p>

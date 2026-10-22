@@ -90,6 +90,75 @@ defmodule CozyCheckout.BillingPdfEmailTest do
     assert length(Regex.scan(~r{/Type /Page\b}, stored.pdf)) >= 2
   end
 
+  test "Czech formatting, stay descriptions and balance labels match each document kind", %{
+    booking: booking
+  } do
+    alias CozyCheckout.Billing.{Pdf, Presentation}
+
+    advance = issue!(booking, "advance", %{"amount" => "2850"})
+    advance_html = Pdf.html(advance)
+    assert advance_html =~ "Záloha na pobyt a objednané služby"
+    refute advance_html =~ "Přijatá záloha"
+    refute advance_html =~ "<th>Počet</th>"
+    refute advance_html =~ "<th>Nocí</th>"
+    refute advance_html =~ "DUZP"
+    assert advance_html =~ "K úhradě: 2 850,00 CZK"
+
+    assert advance_html =~
+             "Pobyt: #{Presentation.date(booking.check_in_date)} – #{Presentation.date(booking.check_out_date)}"
+
+    refute advance_html =~ Date.to_iso8601(booking.check_in_date)
+    assert advance_html =~ "class=\"brand-logo\""
+
+    receipt!(booking, "2850")
+
+    receipt =
+      Enum.find(
+        Billing.list_documents(%{"booking_id" => booking.id}),
+        &(&1.kind == "tax_receipt")
+      )
+
+    receipt = Billing.get_document!(receipt.id)
+    receipt_html = Pdf.html(receipt)
+    assert receipt_html =~ "Přijatá záloha na pobyt a objednané služby"
+    assert receipt_html =~ "Přijetí platby:"
+    refute receipt_html =~ "NÁHLED – NEVYSTAVENÝ DOKLAD"
+    refute receipt_html =~ "Splatnost:"
+    refute receipt_html =~ "<th>Počet</th>"
+    refute receipt_html =~ "<th>Nocí</th>"
+
+    final = issue!(booking, "final")
+    final_html = Pdf.html(final)
+    assert final_html =~ "<th>Počet</th>"
+    assert final_html =~ "<th>Nocí</th>"
+    assert final_html =~ "848,21"
+    refute final_html =~ "848.214"
+    refute final_html =~ "K úhradě / přeplatek"
+    assert Presentation.number("1234567.895") == "1 234 567,90"
+    assert Presentation.number("-285.126") == "-285,13"
+
+    assert {:ok, pdf} = Pdf.render(receipt)
+    assert pdf =~ "%PDF-"
+  end
+
+  test "a fully prepaid final and an overpaid final have unambiguous balances", %{
+    booking: booking
+  } do
+    alias CozyCheckout.Billing.Pdf
+    {:ok, preview} = Billing.preview(booking.id, "final", %{})
+    total = preview.total
+    receipt!(booking, to_string(total))
+    {:ok, prepaid} = Billing.preview(booking.id, "final", %{})
+    assert Pdf.html(prepaid) =~ "Zbývá k úhradě: 0,00 CZK"
+
+    receipt!(booking, "285")
+    final = issue!(booking, "final")
+    html = Pdf.html(final)
+    assert html =~ "Přeplatek: 285,00 CZK"
+    refute html =~ "Přeplatek: -"
+    refute html =~ "alt=\"QR platba\""
+  end
+
   test "Chrome exits and renderer timeouts return errors without killing the caller", %{
     booking: booking
   } do
@@ -200,6 +269,6 @@ defmodule CozyCheckout.BillingPdfEmailTest do
 
     html = CozyCheckout.Billing.Pdf.html(doc)
     assert html =~ "Platební údaje ověřte s vystavovatelem"
-    refute html =~ "data:image/svg+xml"
+    refute html =~ "alt=\"QR platba\""
   end
 end

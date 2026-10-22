@@ -64,6 +64,22 @@ defmodule CozyCheckoutWeb.CurrencyHelper do
 
   def format_number(nil), do: "0"
 
+  @doc "Formats a number with explicit precision and a localized decimal separator."
+  def format_number(number, opts) do
+    number = if is_nil(number), do: Decimal.new(0), else: Decimal.new(to_string(number))
+    rounded = Decimal.round(number, Keyword.get(opts, :precision, 2), :half_up)
+
+    sign = if Decimal.negative?(rounded), do: "-", else: ""
+
+    formatted =
+      rounded
+      |> Decimal.abs()
+      |> format_number_with_separator()
+      |> String.replace(".", Keyword.get(opts, :decimal_separator, "."))
+
+    sign <> formatted
+  end
+
   defp format_number_with_separator(number) do
     # Convert to string
     number_str =
