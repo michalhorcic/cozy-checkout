@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.Bookings
+  alias CozyCheckout.Billing.BookingSummary
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Meals.MenuPlanning
 
@@ -42,15 +43,16 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     socket =
       case Bookings.list_bookings_with_flop(normalized_params) do
         {:ok, {bookings, meta}} ->
-          # Add rooms and invoice to each booking
+          summaries = BookingSummary.for_bookings(Enum.map(bookings, & &1.id))
+
+          # Add rooms and the financial summary to each booking
           bookings_with_rooms =
             Enum.map(bookings, fn booking ->
               rooms = Bookings.list_booking_rooms(booking.id)
-              invoice = Bookings.get_invoice_by_booking_id(booking.id)
 
               booking
               |> Map.put(:rooms_list, rooms)
-              |> Map.put(:invoice, invoice)
+              |> Map.put(:billing_summary, Map.fetch!(summaries, booking.id))
             end)
 
           socket
@@ -186,24 +188,6 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   end
 
   @impl true
-  def handle_event("update_invoice_status", %{"id" => id, "state" => state}, socket) do
-    invoice = Bookings.get_booking_invoice!(id)
-
-    case Bookings.update_invoice_state(invoice, state) do
-      {:ok, _invoice} ->
-        {:noreply,
-         socket
-         |> put_flash(:info, "Invoice status updated successfully")
-         |> push_patch(
-           to: build_path_with_params(~p"/admin/bookings", socket.assigns.current_params)
-         )}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update invoice status")}
-    end
-  end
-
-  @impl true
   def handle_event("filter", params, socket) do
     # Preserve show_all parameter when filtering
     filter_params = build_filter_params(params, socket.assigns.current_params)
@@ -304,18 +288,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
               <.input
                 type="select"
                 name="invoice_state"
-                label="Invoice State"
-                options={[
-                  {"All", ""},
-                  {"No Invoice", "no_invoice"},
-                  {"Draft", "draft"},
-                  {"Personal", "personal"},
-                  {"Generated", "generated"},
-                  {"Sent", "sent"},
-                  {"Advance Paid (50%)", "advance_paid"},
-                  {"Paid", "paid"}
-                ]}
-                value={Map.get(@meta.params, "invoice_state", "")}
+                label="Doklady a úhrady"
+                options={BookingSummary.filter_options()}
+                value={Map.get(@current_params, "invoice_state", "")}
               />
             </:filter>
             <:filter>
@@ -324,7 +299,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                 name="guest_search"
                 label="Guest Name/Email"
                 placeholder="Search by name or email"
-                value={Map.get(@meta.params, "guest_search", "")}
+                value={Map.get(@current_params, "guest_search", "")}
               />
             </:filter>
             <:filter>
@@ -407,20 +382,20 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           </div>
 
           <!-- Fixed desktop columns and stacked cards on narrow screens. -->
-          <div id="bookings-table-container" class="px-3 pb-2 lg:px-0">
+          <div id="bookings-table-container" class="px-3 pb-2 2xl:px-0">
             <table
               id="bookings-table"
-              class="w-full lg:table-fixed [&_.fieldset]:mb-0 [&_.fieldset]:p-0 [&_.fieldset]:gap-0 [&_.label]:text-xs [&_.label]:mb-1"
+              class="w-full 2xl:table-fixed [&_.fieldset]:mb-0 [&_.fieldset]:p-0 [&_.fieldset]:gap-0 [&_.label]:text-xs [&_.label]:mb-1"
             >
-              <colgroup class="hidden lg:table-column-group">
+              <colgroup class="hidden 2xl:table-column-group">
                 <col class="w-[28%]" />
                 <col class="w-[148px]" />
                 <col />
-                <col class="w-[136px]" />
-                <col class="w-[180px]" />
+                <col class="w-[204px]" />
+                <col class="w-[200px]" />
                 <col class="w-[100px]" />
               </colgroup>
-              <thead class="hidden bg-secondary-50 lg:table-header-group">
+              <thead class="hidden bg-secondary-50 2xl:table-header-group">
                 <tr class="text-left text-xs font-semibold text-primary-400">
                   <th class="px-3 py-3">
                     <span>Rezervace a pobyt</span>
@@ -472,7 +447,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   <th class="px-2 py-3 text-right">Akce</th>
                 </tr>
               </thead>
-              <tbody class="grid gap-3 bg-white lg:table-row-group lg:divide-y lg:divide-secondary-200">
+              <tbody class="grid gap-3 bg-white 2xl:table-row-group 2xl:divide-y 2xl:divide-secondary-200">
                 <%= if @bookings == [] do %>
                   <tr>
                     <td colspan="6" class="px-6 py-12 text-center text-primary-400">
@@ -483,9 +458,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   <tr
                     :for={booking <- @bookings}
                     id={"booking-row-#{booking.id}"}
-                    class="grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-secondary-200 p-3 hover:bg-secondary-50 lg:table-row lg:rounded-none lg:border-0 lg:p-0"
+                    class="grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-secondary-200 p-3 hover:bg-secondary-50 2xl:table-row 2xl:rounded-none 2xl:border-0 2xl:p-0"
                   >
-                    <td class="col-span-2 min-w-0 px-0 py-2 align-top text-sm text-primary-500 lg:px-3 lg:py-3">
+                    <td class="col-span-2 min-w-0 px-0 py-2 align-top text-sm text-primary-500 2xl:px-3 2xl:py-3">
                       <.link
                         navigate={
                           build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
@@ -548,8 +523,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                       menu={@booking_menus[booking.id]}
                       error={@catering_errors[booking.id]}
                     />
-                    <td class="min-w-0 py-2 align-top lg:px-2 lg:py-3">
-                      <div class="mb-1 text-xs font-medium text-primary-400 lg:hidden">
+                    <td class="min-w-0 py-2 align-top 2xl:px-2 2xl:py-3">
+                      <div class="mb-1 text-xs font-medium text-primary-400 2xl:hidden">
                         Stav / faktura
                       </div>
                       <div class="space-y-2">
@@ -652,148 +627,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                           </div>
                         </div>
 
-                        <%= if Map.get(booking, :invoice) do %>
-                          <div
-                            class="relative"
-                            id={"invoice-status-#{booking.id}"}
-                            phx-click-away={JS.hide(to: "#invoice-menu-#{booking.id}")}
-                          >
-                            <button
-                              type="button"
-                              phx-click={JS.toggle(to: "#invoice-menu-#{booking.id}")}
-                              class="w-full min-w-0 text-left inline-flex items-center justify-between gap-1 hover:opacity-80 transition-opacity"
-                              title={"Stav faktury: " <> invoice_state_label(booking.invoice.state)}
-                              aria-label="Změnit stav faktury"
-                            >
-                              <.icon
-                                name="hero-document-currency-dollar"
-                                class="size-3.5 shrink-0 text-primary-400"
-                              />
-                              <span class={[
-                                "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                invoice_state_badge_class(booking.invoice.state)
-                              ]}>
-                                {invoice_state_label(booking.invoice.state)}
-                              </span>
-                              <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
-                            </button>
-
-                            <div
-                              id={"invoice-menu-#{booking.id}"}
-                              class="hidden absolute right-0 z-10 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-                            >
-                              <div class="py-1" role="menu">
-                                <button
-                                  type="button"
-                                  phx-click={
-                                    JS.push("update_invoice_status")
-                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
-                                  }
-                                  phx-value-id={booking.invoice.id}
-                                  phx-value-state="draft"
-                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                                >
-                                  <span class={[
-                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                    invoice_state_badge_class("draft")
-                                  ]}>
-                                    Draft
-                                  </span>
-                                </button>
-                                <button
-                                  type="button"
-                                  phx-click={
-                                    JS.push("update_invoice_status")
-                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
-                                  }
-                                  phx-value-id={booking.invoice.id}
-                                  phx-value-state="personal"
-                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                                >
-                                  <span class={[
-                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                    invoice_state_badge_class("personal")
-                                  ]}>
-                                    Personal
-                                  </span>
-                                </button>
-                                <button
-                                  type="button"
-                                  phx-click={
-                                    JS.push("update_invoice_status")
-                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
-                                  }
-                                  phx-value-id={booking.invoice.id}
-                                  phx-value-state="generated"
-                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                                >
-                                  <span class={[
-                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                    invoice_state_badge_class("generated")
-                                  ]}>
-                                    Generated
-                                  </span>
-                                </button>
-                                <button
-                                  type="button"
-                                  phx-click={
-                                    JS.push("update_invoice_status")
-                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
-                                  }
-                                  phx-value-id={booking.invoice.id}
-                                  phx-value-state="sent"
-                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                                >
-                                  <span class={[
-                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                    invoice_state_badge_class("sent")
-                                  ]}>
-                                    Sent
-                                  </span>
-                                </button>
-                                <button
-                                  type="button"
-                                  phx-click={
-                                    JS.push("update_invoice_status")
-                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
-                                  }
-                                  phx-value-id={booking.invoice.id}
-                                  phx-value-state="advance_paid"
-                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                                >
-                                  <span class={[
-                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                    invoice_state_badge_class("advance_paid")
-                                  ]}>
-                                    Advance Paid (50%)
-                                  </span>
-                                </button>
-                                <button
-                                  type="button"
-                                  phx-click={
-                                    JS.push("update_invoice_status")
-                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
-                                  }
-                                  phx-value-id={booking.invoice.id}
-                                  phx-value-state="paid"
-                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                                >
-                                  <span class={[
-                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                    invoice_state_badge_class("paid")
-                                  ]}>
-                                    Paid
-                                  </span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        <% else %>
-                          <span class="text-primary-300 text-sm">—</span>
-                        <% end %>
+                        <.billing_summary booking={booking} summary={booking.billing_summary} />
                       </div>
                     </td>
-                    <td class="col-span-2 min-w-0 py-2 text-right align-top lg:px-2 lg:py-3">
+                    <td class="col-span-2 min-w-0 py-2 text-right align-top 2xl:px-2 2xl:py-3">
                       <div class="flex justify-end gap-1">
                         <.link
                           id={"booking-view-#{booking.id}"}
@@ -868,21 +705,60 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp status_badge_class("cancelled"), do: "bg-error-light text-error-dark"
   defp status_badge_class(_), do: "bg-secondary-100 text-primary-500"
 
-  defp invoice_state_badge_class("draft"), do: "bg-secondary-100 text-primary-500"
-  defp invoice_state_badge_class("personal"), do: "bg-warning-light text-warning-dark"
-  defp invoice_state_badge_class("generated"), do: "bg-tertiary-100 text-tertiary-800"
-  defp invoice_state_badge_class("sent"), do: "bg-info-light text-info-dark"
-  defp invoice_state_badge_class("advance_paid"), do: "bg-warning-light text-warning-dark"
-  defp invoice_state_badge_class("paid"), do: "bg-success-light text-success-dark"
-  defp invoice_state_badge_class(_), do: "bg-secondary-100 text-primary-500"
+  attr :booking, :map, required: true
+  attr :summary, :map, required: true
 
-  defp invoice_state_label("draft"), do: "Draft"
-  defp invoice_state_label("personal"), do: "Personal"
-  defp invoice_state_label("generated"), do: "Generated"
-  defp invoice_state_label("sent"), do: "Sent"
-  defp invoice_state_label("advance_paid"), do: "Advance Paid (50%)"
-  defp invoice_state_label("paid"), do: "Paid"
-  defp invoice_state_label(state), do: String.capitalize(state)
+  defp billing_summary(assigns) do
+    ~H"""
+    <.link
+      id={"booking-billing-#{@booking.id}"}
+      navigate={~p"/admin/bookings/#{@booking.id}/billing"}
+      class={["block space-y-1 rounded text-xs hover:opacity-80 focus-visible:outline-2"]}
+      title="Otevřít kalkulaci, doklady a platby"
+    >
+      <span class={["flex items-center gap-1.5"]}>
+        <.icon name="hero-document-currency-dollar" class="size-3.5 shrink-0 text-primary-400" />
+        <span class={[
+          "inline-block rounded-full px-2 font-semibold leading-5",
+          billing_badge_class(@summary.state)
+        ]}>{BookingSummary.label(@summary.state)}</span>
+      </span>
+      <span
+        :if={@summary.payment_state}
+        id={"booking-payment-#{@booking.id}"}
+        class={[
+          "ml-5 inline-block rounded-full px-2 font-semibold leading-5",
+          billing_badge_class(@summary.payment_state)
+        ]}
+      >{BookingSummary.label(@summary.payment_state)}</span>
+      <span :if={@summary.final_number} class={["ml-5 block text-primary-400"]}>
+        {@summary.final_number}
+      </span>
+      <span
+        :if={@summary.outstanding && not Decimal.equal?(@summary.outstanding, 0)}
+        id={"booking-balance-#{@booking.id}"}
+        class={["ml-5 block text-primary-500"]}
+      >
+        {if Decimal.lt?(@summary.outstanding, 0), do: "Přeplatek:", else: "K úhradě:"}
+        {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.abs(@summary.outstanding))}
+      </span>
+      <span
+        :if={@summary.overdue}
+        id={"booking-overdue-#{@booking.id}"}
+        class={["ml-5 block font-semibold text-error"]}
+      >Po splatnosti</span>
+    </.link>
+    """
+  end
+
+  defp billing_badge_class("personal"), do: "bg-secondary-100 text-primary-500"
+  defp billing_badge_class("paid"), do: "bg-success-light text-success-dark"
+
+  defp billing_badge_class(state) when state in ["partial", "advance_received", "overpaid"],
+    do: "bg-warning-light text-warning-dark"
+
+  defp billing_badge_class("final"), do: "bg-tertiary-100 text-tertiary-800"
+  defp billing_badge_class(_), do: "bg-secondary-100 text-primary-500"
 
   # Convert Phoenix indexed map params (e.g., %{"0" => "value"}) to arrays for Flop
   defp normalize_flop_params(params) do
@@ -977,8 +853,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       |> assign(:menu_form, to_form(%{"variant_id" => selected}, as: :selection))
 
     ~H"""
-    <td class="min-w-0 py-2 align-top text-sm lg:px-2 lg:py-3">
-      <div class="mb-1 text-xs font-medium text-primary-400 lg:hidden">Stravování</div>
+    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3">
+      <div class="mb-1 text-xs font-medium text-primary-400 2xl:hidden">Stravování</div>
       <div class="flex min-w-0 items-center gap-1">
         <.form
           for={@catering_form}
@@ -1013,8 +889,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         {@error}
       </p>
     </td>
-    <td class="min-w-0 py-2 align-top text-sm lg:px-2 lg:py-3">
-      <div class="mb-1 text-xs font-medium text-primary-400 lg:hidden">Menu</div>
+    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3">
+      <div class="mb-1 text-xs font-medium text-primary-400 2xl:hidden">Menu</div>
       <div class="flex min-w-0 items-center gap-1">
         <.form
           :if={@catered}
@@ -1054,14 +930,16 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" /> Vybrat znovu
       </p>
     </td>
-    <td class="min-w-0 py-2 align-top text-sm lg:px-2 lg:py-3">
+    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3">
       <.form
         :if={@catered}
         for={@catering_form}
         id={"catering-counts-#{@booking.id}"}
         phx-change="update_catering"
         phx-value-id={@booking.id}
-        class="grid min-w-0 grid-cols-2 gap-2"
+        class={[
+          "grid min-w-0 grid-cols-2 gap-2 2xl:items-center 2xl:[&_.fieldset>label]:flex 2xl:[&_.fieldset>label]:items-center 2xl:[&_.fieldset>label]:gap-1 2xl:[&_.label]:mb-0 2xl:[&_.label]:shrink-0"
+        ]}
       >
         <.input
           field={@catering_form[:meal_adults]}

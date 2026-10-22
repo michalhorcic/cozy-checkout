@@ -227,8 +227,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   defp refresh(socket) do
     id = socket.assigns.booking.id
 
+    calculation = Billing.calculation(id)
+
     assign(socket,
-      calculation: Billing.calculation(id),
+      personal?: match?(%{state: "personal"}, calculation),
+      calculation: calculation,
       pricing_hint: Billing.pricing_preview(id),
       documents: Billing.list_documents(%{"booking_id" => id}),
       payments: Billing.list_payments(id),
@@ -288,7 +291,17 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             class="link"
           >Dodavatel a číselné řady</.link><button class="link" phx-click="refresh">Obnovit přehled</button>
         </nav>
-        <div class="grid gap-4 rounded-xl border border-secondary-200 bg-secondary-50 p-5 sm:grid-cols-2 xl:grid-cols-4">
+        <p
+          :if={@personal?}
+          id="billing-personal"
+          class={["rounded-xl bg-secondary-50 p-5 font-semibold"]}
+        >
+          Soukromý pobyt · bez finanční evidence
+        </p>
+        <div
+          :if={not @personal?}
+          class="grid gap-4 rounded-xl border border-secondary-200 bg-secondary-50 p-5 sm:grid-cols-2 xl:grid-cols-4"
+        >
           <p><b>{Billing.payment_state(@balance)}</b></p>
           <p>
             Cena:
@@ -330,11 +343,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 class="btn"
                 phx-click="personal"
               >{if @calculation.state == "personal",
-                do: "Zrušit osobní pobyt",
-                else: "Označit osobní pobyt"}</button>
+                do: "Zrušit soukromý pobyt",
+                else: "Označit soukromý pobyt"}</button>
             </div>
             <p :if={@calculation.state == "personal"} class="alert">
-              Osobní pobyt počítá hosty do obsazenosti; nevystavuje doklady.
+              Soukromý pobyt počítá hosty do obsazenosti; doklady ani platby se neevidují.
             </p>
             <div class="overflow-x-auto rounded-lg border border-secondary-200">
               <table id="billing-items" class="table w-full min-w-[760px]">
@@ -447,7 +460,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <button :if={@pricing.season} class="btn btn-primary" phx-click="apply-pricing">Potvrdit nové ceny a počet nocí</button>
           </div>
         </section>
-        <div class="grid items-start gap-6 xl:grid-cols-2">
+        <div :if={not @personal?} class="grid items-start gap-6 xl:grid-cols-2">
           <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 sm:p-6">
             <h2 class="text-xl font-bold mb-4">Odběratel</h2>
             <.form
@@ -459,7 +472,10 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               <.input :for={{key, label} <- @buyer_fields} field={@buyer_form[key]} label={label} /><button class="btn btn-primary md:col-span-2">Uložit odběratele</button>
             </.form>
           </section>
-          <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6">
+          <section
+            :if={not @personal?}
+            class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6"
+          >
             <h2 class="text-xl font-bold">Vystavit doklad</h2>
             <.form
               for={@issue_form}
@@ -547,6 +563,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
           </section>
         </div>
         <section
+          :if={not @personal?}
           id="billing-documents"
           class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6"
         >
@@ -594,7 +611,10 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             </div>
           </div>
         </section>
-        <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6">
+        <section
+          :if={not @personal?}
+          class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6"
+        >
           <h2 class="text-xl font-bold">Skutečně přijaté platby a vratky</h2>
           <p>
             Před vyúčtováním vznikne k přijaté záloze daňový doklad. Při vracení zdaněné zálohy nejprve vystavte opravu. Vratka pouze eviduje provedený převod.
