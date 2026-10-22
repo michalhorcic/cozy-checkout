@@ -47,6 +47,8 @@ defmodule CozyCheckoutWeb.Router do
   scope "/admin", CozyCheckoutWeb do
     pipe_through [:browser, :admin_auth]
 
+    get "/billing/documents/:id/pdf", BillingDocumentController, :show
+
     import Phoenix.LiveDashboard.Router
 
     live_dashboard "/system",
@@ -57,6 +59,11 @@ defmodule CozyCheckoutWeb.Router do
       on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}, CozyCheckoutWeb.AdminNavigation],
       layout: {CozyCheckoutWeb.Layouts, :admin} do
       live "/", DashboardLive
+      live "/billing/settings", BillingLive.Settings
+      live "/billing/documents/:id", BillingLive.Documents, :show
+      live "/billing", BillingLive.Documents, :index
+      live "/accommodation-prices", BillingLive.Seasons
+      live "/bookings/:booking_id/billing", BillingLive.Booking
 
       # Categories
       live "/categories", CategoryLive.Index, :index

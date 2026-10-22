@@ -65,13 +65,19 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 - Printable pricelists (`/admin/pricelists/print`) include only currently valid prices, category selection (all by default), an empty-selection warning and a custom title defaulting to "Ceník".
 - Preserve portrait A4 printing, two flowing columns, category blocks without internal breaks, Czech alphabetical product sorting, cottage/company details and the generation date (`Date.utc_today()`). Hide selection controls on print. Show tiers in corresponding amount/price order, e.g. `Product (300/500 ml) 45/70 CZK`.
 
-## Booking invoices
+## Booking invoices and billing
 
-- Accommodation invoices and bar orders are separate. Keep an invoice header with cached totals and editable line items with quantity, nights, price and per-item VAT; quantity may be zero, and `nights` defaults to 1.
-- Invoice item types are `person` and `extra`; only person items contribute to occupancy.
-- Use the current schema states: `draft` (the initial state), `personal`, `generated`, `sent`, `advance_paid` and `paid`. Do not reintroduce the historical `created` state. Preserve the existing context's transition validation and admin controls/badges.
-- Personal stays retain items, prices, VAT and recalculation, count toward capacity and do not generate an invoice number merely by becoming personal.
-- Invoice numbers use `YY08XXXXX`: year suffix, literal `08` (not the current month), and a five-digit sequence starting at `00001` each year. Preserve unique constraints and concurrency protection.
+- `booking_invoices` / `booking_invoice_items` are editable stay calculations and occupancy sources, not issued financial documents. `person` items count toward occupancy; `extra` items do not. Quantity may be zero; nights default to 1. Preserve exact category names used by the calendar.
+- New calculations use `pricing_basis = "gross"`, seasonal arrival-date prices for the entire stay, and 12% VAT by default. Missing seasonal prices remain nil and must not fall back to hardcoded amounts. Preserve `legacy_net` calculations, old numbers and states as internal history; do not infer payments or issued documents from them.
+- Accommodation seasons are separate from bar/catalog pricelists, include both end dates, and cannot overlap (PostgreSQL date-range exclusion). Repricing is explicit and copies prices, VAT and nights; later season changes do not affect saved calculations or documents.
+- `CozyCheckout.Billing` owns supplier/customer profiles, numbering, immutable document snapshots, manual payments/refunds, advance deductions, PDFs and delivery records. Keep logic out of LiveViews. All billing mutations concerning a stay lock its booking row; series allocation locks the series row in the same transaction. Requests carry UUID idempotency keys.
+- There is one final document per booking, with multiple advance requests and tax receipts. Each received pre-settlement advance creates a tax receipt, including receipts without a request and overpayments. Deductions retain the original rounded net/VAT and never create another payment. Refunds require sufficient available credit; no bank transfers are executed.
+- Corrections are linked differential documents with reasons. Correct a final after settlement, not the deducted tax receipts. Do not expose deletion, editing or draft transitions for issued documents. Supplier/customer details and financial lines are copied at issuance.
+- New series are configured per document kind/year before issuance; used series cannot be changed. Preserve the old `YY08XXXXX` numbers solely as legacy internal identifiers. Unique ten-digit variable symbols use a separate PostgreSQL sequence; do not derive them by stripping prefixes from document numbers. Bar numbering is unchanged.
+- Use `Billing.Money` / `Decimal` for gross calculations and haléř rounding; distinguish `taxable` zero VAT from `outside` VAT (manual local stay fee). Do not silently reinterpret old net prices as gross.
+- Generate self-contained A4 PDF using ChromicPDF/Chromium and persist bytes plus SHA-256 in PostgreSQL. Reuse the same stored PDF for downloads and email attachments. PDF generation and mail use Oban queue `billing`, with idempotency keys for Resend. Provider acceptance means sent, not confirmed delivery. Require recorded electronic-document consent before enqueueing.
+- All billing routes and PDF downloads belong behind existing admin authentication. Keep personal stays available without issued documents and preserve their occupancy. ABRA integration for accommodation is deferred; leave bar exports separate.
+- See `BILLING.md` for setup, financial workflow, backups and operational limits. Financial regression tests include actual Chromium PDF rendering, Swoosh test-adapter delivery, LiveView flows and independent-connection concurrency tests.
 
 ## Kitchen shopping presentation
 

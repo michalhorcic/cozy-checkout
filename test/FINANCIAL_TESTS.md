@@ -59,3 +59,11 @@ chování konkrétní instance ABRA Flexi.
 
 Při posledním ověření po finančních opravách prošel `mix precommit`:
 **108 testů, 0 selhání**.
+
+## Fakturace rezervací
+
+Soubory `booking_billing_test.exs`, `billing_concurrency_test.exs` a
+`billing_pdf_email_test.exs` pokrývají sezony, uložení cen, úhrady a odpočty záloh,
+opravné doklady, vratky, souběžné požadavky a skutečné Chromium PDF včetně
+Swoosh příloh. `test/cozy_checkout_web/billing_live_test.exs` ověřuje administraci
+a ochranu přístupu. Pro renderování PDF je potřeba lokální Chromium a české fonty.

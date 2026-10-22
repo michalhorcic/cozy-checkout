@@ -59,7 +59,7 @@ RUN ls -la _build/prod/ && ls -la _build/prod/rel/ && ls _build/prod/rel/cozy_ch
 # the compiled release and other runtime necessities
 FROM ${RUNNER_IMAGE} AS app
 
-RUN apk add --no-cache libstdc++ openssl ncurses-libs
+RUN apk add --no-cache libstdc++ openssl ncurses-libs chromium font-dejavu
 
 WORKDIR "/app"
 RUN chown nobody /app

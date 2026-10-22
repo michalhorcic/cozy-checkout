@@ -158,3 +158,7 @@ config :cozy_checkout, :abra,
 if booking_ical_token = System.get_env("BOOKING_ICAL_TOKEN") do
   config :cozy_checkout, :booking_ical_token, booking_ical_token
 end
+
+if chrome_executable = System.get_env("CHROME_EXECUTABLE") do
+  config :cozy_checkout, :chrome_executable, chrome_executable
+end

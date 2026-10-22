@@ -1,0 +1,115 @@
+# Fakturace pobytů
+
+## První spuštění
+
+1. Spusťte migrace standardním nasazením. Migrační skript nic nevystavuje,
+   nepřenáší staré stavy do plateb a nemění historické ceny ani částky.
+2. V **Další agenda → Finance a přehledy → Nastavení fakturace** doplňte skutečné
+   sídlo, DIČ, zápis v rejstříku a český bankovní účet dodavatele. Předvyplněný
+   název a IČO nejsou kompletní fakturační profil.
+3. S účetní nastavte čtyři číselné řady pro aktuální rok: zálohové výzvy, doklady
+   k přijaté platbě, konečné faktury a opravné daňové doklady. Číslo je označení +
+   čtyřmístný rok + pořadí doplněné nulami. Po prvním použití se řada uzamkne.
+   Pro nový rok je potřeba předem založit nové řady. Barové doklady mají vlastní
+   původní číslování a jejich nastavení se nemění.
+4. V **Ceník ubytování** založte sezony. Kalendář žlutě označuje dny bez ceny.
+   Začátek a konec platí včetně; překryvy blokuje i databázové omezení.
+5. Ověřte `RESEND_API_KEY` a `EMAIL_FROM_ADDRESS` (ověřený odesílatel v Resend).
+   Pro práci s doklady není ABRA ani přístup do účetnictví potřeba.
+
+Volitelná proměnná `CHROME_EXECUTABLE` určuje cestu k prohlížeči (CI ji nastavuje
+podle instalace Chrome).
+
+Výchozí splatnost je 14 dnů, měna CZK, jazyk čeština. API přístupy nikdy nepatří
+přímo do databáze profilů ani do Git repozitáře.
+
+## Běžný postup
+
+V rezervaci otevřete **Kalkulace, doklady a platby**. Kalkulace eviduje kategorie
+hostů a počty nocí; pouze položky typu Osoby určují obsazenost. Odběratelem může
+být host, firma nebo škola. Doplňte úplnou adresu a fakturační e-mail.
+
+Nová kalkulace používá koncové ceny včetně DPH podle dne příjezdu pro celý pobyt,
+ve výchozí sazbě 12 %. Polopenze je zahrnuta v jedné ceně; nápoje se účtují na
+baru. Další služby mají vlastní sazbu. Místní poplatek přidávejte ručně jako
+službu s režimem **Mimo předmět DPH**, odpovídající cenou a počtem osobonocí.
+Zdanitelná sazba 0 % a plnění mimo předmět DPH jsou odlišné režimy.
+
+Není-li ceník, cena zůstane nevyplněná. Lze ji doplnit ručně. Změna sezony nebo
+dne příjezdu nic sama nepřecení. **Použít aktuální ceník – náhled** zobrazí změny;
+potvrzení zkopíruje nové ceny, sazbu i počet nocí do kalkulace. Vystavených dokladů
+se úprava nedotkne.
+
+Zálohová výzva není daňovým dokladem a neznamená přijatou platbu. Výchozí návrh
+je 50 % ceny pobytu, lze zadat jiné procento nebo částku (částka má přednost).
+Každá skutečně přijatá záloha před dokončením pobytu se zapisuje s datem, částkou,
+způsobem a referencí. Vznikne vlastní daňový doklad k přijaté platbě. Platba může
+být bez výzvy; několik dílčích plateb vytvoří několik daňových dokladů.
+
+Konečnou fakturu před vystavením zkontrolujte v náhledu, včetně DUZP a splatnosti.
+Budoucí DUZP není podporováno. Zálohy se odpočítají v původních základech a DPH,
+neuhrazené výzvy nic nesnižují. Finální doklad může mít nulový doplatek nebo
+přeplatek. Další skutečné příjmy se přiřazují konečné faktuře. Pozdě objevenou
+platbu před DUZP nelze tiše zaevidovat jako doplatek; vyžaduje účetní opravu.
+
+Původní interní kalkulace jsou označené **ceny bez DPH**, včetně starého čísla a
+stavu. Neznamenají existenci skutečného dokladu ani peněz. Jejich přecenění je
+vědomý krok; další služby při převodu zachovají svou koncovou jednotkovou cenu
+zaokrouhlenou na haléře. Historické vystavené doklady se z těchto záznamů nevytvářejí.
+
+Osobní pobyt dál počítá osoby do kapacity, ale nevystavuje finanční doklady.
+
+## Opravy a vratky
+
+V detailu faktury nebo daňového dokladu k platbě lze vystavit snížení či zvýšení
+ceny s uvedením částky a důvodu. Rozdíl se rozděluje podle původních daňových
+skupin. Plná oprava zachová původní zaokrouhlení. Po konečném vyúčtování se
+opravuje konečná faktura, nikoli již odpočtený daňový doklad zálohy.
+
+Změna dodavatele v nastavení nemění kopie na dokladech. Odběratele po prvním
+vystavení nelze přepsat; změnu identifikace musí řešit účetní opravou. Vystavené
+doklady se v administraci neupravují, nemažou ani nevracejí do konceptu.
+
+Vratku evidujte až po skutečném odeslání peněz a po potřebné opravě dokladu.
+Nezdaněný přeplatek konečného vyúčtování lze vrátit přímo. Aplikace neprovádí
+bankovní převody; zrušení rezervace také automaticky nevrací peníze.
+
+## PDF, pošta a provoz
+
+PDF vytváří ChromicPDF s lokálním Chromium, bez externích fontů či vzdálených
+podkladů. Docker runtime obsahuje Chromium a fonty DejaVu. Dokumenty A4 se ukládají
+jako binární data v PostgreSQL spolu s SHA-256. Opakované stažení a e-mail vždy
+použijí původní soubor, nikoli aktualizovanou kalkulaci nebo aktuální firemní profil.
+
+Fronta Oban `billing` má souběžnost 2. Generování PDF i e-mail se opakují až
+pětkrát. Při chybě prvotního generování lze PDF znovu připravit stažením. E-mail
+vyžaduje zaznamenaný souhlas s elektronickou podobou. Každé vědomé nové odeslání
+má vlastní záznam; opakování stejného úkolu používá stejný idempotency key Resend.
+Resend omezuje dobu platnosti svého idempotency key; po nejasné síťové chybě a
+pozdním ručním obnovení úkolu zkontrolujte historii poskytovatele.
+
+Stav **Odesláno** znamená přijetí poskytovatelem, nikoli potvrzené doručení.
+Přehled historie obnovte tlačítkem; technické chyby a vyčerpané úkoly najdete
+v Oban dashboardu. Nefunkční odesílání nebrání stažení dokladu.
+
+Databázové zálohy musí obsahovat tabulky `billing_*` včetně PDF. Nastavte jejich
+uchování nejméně podle zákonné desetileté lhůty a pravidelně ověřujte obnovu
+souborů i kontrolních součtů. Neprovádějte automatické mazání těchto dat spolu
+s rezervací. Stažení PDF i všechny stránky fakturace vyžadují správní relaci.
+
+## Ověření a další etapa
+
+```sh
+PGUSER=elixir PGPASSWORD='' mix test test/cozy_checkout/financial test/cozy_checkout_web/live/financial test/cozy_checkout_web/billing_live_test.exs
+PGUSER=elixir PGPASSWORD='' mix precommit
+```
+
+Nové testy ověřují sezony, chybějící ceny, zálohy, haléřové odpočty, opravy,
+vratky, izolaci obsazenosti, skutečné vícestránkové PDF, přílohy e-mailů,
+autorizaci i souběh oddělených databázových spojení. E-mailový test používá
+Swoosh test adapter; neodesílá zprávy hostům. Pro produkční kontrolu použijte
+vlastní testovací rezervaci a vlastní testovací e-mailovou adresu.
+
+Integrace pobytových dokladů do ABRA Flexi je druhá etapa; nynější export
+barových účtů zůstává zachovaný. Budoucí export má použít stabilní ID dokladů,
+odpočtů a plateb a přenášet vazby jednosměrně z aplikace do účetnictví.

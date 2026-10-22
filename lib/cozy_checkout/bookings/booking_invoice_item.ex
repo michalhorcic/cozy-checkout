@@ -17,6 +17,7 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
     field :vat_amount, :decimal
     field :total, :decimal
 
+    field :tax_mode, :string, default: "taxable"
     field :position, :integer, default: 0
 
     belongs_to :booking_invoice, CozyCheckout.Bookings.BookingInvoice
@@ -38,13 +39,15 @@ defmodule CozyCheckout.Bookings.BookingInvoiceItem do
       :vat_amount,
       :total,
       :position,
+      :tax_mode,
       :item_type
     ])
-    |> validate_required([:name, :quantity, :price_per_night, :nights, :vat_rate, :item_type])
+    |> validate_required([:name, :quantity, :nights, :vat_rate, :item_type])
     |> validate_number(:quantity, greater_than_or_equal_to: 0)
     |> validate_number(:nights, greater_than: 0)
     |> validate_number(:price_per_night, greater_than_or_equal_to: 0)
     |> validate_number(:vat_rate, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+    |> validate_inclusion(:tax_mode, ["taxable", "outside"])
     |> validate_inclusion(:item_type, ["person", "extra"])
   end
 
