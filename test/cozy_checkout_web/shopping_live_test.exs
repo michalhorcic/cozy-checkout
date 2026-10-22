@@ -165,7 +165,9 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
     refute fingerprint.(before) == fingerprint.(after_refresh)
   end
 
-  test "print preserves all quantities, scope and incomplete warnings", %{conn: conn} do
+  test "compact print keeps purchase quantities, packaging, scope and incomplete warnings", %{
+    conn: conn
+  } do
     {ingredient, recipe} = shopping_recipe()
     {booking, _} = shopping_booking(recipe)
     menu_booking_fixture()
@@ -174,6 +176,13 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
     assert has_element?(view, "#shopping-warnings")
     assert has_element?(view, "#shopping-buy-#{ingredient.id}", "14 kg")
     refute has_element?(view, "#shopping-filter-form")
+    refute has_element?(view, "#shopping-summary")
+    refute has_element?(view, "[data-shopping-check]")
+    refute has_element?(view, "#shopping-consumption-#{ingredient.id}")
+    refute has_element?(view, "#shopping-sources-#{ingredient.id}")
+    refute has_element?(view, "#shopping-item-settings-#{ingredient.id}")
+    assert has_element?(view, "#rows-#{ingredient.id} .shopping-paper-check")
+    assert has_element?(view, "#rows-#{ingredient.id} .shopping-packages", "14 balení × 1 kg")
 
     {:ok, scoped, _} =
       live(
@@ -183,6 +192,17 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
 
     refute has_element?(scoped, "#shopping-warnings")
     assert has_element?(scoped, "#shopping-buy-#{ingredient.id}", "14 kg")
+  end
+
+  test "compact print labels ongoing purchases and keeps long ingredient names", %{conn: conn} do
+    {ingredient, recipe} = shopping_recipe()
+    name = "Čerstvá zelenina pro přípravu polévek a příloh bez zkrácení názvu"
+    {:ok, _} = Recipes.update_ingredient(ingredient, %{name: name, purchase_mode: "Průběžně"})
+    shopping_booking(Recipes.get_recipe!(recipe.id))
+    {:ok, view, _} = live(conn, "/admin/kitchen-shopping/print?from=2027-01-08&to=2027-01-10")
+    assert has_element?(view, "#rows-#{ingredient.id} [data-ingredient-name]", name)
+    assert has_element?(view, "#rows-#{ingredient.id} .shopping-mode-recurring", "Průběžně")
+    assert has_element?(view, "#shopping-buy-#{ingredient.id}", "13,5 kg")
   end
 
   test "buffet estimates are visible and directly editable", %{conn: conn} do

@@ -281,11 +281,12 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
             </div>
             <p id="booking-meal-plan" class="font-semibold">{meal_plan_label(@booking.meal_plan)}</p>
             <p
-              :if={is_nil(@booking.meal_plan)}
+              :if={@booking.meal_plan != "none" and not @meal_details_complete}
               id="booking-meals-incomplete"
               class="mt-2 text-warning"
             >
-              Rezervace není zahrnuta do součtů porcí. Doplňte stravování nebo potvrďte pobyt bez stravy.
+              Rezervace není zahrnuta do součtů porcí. Doplňte stravování a oba počty osob
+              (včetně nul), nebo potvrďte pobyt bez stravy.
             </p>
             <div :if={@meal_details_complete} class="mt-4">
               <p>{@booking.meal_adults} dospělí · {@booking.meal_children} děti</p>

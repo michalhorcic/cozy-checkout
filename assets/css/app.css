@@ -254,20 +254,68 @@ h1, h2, h3, h4, h5, h6,
   font-family: var(--font-serif);
 }
 
-/* Kitchen shopping keeps calculation, completion and print styles scoped to this screen. */
+/* Dense shopping rows retain full names, purchase controls and expandable provenance. */
+.shopping-item-summary {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) minmax(6rem, auto) 2.25rem;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .75rem;
+}
+.shopping-paper-check { display: none; }
+.shopping-item-quantity { max-width: 15rem; }
+.shopping-sources { padding: 0 .75rem .25rem 3.25rem; }
+.shopping-sources > div { margin: .25rem 0 .5rem; padding-top: .5rem; }
+.shopping-filters > :first-child { grid-column: 1 / -1; }
+.shopping-filters .fieldset { padding-block: 0; }
 .shopping-row[data-checked="true"] [data-ingredient-name] {
   color: var(--color-primary-400);
   text-decoration: line-through;
 }
 .shopping-row[data-checked="true"] > div { background-color: var(--color-secondary-50); }
-@page kitchen-shopping { size: A4; margin: 12mm; }
+@media (min-width: 640px) {
+  .shopping-filters > :first-child { grid-column: auto; }
+  .shopping-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .shopping-sources { display: contents; }
+  .shopping-sources > button { margin-right: .75rem; }
+  .shopping-sources > div { grid-column: 1 / -1; margin: 0 .75rem .75rem 3.25rem; }
+}
+
+/* The print route is already a compact paper preview, independent of local checks. */
+.shopping-print { max-width: 190mm; margin: 0 auto; padding: 1rem; background: white; }
+.shopping-print .shopping-rows { column-count: 2; column-gap: 7mm; }
+.shopping-print .shopping-row { break-inside: avoid; }
+.shopping-print .shopping-category { margin: 2mm 0 1mm; font-size: 9pt; color: black; }
+.shopping-print .shopping-item { display: block; }
+.shopping-print .shopping-item-summary {
+  grid-template-columns: 3mm minmax(0, 1fr) minmax(0, auto);
+  gap: 2mm;
+  padding: 1mm 0;
+  align-items: start;
+}
+.shopping-print .shopping-paper-check { display: block; width: 2.5mm; height: 2.5mm; margin-top: 1mm; border: .25mm solid black; }
+.shopping-print .shopping-item-name h3,
+.shopping-print .shopping-item-quantity > p { font-size: 10pt; line-height: 1.25; color: black; }
+.shopping-print .shopping-item-quantity .shopping-packages { font-size: 8pt; font-weight: normal; }
+.shopping-print .shopping-mode { display: none; font-size: 8pt; line-height: 1.25; }
+.shopping-print .shopping-mode-recurring { display: block; }
+.shopping-print .shopping-print-header h1 { font-size: 16pt; }
+.shopping-print .shopping-print-header p { margin-top: 1mm; font-size: 9pt; }
+.shopping-print #shopping-warnings { margin-bottom: 2mm; padding: 2mm; border-color: #888; background: white; }
+.shopping-print #shopping-warnings :is(h2, p, summary, li) { font-size: 8pt; line-height: 1.25; }
+.shopping-print #shopping-issues { margin-top: 1mm; }
+.shopping-print #shopping-issues ul { margin-top: 1mm; }
+.shopping-print #shopping-issues li { padding: 0; margin-top: 1mm; }
+.shopping-print #shopping-warnings svg { display: none; }
+.shopping-print #buffet-estimate-note { margin-bottom: 2mm; padding: 1mm; font-size: 8pt; }
+.shopping-print-footer { margin-top: 3mm; font-size: 8pt; color: #444; }
+@page kitchen-shopping { size: A4; margin: 10mm; }
 @media print {
-  body:has(.kitchen-shopping) { page: kitchen-shopping; }
-  .kitchen-shopping .shopping-row { break-inside: avoid; margin-top: 0; }
-  .kitchen-shopping .shopping-row > h2 { margin-top: 10px; margin-bottom: 3px; }
-  .kitchen-shopping .shopping-row > div > div { padding: 5px; }
-  .kitchen-shopping h2 { break-after: avoid; }
+  body:has(.kitchen-shopping) { page: kitchen-shopping; background: white; }
+  .shopping-print { max-width: none; margin: 0; padding: 0; }
   .kitchen-shopping [hidden] { display: none !important; }
+  .kitchen-shopping h2 { break-after: avoid; }
+  .kitchen-shopping .shopping-sources { display: none; }
 }
 
 /* The food workspace follows the existing application palette and typography. */

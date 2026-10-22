@@ -72,13 +72,19 @@ defmodule CozyCheckout.Bookings.Booking do
 
   @doc "Whether this booking has complete, valid catering instructions."
   def meal_details_complete?(%__MODULE__{} = booking) do
-    booking.meal_plan in ["half_board", "full_board"] and
+    meal_schedule_complete?(booking) and
       is_integer(booking.meal_adults) and booking.meal_adults >= 0 and
-      is_integer(booking.meal_children) and booking.meal_children >= 0 and
+      is_integer(booking.meal_children) and booking.meal_children >= 0
+  end
+
+  @doc "A menu can be planned before the number of diners is known."
+  def meal_schedule_complete?(%__MODULE__{} = booking) do
+    booking.meal_plan in ["half_board", "full_board"] and
       booking.first_meal in ["breakfast", "lunch", "dinner"] and
       booking.last_meal in ["breakfast", "lunch", "dinner"] and
       (booking |> change() |> validate_meal_details()).valid? and
       not is_nil(booking.check_in_date) and
+      not is_nil(booking.check_out_date) and
       Date.compare(booking.check_in_date, booking.check_out_date) != :gt
   end
 
@@ -95,8 +101,6 @@ defmodule CozyCheckout.Bookings.Booking do
       changeset
       |> validate_required([
         :check_out_date,
-        :meal_adults,
-        :meal_children,
         :first_meal,
         :last_meal
       ])
