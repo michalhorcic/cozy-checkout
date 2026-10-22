@@ -33,7 +33,10 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     |> form("#billing-issue", issue: %{kind: "advance", percent: "50", amount: ""})
     |> render_submit()
 
-    assert has_element?(view, "#document-preview")
+    assert has_element?(view, "#document-preview", "Záloha na pobyt a objednané služby")
+    assert has_element?(view, "#document-preview", "2 850,00 CZK")
+    refute has_element?(view, "#document-preview", "Přijatá záloha")
+    refute has_element?(view, "#document-preview", "1 × 1")
     view |> element("button[phx-click=issue]") |> render_click()
     assert length(Billing.list_documents(%{"booking_id" => booking.id})) == 1
     assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 2

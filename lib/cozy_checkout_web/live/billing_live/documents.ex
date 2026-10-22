@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.BillingLive.Documents do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Billing
+  alias CozyCheckout.Billing.Presentation
   alias CozyCheckoutWeb.BillingLive.Helpers
   def mount(_, _, socket), do: {:ok, assign(socket, page_title: "Doklady z rezervací")}
 
@@ -120,8 +121,10 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
                     <.link class="link" navigate={~p"/admin/billing/documents/#{doc.id}"}>{doc.number}</.link>
                   </td><td>{Billing.kind_label(doc.kind)}</td><td>
                     {doc.snapshot["customer"]["name"]}
-                  </td><td>{doc.issued_on}</td><td>{doc.due_on}</td><td>
-                    {format_currency(doc.total)}
+                  </td><td>{Presentation.date(doc.issued_on)}</td><td>
+                    {if doc.kind == "tax_receipt", do: "—", else: Presentation.date(doc.due_on)}
+                  </td><td>
+                    {Presentation.amount(doc.total)}
                   </td>
                 </tr>
               </tbody>
@@ -134,7 +137,15 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
               {Billing.kind_label(@document.kind)} {@document.number}
             </h2>
             <p>
-              Odběratel: {@document.snapshot["customer"]["name"]} · Vystaveno {@document.issued_on} · DUZP / přijetí platby {@document.tax_date} · VS {@document.variable_symbol}
+              Odběratel: {@document.snapshot["customer"]["name"]} · Vystaveno {Presentation.date(
+                @document.issued_on
+              )}
+              <span :if={@document.kind != "advance"}>
+                · {if @document.kind == "tax_receipt", do: "Přijetí platby", else: "DUZP"} {Presentation.date(
+                  @document.tax_date
+                )}
+              </span>
+              · VS {@document.variable_symbol}
             </p>
             <p
               :if={
@@ -148,11 +159,13 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             <p :if={@document.snapshot["reason"]}>
               Oprava {@document.snapshot["original_number"]}: {@document.snapshot["reason"]}
             </p>
-            <p :for={line <- @document.lines}>{line["name"]}: {line["gross"]} CZK</p>
-            <p :for={line <- @document.snapshot["deductions"] || []}>
-              {line["name"]}: {line["gross"]} CZK
+            <p :for={line <- Presentation.lines(@document)}>
+              {Presentation.line_label(line, @document.kind)}: {Presentation.amount(line["gross"])}
             </p>
-            <p class="text-xl font-bold">Celkem {format_currency(@document.total)}</p>
+            <p :for={line <- @document.snapshot["deductions"] || []}>
+              {line["name"]}: {Presentation.amount(line["gross"])}
+            </p>
+            <p class="text-xl font-bold">Celkem {Presentation.amount(@document.total)}</p>
             <div class="flex gap-3">
               <.link
                 href={~p"/admin/billing/documents/#{@document.id}/pdf"}
