@@ -19,7 +19,7 @@ defmodule CozyCheckoutWeb.ApplicationIdentityLiveTest do
     conn: conn
   } do
     {:ok, pos, _} = live(conn, ~p"/pos")
-    assert has_element?(pos, "p", "Jindřichův dům")
+    assert has_element?(pos, "#pos-house-name", "Jindřichův dům")
     refute has_element?(pos, "#admin-brand-header")
     refute has_element?(pos, "img[src='/images/cozy-knot.svg']")
 

@@ -42,6 +42,7 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     assert_amount(Sales.get_order!(order.id).total_amount, "290")
     assert Sales.get_order!(order.id).status == "paid"
     assert socket.assigns.payment_method == "cash_success"
+    assert thank_you_visible?(socket)
     assert socket.assigns.payment_invoice_number == payment.invoice_number
   end
 
@@ -54,7 +55,8 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
   test "QR settlement collects only the outstanding balance", %{order: order} do
     {:ok, _} = Sales.create_payment(payment_attrs(order, "100"))
     socket = order |> mounted() |> authorize() |> qr()
-    event(socket, "confirm_qr_payment")
+    socket = event(socket, "confirm_qr_payment")
+    assert thank_you_visible?(socket)
     assert_paid_amount(order, "300")
   end
 
@@ -62,6 +64,7 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
     socket = order |> mounted() |> authorize() |> adjust("30", "20") |> qr()
     assert Sales.list_payments_for_order(order.id) == []
     assert socket.assigns.payment_qr_svg != nil
+    refute thank_you_visible?(socket)
     event(socket, "close_payment_modal")
     updated = Sales.get_order!(order.id)
     assert_amount(updated.total_amount, "300")
@@ -203,6 +206,13 @@ defmodule CozyCheckoutWeb.PosPaymentsTest do
 
     order |> mounted() |> event("open_recalculate_modal") |> event("apply_recalculation")
     assert_amount(Sales.get_order!(order.id).total_amount, "290")
+  end
+
+  defp thank_you_visible?(socket) do
+    render_component(&OrderManagement.render/1, socket.assigns)
+    |> LazyHTML.from_fragment()
+    |> LazyHTML.query("[data-pos-thanks]")
+    |> Enum.any?()
   end
 
   defp mounted(order) do

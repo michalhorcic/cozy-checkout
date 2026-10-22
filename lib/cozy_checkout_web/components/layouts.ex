@@ -231,6 +231,16 @@ defmodule CozyCheckoutWeb.Layouts do
     """
   end
 
+  @doc "A personal sign-off shown only after a POS payment has been recorded."
+  def pos_thanks(assigns) do
+    ~H"""
+    <div class="mb-5 text-center" data-pos-thanks>
+      <p class="text-base text-primary-500">Děkujeme a užijte si pobyt u nás.</p>
+      <p class="mt-1 text-sm text-primary-400">Michal a Lucka · Jindřichův dům</p>
+    </div>
+    """
+  end
+
   @doc """
   Shows the flash group with standard titles and content.
 

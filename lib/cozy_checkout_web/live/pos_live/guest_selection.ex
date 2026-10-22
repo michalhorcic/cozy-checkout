@@ -8,7 +8,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
     if connected?(socket) do
       {:ok,
        socket
-       |> assign(:page_title, "Select Booking")
+       |> assign(:page_title, "Samoobslužný bar")
        |> assign(:show_quick_order_modal, false)
        |> assign(:quick_order_name, "")
        |> assign(:service_mode, false)
@@ -17,7 +17,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
     else
       {:ok,
        assign(socket,
-         page_title: "Select Booking",
+         page_title: "Samoobslužný bar",
          bookings: [],
          standalone_orders: [],
          show_quick_order_modal: false,
@@ -80,7 +80,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
     service_mode = socket.assigns.service_mode
 
     if order_name == "" do
-      {:noreply, put_flash(socket, :error, "Order name cannot be empty")}
+      {:noreply, put_flash(socket, :error, "Vyplňte název účtu.")}
     else
       case Sales.create_standalone_order(%{
              "name" => order_name,
@@ -90,11 +90,11 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
         {:ok, order} ->
           {:noreply,
            socket
-           |> put_flash(:info, "Order created successfully")
+           |> put_flash(:info, "Účet byl založen.")
            |> push_navigate(to: ~p"/pos/orders/#{order.id}")}
 
         {:error, _changeset} ->
-          {:noreply, put_flash(socket, :error, "Failed to create order")}
+          {:noreply, put_flash(socket, :error, "Účet se nepodařilo založit.")}
       end
     end
   end
