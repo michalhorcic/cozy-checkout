@@ -283,10 +283,16 @@ h1, h2, h3, h4, h5, h6,
 
 /* The print route is already a compact paper preview, independent of local checks. */
 .shopping-print { max-width: 190mm; margin: 0 auto; padding: 1rem; background: white; }
-.shopping-print .shopping-rows { column-count: 2; column-gap: 7mm; }
-.shopping-print .shopping-row { break-inside: avoid; }
-.shopping-print .shopping-category { margin: 2mm 0 1mm; font-size: 9pt; color: black; }
-.shopping-print .shopping-item { display: block; }
+.shopping-print .shopping-rows {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 7mm;
+  align-items: start;
+}
+/* Explicit grid cells survive paged printing; categories start a new pair of columns. */
+.shopping-print .shopping-row { display: contents; }
+.shopping-print .shopping-category { grid-column: 1 / -1; margin: 2mm 0 1mm; font-size: 9pt; color: black; }
+.shopping-print .shopping-item { display: block; min-width: 0; break-inside: avoid; }
 .shopping-print .shopping-item-summary {
   grid-template-columns: 3mm minmax(0, 1fr) minmax(0, auto);
   gap: 2mm;
@@ -312,7 +318,7 @@ h1, h2, h3, h4, h5, h6,
 @page kitchen-shopping { size: A4; margin: 10mm; }
 @media print {
   body:has(.kitchen-shopping) { page: kitchen-shopping; background: white; }
-  .shopping-print { max-width: none; margin: 0; padding: 0; }
+  .shopping-print { width: 190mm; max-width: 100%; margin: 0; padding: 0; }
   .kitchen-shopping [hidden] { display: none !important; }
   .kitchen-shopping h2 { break-after: avoid; }
   .kitchen-shopping .shopping-sources { display: none; }

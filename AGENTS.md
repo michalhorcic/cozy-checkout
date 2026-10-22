@@ -76,7 +76,7 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 ## Kitchen shopping presentation
 
 - Keep the shopping list compact, with an inline summary and rows retaining purchase quantity, packaging, consumption, checkboxes, purchase settings and expandable recipe/group provenance.
-- The dedicated print route is an A4 two-column checklist with blank paper checkboxes, full ingredient names, purchase quantities, packaging and ongoing-purchase labels. Preserve the selected date/group scope and incomplete-data warnings; omit interactive controls, recipe breakdowns and duplicate consumption figures. Browser-local completion must not remove ingredients from the printed list.
+- The dedicated print route uses an explicit two-column CSS grid on screen and A4 paper (read left to right, then down), with category headings spanning both columns. Avoid CSS multicolumn flow for this checklist because paged printing can differ from the screen preview. It is a checklist with blank paper checkboxes, full ingredient names, purchase quantities, packaging and ongoing-purchase labels. Preserve the selected date/group scope and incomplete-data warnings; omit interactive controls, recipe breakdowns and duplicate consumption figures. Browser-local completion must not remove ingredients from the printed list.
 
 ## Application identity
 
