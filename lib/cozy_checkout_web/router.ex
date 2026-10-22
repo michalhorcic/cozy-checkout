@@ -54,7 +54,7 @@ defmodule CozyCheckoutWeb.Router do
       additional_pages: [oban: {Oban.LiveDashboard, oban: Oban}]
 
     live_session :admin,
-      on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}],
+      on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}, CozyCheckoutWeb.AdminNavigation],
       layout: {CozyCheckoutWeb.Layouts, :admin} do
       live "/", DashboardLive
 

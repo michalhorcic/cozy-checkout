@@ -133,6 +133,12 @@ defmodule CozyCheckoutWeb.Layouts do
         <img src={~p"/images/cozy-knot.svg"} alt="" width="28" height="28" class="shrink-0" />
         <span><span class="block text-sm">Cozy Checkout</span><span class="block text-xs font-normal text-primary-400">Stravování</span></span>
       </.link>
+      <details class="mb-5 rounded-lg border border-secondary-200 print:hidden">
+        <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-primary-400">
+          Přejít do jiné oblasti
+        </summary>
+        <.admin_navigation id={@id <> "-admin"} path="/admin/meal-planner" compact />
+      </details>
       <div :for={{label, entries} <- @groups} class="mb-5">
         <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-primary-400">
           {label}
@@ -160,6 +166,7 @@ defmodule CozyCheckoutWeb.Layouts do
       >
         <.icon name="hero-arrow-left" class="h-4 w-4" />Zpět do administrace
       </.link>
+      <.admin_controls />
     </nav>
     """
   end
@@ -179,8 +186,121 @@ defmodule CozyCheckoutWeb.Layouts do
   @doc "Renders the shared internal header around authenticated admin pages."
   def admin(assigns) do
     ~H"""
-    <.admin_header />
-    {@inner_content}
+    <div id="admin-shell" class="min-h-screen bg-secondary-50 lg:flex">
+      <aside
+        id="admin-sidebar"
+        class="hidden h-dvh w-60 shrink-0 overflow-y-auto border-r border-secondary-200 bg-white lg:sticky lg:top-0 lg:block print:hidden"
+      >
+        <p class="px-6 py-6 text-xs font-semibold uppercase tracking-wider text-primary-400">
+          Administrace
+        </p>
+        <.admin_navigation id="admin-desktop" path={@admin_path} />
+      </aside>
+      <div id="admin-workspace" class="min-w-0 flex-1">
+        <.admin_header />
+        <details
+          id="admin-mobile-navigation"
+          class="border-b border-secondary-200 bg-white lg:hidden print:hidden"
+          phx-window-keydown={JS.remove_attribute("open", to: "#admin-mobile-navigation")}
+          phx-key="Escape"
+        >
+          <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-primary-500">
+            <.icon name="hero-bars-3" class="h-5 w-5" />Navigace administrace
+          </summary>
+          <.admin_navigation id="admin-mobile" path={@admin_path} />
+        </details>
+        {@inner_content}
+      </div>
+    </div>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :path, :string, required: true
+  attr :compact, :boolean, default: false
+
+  def admin_navigation(assigns) do
+    assigns =
+      assigns
+      |> assign(
+        :primary,
+        Enum.reject(CozyCheckoutWeb.AdminNavigation.primary(), fn {_, path, _} ->
+          assigns.compact && path == "/admin"
+        end)
+      )
+      |> assign(:groups, CozyCheckoutWeb.AdminNavigation.groups())
+      |> assign(:secondary_path, CozyCheckoutWeb.AdminNavigation.secondary_path(assigns.path))
+
+    ~H"""
+    <nav id={@id} aria-label="Hlavní administrace" class="space-y-1 px-3 pb-4">
+      <.link
+        :for={{label, path, icon} <- @primary}
+        navigate={path}
+        aria-current={!@compact && CozyCheckoutWeb.AdminNavigation.active?(@path, path) && "page"}
+        phx-click={JS.remove_attribute("open", to: "#admin-mobile-navigation")}
+        class={[
+          "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors focus-visible:outline-2 focus-visible:outline-tertiary-500",
+          if(CozyCheckoutWeb.AdminNavigation.active?(@path, path),
+            do: "bg-tertiary-100 font-semibold text-tertiary-800",
+            else: "text-primary-500 hover:bg-secondary-50"
+          )
+        ]}
+      >
+        <.icon name={icon} class="h-5 w-5 shrink-0" />{label}
+      </.link>
+      <details
+        id={@id <> "-more"}
+        open={!is_nil(@secondary_path)}
+        class="border-t border-secondary-200 pt-2 mt-4"
+      >
+        <summary class="cursor-pointer rounded-lg px-3 py-3 text-sm font-semibold text-primary-500 hover:bg-secondary-50">
+          Další agenda
+        </summary>
+        <div :for={{label, entries} <- @groups} class="mt-4">
+          <p class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-primary-400">
+            {label}
+          </p>
+          <.link
+            :for={{title, path} <- entries}
+            navigate={path}
+            aria-current={@secondary_path == path && "page"}
+            class={[
+              "block rounded-lg px-3 py-2 text-sm hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500",
+              @secondary_path == path && "font-semibold text-tertiary-700",
+              @secondary_path != path && "text-primary-400"
+            ]}
+          >{title}</.link>
+        </div>
+      </details>
+      <details class="mt-5 border-t border-secondary-200 pt-2">
+        <summary class="cursor-pointer px-3 py-3 text-xs text-primary-400">Systém</summary>
+        <.link href="/admin/system" class="block px-3 py-2 text-sm text-primary-400 hover:underline">Diagnostika</.link>
+        <.link
+          href="/admin/system?page=oban"
+          class="block px-3 py-2 text-sm text-primary-400 hover:underline"
+        >Fronta úloh</.link>
+      </details>
+    </nav>
+    """
+  end
+
+  def admin_controls(assigns) do
+    ~H"""
+    <div class="flex flex-wrap items-center gap-2 print:hidden">
+      <.link
+        navigate={~p"/pos"}
+        class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
+      >
+        <.icon name="hero-arrow-top-right-on-square" class="h-4 w-4" />Pokladna
+      </.link>
+      <form action={~p"/admin/logout"} method="post">
+        <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
+        <button
+          type="submit"
+          class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
+        ><.icon name="hero-lock-closed" class="h-4 w-4" />Zamknout</button>
+      </form>
+    </div>
     """
   end
 
@@ -199,12 +319,7 @@ defmodule CozyCheckoutWeb.Layouts do
           <img src={~p"/images/cozy-knot.svg"} alt="" width="24" height="24" class="shrink-0" />
           <span class="text-sm font-semibold text-primary-500">Cozy Checkout</span>
         </.link>
-        <.link
-          navigate={~p"/pos"}
-          class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 transition-colors hover:bg-secondary-50 hover:text-primary-500 focus-visible:outline-2 focus-visible:outline-tertiary-500"
-        >
-          <.icon name="hero-arrow-top-right-on-square" class="h-4 w-4" />Pokladna
-        </.link>
+        <.admin_controls />
       </div>
     </header>
     """

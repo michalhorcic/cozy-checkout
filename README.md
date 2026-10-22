@@ -9,7 +9,25 @@ To start your Phoenix server:
 
 The root URL opens the POS. All `/admin` pages require a PIN; the POS remains public. Generate a salted PBKDF2 hash with `mix admin.pin.hash` (the PIN is entered without echo) and configure the printed `ADMIN_PIN_HASH` value as an environment secret before starting the server. Do not commit the hash to the repository.
 
-The PIN must contain 6 to 8 digits. Five incorrect attempts from the same client address trigger a one-minute lockout. An authenticated admin session expires after 12 hours and locks after 15 minutes without activity in an admin LiveView. Use **Lock Admin** on the dashboard to end the session immediately.
+The PIN must contain 6 to 8 digits. Five incorrect attempts from the same client address trigger a one-minute lockout. An authenticated admin session expires after 12 hours and locks after 15 minutes without activity in an admin LiveView. Use **Zamknout** in the admin header (or food navigation) to end the session immediately.
+
+## Provozní přehled administrace
+
+Úvodní přehled zobrazuje dnešní příjezdy a odjezdy, obsazenost podle stejných
+pobytových položek jako kalendář a dnešní porce podle plánovače. Seznam pobytů
+zahrnuje probíhající pobyty i příjezdy ode dneška do stejného dne příštího měsíce
+včetně (na konci měsíce se datum zkrátí na poslední platný den). Zrušené,
+dokončené a smazané pobyty se v seznamu nezobrazují. Přehled se obnovuje každou minutu.
+
+Sekce **Vyžaduje pozornost** ukazuje chybějící údaje o stravování a nepřiřazená
+nebo neaktuální menu u těchto pobytů; odkazy vedou přímo k opravě. Obsazenost
+lůžek a porce jsou nezávislé veličiny, například odjezdová snídaně se počítá do
+porcí, ale odjíždějící skupina už do obsazenosti daného dne nevstupuje.
+
+Hlavní navigace je dostupná napříč administrací a upřednostňuje rezervace,
+stravování a barový sklad. Méně časté nástroje jsou seskupeny pod **Další agenda**,
+technické nástroje pod **Systém**. Ve stravování zůstává jeho vlastní menu;
+přechod do ostatních oblastí je pod **Přejít do jiné oblasti**.
 
 ## Emaily hostům
 
