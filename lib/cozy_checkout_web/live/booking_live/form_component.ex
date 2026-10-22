@@ -189,7 +189,6 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
                 label="Dospělí ke stravování"
                 min="0"
                 step="1"
-                required
               />
               <.input
                 field={@form[:meal_children]}
@@ -197,7 +196,6 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
                 label="Děti ke stravování"
                 min="0"
                 step="1"
-                required
               />
               <.input
                 field={@form[:first_meal]}
@@ -217,7 +215,8 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
               />
             </div>
             <p class="mt-3 text-sm text-primary-400">
-              Vyplňte i nulové počty a datum odjezdu. Polopenze zahrnuje snídani a večeři.
+              Počty lze doplnit později. Pro výpočet porcí vyplňte oba počty včetně nul.
+              Polopenze zahrnuje snídani a večeři.
             </p>
           </div>
         </fieldset>
