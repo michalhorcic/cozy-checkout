@@ -153,6 +153,7 @@ defmodule CozyCheckoutWeb.Router do
       live "/ingredients/:id/edit", RecipeLive.Ingredients, :edit
 
       # Meal Planner
+      live "/meal-planner/portion-settings", RecipeLive.Settings
       live "/meal-planner", MealPlannerLive.Index
       live "/meal-planner/templates", MealPlannerLive.Templates, :index
       live "/meal-planner/templates/new", MealPlannerLive.Templates, :new

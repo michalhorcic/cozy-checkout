@@ -148,7 +148,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     item_a = List.last(menu_a.items)
     item_b = List.last(menu_b.items)
     {:ok, view, _} = live(conn, "/admin/meal-planner")
-    assert has_element?(view, "#menu-variants-link")
+    assert has_element?(view, "#food-desktop-variants")
     assert has_element?(view, "#portions-#{week}-breakfast", "17 porcí")
     assert has_element?(view, "#group-menus-#{week}-breakfast-portions-#{item_a.id}", "15 porcí")
     assert has_element?(view, "#group-menus-#{week}-breakfast-portions-#{item_b.id}", "2 porcí")
