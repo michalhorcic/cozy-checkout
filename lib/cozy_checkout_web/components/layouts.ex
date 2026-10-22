@@ -188,16 +188,16 @@ defmodule CozyCheckoutWeb.Layouts do
     ~H"""
     <header
       id="admin-brand-header"
-      class="border-b border-secondary-200 bg-white px-4 py-3 sm:px-6 lg:px-8 print:hidden"
+      class="border-b border-secondary-200 bg-white px-4 py-0.5 sm:px-6 lg:px-8 print:hidden"
     >
-      <div class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
         <.link
           navigate={~p"/admin"}
           class="inline-flex min-h-11 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-tertiary-500"
           aria-label="Cozy Checkout — administrace"
         >
-          <img src={~p"/images/cozy-knot.svg"} alt="" width="32" height="32" class="shrink-0" />
-          <span><span class="block text-sm font-semibold text-primary-500">Cozy Checkout</span><span class="block text-xs text-primary-400">Jindřichův dům</span></span>
+          <img src={~p"/images/cozy-knot.svg"} alt="" width="24" height="24" class="shrink-0" />
+          <span class="text-sm font-semibold text-primary-500">Cozy Checkout</span>
         </.link>
         <.link
           navigate={~p"/pos"}
