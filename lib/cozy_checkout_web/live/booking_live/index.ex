@@ -261,474 +261,604 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-7xl mx-auto px-4 py-8">
-      <div class="mb-8 flex items-center justify-between">
-        <div>
-          <.link
-            navigate={~p"/admin"}
-            class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
-          >
-            ← Back to Dashboard
-          </.link>
-          <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
-        </div>
-        <div class="flex gap-2">
-          <.link navigate={~p"/admin/bookings/calendar"}>
-            <.button>
-              <.icon name="hero-calendar" class="w-5 h-5 mr-2" /> Calendar
-            </.button>
-          </.link>
-          <.link navigate={~p"/admin/bookings/timeline"}>
-            <.button>
-              <.icon name="hero-bars-3" class="w-5 h-5 mr-2" /> Timeline
-            </.button>
-          </.link>
-          <.link patch={build_path_with_params(~p"/admin/bookings/new", @current_params)}>
-            <.button>
-              <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Booking
-            </.button>
-          </.link>
-        </div>
-      </div>
-
-      <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-        <!-- Filter Form -->
-        <.filter_form meta={@meta} path={~p"/admin/bookings"} id="bookings-filter">
-          <:filter>
-            <.input
-              type="select"
-              name="invoice_state"
-              label="Invoice State"
-              options={[
-                {"All", ""},
-                {"No Invoice", "no_invoice"},
-                {"Draft", "draft"},
-                {"Personal", "personal"},
-                {"Generated", "generated"},
-                {"Sent", "sent"},
-                {"Advance Paid (50%)", "advance_paid"},
-                {"Paid", "paid"}
-              ]}
-              value={Map.get(@meta.params, "invoice_state", "")}
-            />
-          </:filter>
-          <:filter>
-            <.input
-              type="text"
-              name="guest_search"
-              label="Guest Name/Email"
-              placeholder="Search by name or email"
-              value={Map.get(@meta.params, "guest_search", "")}
-            />
-          </:filter>
-          <:filter>
-            <input type="hidden" name="filters[0][field]" value="status" />
-            <input type="hidden" name="filters[0][op]" value="==" />
-            <.input
-              type="select"
-              name="filters[0][value]"
-              label="Status"
-              options={[
-                {"All", ""},
-                {"Upcoming", "upcoming"},
-                {"Active", "active"},
-                {"Completed", "completed"},
-                {"Cancelled", "cancelled"}
-              ]}
-              value={get_filter_value(@meta, :status)}
-            />
-          </:filter>
-          <:filter>
-            <input type="hidden" name="filters[1][field]" value="check_in_date" />
-            <input type="hidden" name="filters[1][op]" value=">=" />
-            <.input
-              type="date"
-              name="filters[1][value]"
-              label="Check-in From"
-              value={get_filter_value(@meta, :check_in_date)}
-            />
-          </:filter>
-          <:filter>
-            <input type="hidden" name="filters[2][field]" value="check_in_date" />
-            <input type="hidden" name="filters[2][op]" value="<=" />
-            <.input
-              type="date"
-              name="filters[2][value]"
-              label="Check-in To"
-              value={get_filter_value(@meta, :check_in_date)}
-            />
-          </:filter>
-          <:filter>
-            <input type="hidden" name="filters[3][field]" value="short_note" />
-            <input type="hidden" name="filters[3][op]" value="==" />
-            <.input
-              type="text"
-              name="filters[3][value]"
-              label="Group/Tag"
-              placeholder="Filter by short note"
-              value={get_filter_value(@meta, :short_note)}
-            />
-          </:filter>
-        </.filter_form>
-
-        <!-- View toggle -->
-        <div class="px-6 py-3 bg-secondary-50 border-t border-secondary-200 flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <%= if Map.get(@current_params, "show_all") == "true" do %>
-              <span class="text-sm text-primary-500">
-                <.icon name="hero-eye" class="w-4 h-4 inline-block" />
-                Showing all bookings (including past)
-              </span>
-              <.link
-                navigate={~p"/admin/bookings"}
-                class="text-sm text-tertiary-600 hover:text-tertiary-800 underline"
-              >
-                Show only current & future
-              </.link>
-            <% else %>
-              <span class="text-sm text-primary-500">
-                <.icon name="hero-eye" class="w-4 h-4 inline-block" />
-                Showing current and future bookings
-              </span>
-              <.link
-                navigate={~p"/admin/bookings?show_all=true"}
-                class="text-sm text-tertiary-600 hover:text-tertiary-800 underline"
-              >
-                Show all bookings
-              </.link>
-            <% end %>
+    <Layouts.app
+      flash={@flash}
+      show_header={false}
+      main_class="px-4 py-6 sm:px-6"
+      content_class="w-full"
+    >
+      <div id="bookings-page" class="mx-auto w-full">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <.link
+              navigate={~p"/admin"}
+              class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
+            >
+              ← Back to Dashboard
+            </.link>
+            <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <.link navigate={~p"/admin/bookings/calendar"}>
+              <.button>
+                <.icon name="hero-calendar" class="w-5 h-5 mr-2" /> Calendar
+              </.button>
+            </.link>
+            <.link navigate={~p"/admin/bookings/timeline"}>
+              <.button>
+                <.icon name="hero-bars-3" class="w-5 h-5 mr-2" /> Timeline
+              </.button>
+            </.link>
+            <.link patch={build_path_with_params(~p"/admin/bookings/new", @current_params)}>
+              <.button>
+                <.icon name="hero-plus" class="w-5 h-5 mr-2" /> New Booking
+              </.button>
+            </.link>
           </div>
         </div>
 
-        <!-- Table -->
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-secondary-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
-                  Guest
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
-                  Room
-                </th>
-                <.sortable_header meta={@meta} field={:check_in_date} path={~p"/admin/bookings"}>
-                  Check-in
-                </.sortable_header>
-                <.sortable_header meta={@meta} field={:check_out_date} path={~p"/admin/bookings"}>
-                  Check-out
-                </.sortable_header>
-                <th class="px-4 py-3 text-left text-xs font-medium text-primary-400 uppercase">
-                  Stravování
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-primary-400 uppercase">
-                  Menu
-                </th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-primary-400 uppercase">
-                  Počty osob
-                </th>
-                <.sortable_header meta={@meta} field={:status} path={~p"/admin/bookings"}>
-                  Status
-                </.sortable_header>
-                <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
-                  Invoice
-                </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <%= if @bookings == [] do %>
-                <tr>
-                  <td colspan="10" class="px-6 py-12 text-center text-primary-400">
-                    No bookings found.
-                  </td>
-                </tr>
+        <div class="bg-white shadow-lg rounded-lg">
+          <!-- Filter Form -->
+          <.filter_form meta={@meta} path={~p"/admin/bookings"} id="bookings-filter">
+            <:filter>
+              <.input
+                type="select"
+                name="invoice_state"
+                label="Invoice State"
+                options={[
+                  {"All", ""},
+                  {"No Invoice", "no_invoice"},
+                  {"Draft", "draft"},
+                  {"Personal", "personal"},
+                  {"Generated", "generated"},
+                  {"Sent", "sent"},
+                  {"Advance Paid (50%)", "advance_paid"},
+                  {"Paid", "paid"}
+                ]}
+                value={Map.get(@meta.params, "invoice_state", "")}
+              />
+            </:filter>
+            <:filter>
+              <.input
+                type="text"
+                name="guest_search"
+                label="Guest Name/Email"
+                placeholder="Search by name or email"
+                value={Map.get(@meta.params, "guest_search", "")}
+              />
+            </:filter>
+            <:filter>
+              <input type="hidden" name="filters[0][field]" value="status" />
+              <input type="hidden" name="filters[0][op]" value="==" />
+              <.input
+                type="select"
+                name="filters[0][value]"
+                label="Status"
+                options={[
+                  {"All", ""},
+                  {"Upcoming", "upcoming"},
+                  {"Active", "active"},
+                  {"Completed", "completed"},
+                  {"Cancelled", "cancelled"}
+                ]}
+                value={get_filter_value(@meta, :status)}
+              />
+            </:filter>
+            <:filter>
+              <input type="hidden" name="filters[1][field]" value="check_in_date" />
+              <input type="hidden" name="filters[1][op]" value=">=" />
+              <.input
+                type="date"
+                name="filters[1][value]"
+                label="Check-in From"
+                value={get_filter_value(@meta, :check_in_date)}
+              />
+            </:filter>
+            <:filter>
+              <input type="hidden" name="filters[2][field]" value="check_in_date" />
+              <input type="hidden" name="filters[2][op]" value="<=" />
+              <.input
+                type="date"
+                name="filters[2][value]"
+                label="Check-in To"
+                value={get_filter_value(@meta, :check_in_date)}
+              />
+            </:filter>
+            <:filter>
+              <input type="hidden" name="filters[3][field]" value="short_note" />
+              <input type="hidden" name="filters[3][op]" value="==" />
+              <.input
+                type="text"
+                name="filters[3][value]"
+                label="Group/Tag"
+                placeholder="Filter by short note"
+                value={get_filter_value(@meta, :short_note)}
+              />
+            </:filter>
+          </.filter_form>
+
+          <!-- View toggle -->
+          <div class="px-4 py-3 bg-secondary-50 border-t border-secondary-200 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <%= if Map.get(@current_params, "show_all") == "true" do %>
+                <span class="text-sm text-primary-500">
+                  <.icon name="hero-eye" class="w-4 h-4 inline-block" />
+                  Showing all bookings (including past)
+                </span>
+                <.link
+                  navigate={~p"/admin/bookings"}
+                  class="text-sm text-tertiary-600 hover:text-tertiary-800 underline"
+                >
+                  Show only current & future
+                </.link>
               <% else %>
-                <tr :for={booking <- @bookings} class="hover:bg-secondary-50">
-                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-500">
-                    <div class="flex items-center gap-2">
-                      <span>{booking.guest.name}</span>
-                      <%= if booking.short_note do %>
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-info-light text-tertiary-800">
-                          {booking.short_note}
-                        </span>
-                      <% end %>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
-                    <%= if Map.get(booking, :rooms_list) && booking.rooms_list != [] do %>
-                      {Enum.map_join(booking.rooms_list, ", ", & &1.room_number)}
-                    <% else %>
-                      —
-                    <% end %>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
-                    {Calendar.strftime(booking.check_in_date, "%b %d, %Y")}
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
-                    {if booking.check_out_date,
-                      do: Calendar.strftime(booking.check_out_date, "%b %d, %Y"),
-                      else: "—"}
-                  </td>
-                  <.catering_cells
-                    booking={booking}
-                    variants={@menu_variants}
-                    menu={@booking_menus[booking.id]}
-                    error={@catering_errors[booking.id]}
-                  />
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <div
-                      class="relative"
-                      id={"booking-status-#{booking.id}"}
-                      phx-click-away={JS.hide(to: "#status-menu-#{booking.id}")}
-                    >
-                      <button
-                        type="button"
-                        phx-click={JS.toggle(to: "#status-menu-#{booking.id}")}
-                        class="w-full text-left inline-flex items-center justify-between gap-2 hover:opacity-80 transition-opacity"
-                      >
-                        <span class={[
-                          "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                          status_badge_class(booking.status)
-                        ]}>
-                          {String.capitalize(booking.status)}
-                        </span>
-                        <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
-                      </button>
+                <span class="text-sm text-primary-500">
+                  <.icon name="hero-eye" class="w-4 h-4 inline-block" />
+                  Showing current and future bookings
+                </span>
+                <.link
+                  navigate={~p"/admin/bookings?show_all=true"}
+                  class="text-sm text-tertiary-600 hover:text-tertiary-800 underline"
+                >
+                  Show all bookings
+                </.link>
+              <% end %>
+            </div>
+          </div>
 
-                      <div
-                        id={"status-menu-#{booking.id}"}
-                        class="hidden absolute z-10 mt-1 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+          <!-- Fixed desktop columns and stacked cards on narrow screens. -->
+          <div id="bookings-table-container" class="px-3 pb-2 lg:px-0">
+            <table
+              id="bookings-table"
+              class="w-full lg:table-fixed [&_.fieldset]:mb-0 [&_.fieldset]:p-0 [&_.fieldset]:gap-0 [&_.label]:text-xs [&_.label]:mb-1"
+            >
+              <colgroup class="hidden lg:table-column-group">
+                <col class="w-[28%]" />
+                <col class="w-[148px]" />
+                <col />
+                <col class="w-[136px]" />
+                <col class="w-[180px]" />
+                <col class="w-[100px]" />
+              </colgroup>
+              <thead class="hidden bg-secondary-50 lg:table-header-group">
+                <tr class="text-left text-xs font-semibold text-primary-400">
+                  <th class="px-3 py-3">
+                    <span>Rezervace a pobyt</span>
+                    <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-normal">
+                      <.link
+                        id="bookings-sort-arrival"
+                        patch={
+                          build_path(
+                            ~p"/admin/bookings",
+                            @meta,
+                            :order,
+                            :check_in_date,
+                            @current_params
+                          )
+                        }
+                        class="inline-flex items-center gap-1 hover:text-tertiary-600"
                       >
-                        <div class="py-1" role="menu">
-                          <button
-                            type="button"
-                            phx-click="update_booking_status"
-                            phx-value-id={booking.id}
-                            phx-value-status="upcoming"
-                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                          >
-                            <span class={[
-                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                              status_badge_class("upcoming")
-                            ]}>
-                              Upcoming
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            phx-click="update_booking_status"
-                            phx-value-id={booking.id}
-                            phx-value-status="active"
-                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                          >
-                            <span class={[
-                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                              status_badge_class("active")
-                            ]}>
-                              Active
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            phx-click="update_booking_status"
-                            phx-value-id={booking.id}
-                            phx-value-status="completed"
-                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                          >
-                            <span class={[
-                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                              status_badge_class("completed")
-                            ]}>
-                              Completed
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            phx-click="update_booking_status"
-                            phx-value-id={booking.id}
-                            phx-value-status="cancelled"
-                            class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                          >
-                            <span class={[
-                              "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                              status_badge_class("cancelled")
-                            ]}>
-                              Cancelled
-                            </span>
-                          </button>
-                        </div>
+                        Příjezd <.sort_icon meta={@meta} field={:check_in_date} />
+                      </.link>
+                      <.link
+                        id="bookings-sort-departure"
+                        patch={
+                          build_path(
+                            ~p"/admin/bookings",
+                            @meta,
+                            :order,
+                            :check_out_date,
+                            @current_params
+                          )
+                        }
+                        class="inline-flex items-center gap-1 hover:text-tertiary-600"
+                      >
+                        Odjezd <.sort_icon meta={@meta} field={:check_out_date} />
+                      </.link>
+                    </div>
+                  </th>
+                  <th class="px-2 py-3">Stravování</th>
+                  <th class="px-2 py-3">Menu</th>
+                  <th class="px-2 py-3">Osoby</th>
+                  <.sortable_header
+                    meta={@meta}
+                    field={:status}
+                    path={~p"/admin/bookings"}
+                    raw_params={@current_params}
+                    class="!px-2 !tracking-normal !normal-case"
+                  >
+                    Stav / faktura
+                  </.sortable_header>
+                  <th class="px-2 py-3 text-right">Akce</th>
+                </tr>
+              </thead>
+              <tbody class="grid gap-3 bg-white lg:table-row-group lg:divide-y lg:divide-secondary-200">
+                <%= if @bookings == [] do %>
+                  <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-primary-400">
+                      No bookings found.
+                    </td>
+                  </tr>
+                <% else %>
+                  <tr
+                    :for={booking <- @bookings}
+                    id={"booking-row-#{booking.id}"}
+                    class="grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-secondary-200 p-3 hover:bg-secondary-50 lg:table-row lg:rounded-none lg:border-0 lg:p-0"
+                  >
+                    <td class="col-span-2 min-w-0 px-0 py-2 align-top text-sm text-primary-500 lg:px-3 lg:py-3">
+                      <.link
+                        navigate={
+                          build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
+                        }
+                        title={booking.guest.name}
+                        class="block truncate font-semibold text-tertiary-700 hover:underline"
+                      >
+                        {booking.guest.name}
+                      </.link>
+                      <span
+                        :if={booking.short_note}
+                        class="mt-1 inline-block max-w-full truncate rounded bg-info-light px-1.5 text-xs text-tertiary-800"
+                        title={booking.short_note}
+                      >
+                        {booking.short_note}
+                      </span>
+                      <div
+                        id={"booking-stay-#{booking.id}"}
+                        class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-primary-400"
+                      >
+                        <span class="inline-flex items-center gap-1">
+                          <.icon name="hero-calendar-days" class="size-3.5 shrink-0" />
+                          <time datetime={booking.check_in_date}>{Calendar.strftime(
+                            booking.check_in_date,
+                            "%d.%m.%Y"
+                          )}</time>
+                          <span>–</span>
+                          <time :if={booking.check_out_date} datetime={booking.check_out_date}>{Calendar.strftime(
+                            booking.check_out_date,
+                            "%d.%m.%Y"
+                          )}</time>
+                          <span :if={is_nil(booking.check_out_date)}>odjezd nevyplněn</span>
+                        </span>
+                        <span
+                          :if={booking.check_out_date}
+                          title="Počet nocí"
+                          class="inline-flex items-center gap-1"
+                        >
+                          <.icon name="hero-moon" class="size-3.5 shrink-0" />
+                          {Date.diff(booking.check_out_date, booking.check_in_date)} nocí
+                        </span>
                       </div>
-                    </div>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap">
-                    <%= if Map.get(booking, :invoice) do %>
                       <div
-                        class="relative"
-                        id={"invoice-status-#{booking.id}"}
-                        phx-click-away={JS.hide(to: "#invoice-menu-#{booking.id}")}
+                        :if={booking.rooms_list != []}
+                        id={"booking-rooms-#{booking.id}"}
+                        class="mt-1 flex min-w-0 items-center gap-1 text-xs text-primary-400"
+                        title={"Pokoje: " <> Enum.map_join(booking.rooms_list, ", ", & &1.room_number)}
                       >
-                        <button
-                          type="button"
-                          phx-click={JS.toggle(to: "#invoice-menu-#{booking.id}")}
-                          class="w-full text-left inline-flex items-center justify-between gap-2 hover:opacity-80 transition-opacity"
-                        >
-                          <span class={[
-                            "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                            invoice_state_badge_class(booking.invoice.state)
-                          ]}>
-                            {invoice_state_label(booking.invoice.state)}
-                          </span>
-                          <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
-                        </button>
-
+                        <.icon name="hero-key" class="size-3.5 shrink-0" />
+                        <span class="truncate">Pokoj: {Enum.map_join(
+                          booking.rooms_list,
+                          ", ",
+                          & &1.room_number
+                        )}</span>
+                      </div>
+                    </td>
+                    <.catering_cells
+                      booking={booking}
+                      variants={@menu_variants}
+                      menu={@booking_menus[booking.id]}
+                      error={@catering_errors[booking.id]}
+                    />
+                    <td class="min-w-0 py-2 align-top lg:px-2 lg:py-3">
+                      <div class="mb-1 text-xs font-medium text-primary-400 lg:hidden">
+                        Stav / faktura
+                      </div>
+                      <div class="space-y-2">
                         <div
-                          id={"invoice-menu-#{booking.id}"}
-                          class="hidden absolute z-10 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                          class="relative"
+                          id={"booking-status-#{booking.id}"}
+                          phx-click-away={JS.hide(to: "#status-menu-#{booking.id}")}
                         >
-                          <div class="py-1" role="menu">
-                            <button
-                              type="button"
-                              phx-click="update_invoice_status"
-                              phx-value-id={booking.invoice.id}
-                              phx-value-state="draft"
-                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                            >
-                              <span class={[
-                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                                invoice_state_badge_class("draft")
-                              ]}>
-                                Draft
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              phx-click="update_invoice_status"
-                              phx-value-id={booking.invoice.id}
-                              phx-value-state="personal"
-                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                            >
-                              <span class={[
-                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                                invoice_state_badge_class("personal")
-                              ]}>
-                                Personal
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              phx-click="update_invoice_status"
-                              phx-value-id={booking.invoice.id}
-                              phx-value-state="generated"
-                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                            >
-                              <span class={[
-                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                                invoice_state_badge_class("generated")
-                              ]}>
-                                Generated
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              phx-click="update_invoice_status"
-                              phx-value-id={booking.invoice.id}
-                              phx-value-state="sent"
-                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                            >
-                              <span class={[
-                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                                invoice_state_badge_class("sent")
-                              ]}>
-                                Sent
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              phx-click="update_invoice_status"
-                              phx-value-id={booking.invoice.id}
-                              phx-value-state="advance_paid"
-                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                            >
-                              <span class={[
-                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                                invoice_state_badge_class("advance_paid")
-                              ]}>
-                                Advance Paid (50%)
-                              </span>
-                            </button>
-                            <button
-                              type="button"
-                              phx-click="update_invoice_status"
-                              phx-value-id={booking.invoice.id}
-                              phx-value-state="paid"
-                              class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                            >
-                              <span class={[
-                                "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
-                                invoice_state_badge_class("paid")
-                              ]}>
-                                Paid
-                              </span>
-                            </button>
+                          <button
+                            type="button"
+                            phx-click={JS.toggle(to: "#status-menu-#{booking.id}")}
+                            class="w-full min-w-0 text-left inline-flex items-center justify-between gap-1 hover:opacity-80 transition-opacity"
+                            title={"Stav rezervace: " <> String.capitalize(booking.status)}
+                            aria-label="Změnit stav rezervace"
+                          >
+                            <.icon name="hero-bookmark" class="size-3.5 shrink-0 text-primary-400" />
+                            <span class={[
+                              "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                              status_badge_class(booking.status)
+                            ]}>
+                              {String.capitalize(booking.status)}
+                            </span>
+                            <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
+                          </button>
+
+                          <div
+                            id={"status-menu-#{booking.id}"}
+                            class="hidden absolute right-0 z-10 mt-1 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                          >
+                            <div class="py-1" role="menu">
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="upcoming"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("upcoming")
+                                ]}>
+                                  Upcoming
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="active"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("active")
+                                ]}>
+                                  Active
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="completed"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("completed")
+                                ]}>
+                                  Completed
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="cancelled"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("cancelled")
+                                ]}>
+                                  Cancelled
+                                </span>
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    <% else %>
-                      <span class="text-primary-300 text-sm">—</span>
-                    <% end %>
-                  </td>
-                  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <.link
-                      navigate={
-                        build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
-                      }
-                      class="text-tertiary-600 hover:text-blue-900 mr-4"
-                    >
-                      View
-                    </.link>
-                    <.link
-                      patch={
-                        build_path_with_params(~p"/admin/bookings/#{booking}/edit", @current_params)
-                      }
-                      class="text-tertiary-600 hover:text-white-900 mr-4"
-                    >
-                      Edit
-                    </.link>
-                    <.link
-                      phx-click={JS.push("delete", value: %{id: booking.id})}
-                      data-confirm="Are you sure? This will not delete associated orders."
-                      class="text-error hover:text-error-dark"
-                    >
-                      Delete
-                    </.link>
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
-        <!-- Pagination -->
-        <.pagination meta={@meta} path={~p"/admin/bookings"} />
-      </div>
 
-      <.modal
-        :if={@live_action in [:new, :edit]}
-        id="booking-modal"
-        show
-        on_cancel={JS.patch(build_path_with_params(~p"/admin/bookings", @current_params))}
-      >
-        <.live_component
-          module={CozyCheckoutWeb.BookingLive.FormComponent}
-          id={@booking.id || :new}
-          title={@page_title}
-          action={@live_action}
-          booking={@booking}
-          patch={build_path_with_params(~p"/admin/bookings", @current_params)}
-        />
-      </.modal>
-    </div>
+                        <%= if Map.get(booking, :invoice) do %>
+                          <div
+                            class="relative"
+                            id={"invoice-status-#{booking.id}"}
+                            phx-click-away={JS.hide(to: "#invoice-menu-#{booking.id}")}
+                          >
+                            <button
+                              type="button"
+                              phx-click={JS.toggle(to: "#invoice-menu-#{booking.id}")}
+                              class="w-full min-w-0 text-left inline-flex items-center justify-between gap-1 hover:opacity-80 transition-opacity"
+                              title={"Stav faktury: " <> invoice_state_label(booking.invoice.state)}
+                              aria-label="Změnit stav faktury"
+                            >
+                              <.icon
+                                name="hero-document-currency-dollar"
+                                class="size-3.5 shrink-0 text-primary-400"
+                              />
+                              <span class={[
+                                "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                invoice_state_badge_class(booking.invoice.state)
+                              ]}>
+                                {invoice_state_label(booking.invoice.state)}
+                              </span>
+                              <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
+                            </button>
+
+                            <div
+                              id={"invoice-menu-#{booking.id}"}
+                              class="hidden absolute right-0 z-10 mt-1 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                            >
+                              <div class="py-1" role="menu">
+                                <button
+                                  type="button"
+                                  phx-click={
+                                    JS.push("update_invoice_status")
+                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
+                                  }
+                                  phx-value-id={booking.invoice.id}
+                                  phx-value-state="draft"
+                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                                >
+                                  <span class={[
+                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                    invoice_state_badge_class("draft")
+                                  ]}>
+                                    Draft
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  phx-click={
+                                    JS.push("update_invoice_status")
+                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
+                                  }
+                                  phx-value-id={booking.invoice.id}
+                                  phx-value-state="personal"
+                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                                >
+                                  <span class={[
+                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                    invoice_state_badge_class("personal")
+                                  ]}>
+                                    Personal
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  phx-click={
+                                    JS.push("update_invoice_status")
+                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
+                                  }
+                                  phx-value-id={booking.invoice.id}
+                                  phx-value-state="generated"
+                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                                >
+                                  <span class={[
+                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                    invoice_state_badge_class("generated")
+                                  ]}>
+                                    Generated
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  phx-click={
+                                    JS.push("update_invoice_status")
+                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
+                                  }
+                                  phx-value-id={booking.invoice.id}
+                                  phx-value-state="sent"
+                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                                >
+                                  <span class={[
+                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                    invoice_state_badge_class("sent")
+                                  ]}>
+                                    Sent
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  phx-click={
+                                    JS.push("update_invoice_status")
+                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
+                                  }
+                                  phx-value-id={booking.invoice.id}
+                                  phx-value-state="advance_paid"
+                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                                >
+                                  <span class={[
+                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                    invoice_state_badge_class("advance_paid")
+                                  ]}>
+                                    Advance Paid (50%)
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  phx-click={
+                                    JS.push("update_invoice_status")
+                                    |> JS.hide(to: "#invoice-menu-#{booking.id}")
+                                  }
+                                  phx-value-id={booking.invoice.id}
+                                  phx-value-state="paid"
+                                  class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                                >
+                                  <span class={[
+                                    "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                    invoice_state_badge_class("paid")
+                                  ]}>
+                                    Paid
+                                  </span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        <% else %>
+                          <span class="text-primary-300 text-sm">—</span>
+                        <% end %>
+                      </div>
+                    </td>
+                    <td class="col-span-2 min-w-0 py-2 text-right align-top lg:px-2 lg:py-3">
+                      <div class="flex justify-end gap-1">
+                        <.link
+                          id={"booking-view-#{booking.id}"}
+                          navigate={
+                            build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
+                          }
+                          title="Detail rezervace"
+                          aria-label="Detail rezervace"
+                          class="inline-flex size-7 items-center justify-center rounded text-tertiary-600 hover:bg-tertiary-100 focus-visible:outline-2"
+                        >
+                          <.icon name="hero-eye" class="size-4" />
+                        </.link>
+                        <.link
+                          id={"booking-edit-#{booking.id}"}
+                          patch={
+                            build_path_with_params(
+                              ~p"/admin/bookings/#{booking}/edit",
+                              @current_params
+                            )
+                          }
+                          title="Upravit rezervaci"
+                          aria-label="Upravit rezervaci"
+                          class="inline-flex size-7 items-center justify-center rounded text-tertiary-600 hover:bg-tertiary-100 focus-visible:outline-2"
+                        >
+                          <.icon name="hero-pencil-square" class="size-4" />
+                        </.link>
+                        <button
+                          id={"booking-delete-#{booking.id}"}
+                          type="button"
+                          phx-click={JS.push("delete", value: %{id: booking.id})}
+                          data-confirm="Are you sure? This will not delete associated orders."
+                          title="Smazat rezervaci"
+                          aria-label="Smazat rezervaci"
+                          class="inline-flex size-7 items-center justify-center rounded text-error hover:bg-error-light focus-visible:outline-2"
+                        >
+                          <.icon name="hero-trash" class="size-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <.pagination meta={@meta} path={~p"/admin/bookings"} />
+        </div>
+
+        <.modal
+          :if={@live_action in [:new, :edit]}
+          id="booking-modal"
+          show
+          on_cancel={JS.patch(build_path_with_params(~p"/admin/bookings", @current_params))}
+        >
+          <.live_component
+            module={CozyCheckoutWeb.BookingLive.FormComponent}
+            id={@booking.id || :new}
+            title={@page_title}
+            action={@live_action}
+            booking={@booking}
+            patch={build_path_with_params(~p"/admin/bookings", @current_params)}
+          />
+        </.modal>
+      </div>
+    </Layouts.app>
     """
   end
 
@@ -847,77 +977,99 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       |> assign(:menu_form, to_form(%{"variant_id" => selected}, as: :selection))
 
     ~H"""
-    <td class="px-4 py-4 align-top text-sm min-w-44">
-      <.form
-        for={@catering_form}
-        id={"catering-plan-#{@booking.id}"}
-        phx-change="update_catering"
-        phx-value-id={@booking.id}
-      >
-        <.input
-          field={@catering_form[:meal_plan]}
-          id={"catering-plan-input-#{@booking.id}"}
-          type="select"
-          aria-label="Stravování"
-          disabled={@disabled}
-          options={[
-            {"Nezadáno", ""},
-            {"Bez stravy", "none"},
-            {"Polopenze", "half_board"},
-            {"Plná penze", "full_board"}
-          ]}
-        />
-      </.form>
-      <.link
-        navigate={~p"/admin/bookings/#{@booking.id}/edit"}
-        class="text-xs text-tertiary-600 underline"
-      >Upravit podrobnosti</.link>
+    <td class="min-w-0 py-2 align-top text-sm lg:px-2 lg:py-3">
+      <div class="mb-1 text-xs font-medium text-primary-400 lg:hidden">Stravování</div>
+      <div class="flex min-w-0 items-center gap-1">
+        <.form
+          for={@catering_form}
+          id={"catering-plan-#{@booking.id}"}
+          phx-change="update_catering"
+          phx-value-id={@booking.id}
+          class="min-w-0 flex-1"
+        >
+          <.input
+            field={@catering_form[:meal_plan]}
+            id={"catering-plan-input-#{@booking.id}"}
+            type="select"
+            aria-label="Stravování"
+            class="h-9 w-full min-w-0 rounded-md border border-secondary-300 bg-white px-2 text-xs text-primary-500 focus:border-tertiary-500 focus:outline-none focus:ring-1 focus:ring-tertiary-500 disabled:opacity-50"
+            disabled={@disabled}
+            options={[
+              {"Nezadáno", ""},
+              {"Bez stravy", "none"},
+              {"Polopenze", "half_board"},
+              {"Plná penze", "full_board"}
+            ]}
+          />
+        </.form>
+        <.link
+          navigate={~p"/admin/bookings/#{@booking.id}/edit"}
+          title="Upravit podrobnosti stravování"
+          aria-label="Upravit podrobnosti stravování"
+          class="inline-flex size-6 shrink-0 items-center justify-center rounded text-tertiary-600 hover:bg-tertiary-100 focus-visible:outline-2"
+        ><.icon name="hero-adjustments-horizontal" class="size-4" /></.link>
+      </div>
       <p :if={@error} id={"catering-error-#{@booking.id}"} role="alert" class="mt-2 text-error">
         {@error}
       </p>
     </td>
-    <td class="px-4 py-4 align-top text-sm min-w-56">
-      <.form
-        :if={@catered}
-        for={@menu_form}
-        id={"catering-menu-#{@booking.id}"}
-        phx-change="assign_menu"
-        phx-value-id={@booking.id}
+    <td class="min-w-0 py-2 align-top text-sm lg:px-2 lg:py-3">
+      <div class="mb-1 text-xs font-medium text-primary-400 lg:hidden">Menu</div>
+      <div class="flex min-w-0 items-center gap-1">
+        <.form
+          :if={@catered}
+          for={@menu_form}
+          id={"catering-menu-#{@booking.id}"}
+          phx-change="assign_menu"
+          phx-value-id={@booking.id}
+          class="min-w-0 flex-1"
+        >
+          <.input
+            field={@menu_form[:variant_id]}
+            id={"catering-menu-input-#{@booking.id}"}
+            type="select"
+            aria-label="Menu rezervace"
+            title={if @menu, do: @menu.variant_name, else: "Vybrat vhodné menu"}
+            class="h-9 w-full min-w-0 rounded-md border border-secondary-300 bg-white px-2 text-xs text-primary-500 focus:border-tertiary-500 focus:outline-none focus:ring-1 focus:ring-tertiary-500 disabled:opacity-50"
+            disabled={@disabled or @suitable == []}
+            prompt={if @suitable == [], do: "Žádné vhodné menu", else: "Vybrat menu"}
+            options={Enum.map(@suitable, &{&1.name, &1.id})}
+          />
+        </.form>
+        <span :if={not @catered}>—</span>
+        <.link
+          :if={not is_nil(@menu) and @catered}
+          navigate={~p"/admin/bookings/#{@booking.id}/menu"}
+          title="Zobrazit menu"
+          aria-label="Zobrazit menu"
+          class="inline-flex size-6 shrink-0 items-center justify-center rounded text-tertiary-600 hover:bg-tertiary-100 focus-visible:outline-2"
+        ><.icon name="hero-document-text" class="size-4" /></.link>
+      </div>
+      <p
+        :if={@catered and @stale}
+        id={"catering-stale-#{@booking.id}"}
+        title={"Původní menu: " <> @menu.variant_name <> ". Termín nebo stravování se změnilo; vyberte znovu vhodné menu."}
+        class="mt-1 flex items-center gap-1 text-xs text-warning"
       >
-        <.input
-          field={@menu_form[:variant_id]}
-          id={"catering-menu-input-#{@booking.id}"}
-          type="select"
-          aria-label="Menu rezervace"
-          disabled={@disabled or @suitable == []}
-          prompt={if @suitable == [], do: "Žádné vhodné menu", else: "Vybrat menu"}
-          options={Enum.map(@suitable, &{"#{&1.name} · #{&1.days} dnů / #{&1.days - 1} nocí", &1.id})}
-        />
-      </.form>
-      <span :if={not @catered}>—</span>
-      <p :if={@catered and @stale} id={"catering-stale-#{@booking.id}"} class="mt-1 text-warning">
-        {if @menu, do: @menu.variant_name} · Menu vyžaduje nový výběr
+        <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" /> Vybrat znovu
       </p>
-      <.link
-        :if={not is_nil(@menu) and @catered}
-        navigate={~p"/admin/bookings/#{@booking.id}/menu"}
-        class="text-xs text-tertiary-600 underline"
-      >Zobrazit menu</.link>
     </td>
-    <td class="px-4 py-4 align-top text-sm min-w-52">
+    <td class="min-w-0 py-2 align-top text-sm lg:px-2 lg:py-3">
       <.form
         :if={@catered}
         for={@catering_form}
         id={"catering-counts-#{@booking.id}"}
         phx-change="update_catering"
         phx-value-id={@booking.id}
-        class="grid grid-cols-2 gap-2"
+        class="grid min-w-0 grid-cols-2 gap-2"
       >
         <.input
           field={@catering_form[:meal_adults]}
           id={"catering-adults-#{@booking.id}"}
           type="number"
-          label="Dospělí"
+          label="Dosp."
+          aria-label="Dospělí ke stravování"
+          class="h-9 w-full min-w-0 rounded-md border border-secondary-300 bg-white px-1.5 text-sm text-primary-500 focus:border-tertiary-500 focus:outline-none focus:ring-1 focus:ring-tertiary-500 disabled:opacity-50"
           min="0"
           step="1"
           placeholder="?"
@@ -929,6 +1081,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           id={"catering-children-#{@booking.id}"}
           type="number"
           label="Děti"
+          aria-label="Děti ke stravování"
+          class="h-9 w-full min-w-0 rounded-md border border-secondary-300 bg-white px-1.5 text-sm text-primary-500 focus:border-tertiary-500 focus:outline-none focus:ring-1 focus:ring-tertiary-500 disabled:opacity-50"
           min="0"
           step="1"
           placeholder="?"
@@ -939,9 +1093,10 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       <p
         :if={@catered and (is_nil(@booking.meal_adults) or is_nil(@booking.meal_children))}
         id={"catering-missing-counts-#{@booking.id}"}
-        class="mt-1 text-warning"
+        class="mt-1 flex items-center gap-1 text-xs text-warning"
+        title="Doplňte dospělé i děti včetně nul. Do té doby se porce nezapočítávají."
       >
-        Chybí počty · porce se zatím nezapočítávají
+        <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" /> Chybí počty
       </p>
       <span :if={not @catered}>—</span>
     </td>
