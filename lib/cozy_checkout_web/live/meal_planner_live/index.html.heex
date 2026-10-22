@@ -1,42 +1,35 @@
-<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <%!-- Header --%>
-    <div class="flex justify-between items-center mb-8">
-      <div>
+<Layouts.app
+  food_section={:planner}
+  food_context={@food_context}
+  flash={@flash}
+  show_header={false}
+  main_class=""
+  content_class=""
+>
+  <div class="w-full">
+    <.kitchen_header
+      title="Plán jídel"
+      subtitle="Týdenní přehled všech skupin, jejich menu a počtů porcí."
+    >
+      <:actions>
         <.link
-          navigate={~p"/admin"}
-          class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
-        >
-          ← Back to Dashboard
-        </.link>
-        <h1 class="text-4xl font-bold text-primary-500 flex items-center gap-3">
-          <span>🍽️</span> Meal Planner
-        </h1>
-      </div>
-      <div class="flex flex-wrap gap-3">
-        <.link id="kitchen-shopping-link" navigate={~p"/admin/kitchen-shopping"}><.button type="button">Nákupní seznam</.button></.link>
-        <.link id="recipe-library-link" navigate={~p"/admin/recipes"}><.button type="button">Recepty a suroviny</.button></.link>
-        <.link id="menu-variants-link" navigate={~p"/admin/meal-planner/variants"}>
-          <.button type="button">Varianty menu</.button>
-        </.link>
-        <.link navigate={~p"/admin/meal-planner/templates"}>
-          <.button type="button">
-            <.icon name="hero-bookmark" class="w-5 h-5 mr-2" /> Templates
-          </.button>
-        </.link>
-        <.link navigate={~p"/admin/meal-planner/print?week=#{Date.to_iso8601(@week_start)}"}>
-          <.button type="button">
-            <.icon name="hero-printer" class="w-5 h-5 mr-2" /> Print Menu
-          </.button>
-        </.link>
-      </div>
-    </div>
+          id="kitchen-shopping-link"
+          navigate={CozyCheckoutWeb.FoodNavigation.path(:shopping, @food_context)}
+          class="rounded-lg bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-600"
+        >Zobrazit nákup</.link>
+        <.link
+          navigate={~p"/admin/meal-planner/print?week=#{Date.to_iso8601(@week_start)}"}
+          target="_blank"
+          class="inline-flex items-center gap-2 rounded-lg border border-secondary-300 bg-white px-4 py-2.5 text-sm text-primary-500"
+        ><.icon name="hero-printer" class="h-4 w-4" />Tisk jídelníčku</.link>
+      </:actions>
+    </.kitchen_header>
 
-    <div class="flex gap-6">
+    <div class="flex min-w-0 flex-col gap-6 2xl:flex-row">
       <%!-- Main Content --%>
-      <div class="flex-1">
+      <div class="min-w-0 flex-1">
         <%!-- Week Navigation --%>
-        <div class="bg-white shadow-lg rounded-lg p-6 mb-6">
+        <div class="bg-white shadow-sm rounded-lg p-6 mb-6">
           <div class="flex justify-between items-center">
             <button
               phx-click="prev_week"
@@ -47,13 +40,13 @@
 
             <div class="flex items-center gap-4">
               <h2 class="text-2xl font-bold text-primary-500">
-                Week of {format_date(@week_start)}
+                Týden od {format_date(@week_start)}
               </h2>
               <button
                 phx-click="today"
                 class="px-4 py-2 text-sm font-medium text-tertiary-600 hover:bg-tertiary-50 rounded-lg transition-colors"
               >
-                This Week
+                Tento týden
               </button>
             </div>
 
@@ -73,7 +66,7 @@
         </p>
 
         <%!-- Desktop: Weekly Grid --%>
-        <div class="hidden lg:block bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="hidden lg:block bg-white shadow-sm rounded-lg overflow-hidden">
           <table class="w-full">
             <thead class="bg-secondary-50">
               <tr>
@@ -84,13 +77,13 @@
                   Ubytovaní
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-primary-400 uppercase">
-                  Breakfast
+                  Snídaně
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-primary-400 uppercase">
-                  Lunch
+                  Oběd
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-semibold text-primary-400 uppercase">
-                  Dinner
+                  Večeře
                 </th>
               </tr>
             </thead>
@@ -136,7 +129,7 @@
                           <%= if has_dietary_notes?(meal) do %>
                             <div class="flex items-center gap-1 text-xs text-error">
                               <span>🔴</span>
-                              <span>Dietary notes</span>
+                              <span>Diety a alergie</span>
                             </div>
                           <% end %>
                         </div>
@@ -145,7 +138,7 @@
                           <%= if needs_planning?(uncovered_count(day, meal_type), meal) do %>
                             <span class="text-warning">⚠️</span>
                           <% end %>
-                          <span>Click to plan</span>
+                          <span>Doplnit společné menu</span>
                         </div>
                       <% end %>
                       <.group_menus
@@ -164,7 +157,7 @@
         <%!-- Mobile: Accordion --%>
         <div class="lg:hidden space-y-4">
           <%= for day <- @week_days do %>
-            <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
               <div class="bg-secondary-50 px-4 py-3 border-b border-secondary-200">
                 <div class="flex justify-between items-center">
                   <div>
@@ -181,7 +174,7 @@
                       guest_count_class(day.guest_count)
                     ]}
                   >
-                    {day.guest_count} guests
+                    {day.guest_count} hostů
                   </button>
                 </div>
               </div>
@@ -213,7 +206,7 @@
                           <%= if has_dietary_notes?(meal) do %>
                             <div class="flex items-center gap-1 text-xs text-error mt-2">
                               <span>🔴</span>
-                              <span>Dietary notes</span>
+                              <span>Diety a alergie</span>
                             </div>
                           <% end %>
                         <% else %>
@@ -221,7 +214,7 @@
                             <%= if needs_planning?(uncovered_count(day, meal_type), meal) do %>
                               <span class="text-warning">⚠️</span>
                             <% end %>
-                            <span>Tap to plan</span>
+                            <span>Doplnit společné menu</span>
                           </div>
                         <% end %>
                         <.group_menus
@@ -239,12 +232,12 @@
         </div>
       </div>
 
-      <%!-- Dietary Restrictions Sidebar (Desktop only) --%>
-      <div class="hidden lg:block w-80">
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden sticky top-8">
+      <%!-- Diety a alergie Sidebar (Desktop only) --%>
+      <div class="hidden w-full shrink-0 lg:block 2xl:w-72">
+        <div class="bg-white shadow-sm rounded-lg overflow-hidden sticky top-8">
           <div class="bg-secondary-50 px-4 py-3 border-b border-secondary-200 flex justify-between items-center">
             <h3 class="font-semibold text-primary-500 flex items-center gap-2">
-              <span>🔴</span> Dietary Restrictions
+              <span>🔴</span> Diety a alergie
             </h3>
             <button
               phx-click="toggle_dietary_panel"
@@ -259,7 +252,9 @@
           <%= if @dietary_panel_open do %>
             <div class="p-4 max-h-[600px] overflow-y-auto">
               <%= if @dietary_restrictions == [] do %>
-                <p class="text-sm text-primary-400 italic">No dietary restrictions this week</p>
+                <p class="text-sm text-primary-400 italic">
+                  V tomto týdnu nejsou zadané diety ani alergie
+                </p>
               <% else %>
                 <div class="space-y-4">
                   <%= for restriction <- @dietary_restrictions do %>
@@ -269,7 +264,7 @@
                       </div>
                       <div class="text-xs text-primary-400 mb-2">
                         <%= if restriction.room_number do %>
-                          Room {restriction.room_number} •
+                          Pokoj {restriction.room_number} •
                         <% end %>
                         {format_date(restriction.check_in_date)} - {format_date(
                           restriction.check_out_date || Date.utc_today()
@@ -289,7 +284,7 @@
     </div>
   </div>
 
-  <%!-- Edit Meal Modal --%>
+  <%!-- Upravit Meal Modal --%>
   <%= if @edit_modal_open do %>
     <div
       class="fixed inset-0 bg-primary-500 bg-opacity-75 flex items-center justify-center z-50 p-4"
@@ -343,7 +338,7 @@
               <textarea
                 name="meal[menu_text]"
                 rows="4"
-                placeholder="E.g., Svíčková with bread dumplings"
+                placeholder="Např. svíčková s houskovým knedlíkem"
                 class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-tertiary-500 focus:border-transparent transition-all"
               >{@edit_menu_text}</textarea>
             </div>
@@ -351,33 +346,33 @@
             <%!-- Dietary Notes --%>
             <div>
               <label class="block text-sm font-medium text-primary-500 mb-2">
-                Dietary Notes & Allergies
+                Diety a alergie
               </label>
               <textarea
                 name="meal[dietary_notes]"
                 rows="3"
-                placeholder="E.g., Room 3: No gluten (soup only)"
+                placeholder="Např. pokoj 3: bez lepku (pouze polévka)"
                 class="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-tertiary-500 focus:border-transparent transition-all"
               >{@edit_dietary_notes}</textarea>
             </div>
 
-            <%!-- Quick Actions --%>
+            <%!-- Rychlé akce --%>
             <div class="border-t border-secondary-200 pt-4">
-              <div class="text-sm font-medium text-primary-500 mb-3">Quick Actions</div>
+              <div class="text-sm font-medium text-primary-500 mb-3">Rychlé akce</div>
               <div class="flex flex-wrap gap-2">
                 <button
                   type="button"
                   phx-click="copy_from_yesterday"
                   class="px-4 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 text-primary-500 rounded-lg transition-colors"
                 >
-                  Copy from Yesterday
+                  Převzít ze včerejška
                 </button>
                 <button
                   type="button"
                   phx-click="copy_to_week"
                   class="px-4 py-2 text-sm bg-secondary-100 hover:bg-secondary-200 text-primary-500 rounded-lg transition-colors"
                 >
-                  Copy to Rest of Week
+                  Zkopírovat do konce týdne
                 </button>
               </div>
             </div>
@@ -389,13 +384,13 @@
               phx-click="close_edit_modal"
               class="px-6 py-2 text-sm font-medium text-primary-400 hover:text-primary-500 transition-colors"
             >
-              Cancel
+              Zrušit
             </button>
             <button
               type="submit"
               class="px-6 py-2 text-sm font-medium bg-tertiary-600 hover:bg-tertiary-700 text-white rounded-lg transition-colors"
             >
-              Save Meal
+              Uložit jídlo
             </button>
           </div>
         </.form>

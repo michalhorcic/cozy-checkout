@@ -195,7 +195,12 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
     {booking, _} = shopping_booking(buffet)
     {:ok, view, _} = live(conn, path(booking.id))
     assert has_element?(view, "#buffet-estimate-note")
-    assert has_element?(view, "#edit-buffet-norms[href='/admin/recipes/#{buffet.id}/edit']")
+
+    assert has_element?(
+             view,
+             "#edit-buffet-norms[href^='/admin/recipes/#{buffet.id}/edit?'][href*='origin=shopping']"
+           )
+
     {:ok, library, _} = live(conn, "/admin/recipes")
     assert has_element?(library, "#recipes-#{buffet.id}", "pracovní norma bufetu")
   end

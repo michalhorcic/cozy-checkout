@@ -5,6 +5,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
   alias CozyCheckout.Bookings
   alias CozyCheckout.Meals.MenuPlanning
   import CozyCheckoutWeb.MealComponents
+  import CozyCheckoutWeb.KitchenComponents, only: [kitchen_header: 1]
 
   @impl true
   def mount(_params, _session, socket) do
@@ -28,45 +29,71 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
   end
 
   @impl true
-  def handle_params(_params, _url, socket) do
-    {:noreply, socket}
+  def handle_params(params, _url, socket) do
+    context = CozyCheckoutWeb.FoodNavigation.context(params)
+
+    date =
+      case Date.from_iso8601(context["from"] || "") do
+        {:ok, date} -> date
+        _ -> Date.utc_today()
+      end
+
+    first = Meals.start_of_week(date)
+
+    socket =
+      if first == socket.assigns.week_start,
+        do: socket,
+        else: socket |> assign(:week_start, first) |> load_week_data()
+
+    context =
+      if Map.has_key?(context, "from"),
+        do: context,
+        else:
+          Map.merge(context, %{
+            "from" => Date.to_iso8601(first),
+            "to" => Date.to_iso8601(Date.add(first, 6))
+          })
+
+    {:noreply, assign(socket, :food_context, context)}
   end
 
   @impl true
   def handle_event("prev_week", _params, socket) do
-    week_start = Date.add(socket.assigns.week_start, -7)
+    first = Date.add(socket.assigns.week_start, -7)
 
-    socket =
-      socket
-      |> assign(:week_start, week_start)
-      |> load_week_data()
+    context =
+      Map.merge(socket.assigns.food_context, %{
+        "from" => Date.to_iso8601(first),
+        "to" => Date.to_iso8601(Date.add(first, 6))
+      })
 
-    {:noreply, socket}
+    {:noreply, push_patch(socket, to: CozyCheckoutWeb.FoodNavigation.path(:planner, context))}
   end
 
   @impl true
   def handle_event("next_week", _params, socket) do
-    week_start = Date.add(socket.assigns.week_start, 7)
+    first = Date.add(socket.assigns.week_start, 7)
 
-    socket =
-      socket
-      |> assign(:week_start, week_start)
-      |> load_week_data()
+    context =
+      Map.merge(socket.assigns.food_context, %{
+        "from" => Date.to_iso8601(first),
+        "to" => Date.to_iso8601(Date.add(first, 6))
+      })
 
-    {:noreply, socket}
+    {:noreply, push_patch(socket, to: CozyCheckoutWeb.FoodNavigation.path(:planner, context))}
   end
 
   @impl true
   def handle_event("today", _params, socket) do
-    today = Date.utc_today()
-    week_start = Meals.start_of_week(today)
+    first = Meals.start_of_week(Date.utc_today())
 
-    socket =
-      socket
-      |> assign(:week_start, week_start)
-      |> load_week_data()
+    context =
+      Map.merge(socket.assigns.food_context, %{
+        "from" => Date.to_iso8601(first),
+        "to" => Date.to_iso8601(Date.add(first, 6))
+      })
 
-    {:noreply, socket}
+    {:noreply, push_patch(socket, to: CozyCheckoutWeb.FoodNavigation.path(:planner, context))}
   end
 
   @impl true
@@ -131,13 +158,13 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
         socket =
           socket
           |> assign(:edit_modal_open, false)
-          |> put_flash(:success, "Meal saved successfully")
+          |> put_flash(:success, "Jídlo uloženo")
           |> load_week_data()
 
         {:noreply, socket}
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to save meal")}
+        {:noreply, put_flash(socket, :error, "Jídlo se nepodařilo uložit")}
     end
   end
 
@@ -152,7 +179,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
         |> assign(:edit_menu_text, meal.menu_text || "")
         |> assign(:edit_dietary_notes, meal.dietary_notes || "")
       else
-        put_flash(socket, :info, "No meal found for yesterday")
+        put_flash(socket, :info, "Na včerejšek není vyplněné jídlo")
       end
 
     {:noreply, socket}
@@ -171,7 +198,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
       |> Enum.to_list()
 
     if target_dates == [] do
-      {:noreply, put_flash(socket, :info, "Already at the end of the week")}
+      {:noreply, put_flash(socket, :info, "Jste na konci týdne")}
     else
       meal = Meals.get_meal_by_date_and_type(current_date, meal_type)
 
@@ -180,16 +207,16 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
           {:ok, count} ->
             socket =
               socket
-              |> put_flash(:success, "Meal copied to #{count} days")
+              |> put_flash(:success, "Jídlo zkopírováno do #{count} dnů")
               |> load_week_data()
 
             {:noreply, socket}
 
           {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Failed to copy meal")}
+            {:noreply, put_flash(socket, :error, "Jídlo se nepodařilo zkopírovat")}
         end
       else
-        {:noreply, put_flash(socket, :info, "Please save this meal first")}
+        {:noreply, put_flash(socket, :info, "Nejdřív jídlo uložte")}
       end
     end
   end
@@ -255,7 +282,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     )
     |> assign(:dietary_restrictions, dietary_restrictions)
     |> assign(:bookings, bookings)
-    |> assign(:page_title, "Meal Planner - Week of #{Calendar.strftime(week_start, "%B %d, %Y")}")
+    |> assign(:page_title, "Plán jídel · týden od #{Calendar.strftime(week_start, "%d.%m.%Y")}")
   end
 
   defp meals_to_map(meals) do
@@ -265,11 +292,11 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
   end
 
   defp day_name(date) do
-    Calendar.strftime(date, "%A")
+    Enum.at(~w(Pondělí Úterý Středa Čtvrtek Pátek Sobota Neděle), Date.day_of_week(date) - 1)
   end
 
   defp format_date(date) do
-    Calendar.strftime(date, "%b %d")
+    Calendar.strftime(date, "%d.%m.")
   end
 
   defp meal_type_emoji(type) do
@@ -283,9 +310,9 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
 
   defp meal_type_label(type) do
     case type do
-      "breakfast" -> "Breakfast"
-      "lunch" -> "Lunch"
-      "dinner" -> "Dinner"
+      "breakfast" -> "Snídaně"
+      "lunch" -> "Oběd"
+      "dinner" -> "Večeře"
       _ -> type
     end
   end

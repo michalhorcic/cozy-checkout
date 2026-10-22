@@ -1,26 +1,36 @@
-<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
-  <div class="min-h-screen bg-slate-50 px-4 py-8 font-sans sm:px-8">
-    <div class="mx-auto max-w-7xl">
+<Layouts.app
+  food_section={:recipes}
+  food_context={@food_context}
+  flash={@flash}
+  show_header={false}
+  main_class=""
+  content_class=""
+>
+  <div class="food-page">
+    <div class="w-full">
       <.kitchen_header
         title={
           if @recipe,
             do: if(@recipe.id, do: "Upravit recept", else: "Nový recept"),
-            else: "Recepty pro vaši kuchyni"
+            else: "Recepty"
         }
+        back={if @recipe, do: @editor_back}
+        back_label="Zpět na recept"
         subtitle="Všechny receptury na jednom místě. Najděte jídlo, upravte suroviny a přepočítejte množství pro svou skupinu."
       >
         <:actions>
-          <button
+          <.link
             :if={is_nil(@recipe)}
             id="portion-settings"
-            type="button"
-            phx-click="settings"
-            class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition hover:border-emerald-300"
-          >Porce dětí</button><.link
+            navigate={CozyCheckoutWeb.FoodNavigation.path(:settings, @food_context)}
+            class="rounded-lg border border-secondary-300 bg-white px-4 py-2.5 text-sm text-primary-500"
+          >Porce dětí</.link><.link
             :if={is_nil(@recipe)}
             id="new-recipe"
-            patch={~p"/admin/recipes/new"}
-            class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+            patch={
+              CozyCheckoutWeb.FoodNavigation.with_context(~p"/admin/recipes/new", @food_context)
+            }
+            class="inline-flex items-center gap-2 rounded-lg bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-600"
           ><.icon name="hero-plus" class="h-4 w-4" />Nový recept</.link>
         </:actions>
       </.kitchen_header>
@@ -34,7 +44,7 @@
           <div class="relative w-full max-w-xl">
             <.icon
               name="hero-magnifying-glass"
-              class="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-slate-400"
+              class="pointer-events-none absolute left-4 top-3.5 h-5 w-5 text-primary-300"
             /><input
               id="recipe-search"
               name="search"
@@ -43,9 +53,9 @@
               phx-debounce="200"
               placeholder="Najít recept… zkuste třeba kuře nebo polévku"
               aria-label="Hledat recept"
-              class="w-full rounded-2xl border border-slate-200 bg-white py-3 pl-12 pr-4 text-sm outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-50"
+              class="w-full rounded-lg border border-secondary-200 bg-white py-3 pl-12 pr-4 text-sm outline-none transition focus:border-tertiary-400 focus:ring-4 focus:ring-tertiary-50"
             />
-          </div><span id="recipe-count" class="text-sm text-slate-500">{@result_count} receptů</span>
+          </div><span id="recipe-count" class="text-sm text-primary-400">{@result_count} receptů</span>
         </.form>
         <div
           id="recipe-cards"
@@ -54,38 +64,48 @@
         >
           <div
             id="recipes-empty"
-            class="hidden rounded-2xl border border-dashed border-slate-300 p-10 text-center text-slate-500 only:block"
+            class="hidden rounded-lg border border-dashed border-secondary-300 p-10 text-center text-primary-400 only:block"
           >
             Žádný recept neodpovídá hledání. Zkuste kratší název.
           </div>
           <article
             :for={{id, recipe} <- @streams.recipes}
             id={id}
-            class="group rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-md"
+            class="group rounded-lg border border-secondary-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-tertiary-300 hover:shadow-sm"
           >
             <div class="mb-5 flex items-center justify-between">
-              <span class="rounded-xl bg-emerald-50 p-3 text-emerald-700"><.icon
+              <span class="rounded-lg bg-secondary-50 p-3 text-tertiary-600"><.icon
                 name="hero-book-open"
                 class="h-6 w-6"
-              /></span><span class="rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-500">{Decimal.to_string(
+              /></span><span class="rounded-full bg-secondary-50 px-3 py-1 text-xs font-medium text-primary-400">{Decimal.to_string(
                 Decimal.normalize(recipe.base_servings),
                 :normal
               )} porcí / dávka</span>
             </div>
-            <h2 class="min-h-14 text-lg font-bold leading-snug text-slate-900">
+            <h2 class="min-h-14 text-lg font-bold leading-snug text-primary-500">
               <.link
-                navigate={~p"/admin/recipes/#{recipe.id}"}
-                class="transition hover:text-emerald-700"
+                navigate={
+                  CozyCheckoutWeb.FoodNavigation.with_context(
+                    ~p"/admin/recipes/#{recipe.id}",
+                    @food_context
+                  )
+                }
+                class="transition hover:text-tertiary-700"
               >{recipe.name}</.link>
             </h2>
-            <p class="mt-3 text-sm text-slate-500">
+            <p class="mt-3 text-sm text-primary-400">
               {length(recipe.lines)} surovin
               <span :if={recipe.source_key == "kitchen:breakfast-buffet:v1"}>· pracovní norma bufetu</span>
               <span :if={recipe.source_key && recipe.source_key != "kitchen:breakfast-buffet:v1"}>· z podkladové tabulky</span>
             </p>
             <.link
-              navigate={~p"/admin/recipes/#{recipe.id}"}
-              class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-emerald-700"
+              navigate={
+                CozyCheckoutWeb.FoodNavigation.with_context(
+                  ~p"/admin/recipes/#{recipe.id}",
+                  @food_context
+                )
+              }
+              class="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-tertiary-600"
             >Otevřít a přepočítat
             <.icon name="hero-arrow-right" class="h-4 w-4 transition group-hover:translate-x-1" /></.link>
           </article>
@@ -99,8 +119,8 @@
         phx-submit="save"
         class="mx-auto max-w-5xl space-y-6"
       >
-        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="mb-5 text-lg font-bold text-slate-900">Základ receptu</h2><div class="grid gap-5 sm:grid-cols-[1fr_12rem]">
+        <section class="rounded-lg border border-secondary-200 bg-white p-6 shadow-sm">
+          <h2 class="mb-5 text-lg font-bold text-primary-500">Základ receptu</h2><div class="grid gap-5 sm:grid-cols-[1fr_12rem]">
             <.input field={@form[:name]} label="Název receptu" class={field_class()} required /><.input
               field={@form[:base_servings]}
               type="number"
@@ -124,9 +144,9 @@
             />
           </div>
         </section>
-        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section class="rounded-lg border border-secondary-200 bg-white p-6 shadow-sm">
           <div class="mb-5">
-            <h2 class="text-lg font-bold text-slate-900">Suroviny na celou dávku</h2><p class="mt-1 text-sm text-slate-500">
+            <h2 class="text-lg font-bold text-primary-500">Suroviny na celou dávku</h2><p class="mt-1 text-sm text-primary-400">
               Zadejte množství pro počet porcí výše. Gramy a mililitry se při výpočtu převedou automaticky.
             </p>
           </div>
@@ -140,7 +160,7 @@
           </div>
           <div class="space-y-3">
             <.inputs_for :let={line} field={@form[:lines]}>
-              <div class="rounded-xl border border-slate-100 bg-slate-50/70 p-4">
+              <div class="rounded-lg border border-secondary-200 bg-secondary-50/70 p-4">
                 <div class="grid items-end gap-3 sm:grid-cols-[1fr_8rem_6rem_auto]">
                   <.ingredient_picker
                     field={line[:ingredient_id]}
@@ -167,9 +187,9 @@
                     phx-click="remove_line"
                     phx-value-index={line.index}
                     aria-label="Odebrat surovinu"
-                    class="mb-2 rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-700"
+                    class="mb-2 rounded-lg p-2 text-primary-300 hover:bg-red-50 hover:text-red-700"
                   ><.icon name="hero-trash" class="h-5 w-5" /></button>
-                </div><details class="mt-2 text-xs text-slate-500">
+                </div><details class="mt-2 text-xs text-primary-400">
                   <summary class="cursor-pointer">Poznámka nebo pracovní odhad</summary><.input
                     field={line[:notes]}
                     label="Poznámka k množství"
@@ -183,67 +203,36 @@
             id="add-recipe-line"
             type="button"
             phx-click="add_line"
-            class="mt-5 inline-flex items-center gap-2 rounded-xl border border-dashed border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
-          ><.icon name="hero-plus" class="h-4 w-4" />Přidat surovinu</button><p class="mt-4 text-xs text-slate-500">
+            class="mt-5 inline-flex items-center gap-2 rounded-lg border border-dashed border-secondary-300 px-4 py-2.5 text-sm font-semibold text-tertiary-600 hover:bg-tertiary-50"
+          ><.icon name="hero-plus" class="h-4 w-4" />Přidat surovinu</button><p class="mt-4 text-xs text-primary-400">
             Surovina v seznamu chybí?
             <button
               id="quick-new-ingredient"
               type="button"
               phx-click="new_ingredient"
-              class="font-semibold text-emerald-700 underline"
+              class="font-semibold text-tertiary-600 underline"
             >Založit novou surovinu</button>
           </p>
         </section>
-        <div class="sticky bottom-4 flex items-center justify-between rounded-2xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur">
-          <.link patch={~p"/admin/recipes"} class="px-3 text-sm font-semibold text-slate-500">Zrušit</.link><button
+        <div class="sticky bottom-4 flex items-center justify-between rounded-lg border border-secondary-200 bg-white/95 p-4 shadow-sm backdrop-blur">
+          <.link navigate={@editor_back} class="px-3 text-sm font-semibold text-primary-400">Zrušit</.link><button
             type="submit"
             id="save-recipe"
             phx-disable-with="Ukládám…"
-            class="rounded-xl bg-emerald-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800"
+            class="rounded-lg bg-primary-500 px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-600"
           >Uložit recept</button>
         </div>
       </.form>
     </div>
   </div>
   <.modal
-    :if={@settings_open}
-    id="portion-settings-modal"
-    show
-    on_cancel={JS.push("close_settings")}
-  >
-    <h2 class="text-xl font-bold text-slate-900">Jak velká je dětská porce?</h2><p class="my-3 text-sm text-slate-500">
-      Platí pro přepočet surovin. Počet porcí pro výdej zůstává stejný. Výchozí hodnota z tabulky je 70 %.
-    </p><.form for={@settings_form} id="portion-settings-form" phx-submit="save_settings">
-      <.input
-        field={@settings_form[:hot]}
-        type="number"
-        min="0"
-        max="100"
-        step="any"
-        label="Obědy a večeře (%)"
-        class={field_class()}
-      /><.input
-        field={@settings_form[:breakfast]}
-        type="number"
-        min="0"
-        max="100"
-        step="any"
-        label="Snídaně a bufet (%)"
-        class={field_class()}
-      /><p :if={@settings_error} class="my-3 text-sm text-red-700">{@settings_error}</p><button
-        type="submit"
-        class="mt-4 rounded-xl bg-emerald-700 px-5 py-2.5 font-semibold text-white"
-      >Uložit nastavení</button>
-    </.form>
-  </.modal>
-  <.modal
     :if={@quick_ingredient_open}
     id="quick-ingredient-modal"
     show
     on_cancel={JS.push("close_ingredient")}
   >
-    <h2 class="mb-3 text-xl font-bold text-slate-900">Nová surovina</h2>
-    <p class="mb-5 text-sm text-slate-500">
+    <h2 class="mb-3 text-xl font-bold text-primary-500">Nová surovina</h2>
+    <p class="mb-5 text-sm text-primary-400">
       Rozpracovaný recept zůstane zachovaný. Surovinu rovnou přidáme do receptu.
     </p>
     <.form for={@quick_ingredient_form} id="quick-ingredient-form" phx-submit="save_ingredient">
@@ -271,7 +260,7 @@
       <button
         type="submit"
         phx-disable-with="Ukládám…"
-        class="mt-5 rounded-xl bg-emerald-700 px-5 py-2.5 font-semibold text-white"
+        class="mt-5 rounded-lg bg-primary-500 px-5 py-2.5 font-semibold text-white"
       >Přidat do receptu</button>
     </.form>
   </.modal>

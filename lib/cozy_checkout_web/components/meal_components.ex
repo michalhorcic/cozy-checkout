@@ -84,7 +84,16 @@ defmodule CozyCheckoutWeb.MealComponents do
         class="rounded-lg bg-secondary-50 p-3"
       >
         <.link
-          navigate={~p"/admin/bookings/#{group.booking.id}/menu"}
+          navigate={
+            CozyCheckoutWeb.FoodNavigation.with_context(
+              ~p"/admin/bookings/#{group.booking.id}/menu",
+              %{
+                "week" => Date.to_iso8601(group.date),
+                "booking" => group.booking.id,
+                "origin" => "planner"
+              }
+            )
+          }
           phx-click="noop"
           class="text-sm font-semibold text-tertiary-600 underline"
         >{group.booking.guest.name}</.link>
@@ -94,9 +103,18 @@ defmodule CozyCheckoutWeb.MealComponents do
           {group.supplements}
         </p>
         <.link
-          navigate={~p"/admin/recipes/menu/booking/#{group.id}"}
+          navigate={
+            CozyCheckoutWeb.FoodNavigation.with_context(
+              ~p"/admin/recipes/menu/booking/#{group.id}",
+              %{
+                "week" => Date.to_iso8601(group.date),
+                "booking" => group.booking.id,
+                "origin" => "planner"
+              }
+            )
+          }
           phx-click="noop"
-          class="mt-2 inline-block text-xs font-semibold text-emerald-700 underline"
+          class="mt-2 inline-block text-xs font-semibold text-tertiary-600 underline"
         >Suroviny pro skupinu</.link>
         <p :if={group.manually_edited} class="mt-1 text-xs font-semibold text-tertiary-600">
           Ruční úprava

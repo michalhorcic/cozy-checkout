@@ -1,14 +1,25 @@
-<Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
-  <div class="mx-auto max-w-6xl space-y-6 px-4 py-8">
-    <.link navigate={~p"/admin/bookings/#{@booking.id}"} class="text-tertiary-600 underline">← Detail rezervace</.link>
-    <header>
-      <h1 class="text-3xl font-bold text-primary-500">Menu rezervace · {@booking.guest.name}</h1>
-      <p class="mt-2 text-primary-400">
-        {Calendar.strftime(@booking.check_in_date, "%d.%m.%Y")} – {if @booking.check_out_date,
-          do: Calendar.strftime(@booking.check_out_date, "%d.%m.%Y"),
-          else: "odjezd nevyplněn"} · {meal_plan_label(@booking.meal_plan)}
-      </p>
-    </header>
+<Layouts.app
+  food_section={:planner}
+  food_context={@food_context}
+  flash={@flash}
+  show_header={false}
+  main_class=""
+  content_class=""
+>
+  <div class="w-full space-y-6">
+    <.kitchen_header
+      title={"Menu rezervace · #{@booking.guest.name}"}
+      subtitle={"#{Calendar.strftime(@booking.check_in_date, "%d.%m.%Y")} – #{if @booking.check_out_date, do: Calendar.strftime(@booking.check_out_date, "%d.%m.%Y"), else: "odjezd nevyplněn"} · #{meal_plan_label(@booking.meal_plan)}"}
+      back={
+        CozyCheckoutWeb.FoodNavigation.back_path(
+          @request_context,
+          ~p"/admin/bookings/#{@booking.id}"
+        )
+      }
+      back_label={
+        CozyCheckoutWeb.FoodNavigation.back_label(@request_context, "Zpět na detail rezervace")
+      }
+    />
     <section class="rounded-lg bg-white p-6 shadow">
       <h2 class="text-xl font-semibold text-primary-500">Přiřadit variantu</h2>
       <p class="my-3 text-sm text-primary-400">
@@ -29,7 +40,7 @@
           prompt="Vyberte variantu"
           options={Enum.map(@variants, &{&1.name, &1.id})}
         />
-        <div class="mt-4 flex items-center gap-4">
+        <div class="mt-4 flex flex-wrap items-center gap-4">
           <.button id="preview-booking-menu" type="submit">Zobrazit náhled</.button>
           <.link navigate={~p"/admin/meal-planner/variants"} class="text-tertiary-600 underline">Spravovat varianty</.link>
           <.link
@@ -142,7 +153,12 @@
             <.menu_recipe_links
               id={"item-recipes-#{item.id}"}
               item={item}
-              href={~p"/admin/recipes/menu/booking/#{item.id}"}
+              href={
+                CozyCheckoutWeb.FoodNavigation.with_context(
+                  ~p"/admin/recipes/menu/booking/#{item.id}",
+                  Map.put(@food_context, "origin", "booking")
+                )
+              }
             />
             <div class="mt-3 flex flex-wrap gap-4 text-sm">
               <button
@@ -178,7 +194,7 @@
         required
       />
       <.input field={@edit_form[:supplements]} type="textarea" label="Doplňky" rows="3" />
-      <p class="mt-3 text-sm text-slate-500">
+      <p class="mt-3 text-sm text-primary-400">
         Změna textu odpojí recepty příslušného chodu nebo doplňků. Po uložení je znovu připojte u daného jídla.
       </p>
       <p class="my-4 text-sm text-primary-400">

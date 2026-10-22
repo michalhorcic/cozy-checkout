@@ -21,33 +21,33 @@ defmodule CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent do
         <.input
           field={@form[:name]}
           type="text"
-          label="Template Name"
+          label="Název šablony"
           required
-          placeholder="E.g., Continental Breakfast"
+          placeholder="Např. snídaňový bufet"
         />
 
         <.input
           field={@form[:category]}
           type="select"
-          label="Category"
+          label="Kategorie"
           required
           options={[
-            {"Breakfast", "breakfast"},
-            {"Lunch", "lunch"},
-            {"Dinner", "dinner"}
+            {"Snídaně", "breakfast"},
+            {"Oběd", "lunch"},
+            {"Večeře", "dinner"}
           ]}
         />
 
         <.input
           field={@form[:default_menu_text]}
           type="textarea"
-          label="Default Menu Text"
-          placeholder="E.g., Coffee, tea, juice, bread, butter, jam, cheese, ham"
+          label="Výchozí text menu"
+          placeholder="Např. káva, čaj, pečivo, máslo, marmeláda, sýr, šunka"
           rows="4"
         />
 
         <div class="mt-6 flex items-center justify-end gap-x-6">
-          <.button type="submit" phx-disable-with="Saving...">Save Template</.button>
+          <.button type="submit" phx-disable-with="Ukládám…">Uložit šablonu</.button>
         </div>
       </.form>
     </div>
@@ -81,7 +81,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent do
 
         {:noreply,
          socket
-         |> put_flash(:success, "Template updated successfully")
+         |> put_flash(:success, "Šablona upravena")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -96,7 +96,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.TemplateFormComponent do
 
         {:noreply,
          socket
-         |> put_flash(:success, "Template created successfully")
+         |> put_flash(:success, "Šablona vytvořena")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->

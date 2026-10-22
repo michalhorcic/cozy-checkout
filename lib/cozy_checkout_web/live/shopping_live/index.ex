@@ -18,6 +18,7 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
 
   @impl true
   def handle_params(params, _, socket) do
+    socket = assign(socket, :food_context, CozyCheckoutWeb.FoodNavigation.context(params))
     {first, last} = default_weekend()
     first = params["from"] || Date.to_iso8601(first)
     last = params["to"] || Date.to_iso8601(last)
@@ -166,6 +167,14 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
     ]
 
     socket
+    |> assign(
+      :food_context,
+      CozyCheckoutWeb.FoodNavigation.context(%{
+        "from" => Date.to_iso8601(result.start_date),
+        "to" => Date.to_iso8601(result.end_date),
+        "booking" => booking_id
+      })
+    )
     |> assign(:result, result)
     |> assign(:range_error, nil)
     |> assign(:booking_id, booking_id || "")
@@ -248,7 +257,7 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
   defp number(value),
     do: value |> Decimal.normalize() |> Decimal.to_string(:normal) |> String.replace(".", ",")
 
-  defp recipe_path(source) do
-    ~p"/admin/recipes/#{source.recipe.id}?#{%{adults: source.adults, children: source.children, percent: Decimal.to_string(Decimal.mult(source.factor, 100), :normal)}}"
+  defp recipe_path(source, range) do
+    ~p"/admin/recipes/#{source.recipe.id}?#{Map.merge(CozyCheckoutWeb.FoodNavigation.context(range), %{"origin" => "shopping", "adults" => source.adults, "children" => source.children, "percent" => Decimal.to_string(Decimal.mult(source.factor, 100), :normal)})}"
   end
 end

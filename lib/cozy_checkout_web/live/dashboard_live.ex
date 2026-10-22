@@ -79,6 +79,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
               navigate={~p"/admin/bar-stock"}
             />
             <.quick_action_card
+              title="Stravování"
+              icon="hero-clipboard-document-list"
+              navigate={~p"/admin/meal-planner"}
+            />
+            <.quick_action_card
               title="Email Guests"
               icon="hero-envelope"
               navigate={~p"/admin/emails"}
@@ -215,7 +220,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
                 navigate={~p"/admin/ical-import"}
               />
               <.compact_card
-                title="Meal Planner"
+                title="Stravování"
                 icon="hero-clipboard-document-list"
                 navigate={~p"/admin/meal-planner"}
               />

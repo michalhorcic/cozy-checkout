@@ -2,13 +2,15 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Variants do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Meals.{MenuPlanning, MenuVariant}
   import CozyCheckoutWeb.MealComponents
-  import CozyCheckoutWeb.KitchenComponents, only: [menu_recipe_links: 1]
+  import CozyCheckoutWeb.KitchenComponents, only: [menu_recipe_links: 1, kitchen_header: 1]
 
   @impl true
   def mount(_params, _session, socket), do: {:ok, socket}
 
   @impl true
   def handle_params(params, _uri, socket) do
+    socket = assign(socket, :food_context, CozyCheckoutWeb.FoodNavigation.context(params))
+
     variant =
       case socket.assigns.live_action do
         :new -> %MenuVariant{items: []}
@@ -48,7 +50,9 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Variants do
         {:noreply,
          socket
          |> put_flash(:success, "Varianta uložena. Již přiřazená menu zůstala beze změny.")
-         |> push_patch(to: ~p"/admin/meal-planner/variants")}
+         |> push_patch(
+           to: CozyCheckoutWeb.FoodNavigation.path(:variants, socket.assigns.food_context)
+         )}
 
       {:error, %Ecto.Changeset{} = cs} ->
         {:noreply, assign(socket, :form, to_form(cs))}

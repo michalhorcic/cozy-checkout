@@ -84,7 +84,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
     )
     |> assign(:dietary_restrictions, dietary_restrictions)
     |> assign(:generated_date, Date.utc_today())
-    |> assign(:page_title, "Weekly Menu - #{Calendar.strftime(week_start, "%B %d, %Y")}")
+    |> assign(:page_title, "Týdenní jídelníček · #{Calendar.strftime(week_start, "%d.%m.%Y")}")
   end
 
   defp meals_to_map(meals) do
@@ -94,18 +94,18 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
   end
 
   defp day_name(date) do
-    Calendar.strftime(date, "%A")
+    Enum.at(~w(Pondělí Úterý Středa Čtvrtek Pátek Sobota Neděle), Date.day_of_week(date) - 1)
   end
 
   defp format_date(date) do
-    Calendar.strftime(date, "%B %d, %Y")
+    Calendar.strftime(date, "%d.%m.%Y")
   end
 
   defp meal_type_label(type) do
     case type do
-      "breakfast" -> "Breakfast"
-      "lunch" -> "Lunch"
-      "dinner" -> "Dinner"
+      "breakfast" -> "Snídaně"
+      "lunch" -> "Oběd"
+      "dinner" -> "Večeře"
       _ -> type
     end
   end

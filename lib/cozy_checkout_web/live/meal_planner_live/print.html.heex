@@ -2,12 +2,12 @@
   <div class="print-container bg-white p-8 mx-auto" style="max-width: 210mm; min-height: 297mm;">
     <%!-- Header --%>
     <div class="text-center mb-8 border-b-2 border-gray-300 pb-6">
-      <h1 class="text-4xl font-bold text-gray-900 mb-2">Jindřichův dům</h1>
-      <h2 class="text-2xl font-semibold text-gray-700 mb-1">Weekly Menu</h2>
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">Jindřichův dům</h1>
+      <h2 class="text-2xl font-semibold text-gray-700 mb-1">Týdenní jídelníček</h2>
       <p class="text-lg text-gray-600">
         {format_date(@week_start)} - {format_date(Date.add(@week_start, 6))}
       </p>
-      <p class="text-sm text-gray-500 mt-2">Generated: {format_date(@generated_date)}</p>
+      <p class="text-sm text-gray-500 mt-2">Vytvořeno: {format_date(@generated_date)}</p>
     </div>
 
     <.incomplete_catering_notice bookings={@incomplete_bookings} />
@@ -22,7 +22,7 @@
             <h3 class="text-xl font-bold text-gray-900 uppercase">
               {day_name(day.date)}, {Calendar.strftime(day.date, "%B %d")}
             </h3>
-            <span class="text-lg font-semibold text-gray-700">({day.guest_count} guests)</span>
+            <span class="text-lg font-semibold text-gray-700">({day.guest_count} hostů)</span>
           </div>
 
           <div class="space-y-2 ml-4">
@@ -55,17 +55,17 @@
       <% end %>
     </div>
 
-    <%!-- Dietary Restrictions Summary --%>
+    <%!-- Přehled diet a alergií --%>
     <%= if @dietary_restrictions != [] do %>
       <div class="border-t-2 border-gray-300 pt-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">Dietary Restrictions Summary</h3>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Přehled diet a alergií</h3>
         <div class="space-y-2">
           <%= for restriction <- @dietary_restrictions do %>
             <div class="flex justify-between items-start text-sm">
               <div class="flex-1">
                 <span class="font-semibold text-gray-800">{restriction.guest_name}</span>
                 <%= if restriction.room_number do %>
-                  <span class="text-gray-600">(Room {restriction.room_number})</span>
+                  <span class="text-gray-600">(Pokoj {restriction.room_number})</span>
                 <% end %>
                 <span class="text-gray-600">
                   — {Calendar.strftime(restriction.check_in_date, "%b %d")} to {Calendar.strftime(
