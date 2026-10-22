@@ -3,18 +3,49 @@ defmodule CozyCheckout.Billing.Pdf do
   alias CozyCheckout.Billing.{Money, Document}
   alias CozyCheckout.Billing
 
-  def render(document) do
-    try do
-      case ChromicPDF.print_to_pdf({:html, html(document)},
-             print_to_pdf: %{printBackground: true, preferCSSPageSize: true}
-           ) do
-        {:ok, encoded} -> Base.decode64(encoded)
-        error -> error
-      end
-    rescue
-      exception -> {:error, "PDF: #{Exception.message(exception)}"}
+  @render_timeout 60_000
+
+  def render(document, opts \\ []) do
+    renderer = Keyword.get(opts, :renderer, CozyCheckout.Billing.PdfBrowser)
+    timeout = Keyword.get(opts, :timeout, @render_timeout)
+
+    task =
+      Task.Supervisor.async_nolink(CozyCheckout.Billing.PdfTasks, fn ->
+        # A temporary Chrome supervisor may send EXIT during startup or teardown.
+        # Keep those signals in this isolated process, away from HTTP/Oban callers.
+        Process.flag(:trap_exit, true)
+        render_in_task(document, renderer)
+      end)
+
+    case Task.yield(task, timeout) || Task.shutdown(task, :brutal_kill) do
+      {:ok, result} -> result
+      {:exit, reason} -> {:error, chrome_error(Exception.format_exit(reason))}
+      nil -> {:error, chrome_error("Příprava překročila časový limit")}
     end
   end
+
+  defp render_in_task(document, renderer) do
+    try do
+      with {:ok, encoded} <-
+             renderer.print_to_pdf({:html, html(document)},
+               print_to_pdf: %{printBackground: true, preferCSSPageSize: true}
+             ),
+           {:ok, bytes} <- Base.decode64(encoded) do
+        {:ok, bytes}
+      else
+        {:error, reason} -> {:error, chrome_error(inspect(reason))}
+        :error -> {:error, chrome_error("Prohlížeč nevrátil platné PDF")}
+      end
+    rescue
+      exception -> {:error, chrome_error(Exception.message(exception))}
+    catch
+      :exit, reason -> {:error, chrome_error(Exception.format_exit(reason))}
+    end
+  end
+
+  defp chrome_error(reason),
+    do:
+      "PDF: #{reason}. Zkontrolujte spuštění Chrome/Chromium a případně nastavte CHROME_EXECUTABLE."
 
   def html(document) do
     supplier = document.snapshot["supplier"]
@@ -23,14 +54,22 @@ defmodule CozyCheckout.Billing.Pdf do
     due = Decimal.add(document.total, Money.total(deductions))
     preview? = not match?(%Document{}, document)
 
-    qr =
+    payment_params =
       if not preview? and document.kind in ["advance", "final"] and Decimal.gt?(due, 0) do
-        CozyCheckout.Payments.QrCode.generate_qr_svg(%{
+        %{
           account_number: supplier["bank_account"],
           amount: due,
           variable_symbol: document.variable_symbol,
           message: document.number
-        })
+        }
+      end
+
+    qr =
+      if payment_params do
+        data = CozyCheckout.Payments.QrCode.generate_qr_data(payment_params)
+
+        if Regex.match?(~r/\*ACC:CZ\d{22}\*/, data),
+          do: CozyCheckout.Payments.QrCode.generate_qr_svg(payment_params)
       end
 
     """
@@ -51,6 +90,7 @@ defmodule CozyCheckout.Billing.Pdf do
     #{if document.kind in ["advance", "final"], do: "<p class=total>K úhradě / přeplatek: #{money(due)} CZK</p>", else: ""}
     <p>Účet: #{escape(supplier["bank_account"])} · IBAN: #{escape(supplier["iban"])}</p>
     #{if preview?, do: "", else: "<p>Variabilní symbol: #{escape(document.variable_symbol)}</p>"}
+    #{if payment_params && !qr, do: "<p>QR platba není k dispozici. Platební údaje ověřte s vystavovatelem.</p>", else: ""}
     #{if qr, do: "<img class=qr alt=\"QR platba\" src=\"data:image/svg+xml;base64,#{qr}\">", else: ""}
     <p class="muted">#{escape(supplier["email"])} · #{escape(supplier["phone"])}</p>
     </body></html>

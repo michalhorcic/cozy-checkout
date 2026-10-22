@@ -81,6 +81,39 @@ podkladů. Docker runtime obsahuje Chromium a fonty DejaVu. Dokumenty A4 se ukl�
 jako binární data v PostgreSQL spolu s SHA-256. Opakované stažení a e-mail vždy
 použijí původní soubor, nikoli aktualizovanou kalkulaci nebo aktuální firemní profil.
 
+### Lokální spuštění PDF a mailboxu
+
+Na lokálním počítači musí být nainstalovaný Google Chrome nebo Chromium. Na macOS
+je běžná cesta `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome`.
+Pokud se automaticky nenajde, spusťte aplikaci s explicitní cestou:
+
+```sh
+CHROME_EXECUTABLE="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" iex -S mix phx.server
+```
+
+Po změně cesty nebo aktualizaci nastavení rendereru aplikaci restartujte.
+Renderer se spustí až při prvním PDF. Používá vlastní dočasný profil a jednu
+browserovou instanci, takže funguje také s běžným Google Chrome 136+ a již
+otevřeným osobním prohlížečem. Chrome 136+ vyžaduje samostatný profil pro
+`remote-debugging-pipe`: https://developer.chrome.com/blog/remote-debugging-port.
+Profil se při řádném zastavení aplikace odstraní.
+
+Vytváření PDF běží mimo databázovou transakci. Pád nebo timeout Chromia vrátí
+zachycenou chybu, kterou zobrazí stažení i podrobnosti e-mailového pokusu.
+V developmentu zůstává stderr Chromia v terminálu viditelný. Hotové PDF se uloží
+pod krátkým zámkem; souběžné požadavky vždy dostanou původní uložené bajty.
+
+Development používá `Swoosh.Adapters.Local`: zpráva se zobrazí v `/dev/mailbox`
+až po úspěšné přípravě přílohy. Nepotřebuje Resend API klíč. Pokud původní úkol
+vyčerpal pět pokusů (`discarded`), po opravě odešlete zprávu z detailu dokladu
+znovu; samotný restart vyčerpaný úkol neobnoví.
+
+Bankovní údaje musí být platný český účet (nejvýše deset číslic základního čísla,
+až šest číslic předčíslí a čtyři číslice kódu banky). Nesprávný účet se nově
+neuloží jako IBAN. U starších dokladů s nesprávným uloženým údajem se nevytváří
+neplatný QR kód. Oprava profilu nemění již vystavený doklad; u nesprávné zálohové
+výzvy vystavte novou výzvu s opravenými údaji.
+
 Fronta Oban `billing` má souběžnost 2. Generování PDF i e-mail se opakují až
 pětkrát. Při chybě prvotního generování lze PDF znovu připravit stažením. E-mail
 vyžaduje zaznamenaný souhlas s elektronickou podobou. Každé vědomé nové odeslání

@@ -184,8 +184,11 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             <div :for={d <- @deliveries} class="border-b py-2">
               {d.recipient} · {delivery_label(d.state)} · pokusů {d.attempts}
               <p :if={d.state in ["failed", "retrying"]} class="text-red-700">
-                Odeslání se nezdařilo. Zkontrolujte adresu a nastavení pošty.
+                Příprava PDF nebo odeslání se nezdařily.
               </p>
+              <details :if={d.error && d.state in ["failed", "retrying"]}>
+                <summary>Podrobnosti chyby</summary><pre class="whitespace-pre-wrap text-sm">{d.error}</pre>
+              </details>
             </div>
             <p class="text-sm">
               Odesláno znamená přijetí poštovním poskytovatelem, nikoli potvrzené doručení adresátovi.

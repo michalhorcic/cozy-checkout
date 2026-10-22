@@ -136,6 +136,13 @@ defmodule CozyCheckout.Billing do
 
       account = qr |> String.split("*") |> Enum.find(&String.starts_with?(&1, "ACC:"))
       derived = String.replace_prefix(account, "ACC:", "")
+
+      if not Regex.match?(~r/\ACZ\d{22}\z/, derived),
+        do:
+          fail(
+            "Neplatný český bankovní účet: základní číslo smí mít nejvýše 10 číslic, předčíslí nejvýše 6 a kód banky 4"
+          )
+
       entered = (data["iban"] || "") |> String.replace(" ", "") |> String.upcase()
       if entered != "" and entered != derived, do: fail("IBAN neodpovídá českému bankovnímu účtu")
       Map.put(data, "iban", derived)
@@ -850,11 +857,15 @@ defmodule CozyCheckout.Billing do
 
     if supplier? do
       try do
-        CozyCheckout.Payments.QrCode.generate_qr_data(%{
-          account_number: data["bank_account"],
-          amount: Decimal.new(1),
-          variable_symbol: "1"
-        })
+        qr =
+          CozyCheckout.Payments.QrCode.generate_qr_data(%{
+            account_number: data["bank_account"],
+            amount: Decimal.new(1),
+            variable_symbol: "1"
+          })
+
+        if not Regex.match?(~r/\*ACC:CZ\d{22}\*/, qr),
+          do: fail("Neplatný český bankovní účet dodavatele")
       rescue
         _ -> fail("Neplatný český bankovní účet dodavatele")
       end
@@ -948,26 +959,37 @@ defmodule CozyCheckout.Billing do
   end
 
   def ensure_pdf(document_id) do
-    transaction(fn ->
-      doc = Repo.one!(from d in Document, where: d.id == ^document_id, lock: "FOR UPDATE")
+    # Browser startup can be slow on a workstation. Never hold a database
+    # connection or row lock while Chrome is starting or rendering.
+    doc = get_document!(document_id)
 
-      if doc.pdf do
-        doc
-      else
-        case CozyCheckout.Billing.Pdf.render(doc) do
-          {:ok, bytes} ->
-            doc
-            |> Ecto.Changeset.change(
-              pdf: bytes,
-              pdf_sha256: Base.encode16(:crypto.hash(:sha256, bytes), case: :lower)
-            )
-            |> Repo.update!()
+    if doc.pdf do
+      {:ok, doc}
+    else
+      case CozyCheckout.Billing.Pdf.render(doc) do
+        {:ok, bytes} ->
+          transaction(fn ->
+            current =
+              Repo.one!(from d in Document, where: d.id == ^document_id, lock: "FOR UPDATE")
 
-          {:error, reason} ->
-            fail(reason)
-        end
+            if current.pdf do
+              current
+            else
+              current
+              |> Ecto.Changeset.change(
+                pdf: bytes,
+                pdf_sha256: Base.encode16(:crypto.hash(:sha256, bytes), case: :lower)
+              )
+              |> Repo.update!()
+            end
+          end)
+
+        {:error, reason} ->
+          require Logger
+          Logger.warning("Billing PDF #{document_id} failed: #{reason}")
+          {:error, reason}
       end
-    end)
+    end
   end
 
   defp lock_booking!(id), do: Repo.one!(from b in Booking, where: b.id == ^id, lock: "FOR UPDATE")
