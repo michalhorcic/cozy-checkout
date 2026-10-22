@@ -2,6 +2,9 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
   use CozyCheckoutWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
   import CozyCheckout.BillingFixtures
+  import Swoosh.TestAssertions
+
+  setup :set_swoosh_global
   alias CozyCheckout.{Billing, Repo}
   alias CozyCheckoutWeb.AdminAuth
 
@@ -40,7 +43,95 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     view |> element("button[phx-click=issue]") |> render_click()
     assert length(Billing.list_documents(%{"booking_id" => booking.id})) == 1
     assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 2
-    assert render(view) =~ "Detail, PDF, odeslání a oprava"
+    [document] = Billing.list_documents(%{"booking_id" => booking.id})
+
+    assert has_element?(
+             view,
+             "#billing-document-pdf-#{document.id}[href='/admin/billing/documents/#{document.id}/pdf']"
+           )
+
+    assert has_element?(view, "#billing-document-email-#{document.id}")
+    refute has_element?(view, "#billing-items .badge", "Osoby")
+  end
+
+  test "document email can be checked and sent from the calculation without navigating away", %{
+    conn: conn,
+    booking: booking
+  } do
+    document = issue!(booking, "advance")
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    view |> element("#billing-document-email-#{document.id}") |> render_click()
+    assert has_element?(view, "#billing-email-modal")
+    assert has_element?(view, "#billing-email-modal-description", document.number)
+
+    assert has_element?(
+             view,
+             "#billing-booking-email input[name='email[recipient]'][value='school@example.com']"
+           )
+
+    attrs = %{
+      recipient: "test@example.com",
+      subject: "Záloha na pobyt",
+      body: "Dobrý den, zasíláme výzvu."
+    }
+
+    view |> form("#billing-booking-email", email: attrs) |> render_submit()
+    assert has_element?(view, "#billing-booking-email-error", "souhlas")
+    assert Billing.list_deliveries(document.id) == []
+
+    assert has_element?(
+             view,
+             "#billing-booking-email input[name='email[recipient]'][value='test@example.com']"
+           )
+
+    view
+    |> form("#billing-booking-email", email: Map.put(attrs, :consent, true))
+    |> render_submit()
+
+    refute has_element?(view, "#billing-email-modal")
+    assert has_element?(view, "#billing-documents")
+    assert has_element?(view, "#flash-info", "E-mail zařazen k odeslání")
+    [delivery] = Billing.list_deliveries(document.id)
+    assert delivery.recipient == "test@example.com"
+    assert delivery.subject == attrs.subject
+    assert delivery.body == attrs.body
+    assert delivery.consented_at
+    assert delivery.state == "queued"
+
+    assert Repo.get_by!(Oban.Job, worker: "CozyCheckout.Workers.BillingEmailWorker").args == %{
+             "delivery_id" => delivery.id
+           }
+
+    # A repeated click from the now-closed composer cannot enqueue another delivery.
+    render_submit(view, "email", %{"email" => %{"consent" => "true"}})
+    assert length(Billing.list_deliveries(document.id)) == 1
+    job = %Oban.Job{args: %{"delivery_id" => delivery.id}, attempt: 1, max_attempts: 5}
+    assert :ok = CozyCheckout.Workers.BillingEmailWorker.perform(job)
+    stored = Billing.get_document!(document.id)
+
+    assert_email_sent(fn email ->
+      email.to == [{"", "test@example.com"}] and hd(email.attachments).data == stored.pdf
+    end)
+  end
+
+  test "email composer validates recipients, cancels cleanly and only opens this booking's documents",
+       %{conn: conn, booking: booking} do
+    document = issue!(booking, "advance")
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    render_click(view, "compose-email", %{"id" => Ecto.UUID.generate()})
+    refute has_element?(view, "#billing-email-modal")
+    view |> element("#billing-document-email-#{document.id}") |> render_click()
+
+    view
+    |> form("#billing-booking-email", email: %{recipient: "invalid", consent: true})
+    |> render_submit()
+
+    assert has_element?(view, "#billing-booking-email-error")
+    assert Billing.list_deliveries(document.id) == []
+    render_click(view, "close-email")
+    refute has_element?(view, "#billing-email-modal")
+    assert has_element?(view, "#billing-items")
+    assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 2
   end
 
   test "seasons calendar exposes missing dates and supports explicit reprice", %{
