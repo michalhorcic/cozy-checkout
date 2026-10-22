@@ -7,6 +7,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
     {:ok,
      socket
      |> assign(assigns)
+     |> assign(:personal?, match?(%{state: "personal"}, Billing.calculation(assigns.booking.id)))
      |> assign(:balance, Billing.balance(assigns.booking.id))
      |> assign(:documents, Billing.list_documents(%{"booking_id" => assigns.booking.id}))}
   end
@@ -15,7 +16,8 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
     ~H"""
     <section class="bg-white shadow rounded-xl p-6 space-y-4">
       <h2 class="text-2xl font-bold">Kalkulace a fakturace pobytu</h2>
-      <div class="flex flex-wrap gap-6">
+      <p :if={@personal?} id="booking-personal">Soukromý pobyt · bez finanční evidence</p>
+      <div :if={not @personal?} class="flex flex-wrap gap-6">
         <p><strong>{Billing.payment_state(@balance)}</strong></p>
         <p>
           Cena:
@@ -27,7 +29,7 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
           <strong>{Presentation.balance_amount(@balance.outstanding)}</strong>
         </p>
       </div>
-      <p>{length(@documents)} vystavených dokladů</p>
+      <p :if={not @personal?}>{length(@documents)} vystavených dokladů</p>
       <.link navigate={~p"/admin/bookings/#{@booking.id}/billing"} class="btn btn-primary">Otevřít kalkulaci, doklady a platby</.link>
     </section>
     """

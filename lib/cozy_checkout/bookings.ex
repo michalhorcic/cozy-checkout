@@ -13,6 +13,7 @@ defmodule CozyCheckout.Bookings do
   alias CozyCheckout.Bookings.BookingInvoiceItem
   alias CozyCheckout.Sales.InvoiceCounter
   alias CozyCheckout.Rooms
+  alias CozyCheckout.Billing.BookingSummary
 
   @cottage_capacity 45
 
@@ -151,9 +152,12 @@ defmodule CozyCheckout.Bookings do
     base_query =
       Booking
       |> where([b], is_nil(b.deleted_at))
-      |> join(:left, [b], i in assoc(b, :invoice), as: :invoice)
       |> join(:left, [b], g in assoc(b, :guest), as: :guest)
-      |> preload([b, invoice: i, guest: g], guest: g)
+      |> join(:inner, [b], s in subquery(BookingSummary.query()),
+        on: s.booking_id == b.id,
+        as: :billing
+      )
+      |> preload([guest: g], guest: g)
 
     # Apply custom filters
     query = apply_custom_filters(base_query, params)
@@ -182,21 +186,10 @@ defmodule CozyCheckout.Bookings do
 
   defp apply_current_and_future_filter(query, _params), do: query
 
-  # Filter by invoice state
-  defp apply_invoice_state_filter(query, %{"invoice_state" => state}) when state != "" do
-    case state do
-      "no_invoice" ->
-        where(query, [b, invoice: i], is_nil(i.id))
-
-      state when state in ["draft", "personal", "generated", "sent", "advance_paid", "paid"] ->
-        where(query, [b, invoice: i], i.state == ^state)
-
-      _ ->
-        query
-    end
+  # The same derived state drives both the displayed summary and filtering before pagination.
+  defp apply_invoice_state_filter(query, params) do
+    BookingSummary.apply_filter(query, params["invoice_state"])
   end
-
-  defp apply_invoice_state_filter(query, _params), do: query
 
   # Filter by guest name or email (partial match, case-insensitive)
   defp apply_guest_search_filter(query, %{"guest_search" => search})

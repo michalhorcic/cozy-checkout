@@ -57,7 +57,21 @@ stavu. Neznamenají existenci skutečného dokladu ani peněz. Jejich přeceněn
 vědomý krok; další služby při převodu zachovají svou koncovou jednotkovou cenu
 zaokrouhlenou na haléře. Historické vystavené doklady se z těchto záznamů nevytvářejí.
 
-Osobní pobyt dál počítá osoby do kapacity, ale nevystavuje finanční doklady.
+Soukromý pobyt dál počítá osoby do kapacity a zachovává stravování, ale je bez
+finanční evidence. Označuje se v kalkulaci tlačítkem **Označit soukromý pobyt**;
+pokud už existují vydané doklady, tento přepínač není dostupný. Soukromé pobyty
+nezobrazují nedoplatek, stav úhrady ani formuláře pro doklady a platby.
+
+V seznamu rezervací se stav dokladů a úhrad odvozuje ze skutečně vydaných dokladů
+a ručně zaznamenaných plateb, včetně oprav a vratek. Zálohová výzva neznamená
+přijetí peněz a ani plně přijatá záloha neznamená konečnou fakturu. U konečné
+faktury se zobrazuje stav úhrady, číslo dokladu, nedoplatek nebo přeplatek a při
+kladném nedoplatku po datu splatnosti také **Po splatnosti**. Datum splatnosti
+samo se ještě nepovažuje za prodlení. Změna kalkulace nezmění částku vydané
+faktury. Filtr **Doklady a úhrady** používá stejná pravidla jako zobrazení.
+Finanční stav v seznamu nelze ručně přepsat; kliknutí otevře evidenci pobytu.
+Přehled se aktualizuje při otevření seznamu nebo změně filtru. Bankovní párování
+zatím není zapojené.
 
 ## Opravy a vratky
 

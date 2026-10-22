@@ -175,4 +175,59 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert get_resp_header(conn, "content-type") == ["application/pdf; charset=utf-8"]
     assert Billing.get_document!(doc.id).pdf == conn.resp_body
   end
+
+  test "reservation list links to actual billing and filters on the recorded payment", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, _} = CozyCheckout.Bookings.update_invoice_state(Billing.calculation(booking.id), "paid")
+    {:ok, view, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(view, "#booking-billing-#{booking.id}", "Bez dokladu")
+    refute has_element?(view, "button[phx-value-state]")
+    refute has_element?(view, "#booking-payment-#{booking.id}")
+
+    final = issue!(booking, "final", %{"due_on" => to_string(Date.add(Billing.today(), -1))})
+    {:ok, view, _} = live(conn, "/admin/bookings?invoice_state=unpaid&show_all=true")
+    assert has_element?(view, "#booking-billing-#{booking.id}", final.number)
+    assert has_element?(view, "#booking-payment-#{booking.id}", "Neuhrazeno")
+    assert has_element?(view, "#booking-overdue-#{booking.id}", "Po splatnosti")
+    assert has_element?(view, "#booking-balance-#{booking.id}", "5 700")
+    assert has_element?(view, "#bookings-filter option[value='unpaid'][selected]")
+
+    view |> form("#bookings-filter", invoice_state: "paid") |> render_change()
+    refute has_element?(view, "#booking-row-#{booking.id}")
+    receipt!(booking, "5700", %{"paid_on" => to_string(Billing.today())})
+    {:ok, view, _} = live(conn, "/admin/bookings?invoice_state=paid&show_all=true")
+    assert has_element?(view, "#booking-payment-#{booking.id}", "Uhrazeno")
+    refute has_element?(view, "#booking-overdue-#{booking.id}")
+    refute has_element?(view, "#booking-balance-#{booking.id}")
+
+    assert has_element?(
+             view,
+             "#booking-billing-#{booking.id}[href='/admin/bookings/#{booking.id}/billing']"
+           )
+  end
+
+  test "private stays show no financial balance or payment forms and can return to normal billing",
+       %{conn: conn, booking: booking} do
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    view |> element("button[phx-click=personal]") |> render_click()
+    assert has_element?(view, "#billing-personal", "Soukromý pobyt")
+    refute has_element?(view, "#billing-payment")
+    refute has_element?(view, "#billing-issue")
+    assert Billing.list_payments(booking.id) == []
+    assert Billing.list_documents(%{"booking_id" => booking.id}) == []
+
+    {:ok, list, _} = live(conn, "/admin/bookings?invoice_state=personal&show_all=true")
+    assert has_element?(list, "#booking-billing-#{booking.id}", "Soukromý pobyt")
+    refute has_element?(list, "#booking-payment-#{booking.id}")
+    refute has_element?(list, "#booking-balance-#{booking.id}")
+    {:ok, detail, _} = live(conn, "/admin/bookings/#{booking.id}")
+    assert has_element?(detail, "#booking-personal", "bez finanční evidence")
+
+    view |> element("button[phx-click=personal]") |> render_click()
+    refute has_element?(view, "#billing-personal")
+    assert has_element?(view, "#billing-payment")
+    assert has_element?(view, "#billing-issue")
+  end
 end
