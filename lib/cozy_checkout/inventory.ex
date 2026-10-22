@@ -948,7 +948,7 @@ defmodule CozyCheckout.Inventory do
           Decimal.new(0)
         end
 
-      total_profit = Decimal.mult(profit_per_unit, total_sold || Decimal.new(0))
+      total_profit = Decimal.mult(profit_per_unit, total_sold)
 
       %{
         product: product,

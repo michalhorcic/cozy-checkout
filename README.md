@@ -231,3 +231,10 @@ listen_addresses = '192.168.1.100'  # Your server's IP
 
 
 sudo systemctl restart postgresql
+
+## Fakturace pobytů
+
+Sezonní ceníky, kalkulace, zálohové výzvy, daňové doklady k přijatým platbám,
+konečné faktury, opravy a vratky jsou dostupné z detailu rezervace.
+Před prvním vystavením doplňte dodavatele a číselné řady podle účetní.
+Postup, PDF, e-maily a zálohování popisuje [BILLING.md](BILLING.md).

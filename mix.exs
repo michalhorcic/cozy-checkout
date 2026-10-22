@@ -59,6 +59,7 @@ defmodule CozyCheckout.MixProject do
        compile: false,
        depth: 1},
       {:swoosh, "~> 1.16"},
+      {:chromic_pdf, "~> 1.17"},
       {:req, "~> 0.5"},
       {:qr_code, "~> 3.2"},
       {:flop, "~> 0.26.0"},

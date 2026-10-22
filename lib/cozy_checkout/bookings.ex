@@ -544,59 +544,7 @@ defmodule CozyCheckout.Bookings do
   Creates a default invoice for a booking with default line items.
   """
   def create_default_invoice(%Booking{} = booking) do
-    Repo.transaction(fn ->
-      # Create invoice header
-      invoice =
-        %BookingInvoice{}
-        |> BookingInvoice.changeset(%{booking_id: booking.id})
-        |> Repo.insert!()
-
-      # Calculate actual nights from booking
-      nights = BookingInvoice.calculate_nights(booking)
-
-      # Create default line items
-      default_items = [
-        %{
-          name: "Dospělí",
-          quantity: 2,
-          nights: nights,
-          price_per_night: Decimal.new("950.00"),
-          vat_rate: Decimal.new("0"),
-          position: 1,
-          booking_invoice_id: invoice.id,
-          item_type: "person"
-        },
-        %{
-          name: "Děti do 2 let",
-          quantity: 0,
-          nights: nights,
-          price_per_night: Decimal.new("210.00"),
-          vat_rate: Decimal.new("0"),
-          position: 2,
-          booking_invoice_id: invoice.id,
-          item_type: "person"
-        },
-        %{
-          name: "Děti do 12 let",
-          quantity: 0,
-          nights: nights,
-          price_per_night: Decimal.new("880.00"),
-          vat_rate: Decimal.new("0"),
-          position: 3,
-          booking_invoice_id: invoice.id,
-          item_type: "person"
-        }
-      ]
-
-      Enum.each(default_items, fn item_attrs ->
-        %BookingInvoiceItem{}
-        |> BookingInvoiceItem.changeset(item_attrs)
-        |> Repo.insert!()
-      end)
-
-      # Reload with items
-      get_booking_invoice!(invoice.id)
-    end)
+    CozyCheckout.Billing.create_calculation(booking.id)
   end
 
   @doc """
@@ -662,58 +610,7 @@ defmodule CozyCheckout.Bookings do
   Recalculates and updates the cached totals for all invoice items and the invoice header.
   """
   def recalculate_invoice_totals(%BookingInvoice{} = invoice) do
-    Repo.transaction(fn ->
-      booking = get_booking!(invoice.booking_id)
-      nights = BookingInvoice.calculate_nights(booking)
-
-      # Reload invoice with items
-      invoice = get_booking_invoice!(invoice.id)
-
-      # Recalculate each item
-      updated_items =
-        Enum.map(invoice.items, fn item ->
-          # Ensure the item has nights set (use booking nights if not set)
-          item = if is_nil(item.nights), do: %{item | nights: nights}, else: item
-
-          totals = BookingInvoiceItem.calculate_totals(item)
-
-          {:ok, updated_item} =
-            item
-            |> BookingInvoiceItem.changeset(totals)
-            |> Repo.update()
-
-          updated_item
-        end)
-
-      # Calculate invoice totals from items
-      invoice_subtotal =
-        updated_items
-        |> Enum.map(& &1.subtotal)
-        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
-
-      invoice_vat_amount =
-        updated_items
-        |> Enum.map(& &1.vat_amount)
-        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
-
-      invoice_total =
-        updated_items
-        |> Enum.map(& &1.total)
-        |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
-
-      # Update invoice header with totals
-      {:ok, updated_invoice} =
-        invoice
-        |> BookingInvoice.changeset(%{
-          subtotal: invoice_subtotal,
-          vat_amount: invoice_vat_amount,
-          total_price: invoice_total
-        })
-        |> Repo.update()
-
-      # Reload with updated items
-      get_booking_invoice!(updated_invoice.id)
-    end)
+    CozyCheckout.Billing.recalculate_calculation(invoice.booking_id)
   end
 
   @doc """
@@ -836,16 +733,10 @@ defmodule CozyCheckout.Bookings do
   @doc """
   Transitions the invoice to "personal" state.
   This state does not generate an invoice number and is used for capacity counting only.
-  Validates that invoice has items and total > 0.
+  Personal occupancy does not require a priced calculation.
   """
   def transition_to_personal(%BookingInvoice{} = invoice) do
-    invoice = Repo.preload(invoice, :items)
-
-    with :ok <- validate_invoice_for_state_change(invoice) do
-      invoice
-      |> BookingInvoice.changeset(%{state: "personal"})
-      |> Repo.update()
-    end
+    CozyCheckout.Billing.set_personal(invoice.booking_id, true)
   end
 
   # Helper function to validate invoice before state changes

@@ -75,7 +75,7 @@ config :cozy_checkout,
 # Oban background job processing
 config :cozy_checkout, Oban,
   repo: CozyCheckout.Repo,
-  queues: [abra_sync: 3, booking_emails: 5]
+  queues: [abra_sync: 3, booking_emails: 5, billing: 2]
 
 config :cozy_checkout,
   email_from_address: "jindrichuvdum@jindrichuvdum.cz"

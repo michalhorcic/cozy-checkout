@@ -13,6 +13,8 @@ defmodule CozyCheckout.Bookings.BookingInvoice do
     field :invoice_number, :string
     field :invoice_generated_at, :utc_datetime
     field :state, :string, default: "draft"
+    field :pricing_basis, :string, default: "legacy_net"
+    field :priced_on, :date
 
     belongs_to :booking, CozyCheckout.Bookings.Booking
     has_many :items, CozyCheckout.Bookings.BookingInvoiceItem, foreign_key: :booking_invoice_id

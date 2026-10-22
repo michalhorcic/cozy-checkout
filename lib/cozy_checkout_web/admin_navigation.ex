@@ -54,6 +54,9 @@ defmodule CozyCheckoutWeb.AdminNavigation do
        [
          {"Barové platby", "/admin/payments"},
          {"Ekonomika pobytů", "/admin/economy"},
+         {"Faktury z rezervací", "/admin/billing"},
+         {"Ceník ubytování", "/admin/accommodation-prices"},
+         {"Nastavení fakturace", "/admin/billing/settings"},
          {"Statistiky prodeje", "/admin/statistics"},
          {"Export POHODA", "/admin/pohoda-export"}
        ]}
