@@ -185,3 +185,5 @@ vlastní testovací rezervaci a vlastní testovací e-mailovou adresu.
 Integrace pobytových dokladů do ABRA Flexi je druhá etapa; nynější export
 barových účtů zůstává zachovaný. Budoucí export má použít stabilní ID dokladů,
 odpočtů a plateb a přenášet vazby jednosměrně z aplikace do účetnictví.
+Současné barové mapování, provozní omezení a podklady pro tuto etapu popisuje
+[ABRA_INTEGRATION.md](../integrations/ABRA_INTEGRATION.md).

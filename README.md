@@ -55,6 +55,7 @@ podklady a [plány nových funkcí](docs/plans/README.md).
 - [Emaily hostům](docs/features/GUEST_EMAILS.md)
 - [Kalendář rezervací](docs/features/CALENDAR_VIEW.md)
 - [Import iCal](docs/integrations/ICAL_IMPORT.md) a [export POHODA](docs/integrations/POHODA_EXPORT.md)
+- [Integrace s ABRA Flexi](docs/integrations/ABRA_INTEGRATION.md)
 - [Finanční regresní testy](docs/development/FINANCIAL_TESTS.md)
 
 ## Ověření změn

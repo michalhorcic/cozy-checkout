@@ -26,12 +26,12 @@ Podrobnosti jsou rozdělené podle účelu:
 ## Integrace
 
 - [Import rezervací z iCal](integrations/ICAL_IMPORT.md)
+- [Integrace s ABRA Flexi](integrations/ABRA_INTEGRATION.md)
 - [Export barových účtů do POHODA](integrations/POHODA_EXPORT.md)
 
-Synchronizace barových účtů do ABRA je součástí existujícího kódu a
-[finančních testů](development/FINANCIAL_TESTS.md). Samostatný provozní návod
-zatím nemá. Export pobytových dokladů do ABRA zůstává další etapou popsanou
-ve [fakturaci](features/BILLING.md#ověření-a-další-etapa).
+Export pobytových dokladů do ABRA zůstává další etapou. Současnou barovou
+integraci a podklady pro její rozšíření popisuje [návod ABRA](integrations/ABRA_INTEGRATION.md);
+uživatelský postup je ve [fakturaci](features/BILLING.md#ověření-a-další-etapa).
 
 ## Vývoj a ověření
 
