@@ -61,6 +61,26 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     refute has_element?(view, "#billing-items .badge", "Osoby")
   end
 
+  test "calculation notices clear from the whole notice and stay cleared after refresh", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+
+    for _attempt <- 1..2 do
+      view
+      |> form("#billing-customer", buyer: %{name: "Test Customer", country: "CZ"})
+      |> render_submit()
+
+      assert has_element?(view, "#flash-info", "Uloženo")
+      view |> element("#flash-info") |> render_click()
+      refute has_element?(view, "#flash-info")
+
+      render_click(view, "refresh")
+      refute has_element?(view, "#flash-info")
+    end
+  end
+
   test "document email can be checked and sent from the calculation without navigating away", %{
     conn: conn,
     booking: booking

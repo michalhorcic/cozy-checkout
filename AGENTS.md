@@ -139,6 +139,7 @@ custom classes must fully style the input
   - You cannot reference an external vendor'd script `src` or link `href` in the layouts
   - You must import the vendor deps into app.js and app.css to use them
   - Put new JavaScript in `assets/js` and import it through `app.js`; do not add inline scripts to templates. The existing root-layout light-theme bootstrap is an exception.
+- Flash notices use LiveView's native `lv:clear-flash` command on the whole notice, including clicks bubbling from its close button. Preserve this dismissal behavior when restyling. LiveView clears flash on client live patches; daisyUI toast styles provide an entrance animation, not timed dismissal.
 
 ### UI/UX & design guidelines
 
