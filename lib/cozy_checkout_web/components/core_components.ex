@@ -44,6 +44,7 @@ defmodule CozyCheckoutWeb.CoreComponents do
   attr :title, :string, default: nil
   attr :kind, :atom, values: [:success, :info, :error], doc: "used for styling and flash lookup"
   attr :info_class, :string, default: nil
+  attr :auto_dismiss, :boolean, default: true
   attr :rest, :global, doc: "the arbitrary HTML attributes to add to the flash container"
 
   slot :inner_block, doc: "the optional inner block that renders the flash message"
@@ -57,6 +58,7 @@ defmodule CozyCheckoutWeb.CoreComponents do
       id={@id}
       role={if @kind == :error, do: "alert", else: "status"}
       class="pointer-events-auto"
+      phx-hook={@auto_dismiss && "Flash"}
       {@rest}
     >
       <div class={[

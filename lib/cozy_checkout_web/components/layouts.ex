@@ -380,6 +380,7 @@ defmodule CozyCheckoutWeb.Layouts do
 
       <.flash
         id="client-error"
+        auto_dismiss={false}
         kind={:error}
         title={gettext("We can't find the internet")}
         phx-disconnected={show(".phx-client-error #client-error") |> JS.remove_attribute("hidden")}
@@ -392,6 +393,7 @@ defmodule CozyCheckoutWeb.Layouts do
 
       <.flash
         id="server-error"
+        auto_dismiss={false}
         kind={:error}
         title={gettext("Something went wrong!")}
         phx-disconnected={show(".phx-server-error #server-error") |> JS.remove_attribute("hidden")}

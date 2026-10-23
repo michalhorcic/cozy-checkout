@@ -20,6 +20,11 @@ defmodule CozyCheckoutWeb.FlashTest do
 
       assert Enum.count(LazyHTML.query(html, "#flash-#{kind} .hero-#{icon}")) == 1
       assert Enum.count(LazyHTML.query(html, "#flash-#{kind} button[aria-label]")) == 1
+      assert Enum.count(LazyHTML.query(html, "#flash-#{kind}[phx-hook='Flash']")) == 1
+    end
+
+    for id <- ["client-error", "server-error"] do
+      assert Enum.count(LazyHTML.query(html, "##{id}[phx-hook]")) == 0
     end
   end
 
