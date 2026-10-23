@@ -517,51 +517,59 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               />
               <button class="btn btn-primary self-end sm:col-span-2">Zkontrolovat náhled</button>
             </.form>
-            <div
-              :if={@preview}
-              class="border-2 border-emerald-300 rounded-xl p-4 space-y-3"
-              id="document-preview"
-            >
-              <h3 class="font-bold">NÁHLED – {Billing.kind_label(@preview.kind)}</h3>
-              <p>
-                Odběratel: {@preview.snapshot["customer"]["name"]}. Datum vystavení: {Presentation.date(
-                  @preview.issued_on
-                )}.
-                <span :if={@preview.kind != "tax_receipt"}>Splatnost: {Presentation.date(
-                  @preview.due_on
-                )}.</span>
-                Pobyt: {Presentation.date(@preview.snapshot["check_in"])} – {Presentation.date(
-                  @preview.snapshot["check_out"]
-                )}.
-              </p>
-              <p :for={line <- Presentation.lines(@preview)}>
-                {Presentation.line_label(line, @preview.kind)}:
-                <span :if={@preview.kind not in ["advance", "tax_receipt"]}>
-                  {Presentation.number(line["quantity"])} × {Presentation.number(line["nights"])} —
-                </span>
-                {Presentation.amount(line["gross"])}
-                <span :if={@preview.kind != "advance"}>
-                  {if line["tax_mode"] == "outside",
-                    do: "(mimo předmět DPH)",
-                    else: "(#{Presentation.number(line["vat_rate"])} % DPH)"}
-                </span>
-              </p>
-              <p :for={line <- @preview.snapshot["deductions"]}>
-                {line["name"]}: {Presentation.amount(line["gross"])}
-              </p>
-              <p class="font-bold">
-                Celkem {Presentation.amount(@preview.total)}; po odpočtech {Presentation.amount(
-                  Decimal.add(
-                    @preview.total,
-                    CozyCheckout.Billing.Money.total(@preview.snapshot["deductions"])
-                  )
-                )}
-              </p>
-              <p>Vystavený doklad se uzamkne. PDF a odeslání e-mailem najdete níže u dokladu.</p>
-              <button class="btn btn-primary" phx-click="issue" phx-disable-with="Vystavuji…">Vystavit doklad</button>
-            </div>
           </section>
         </div>
+        <section
+          :if={@preview && not @personal?}
+          class="border-2 border-emerald-300 rounded-xl p-4 space-y-3"
+          id="document-preview"
+        >
+          <h3 class="font-bold">NÁHLED – {Billing.kind_label(@preview.kind)}</h3>
+          <p>
+            Odběratel: {@preview.snapshot["customer"]["name"]}. Datum vystavení: {Presentation.date(
+              @preview.issued_on
+            )}.
+            <span :if={@preview.kind != "tax_receipt"}>Splatnost: {Presentation.date(@preview.due_on)}.</span>
+            Pobyt: {Presentation.date(@preview.snapshot["check_in"])} – {Presentation.date(
+              @preview.snapshot["check_out"]
+            )}.
+          </p>
+          <CozyCheckoutWeb.BillingComponents.advance_breakdown
+            id="advance-preview-breakdown"
+            document={@preview}
+          />
+          <p
+            :for={line <- Presentation.lines(@preview)}
+            :if={is_nil(Presentation.advance_breakdown(@preview))}
+          >
+            {Presentation.line_label(line, @preview.kind)}:
+            <span :if={@preview.kind not in ["advance", "tax_receipt"]}>
+              {Presentation.number(line["quantity"])} × {Presentation.number(line["nights"])} —
+            </span>
+            {Presentation.amount(line["gross"])}
+            <span :if={@preview.kind != "advance"}>
+              {if line["tax_mode"] == "outside",
+                do: "(mimo předmět DPH)",
+                else: "(#{Presentation.number(line["vat_rate"])} % DPH)"}
+            </span>
+          </p>
+          <p :for={line <- @preview.snapshot["deductions"]}>
+            {line["name"]}: {Presentation.amount(line["gross"])}
+          </p>
+          <p :if={@preview.kind == "advance"} class="font-bold">
+            Požadovaná záloha: {Presentation.amount(@preview.total)}
+          </p>
+          <p :if={@preview.kind != "advance"} class="font-bold">
+            Celkem {Presentation.amount(@preview.total)}; po odpočtech {Presentation.amount(
+              Decimal.add(
+                @preview.total,
+                CozyCheckout.Billing.Money.total(@preview.snapshot["deductions"])
+              )
+            )}
+          </p>
+          <p>Vystavený doklad se uzamkne. PDF a odeslání e-mailem najdete níže u dokladu.</p>
+          <button class="btn btn-primary" phx-click="issue" phx-disable-with="Vystavuji…">Vystavit doklad</button>
+        </section>
         <section
           :if={not @personal?}
           id="billing-documents"

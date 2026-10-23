@@ -97,10 +97,15 @@ defmodule CozyCheckout.BillingPdfEmailTest do
 
     advance = issue!(booking, "advance", %{"amount" => "2850"})
     advance_html = Pdf.html(advance)
-    assert advance_html =~ "Záloha na pobyt a objednané služby"
+    assert advance_html =~ "Rozpis pobytu a objednaných služeb"
+    assert advance_html =~ "Záloha zadaná částkou: 2 850,00 CZK"
+    assert advance_html =~ "Jedn. cena s DPH"
+    refute advance_html =~ "<th>Základ"
+    refute advance_html =~ "<th>DPH"
+    refute advance_html =~ "Rekapitulace"
     refute advance_html =~ "Přijatá záloha"
-    refute advance_html =~ "<th>Počet</th>"
-    refute advance_html =~ "<th>Nocí</th>"
+    assert advance_html =~ "<th>Osob / množství</th>"
+    assert advance_html =~ "<th>Nocí / jednotek</th>"
     refute advance_html =~ "DUZP"
     assert advance_html =~ "K úhradě: 2 850,00 CZK"
 

@@ -19,6 +19,27 @@ defmodule CozyCheckout.Billing.Presentation do
   def line_label(_line, "tax_receipt"), do: "Přijatá záloha na pobyt a objednané služby"
   def line_label(line, _kind), do: line["name"]
 
+  def advance_breakdown(%{kind: "advance", snapshot: snapshot}),
+    do: snapshot["advance_calculation"]
+
+  def advance_breakdown(_document), do: nil
+
+  def advance_explanation(%{"method" => "percent"} = calculation) do
+    "#{number(calculation["percent"])} % z #{amount(calculation["stay_total"])} = #{amount(calculation["amount"])}"
+  end
+
+  def advance_explanation(%{"method" => "amount"} = calculation),
+    do: "Záloha zadaná částkou: #{amount(calculation["amount"])}"
+
+  def gross_unit_price(%{"basis" => "legacy_net", "tax_mode" => "taxable"} = line) do
+    Decimal.mult(
+      Money.value(line, "unit"),
+      Decimal.add(1, Decimal.div(Money.value(line, "vat_rate"), 100))
+    )
+  end
+
+  def gross_unit_price(line), do: Money.value(line, "unit")
+
   def balance_label(value) do
     case Decimal.compare(Money.decimal(value), 0) do
       :gt -> "K úhradě"

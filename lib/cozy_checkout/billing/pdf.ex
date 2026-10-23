@@ -84,11 +84,9 @@ defmodule CozyCheckout.Billing.Pdf do
     <div class="parties"><div class="party"><h2>Dodavatel</h2>#{party(supplier)}</div><div class="party"><h2>Odběratel</h2>#{party(buyer)}</div></div>
     <p>Vystaveno: #{date(document.issued_on)} #{if document.kind == "advance", do: "", else: " · #{if document.kind == "tax_receipt", do: "Přijetí platby", else: "DUZP"}: #{date(document.tax_date)}"}<br>#{if document.kind == "tax_receipt", do: "", else: "Splatnost: #{date(document.due_on)}<br>"}Pobyt: #{date(document.snapshot["check_in"])} – #{date(document.snapshot["check_out"])}</p>
     #{if document.snapshot["original_number"], do: "<p>Oprava dokladu #{escape(document.snapshot["original_number"])}<br>Důvod: #{escape(document.snapshot["reason"])}</p>", else: ""}
-    <table><thead><tr>#{line_headers(document.kind)}</tr></thead><tbody>
-    #{document_rows(document)}
-    </tbody></table>
+    #{items_table(document)}
     #{if document.kind == "advance", do: "", else: vat_table(document.lines)}
-    <p class="total">Celkem: #{money(document.total)} CZK</p>
+    #{if Presentation.advance_breakdown(document), do: "", else: "<p class=total>Celkem: #{money(document.total)} CZK</p>"}
     #{if deductions != [], do: "<h2>Odpočty přijatých záloh</h2><table><thead><tr><th>Doklad</th><th>Základ CZK</th><th>Daň CZK</th><th>Celkem CZK</th></tr></thead><tbody>#{Enum.map_join(deductions, &deduction_row/1)}</tbody></table>#{vat_table(document.lines ++ deductions)}", else: ""}
     #{if document.kind in ["advance", "final"], do: "<p class=total>#{Presentation.balance_label(due)}: #{Presentation.balance_amount(due)}</p>", else: ""}
     <p>Účet: #{escape(supplier["bank_account"])} · IBAN: #{escape(supplier["iban"])}</p>
@@ -98,6 +96,25 @@ defmodule CozyCheckout.Billing.Pdf do
     <p class="muted">#{escape(supplier["email"])} · #{escape(supplier["phone"])}</p>
     </body></html>
     """
+  end
+
+  defp items_table(document) do
+    if calculation = Presentation.advance_breakdown(document) do
+      rows =
+        Enum.map_join(calculation["lines"], fn line ->
+          "<tr><td>#{escape(line["name"])}</td><td>#{Presentation.number(line["quantity"])}</td><td>#{Presentation.number(line["nights"])}</td><td>#{money(Presentation.gross_unit_price(line))}</td><td>#{money(Money.value(line, "gross"))}</td></tr>"
+        end)
+
+      """
+      <h2>Rozpis pobytu a objednaných služeb</h2>
+      <table><thead><tr><th>Položka</th><th>Osob / množství</th><th>Nocí / jednotek</th><th>Jedn. cena s DPH</th><th>Celkem s DPH</th></tr></thead><tbody>#{rows}</tbody></table>
+      <p class="total">Celková cena pobytu: #{Presentation.amount(calculation["stay_total"])}</p>
+      <p class="muted">Ceny jsou včetně DPH. Částky jsou zaokrouhlené na haléře.</p>
+      <h2>Výpočet zálohy</h2><p>#{escape(Presentation.advance_explanation(calculation))}</p>
+      """
+    else
+      "<table><thead><tr>#{line_headers(document.kind)}</tr></thead><tbody>#{document_rows(document)}</tbody></table>"
+    end
   end
 
   defp document_rows(document),
