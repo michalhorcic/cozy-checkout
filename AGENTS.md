@@ -29,9 +29,9 @@ and daisyUI; Docker deployment through Coolify.
 
 ## Validation and delivery
 
-- Add or update tests for business-logic changes. Run relevant tests and `mix precommit`; fix issues introduced by the change and report blockers. This alias compiles with warnings as errors, checks unused dependencies, formats and runs tests.
+- Add or update tests for business-logic changes. By default, leave test execution to GitHub CI; do not run local tests or `mix precommit`, wait for CI completion, or poll its status. Run local tests only when explicitly requested or necessary to reproduce and fix the issue being addressed. State in the PR and final response that local tests were not run and the user will verify CI results, or report any local tests actually run.
 - Local PostgreSQL uses the `elixir` role: `PGUSER=elixir PGPASSWORD='' mix test` (or `mix precommit` with the same environment).
-- After validation, create a feature branch, commit, push and open a pull request without additional confirmation unless the user requests otherwise. Include checks and verification limits in the PR.
+- Create a feature branch, commit, push and open a pull request without additional confirmation unless the user requests otherwise. Include checks and verification limits in the PR.
 - Explain the result and validation; mention migrations, configuration changes and breaking changes when applicable.
 
 ## References
