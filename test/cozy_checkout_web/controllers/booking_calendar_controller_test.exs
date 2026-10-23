@@ -13,4 +13,22 @@ defmodule CozyCheckoutWeb.BookingCalendarControllerTest do
 
     assert response(conn, 404) == "Not found"
   end
+
+  test "GET /calendar/bookings.ics rejects an incorrect token", %{conn: conn} do
+    conn = get(conn, "/calendar/bookings.ics?token=incorrect")
+
+    assert response(conn, 404) == "Not found"
+  end
+
+  test "GET /calendar/bookings.ics rejects a list token", %{conn: conn} do
+    conn = get(conn, "/calendar/bookings.ics?token[]=test-booking-calendar-token")
+
+    assert response(conn, 404) == "Not found"
+  end
+
+  test "GET /calendar/bookings.ics rejects a map token", %{conn: conn} do
+    conn = get(conn, "/calendar/bookings.ics?token[value]=test-booking-calendar-token")
+
+    assert response(conn, 404) == "Not found"
+  end
 end
