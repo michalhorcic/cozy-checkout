@@ -42,6 +42,17 @@ se úprava nedotkne.
 
 Zálohová výzva není daňovým dokladem a neznamená přijatou platbu. Výchozí návrh
 je 50 % ceny pobytu, lze zadat jiné procento nebo částku (částka má přednost).
+Nové výzvy v náhledu, detailu i PDF ukazují rozpis dospělých a dětských kategorií,
+počet osob, nocí, jednotkovou cenu s DPH a celkovou cenu každé položky. Zahrnou
+se i objednané služby. Pod celkovou cenou pobytu je výpočet požadované zálohy:
+například **50,00 % z 14 250,00 CZK = 7 125,00 CZK**, nebo údaj o záloze zadané
+přímo částkou. Základ a výše DPH se na výzvě nerozepisují. K úhradě i v QR platbě
+zůstává pouze požadovaná záloha.
+
+Rozpis a způsob výpočtu se při vystavení ukládají s dokladem; pozdější změna
+kalkulace je nepřepočítává. Starší výzvy bez tohoto uloženého rozpisu zachovají
+původní souhrnný text. Již uložená PDF se nemění.
+
 Každá skutečně přijatá záloha před dokončením pobytu se zapisuje s datem, částkou,
 způsobem a referencí. Vznikne vlastní daňový doklad k přijaté platbě. Platba může
 být bez výzvy; několik dílčích plateb vytvoří několik daňových dokladů.

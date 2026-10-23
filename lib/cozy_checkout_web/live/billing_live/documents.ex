@@ -147,13 +147,24 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             <p :if={@document.snapshot["reason"]}>
               Oprava {@document.snapshot["original_number"]}: {@document.snapshot["reason"]}
             </p>
-            <p :for={line <- Presentation.lines(@document)}>
+            <CozyCheckoutWeb.BillingComponents.advance_breakdown
+              id="advance-document-breakdown"
+              document={@document}
+            />
+            <p
+              :for={line <- Presentation.lines(@document)}
+              :if={is_nil(Presentation.advance_breakdown(@document))}
+            >
               {Presentation.line_label(line, @document.kind)}: {Presentation.amount(line["gross"])}
             </p>
             <p :for={line <- @document.snapshot["deductions"] || []}>
               {line["name"]}: {Presentation.amount(line["gross"])}
             </p>
-            <p class="text-xl font-bold">Celkem {Presentation.amount(@document.total)}</p>
+            <p class="text-xl font-bold">
+              {if @document.kind == "advance", do: "Požadovaná záloha:", else: "Celkem"} {Presentation.amount(
+                @document.total
+              )}
+            </p>
             <div class="flex gap-3">
               <.link
                 href={~p"/admin/billing/documents/#{@document.id}/pdf"}

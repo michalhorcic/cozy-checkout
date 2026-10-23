@@ -36,7 +36,14 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     |> form("#billing-issue", issue: %{kind: "advance", percent: "50", amount: ""})
     |> render_submit()
 
-    assert has_element?(view, "#document-preview", "Záloha na pobyt a objednané služby")
+    assert has_element?(view, "#advance-preview-breakdown", "Rozpis pobytu a objednaných služeb")
+
+    assert has_element?(
+             view,
+             "#advance-preview-breakdown",
+             "50,00 % z 5 700,00 CZK = 2 850,00 CZK"
+           )
+
     assert has_element?(view, "#document-preview", "2 850,00 CZK")
     refute has_element?(view, "#document-preview", "Přijatá záloha")
     refute has_element?(view, "#document-preview", "1 × 1")
@@ -182,6 +189,26 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert has_element?(view, "#flash-error", "mezitím změnila")
     assert has_element?(view, "#item-#{adult.id}_quantity[value='4']")
     assert Enum.find(Billing.calculation(booking.id).items, &(&1.id == adult.id)).quantity == 3
+  end
+
+  test "calculation notices clear from the whole notice and stay cleared after refresh", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+
+    for _attempt <- 1..2 do
+      view
+      |> form("#billing-customer", buyer: %{name: "Test Customer", country: "CZ"})
+      |> render_submit()
+
+      assert has_element?(view, "#flash-info", "Uloženo")
+      view |> element("#flash-info") |> render_click()
+      refute has_element?(view, "#flash-info")
+
+      render_click(view, "refresh")
+      refute has_element?(view, "#flash-info")
+    end
   end
 
   test "document email can be checked and sent from the calculation without navigating away", %{
@@ -374,5 +401,38 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     refute has_element?(view, "#billing-personal")
     assert has_element?(view, "#billing-payment")
     assert has_element?(view, "#billing-issue")
+  end
+
+  test "advance preview and issued detail show child categories and the chosen amount", %{
+    conn: conn,
+    booking: booking
+  } do
+    for item <- Billing.calculation(booking.id).items, item.name != "Dospělí" do
+      assert {:ok, _} = Billing.save_item(booking.id, %{"quantity" => "1"}, item.id)
+    end
+
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+
+    view
+    |> form("#billing-issue", issue: %{kind: "advance", percent: "50", amount: "2000"})
+    |> render_submit()
+
+    assert has_element?(view, "#advance-preview-breakdown td", "Děti do 2 let")
+    assert has_element?(view, "#advance-preview-breakdown td", "Děti do 12 let")
+    assert has_element?(view, "#advance-preview-breakdown th", "Jedn. cena s DPH")
+    assert has_element?(view, "#advance-preview-breakdown td", "950,00 CZK")
+    assert has_element?(view, "#advance-preview-breakdown", "Záloha zadaná částkou: 2 000,00 CZK")
+    refute has_element?(view, "#advance-preview-breakdown", "50,00 %")
+    view |> element("button[phx-click=issue]") |> render_click()
+    [document] = Billing.list_documents(%{"booking_id" => booking.id})
+    {:ok, detail, _} = live(conn, "/admin/billing/documents/#{document.id}")
+    assert has_element?(detail, "#advance-document-breakdown td", "Děti do 2 let")
+    assert has_element?(detail, "#advance-document-breakdown td", "Děti do 12 let")
+
+    assert has_element?(
+             detail,
+             "#advance-document-breakdown",
+             "Záloha zadaná částkou: 2 000,00 CZK"
+           )
   end
 end

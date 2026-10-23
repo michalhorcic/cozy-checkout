@@ -55,6 +55,7 @@ defmodule CozyCheckoutWeb.CoreComponents do
     <div
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
+      phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role={if @kind == :error, do: "alert", else: "status"}
       class="pointer-events-auto"
       {@rest}
@@ -75,7 +76,6 @@ defmodule CozyCheckoutWeb.CoreComponents do
         <div class="flex-1" />
         <button
           type="button"
-          phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
           class="group self-start cursor-pointer"
           aria-label={gettext("close")}
         >
