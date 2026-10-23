@@ -270,3 +270,9 @@ Sezonní ceníky, kalkulace, zálohové výzvy, daňové doklady k přijatým pl
 konečné faktury, opravy a vratky jsou dostupné z detailu rezervace.
 Před prvním vystavením doplňte dodavatele a číselné řady podle účetní.
 Postup, PDF, e-maily a zálohování popisuje [BILLING.md](BILLING.md).
+
+## Integrace s ABRA Flexi
+
+Zaplacené barové účty se automaticky odesílají do ABRA Flexi přes frontu Oban.
+Konfiguraci, mapování dokladů a úhrad, řešení chyb i podklady pro budoucí
+napojení pobytových dokladů popisuje [ABRA_INTEGRATION.md](ABRA_INTEGRATION.md).
