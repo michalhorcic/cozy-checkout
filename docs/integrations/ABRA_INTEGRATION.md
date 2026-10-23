@@ -3,11 +3,11 @@
 Aplikace jednosměrně odesílá zaplacené barové objednávky jako vydané faktury
 do REST API ABRA Flexi. Pobytové doklady z modulu `Billing` zatím neexportuje.
 Tento dokument popisuje současný kód a podklady pro jeho rozšíření;
-uživatelský postup fakturace pobytů je v [BILLING.md](BILLING.md).
+uživatelský postup fakturace pobytů je v [BILLING.md](../features/BILLING.md).
 
 ## Konfigurace
 
-[config/runtime.exs](config/runtime.exs) načítá ve všech prostředích nastavení
+[config/runtime.exs](../../config/runtime.exs) načítá ve všech prostředích nastavení
 do `Application.fetch_env!(:cozy_checkout, :abra)`:
 
 | Proměnná prostředí | Význam a současná výchozí hodnota |
@@ -52,7 +52,7 @@ přidává. Význam těchto záznamů v cílové firmě ověřte s účetní.
 
 ## Mapování faktury
 
-[InvoiceBuilder](lib/cozy_checkout/abra/invoice_builder.ex) vytváří JSON
+[InvoiceBuilder](../../lib/cozy_checkout/abra/invoice_builder.ex) vytváří JSON
 `{"winstrom": {"faktura-vydana": [faktura]}}` s jednou objednávkou.
 
 | Pole ABRA | Zdroj / pravidlo |
@@ -108,7 +108,7 @@ automatické spárování v účetnictví. Zpětné čtení banky ani webhooky z
 
 ## HTTP a chyby
 
-[Client](lib/cozy_checkout/abra/client.ex) používá `Req.post/2` s JSON tělem,
+[Client](../../lib/cozy_checkout/abra/client.ex) používá `Req.post/2` s JSON tělem,
 Basic autentizací, hlavičkou `Accept: application/json` a adresou:
 
 ```text
@@ -129,7 +129,7 @@ Klient chyby loguje s prefixem `[Abra]`.
 ## Stav a obsluha
 
 Údaje jsou na `orders`, přidané migrací
-[20260819000002](priv/repo/migrations/20260819000002_add_abra_sync_to_orders.exs).
+[20260819000002](../../priv/repo/migrations/20260819000002_add_abra_sync_to_orders.exs).
 
 | Pole | Význam |
 | --- | --- |
@@ -179,10 +179,10 @@ Tato část je návrh další etapy, nikoli hotová funkcionalita. Barový build
 očekává `Sales.Order`, barové kódy, datum vytvoření účtu a ceny s DPH;
 pobytovou kalkulaci mu nelze přímo předat.
 
-Zdroje pro rozšíření: [Billing](lib/cozy_checkout/billing.ex),
-[Document](lib/cozy_checkout/billing/document.ex),
-[Payment](lib/cozy_checkout/billing/payment.ex),
-[Money](lib/cozy_checkout/billing/money.ex).
+Zdroje pro rozšíření: [Billing](../../lib/cozy_checkout/billing.ex),
+[Document](../../lib/cozy_checkout/billing/document.ex),
+[Payment](../../lib/cozy_checkout/billing/payment.ex),
+[Money](../../lib/cozy_checkout/billing/money.ex).
 
 | Existující data | Význam pro budoucí export |
 | --- | --- |
@@ -218,13 +218,13 @@ bankovní párování zpět současný kód neposkytuje.
 
 ## Kód a ověření
 
-- [Abra](lib/cozy_checkout/abra.ex): orchestrace a kontrola uloženého ID.
-- [Sales](lib/cozy_checkout/sales.ex): zařazení jobů, načítání a ukládání stavů.
-- [AbraSyncWorker](lib/cozy_checkout/workers/abra_sync_worker.ex): pokusy a PubSub.
-- [config/config.exs](config/config.exs): fronty Oban.
-- [abra-vzor.xml](lib/cozy_checkout/abra/abra-vzor.xml): referenční XML; runtime
+- [Abra](../../lib/cozy_checkout/abra.ex): orchestrace a kontrola uloženého ID.
+- [Sales](../../lib/cozy_checkout/sales.ex): zařazení jobů, načítání a ukládání stavů.
+- [AbraSyncWorker](../../lib/cozy_checkout/workers/abra_sync_worker.ex): pokusy a PubSub.
+- [config/config.exs](../../config/config.exs): fronty Oban.
+- [abra-vzor.xml](../../lib/cozy_checkout/abra/abra-vzor.xml): referenční XML; runtime
   jej nenačítá, skutečný přenos vytváří JSON builder.
-- [Finanční testy](test/FINANCIAL_TESTS.md): pokrytí a omezení ověření.
+- [Finanční testy](../development/FINANCIAL_TESTS.md): pokrytí a omezení ověření.
 
 ```sh
 PGUSER=elixir PGPASSWORD='' mix test test/cozy_checkout/financial/abra_client_test.exs test/cozy_checkout/financial/abra_sync_test.exs test/cozy_checkout/financial/accounting_amounts_test.exs test/cozy_checkout/financial/qr_code_test.exs test/cozy_checkout/financial/sales_money_test.exs

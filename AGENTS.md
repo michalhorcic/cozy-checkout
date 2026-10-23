@@ -12,6 +12,8 @@ and daisyUI; Docker deployment through Coolify.
 
 ## Development
 
+- Before starting work, fetch the latest `origin/main` and base new work on its latest commit. When continuing an existing branch, first compare it with the freshly fetched `origin/main` and reconcile relevant changes.
+
 - Inspect the relevant implementation, schemas, migrations and tests first. Follow existing patterns, keep business logic in contexts, and prefer simple solutions. Ask when a material business requirement cannot be resolved from the repository.
 - Keep guest-facing POS flows simple, touch-friendly and short; administrative complexity belongs in admin screens.
 - Preserve existing admin PIN authentication for admin routes, LiveViews and billing downloads; POS stays public. Do not assume generated Phoenix account authentication exists.
@@ -29,15 +31,15 @@ and daisyUI; Docker deployment through Coolify.
 
 ## Validation and delivery
 
-- Add or update tests for business-logic changes. Run relevant tests and `mix precommit`; fix issues introduced by the change and report blockers. This alias compiles with warnings as errors, checks unused dependencies, formats and runs tests.
+- Add or update tests for business-logic changes. By default, leave test execution to GitHub CI; do not run local tests or `mix precommit`, wait for CI completion, or poll its status. Run local tests only when explicitly requested or necessary to reproduce and fix the issue being addressed. State in the PR and final response that local tests were not run and the user will verify CI results, or report any local tests actually run.
 - Local PostgreSQL uses the `elixir` role: `PGUSER=elixir PGPASSWORD='' mix test` (or `mix precommit` with the same environment).
-- After validation, create a feature branch, commit, push and open a pull request without additional confirmation unless the user requests otherwise. Include checks and verification limits in the PR.
+- Create a feature branch, commit, push and open a pull request without additional confirmation unless the user requests otherwise. Include checks and verification limits in the PR.
 - Explain the result and validation; mention migrations, configuration changes and breaking changes when applicable.
 
 ## References
 
 - `README.md`: setup and feature workflows.
-- `BILLING.md`: accommodation billing, configuration and operational limits.
-- `test/FINANCIAL_TESTS.md`: financial regression coverage and commands.
-- `ICAL_IMPORT.md`, `POHODA_EXPORT.md`: integration details.
+- `docs/features/BILLING.md`: accommodation billing, configuration and operational limits.
+- `docs/development/FINANCIAL_TESTS.md`: financial regression coverage and commands.
+- `docs/integrations/ICAL_IMPORT.md`, `docs/integrations/POHODA_EXPORT.md`: integration details.
 - For feature details and framework usage, consult the relevant code, tests and documentation rather than expanding these instructions.
