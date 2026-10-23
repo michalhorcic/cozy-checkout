@@ -9,6 +9,18 @@ defmodule CozyCheckout.BillingPdfEmailTest do
   setup :set_swoosh_global
   setup do: billing_fixture()
 
+  test "a name-only customer renders without blank address lines in a real invoice PDF", %{
+    booking: booking
+  } do
+    assert {:ok, _} = Billing.save_customer(booking.id, %{"name" => "Jana Nováková"})
+    document = issue!(booking, "final")
+    html = CozyCheckout.Billing.Pdf.html(document)
+    assert html =~ "<h2>Odběratel</h2>Jana Nováková</div>"
+    assert {:ok, stored} = Billing.ensure_pdf(document.id)
+    assert stored.pdf =~ "%PDF-"
+    assert byte_size(stored.pdf) > 5000
+  end
+
   @tag timeout: 60_000
   test "Chromium renders real immutable A4 PDF and the mail worker attaches those exact bytes", %{
     booking: booking
