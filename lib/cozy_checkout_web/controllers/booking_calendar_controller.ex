@@ -16,7 +16,7 @@ defmodule CozyCheckoutWeb.BookingCalendarController do
 
   def index(conn, _params), do: send_resp(conn, 404, "Not found")
 
-  defp valid_token?(provided_token) do
+  defp valid_token?(provided_token) when is_binary(provided_token) do
     case Application.get_env(:cozy_checkout, :booking_ical_token) do
       configured_token when is_binary(configured_token) and byte_size(configured_token) > 0 ->
         Plug.Crypto.secure_compare(provided_token, configured_token)
@@ -25,4 +25,6 @@ defmodule CozyCheckoutWeb.BookingCalendarController do
         false
     end
   end
+
+  defp valid_token?(_provided_token), do: false
 end
