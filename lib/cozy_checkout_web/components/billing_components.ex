@@ -1,6 +1,56 @@
 defmodule CozyCheckoutWeb.BillingComponents do
-  @moduledoc "Shared document delivery form for billing screens."
+  @moduledoc "Shared billing document presentation and delivery forms."
   use CozyCheckoutWeb, :html
+
+  alias CozyCheckout.Billing.Presentation
+
+  attr :id, :string, required: true
+  attr :document, :map, required: true
+
+  def advance_breakdown(assigns) do
+    assigns = assign(assigns, :calculation, Presentation.advance_breakdown(assigns.document))
+
+    ~H"""
+    <section :if={@calculation} id={@id} class={["space-y-3"]}>
+      <h3 class={["font-semibold"]}>Rozpis pobytu a objednaných služeb</h3>
+      <div class={["overflow-x-auto rounded-lg border border-secondary-200"]}>
+        <table class={["table w-full min-w-[640px] text-sm"]}>
+          <thead>
+            <tr>
+              <th>Položka</th><th class={["text-right"]}>Osob / množství</th>
+              <th class={["text-right"]}>Nocí / jednotek</th>
+              <th class={["text-right"]}>Jedn. cena s DPH</th>
+              <th class={["text-right"]}>Celkem s DPH</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr :for={line <- @calculation["lines"]}>
+              <td>{line["name"]}</td>
+              <td class={["text-right tabular-nums"]}>{Presentation.number(line["quantity"])}</td>
+              <td class={["text-right tabular-nums"]}>{Presentation.number(line["nights"])}</td>
+              <td class={["whitespace-nowrap text-right tabular-nums"]}>
+                {Presentation.amount(Presentation.gross_unit_price(line))}
+              </td>
+              <td class={["whitespace-nowrap text-right font-medium tabular-nums"]}>
+                {Presentation.amount(line["gross"])}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class={["text-right font-semibold"]}>
+        Celková cena pobytu: {Presentation.amount(@calculation["stay_total"])}
+      </p>
+      <p class={["text-xs text-primary-400"]}>
+        Ceny jsou včetně DPH. Částky jsou zaokrouhlené na haléře.
+      </p>
+      <div class={["rounded-lg border border-secondary-200 bg-secondary-50 p-4"]}>
+        <h3 class={["font-semibold"]}>Výpočet zálohy</h3>
+        <p class={["mt-1 tabular-nums"]}>{Presentation.advance_explanation(@calculation)}</p>
+      </div>
+    </section>
+    """
+  end
 
   attr :id, :string, required: true
   attr :form, :any, required: true

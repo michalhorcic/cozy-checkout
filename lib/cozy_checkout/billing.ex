@@ -573,19 +573,22 @@ defmodule CozyCheckout.Billing do
       "currency" => "CZK"
     }
 
-    {lines, deductions} =
+    {lines, deductions, snapshot} =
       case kind do
         type when type in ["advance", "tax_receipt"] ->
           if final_document(booking_id), do: fail("Vyúčtování již existuje")
 
+          explicit_amount? = attrs["amount"] not in [nil, ""]
+          percent = if not explicit_amount?, do: parse_money!(attrs["percent"] || "50")
+
           amount =
-            if attrs["amount"] not in [nil, ""],
+            if explicit_amount?,
               do: parse_money!(attrs["amount"]),
               else:
                 Money.round(
                   Decimal.mult(
                     Money.total(lines),
-                    Decimal.div(parse_money!(attrs["percent"] || "50"), 100)
+                    Decimal.div(percent, 100)
                   )
                 )
 
@@ -593,7 +596,20 @@ defmodule CozyCheckout.Billing do
                (kind == "advance" and Decimal.gt?(amount, Money.total(lines))),
              do: fail("Záloha musí být kladná a nejvýše cena pobytu")
 
-          {Money.allocate(lines, amount), []}
+          snapshot =
+            if kind == "advance" do
+              Map.put(snapshot, "advance_calculation", %{
+                "method" => if(explicit_amount?, do: "amount", else: "percent"),
+                "percent" => if(percent, do: to_string(percent)),
+                "amount" => to_string(amount),
+                "stay_total" => to_string(Money.total(lines)),
+                "lines" => lines
+              })
+            else
+              snapshot
+            end
+
+          {Money.allocate(lines, amount), [], snapshot}
 
         "final" ->
           if Date.compare(tax_date, today()) == :gt,
@@ -628,7 +644,7 @@ defmodule CozyCheckout.Billing do
               )
             end)
 
-          {lines, deductions}
+          {lines, deductions, snapshot}
 
         _ ->
           fail("Nepodporovaný druh dokladu")
