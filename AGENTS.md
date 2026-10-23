@@ -37,7 +37,7 @@ and daisyUI; Docker deployment through Coolify.
 ## References
 
 - `README.md`: setup and feature workflows.
-- `BILLING.md`: accommodation billing, configuration and operational limits.
-- `test/FINANCIAL_TESTS.md`: financial regression coverage and commands.
-- `ICAL_IMPORT.md`, `POHODA_EXPORT.md`: integration details.
+- `docs/features/BILLING.md`: accommodation billing, configuration and operational limits.
+- `docs/development/FINANCIAL_TESTS.md`: financial regression coverage and commands.
+- `docs/integrations/ICAL_IMPORT.md`, `docs/integrations/POHODA_EXPORT.md`: integration details.
 - For feature details and framework usage, consult the relevant code, tests and documentation rather than expanding these instructions.
