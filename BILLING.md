@@ -27,7 +27,10 @@ přímo do databáze profilů ani do Git repozitáře.
 
 V rezervaci otevřete **Kalkulace, doklady a platby**. Kalkulace eviduje kategorie
 hostů a počty nocí; pouze položky typu Osoby určují obsazenost. Odběratelem může
-být host, firma nebo škola. Doplňte úplnou adresu a fakturační e-mail.
+být host, firma nebo škola. Povinné je pouze jméno nebo název odběratele.
+Adresu, zemi, IČO, DIČ a fakturační e-mail lze volitelně doplnit pod **Další údaje**;
+prázdné údaje se na dokladu nezobrazují. Pro odeslání e-mailem vyplňte příjemce
+v odesílacím formuláři.
 
 Nová kalkulace používá koncové ceny včetně DPH podle dne příjezdu pro celý pobyt,
 ve výchozí sazbě 12 %. Polopenze je zahrnuta v jedné ceně; nápoje se účtují na

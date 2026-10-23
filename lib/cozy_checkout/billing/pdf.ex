@@ -176,7 +176,8 @@ defmodule CozyCheckout.Billing.Pdf do
       if(data["vat_id"] not in [nil, ""], do: "DIČ: #{data["vat_id"]}"),
       data["registry"]
     ]
-    |> Enum.reject(&(&1 in [nil, ""]))
+    |> Enum.map(&String.trim(&1 || ""))
+    |> Enum.reject(&(&1 == ""))
     |> Enum.map_join("<br>", &escape/1)
   end
 

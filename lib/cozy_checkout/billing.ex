@@ -108,13 +108,15 @@ defmodule CozyCheckout.Billing do
   def save_customer(booking_id, attrs) do
     transaction(fn ->
       lock_booking!(booking_id)
+      updated = party_data(attrs)
+      validate_party!(updated, false)
 
       if Repo.exists?(from d in Document, where: d.booking_id == ^booking_id) and
-           customer(booking_id).data != party_data(attrs),
+           customer(booking_id).data != updated,
          do: fail("Odběratel má vystavené doklady; změnu údajů řešte opravou")
 
       customer(booking_id)
-      |> Ecto.Changeset.change(data: party_data(attrs))
+      |> Ecto.Changeset.change(data: updated)
       |> Repo.insert_or_update!()
     end)
   end
@@ -910,7 +912,7 @@ defmodule CozyCheckout.Billing do
     fields =
       if supplier?,
         do: ~w(name street city postcode country company_id vat_id registry bank_account),
-        else: ~w(name street city postcode country)
+        else: ~w(name)
 
     missing = Enum.filter(fields, &(String.trim(data[&1] || "") == ""))
 

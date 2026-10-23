@@ -6,7 +6,6 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   alias CozyCheckoutWeb.BillingLive.Helpers
 
   @buyer_fields [
-    {"name", "Jméno / firma / škola"},
     {"street", "Ulice a číslo"},
     {"city", "Město"},
     {"postcode", "PSČ"},
@@ -684,7 +683,21 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               phx-submit="customer"
               class="grid md:grid-cols-2 gap-3"
             >
-              <.input :for={{key, label} <- @buyer_fields} field={@buyer_form[key]} label={label} /><button class="btn btn-primary md:col-span-2">Uložit odběratele</button>
+              <div class="md:col-span-2">
+                <.input field={@buyer_form[:name]} label="Jméno / firma / škola" required />
+                <p class="text-sm text-primary-400">
+                  Pro vystavení dokladu stačí jméno nebo název odběratele.
+                </p>
+              </div>
+              <details id="billing-customer-details" class="md:col-span-2">
+                <summary class="cursor-pointer text-sm text-primary-400 hover:text-primary-700">
+                  Další údaje <span class="text-xs">(nepovinné)</span>
+                </summary>
+                <div class="mt-3 grid gap-3 md:grid-cols-2">
+                  <.input :for={{key, label} <- @buyer_fields} field={@buyer_form[key]} label={label} />
+                </div>
+              </details>
+              <button class="btn btn-primary md:col-span-2">Uložit odběratele</button>
             </.form>
           </section>
           <section
