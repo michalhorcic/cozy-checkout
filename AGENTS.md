@@ -8,10 +8,10 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 
 - `AGENTS.md` is the single source of truth for repository-wide development instructions. `.github/copilot-instructions.md` points here so Copilot and other agents follow the same rules.
 - Read these instructions before changing code. Inspect the existing implementation, schemas, migrations and tests before applying a rule to a particular feature.
-- **Whenever you make substantial changes during development, review and update these instructions as part of the same change.** This includes changes to architecture, business rules, data models, integrations, configuration, build/test commands, deployment or development workflow.
+- **Before adding any new instruction to `AGENTS.md`, always show the user the proposed wording and ask for explicit approval. Wait for approval before writing it, including when extending an existing bullet or section. Substantial development changes do not automatically authorize additions.** Keep this file concise; do not duplicate behaviour already clear from code, tests or feature documentation.
 - Keep `AGENTS.md` accurate and keep `.github/copilot-instructions.md` aligned with it. Put shared rules here rather than duplicating them in the Copilot file; update that file when its reference or Copilot-specific guidance changes.
 - Remove obsolete or contradictory instructions and record the final supported behaviour. Do not turn historical feature requests or speculative ideas into implementation tasks.
-- Before completing a task, check whether the instructions need updating and mention any material documentation changes in the handoff.
+- Before completing a task, check for obsolete or contradictory instructions and mention any material documentation changes in the handoff. Propose any necessary additions for user approval rather than writing them automatically.
 
 ## Product and development principles
 
