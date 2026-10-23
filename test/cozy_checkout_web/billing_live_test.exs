@@ -54,6 +54,136 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     refute has_element?(view, "#billing-items .badge", "Osoby")
   end
 
+  test "inline edits preview totals, block issuance, survive refresh and save together", %{
+    conn: conn,
+    booking: booking
+  } do
+    invoice = Billing.calculation(booking.id)
+    adult = Enum.find(invoice.items, &(&1.name == "Dospělí"))
+    child = Enum.find(invoice.items, &(&1.name == "Děti do 12 let"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    refute has_element?(view, "#billing-item")
+
+    view |> form("#billing-issue", issue: %{kind: "advance", percent: "50"}) |> render_submit()
+    assert has_element?(view, "#document-preview")
+
+    attrs = %{
+      adult.id => %{quantity: "3", nights: "2", price_per_night: "1000"},
+      child.id => %{quantity: "1"}
+    }
+
+    view |> form("#billing-items-form", items: attrs) |> render_change()
+    assert has_element?(view, "#billing-items-status", "Máte neuložené změny")
+    assert has_element?(view, "#billing-item-#{adult.id}", "6 000,00")
+    refute has_element?(view, "#document-preview")
+    assert Billing.calculation(booking.id).total_price == invoice.total_price
+    render_submit(view, "preview", %{"issue" => %{"kind" => "final"}})
+    render_click(view, "issue")
+    assert Billing.list_documents(%{"booking_id" => booking.id}) == []
+    render_click(view, "refresh")
+    assert has_element?(view, "#item-#{adult.id}_quantity[value='3']")
+    view |> form("#billing-items-form", items: attrs) |> render_submit()
+    saved = Billing.calculation(booking.id)
+    assert Enum.find(saved.items, &(&1.id == adult.id)).quantity == 3
+    assert Enum.find(saved.items, &(&1.id == child.id)).quantity == 1
+    assert Decimal.equal?(saved.total_price, "8640")
+    assert has_element?(view, "#billing-items-status", "Všechny změny jsou uloženy")
+    assert has_element?(view, "#billing-save-items[disabled]")
+    assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 4
+  end
+
+  test "invalid rows remain editable and discard restores persisted values", %{
+    conn: conn,
+    booking: booking
+  } do
+    invoice = Billing.calculation(booking.id)
+    adult = Enum.find(invoice.items, &(&1.name == "Dospělí"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    render_submit(view, "save-items", %{"items" => %{adult.id => %{"quantity" => "-1"}}})
+    assert has_element?(view, "#billing-item-#{adult.id} .text-error")
+    assert Billing.calculation(booking.id).total_price == invoice.total_price
+    assert has_element?(view, "#item-#{adult.id}_quantity[value='-1']")
+    view |> element("#billing-discard-items") |> render_click()
+    assert has_element?(view, "#item-#{adult.id}_quantity[value='2']")
+    assert has_element?(view, "#billing-save-items[disabled]")
+  end
+
+  test "invalid numeric input blocks issuance even when casting produces no changes", %{
+    conn: conn,
+    booking: booking
+  } do
+    adult = Enum.find(Billing.calculation(booking.id).items, &(&1.name == "Dospělí"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    render_change(view, "change-items", %{"items" => %{adult.id => %{"quantity" => "1.5"}}})
+    assert has_element?(view, "#billing-items-status", "Máte neuložené změny")
+    render_submit(view, "preview", %{"issue" => %{"kind" => "final"}})
+    refute has_element?(view, "#document-preview")
+    assert has_element?(view, "#flash-error", "Nejprve uložte")
+  end
+
+  test "explicit repricing refreshes inline prices and missing prices remain blank", %{
+    conn: conn,
+    booking: booking
+  } do
+    adult = Enum.find(Billing.calculation(booking.id).items, &(&1.name == "Dospělí"))
+    {:ok, _} = Billing.save_item(booking.id, %{"price_per_night" => ""}, adult.id)
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    assert has_element?(view, "#item-#{adult.id}_price_per_night[placeholder='Chybí cena']")
+    assert has_element?(view, "#billing-items-form", "Doplňte ceny")
+    render_click(view, "pricing")
+    render_click(view, "apply-pricing")
+    assert has_element?(view, "#item-#{adult.id}_price_per_night[value='950.00']")
+    assert has_element?(view, "#billing-save-items[disabled]")
+  end
+
+  test "new items and removals are drafts until the common save", %{conn: conn, booking: booking} do
+    invoice = Billing.calculation(booking.id)
+    adult = Enum.find(invoice.items, &(&1.name == "Dospělí"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    render_click(view, "remove-item", %{"id" => adult.id})
+    assert has_element?(view, "#billing-item-#{adult.id}", "Bude odstraněno")
+    assert length(Billing.calculation(booking.id).items) == 3
+    render_click(view, "restore-item", %{"id" => adult.id})
+    assert has_element?(view, "#billing-save-items[disabled]")
+    view |> element("#billing-add-item") |> render_click()
+    html = render(view)
+    [_, key] = Regex.run(~r/id="item-([a-f0-9-]+)_name"[^>]*value=""/, html)
+
+    attrs = %{
+      key => %{
+        name: "Poplatek z pobytu",
+        quantity: "2",
+        nights: "3",
+        price_per_night: "50",
+        tax_mode: "outside"
+      }
+    }
+
+    view |> form("#billing-items-form", items: attrs) |> render_change()
+    assert length(Billing.calculation(booking.id).items) == 3
+    view |> form("#billing-items-form", items: attrs) |> render_submit()
+    fee = Enum.find(Billing.calculation(booking.id).items, &(&1.name == "Poplatek z pobytu"))
+    assert fee.item_type == "extra"
+    assert fee.tax_mode == "outside"
+    assert Decimal.equal?(fee.total, "300")
+    assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 2
+    render_click(view, "remove-item", %{"id" => fee.id})
+    view |> form("#billing-items-form") |> render_submit()
+    assert length(Billing.calculation(booking.id).items) == 3
+  end
+
+  test "concurrent edits are rejected without losing draft input", %{conn: conn, booking: booking} do
+    adult = Enum.find(Billing.calculation(booking.id).items, &(&1.name == "Dospělí"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    attrs = %{adult.id => %{quantity: "4"}}
+    view |> form("#billing-items-form", items: attrs) |> render_change()
+    {:ok, _} = Billing.save_item(booking.id, %{"quantity" => "3"}, adult.id)
+    view |> form("#billing-items-form", items: attrs) |> render_submit()
+    assert has_element?(view, "#flash-error", "mezitím změnila")
+    assert has_element?(view, "#item-#{adult.id}_quantity[value='4']")
+    assert Enum.find(Billing.calculation(booking.id).items, &(&1.id == adult.id)).quantity == 3
+  end
+
   test "document email can be checked and sent from the calculation without navigating away", %{
     conn: conn,
     booking: booking

@@ -9,6 +9,55 @@ defmodule CozyCheckout.BookingBillingTest do
     billing_fixture()
   end
 
+  test "batch calculation updates roll back all rows on invalid or foreign items", %{
+    booking: booking
+  } do
+    invoice = Billing.calculation(booking.id)
+    [first, second | _] = invoice.items
+    version = Billing.calculation_version(invoice)
+
+    rows = [
+      %{id: first.id, delete: false, attrs: %{"quantity" => "7"}},
+      %{id: second.id, delete: false, attrs: %{"nights" => "0"}}
+    ]
+
+    assert {:error, %Ecto.Changeset{}} = Billing.save_calculation_items(booking.id, rows, version)
+    assert Billing.calculation_version(Billing.calculation(booking.id)) == version
+    rows = [hd(rows), %{id: Ecto.UUID.generate(), delete: true, attrs: %{}}]
+
+    assert {:error, "Položka nepatří k této kalkulaci"} =
+             Billing.save_calculation_items(booking.id, rows, version)
+
+    assert Billing.calculation_version(Billing.calculation(booking.id)) == version
+  end
+
+  test "batch edits preserve legacy net pricing and issued document snapshots", %{
+    booking: booking
+  } do
+    document = issue!(booking, "advance")
+    invoice = Billing.calculation(booking.id)
+    {:ok, _} = invoice |> Ecto.Changeset.change(pricing_basis: "legacy_net") |> Repo.update()
+    invoice = Billing.calculation(booking.id)
+    adult = Enum.find(invoice.items, &(&1.name == "Dospělí"))
+
+    assert {:ok, saved} =
+             Billing.save_calculation_items(
+               booking.id,
+               [
+                 %{
+                   id: adult.id,
+                   delete: false,
+                   attrs: %{"quantity" => "3", "price_per_night" => "100", "nights" => "2"}
+                 }
+               ],
+               Billing.calculation_version(invoice)
+             )
+
+    assert saved.pricing_basis == "legacy_net"
+    assert Decimal.equal?(saved.total_price, "672")
+    assert Billing.get_document!(document.id).snapshot == document.snapshot
+  end
+
   test "season boundaries, overlapping seasons and saved prices", %{
     booking: booking,
     season: season

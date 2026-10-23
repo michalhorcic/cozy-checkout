@@ -35,8 +35,8 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
        page_title: "Fakturace pobytu",
        buyer_fields: @buyer_fields,
        buyer_form: to_form(buyer, as: :buyer),
-       item_form: item_form(),
-       editing: nil,
+       item_rows: nil,
+       items_dirty?: false,
        pricing: nil,
        preview: nil,
        email_document: nil,
@@ -112,6 +112,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   def handle_event("create", _, socket),
     do: result(Billing.create_calculation(socket.assigns.booking.id), socket)
 
+  def handle_event(event, _, %{assigns: %{items_dirty?: true}} = socket)
+      when event in ["preview", "issue", "pricing", "apply-pricing", "personal", "payment"] do
+    {:noreply, put_flash(socket, :error, "Nejprve uložte nebo zahoďte změny kalkulace.")}
+  end
+
   def handle_event("pricing", _, socket),
     do: {:noreply, assign(socket, :pricing, Billing.pricing_preview(socket.assigns.booking.id))}
 
@@ -132,33 +137,79 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         socket
       )
 
-  def handle_event("edit-item", %{"id" => id}, socket) do
-    item = Enum.find(socket.assigns.calculation.items, &(&1.id == id))
-    {:noreply, assign(socket, editing: id, item_form: item_form(item))}
+  def handle_event("change-items", params, socket),
+    do: {:noreply, update_item_rows(socket, params)}
+
+  def handle_event("add-item", _, socket) do
+    row =
+      editor_row(%BookingInvoiceItem{
+        name: "",
+        quantity: 1,
+        nights: 1,
+        vat_rate: Decimal.new(12),
+        item_type: "extra",
+        tax_mode: "taxable",
+        position: length(socket.assigns.item_rows)
+      })
+
+    {:noreply, socket |> assign(:item_rows, socket.assigns.item_rows ++ [row]) |> editor_state()}
   end
 
-  def handle_event("cancel-item", _, socket),
-    do: {:noreply, assign(socket, editing: nil, item_form: item_form())}
+  def handle_event("remove-item", %{"id" => key}, socket) do
+    rows =
+      Enum.flat_map(socket.assigns.item_rows, fn row ->
+        cond do
+          row.key != key -> [row]
+          is_nil(row.changeset.data.id) -> []
+          true -> [%{row | deleted?: true}]
+        end
+      end)
 
-  def handle_event("save-item", %{"booking_invoice_item" => attrs}, socket) do
-    case Billing.save_item(socket.assigns.booking.id, attrs, socket.assigns.editing) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> assign(editing: nil, item_form: item_form(), preview: nil)
-         |> refresh()
-         |> put_flash(:info, "Položka uložena a přepočítána")}
+    {:noreply, socket |> assign(:item_rows, rows) |> editor_state()}
+  end
 
-      {:error, %Ecto.Changeset{} = cs} ->
-        {:noreply, assign(socket, :item_form, to_form(cs))}
+  def handle_event("restore-item", %{"id" => key}, socket) do
+    rows =
+      Enum.map(socket.assigns.item_rows, fn row ->
+        if row.key == key, do: %{row | deleted?: false}, else: row
+      end)
 
-      {:error, error} ->
-        {:noreply, put_flash(socket, :error, Helpers.error(error))}
+    {:noreply, socket |> assign(:item_rows, rows) |> editor_state()}
+  end
+
+  def handle_event("discard-items", _, socket),
+    do:
+      {:noreply, socket |> assign(item_rows: nil, items_dirty?: false, preview: nil) |> refresh()}
+
+  def handle_event("save-items", params, socket) do
+    socket = update_item_rows(socket, params)
+    rows = socket.assigns.item_rows
+
+    if Enum.all?(rows, &(&1.deleted? or &1.changeset.valid?)) do
+      batch =
+        Enum.map(rows, fn row ->
+          %{id: row.changeset.data.id, delete: row.deleted?, attrs: row.changeset.params || %{}}
+        end)
+
+      case Billing.save_calculation_items(
+             socket.assigns.booking.id,
+             batch,
+             socket.assigns.items_version
+           ) do
+        {:ok, _} ->
+          {:noreply,
+           socket
+           |> assign(item_rows: nil, items_dirty?: false, preview: nil, pricing: nil)
+           |> refresh()
+           |> put_flash(:info, "Změny kalkulace uloženy")}
+
+        {:error, error} ->
+          {:noreply, put_flash(socket, :error, Helpers.error(error))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Opravte označená pole. Změny nebyly uloženy.")}
     end
   end
-
-  def handle_event("delete-item", %{"id" => id}, socket),
-    do: result(Billing.delete_item(socket.assigns.booking.id, id), assign(socket, :preview, nil))
 
   def handle_event("preview", %{"issue" => attrs}, socket) do
     attrs = if attrs["due_on"] == "", do: Map.delete(attrs, "due_on"), else: attrs
@@ -229,27 +280,105 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
 
     calculation = Billing.calculation(id)
 
+    socket =
+      assign(socket,
+        personal?: match?(%{state: "personal"}, calculation),
+        calculation: calculation,
+        pricing_hint: Billing.pricing_preview(id),
+        documents: Billing.list_documents(%{"booking_id" => id}),
+        payments: Billing.list_payments(id),
+        balance: Billing.balance(id)
+      )
+
+    if calculation && (is_nil(socket.assigns.item_rows) or !socket.assigns.items_dirty?) do
+      socket
+      |> assign(
+        item_rows: Enum.map(calculation.items, &editor_row/1),
+        items_version: Billing.calculation_version(calculation)
+      )
+      |> editor_state()
+    else
+      socket
+    end
+  end
+
+  defp editor_row(item) do
+    %{
+      key: item.id || Ecto.UUID.generate(),
+      changeset: BookingInvoiceItem.changeset(item, %{}),
+      deleted?: false
+    }
+  end
+
+  defp update_item_rows(socket, params) do
+    inputs = Map.get(params, "items", %{})
+
+    rows =
+      Enum.map(socket.assigns.item_rows, fn row ->
+        case inputs[row.key] do
+          nil ->
+            row
+
+          attrs ->
+            %{
+              row
+              | changeset: %{
+                  BookingInvoiceItem.changeset(row.changeset.data, attrs)
+                  | action: :validate
+                }
+            }
+        end
+      end)
+
+    socket |> assign(:item_rows, rows) |> editor_state()
+  end
+
+  defp editor_state(socket) do
+    dirty? =
+      Enum.any?(socket.assigns.item_rows, fn row ->
+        row.deleted? or is_nil(row.changeset.data.id) or !row.changeset.valid? or
+          map_size(row.changeset.changes) > 0
+      end)
+
     assign(socket,
-      personal?: match?(%{state: "personal"}, calculation),
-      calculation: calculation,
-      pricing_hint: Billing.pricing_preview(id),
-      documents: Billing.list_documents(%{"booking_id" => id}),
-      payments: Billing.list_payments(id),
-      balance: Billing.balance(id)
+      items_dirty?: dirty?,
+      preview: if(dirty?, do: nil, else: socket.assigns.preview),
+      pricing: if(dirty?, do: nil, else: socket.assigns.pricing)
     )
   end
 
-  defp item_form(
-         item \\ %BookingInvoiceItem{
-           name: "",
-           quantity: 1,
-           nights: 1,
-           vat_rate: Decimal.new(12),
-           item_type: "extra",
-           tax_mode: "taxable"
-         }
-       ),
-       do: to_form(BookingInvoiceItem.changeset(item, %{}))
+  defp row_form(row), do: to_form(row.changeset, as: "items[#{row.key}]", id: "item-#{row.key}")
+
+  defp row_total(row, basis) do
+    item = Ecto.Changeset.apply_changes(row.changeset)
+
+    if row.changeset.valid? and item.price_per_night do
+      CozyCheckout.Billing.Money.line(
+        item.name,
+        item.quantity,
+        item.nights,
+        item.price_per_night,
+        item.vat_rate,
+        item.tax_mode,
+        basis
+      )
+      |> CozyCheckout.Billing.Money.value("gross")
+    end
+  end
+
+  defp editor_total(rows, basis) do
+    active = Enum.reject(rows, & &1.deleted?)
+
+    if Enum.all?(active, fn row ->
+         row.changeset.valid? and
+           (row_total(row, basis) != nil or
+              Ecto.Changeset.get_field(row.changeset, :quantity) == 0)
+       end) do
+      active
+      |> Enum.map(&(row_total(&1, basis) || Decimal.new(0)))
+      |> CozyCheckout.Billing.Money.sum()
+    end
+  end
 
   defp payment_form,
     do:
@@ -338,10 +467,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               Pro datum příjezdu chybí sezonní ceník. Ceny můžete doplnit ručně.
             </p>
             <div class="flex flex-wrap gap-2">
-              <button class="btn" phx-click="pricing">Použít aktuální ceník – náhled</button><button
+              <button class="btn" phx-click="pricing" disabled={@items_dirty?}>Použít aktuální ceník – náhled</button><button
                 :if={@documents == []}
                 class="btn"
                 phx-click="personal"
+                disabled={@items_dirty?}
               >{if @calculation.state == "personal",
                 do: "Zrušit soukromý pobyt",
                 else: "Označit soukromý pobyt"}</button>
@@ -349,101 +479,186 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <p :if={@calculation.state == "personal"} class="alert">
               Soukromý pobyt počítá hosty do obsazenosti; doklady ani platby se neevidují.
             </p>
-            <div class="overflow-x-auto rounded-lg border border-secondary-200">
-              <table id="billing-items" class="table w-full min-w-[760px]">
-                <thead>
-                  <tr>
-                    <th class="w-1/4">Položka</th><th class="text-right">Počet</th><th class="whitespace-nowrap text-right">
-                      Nocí / jednotek
-                    </th><th class="text-right">Cena</th><th class="text-right">DPH</th><th class="text-right">
-                      Celkem
-                    </th><th><span class="sr-only">Akce</span></th>
-                  </tr>
-                </thead><tbody>
-                  <tr :for={item <- @calculation.items} id={"billing-item-#{item.id}"}>
-                    <td>
-                      <span class="font-medium">{item.name}</span>
-                    </td><td class="text-right tabular-nums">{item.quantity}</td><td class="text-right tabular-nums">
-                      {item.nights}
-                    </td><td class="whitespace-nowrap text-right tabular-nums">
-                      {if item.price_per_night,
-                        do: Presentation.amount(item.price_per_night),
-                        else: "Chybí cena"}
-                    </td><td class="whitespace-nowrap text-right">
-                      {if item.tax_mode == "outside",
-                        do: "Mimo DPH",
-                        else: "#{Presentation.number(item.vat_rate)} %"}
-                    </td><td class="whitespace-nowrap text-right font-semibold tabular-nums">
-                      {if item.total, do: Presentation.amount(item.total), else: "—"}
-                    </td><td>
-                      <div class="flex justify-end gap-2 whitespace-nowrap">
-                        <button class="btn btn-sm" phx-click="edit-item" phx-value-id={item.id}>Upravit</button><button
-                          class="btn btn-sm"
-                          phx-click="delete-item"
-                          phx-value-id={item.id}
-                          data-confirm="Odstranit položku kalkulace? U osob se změní obsazenost."
-                        >Odstranit</button>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
             <.form
-              for={@item_form}
-              id="billing-item"
-              phx-submit="save-item"
-              class="grid gap-x-4 gap-y-3 rounded-lg bg-secondary-50 p-4 sm:grid-cols-2 lg:grid-cols-4"
+              for={%{}}
+              id="billing-items-form"
+              phx-change="change-items"
+              phx-submit="save-items"
+              phx-hook="CalculationEditor"
+              data-dirty={to_string(@items_dirty?)}
+              class="space-y-3"
             >
-              <h3 class="font-bold sm:col-span-2 lg:col-span-4">
-                {if @editing, do: "Upravit položku", else: "Přidat položku / poplatek z pobytu"}
-              </h3>
-              <div class="sm:col-span-2">
-                <.input field={@item_form[:name]} label="Název" required />
+              <div id="billing-items" class="space-y-3">
+                <div
+                  class="hidden gap-3 px-4 text-sm font-semibold text-primary-400 md:grid md:grid-cols-[minmax(140px,2fr)_80px_100px_130px_110px]"
+                  aria-hidden="true"
+                >
+                  <span>Položka</span><span class="text-right">Počet</span><span class="text-right">Nocí / jednotek</span><span class="text-right">Cena</span><span class="text-right">Celkem</span>
+                </div>
+                <div
+                  :for={row <- @item_rows}
+                  id={"billing-item-#{row.key}"}
+                  class={[
+                    "rounded-lg border p-4",
+                    cond do
+                      row.deleted? ->
+                        "border-secondary-200 bg-secondary-50"
+
+                      is_nil(row.changeset.data.id) or map_size(row.changeset.changes) > 0 or
+                          !row.changeset.valid? ->
+                        "border-amber-300 bg-amber-50/30"
+
+                      true ->
+                        "border-secondary-200 bg-white"
+                    end
+                  ]}
+                >
+                  <% form = row_form(row) %>
+                  <div
+                    :if={row.deleted?}
+                    class="flex flex-wrap items-center justify-between gap-2 text-sm"
+                  >
+                    <span><s>{Ecto.Changeset.get_field(row.changeset, :name)}</s>
+                    · Bude odstraněno po uložení</span>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-ghost"
+                      phx-click="restore-item"
+                      phx-value-id={row.key}
+                    >Vrátit</button>
+                  </div>
+                  <div :if={!row.deleted?}>
+                    <div class="grid grid-cols-2 items-start gap-x-3 gap-y-2 md:[&_.label]:sr-only md:[&_.fieldset]:mb-0 md:grid-cols-[minmax(140px,2fr)_80px_100px_130px_110px]">
+                      <div class="col-span-2 self-center md:col-span-1">
+                        <p class="font-semibold break-words">
+                          {Ecto.Changeset.get_field(row.changeset, :name) || "Nová položka"}
+                        </p>
+                        <span :if={is_nil(row.changeset.data.id)} class="text-xs text-primary-400">Nová položka</span>
+                      </div>
+                      <.input
+                        field={form[:quantity]}
+                        type="number"
+                        label="Počet"
+                        aria-label={"Počet – #{row.changeset.data.name || "nová položka"}"}
+                        min="0"
+                        required
+                        class="input w-full text-right tabular-nums"
+                      />
+                      <.input
+                        field={form[:nights]}
+                        type="number"
+                        label="Nocí / jednotek"
+                        min="1"
+                        required
+                        class="input w-full text-right tabular-nums"
+                      />
+                      <.input
+                        field={form[:price_per_night]}
+                        type="number"
+                        label={
+                          if @calculation.pricing_basis == "gross",
+                            do: "Cena vč. DPH",
+                            else: "Cena bez DPH"
+                        }
+                        step="0.01"
+                        min="0"
+                        placeholder="Chybí cena"
+                        class="input w-full text-right tabular-nums"
+                      />
+                      <div class="self-center text-right tabular-nums" aria-live="polite">
+                        <span class="block text-xs text-primary-400 md:hidden">Celkem</span>
+                        <b>{if total = row_total(row, @calculation.pricing_basis),
+                          do: Presentation.amount(total),
+                          else: "—"}</b>
+                      </div>
+                    </div>
+                    <details
+                      id={"item-details-#{row.key}"}
+                      open={is_nil(row.changeset.data.id)}
+                      class="mt-2"
+                    >
+                      <summary class="cursor-pointer text-sm text-primary-400 hover:text-primary-700">
+                        Podrobnosti · {if Ecto.Changeset.get_field(row.changeset, :tax_mode) ==
+                                            "outside",
+                                          do: "Mimo DPH",
+                                          else:
+                                            "DPH #{Presentation.number(Ecto.Changeset.get_field(row.changeset, :vat_rate))} %"}
+                      </summary>
+                      <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        <.input field={form[:name]} label="Název" required />
+                        <.input
+                          field={form[:item_type]}
+                          type="select"
+                          label="Typ"
+                          options={[{"Služba / poplatek", "extra"}, {"Osoby (obsazenost)", "person"}]}
+                        />
+                        <.input
+                          field={form[:vat_rate]}
+                          type="number"
+                          label="Sazba DPH (%)"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          required
+                        />
+                        <.input
+                          field={form[:tax_mode]}
+                          type="select"
+                          label="Režim DPH"
+                          options={[{"Zdanitelné", "taxable"}, {"Mimo předmět DPH", "outside"}]}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-ghost mt-2 text-red-700"
+                        phx-click="remove-item"
+                        phx-value-id={row.key}
+                      >Odstranit položku</button>
+                      <p
+                        :if={row.changeset.action && !row.changeset.valid?}
+                        class="mt-2 text-sm text-red-700"
+                      >
+                        Zkontrolujte označená pole.
+                      </p>
+                    </details>
+                  </div>
+                </div>
               </div>
-              <.input
-                field={@item_form[:item_type]}
-                type="select"
-                label="Typ"
-                options={[{"Služba / poplatek", "extra"}, {"Osoby (obsazenost)", "person"}]}
-              />
-              <.input field={@item_form[:quantity]} type="number" label="Počet" min="0" required />
-              <.input
-                field={@item_form[:nights]}
-                type="number"
-                label="Počet nocí / jednotek"
-                min="1"
-                required
-              />
-              <.input
-                field={@item_form[:price_per_night]}
-                type="number"
-                label={
-                  if @calculation.pricing_basis == "gross",
-                    do: "Jednotková cena vč. DPH",
-                    else: "Jednotková cena bez DPH"
-                }
-                step="0.01"
-                min="0"
-              />
-              <.input
-                field={@item_form[:vat_rate]}
-                type="select"
-                label="Sazba DPH"
-                options={[{"12 %", "12"}, {"21 %", "21"}, {"0 %", "0"}]}
-              />
-              <.input
-                field={@item_form[:tax_mode]}
-                type="select"
-                label="Režim (poplatek: mimo DPH)"
-                options={[{"Zdanitelné", "taxable"}, {"Mimo předmět DPH", "outside"}]}
-              />
-              <div class="flex flex-wrap gap-2 items-end sm:col-span-2 lg:col-span-4">
-                <button class="btn btn-primary">Uložit</button><button
-                  class="btn"
-                  type="button"
-                  phx-click="cancel-item"
-                >Zrušit</button>
+              <button
+                type="button"
+                id="billing-add-item"
+                class="btn btn-sm btn-ghost"
+                phx-click="add-item"
+              ><.icon name="hero-plus" class="size-4" />Přidat položku</button>
+              <div class={[
+                "flex flex-wrap items-center justify-between gap-3 rounded-lg border border-secondary-200 bg-secondary-50 p-4",
+                @items_dirty? && "sticky bottom-3 z-10 shadow-sm"
+              ]}>
+                <div aria-live="polite">
+                  <p class="font-semibold">
+                    Celkem: {if total = editor_total(@item_rows, @calculation.pricing_basis),
+                      do: Presentation.amount(total),
+                      else: "Doplňte ceny a opravte chyby"}
+                  </p>
+                  <p id="billing-items-status" class="text-sm text-primary-400">
+                    {if @items_dirty?, do: "Máte neuložené změny", else: "Všechny změny jsou uloženy"}
+                  </p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    id="billing-discard-items"
+                    class="btn"
+                    phx-click="discard-items"
+                    disabled={!@items_dirty?}
+                  >Zahodit změny</button>
+                  <button
+                    id="billing-save-items"
+                    class="btn btn-primary"
+                    disabled={!@items_dirty?}
+                    phx-disable-with="Ukládám…"
+                  >Uložit změny</button>
+                </div>
               </div>
             </.form>
           </div>
@@ -515,7 +730,10 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 type="date"
                 label="Splatnost (prázdné = výchozí)"
               />
-              <button class="btn btn-primary self-end sm:col-span-2">Zkontrolovat náhled</button>
+              <p :if={@items_dirty?} class="text-sm text-amber-700 sm:col-span-2">
+                Před vystavením dokladu uložte nebo zahoďte změny kalkulace.
+              </p>
+              <button class="btn btn-primary self-end sm:col-span-2" disabled={@items_dirty?}>Zkontrolovat náhled</button>
             </.form>
             <div
               :if={@preview}
