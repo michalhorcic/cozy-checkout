@@ -9,6 +9,44 @@ defmodule CozyCheckout.BookingBillingTest do
     billing_fixture()
   end
 
+  for kind <- ["advance", "final"] do
+    test "#{kind} can be previewed and issued with only the customer's name", %{booking: booking} do
+      assert {:ok, customer} = Billing.save_customer(booking.id, %{"name" => "  Jana Nováková  "})
+      assert customer.data["name"] == "Jana Nováková"
+
+      assert Enum.all?(
+               ~w(street city postcode country company_id vat_id email),
+               &(customer.data[&1] == "")
+             )
+
+      assert {:ok, _} = Billing.preview(booking.id, unquote(kind))
+      document = issue!(booking, unquote(kind))
+      assert document.snapshot["customer"] == customer.data
+      assert {:error, _} = Billing.save_customer(booking.id, %{"name" => "Jiný host"})
+    end
+  end
+
+  test "a blank customer name is rejected and old nameless customer records cannot issue", %{
+    booking: booking
+  } do
+    before = Billing.customer(booking.id)
+
+    for attrs <- [%{}, %{"name" => ""}, %{"name" => "  "}] do
+      assert {:error, "Doplňte odběratele: název/jméno"} =
+               Billing.save_customer(booking.id, attrs)
+
+      assert Billing.customer(booking.id).data == before.data
+    end
+
+    before |> change(data: %{"name" => "  "}) |> Repo.update!()
+
+    for kind <- ["advance", "final"] do
+      assert {:error, "Doplňte odběratele: název/jméno"} = Billing.preview(booking.id, kind)
+    end
+
+    assert Billing.list_documents(%{"booking_id" => booking.id}) == []
+  end
+
   test "batch calculation updates roll back all rows on invalid or foreign items", %{
     booking: booking
   } do

@@ -25,6 +25,41 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     )
   end
 
+  test "customer form requires only a name and keeps optional fields in collapsed details", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    assert has_element?(view, "#billing-customer input[name='buyer[name]'][required]")
+    assert has_element?(view, "#billing-customer-details summary", "Další údaje")
+    refute has_element?(view, "#billing-customer-details[open]")
+    refute has_element?(view, "#billing-customer-details [required]")
+
+    attrs =
+      Map.new(~w(street city postcode country company_id vat_id email), &{&1, ""})
+      |> Map.put("name", "Jana Nováková")
+
+    view |> form("#billing-customer", buyer: attrs) |> render_submit()
+    assert Billing.customer(booking.id).data["street"] == ""
+    view |> form("#billing-issue", issue: %{kind: "final"}) |> render_submit()
+    assert has_element?(view, "#document-preview", "Jana Nováková")
+    view |> element("button[phx-click=issue]") |> render_click()
+    [document] = Billing.list_documents(%{"booking_id" => booking.id})
+    assert document.snapshot["customer"]["name"] == "Jana Nováková"
+    assert document.snapshot["customer"]["country"] == ""
+  end
+
+  test "customer name validation keeps the entered optional details on error", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    render_submit(view, "customer", %{"buyer" => %{"name" => "  ", "city" => "Liberec"}})
+    assert has_element?(view, "#flash-error", "název/jméno")
+    assert has_element?(view, "#billing-customer input[name='buyer[city]'][value='Liberec']")
+    assert Billing.customer(booking.id).data["name"] == "Základní škola"
+  end
+
   test "booking flow previews and issues a real document without changing occupancy", %{
     conn: conn,
     booking: booking
