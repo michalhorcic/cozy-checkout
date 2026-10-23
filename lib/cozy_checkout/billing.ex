@@ -339,6 +339,55 @@ defmodule CozyCheckout.Billing do
     end)
   end
 
+  @calculation_item_fields ~w(name quantity nights price_per_night vat_rate item_type tax_mode position)a
+
+  @doc "Version of the editable calculation; checked under the booking lock on batch save."
+  def calculation_version(invoice) do
+    {invoice.pricing_basis, invoice.priced_on, invoice.state,
+     invoice.items
+     |> Enum.sort_by(& &1.id)
+     |> Enum.map(&Map.take(&1, [:id | @calculation_item_fields]))}
+    |> :erlang.term_to_binary()
+    |> then(&:crypto.hash(:sha256, &1))
+    |> Base.encode16()
+  end
+
+  @doc "Atomically saves a complete calculation editor batch, including additions and removals."
+  def save_calculation_items(booking_id, rows, version) do
+    transaction(fn ->
+      lock_booking!(booking_id)
+      invoice = calculation(booking_id) || fail("Chybí kalkulace")
+
+      if calculation_version(invoice) != version,
+        do:
+          fail(
+            "Kalkulace se mezitím změnila. Vaše úpravy zůstaly zachované. Pro načtení aktuální kalkulace použijte Zahodit změny a zadejte úpravy znovu."
+          )
+
+      for row <- rows do
+        item =
+          if row.id,
+            do:
+              Enum.find(invoice.items, &(&1.id == row.id)) ||
+                fail("Položka nepatří k této kalkulaci"),
+            else: %BookingInvoiceItem{booking_invoice_id: invoice.id}
+
+        if row.delete do
+          if item.id, do: Repo.delete!(item)
+        else
+          attrs = Map.take(row.attrs, Enum.map(@calculation_item_fields, &Atom.to_string/1))
+
+          case item |> BookingInvoiceItem.changeset(attrs) |> Repo.insert_or_update() do
+            {:ok, _} -> :ok
+            {:error, cs} -> fail(cs)
+          end
+        end
+      end
+
+      recalculate!(invoice.id)
+    end)
+  end
+
   def set_personal(booking_id, personal? \\ true) do
     transaction(fn ->
       lock_booking!(booking_id)
