@@ -11,16 +11,16 @@ sazby DPH a dobrovolné spropitné se vykazuje samostatně bez DPH.
 Finanční testy:
 
 ```sh
-mix test test/cozy_checkout/financial test/cozy_checkout_web/live/financial
+PGUSER=elixir PGPASSWORD='' mix test test/cozy_checkout/financial test/cozy_checkout_web/live/financial
 ```
 
 Celá projektová kontrola včetně kompilace, formátování a všech testů:
 
 ```sh
-mix precommit
+PGUSER=elixir PGPASSWORD='' mix precommit
 ```
 
-Všech devět finančních testovacích modulů má značku `financial`. V současnosti
+Finanční testovací moduly mají značku `financial`. V současnosti
 nejsou žádné finanční testy označené `known_bug`; není proto třeba tuto značku
 vylučovat ani spouštět samostatně.
 
@@ -57,9 +57,6 @@ Test ztracené odpovědi ABRA simuluje situaci, kdy vzdálený systém doklad ul
 ale klient obdrží timeout. Ověřuje idempotentní identitu požadavku; nepotvrzuje
 chování konkrétní instance ABRA Flexi.
 
-Při posledním ověření po finančních opravách prošel `mix precommit`:
-**108 testů, 0 selhání**.
-
 ## Fakturace rezervací
 
 Soubory `booking_billing_test.exs`, `billing_concurrency_test.exs` a
@@ -67,3 +64,11 @@ Soubory `booking_billing_test.exs`, `billing_concurrency_test.exs` a
 opravné doklady, vratky, souběžné požadavky a skutečné Chromium PDF včetně
 Swoosh příloh. `test/cozy_checkout_web/billing_live_test.exs` ověřuje administraci
 a ochranu přístupu. Pro renderování PDF je potřeba lokální Chromium a české fonty.
+
+Další regresní pokrytí pobytů:
+
+- `booking_summary_test.exs`: odvozené finanční stavy rezervací.
+- `advance_breakdown_test.exs`: rozpis zálohových výzev.
+
+Provozní postupy a nastavení PDF popisuje [fakturace](../features/BILLING.md).
+Počty testů se mění; aktuální výsledek ověření patří ke konkrétnímu commitu.

@@ -1,0 +1,23 @@
+# Plány funkcí
+
+Tento adresář slouží pro uložené plány, ke kterým se lze vracet napříč chaty.
+Aktuálně neobsahuje žádný konkrétní plán funkce. [Šablona](TEMPLATE.md) je výchozí
+kostra, nikoli schválený záměr realizace.
+
+## Jak plán uložit a znovu otevřít
+
+1. Nejprve společně připravíme plán a vyjasníme rozsah a otevřené otázky.
+2. Uložíme jej například jako `docs/plans/2026-10-23-nazev-funkce.md`.
+   Datum označuje vznik; název zůstává stabilní i při pozdější aktualizaci.
+3. Plán obsahuje stav, datum aktualizace, přijatá rozhodnutí, dosavadní postup
+   a nejbližší další krok. Otázky bez odpovědi zůstávají viditelně otevřené.
+4. V novém chatu stačí odkaz na soubor a konkrétní požadavek, například:
+   „Přečti plán v docs/plans/2026-10-23-nazev-funkce.md, ověř současný stav kódu
+   a pokračuj nejbližším nedokončeným krokem.“
+5. Po dokončení zůstává plán na stejném místě se stavem **dokončeno** a odkazy
+   na implementaci a ověření. Popis skutečně dodané funkce patří do `features`
+   nebo `integrations`; původní plán zachovává důvody rozhodnutí.
+
+Navržené stavy: **návrh → připraveno → rozpracováno → dokončeno**.
+Pro odložený nebo opuštěný záměr lze použít **odloženo** nebo **zrušeno** s důvodem.
+Uložený plán sám nepředstavuje pokyn k zahájení implementace.
