@@ -1,9 +1,10 @@
 defmodule CozyCheckout.Bookings.Booking do
   use Ecto.Schema
+  use Flop.Schema
   import Ecto.Changeset
 
-  @derive {
-    Flop.Schema,
+  @flop_options [
+    tiebreaker: false,
     filterable: [:status, :check_in_date, :check_out_date, :short_note],
     sortable: [:check_in_date, :check_out_date, :status, :inserted_at],
     default_order: %{
@@ -12,7 +13,7 @@ defmodule CozyCheckout.Bookings.Booking do
     },
     default_limit: 100,
     max_limit: 100
-  }
+  ]
 
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id

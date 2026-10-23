@@ -687,10 +687,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               <.input :for={{key, label} <- @buyer_fields} field={@buyer_form[key]} label={label} /><button class="btn btn-primary md:col-span-2">Uložit odběratele</button>
             </.form>
           </section>
-          <section
-            :if={not @personal?}
-            class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6"
-          >
+          <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6">
             <h2 class="text-xl font-bold">Vystavit doklad</h2>
             <.form
               for={@issue_form}

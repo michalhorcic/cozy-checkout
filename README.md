@@ -1,5 +1,37 @@
 # CozyCheckout
 
+## Elixir and Erlang versions
+
+Use the versions pinned in `.tool-versions` (Elixir 1.20.4 / Erlang/OTP 29.1).
+CI reads this file; keep the `ELIXIR_VERSION` and `OTP_VERSION` arguments in
+`Dockerfile` aligned with it. The application supports the Elixir 1.20 patch line.
+
+On macOS, Homebrew can manage mise while mise manages the project's runtimes:
+
+```sh
+brew install mise
+echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
+exec zsh
+cd /path/to/cozy-checkout
+mise install
+elixir --version
+```
+
+Activate mise once in your shell. It reads `.tool-versions` automatically; asdf
+can use the same file. `brew upgrade` can then update Homebrew packages without
+selecting a different runtime for this project. Check `which elixir` if the
+Homebrew installation still takes precedence.
+
+Review dependencies every 2–4 weeks with `mix hex.outdated` and `mix hex.audit`.
+Prioritize security fixes and read release notes before selecting updates with
+`mix deps.update PACKAGE ...`. Commit both `mix.exs` and `mix.lock` when they
+change. Review Elixir/OTP support and larger dependency upgrades quarterly;
+update runtime pins, Docker and CI together in a dedicated PR when practical.
+Validate with `mix precommit`, `mix hex.audit`, `MIX_ENV=prod mix assets.deploy`
+and `MIX_ENV=prod mix release`, including real Chromium PDF tests. Test a release
+on staging before production and retain the previous image for rollback; database
+migrations need their own compatibility and backup review.
+
 To start your Phoenix server:
 
 * Run `mix setup` to install and setup dependencies

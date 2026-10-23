@@ -49,6 +49,7 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 - Keep individual `order_items` records while grouping their UI presentation by product and unit amount. Allow expanding groups and deleting individual items; POS must not delete whole groups.
 - Show order names in order selection and prices on product cards or amount choices. For products with `default_unit_amounts`, offer only predefined amounts; preserve the existing fallback for products without presets.
 - Prefer Flop for admin filtering, sorting and pagination without adding `flop_phoenix` unless compatibility is established. Keep reusable UI separate from query logic, encode filters in URLs and handle empty results.
+- Flop schemas use `use Flop.Schema` and `@flop_options` (Flop 0.29+). Keep `tiebreaker: false` to preserve the existing ordering; review any future change to tie ordering explicitly.
 - Orders support status, name, guest, order-number, creation-date range and booking guest-name filters. Order-number search uses ILIKE. Support sorting by creation time and status, defaulting to newest first.
 - Preserve the 80mm receipt at `/admin/orders/:id/receipt`, accessible from order details and POS cash/QR payment success. Include items, total, payment date, document number and VAT breakdown.
 - Printed company details are Moruška s.r.o., IČO 23741457, Jindřichův dům, Pec pod Sněžkou 24.
@@ -105,6 +106,7 @@ Tailwind CSS v4 and daisyUI, with Docker deployment through Coolify.
 
 ## Validation and handoff
 
+- Use the Elixir/Erlang versions in `.tool-versions` (mise/asdf); CI reads that file. Keep Docker's runtime arguments aligned and the Elixir requirement in `mix.exs` accurate. Review dependency updates in small groups, commit `mix.lock`, run `mix hex.audit`, and verify production assets/release as well as tests after upgrades. See README for the maintenance cadence and macOS setup.
 - After completing and validating repository changes, automatically create a feature branch, commit and push the changes, and open a pull request without asking for additional confirmation, unless the user explicitly requests otherwise. Include the completed checks and any verification limits in the PR description.
 - Add or update tests for business-logic changes. Run relevant tests, check formatting and run `mix precommit` before completing changes; fix issues introduced by the change and report any blockers.
 - `mix precommit` compiles with warnings as errors, checks unused dependencies, formats and runs tests. See `test/FINANCIAL_TESTS.md` for the financial regression suite.
