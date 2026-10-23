@@ -42,8 +42,8 @@ jobs:
       - name: Set up Elixir and Erlang
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.18.3'
-          otp-version: '27.3'
+          version-file: .tool-versions
+          version-type: strict
 
       - name: Cache dependencies and compiled test code
         uses: actions/cache@v4
@@ -51,7 +51,7 @@ jobs:
           path: |
             deps
             _build/test
-          key: ${{ runner.os }}-elixir-1.18.3-otp-27.3-test-${{ hashFiles('mix.lock') }}
+          key: ${{ runner.os }}-beam-test-${{ hashFiles('.tool-versions', 'mix.lock') }}
 
       - name: Set up Chrome for real PDF tests
         id: chrome
@@ -65,6 +65,15 @@ jobs:
 
       - name: Install dependencies
         run: mix deps.get
+
+      - name: Audit dependency security
+        run: mix hex.audit
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Compile with warnings as errors
+        run: mix compile --warnings-as-errors
 
       # The project's test alias creates the database and runs migrations.
       # Run every test, including known_bug regressions, so failures block CI.

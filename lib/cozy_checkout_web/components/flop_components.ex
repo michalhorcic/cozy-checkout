@@ -370,7 +370,7 @@ defmodule CozyCheckoutWeb.FlopComponents do
     cond do
       # Show all pages if 7 or less
       total_pages <= 7 ->
-        Enum.to_list(1..total_pages)
+        Enum.to_list(1..total_pages//1)
 
       # Current page is in the first 4 pages
       current_page <= 4 ->
