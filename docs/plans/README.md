@@ -1,8 +1,12 @@
 # Plány funkcí
 
 Tento adresář slouží pro uložené plány, ke kterým se lze vracet napříč chaty.
-Aktuálně neobsahuje žádný konkrétní plán funkce. [Šablona](TEMPLATE.md) je výchozí
-kostra, nikoli schválený záměr realizace.
+[Šablona](TEMPLATE.md) je výchozí kostra, nikoli schválený záměr realizace.
+
+## Přehled plánů
+
+- [Integrace fakturace ubytování s ABRA Flexi](2026-10-23-abra-ubytovani.md)
+  — návrh; čeká na vzory od účetní a ověření API v testovací firmě.
 
 ## Jak plán uložit a znovu otevřít
 
