@@ -44,7 +44,6 @@ defmodule CozyCheckoutWeb.CoreComponents do
   attr :title, :string, default: nil
   attr :kind, :atom, values: [:success, :info, :error], doc: "used for styling and flash lookup"
   attr :info_class, :string, default: nil
-  attr :auto_dismiss, :boolean, default: true
   attr :rest, :global, doc: "the arbitrary HTML attributes to add to the flash container"
 
   slot :inner_block, doc: "the optional inner block that renders the flash message"
@@ -56,9 +55,9 @@ defmodule CozyCheckoutWeb.CoreComponents do
     <div
       :if={msg = render_slot(@inner_block) || Phoenix.Flash.get(@flash, @kind)}
       id={@id}
+      phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
       role={if @kind == :error, do: "alert", else: "status"}
       class="pointer-events-auto"
-      phx-hook={@auto_dismiss && "Flash"}
       {@rest}
     >
       <div class={[
@@ -77,7 +76,6 @@ defmodule CozyCheckoutWeb.CoreComponents do
         <div class="flex-1" />
         <button
           type="button"
-          phx-click={JS.push("lv:clear-flash", value: %{key: @kind}) |> hide("##{@id}")}
           class="group self-start cursor-pointer"
           aria-label={gettext("close")}
         >

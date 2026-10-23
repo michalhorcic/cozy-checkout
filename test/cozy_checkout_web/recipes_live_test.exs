@@ -366,7 +366,7 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     {:ok, detail, _} = follow_redirect(result, conn, "/admin/recipes/#{recipe.id}")
     assert has_element?(detail, "#flash-success .bg-emerald-50", "Recept uložen")
     refute has_element?(detail, "#flash-error")
-    detail |> element("#flash-success button") |> render_click()
+    detail |> element("#flash-success") |> render_click()
     refute has_element?(detail, "#flash-success")
   end
 

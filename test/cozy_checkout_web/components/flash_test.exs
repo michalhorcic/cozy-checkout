@@ -20,11 +20,6 @@ defmodule CozyCheckoutWeb.FlashTest do
 
       assert Enum.count(LazyHTML.query(html, "#flash-#{kind} .hero-#{icon}")) == 1
       assert Enum.count(LazyHTML.query(html, "#flash-#{kind} button[aria-label]")) == 1
-      assert Enum.count(LazyHTML.query(html, "#flash-#{kind}[phx-hook='Flash']")) == 1
-    end
-
-    for id <- ["client-error", "server-error"] do
-      assert Enum.count(LazyHTML.query(html, "##{id}[phx-hook]")) == 0
     end
   end
 
@@ -38,5 +33,22 @@ defmodule CozyCheckoutWeb.FlashTest do
       |> LazyHTML.from_fragment()
 
     assert Enum.count(LazyHTML.query(html, "#flash-info .bg-emerald-50")) == 1
+  end
+
+  test "the whole notice dismisses its own flash kind using LiveView's native command" do
+    html =
+      render_component(&Layouts.flash_group/1,
+        flash: %{"success" => "Uloženo", "info" => "Informace", "error" => "Chyba"}
+      )
+      |> LazyHTML.from_fragment()
+
+    for kind <- ["success", "info", "error"] do
+      [command] = LazyHTML.attribute(LazyHTML.query(html, "#flash-#{kind}"), "phx-click")
+      assert [["push", push], ["hide", hide]] = Jason.decode!(command)
+      assert push["event"] == "lv:clear-flash"
+      assert push["value"] == %{"key" => kind}
+      assert hide["to"] == "#flash-#{kind}"
+      assert Enum.empty?(LazyHTML.query(html, "#flash-#{kind} button[phx-click]"))
+    end
   end
 end
