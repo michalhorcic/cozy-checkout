@@ -1,14 +1,14 @@
 # Integrace fakturace ubytování s ABRA Flexi
 
-- Stav: návrh; možnosti API doloženy dokumentací, účetní mapování a celý cyklus
-  čekají na vzory a ověření v testovací firmě.
+- Stav: návrh; možnosti API doloženy dokumentací, vzory zálohy a ZDD prozkoumány.
+  Finální mapování a celý cyklus čekají na další vzory a testovací firmu.
 - Vytvořeno: 2026-10-23
-- Aktualizováno: 2026-10-23
+- Aktualizováno: 2026-10-26
 - Související dokumentace / implementace: [Fakturace pobytů](../features/BILLING.md),
   [Integrace ABRA](../integrations/ABRA_INTEGRATION.md),
   [Billing](../../lib/cozy_checkout/billing.ex), [Abra](../../lib/cozy_checkout/abra.ex).
-- Implementace nebyla zahájena. Uživatel zajistí napojení na testovací firmu;
-  před finálním mapováním jsou potřeba také vzory od účetní.
+- Implementace nebyla zahájena; začne až na výslovný pokyn v samostatném chatu.
+  Uživatel zajistí napojení na testovací firmu a vzor finální faktury dodá později.
 
 ## Problém a očekávaný výsledek
 
@@ -104,6 +104,66 @@ Zbývá ověřit licenci, verzi a oprávnění konkrétní firmy. API respektuje
 uživatele k evidencím i jednotlivým záznamům; dostupnost veřejné dokumentace
 nepotvrzuje přístup na cílové instanci.
 [Přístupová práva](https://demo.flexibee.eu/devdoc/permissions).
+
+### Poznatky z účetních XML vzorů (2026-10-26)
+
+Podklady dodané uživatelem od účetní (originály mimo repozitář):
+
+- `vzor-zalohove-faktury.xml`: samostatná záloha `VF2-0002/2627`, 20 700 Kč.
+- `zdd-doklad-o-platbe.xml`: dva záznamy `faktura-vydana`, záloha
+  `VF2-0001/2627` a ZDD `270100048`, oba na 275 535 Kč. Jde o jiný případ než
+  v prvním souboru, nikoli o ZDD k záloze `VF2-0002/2627`.
+
+Vzory dokládají nastavení konkrétních dokladů, nikoli schválené importní payloady
+nebo úplnou konfiguraci firmy. Jejich interní identity ani stavová pole se do
+nového exportu nemají slepě kopírovat.
+
+| Oblast | Záloha | ZDD |
+| --- | --- | --- |
+| Evidence | `faktura-vydana` | `faktura-vydana` |
+| Typ dokladu | `code:ZÁLOHA` | `code:ZDD` |
+| Řada ve vzoru | `code:ZÁLOHA` | `code:FAKTURA-STANDARD` |
+| Účetní charakter | `ucetni=false` | `ucetni=true` |
+| Struktura | Položková, `bezPolozek=false` | Souhrnná, `bezPolozek=true` |
+| Členění DPH | `code:000U` — bez vlivu na DPH | `code:01-02` |
+| Kontrolní hlášení | `code:0.0.` | `code:A.4-5.AUTO` |
+| Účetní operace | Nevyplněná | `code:ZÁLOHA PŘIJATÁ` |
+
+Řady ve vzorech popisují dosavadní práci účetní. Externí doklady aplikace budou
+používat vlastní vyhrazené řady podle rozhodnutí níže, nikoli automaticky tyto
+sdílené řady. Typy, předkontace a daňové členění se ještě ověří s účetní.
+
+- ZDD používá `primUcet=code:324999`, `protiUcet=code:324001` a pro sníženou
+  DPH `dphSnizUcet=code:343200`. Zjistit, které hodnoty převezme z typu dokladu
+  a které bude integrace posílat výslovně.
+- Položky ubytování mají ceny včetně 12% DPH a účet `602001`; rekreační
+  poplatek má účet `345100`, ceníkový kód `REKREPOPL`, `typCeny.bezDph`
+  a `typSzbDph.dphOsv`. Záloha i ZDD ve druhém souboru obsahují ubytování
+  270 040 Kč (základ 241 107,14 Kč, DPH 28 932,86 Kč) a poplatek 5 495 Kč
+  v `sumOsv`, celkem 275 535 Kč.
+- Rozpis sazeb a DPH na neúčetní záloze v XML sám neznamená její zdanění:
+  hlavička i položky mají členění bez vlivu na DPH. Místní PDF výzvy proto
+  nemusí zobrazovat stejný daňový rozpis jako účetní export.
+- Souhrnný ZDD nabízí možnost mapovat místní daňové skupiny na součty hlavičky
+  místo jednotlivých pobytových položek. Jde o návrh k ověření importem,
+  zejména při dílčí záloze a zaokrouhlení. Přítomnost poplatku v `sumOsv`
+  zatím neuzavírá mapování režimu mimo předmět DPH: ZDD nemá položky a na
+  záloze mají všechny položky členění bez vlivu na DPH. Potřebujeme i vyúčtování.
+- VS nejsou společné pro celý cyklus: záloha ve druhém souboru má `200012627`,
+  ZDD má `270100048`. Vazby se nesmějí odvozovat jen ze shodného VS.
+- Položky jsou zaokrouhlovány na haléře, hlavičky mají `zaokrNa.jednotky`
+  a `zaokrouhlitPoOdpoctu=true`. Celkové částky vzorů jsou celé koruny,
+  takže neověřují shodu s místními haléřovými doklady. Nastavení nepřebírat
+  bez ověření, že nezmění snapshoty a částku k úhradě.
+- Exporty neobsahují bankovní/pokladní pohyby ani vlastní vazby úhrad a odpočtů.
+  Součty a stav „uhrazeno“ nepotvrzují jejich přesné propojení. Samostatná
+  záloha navíc uvádí `stavOdp.vytvZdd`, přestože `juhSum=0` a zbývá uhradit
+  celou částku; tento příznak sám nesmí potvrzovat přijetí peněz.
+
+**Vzor finální vydané faktury uživatel dodá později.** Podobná XML struktura
+nepotvrzuje stejné účtování: ověřit typ, účty, daňové režimy a skutečné odpočty
+ZDD bez dalšího příjmu peněz nebo dvojího zdanění. Nejvhodnější další podklad
+je vyúčtování navazující na druhý soubor, včetně exportovaných vazeb.
 
 ## Rozsah
 
@@ -222,6 +282,30 @@ v jedné místní transakci. HTTP požadavky probíhají mimo ni.
 - Administrace i bankovní údaje zůstávají pod existující PIN autentizací.
   Přístupy budou v prostředí nasazení.
 
+### Číslování externích dokladů
+
+Čísla přiděluje aplikace ve vlastní vyhrazené řadě (případně řadách podle
+druhu dokladu). V Abře se připraví odpovídající samostatné řady pro externí
+doklady, odlišené od ručního vystavování účetní i od baru. Z označení bude
+patrné, že doklad vznikl v aplikaci. Konkrétní kódy, prefixy a členění podle
+období se dohodnou s účetní; tímto plánem se nevymýšlejí.
+
+- Místní databáze bezpečně přidělí jedinečné číslo při vystavení; export
+  předá původní číslo do `kod` a zachová místní VS. Stabilní externí ID zůstává
+  samostatnou identitou pro opakování exportu.
+- Účetní nebude vyhrazené řady používat pro ruční vystavování. Ověřit kolize,
+  limit 20 znaků `kod`, nastavení řad a přechod účetních období.
+- Číslování nepoužívá „maximum v Abře + 1“ ani průběžné přebírání čítače
+  z Abry. Čtení by číslo nerezervovalo a nezabránilo souběžným kolizím.
+- API zpřístupňuje stav řad přes `rada-faktury-vydane`, relaci `polozkyRady`
+  a `rocni-rada` (`cisAkt`, prefix, postfix, účetní období); to lze využít
+  pro kontrolu nastavení, nikoli jako místní generátor čísel.
+  [Metadata roční řady](https://demo.flexibee.eu/c/demo/rocni-rada/properties.json).
+- Aplikace tak nadále vystaví doklad a PDF nezávisle na dostupnosti Abry
+  a účetní export proběhne následně. Vydané doklady se dodatečně nepřečíslují.
+  API podporuje vlastní `kod`.
+  [Pravidla číslování přes API](https://podpora.flexibee.eu/cs/articles/9221020-api-aktualizace-dokladove-rady-na-dokladu).
+
 ## Rozhodnutí
 
 | Datum | Rozhodnutí a důvod | Potvrzení / zdroj |
@@ -237,16 +321,20 @@ v jedné místní transakci. HTTP požadavky probíhají mimo ni.
 | 2026-10-23 | Výchozí interval načítání 15 minut, CZK, explicitně nakonfigurovaný účet. | Návrhový výchozí stav |
 | 2026-10-23 | Nyní pouze uložit plán; pokračovat po pročtení a zajištění vzorů. | Uživatel |
 | 2026-10-23 | Doplnit doložené možnosti a omezení API; uživatel zajistí napojení na testovací firmu pro ověřování API a budoucí implementace. Tato aktualizace nezahajuje implementaci. | Uživatel |
+| 2026-10-26 | Vlastní vyhrazené řady aplikace, čísla přiděluje místní databáze a ABRA je přebírá. Externí původ bude viditelný, zůstává nezávislé místní vystavování a následný export. | Uživatel |
+| 2026-10-26 | Vzory zálohy a ZDD dodány; finální fakturu uživatel dodá později. Implementace začne až na výslovný pokyn v samostatném chatu. | Uživatel |
 
 ## Otevřené otázky
 
 Před implementací účetního mapování doplnit:
 
-- Vzory od účetní: zálohová výzva, daňový doklad k platbě, vyúčtování
-  s odpočtem, oprava, hotovostní příjem/výdej a bankovní vratka. Potřebné jsou
-  exporty s vazbami, nejen PDF.
-- Cílové typy, řady, předkontace, daňové režimy a způsob zachování místního
-  čísla dokladu.
+- Zbývající vzory od účetní: vyúčtování s odpočtem (uživatel dodá později),
+  oprava, hotovostní příjem/výdej a bankovní vratka. Záloha a ZDD již dodány,
+  chybí však export jejich platebních vazeb. Potřebné jsou exporty s vazbami,
+  nejen PDF.
+- Finální cílové typy, předkontace a daňové režimy podle vzorů; kódy a formát
+  vlastních vyhrazených řad a ověření importu místního čísla do `kod`.
+  Autorita aplikace nad číslováním je již rozhodnuta.
 - Konkrétní payloady a výsledné vazby doložených API operací v testovací
   firmě, zejména záloha bez předchozí výzvy, oprava ZDD a vratka zdaněné zálohy.
 - Přesná shoda odpočtů při různých sazbách, přeplatku a nulovém doplatku;
@@ -265,9 +353,10 @@ ponechanou implementátorovi.
 
 - [x] Ověřit obecné možnosti API v oficiální dokumentaci a veřejných metadatech;
   doložit mechanismy, omezení a zbývající nejistoty.
+- [x] Prozkoumat dodané XML zálohy a ZDD a rozhodnout vlastní číslování aplikace.
 - [ ] Zajistit napojení na testovací firmu (uživatel).
-- [ ] Získat vzory a ověřit API i účetní vazby v testovací firmě; výsledné
-  mapování doplnit do plánu.
+- [ ] Získat zbývající vzory (finální fakturu uživatel dodá později) a ověřit
+  API i účetní vazby v testovací firmě; výsledné mapování doplnit do plánu.
 - [ ] Ověřit celý vzorový cyklus včetně opakování po ztracené odpovědi
   a kontroly částek.
 - [ ] Přidat evidenci synchronizace, bankovních pohybů a zapojení nových rezervací.
@@ -306,7 +395,10 @@ Před zapnutím integrace navíc ověřit proti skutečnému API:
 - Počáteční import a pokračování Changes API, pozdě importovaný starší pohyb,
   změnu a smazání pohybu i změnu párování; také souběžný zásah účetní.
 - Zachování čísel dokladů a jejich limitů, daňové režimy, oprávnění a nastavení
-  automatizací na používané verzi instance.
+  automatizací na používané verzi instance; vlastní vyhrazené řady, souběžné
+  místní vystavování a přechod období bez kolize s ručními doklady účetní.
+- Souhrnný ZDD podle XML vzoru, rekreační poplatek na odděleném účtu a doklady
+  s haléřovou celkovou částkou vůči vzorovému zaokrouhlení na celé koruny.
 
 Lokální testy při přípravě, uložení a doplnění plánu nebyly spuštěny; změna je pouze
 dokumentační. Při implementaci proběhnou kontroly standardně v CI podle
@@ -334,15 +426,19 @@ zaokrouhlení a souběžné zásahy v Abře. Jejich ověření je podmínkou spu
   potvrzen rozsah s uživatelem. Návrh uložen do tohoto souboru a odkaz přidán
   do [rejstříku plánů](README.md). Následně ověřena oficiální API dokumentace
   a veřejná metadata; zjištění a omezení doplněna se souhlasem uživatele.
-  Implementace integrace nebyla zahájena.
-- Zbývá: napojení na testovací firmu, účetní vzory, ověření celého cyklu a přesné
-  mapování. Uživatel zajistí napojení pro testování API a budoucí implementace.
-- Blokuje: chybějící vzory a dosud nepřipravené napojení na testovací firmu.
-  Přístup k dokumentaci již není překážkou; API testovací firmy zde testováno nebylo.
-- Nejbližší další krok: po zajištění přístupu ověřit verzi, licenci, oprávnění
-  a nastavení testovací firmy, s účetními vzory projít celý cyklus a doplnit
-  mapování. Před implementací znovu ověřit aktuální kód; tato dokumentační
-  aktualizace není zahájením implementace.
+  Dne 2026-10-26 prozkoumány XML zálohy a ZDD a schváleny vlastní řady aplikace.
+  Implementace integrace nebyla zahájena a tento chat ji nezahajuje.
+- Zbývá: napojení na testovací firmu, finální faktura a další účetní vzory,
+  ověření celého cyklu a přesné mapování. Uživatel zajistí napojení a finální
+  fakturu dodá později.
+- Blokuje dokončení: chybějící vzory včetně vyúčtování a dosud nepřipravené
+  napojení na testovací firmu. Přístup k dokumentaci již není překážkou;
+  API testovací firmy zde testováno nebylo.
+- Nejbližší další krok: v samostatném chatu na výslovný pokyn uživatele znovu
+  ověřit aktuální kód a stav přístupu. Bez finální faktury lze jako první
+  samostatný krok připravit a v testovací firmě ověřit vytvoření zálohy;
+  celý cyklus se dokončí až po dodání a ověření zbývajících vzorů. Před zápisem
+  ověřit cílovou testovací firmu, licenci, oprávnění, nastavení a vlastní řady.
 
 V novém chatu lze navázat například:
 
