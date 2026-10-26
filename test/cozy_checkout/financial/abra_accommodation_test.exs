@@ -17,7 +17,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
       username: "test-user",
       password: "test-password",
       advance_type_code: "ZÁLOHA",
-      advance_series_code: "COZY-ZALOHY",
+      advance_series_code: "COZY-ZALOHA",
       bank_account_code: "TEST-UCET"
     )
 
@@ -42,7 +42,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert invoice["varSym"] == doc.variable_symbol
     assert invoice["nazFirmy"] == doc.snapshot["customer"]["name"]
     assert invoice["typDokl"] == "code:ZÁLOHA"
-    assert invoice["rada"] == "code:COZY-ZALOHY"
+    assert invoice["rada"] == "code:COZY-ZALOHA"
     assert invoice["clenDph"] == "code:000U"
     assert invoice["ucetni"] == false
     refute Map.has_key?(invoice, "hotovostni-uhrada")
@@ -195,7 +195,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
       "sumCelkem" => to_string(doc.total),
       "mena" => "code:CZK",
       "typDokl" => "code:ZÁLOHA",
-      "rada" => "code:COZY-ZALOHY",
+      "rada" => "code:COZY-ZALOHA",
       "bankovniUcet" => "code:TEST-UCET",
       "ucetni" => false,
       "clenDph" => "code:000U",

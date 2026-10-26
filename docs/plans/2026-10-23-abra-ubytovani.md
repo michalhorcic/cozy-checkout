@@ -288,8 +288,8 @@ v jedné místní transakci. HTTP požadavky probíhají mimo ni.
 Čísla přiděluje aplikace ve vlastní vyhrazené řadě (případně řadách podle
 druhu dokladu). V Abře se připraví odpovídající samostatné řady pro externí
 doklady, odlišené od ručního vystavování účetní i od baru. Z označení bude
-patrné, že doklad vznikl v aplikaci. Konkrétní kódy, prefixy a členění podle
-období se dohodnou s účetní; tímto plánem se nevymýšlejí.
+patrné, že doklad vznikl v aplikaci. Pro zálohové výzvy uživatel zvolil kód řady `COZY-ZALOHA`. Prefixy,
+členění podle období a kódy ostatních druhů dokladů se dohodnou s účetní.
 
 - Místní databáze bezpečně přidělí jedinečné číslo při vystavení; export
   předá původní číslo do `kod` a zachová místní VS. Stabilní externí ID zůstává
@@ -325,6 +325,7 @@ období se dohodnou s účetní; tímto plánem se nevymýšlejí.
 | 2026-10-26 | Vlastní vyhrazené řady aplikace, čísla přiděluje místní databáze a ABRA je přebírá. Externí původ bude viditelný, zůstává nezávislé místní vystavování a následný export. | Uživatel |
 | 2026-10-26 | Vzory zálohy a ZDD dodány; finální fakturu uživatel dodá později. Implementace začne až na výslovný pokyn v samostatném chatu. | Uživatel |
 | 2026-10-26 | Zahájit implementaci po samostatných PR; první krok ruční export zálohové výzvy. Reálné ověření v testovací firmě a schválení provede uživatel před pokračováním. | Uživatel |
+| 2026-10-26 | Vlastní řada zálohových výzev aplikace používá kód `COZY-ZALOHA`. | Uživatel |
 
 ## Otevřené otázky
 

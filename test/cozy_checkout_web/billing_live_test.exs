@@ -368,7 +368,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
       username: "test",
       password: "test",
       advance_type_code: "ZÁLOHA",
-      advance_series_code: "COZY-ZALOHY",
+      advance_series_code: "COZY-ZALOHA",
       bank_account_code: "BANKOVNÍ ÚČET"
     )
 

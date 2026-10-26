@@ -21,15 +21,15 @@ server a firmu pomocí `ABRA_ACCOMMODATION_BASE_URL` a
 | `ABRA_ACCOMMODATION_ENABLED` | `true` povolí ruční export a provádění jobů; výchozí `false`. |
 | `ABRA_ACCOMMODATION_ENABLED_FROM` | Povinný okamžik zapojení **nově vytvořených rezervací**, ISO 8601 s časovou zónou, např. `2026-10-26T12:00:00+01:00`. Posuzuje se `booking.inserted_at`, nikoli datum příjezdu. |
 | `ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE` | Typ zálohy bez `code:`, výchozí `ZÁLOHA` podle XML. |
-| `ABRA_ACCOMMODATION_ADVANCE_SERIES_CODE` | Povinný kód samostatné řady pro exportované zálohy, bez `code:`; bez výchozí hodnoty. |
+| `ABRA_ACCOMMODATION_ADVANCE_SERIES_CODE` | Kód samostatné řady pro exportované zálohy, bez `code:`; výchozí `COZY-ZALOHA` podle rozhodnutí uživatele. |
 | `ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE` | Kód účtu bez `code:`, výchozí `BANKOVNÍ ÚČET` podle XML. Musí odpovídat účtu na místním dokladu. |
 
 V testovací firmě předem ověřte dostupnost číselníků a oprávnění API uživatele
-pro čtení i vytváření vydaných faktur. Vlastní řada je záměrně povinná podle
-rozhodnutí v [plánu](../plans/2026-10-23-abra-ubytovani.md#číslování-externích-dokladů).
-Samotné XML obsahuje sdílenou řadu `ZÁLOHA`, nikoli dosud dohodnutý kód vlastní
-řady aplikace. Případné dočasné použití řady `ZÁLOHA` při testování musí být
-výslovně nastaveno v prostředí.
+pro čtení i vytváření vydaných faktur. V cílové firmě musí existovat vlastní
+řada `COZY-ZALOHA`, schválená uživatelem podle
+[plánu](../plans/2026-10-23-abra-ubytovani.md#číslování-externích-dokladů).
+Je oddělená od sdílené řady `ZÁLOHA` ze vzorového XML. Proměnná prostředí
+umožňuje kód podle potřeby přepsat.
 
 ## Obsah a bezpečné opakování
 
