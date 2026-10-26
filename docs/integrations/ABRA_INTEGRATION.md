@@ -293,3 +293,108 @@ stránkování a výpadek, starší pohyb, změna a chybějící pohyb, účet, 
 párování, starší pobyty, izolace firem, starý VS a absence finančních zápisů,
 PIN ochrana. HTTP se simuluje přes `Req.Test`. Lokální testy nebyly spuštěny;
 výsledky CI ověří uživatel. Skutečné API testovací firmy nebylo ověřeno.
+
+## Ruční potvrzení bankovní zálohy a ZDD
+
+Navazující blok dovoluje v přehledu banky výslovně potvrdit **celý bankovní
+příjem k jedné zálohové výzvě**. Vyžaduje již úspěšný export výzvy do stejné
+firmy, nový pobyt, CZK a shodný VS. Potvrzení je samostatné od importu banky.
+Konečné faktury, příjmy bez výzvy, vratky, rozdělení pohybu a přeplatky nad
+zbývající částku výzvy tato implementace nepotvrzuje.
+
+Přidávací migrace `20261026160000_create_abra_bank_confirmations.exs` zavádí
+jedinečnou vazbu pohybu a místní platby i uložený požadavek na synchronizaci.
+Po migraci zůstává potvrzování vypnuté. Pro zkoušení v testovací firmě nastavte:
+
+```sh
+ABRA_ACCOMMODATION_ENABLED=true
+ABRA_ACCOMMODATION_BANK_CONFIRMATION_ENABLED=true
+```
+
+Stávající nastavení instance, testovací firmy, účtu, přístupů a okamžiku
+zapojení nových pobytů se používá dál. Import banky má vlastní přepínač.
+Čtyři místní číselné řady musí být nastavené; číslo ZDD smí mít nejvýše
+20 znaků. Ověření proti skutečné ABRA provádí uživatel na svém lokálu.
+
+### Mapování ze zaslaného XML ZDD
+
+Výchozí kódy byly převzaty z `zdd-doklad-o-platbe.xml`, z hlavičky účetního
+souhrnného ZDD (nikoli z neúčetní výzvy ve stejném souboru). Osobní údaje,
+číslo vzoru a vzdálené identity se nekopírují. Každou hodnotu lze změnit
+proměnnou prostředí:
+
+| Proměnná (prefix `ABRA_ACCOMMODATION_`) | Výchozí hodnota podle XML |
+| --- | --- |
+| `ZDD_TYPE_CODE` | `ZDD` |
+| `ZDD_VAT_CODE` | `01-02` |
+| `ZDD_VAT_REPORT_CODE` | `A.4-5.AUTO` |
+| `ZDD_OPERATION_CODE` | `ZÁLOHA PŘIJATÁ` |
+| `ZDD_PRIMARY_ACCOUNT` | `324999` |
+| `ZDD_COUNTER_ACCOUNT` | `324001` |
+| `ZDD_VAT12_ACCOUNT` | `343200` |
+| `ZDD_VAT21_ACCOUNT` | `343100` |
+| `ZDD_OUTSIDE_MODE` | `sumOsv` |
+
+Souhrnné ZDD posílá oddělené základy a DPH 12 % a 21 %. Poplatek v místním
+režimu `outside` mapuje podle dodaného vzoru do `sumOsv`; nastavení jiného
+`ZDD_OUTSIDE_MODE` jeho export zastaví. Zdanitelná nula se za tento režim
+nepovažuje a zůstává nepodporovaná. Druhá snížená sazba se neexportuje.
+Vzorek má kladné částky pouze pro 12 % a poplatek; 21% částky a účtování
+plnění mimo DPH je potřeba ověřit na konkrétních případech.
+
+Test částek vzoru očekává základ 241 107,14 Kč, DPH 28 932,86 Kč a poplatek
+5 495 Kč. Doklad používá vlastní místní číslo, VS, snapshot zákazníka a
+částky místního ZDD. Nesdílí řadu `FAKTURA-STANDARD` a nepřebírá vzorové
+zaokrouhlení na celé koruny. DUZP i datum účtování jsou skutečným datem
+přijetí bankovní zálohy; vystavení má místní datum vystavení. Před ostrým
+zapnutím ověřte výsledné DPH a účty v testovací firmě.
+
+### Potvrzení a opakování
+
+1. U návrhu zálohy zvolte **Zkontrolovat přijetí zálohy**. Aplikace načte
+   aktuální bankovní pohyb, celý seznam vazeb a zdrojovou výzvu z ABRA.
+2. Náhled ukáže částku, datum a cílovou výzvu. **Potvrdit zálohu a vystavit ZDD**
+   znovu čte ABRA; při nedostupnosti, změně nebo konfliktu nic místně nezapíše.
+3. Pod zámkem pobytu a pohybu vzniknou v jedné místní transakci platba,
+   uzamčené ZDD a Oban požadavek. Unikátní vazby a identita požadavku chrání
+   opakované potvrzení. Stejná dosud ručně zaevidovaná bankovní platba
+   (pobyt, datum, částka) potvrzení zablokuje kvůli možné duplicitě.
+4. Worker dohledá ZDD podle stabilního externího ID, případně ho vytvoří,
+   ověří celý rozpis částek a účetní nastavení, spáruje existující bankovní
+   příjem s výzvou a připojí existující ZDD přes `vytvor-vazbu-zdd`.
+   Nevytváří bankovní ani pokladní pohyb. Po každé vazbě zkontroluje výsledek.
+5. Po timeoutu znovu čte vzdálený výsledek. Shodné existující úhrady a ZDD vazby
+   použije; konfliktní stav nepřepisuje. Místní platba a ZDD při výpadku
+   zůstávají uložené, vedle nich je vidět samostatný stav účetního přenosu.
+
+Volnost pohybu se neodvozuje pouze z `sparovano`. Kontrola spojuje
+`vazebni-doklady` (cíl a typ vazby) s `vazby` (částka), vyžaduje explicitní
+stav storna a úplný seznam relací. Shodná existující úhrada celé bankovní
+částky téže výzvě se využije; částečně obsazený pohyb, jiné cíle, neznámé
+nebo neúplné vazby se odmítnou. Tyto předpoklady tvaru odpovědí se ještě
+musí ověřit vůči používané verzi ABRA. Neznámá odpověď vede k zastavení.
+
+Nové čtení neposkytuje vzdálený zámek: mezi kontrolou a zápisem může zasáhnout
+účetní či automatizace firmy. Kontroly v workeru a po operacích odhalují
+konflikt; aplikace nepřepisuje místní historii ani neopravuje cizí párování.
+Změna, storno nebo nepřítomnost již potvrzeného pohybu při dalším importu
+vyvolá stav **Vyžaduje účetní kontrolu**, včetně již přeneseného potvrzení.
+Takový konflikt nemá automatické opakování ani tlačítko vrácení platby.
+Běžnou chybu přenosu lze opakovat samostatným tlačítkem.
+
+### Lokální ověření před zapnutím
+
+Na testovací firmě vystavte a exportujte novou výzvu. Připravte bankovní příjem
+se stejným VS (např. dílčí zálohu), načtěte ho a potvrďte. V aplikaci i ABRA
+ověřte částku a datum platby, právě jeden ZDD, daňové součty a obě vazby.
+Zopakujte požadavek i účetní přenos a ověřte, že nepřibyl doklad nebo příjem.
+Dále vyzkoušejte již shodně spárovaný příjem, cizí/částečné párování,
+výpadek přenosu a dodatečnou změnu potvrzeného pohybu. Vypněte automatizace
+firmy, které samy vytvářejí ZDD nebo konkurují explicitnímu párování.
+
+Zásadní testy jsou v `abra_bank_payments_test.exs`: částky XML, dvojí potvrzení,
+rollback, čerstvá změna a výpadek, vznik konečné faktury, opakování po ztracené
+odpovědi při vytvoření ZDD, úhradě i vazbě, shodné a konfliktní párování,
+možná ruční duplicita a vypnutí funkce. HTTP simuluje `Req.Test`; skutečné
+účetní doklady v ABRA při testech nevznikají. Projektové testy nebyly lokálně
+spuštěny podle AGENTS.md; výsledky CI ověří uživatel.

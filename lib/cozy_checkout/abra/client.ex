@@ -93,6 +93,129 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  @doc "Fresh bank data and complete direct relationship lists for a confirmation."
+  def bank_snapshot(id, cfg) do
+    path = "banka/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
+
+    with {:ok, [bank]} when is_map(bank) <- read_records(path, "banka", cfg, detail: "full"),
+         {:ok, links} <- relation_pages(path <> "/vazebni-doklady", "vazebni-doklad", cfg, 0, []),
+         {:ok, amounts} <- relation_pages(path <> "/vazby", "vazba", cfg, 0, []) do
+      {:ok, %{bank: bank, links: links, amounts: amounts}}
+    else
+      {:ok, _} -> {:error, "Bankovní pohyb již neexistuje nebo není jednoznačný"}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def read_invoice(id, cfg) do
+    path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
+
+    case read_records(path, "faktura-vydana", cfg, detail: "full") do
+      {:ok, [invoice]} when is_map(invoice) -> {:ok, invoice}
+      {:ok, []} -> :not_found
+      {:error, :not_found} -> :not_found
+      {:error, reason} -> {:error, reason}
+      _ -> {:error, "Nejednoznačná faktura v ABRA"}
+    end
+  end
+
+  @doc "Pairs an existing bank movement; never supplies fields that create a bank receipt."
+  def match_bank(bank_id, invoice_id, amount, cfg) do
+    payload = %{
+      "winstrom" => %{
+        "banka" => [
+          %{
+            "@create" => "fail",
+            "@update" => "ok",
+            "id" => bank_id,
+            "sparovani" => %{
+              "uhrazovanaFak" => %{
+                "@castka" => to_string(amount),
+                "@type" => "faktura-vydana",
+                "filter" => to_string(invoice_id)
+              },
+              "zbytek" => "ne"
+            }
+          }
+        ]
+      }
+    }
+
+    post_operation("banka", payload, cfg)
+  end
+
+  def link_tax_receipt(receipt_id, bank_id, cfg) do
+    payload = %{
+      "winstrom" => %{
+        "faktura-vydana" => [
+          %{
+            "@create" => "fail",
+            "@update" => "ok",
+            "id" => receipt_id,
+            "vytvor-vazbu-zdd" => %{"uhrada" => bank_id, "uhrada@type" => "banka"}
+          }
+        ]
+      }
+    }
+
+    post_operation("faktura-vydana", payload, cfg)
+  end
+
+  defp post_operation(evidence, payload, cfg) do
+    case Req.post("#{cfg[:base_url]}/c/#{cfg[:company_id]}/#{evidence}.json",
+           json: payload,
+           auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
+           retry: false
+         ) do
+      {:ok, %Req.Response{status: status, body: body}} when status in [200, 201] ->
+        case parse_abra_id(body) do
+          {:ok, _} -> :ok
+          {:error, reason} -> {:error, reason}
+        end
+
+      {:ok, %Req.Response{status: status}} ->
+        {:error, "ABRA operace HTTP #{status}"}
+
+      {:error, exception} ->
+        {:error, Exception.message(exception)}
+    end
+  end
+
+  defp relation_pages(_path, _key, _cfg, offset, _acc) when offset >= 10_000,
+    do: {:error, "Příliš mnoho vazeb; dostupnost pohybu nelze bezpečně ověřit"}
+
+  defp relation_pages(path, key, cfg, offset, acc) do
+    with {:ok, rows} <-
+           read_records(path, key, cfg, detail: "full", limit: 100, start: offset, order: "id") do
+      if length(rows) < 100,
+        do: {:ok, acc ++ rows},
+        else: relation_pages(path, key, cfg, offset + 100, acc ++ rows)
+    end
+  end
+
+  defp read_records(path, key, cfg, params) do
+    case Req.get("#{cfg[:base_url]}/c/#{cfg[:company_id]}/#{path}.json",
+           params: params,
+           auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
+           retry: false
+         ) do
+      {:ok, %Req.Response{status: 200, body: %{"winstrom" => body}}} when is_map(body) ->
+        case body[key] do
+          rows when is_list(rows) -> {:ok, rows}
+          _ -> {:error, "ABRA nevrátila úplná data evidence #{key}"}
+        end
+
+      {:ok, %Req.Response{status: 404}} ->
+        {:error, :not_found}
+
+      {:ok, %Req.Response{status: status}} ->
+        {:error, "ABRA čtení HTTP #{status}"}
+
+      {:error, exception} ->
+        {:error, Exception.message(exception)}
+    end
+  end
+
   defp parse_abra_id(%{"winstrom" => %{"results" => [%{} = result | _]}}) do
     case Map.get(result, "errors") do
       [error | _] = errors ->

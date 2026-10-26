@@ -95,8 +95,10 @@ defmodule CozyCheckout.Abra.Bank do
         |> Ecto.Changeset.change(attrs)
         |> Repo.insert!(
           on_conflict: {:replace, Map.keys(attrs) ++ [:updated_at]},
-          conflict_target: [:base_url, :company_id, :evidence, :remote_id]
+          conflict_target: [:base_url, :company_id, :evidence, :remote_id],
+          returning: true
         )
+        |> CozyCheckout.Abra.BankPayments.notice_import()
       end
 
       changes =
@@ -109,6 +111,14 @@ defmodule CozyCheckout.Abra.Bank do
             ),
             set: [missing_at: DateTime.utc_now(:second)]
           )
+
+          Repo.all(
+            from m in BankMovement,
+              where:
+                ^[base_url: state.base_url, company_id: state.company_id, account: state.account],
+              where: not is_nil(m.missing_at)
+          )
+          |> Enum.each(&CozyCheckout.Abra.BankPayments.notice_import/1)
 
           [scan_id: nil, offset: 0, last_success_at: DateTime.utc_now(:second), error: nil]
         else
@@ -234,7 +244,13 @@ defmodule CozyCheckout.Abra.Bank do
   end
 
   defp suggestion(movement, cfg) do
-    base = %{movement: movement, booking_id: nil, document: nil, difference: nil}
+    base = %{
+      movement: movement,
+      booking_id: nil,
+      document: nil,
+      difference: nil,
+      confirmation: CozyCheckout.Abra.BankPayments.get(movement.id)
+    }
 
     cond do
       movement.missing_at ->
@@ -250,7 +266,17 @@ defmodule CozyCheckout.Abra.Bank do
         Map.put(base, :reason, "Neplatná částka příjmu")
 
       movement.pairing == "paired" ->
-        Map.put(base, :reason, "ABRA hlásí párování – ruční kontrola")
+        if cfg[:bank_confirmation_enabled] == true and match?(%DateTime{}, cfg[:enabled_from]) do
+          candidate = match_documents(base, cfg)
+
+          Map.put(
+            candidate,
+            :reason,
+            "ABRA hlásí párování – před potvrzením ověřte jeho přesnou shodu"
+          )
+        else
+          Map.put(base, :reason, "ABRA hlásí párování – ruční kontrola")
+        end
 
       movement.variable_symbol in [nil, ""] ->
         Map.put(base, :reason, "Chybí VS")
