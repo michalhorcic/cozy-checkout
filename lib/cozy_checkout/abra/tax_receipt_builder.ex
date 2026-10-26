@@ -13,7 +13,7 @@ defmodule CozyCheckout.Abra.TaxReceiptBuilder do
          true <- String.length(doc.number) <= 20,
          true <- doc.snapshot["currency"] == "CZK",
          true <- Decimal.equal?(Money.total(doc.lines), doc.total),
-         {:ok, totals} <- totals(doc.lines, cfg) do
+         {:ok, totals} <- summary_totals(doc.lines, cfg) do
       invoice =
         Map.merge(totals, %{
           "@create" => "ok",
@@ -74,9 +74,9 @@ defmodule CozyCheckout.Abra.TaxReceiptBuilder do
     end
   end
 
-  def supported_lines?(lines, cfg), do: match?({:ok, _}, totals(lines, cfg))
+  def supported_lines?(lines, cfg), do: match?({:ok, _}, summary_totals(lines, cfg))
 
-  defp totals(lines, cfg) do
+  def summary_totals(lines, cfg) do
     initial =
       Map.new(
         ~w(sumOsv sumZklSniz sumDphSniz sumZklSniz2 sumDphSniz2 sumZklZakl sumDphZakl),

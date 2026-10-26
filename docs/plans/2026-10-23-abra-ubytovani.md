@@ -488,3 +488,24 @@ relací i dopady automatizací musí být potvrzeny před ostrým zapnutím.
 První potvrzovací blok nezahrnuje doplatek konečné faktury, zálohu bez výzvy,
 přeplatek nad zbývající částku výzvy, rozdělení pohybu ani vratky.
 Provozní postup a mapování jsou v dokumentaci ABRA_INTEGRATION.md.
+
+### Zkušební vyúčtování před schválením finálního vzoru
+
+Uživatel výslovně požádal vytvořit finální fakturu z dosavadních znalostí,
+aby celý průchod mohl předvést účetní a společně ověřit chybějící části i
+okrajové případy. To povoluje připravit experimentální mapování bez dosud
+chybějícího schváleného vzoru; nepovoluje označit návrh za účetně ověřený.
+
+Přenos konečných faktur má samostatný přepínač, výchozím stavem vypnutý,
+a používá stávající připojení k ABRA pro ubytování. Samostatná URL a firma
+se pro tento export nekonfigurují.
+Použije místní vydanou finální fakturu, skutečné odpočty přenesených ZDD se
+stabilní identitou a zachová daňové základy i DPH. Kontrola existujícího
+vzdáleného výsledku chrání opakování po timeoutu. Žádný nový příjem peněz
+nevzniká. Typ finální faktury a účetní nastavení vyúčtování jsou pracovní
+předpoklady, které účetní musí schválit. Doplatek, opravy a vratky zůstávají
+navazujícími samostatnými kroky.
+
+Podklady pro společný test jsou v [ABRA_ACCOUNTANT_REVIEW.md](../integrations/ABRA_ACCOUNTANT_REVIEW.md).
+Projektové testy se lokálně nespouštěly; výsledky CI a živé účetní ověření
+provádí uživatel na lokálu s účetní. Původní podmínky ostrého spuštění trvají.

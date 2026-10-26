@@ -418,3 +418,66 @@ vydané doklady se nepřepisují. Nové požadavky kontrolují skutečné pole
 `kontaktEmail`. Při neshodě ZDD hláška vypisuje názvy odlišných polí bez jejich
 hodnot a bez zveřejnění osobních údajů. Chybná částka, daňové nebo účetní
 nastavení dál blokují přenos.
+
+## Konečná faktura s odpočty
+
+Na výslovný požadavek uživatele lze připravit a exportovat pracovní vyúčtování
+ještě před dodáním schváleného účetního vzoru. Export má samostatný přepínač
+`ABRA_ACCOMMODATION_FINAL_ENABLED`, výchozím stavem vypnutý, a používá stávající
+připojení k ABRA pro ubytování. Používá stávající detail dokladu a evidenci exportů; přidávací migrace
+ukládá neměnné podklady pro kontrolu výsledku a zdrojových ZDD.
+
+[Postup pro účetní, nastavení, příklad a otevřené předpoklady](ABRA_ACCOUNTANT_REVIEW.md).
+Přenos zachovává místní finální snapshot a původní základy/DPH jednotlivých
+ZDD, posílá skutečné `odpocty-zaloh` se stabilními identitami a kontroluje
+výsledné částky, položky i vazby. Nevytváří další bankovní nebo hotovostní
+příjem a nepřijímá automatické doporučené změny částek. ZDD musí mít dokončený
+přenos do stejného cíle a být stále k dispozici k odpočtu.
+
+Faktura se nejprve vytvoří bez odpočtů a zpětně ověří. Odpočty se pak přidávají
+po jednom samostatnou operací na již existujícím dokladu. Po každé operaci
+se ověří odpovídající mezistav včetně zbývající částky a zdrojových vazeb.
+Do dokončení přenosu tak ABRA může ukazovat celou cenu nebo jen část odpočtů.
+Při opakování se čte aktuální stav: hotová faktura se znovu nevytváří a již
+ověřený odpočet se znovu neposílá. Stejný uložený export lze použít i po chybě
+původního společného požadavku, pokud vzdálený stav projde kontrolami.
+
+V JSON se odpočty posílají jako `"odpocty-zaloh": [{...}]`, bez XML obalu
+`odpocet` ([oficiální příklad JSON](https://podpora.flexibee.eu/cs/articles/4729457-odpocet-zaloh-a-zdd-api)).
+Starší uložené exporty s tímto obalem lze obnovit beze změny jejich snapshotu;
+samostatný požadavek na odpočet se odešle ve správném JSON formátu. Částky
+a volby odpočtu ZDD vycházejí z [dokumentace odpočtů](https://demo.flexibee.eu/devdoc/odpocet-zaloh).
+
+Kontrola odpočtu vychází z [čerpání ZDD přes REST API](https://podpora.flexibee.eu/cs/articles/3422294-cerpani-zdd-rest-api):
+`vazby/vazba/a` odkazuje na konkrétní odpočtovou položku konečné faktury,
+`b` na zdrojové ZDD. V JSON jsou cíle dostupné přes `a@ref` a `b@ref`.
+Vazby se čtou také z relace `vazby` každého zdrojového ZDD: relace hlavičky
+konečné faktury může být prázdná, protože konec `a` míří na její položku.
+Ze zdrojových vazeb se vybírají pouze odpočty do položek právě ověřované
+faktury; bankovní vazby a odpočty do jiných faktur se do jejího výsledku
+nezapočítávají. Odkazy podporují i prefix `/v2/c/`. Stejná vazba vrácená
+z obou stran se započte jednou; nedostupné čtení zdroje přenos zastaví.
+Částky se kontrolují z navázaných položek, nikoli ze spárované částky `castka`
+na vazbě. Každá odpočtová položka musí mít právě jednu ověřenou vazbu;
+základy a DPH se porovnávají samostatně pro každé zdrojové ZDD. Jeden zdroj
+může mít několik položek a vazeb (například ubytování a poplatek).
+Graf `vazebni-doklady` slouží také ke kontrole cílových dokladů, ale jeho počet
+řádků nemusí odpovídat počtu zdrojů. Při nejasných odkazech nebo neúplném
+odpočtu se další zápisy zastaví; chyba rozliší odkazy položek, částky a graf.
+
+Typ běžné vydané faktury, účet pohledávky, účetní předpis a daňové členění
+vyúčtování nejsou schválené vzorem finální faktury. Výchozí `FAKTURA` je
+pracovní návrh kódu typu; musí v testovací firmě existovat, jinak jej nastavte
+na skutečný vhodný typ. Zdanitelné sazby jsou omezené na 12 % a 21 %,
+poplatek mimo DPH používá dosavadní explicitní mapování. Přeplatky, vratky,
+opravy, nepřenesené ZDD a již místně zaznamenané doplatky se zastaví.
+
+Zásadní testy jsou v `abra_final_invoice_export_test.exs`: několik dílčích ZDD,
+haléře, poplatek, žádná přijatá záloha, nulový doplatek, vypnutí a ochrana uloženého cíle,
+nedokončený nebo vyčerpaný zdroj, timeout bez duplicity a neshoda daně či
+zdrojové vazby. Testy skutečné účetní schválení ani živé API nenahrazují.
+
+Položky vydané faktury se načítají přes relaci `polozkyDokladu`; název
+`polozkyFaktury` slouží pro zápis položek do faktury. Čtení stránkuje všechny
+položky i vazby. Chybějící relace se nepovažuje za prázdný seznam: chyba
+obsahuje konkrétní název relace a HTTP stav, aby šla příčina dohledat.

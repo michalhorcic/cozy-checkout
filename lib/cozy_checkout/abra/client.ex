@@ -119,6 +119,69 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  def deductible_amounts(id, cfg) do
+    path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}/castky-k-odpoctu"
+
+    case read_records(path, "castky-k-odpoctu", cfg, detail: "full", limit: 2) do
+      {:ok, [amounts]} when is_map(amounts) ->
+        {:ok, amounts}
+
+      {:ok, _} ->
+        {:error, "ABRA nevrátila jednoznačné zbývající částky ZDD k odpočtu"}
+
+      {:error, :not_found} ->
+        {:error, "ABRA nenabízí zbývající částky ZDD k odpočtu; ověřte verzi a oprávnění API"}
+
+      error ->
+        error
+    end
+  end
+
+  # polozkyFaktury is the import property; polozkyDokladu is the read relation.
+  def final_invoice_snapshot(id, cfg, source_ids \\ []) do
+    path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
+
+    with {:ok, invoice} <- read_invoice(id, cfg),
+         {:ok, items} <-
+           invoice_relation(path, "polozkyDokladu", "faktura-vydana-polozka", cfg),
+         {:ok, links} <- invoice_relation(path, "vazebni-doklady", "vazebni-doklad", cfg),
+         {:ok, amounts} <- invoice_relation(path, "vazby", "vazba", cfg),
+         {:ok, source_bindings} <- source_invoice_bindings(source_ids, cfg) do
+      {:ok,
+       %{
+         invoice: invoice,
+         items: items,
+         links: links,
+         amounts: amounts,
+         source_bindings: source_bindings
+       }}
+    else
+      :not_found -> {:error, "Vyúčtování v ABRA po importu chybí"}
+      error -> error
+    end
+  end
+
+  # A deduction's a endpoint is an invoice ITEM, so the final invoice's header
+  # relation need not contain it. Read the b endpoint (source ZDD) as documented.
+  defp source_invoice_bindings(source_ids, cfg) do
+    Enum.reduce_while(Enum.uniq(source_ids), {:ok, []}, fn id, {:ok, acc} ->
+      path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
+
+      case invoice_relation(path, "vazby", "vazba", cfg) do
+        {:ok, rows} -> {:cont, {:ok, acc ++ rows}}
+        {:error, reason} -> {:halt, {:error, "Čtení vazeb zdrojového ZDD ID #{id}: #{reason}"}}
+      end
+    end)
+  end
+
+  defp invoice_relation(path, relation, key, cfg) do
+    case relation_pages(path <> "/" <> relation, key, cfg, 0, []) do
+      {:error, :not_found} -> {:error, "ABRA nevrátila relaci #{relation} vyúčtování (HTTP 404)"}
+      {:error, reason} -> {:error, "Čtení relace #{relation} vyúčtování selhalo: #{reason}"}
+      result -> result
+    end
+  end
+
   @doc "Pairs an existing bank movement; never supplies fields that create a bank receipt."
   def match_bank(bank_id, invoice_id, amount, cfg) do
     payload = %{
@@ -161,6 +224,27 @@ defmodule CozyCheckout.Abra.Client do
     post_operation("faktura-vydana", payload, cfg)
   end
 
+  @doc "Apply one stable deduction to an existing invoice without resending its prices or header."
+  def apply_invoice_deduction(invoice_id, deduction, cfg) do
+    post_operation(
+      "faktura-vydana",
+      %{
+        "winstrom" => %{
+          "faktura-vydana" => [
+            %{
+              "@create" => "fail",
+              "@update" => "ok",
+              "id" => invoice_id,
+              # JSON collections omit the XML child element (odpocet).
+              "odpocty-zaloh" => [deduction]
+            }
+          ]
+        }
+      },
+      cfg
+    )
+  end
+
   defp post_operation(evidence, payload, cfg) do
     case Req.post("#{cfg[:base_url]}/c/#{cfg[:company_id]}/#{evidence}.json",
            json: payload,
@@ -173,8 +257,8 @@ defmodule CozyCheckout.Abra.Client do
           {:error, reason} -> {:error, reason}
         end
 
-      {:ok, %Req.Response{status: status}} ->
-        {:error, "ABRA operace HTTP #{status}"}
+      {:ok, %Req.Response{status: status, body: body}} ->
+        {:error, extract_error(body, status)}
 
       {:error, exception} ->
         {:error, Exception.message(exception)}
