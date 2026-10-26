@@ -128,9 +128,10 @@ defmodule CozyCheckout.AbraAccommodationTest do
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       assert Jason.decode!(body) == export.payload
 
-      assert get_in(Jason.decode!(body), ["winstrom", "faktura-vydana"])
-             |> hd()
-             |> Map.fetch!("@action") == "create"
+      [invoice] = get_in(Jason.decode!(body), ["winstrom", "faktura-vydana"])
+      assert invoice["@create"] == "ok"
+      assert invoice["@update"] == "fail"
+      refute Map.has_key?(invoice, "@action")
 
       Req.Test.json(conn, %{"winstrom" => %{"results" => [%{"id" => 42}]}})
     end)

@@ -15,7 +15,8 @@ defmodule CozyCheckout.Abra.AdvanceBuilder do
 
       true ->
         invoice = %{
-          "@action" => "create",
+          "@create" => "ok",
+          "@update" => "fail",
           "id" => "ext:cozy-checkout:accommodation:#{doc.id}",
           "kod" => doc.number,
           "varSym" => doc.variable_symbol,

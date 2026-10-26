@@ -51,8 +51,10 @@ umožňuje kód podle potřeby přepsat.
   `ext:cozy-checkout:accommodation:<UUID dokladu>`. Přístupové údaje neukládá.
   Ruční opakování neposkládá jiný payload z aktuální konfigurace nebo ceníku.
 - Před každým importem se hledá vzdálený doklad pod externím ID. Existující
-  doklad se pouze zkontroluje. Nový import používá `@action=create`, takže
+  doklad se pouze zkontroluje. Nový import používá `@create=ok` a `@update=fail`, takže
   souběh ani opožděná odpověď nesmějí vést k aktualizaci existujícího dokladu.
+  Jde o [režimy importu](https://podpora.flexibee.eu/cs/articles/4725944-rezim-pro-zalozeni-zmenu),
+  nikoli o `@action`, které je určeno pro akce nad existujícím záznamem.
 - Po importu se doklad znovu načte a porovná se číslo, VS, částka, měna, typ,
   řada, účet a neúčetní daňové členění. Nesoulad je chyba k ručnímu prověření;
   integrace vzdálený doklad neopravuje. Timeout po přijatém importu se při
