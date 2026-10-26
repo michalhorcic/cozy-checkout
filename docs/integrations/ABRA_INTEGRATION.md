@@ -539,3 +539,67 @@ přehledu: všechny prošly (Elixir 1.20.4 / OTP 27). Dvě selhání způsoboval
 řetězcová kontrola částek; byla opravena na porovnání přes Decimal.
 CI ověří uživatel. Před ostrým použitím ověřte v testovací firmě celý i dílčí doplatek, saldokonto,
 odpočty, vrácené grafy vazeb a obnovu po timeoutu. Živá ABRA zde nebyla volána.
+
+## Automatický export a společný přehled přenosů
+
+Po migraci `20261026210000_allow_pending_accommodation_exports.exs` lze ke
+stávající konfiguraci přidat:
+
+```sh
+ABRA_ACCOMMODATION_AUTO_EXPORT_ENABLED=true
+```
+
+Výchozí hodnota je `false`. Základní integrace musí být zapnutá a musí mít
+platný `ABRA_ACCOMMODATION_ENABLED_FROM`. Rozhoduje okamžik vytvoření pobytu,
+nikoli příjezd. Pro skutečný přenos konečných faktur je nadále potřeba
+`ABRA_ACCOMMODATION_FINAL_ENABLED=true`. Banka, potvrzení plateb a jejich
+přepínače se nemění; potvrzování plateb zůstává výslovným úkonem obsluhy.
+
+Obsluha vystaví výzvu nebo konečnou fakturu obvyklým způsobem. Ve stejné místní
+transakci se uloží jedinečný požadavek na přenos a Oban job. Vystavení nevolá
+ABRA a nečeká na síť ani účetní přípravu exportu. Opakování stejného vystavení
+nevytvoří druhý požadavek. Rollback vrátí doklad, číslo, požadavek i job společně.
+PDF a e-mail pokračují svými dosavadními joby nezávisle na ABRA.
+
+Na pozadí se jednou připraví a uloží účetní payload z neměnného vydaného
+snapshotu. Před přípravou je požadavek uložen s prázdným payloadem; nejde o
+vzdálený doklad. Již připravený payload se při opakování nikdy nepřepočítává.
+URL a firma se zachytí při vystavení, pokud jsou vyplněné; chybějící hodnoty
+se doplní při první úspěšné přípravě. Již známou část cíle nelze přesměrovat
+jinam. Změna cíle přenos zastaví a zobrazí chybu.
+
+Konečná faktura počká ve stavu **Čeká na podmínky**, dokud se nedokončí přenos
+zdrojových ZDD a bankovních vazeb. Kontrola se opakuje po minutě bez vyčerpání
+počtu pokusů o přenos. Stejně čeká při vypnutém exportu konečných faktur.
+Chybějící či konfliktní zdroj, nepodporované účetní údaje nebo neúplná
+konfigurace skončí viditelnou chybou; po vyřešení lze obnovit stejný požadavek.
+Přechodné HTTP chyby opakuje Oban podle dosavadních pravidel, po timeoutu
+nejprve dohledá vzdálený doklad podle stabilního externího ID.
+
+Stav **Čeká na přenos / Čeká na podmínky / Přeneseno / Chyba** a vysvětlení
+jsou viditelné v seznamu dokladů i u dokladů pobytu. Obnovují se přibližně po
+10 sekundách bez přepsání rozpracovaného formuláře. Odkaz **Přenosy do ABRA**
+vede na PINem chráněný `/admin/billing/transfers`:
+
+- **Chyby a opakování** zobrazí chyby exportů i bankovních přenosů.
+- **Čekající** zobrazí frontu a závislosti; **Všechny** také dokončené přenosy.
+- **Ověřit a obnovit přenos** používá původní identitu a uložené podklady.
+  U bankovních vazeb provádí dosavadní čerstvou kontrolu před obnovou.
+
+Přehled je stránkovaný po 50 záznamech. ZDD přenášené při potvrzení zálohy se
+zobrazují u svého daňového dokladu; doplatek a jeho vazby u konečné faktury.
+Ruční export z detailu zůstává dostupný pro cílené doplnění staršího dokladu,
+pokud pobyt splňuje pravidla zapojení. Zapnutí automatiky samo **nic historicky
+nedoexportuje**. Vypnutí jen automatického zařazování neodstraní již uložené
+požadavky; k pozastavení jejich provádění slouží základní přepínač integrace.
+
+Automatika samostatně exportuje výzvy a konečné faktury. ZDD dál používají
+stávající bankovní tok. Hotovostní ZDD a opravné doklady tímto blokem novou
+účetní cestu nezískávají; přehled jejich nepřenesený stav výslovně označuje.
+Nasazení nemění vydané doklady, PDF, místní platby ani dosavadní účetní mapování.
+
+Cílené lokální ověření na dřívější výslovné povolení uživatele: 69 testů
+exportů, čekání na ZDD, bankovních plateb a administrace prošlo na
+Elixiru 1.20.4 / OTP 27. Prošly také formátování a kompilace s
+`--warnings-as-errors`. Celá projektová sada neběžela; CI používá OTP 29.
+Živou ABRA a účetní shodu nadále ověřuje uživatel s účetní.

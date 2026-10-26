@@ -277,6 +277,42 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
     end
   end
 
+  test "automatic final waits for ZDD without exhausting attempts, then resumes and freezes deductions",
+       ctx do
+    confirmation = seed_receipt(ctx, "600.00", 100)
+    confirmation |> Ecto.Changeset.change(state: "queued") |> Repo.update!()
+
+    Application.put_env(
+      :cozy_checkout,
+      :abra_accommodation,
+      Keyword.put(ctx.cfg, :auto_export_enabled, true)
+    )
+
+    doc = issue!(ctx.booking, "final")
+    export = Accommodation.get_export(doc.id)
+    Agent.update(ctx.remote, &%{&1 | export: export})
+    assert {:snooze, 60} = Accommodation.sync(export.id, true)
+    assert Accommodation.get_export(doc.id).state == "waiting"
+    assert Accommodation.get_export(doc.id).payload == %{}
+    assert Agent.get(ctx.remote, & &1.posts) == 0
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 0
+    assert Accommodation.get_export(doc.id).attempts == 0
+
+    Repo.get!(BankConfirmation, confirmation.id)
+    |> Ecto.Changeset.change(state: "synced")
+    |> Repo.update!()
+
+    assert :ok = Accommodation.sync(export.id)
+    frozen = Accommodation.get_export(doc.id)
+    assert frozen.state == "synced"
+    assert length(frozen.verification["sources"]) == 1
+    assert :ok = Accommodation.sync(export.id)
+    assert Accommodation.get_export(doc.id).payload == frozen.payload
+    assert Agent.get(ctx.remote, & &1.posts) == 1
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 1
+    assert Billing.get_document!(doc.id) == doc
+  end
+
   defp seed_receipt(ctx, amount, id) do
     payment = receipt!(ctx.booking, amount, %{"document_id" => ctx.advance.id})
     zdd = Billing.get_document!(payment.tax_document_id)
@@ -343,6 +379,12 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
 
   defp respond(conn, agent) do
     state = Agent.get(agent, & &1)
+    # Automatic intents freeze their payload in the worker, after dependencies finish.
+    state =
+      if state.export && state.export.payload == %{},
+        do: %{state | export: Repo.get!(AccommodationExport, state.export.id)},
+        else: state
+
     path = URI.decode(conn.request_path)
 
     source =

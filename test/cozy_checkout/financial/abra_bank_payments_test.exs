@@ -161,6 +161,13 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert Repo.aggregate(Document, :count) == 2
     payment = Repo.get!(Payment, first.payment_id)
     zdd = Billing.get_document!(payment.tax_document_id)
+    transfers = CozyCheckout.Abra.Transfers.list("all")
+    assert Enum.sort(Enum.map(transfers, & &1.category)) == ["document", "payment"]
+    assert Enum.find(transfers, &(&1.category == "payment")).document_id == zdd.id
+    assert [%{id: confirmation_id}] = CozyCheckout.Abra.Transfers.for_documents([zdd])[zdd.id]
+    assert confirmation_id == first.id
+    assert CozyCheckout.Abra.Transfers.list() == []
+    assert [%{category: "payment"}] = CozyCheckout.Abra.Transfers.list("pending")
     assert zdd.tax_date == ctx.movement.paid_on
     assert zdd.due_on == ctx.movement.paid_on
     assert Decimal.equal?(payment.amount, "600")

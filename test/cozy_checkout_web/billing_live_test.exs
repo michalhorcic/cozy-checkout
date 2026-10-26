@@ -385,6 +385,47 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
              live(build_conn(), "/admin/billing/documents/#{doc.id}")
   end
 
+  test "automatic export states appear in lists and booking, and the PIN-protected overview retries",
+       %{conn: conn, booking: booking} do
+    alias CozyCheckout.Abra.{Accommodation, AccommodationExport}
+    old = Application.get_env(:cozy_checkout, :abra_accommodation)
+
+    Application.put_env(:cozy_checkout, :abra_accommodation,
+      enabled: true,
+      auto_export_enabled: true,
+      enabled_from: ~U[2020-01-01 00:00:00Z],
+      base_url: "https://accounting.test",
+      company_id: "test",
+      username: "test",
+      password: "test",
+      advance_type_code: "ZÁLOHA",
+      bank_account_code: "TEST"
+    )
+
+    on_exit(fn -> Application.put_env(:cozy_checkout, :abra_accommodation, old) end)
+    doc = issue!(booking, "advance")
+    export = Accommodation.get_export(doc.id)
+
+    export
+    |> Ecto.Changeset.change(state: "failed", error: "Testovací chyba přenosu")
+    |> Repo.update!()
+
+    {:ok, view, _} = live(conn, "/admin/billing")
+    assert has_element?(view, "#abra-status-#{doc.id}", "Testovací chyba přenosu")
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    assert has_element?(view, "#abra-status-#{doc.id}", "Chyba přenosu")
+    {:ok, view, _} = live(conn, "/admin/billing/transfers")
+    selector = "#abra-transfer-document-#{export.id}"
+    assert has_element?(view, selector, doc.number)
+    view |> element(selector <> " button[phx-click=retry]") |> render_click()
+    refute has_element?(view, selector)
+    assert Repo.get!(AccommodationExport, export.id).state == "queued"
+    assert Repo.aggregate(AccommodationExport, :count) == 1
+
+    assert {:error, {:redirect, %{to: "/admin/login"}}} =
+             live(build_conn(), "/admin/billing/transfers")
+  end
+
   test "PDF and billing administration require authentication", %{booking: booking} do
     final = issue!(booking, "final")
     conn = build_conn() |> get("/admin/billing/documents/#{final.id}/pdf")

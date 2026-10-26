@@ -1,5 +1,5 @@
 defmodule CozyCheckout.Abra.Accommodation do
-  @moduledoc "Explicit, opt-in export of new accommodation advance requests."
+  @moduledoc "Persistent, retryable export of issued accommodation documents."
   import Ecto.Query
   alias CozyCheckout.{Billing, Repo}
   alias CozyCheckout.Abra.{AccommodationExport, AdvanceBuilder, Client, FinalInvoiceExport}
@@ -9,6 +9,36 @@ defmodule CozyCheckout.Abra.Accommodation do
   def config, do: Application.get_env(:cozy_checkout, :abra_accommodation, [])
   def enabled?, do: config()[:enabled] == true
   def get_export(document_id), do: Repo.get_by(AccommodationExport, document_id: document_id)
+
+  def automatic?, do: config()[:auto_export_enabled] == true
+
+  @doc "Persist an export intent in the document-issuance transaction. No HTTP or payload preparation."
+  def enqueue_issued(doc) do
+    cfg = config()
+    booking = Repo.get!(Booking, doc.booking_id)
+
+    if automatic?() and enabled?() and doc.kind in ["advance", "final"] and
+         is_nil(booking.deleted_at) and match?(%DateTime{}, cfg[:enabled_from]) and
+         DateTime.compare(booking.inserted_at, cfg[:enabled_from]) != :lt do
+      if not Repo.in_transaction?(), do: raise("Export intent requires the issuance transaction")
+
+      export =
+        %AccommodationExport{}
+        |> Ecto.Changeset.change(
+          document_id: doc.id,
+          base_url: cfg[:base_url],
+          company_id: cfg[:company_id],
+          external_id: "ext:cozy-checkout:accommodation:#{doc.id}",
+          payload: %{},
+          verification: %{"kind" => doc.kind, "automatic" => true}
+        )
+        |> Repo.insert!()
+
+      {:ok, _} = %{export_id: export.id} |> AbraAccommodationWorker.new() |> Oban.insert()
+    end
+
+    :ok
+  end
 
   def enqueue(document_id) do
     Repo.transaction(fn ->
@@ -26,13 +56,16 @@ defmodule CozyCheckout.Abra.Accommodation do
         do: Repo.rollback("Starší pobyty jsou mimo novou integraci")
 
       export =
-        case get_export(doc.id) do
+        case Repo.one(
+               from e in AccommodationExport, where: e.document_id == ^doc.id, lock: "FOR UPDATE"
+             ) do
           nil ->
             {payload, verification} =
               if doc.kind == "final" do
                 case FinalInvoiceExport.prepare(doc, cfg) do
                   {:ok, payload, verification} -> {payload, verification}
                   {:error, error} -> Repo.rollback(error)
+                  {:waiting, reason} -> Repo.rollback(reason)
                 end
               else
                 case AdvanceBuilder.build(doc, cfg) do
@@ -79,35 +112,103 @@ defmodule CozyCheckout.Abra.Accommodation do
       export.state == "synced" ->
         :ok
 
-      not same_target?(export, cfg) ->
-        fail(export, "Cílová firma se změnila; export je pozastaven", true)
-
       export.verification["kind"] == "final" and not FinalInvoiceExport.enabled?(cfg) ->
-        {:snooze, 60}
-
-      cfg[:username] in [nil, ""] or cfg[:password] in [nil, ""] ->
-        fail(export, "Chybí přístupové údaje do ABRA", final_attempt?)
+        wait(export, "Export konečných faktur je vypnutý")
 
       true ->
-        export = export |> Ecto.Changeset.change(attempts: export.attempts + 1) |> Repo.update!()
-
-        case deliver(export, cfg) do
-          {:ok, id} ->
-            export
-            |> Ecto.Changeset.change(
-              state: "synced",
-              remote_id: id,
-              error: nil,
-              synced_at: DateTime.utc_now(:second)
-            )
-            |> Repo.update!()
-
-            :ok
-
-          {:error, reason} ->
-            fail(export, reason, final_attempt?)
+        case prepare_pending(export, cfg) do
+          {:ok, prepared} -> transfer(prepared, cfg, final_attempt?)
+          {:error, {:waiting, reason}} -> wait(export, reason)
+          {:error, reason} -> fail(export, reason, true)
         end
     end
+  end
+
+  defp prepare_pending(%{payload: payload} = export, cfg) when map_size(payload) > 0 do
+    if same_target?(export, cfg),
+      do: {:ok, export},
+      else: {:error, "Cílová firma se změnila; export je pozastaven"}
+  end
+
+  defp prepare_pending(export, cfg) do
+    Repo.transaction(fn ->
+      doc = Billing.get_document!(export.document_id)
+      Repo.one!(from b in Booking, where: b.id == ^doc.booking_id, lock: "FOR UPDATE")
+
+      current =
+        Repo.one!(from e in AccommodationExport, where: e.id == ^export.id, lock: "FOR UPDATE")
+
+      cfg = checked_config!(cfg)
+      check_target!(current, cfg)
+
+      if current.payload != %{} do
+        current
+      else
+        {payload, verification} =
+          if doc.kind == "final" do
+            case FinalInvoiceExport.prepare(doc, cfg) do
+              {:ok, payload, verification} -> {payload, verification}
+              {:waiting, reason} -> Repo.rollback({:waiting, reason})
+              {:error, reason} -> Repo.rollback(reason)
+            end
+          else
+            case AdvanceBuilder.build(doc, cfg) do
+              {:ok, payload} -> {payload, %{}}
+              {:error, reason} -> Repo.rollback(reason)
+            end
+          end
+
+        current
+        |> Ecto.Changeset.change(
+          payload: payload,
+          verification: Map.merge(current.verification, verification),
+          base_url: cfg[:base_url],
+          company_id: cfg[:company_id],
+          state: "queued",
+          error: nil
+        )
+        |> Repo.update!()
+      end
+    end)
+  end
+
+  defp transfer(%{state: "synced"}, _cfg, _final_attempt?), do: :ok
+
+  defp transfer(export, cfg, final_attempt?) do
+    if cfg[:username] in [nil, ""] or cfg[:password] in [nil, ""] do
+      fail(export, "Chybí přístupové údaje do ABRA", final_attempt?)
+    else
+      export = export |> Ecto.Changeset.change(attempts: export.attempts + 1) |> Repo.update!()
+
+      case deliver(export, cfg) do
+        {:ok, id} ->
+          export
+          |> Ecto.Changeset.change(
+            state: "synced",
+            remote_id: id,
+            error: nil,
+            synced_at: DateTime.utc_now(:second)
+          )
+          |> Repo.update!()
+
+          :ok
+
+        {:waiting, reason} ->
+          wait(export, reason)
+
+        {:error, reason} ->
+          fail(export, reason, final_attempt?)
+      end
+    end
+  end
+
+  defp wait(export, reason) do
+    Repo.update_all(
+      from(e in AccommodationExport, where: e.id == ^export.id and e.state != "synced"),
+      set: [state: "waiting", error: reason, updated_at: DateTime.utc_now(:second)]
+    )
+
+    {:snooze, 60}
   end
 
   defp deliver(%{verification: %{"kind" => "final"}} = export, cfg),
@@ -164,21 +265,33 @@ defmodule CozyCheckout.Abra.Accommodation do
   defp decimal(_), do: nil
   defp valid_id?(id), do: (is_integer(id) and id > 0) or (is_binary(id) and id != "")
 
+  @doc false
+  def worker_failed(id, final_attempt?) do
+    fail(
+      Repo.get!(AccommodationExport, id),
+      "Přenos přerušila neočekávaná chyba. Pokud se opakuje, předejte ji správci.",
+      final_attempt?
+    )
+  end
+
   defp fail(export, reason, final?) do
-    export
-    |> Ecto.Changeset.change(state: if(final?, do: "failed", else: "retrying"), error: reason)
-    |> Repo.update!()
+    Repo.update_all(
+      from(e in AccommodationExport, where: e.id == ^export.id and e.state != "synced"),
+      set: [
+        state: if(final?, do: "failed", else: "retrying"),
+        error: reason,
+        updated_at: DateTime.utc_now(:second)
+      ]
+    )
 
     if final?, do: {:cancel, reason}, else: {:error, reason}
   end
 
-  defp checked_config! do
-    cfg = config()
-
+  defp checked_config!(cfg \\ config()) do
     required =
       ~w(base_url company_id username password advance_type_code bank_account_code)a
 
-    if not enabled?() or not match?(%DateTime{}, cfg[:enabled_from]) or
+    if cfg[:enabled] != true or not match?(%DateTime{}, cfg[:enabled_from]) or
          Enum.any?(required, &(cfg[&1] in [nil, ""])) do
       Repo.rollback("Export pobytů do ABRA není zapnutý nebo chybí konfigurace")
     end
@@ -190,7 +303,12 @@ defmodule CozyCheckout.Abra.Accommodation do
     do: export.base_url == cfg[:base_url] and export.company_id == cfg[:company_id]
 
   defp check_target!(export, cfg) do
-    if not same_target?(export, cfg),
+    pending_target? =
+      export.payload == %{} and
+        export.base_url in [nil, "", cfg[:base_url]] and
+        export.company_id in [nil, "", cfg[:company_id]]
+
+    if not same_target?(export, cfg) and not pending_target?,
       do: Repo.rollback("Doklad již má export do jiné cílové firmy")
   end
 end

@@ -3,8 +3,11 @@
 První samostatně ověřitelná část integrace: **ruční export vystavené zálohové
 výzvy** z detailu `/admin/billing/documents/:id`. Export je ve výchozím stavu
 vypnutý. Nevytváří platbu, ZDD ani bankovní nebo pokladní pohyb. Přijetí peněz
-ani finanční stav pobytu se exportem nemění. Automatický export a celý platební
-cyklus přijdou až po reálném ověření této části.
+ani finanční stav pobytu se exportem nemění.
+
+Tento dokument popisuje původní ruční postup. Nyní lze zapnout také
+[automatický export výzev a konečných faktur se společným přehledem chyb](ABRA_INTEGRATION.md#automatický-export-a-společný-přehled-přenosů).
+Bankovní zálohy, ZDD, odpočty a doplatky popisuje navazující provozní dokumentace.
 
 ## Nastavení pro testovací firmu
 

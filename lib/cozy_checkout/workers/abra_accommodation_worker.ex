@@ -12,5 +12,9 @@ defmodule CozyCheckout.Workers.AbraAccommodationWorker do
   @impl Oban.Worker
   def perform(%Oban.Job{args: %{"export_id" => id}, attempt: attempt, max_attempts: max}) do
     CozyCheckout.Abra.Accommodation.sync(id, attempt >= max)
+  rescue
+    exception ->
+      CozyCheckout.Abra.Accommodation.worker_failed(id, attempt >= max)
+      reraise exception, __STACKTRACE__
   end
 end

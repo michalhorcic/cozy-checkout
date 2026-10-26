@@ -1,10 +1,26 @@
 defmodule CozyCheckoutWeb.BillingLive.Documents do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Billing
-  alias CozyCheckout.Abra.Accommodation
+  alias CozyCheckout.Abra.{Accommodation, Transfers}
   alias CozyCheckout.Billing.Presentation
   alias CozyCheckoutWeb.BillingLive.Helpers
-  def mount(_, _, socket), do: {:ok, assign(socket, page_title: "Doklady z rezervací")}
+
+  def mount(_, _, socket) do
+    if connected?(socket), do: Process.send_after(self(), :abra_tick, 10_000)
+    {:ok, assign(socket, page_title: "Doklady z rezervací", abra_transfers: %{})}
+  end
+
+  def handle_info(:abra_tick, socket) do
+    Process.send_after(self(), :abra_tick, 10_000)
+
+    if socket.assigns.document do
+      {:noreply,
+       assign(socket, :abra_export, Accommodation.get_export(socket.assigns.document.id))}
+    else
+      {:noreply,
+       assign(socket, :abra_transfers, Transfers.for_documents(socket.assigns.documents))}
+    end
+  end
 
   def handle_params(%{"id" => id}, _, socket) do
     doc = Billing.get_document!(id)
@@ -27,14 +43,17 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
      )}
   end
 
-  def handle_params(params, _, socket),
-    do:
-      {:noreply,
-       assign(socket,
-         document: nil,
-         documents: Billing.list_documents(params),
-         filter_form: to_form(Map.take(params, ["kind", "number"]), as: :filter)
-       )}
+  def handle_params(params, _, socket) do
+    documents = Billing.list_documents(params)
+
+    {:noreply,
+     assign(socket,
+       document: nil,
+       documents: documents,
+       abra_transfers: Transfers.for_documents(documents),
+       filter_form: to_form(Map.take(params, ["kind", "number"]), as: :filter)
+     )}
+  end
 
   def handle_event("filter", %{"filter" => attrs}, socket),
     do: {:noreply, push_patch(socket, to: ~p"/admin/billing?#{attrs}")}
@@ -97,6 +116,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
       <div class="max-w-6xl mx-auto space-y-6">
         <h1 class="text-3xl font-bold">Doklady z rezervací</h1>
         <nav class="flex gap-3">
+          <.link navigate={~p"/admin/billing/transfers"} class="link">Přenosy do ABRA</.link>
           <.link navigate={~p"/admin/billing/bank"} class="link">Bankovní pohyby</.link>
           <.link navigate={~p"/admin/billing"} class="link">Seznam dokladů</.link><.link
             navigate={~p"/admin/billing/settings"}
@@ -123,7 +143,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
                 <tr>
                   <th>Číslo</th><th>Druh</th><th>Odběratel</th><th>Vystaveno</th><th>Splatnost</th><th>
                     Celkem
-                  </th>
+                  </th><th>ABRA</th>
                 </tr>
               </thead><tbody>
                 <tr :for={doc <- @documents}>
@@ -135,6 +155,11 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
                     {if doc.kind == "tax_receipt", do: "—", else: Presentation.date(doc.due_on)}
                   </td><td>
                     {Presentation.amount(doc.total)}
+                  </td><td>
+                    <CozyCheckoutWeb.BillingComponents.abra_status
+                      document={doc}
+                      statuses={Map.get(@abra_transfers, doc.id, [])}
+                    />
                   </td>
                 </tr>
               </tbody>
@@ -212,7 +237,10 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
               <p :if={@abra_export.error} class="text-red-700">{@abra_export.error}</p>
             </div>
             <button
-              :if={@abra_enabled? && (!@abra_export || @abra_export.state == "failed")}
+              :if={
+                @abra_enabled? &&
+                  (!@abra_export || @abra_export.state in ["failed", "retrying", "waiting"])
+              }
               id="accommodation-abra-export"
               phx-click="abra-export"
               phx-disable-with="Zařazuji…"
@@ -282,6 +310,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     """
   end
 
+  defp abra_state("waiting"), do: "Čeká na podmínky"
   defp abra_state("queued"), do: "Čeká na export"
   defp abra_state("retrying"), do: "Čeká na opakování"
   defp abra_state("failed"), do: "Chyba exportu"

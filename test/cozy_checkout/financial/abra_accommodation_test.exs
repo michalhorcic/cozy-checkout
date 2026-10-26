@@ -223,6 +223,115 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert Accommodation.get_export(doc.id).payload == export.payload
   end
 
+  test "automatic issuance commits one intent and job, repeats safely and rolls back together",
+       ctx do
+    configure(auto_export_enabled: true)
+    assert Accommodation.get_export(ctx.document.id) == nil
+
+    assert {:error, :cancelled} =
+             Repo.transaction(fn ->
+               doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
+               assert Accommodation.get_export(doc.id).payload == %{}
+               Repo.rollback(:cancelled)
+             end)
+
+    assert Repo.aggregate(AccommodationExport, :count) == 0
+    doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
+
+    assert {:ok, same} =
+             CozyCheckout.Billing.issue(ctx.booking.id, "advance", %{}, doc.request_id)
+
+    assert same.id == doc.id
+    export = Accommodation.get_export(doc.id)
+    assert export.payload == %{}
+    assert export.verification["automatic"]
+    assert Repo.aggregate(AccommodationExport, :count) == 1
+    worker = Oban.Worker.to_string(AbraAccommodationWorker)
+    assert Repo.aggregate(from(j in Oban.Job, where: j.worker == ^worker), :count) == 1
+  end
+
+  test "configuration failure never blocks issuance and can resume the same intent", ctx do
+    configure(auto_export_enabled: true, username: nil, base_url: nil, company_id: nil)
+    doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
+    export = Accommodation.get_export(doc.id)
+    assert {:cancel, _} = Accommodation.sync(export.id)
+    assert Accommodation.get_export(doc.id).state == "failed"
+    assert [%{id: id, category: "document"}] = CozyCheckout.Abra.Transfers.list()
+    assert id == export.id
+
+    configure(
+      username: "test-user",
+      base_url: "https://accounting.test",
+      company_id: "test-accommodation"
+    )
+
+    assert {:ok, retried} = CozyCheckout.Abra.Transfers.retry("document", export.id)
+    assert retried.id == export.id
+    expect_remote(remote_invoice(doc))
+    assert :ok = Accommodation.sync(export.id)
+    assert Accommodation.get_export(doc.id).state == "synced"
+    assert CozyCheckout.Billing.get_document!(doc.id) == doc
+  end
+
+  test "automatic timeout resumes a frozen payload by external identity without a second POST",
+       ctx do
+    configure(auto_export_enabled: true)
+    doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
+    export = Accommodation.get_export(doc.id)
+
+    Req.Test.expect(Client, fn conn ->
+      Req.Test.json(conn, %{"winstrom" => %{"faktura-vydana" => []}})
+    end)
+
+    Req.Test.expect(Client, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      assert Jason.decode!(body) == Accommodation.get_export(doc.id).payload
+      Req.Test.transport_error(conn, :timeout)
+    end)
+
+    assert {:error, _} = Accommodation.sync(export.id)
+    frozen = Accommodation.get_export(doc.id).payload
+    refute frozen == %{}
+    configure(advance_type_code: "CHANGED")
+    expect_remote(remote_invoice(doc))
+    assert :ok = Accommodation.sync(export.id)
+    assert Accommodation.get_export(doc.id).payload == frozen
+    assert Repo.aggregate(AccommodationExport, :count) == 1
+  end
+
+  test "automatic export respects the switch, cutoff and saved target without backfill", ctx do
+    configure(
+      auto_export_enabled: true,
+      enabled_from: DateTime.add(DateTime.utc_now(), 60, :second)
+    )
+
+    old = issue!(ctx.booking, "advance", %{"amount" => "500"})
+    assert Accommodation.get_export(old.id) == nil
+    configure(enabled_from: ~U[2020-01-01 00:00:00Z], auto_export_enabled: false)
+    manual = issue!(ctx.booking, "advance", %{"amount" => "500"})
+    assert Accommodation.get_export(manual.id) == nil
+    configure(auto_export_enabled: true)
+    doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
+    export = Accommodation.get_export(doc.id)
+    configure(company_id: "other")
+    assert {:cancel, _} = Accommodation.sync(export.id)
+    assert Accommodation.get_export(doc.id).payload == %{}
+    assert Accommodation.get_export(doc.id).company_id == "test-accommodation"
+    assert Accommodation.get_export(ctx.document.id) == nil
+  end
+
+  test "unexpected worker errors remain visible and preserve the issued document", %{
+    document: doc
+  } do
+    {:ok, export} = Accommodation.enqueue(doc.id)
+    Req.Test.expect(Client, fn _conn -> raise "transport crashed" end)
+    job = %Oban.Job{args: %{"export_id" => export.id}, attempt: 5, max_attempts: 5}
+    assert_raise RuntimeError, "transport crashed", fn -> AbraAccommodationWorker.perform(job) end
+    assert Accommodation.get_export(doc.id).state == "failed"
+    assert Accommodation.get_export(doc.id).error =~ "neočekávaná chyba"
+    assert CozyCheckout.Billing.get_document!(doc.id) == doc
+  end
+
   defp configure(attrs),
     do:
       Application.put_env(

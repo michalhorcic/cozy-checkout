@@ -534,3 +534,25 @@ bylo lokálně spuštěno 39 testů doplatků a souvisejících záloh, exportu,
 banky a administrace: všechny prošly na Elixiru 1.20.4 / OTP 27. Dvě selhání
 způsobovala sdílená řetězcová kontrola částek; nyní používá Decimal.
 CI a skutečnou ABRA ověří uživatel.
+
+### Automatický export vystavených dokladů a společný přehled
+
+Po sloučení #45 uživatel autorizoval automatický přenos již vystavených
+výzev a konečných faktur, viditelné chyby v přehledech a obnovu bez nutnosti
+otevírat jednotlivé detaily. Vystavení dokladů a potvrzení plateb zůstává
+výslovným úkonem obsluhy. Automatické párování plateb není součástí bloku.
+
+Samostatný vypínač `ABRA_ACCOMMODATION_AUTO_EXPORT_ENABLED` zařazuje pouze
+nově vystavené podporované doklady zapojených pobytů. Jedinečný požadavek
+se uloží atomicky s dokladem; příprava payloadu i HTTP běží až na pozadí.
+Konečná faktura může čekat na zdrojové ZDD bez vyčerpání přenosových pokusů.
+Připravený payload a známý cíl zůstávají zachované při obnově. Přehled
+zahrnuje dokumentové exporty i bankovní potvrzení a zůstává pod admin PINem.
+Podrobnosti nasazení a omezení jsou v provozní dokumentaci ABRA_INTEGRATION.md.
+
+Na základě dřívějšího výslovného povolení cílených testů bylo lokálně
+spuštěno 69 testů automatického i ručního exportu, čekání na ZDD, bankovních
+záloh a doplatků a administrace: všechny prošly (Elixir 1.20.4 / OTP 27).
+Prošly také formátování, kompilace s warnings-as-errors a kontrola diffu.
+Celá projektová sada ani mix precommit neběžely; CI ověří uživatel.
+Živá ABRA zde nebyla volána.
