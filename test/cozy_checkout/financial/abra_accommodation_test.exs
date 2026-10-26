@@ -17,7 +17,6 @@ defmodule CozyCheckout.AbraAccommodationTest do
       username: "test-user",
       password: "test-password",
       advance_type_code: "ZÁLOHA",
-      advance_series_code: "COZY-ZALOHA",
       bank_account_code: "TEST-UCET"
     )
 
@@ -39,12 +38,14 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert {:ok, payload} = AdvanceBuilder.build(doc, Accommodation.config())
     [invoice] = payload["winstrom"]["faktura-vydana"]
     assert invoice["kod"] == doc.number
+    assert String.starts_with?(doc.number, "COZY-ZF")
     assert invoice["varSym"] == doc.variable_symbol
     assert invoice["nazFirmy"] == doc.snapshot["customer"]["name"]
     assert invoice["typDokl"] == "code:ZÁLOHA"
-    assert invoice["rada"] == "code:COZY-ZALOHA"
+    refute Map.has_key?(invoice, "rada")
     assert invoice["clenDph"] == "code:000U"
     assert invoice["ucetni"] == false
+    assert invoice["poznam"] =~ "Záloha zadaná částkou: 1 234,57 CZK"
     refute Map.has_key?(invoice, "hotovostni-uhrada")
     refute Map.has_key?(invoice, "duzpPuv")
 
@@ -95,6 +96,45 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert Repo.aggregate(AccommodationExport, :count) == 1
     worker = Oban.Worker.to_string(AbraAccommodationWorker)
     assert Repo.aggregate(from(j in Oban.Job, where: j.worker == ^worker), :count) == 1
+  end
+
+  test "note describes the original stay separately from the requested advance, with legacy fallback",
+       %{document: doc} do
+    alias CozyCheckout.Billing.Money
+
+    calculation = %{
+      "method" => "percent",
+      "percent" => "50",
+      "stay_total" => "1200.00",
+      "amount" => "600.00",
+      "lines" => [Money.line("Původní ubytování", 2, 3, "200.00", "12")]
+    }
+
+    snapshot = Map.put(doc.snapshot, "advance_calculation", calculation)
+
+    note_doc = %{
+      doc
+      | snapshot: snapshot,
+        total: Decimal.new("600.00"),
+        lines: Money.allocate(calculation["lines"], Decimal.new("600.00"))
+    }
+
+    assert {:ok, payload} = AdvanceBuilder.build(note_doc, Accommodation.config())
+    [invoice] = payload["winstrom"]["faktura-vydana"]
+    assert invoice["poznam"] =~ "Původní ubytování: 2,00 × 3,00 × 200,00 CZK = 1 200,00 CZK"
+    assert invoice["poznam"] =~ "Celková cena pobytu: 1 200,00 CZK"
+    assert invoice["poznam"] =~ "50,00 % z 1 200,00 CZK = 600,00 CZK"
+    assert invoice["polozkyFaktury"] != calculation["lines"]
+
+    assert {:ok, legacy} =
+             AdvanceBuilder.build(
+               %{doc | snapshot: Map.delete(doc.snapshot, "advance_calculation")},
+               Accommodation.config()
+             )
+
+    [legacy_invoice] = legacy["winstrom"]["faktura-vydana"]
+    assert legacy_invoice["poznam"] =~ "Původní rozpis položek nebyl u tohoto dokladu uložen."
+    refute legacy_invoice["poznam"] =~ "Přijatá záloha"
   end
 
   test "disabled export, old bookings and other document kinds cannot enqueue", %{
@@ -196,7 +236,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
       "sumCelkem" => to_string(doc.total),
       "mena" => "code:CZK",
       "typDokl" => "code:ZÁLOHA",
-      "rada" => "code:COZY-ZALOHA",
+      "rada" => "",
       "bankovniUcet" => "code:TEST-UCET",
       "ucetni" => false,
       "clenDph" => "code:000U",

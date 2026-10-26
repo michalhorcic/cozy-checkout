@@ -343,6 +343,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     final = issue!(booking, "final")
     {:ok, view, _} = live(conn, "/admin/billing/settings")
     assert has_element?(view, "#billing-profile")
+    assert has_element?(view, "#billing-series input[name='series[prefix]'][value='COZY-ZF']")
     {:ok, view, _} = live(conn, "/admin/billing/documents/#{final.id}")
     assert has_element?(view, "#billing-email")
     assert has_element?(view, "#billing-correction")
@@ -368,7 +369,6 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
       username: "test",
       password: "test",
       advance_type_code: "ZÁLOHA",
-      advance_series_code: "COZY-ZALOHA",
       bank_account_code: "BANKOVNÍ ÚČET"
     )
 

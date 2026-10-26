@@ -8,7 +8,11 @@ cyklus přijdou až po reálném ověření této části.
 
 ## Nastavení pro testovací firmu
 
-Spusťte migraci `20261026120000_create_accommodation_abra_exports.exs`.
+Spusťte migrace `20261026120000_create_accommodation_abra_exports.exs` a
+`20261026130000_set_cozy_advance_prefix.exs`. Druhá nastaví místním řadám
+zálohových výzev prefix `COZY-ZF`, zachová jejich čítače i již vystavené
+doklady. Při rollbacku ponechá nový prefix zachovaný. Formulář pro zakládání
+řad jej také předvyplňuje.
 Připojení a přístupové údaje jsou společné s existující integrací do stejného
 účetnictví (`ABRA_BASE_URL`, `ABRA_COMPANY_ID`, `ABRA_USERNAME`, `ABRA_PASSWORD`).
 Mapování dokladů ubytování je samostatné; barový builder ani barová řada se
@@ -21,15 +25,13 @@ server a firmu pomocí `ABRA_ACCOMMODATION_BASE_URL` a
 | `ABRA_ACCOMMODATION_ENABLED` | `true` povolí ruční export a provádění jobů; výchozí `false`. |
 | `ABRA_ACCOMMODATION_ENABLED_FROM` | Povinný okamžik zapojení **nově vytvořených rezervací**, ISO 8601 s časovou zónou, např. `2026-10-26T12:00:00+01:00`. Posuzuje se `booking.inserted_at`, nikoli datum příjezdu. |
 | `ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE` | Typ zálohy bez `code:`, výchozí `ZÁLOHA` podle XML. |
-| `ABRA_ACCOMMODATION_ADVANCE_SERIES_CODE` | Kód samostatné řady pro exportované zálohy, bez `code:`; výchozí `COZY-ZALOHA` podle rozhodnutí uživatele. |
 | `ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE` | Kód účtu bez `code:`, výchozí `BANKOVNÍ ÚČET` podle XML. Musí odpovídat účtu na místním dokladu. |
 
 V testovací firmě předem ověřte dostupnost číselníků a oprávnění API uživatele
-pro čtení i vytváření vydaných faktur. V cílové firmě musí existovat vlastní
-řada `COZY-ZALOHA`, schválená uživatelem podle
-[plánu](../plans/2026-10-23-abra-ubytovani.md#číslování-externích-dokladů).
-Je oddělená od sdílené řady `ZÁLOHA` ze vzorového XML. Proměnná prostředí
-umožňuje kód podle potřeby přepsat.
+pro čtení i vytváření vydaných faktur. Čísla přiděluje výhradně místní databáze:
+např. `COZY-ZF202600009`. ABRA dostává hotové číslo v `kod`; vazba `rada` se
+neposílá ani nekontroluje a samostatná řada v ABRA není pro export potřeba.
+Proměnná `ABRA_ACCOMMODATION_ADVANCE_SERIES_CODE` se již nepoužívá.
 
 ## Obsah a bezpečné opakování
 
@@ -42,6 +44,12 @@ umožňuje kód podle potřeby přepsat.
   Každá skupina se přenese jako jedna položka s množstvím 1 a přesnou částkou
   zálohy, nikoli jako celý původní pobyt. Sazby 12/21/0 % a nezdaněný poplatek
   navazují na XML. Toto mapování neřeší budoucí daňové režimy ZDD/vyúčtování.
+- Poznámka `poznam` obsahuje původní rozpis celého pobytu ze snapshotu
+  `advance_calculation`: názvy, množství, noci/jednotky, jednotkové a celkové
+  ceny, celkovou cenu pobytu a výpočet požadované zálohy. Rozpis celého pobytu
+  je výslovně odlišen od částky zálohy. Pozdější změny kalkulace se do něj
+  nepřenášejí. Starší doklad bez rozpisu obsahuje pouze částku a informaci,
+  že původní položky nebyly uloženy; aktuální kalkulace se k němu nedoplňuje.
 - Položky se zaokrouhlují na haléře; korunní zaokrouhlení hlavičky ze vzoru
   se nepřebírá, protože nesmí změnit již vystavenou místní částku.
 - V jedné databázové transakci se uloží jedinečný export a unikátní Oban job.
@@ -56,7 +64,7 @@ umožňuje kód podle potřeby přepsat.
   Jde o [režimy importu](https://podpora.flexibee.eu/cs/articles/4725944-rezim-pro-zalozeni-zmenu),
   nikoli o `@action`, které je určeno pro akce nad existujícím záznamem.
 - Po importu se doklad znovu načte a porovná se číslo, VS, částka, měna, typ,
-  řada, účet a neúčetní daňové členění. Nesoulad je chyba k ručnímu prověření;
+  účet a neúčetní daňové členění. Nesoulad je chyba k ručnímu prověření;
   integrace vzdálený doklad neopravuje. Timeout po přijatém importu se při
   dalším pokusu řeší načtením existujícího dokladu, bez dalšího POST.
 - Změna serveru nebo firmy zablokuje uložený export. Testovací identitu nelze
@@ -72,7 +80,7 @@ umožňuje kód podle potřeby přepsat.
 3. V detailu dokladu použijte **Exportovat do ABRA** a následně **Obnovit stav
    exportu**. Export je oddělený od generování PDF a odesílání e-mailu.
 4. V ABRA porovnejte číslo, VS, odběratele, adresu, data, měnu, bankovní účet,
-   položky, požadovanou částku a neúčetní charakter. Zkontrolujte nepřítomnost
+   položky, poznámku s původním rozpisem, požadovanou částku a neúčetní charakter. Zkontrolujte nepřítomnost
    platby, ZDD a nežádoucího účtování/DPH. Vlastní číslo má zůstat zachované.
 5. Při chybě je vidět poslední důvod a počet pokusů. Po vyčerpání pokusů lze
    použít **Opakovat export do ABRA**. Ověřte, že další pokus nepřidá druhý

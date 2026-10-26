@@ -1,6 +1,6 @@
 defmodule CozyCheckout.Abra.AdvanceBuilder do
   @moduledoc "Builds non-accounting advance requests from immutable billing snapshots."
-  alias CozyCheckout.Billing.{Document, Money}
+  alias CozyCheckout.Billing.{Document, Money, Presentation}
 
   def build(%Document{kind: "advance"} = doc, cfg) do
     cond do
@@ -21,12 +21,12 @@ defmodule CozyCheckout.Abra.AdvanceBuilder do
           "kod" => doc.number,
           "varSym" => doc.variable_symbol,
           "typDokl" => "code:#{cfg[:advance_type_code]}",
-          "rada" => "code:#{cfg[:advance_series_code]}",
           "bankovniUcet" => "code:#{cfg[:bank_account_code]}",
           "mena" => "code:CZK",
           "datVyst" => Date.to_iso8601(doc.issued_on),
           "datSplat" => Date.to_iso8601(doc.due_on),
           "popis" => "Zálohová výzva #{doc.number} · Cozy Checkout",
+          "poznam" => breakdown_note(doc),
           "ucetni" => false,
           "bezPolozek" => false,
           "clenDph" => "code:000U",
@@ -66,6 +66,39 @@ defmodule CozyCheckout.Abra.AdvanceBuilder do
   end
 
   def build(_, _), do: {:error, "Tato etapa podporuje pouze zálohové výzvy"}
+
+  defp breakdown_note(doc) do
+    stay =
+      "Pobyt: #{Presentation.date(doc.snapshot["check_in"])} – #{Presentation.date(doc.snapshot["check_out"])}"
+
+    case Presentation.advance_breakdown(doc) do
+      nil ->
+        Enum.join(
+          [
+            stay,
+            "Záloha na pobyt a objednané služby: #{Presentation.amount(doc.total)}",
+            "Původní rozpis položek nebyl u tohoto dokladu uložen."
+          ],
+          "\n"
+        )
+
+      calculation ->
+        rows =
+          Enum.map(calculation["lines"], fn line ->
+            "#{line["name"]}: #{Presentation.number(line["quantity"])} × #{Presentation.number(line["nights"])} × #{Presentation.amount(Presentation.gross_unit_price(line))} = #{Presentation.amount(line["gross"])}"
+          end)
+
+        Enum.join(
+          [stay, "Rozpis celého pobytu a objednaných služeb (ceny včetně DPH):"] ++
+            rows ++
+            [
+              "Celková cena pobytu: #{Presentation.amount(calculation["stay_total"])}",
+              "Výpočet požadované zálohy: #{Presentation.advance_explanation(calculation)}"
+            ],
+          "\n"
+        )
+    end
+  end
 
   defp item(line) do
     %{

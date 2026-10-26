@@ -124,7 +124,7 @@ defmodule CozyCheckout.Abra.Accommodation do
 
     if remote["kod"] == invoice["kod"] and remote["varSym"] == invoice["varSym"] and
          remote["mena"] == "code:CZK" and remote["typDokl"] == invoice["typDokl"] and
-         remote["rada"] == invoice["rada"] and remote["bankovniUcet"] == invoice["bankovniUcet"] and
+         remote["bankovniUcet"] == invoice["bankovniUcet"] and
          remote["ucetni"] in [false, "false"] and remote["clenDph"] == "code:000U" and
          remote["clenKonVykDph"] == "code:0.0." and
          is_struct(total, Decimal) and Decimal.equal?(total, expected) and valid_id?(remote["id"]) do
@@ -158,7 +158,7 @@ defmodule CozyCheckout.Abra.Accommodation do
     cfg = config()
 
     required =
-      ~w(base_url company_id username password advance_type_code advance_series_code bank_account_code)a
+      ~w(base_url company_id username password advance_type_code bank_account_code)a
 
     if not enabled?() or not match?(%DateTime{}, cfg[:enabled_from]) or
          Enum.any?(required, &(cfg[&1] in [nil, ""])) do

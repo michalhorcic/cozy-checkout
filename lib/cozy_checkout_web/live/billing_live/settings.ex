@@ -68,7 +68,7 @@ defmodule CozyCheckoutWeb.BillingLive.Settings do
         %{
           "kind" => "advance",
           "year" => to_string(Billing.today().year),
-          "prefix" => "",
+          "prefix" => "COZY-ZF",
           "digits" => "5",
           "next_number" => "1"
         },

@@ -130,9 +130,9 @@ nového exportu nemají slepě kopírovat.
 | Kontrolní hlášení | `code:0.0.` | `code:A.4-5.AUTO` |
 | Účetní operace | Nevyplněná | `code:ZÁLOHA PŘIJATÁ` |
 
-Řady ve vzorech popisují dosavadní práci účetní. Externí doklady aplikace budou
-používat vlastní vyhrazené řady podle rozhodnutí níže, nikoli automaticky tyto
-sdílené řady. Typy, předkontace a daňové členění se ještě ověří s účetní.
+Řady ve vzorech popisují dosavadní práci účetní. Čísla externích dokladů
+přidělují vlastní místní řady aplikace podle rozhodnutí níže; vazbu na řadu
+v ABRA export nevyžaduje. Typy, předkontace a daňové členění se ještě ověří s účetní.
 
 - ZDD používá `primUcet=code:324999`, `protiUcet=code:324001` a pro sníženou
   DPH `dphSnizUcet=code:343200`. Zjistit, které hodnoty převezme z typu dokladu
@@ -285,27 +285,22 @@ v jedné místní transakci. HTTP požadavky probíhají mimo ni.
 
 ### Číslování externích dokladů
 
-Čísla přiděluje aplikace ve vlastní vyhrazené řadě (případně řadách podle
-druhu dokladu). V Abře se připraví odpovídající samostatné řady pro externí
-doklady, odlišené od ručního vystavování účetní i od baru. Z označení bude
-patrné, že doklad vznikl v aplikaci. Pro zálohové výzvy uživatel zvolil kód řady `COZY-ZALOHA`. Prefixy,
-členění podle období a kódy ostatních druhů dokladů se dohodnou s účetní.
+Čísla přiděluje výhradně aplikace ve vlastních místních řadách podle druhu
+dokladu. Zálohové výzvy používají prefix `COZY-ZF`, např. `COZY-ZF202600009`.
+Vazba na číselník řad v ABRA se neposílá ani nekontroluje. Dříve zvolená
+vazba `COZY-ZALOHA` byla po reálném testu a domluvě s uživatelem opuštěna.
 
-- Místní databáze bezpečně přidělí jedinečné číslo při vystavení; export
-  předá původní číslo do `kod` a zachová místní VS. Stabilní externí ID zůstává
-  samostatnou identitou pro opakování exportu.
-- Účetní nebude vyhrazené řady používat pro ruční vystavování. Ověřit kolize,
-  limit 20 znaků `kod`, nastavení řad a přechod účetních období.
-- Číslování nepoužívá „maximum v Abře + 1“ ani průběžné přebírání čítače
-  z Abry. Čtení by číslo nerezervovalo a nezabránilo souběžným kolizím.
-- API zpřístupňuje stav řad přes `rada-faktury-vydane`, relaci `polozkyRady`
-  a `rocni-rada` (`cisAkt`, prefix, postfix, účetní období); to lze využít
-  pro kontrolu nastavení, nikoli jako místní generátor čísel.
-  [Metadata roční řady](https://demo.flexibee.eu/c/demo/rocni-rada/properties.json).
-- Aplikace tak nadále vystaví doklad a PDF nezávisle na dostupnosti Abry
-  a účetní export proběhne následně. Vydané doklady se dodatečně nepřečíslují.
-  API podporuje vlastní `kod`.
-  [Pravidla číslování přes API](https://podpora.flexibee.eu/cs/articles/9221020-api-aktualizace-dokladove-rady-na-dokladu).
+- Místní databáze pod zámkem přidělí jedinečné číslo; export předá původní
+  číslo do `kod` a zachová místní VS. Stabilní externí ID je samostatnou
+  identitou pro opakování exportu.
+- Migrace prefixu změní jen budoucí čísla zálohových výzev; zachová čítače,
+  vystavené doklady i PDF. Při rollbacku prefix nevrací zpět.
+- Účetní nebude místní prefix používat pro ruční doklady v ABRA. Ověřit
+  kolize, limit 20 znaků `kod` a přechod účetních období.
+- Číslování nečte maximum ani čítač z ABRA. Vystavení a PDF jsou nezávislé
+  na její dostupnosti. [Import vlastního čísla](https://podpora.flexibee.eu/cs/articles/9221020-api-aktualizace-dokladove-rady-na-dokladu).
+- Poznámka exportu uchová původní položky a výpočet zálohy ze snapshotu;
+  účetní položky zůstávají agregované podle daňových skupin zálohy.
 
 ## Rozhodnutí
 
@@ -326,6 +321,7 @@ patrné, že doklad vznikl v aplikaci. Pro zálohové výzvy uživatel zvolil k�
 | 2026-10-26 | Vzory zálohy a ZDD dodány; finální fakturu uživatel dodá později. Implementace začne až na výslovný pokyn v samostatném chatu. | Uživatel |
 | 2026-10-26 | Zahájit implementaci po samostatných PR; první krok ruční export zálohové výzvy. Reálné ověření v testovací firmě a schválení provede uživatel před pokračováním. | Uživatel |
 | 2026-10-26 | Vlastní řada zálohových výzev aplikace používá kód `COZY-ZALOHA`. | Uživatel |
+| 2026-10-26 | Po testu používat pouze místní čísla s prefixem `COZY-ZF`; opustit vazbu na řadu ABRA a přidat původní rozpis položek do poznámky exportu. | Uživatel |
 
 ## Otevřené otázky
 
@@ -440,7 +436,7 @@ zaokrouhlení a souběžné zásahy v Abře. Jejich ověření je podmínkou spu
 - Blokuje dokončení: chybějící vzory včetně vyúčtování a dosud nepřipravené
   napojení na testovací firmu. Přístup k dokumentaci již není překážkou;
   API testovací firmy zde testováno nebylo.
-- Nejbližší další krok: uživatel nastaví testovací firmu a řadu, ověří
+- Nejbližší další krok: uživatel nastaví testovací firmu, ověří
   ruční export zálohy podle [postupu](../integrations/ABRA_ACCOMMODATION.md)
   a schválí první PR. Před tímto schválením nepokračovat další etapou.
   Potom lze navázat ZDD a platbami; finální fakturu a zbývající vzory dodá později.

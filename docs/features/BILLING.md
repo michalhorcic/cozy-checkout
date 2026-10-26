@@ -14,6 +14,8 @@ dokladu. Nastavení, limity první části a ověření popisuje
 3. S účetní nastavte čtyři číselné řady pro aktuální rok: zálohové výzvy, doklady
    k přijaté platbě, konečné faktury a opravné daňové doklady. Číslo je označení +
    čtyřmístný rok + pořadí doplněné nulami. Po prvním použití se řada uzamkne.
+   Zálohové výzvy používají označení `COZY-ZF` (např. `COZY-ZF202600009`).
+   Migrace zachová již vystavená čísla a nastaví tento prefix pro další výzvy.
    Pro nový rok je potřeba předem založit nové řady. Barové doklady mají vlastní
    původní číslování a jejich nastavení se nemění.
 4. V **Ceník ubytování** založte sezony. Kalendář žlutě označuje dny bez ceny.

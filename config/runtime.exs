@@ -173,7 +173,6 @@ config :cozy_checkout, :abra_accommodation,
   username: abra_connection[:username],
   password: abra_connection[:password],
   advance_type_code: System.get_env("ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE", "ZÁLOHA"),
-  advance_series_code: System.get_env("ABRA_ACCOMMODATION_ADVANCE_SERIES_CODE", "COZY-ZALOHA"),
   bank_account_code: System.get_env("ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
 
 if booking_ical_token = System.get_env("BOOKING_ICAL_TOKEN") do

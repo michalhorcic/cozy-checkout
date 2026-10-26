@@ -41,7 +41,7 @@ defmodule CozyCheckout.Abra.Client do
     case Req.get(url,
            params: [
              detail:
-               "custom:id,kod,varSym,sumCelkem,mena,typDokl,rada,bankovniUcet,ucetni,clenDph,clenKonVykDph"
+               "custom:id,kod,varSym,sumCelkem,mena,typDokl,bankovniUcet,ucetni,clenDph,clenKonVykDph"
            ],
            auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
            headers: [{"Accept", "application/json"}],
