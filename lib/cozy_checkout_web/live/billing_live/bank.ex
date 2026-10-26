@@ -52,7 +52,7 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
          socket
          |> assign(:confirmation_preview, nil)
          |> refresh()
-         |> put_flash(:info, "Záloha a ZDD uloženy. Účetní synchronizace byla zařazena.")}
+         |> put_flash(:info, "Platba uložena. Účetní synchronizace byla zařazena.")}
 
       {:error, reason} ->
         {:noreply,
@@ -82,7 +82,7 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
       rows: Bank.list(socket.assigns.page),
       status: Bank.status(),
       enabled?: Bank.enabled?(),
-      confirmation_enabled?: BankPayments.enabled?()
+      confirmation_enabled?: BankPayments.enabled?() || BankPayments.enabled_for?("final")
     )
   end
 
@@ -93,7 +93,7 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
         <h1 class="text-3xl font-bold">Bankovní pohyby</h1>
         <.link navigate={~p"/admin/billing"} class="link">Doklady z rezervací</.link>
         <p>
-          Načtení pohybu nepotvrzuje platbu. Zálohu a ZDD vytvoří až výslovné potvrzení po nové kontrole v ABRA.
+          Načtení pohybu nepotvrzuje platbu. Platba vznikne až po výslovném potvrzení a nové kontrole v ABRA. Doplatek konečné faktury nevytváří ZDD.
         </p>
         <p :if={!@enabled?} id="bank-disabled">Načítání banky je vypnuté.</p>
         <div class="flex flex-wrap gap-3">
@@ -131,7 +131,7 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
           <p>{row.reason}</p>
           <div :if={row.confirmation} class="space-y-2">
             <p class="font-semibold">
-              Záloha zaevidována · účetní synchronizace: {BankPayments.state_label(
+              Platba zaevidována · účetní synchronizace: {BankPayments.state_label(
                 row.confirmation.state
               )}
             </p>
@@ -151,14 +151,19 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
                 else: "částce výzvy"}: {Presentation.amount(row.difference)}
             </p>
             <button
-              :if={@confirmation_enabled? && !row.confirmation && row.document.kind == "advance"}
+              :if={
+                @confirmation_enabled? && !row.confirmation &&
+                  BankPayments.enabled_for?(row.document.kind)
+              }
               id={"bank-check-#{row.movement.id}"}
               class="btn btn-primary btn-sm"
               phx-click="check-payment"
               phx-value-movement={row.movement.id}
               phx-value-document={row.document.id}
               phx-disable-with="Ověřuji v ABRA…"
-            >Zkontrolovat přijetí zálohy</button>
+            >{if row.document.kind == "final",
+              do: "Zkontrolovat přijetí doplatku",
+              else: "Zkontrolovat přijetí zálohy"}</button>
           </div>
         </section>
         <.modal
@@ -167,16 +172,23 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
           show
           on_cancel={JS.push("cancel-payment")}
         >
-          <h2 class="text-xl font-bold">Potvrdit přijetí zálohy</h2>
+          <h2 class="text-xl font-bold">
+            {if @confirmation_preview.document.kind == "final",
+              do: "Potvrdit bankovní doplatek",
+              else: "Potvrdit přijetí zálohy"}
+          </h2>
           <p>
-            Výzva {@confirmation_preview.document.number} · VS {@confirmation_preview.movement.variable_symbol}
+            Doklad {@confirmation_preview.document.number} · VS {@confirmation_preview.movement.variable_symbol}
           </p>
           <p>
             {Presentation.amount(@confirmation_preview.movement.amount)} · {Presentation.date(
               @confirmation_preview.movement.paid_on
             )} · {@confirmation_preview.movement.counterparty}
           </p>
-          <p>
+          <p :if={@confirmation_preview.document.kind == "final"}>
+            Potvrzením se zaeviduje doplatek a existující bankovní pohyb se spáruje s konečnou fakturou v ABRA. Nevznikne ZDD ani nový bankovní pohyb.
+          </p>
+          <p :if={@confirmation_preview.document.kind == "advance"}>
             Potvrzením vznikne skutečná platba a uzamčený daňový doklad k přijaté záloze. Účetní vazby se následně přenesou do ABRA. Potvrzení nelze jednoduše vrátit zpět.
           </p>
           <button
@@ -184,7 +196,9 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
             class="btn btn-primary mt-4"
             phx-click="confirm-payment"
             phx-disable-with="Potvrzuji…"
-          >Potvrdit zálohu a vystavit ZDD</button>
+          >{if @confirmation_preview.document.kind == "final",
+            do: "Potvrdit doplatek a spárovat fakturu",
+            else: "Potvrdit zálohu a vystavit ZDD"}</button>
         </.modal>
         <nav class="flex gap-4">
           <.link :if={@page > 1} patch={~p"/admin/billing/bank?page=#{@page - 1}"} class="link">Předchozí</.link>

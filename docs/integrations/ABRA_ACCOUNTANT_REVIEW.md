@@ -92,8 +92,9 @@ příjmem, obyčejnými slevami nebo samostatnými zápornými položkami bez va
   sazby. Tyto případy mají skončit vysvětlením a pro další implementaci
   potřebujeme účetní postup/vzor.
 
-Tento blok nezahrnuje potvrzení a export doplatku konečné faktury. Na přenesené
-faktuře je ponechána částka k úhradě; její potvrzení bude další samostatná etapa.
+Bankovní doplatek konečné faktury nyní řeší samostatný navazující blok:
+[postup a zapnutí](ABRA_INTEGRATION.md#bankovní-doplatek-konečné-faktury).
+Export sám ponechává částku k úhradě; platbu potvrdí až obsluha po načtení banky.
 Fakturu s již místně zaznamenaným doplatkem export odmítne.
 Před zapnutím pro ostrou firmu je nutné schválit mapování a ověřit celý
 finanční cyklus včetně doplatků, oprav a vratek.

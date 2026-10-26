@@ -182,6 +182,8 @@ config :cozy_checkout, :abra_accommodation,
   tax_receipt_counter_account: System.get_env("ABRA_ACCOMMODATION_ZDD_COUNTER_ACCOUNT", "324001"),
   tax_receipt_vat12_account: System.get_env("ABRA_ACCOMMODATION_ZDD_VAT12_ACCOUNT", "343200"),
   tax_receipt_vat21_account: System.get_env("ABRA_ACCOMMODATION_ZDD_VAT21_ACCOUNT", "343100"),
+  final_bank_confirmation_enabled:
+    System.get_env("ABRA_ACCOMMODATION_FINAL_BANK_CONFIRMATION_ENABLED", "false") == "true",
   final_enabled: System.get_env("ABRA_ACCOMMODATION_FINAL_ENABLED", "false") == "true",
   final_type_code: System.get_env("ABRA_ACCOMMODATION_FINAL_TYPE_CODE", "FAKTURA"),
   final_vat_code: System.get_env("ABRA_ACCOMMODATION_FINAL_VAT_CODE", "01-02"),

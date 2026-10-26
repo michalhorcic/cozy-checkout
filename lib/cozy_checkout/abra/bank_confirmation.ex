@@ -6,6 +6,7 @@ defmodule CozyCheckout.Abra.BankConfirmation do
     belongs_to :movement, CozyCheckout.Abra.BankMovement
     belongs_to :payment, CozyCheckout.Billing.Payment
     belongs_to :source_export, CozyCheckout.Abra.AccommodationExport
+    field :kind, :string, default: "advance"
     field :base_url, :string
     field :company_id, :string
     field :bank_snapshot, :map
