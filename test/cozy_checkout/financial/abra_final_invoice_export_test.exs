@@ -356,7 +356,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
         Agent.update(agent, &%{&1 | available_reads: &1.available_reads + 1})
         json(conn, "castky-k-odpoctu", [totals])
 
-      conn.method == "GET" and String.ends_with?(path, "/polozkyFaktury.json") ->
+      conn.method == "GET" and String.ends_with?(path, "/polozkyDokladu.json") ->
         [invoice] = state.export.payload["winstrom"]["faktura-vydana"]
 
         ordinary =

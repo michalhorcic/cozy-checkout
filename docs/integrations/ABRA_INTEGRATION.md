@@ -453,3 +453,8 @@ Zásadní testy jsou v `abra_final_invoice_export_test.exs`: několik dílčích
 haléře, poplatek, žádná přijatá záloha, nulový doplatek, vypnutí a ochrana uloženého cíle,
 nedokončený nebo vyčerpaný zdroj, timeout bez duplicity a neshoda daně či
 zdrojové vazby. Testy skutečné účetní schválení ani živé API nenahrazují.
+
+Položky vydané faktury se načítají přes relaci `polozkyDokladu`; název
+`polozkyFaktury` slouží pro zápis položek do faktury. Čtení stránkuje všechny
+položky i vazby. Chybějící relace se nepovažuje za prázdný seznam: chyba
+obsahuje konkrétní název relace a HTTP stav, aby šla příčina dohledat.

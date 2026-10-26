@@ -137,19 +137,27 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  # polozkyFaktury is the import property; polozkyDokladu is the read relation.
   def final_invoice_snapshot(id, cfg) do
     path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
 
     with {:ok, invoice} <- read_invoice(id, cfg),
          {:ok, items} <-
-           relation_pages(path <> "/polozkyFaktury", "faktura-vydana-polozka", cfg, 0, []),
-         {:ok, links} <- relation_pages(path <> "/vazebni-doklady", "vazebni-doklad", cfg, 0, []),
-         {:ok, amounts} <- relation_pages(path <> "/vazby", "vazba", cfg, 0, []) do
+           invoice_relation(path, "polozkyDokladu", "faktura-vydana-polozka", cfg),
+         {:ok, links} <- invoice_relation(path, "vazebni-doklady", "vazebni-doklad", cfg),
+         {:ok, amounts} <- invoice_relation(path, "vazby", "vazba", cfg) do
       {:ok, %{invoice: invoice, items: items, links: links, amounts: amounts}}
     else
       :not_found -> {:error, "Vyúčtování v ABRA po importu chybí"}
-      {:error, :not_found} -> {:error, "ABRA nevrátila úplné položky nebo vazby vyúčtování"}
       error -> error
+    end
+  end
+
+  defp invoice_relation(path, relation, key, cfg) do
+    case relation_pages(path <> "/" <> relation, key, cfg, 0, []) do
+      {:error, :not_found} -> {:error, "ABRA nevrátila relaci #{relation} vyúčtování (HTTP 404)"}
+      {:error, reason} -> {:error, "Čtení relace #{relation} vyúčtování selhalo: #{reason}"}
+      result -> result
     end
   end
 
