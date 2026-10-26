@@ -4,33 +4,26 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
 
   @doc "Verify an exact intermediate state and identify only fully applied source deductions."
   def progress(invoice, metadata, snapshot) do
-    applied =
-      Enum.filter(metadata["sources"], fn source ->
-        Enum.any?(snapshot.links, fn link ->
-          link["storno"] in [false, "false"] and link["modulK"] == "modulUcetni.FAV" and
-            to_string(link["uroven"]) == "1" and link["typVazbyK"] == "typVazbyDokl.odpocetZDD" and
-            to_string(link["idDokl"]) == source["remote_id"]
+    with {:ok, applied} <- binding_sources(snapshot, metadata["sources"]) do
+      pending = Enum.reject(metadata["sources"], &(&1 in applied))
+
+      expected =
+        Enum.reduce(pending, metadata["expected"], fn source, totals ->
+          Map.new(totals, fn {key, value} ->
+            addition =
+              cond do
+                key in ["sumCelkem", "zbyvaUhradit"] -> source["gross"]
+                key == "juhSum" -> "0"
+                true -> source["totals"][key]
+              end
+
+            {key, to_string(Decimal.add(value, addition))}
+          end)
         end)
-      end)
 
-    pending = Enum.reject(metadata["sources"], &(&1 in applied))
-
-    expected =
-      Enum.reduce(pending, metadata["expected"], fn source, totals ->
-        Map.new(totals, fn {key, value} ->
-          addition =
-            cond do
-              key in ["sumCelkem", "zbyvaUhradit"] -> source["gross"]
-              key == "juhSum" -> "0"
-              true -> source["totals"][key]
-            end
-
-          {key, to_string(Decimal.add(value, addition))}
-        end)
-      end)
-
-    stage = metadata |> Map.put("sources", applied) |> Map.put("expected", expected)
-    with :ok <- check(invoice, stage, snapshot), do: {:ok, applied}
+      stage = metadata |> Map.put("sources", applied) |> Map.put("expected", expected)
+      with :ok <- check(invoice, stage, snapshot), do: {:ok, applied}
+    end
   end
 
   def check(invoice, metadata, snapshot) do
@@ -90,7 +83,15 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
 
     fields =
       fields ++
-        if(bindings?(snapshot, metadata["sources"]), do: [], else: ["vazby na zdrojové ZDD"])
+        case binding_sources(snapshot, metadata["sources"]) do
+          {:ok, applied} ->
+            if applied == metadata["sources"],
+              do: [],
+              else: ["vazby na zdrojové ZDD (chybějící odpočet)"]
+
+          {:error, reason} ->
+            [reason]
+        end
 
     if fields == [],
       do: :ok,
@@ -142,45 +143,126 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
       Enum.all?(expected, fn {key, value} -> Decimal.equal?(actual[key], value) end)
   end
 
-  defp bindings?(snapshot, sources) do
-    active? = fn row -> row["storno"] in [false, "false"] end
-    valid? = fn row -> is_map(row) and row["storno"] in [true, false, "true", "false"] end
+  # ABRA binds each deduction ITEM (a) to the source ZDD header (b).
+  # castka on the binding is not the monetary value of the deducted items.
+  # https://podpora.flexibee.eu/cs/articles/3422294-cerpani-zdd-rest-api
+  defp binding_sources(snapshot, sources) do
+    deductions = Enum.filter(snapshot.items, &(&1["typPolozkyK"] == "typPolozky.odpocetZdd"))
+    rows = Map.new(deductions, &{to_string(&1["id"]), &1})
+    source_ids = Enum.map(sources, & &1["remote_id"])
 
+    with :ok <-
+           require_binding(
+             map_size(rows) == length(deductions) and Enum.all?(Map.keys(rows), &valid_id?/1),
+             "chybějící nebo duplicitní ID odpočtové položky"
+           ),
+         :ok <-
+           require_binding(
+             Enum.all?(snapshot.amounts, &valid_storno?/1),
+             "neznámý stav storna vazby"
+           ),
+         active = Enum.filter(snapshot.amounts, &active?/1),
+         :ok <-
+           require_binding(
+             Enum.all?(active, &valid_id?(to_string(&1["id"]))) and
+               length(Enum.uniq_by(active, &to_string(&1["id"]))) == length(active),
+             "chybějící nebo duplicitní ID vazby"
+           ),
+         {:ok, grouped, used} <- linked_rows(active, rows, source_ids),
+         :ok <-
+           require_binding(
+             MapSet.new(Map.keys(rows)) == used,
+             "odpočtová položka nemá vazbu na ZDD"
+           ),
+         applied = Enum.filter(sources, &Map.has_key?(grouped, &1["remote_id"])),
+         :ok <-
+           require_binding(
+             Enum.all?(applied, &deduction_totals(grouped[&1["remote_id"]], [&1])),
+             "položky jednotlivého ZDD neodpovídají původním základům a DPH"
+           ),
+         :ok <-
+           require_binding(
+             graph_matches?(snapshot, applied),
+             "graf dokladů neodpovídá ověřeným vazbám položek"
+           ) do
+      {:ok, applied}
+    else
+      {:error, detail} -> {:error, "vazby na zdrojové ZDD (#{detail})"}
+    end
+  end
+
+  defp linked_rows(bindings, rows, source_ids) do
+    Enum.reduce_while(bindings, {:ok, %{}, MapSet.new()}, fn binding, {:ok, grouped, used} ->
+      with "typVazbyDokl.odpocetZDD" <- binding["typVazbyK"],
+           {company, "faktura-vydana-polozka", item_id} <- reference(binding["a@ref"]),
+           {^company, "faktura-vydana", source_id} <- reference(binding["b@ref"]),
+           true <- source_id in source_ids,
+           %{} = row <- rows[item_id],
+           true <- active?(row),
+           false <- MapSet.member?(used, item_id),
+           true <- internal_id_matches?(binding, "a", item_id),
+           true <- internal_id_matches?(binding, "b", source_id) do
+        {:cont,
+         {:ok, Map.update(grouped, source_id, [row], &[row | &1]), MapSet.put(used, item_id)}}
+      else
+        _ ->
+          {:halt,
+           {:error,
+            "vazba ID #{binding["id"]}: neplatné a@ref/b@ref, zdroj, typ nebo opakované přiřazení položky"}}
+      end
+    end)
+  end
+
+  defp reference(ref) when is_binary(ref) do
+    case URI.parse(ref).path do
+      path when is_binary(path) ->
+        case path |> URI.decode() |> String.split("/", trim: true) do
+          ["c", company, evidence, id] ->
+            id = String.replace(id, ~r/\.(json|xml)$/, "")
+            if valid_id?(id), do: {company, evidence, id}
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        nil
+    end
+  end
+
+  defp reference(_), do: nil
+
+  defp internal_id_matches?(binding, side, id) do
+    case binding[side <> "@internalId"] do
+      nil -> true
+      internal_id -> to_string(internal_id) == id
+    end
+  end
+
+  defp graph_matches?(snapshot, applied) do
     links =
       Enum.reject(snapshot.links, fn row ->
         to_string(row["idDokl"]) == to_string(snapshot.invoice["id"]) and
-          row["modulK"] == "modulUcetni.FAV" and
-          row["typVazbyK"] in [nil, ""] and row["idVazby"] in [nil, "", 0, "0", -1, "-1"]
+          row["modulK"] == "modulUcetni.FAV" and row["typVazbyK"] in [nil, ""] and
+          row["idVazby"] in [nil, "", 0, "0", -1, "-1"]
       end)
 
-    if Enum.all?(links ++ snapshot.amounts, valid?) do
-      direct = Enum.filter(links, &(active?.(&1) and to_string(&1["uroven"]) == "1"))
-      amounts = Enum.filter(snapshot.amounts, active?)
+    direct = Enum.filter(links, &(active?(&1) and to_string(&1["uroven"]) == "1"))
+    expected_ids = MapSet.new(applied, & &1["remote_id"])
 
-      length(direct) == length(sources) and length(amounts) == length(sources) and
-        Enum.all?(sources, fn source ->
-          matches =
-            Enum.filter(
-              direct,
-              &(to_string(&1["idDokl"]) == source["remote_id"] and
-                  &1["modulK"] == "modulUcetni.FAV" and
-                  &1["typVazbyK"] == "typVazbyDokl.odpocetZDD")
-            )
-
-          case matches do
-            [link] ->
-              amount = Enum.find(amounts, &(to_string(&1["id"]) == to_string(link["idVazby"])))
-              value = if amount, do: BankVerification.amount(amount["castka"])
-
-              amount && amount["typVazbyK"] == "typVazbyDokl.odpocetZDD" && value &&
-                Decimal.equal?(Decimal.abs(value), Decimal.new(source["gross"]))
-
-            _ ->
-              false
-          end
-        end)
-    else
-      false
-    end
+    Enum.all?(links, &valid_storno?/1) and
+      Enum.all?(
+        direct,
+        &(&1["modulK"] == "modulUcetni.FAV" and
+            &1["typVazbyK"] == "typVazbyDokl.odpocetZDD")
+      ) and
+      MapSet.new(direct, &to_string(&1["idDokl"])) == expected_ids
   end
+
+  defp require_binding(true, _detail), do: :ok
+  defp require_binding(_, detail), do: {:error, detail}
+
+  defp valid_id?(id), do: is_binary(id) and Regex.match?(~r/^[1-9][0-9]*$/, id)
+  defp active?(row), do: row["storno"] in [false, "false"]
+  defp valid_storno?(row), do: is_map(row) and row["storno"] in [true, false, "true", "false"]
 end

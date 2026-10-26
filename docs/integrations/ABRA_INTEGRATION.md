@@ -448,6 +448,17 @@ Starší uložené exporty s tímto obalem lze obnovit beze změny jejich snapsh
 samostatný požadavek na odpočet se odešle ve správném JSON formátu. Částky
 a volby odpočtu ZDD vycházejí z [dokumentace odpočtů](https://demo.flexibee.eu/devdoc/odpocet-zaloh).
 
+Kontrola odpočtu vychází z [čerpání ZDD přes REST API](https://podpora.flexibee.eu/cs/articles/3422294-cerpani-zdd-rest-api):
+`vazby/vazba/a` odkazuje na konkrétní odpočtovou položku konečné faktury,
+`b` na zdrojové ZDD. V JSON jsou cíle dostupné přes `a@ref` a `b@ref`.
+Částky se kontrolují z navázaných položek, nikoli ze spárované částky `castka`
+na vazbě. Každá odpočtová položka musí mít právě jednu ověřenou vazbu;
+základy a DPH se porovnávají samostatně pro každé zdrojové ZDD. Jeden zdroj
+může mít několik položek a vazeb (například ubytování a poplatek).
+Graf `vazebni-doklady` slouží také ke kontrole cílových dokladů, ale jeho počet
+řádků nemusí odpovídat počtu zdrojů. Při nejasných odkazech nebo neúplném
+odpočtu se další zápisy zastaví; chyba rozliší odkazy položek, částky a graf.
+
 Typ běžné vydané faktury, účet pohledávky, účetní předpis a daňové členění
 vyúčtování nejsou schválené vzorem finální faktury. Výchozí `FAKTURA` je
 pracovní návrh kódu typu; musí v testovací firmě existovat, jinak jej nastavte

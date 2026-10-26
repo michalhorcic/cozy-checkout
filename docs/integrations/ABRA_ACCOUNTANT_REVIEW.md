@@ -103,8 +103,9 @@ finanční cyklus včetně doplatků, oprav a vratek.
 Kontrola porovnává číslo, VS, termíny, zákazníka, měnu, celkové i daňové
 zůstatky, původní položky s výnosovými účty, součty odpočtových položek a
 vazbu/částku ke každému zdrojovému ZDD. Ověření úplného konkrétního účtování
-odpočtových položek a rozdělení jejich DPH po jednotlivých zdrojích je úkolem
-společného testu s účetní; součtová kontrola ho nenahrazuje.
+odpočtových položek je úkolem společného testu s účetní. Základy a DPH
+kontroluje aplikace i samostatně pro každý zdroj přes vazby odpočtových položek
+`a` na zdrojové ZDD `b`; tato kontrola nenahrazuje účetní schválení.
 
 HTTP probíhá mimo místní transakce. Nejdřív se vytvoří a ověří faktura s celou
 cenou pobytu. Každý odpočet se pak samostatně připojí k již existující faktuře

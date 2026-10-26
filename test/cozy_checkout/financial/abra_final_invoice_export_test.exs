@@ -382,31 +382,35 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
 
       conn.method == "GET" and String.ends_with?(path, "/vazebni-doklady.json") ->
         links =
-          Enum.with_index(applied, 1)
-          |> Enum.map(fn {source, index} ->
-            %{
-              "idVazby" => index,
-              "idDokl" =>
-                if(state.fault == :wrong_source, do: "other", else: source["remote_id"]),
-              "modulK" => "modulUcetni.FAV",
-              "typVazbyK" => "typVazbyDokl.odpocetZDD",
-              "uroven" => 1,
-              "storno" => false
-            }
+          Enum.flat_map(applied, fn source ->
+            Enum.map(deduction_rows([source]), fn row ->
+              %{
+                "idVazby" => row["id"],
+                "idDokl" =>
+                  if(state.fault == :wrong_source, do: "other", else: source["remote_id"]),
+                "modulK" => "modulUcetni.FAV",
+                "typVazbyK" => "typVazbyDokl.odpocetZDD",
+                "uroven" => 1,
+                "storno" => false
+              }
+            end)
           end)
 
         json(conn, "vazebni-doklad", links)
 
       conn.method == "GET" and String.ends_with?(path, "/vazby.json") ->
         amounts =
-          Enum.with_index(applied, 1)
-          |> Enum.map(fn {source, index} ->
-            %{
-              "id" => index,
-              "castka" => source["gross"],
-              "typVazbyK" => "typVazbyDokl.odpocetZDD",
-              "storno" => false
-            }
+          Enum.flat_map(applied, fn source ->
+            Enum.map(deduction_rows([source]), fn row ->
+              %{
+                "id" => row["id"],
+                "castka" => "0.00",
+                "a@ref" => "/c/accounting-test/faktura-vydana-polozka/#{row["id"]}.json",
+                "b@ref" => "/c/accounting-test/faktura-vydana/#{source["remote_id"]}.json",
+                "typVazbyK" => "typVazbyDokl.odpocetZDD",
+                "storno" => false
+              }
+            end)
           end)
 
         json(conn, "vazba", amounts)
@@ -553,6 +557,10 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
           ),
         not Decimal.equal?(net, 0) or not Decimal.equal?(vat, 0) do
       %{
+        "id" =>
+          source["remote_id"] <>
+            if(vat_key == "sumDphSniz", do: "1", else: if(vat_key, do: "2", else: "3")),
+        "storno" => false,
         "typPolozkyK" => "typPolozky.odpocetZdd",
         "typSzbDphK" => type,
         "sumZkl" => to_string(net),
