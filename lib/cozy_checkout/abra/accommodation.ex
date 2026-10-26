@@ -2,7 +2,7 @@ defmodule CozyCheckout.Abra.Accommodation do
   @moduledoc "Explicit, opt-in export of new accommodation advance requests."
   import Ecto.Query
   alias CozyCheckout.{Billing, Repo}
-  alias CozyCheckout.Abra.{AccommodationExport, AdvanceBuilder, Client}
+  alias CozyCheckout.Abra.{AccommodationExport, AdvanceBuilder, Client, FinalInvoiceTrial}
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Workers.AbraAccommodationWorker
 
@@ -16,7 +16,11 @@ defmodule CozyCheckout.Abra.Accommodation do
       doc = Billing.get_document!(document_id)
       booking = Repo.one!(from b in Booking, where: b.id == ^doc.booking_id, lock: "FOR UPDATE")
 
-      if doc.kind != "advance", do: Repo.rollback("Exportovat lze pouze zálohovou výzvu")
+      if doc.kind not in ["advance", "final"],
+        do: Repo.rollback("Tento export podporuje pouze výzvu a zkušební vyúčtování")
+
+      if doc.kind == "final" and not FinalInvoiceTrial.enabled?(cfg),
+        do: Repo.rollback("Zkušební export vyúčtování není zapnutý pro tuto testovací firmu")
 
       if DateTime.compare(booking.inserted_at, cfg[:enabled_from]) == :lt,
         do: Repo.rollback("Starší pobyty jsou mimo novou integraci")
@@ -24,10 +28,17 @@ defmodule CozyCheckout.Abra.Accommodation do
       export =
         case get_export(doc.id) do
           nil ->
-            payload =
-              case AdvanceBuilder.build(doc, cfg) do
-                {:ok, payload} -> payload
-                {:error, error} -> Repo.rollback(error)
+            {payload, verification} =
+              if doc.kind == "final" do
+                case FinalInvoiceTrial.prepare(doc, cfg) do
+                  {:ok, payload, verification} -> {payload, verification}
+                  {:error, error} -> Repo.rollback(error)
+                end
+              else
+                case AdvanceBuilder.build(doc, cfg) do
+                  {:ok, payload} -> {payload, %{}}
+                  {:error, error} -> Repo.rollback(error)
+                end
               end
 
             [invoice] = payload["winstrom"]["faktura-vydana"]
@@ -38,7 +49,8 @@ defmodule CozyCheckout.Abra.Accommodation do
               base_url: cfg[:base_url],
               company_id: cfg[:company_id],
               external_id: invoice["id"],
-              payload: payload
+              payload: payload,
+              verification: verification
             )
             |> Repo.insert!()
 
@@ -70,6 +82,9 @@ defmodule CozyCheckout.Abra.Accommodation do
       not same_target?(export, cfg) ->
         fail(export, "Cílová firma se změnila; export je pozastaven", true)
 
+      export.verification["kind"] == "final_trial" and not FinalInvoiceTrial.enabled?(cfg) ->
+        {:snooze, 60}
+
       cfg[:username] in [nil, ""] or cfg[:password] in [nil, ""] ->
         fail(export, "Chybí přístupové údaje do ABRA", final_attempt?)
 
@@ -94,6 +109,9 @@ defmodule CozyCheckout.Abra.Accommodation do
         end
     end
   end
+
+  defp deliver(%{verification: %{"kind" => "final_trial"}} = export, cfg),
+    do: FinalInvoiceTrial.deliver(export, cfg)
 
   defp deliver(export, cfg) do
     case Client.find_invoice(export.external_id, cfg) do

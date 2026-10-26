@@ -119,6 +119,40 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  def deductible_amounts(id, cfg) do
+    path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}/castky-k-odpoctu"
+
+    case read_records(path, "castky-k-odpoctu", cfg, detail: "full", limit: 2) do
+      {:ok, [amounts]} when is_map(amounts) ->
+        {:ok, amounts}
+
+      {:ok, _} ->
+        {:error, "ABRA nevrátila jednoznačné zbývající částky ZDD k odpočtu"}
+
+      {:error, :not_found} ->
+        {:error, "ABRA nenabízí zbývající částky ZDD k odpočtu; ověřte verzi a oprávnění API"}
+
+      error ->
+        error
+    end
+  end
+
+  def final_invoice_snapshot(id, cfg) do
+    path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
+
+    with {:ok, invoice} <- read_invoice(id, cfg),
+         {:ok, items} <-
+           relation_pages(path <> "/polozkyFaktury", "faktura-vydana-polozka", cfg, 0, []),
+         {:ok, links} <- relation_pages(path <> "/vazebni-doklady", "vazebni-doklad", cfg, 0, []),
+         {:ok, amounts} <- relation_pages(path <> "/vazby", "vazba", cfg, 0, []) do
+      {:ok, %{invoice: invoice, items: items, links: links, amounts: amounts}}
+    else
+      :not_found -> {:error, "Vyúčtování v ABRA po importu chybí"}
+      {:error, :not_found} -> {:error, "ABRA nevrátila úplné položky nebo vazby vyúčtování"}
+      error -> error
+    end
+  end
+
   @doc "Pairs an existing bank movement; never supplies fields that create a bank receipt."
   def match_bank(bank_id, invoice_id, amount, cfg) do
     payload = %{

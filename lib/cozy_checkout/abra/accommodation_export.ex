@@ -10,6 +10,7 @@ defmodule CozyCheckout.Abra.AccommodationExport do
     field :company_id, :string
     field :external_id, :string
     field :payload, :map
+    field :verification, :map, default: %{}
     field :remote_id, :string
     field :state, :string, default: "queued"
     field :attempts, :integer, default: 0

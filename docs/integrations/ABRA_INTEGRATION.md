@@ -418,3 +418,30 @@ vydané doklady se nepřepisují. Nové požadavky kontrolují skutečné pole
 `kontaktEmail`. Při neshodě ZDD hláška vypisuje názvy odlišných polí bez jejich
 hodnot a bez zveřejnění osobních údajů. Chybná částka, daňové nebo účetní
 nastavení dál blokují přenos.
+
+## Zkušební konečná faktura s odpočty
+
+Na výslovný požadavek uživatele lze připravit a exportovat pracovní vyúčtování
+ještě před dodáním schváleného účetního vzoru. Jde o experimentální mapování,
+výchozím stavem vypnuté a připnuté na explicitně nastavenou URL i testovací
+firmu. Používá stávající detail dokladu a evidenci exportů; přidávací migrace
+ukládá neměnné podklady pro kontrolu výsledku a zdrojových ZDD.
+
+[Postup pro účetní, nastavení, příklad a otevřené předpoklady](ABRA_ACCOUNTANT_TRIAL.md).
+Přenos zachovává místní finální snapshot a původní základy/DPH jednotlivých
+ZDD, posílá skutečné `odpocty-zaloh` se stabilními identitami a kontroluje
+výsledné částky, položky i vazby. Nevytváří další bankovní nebo hotovostní
+příjem a nepřijímá automatické doporučené změny částek. ZDD musí mít dokončený
+přenos do stejného cíle a být stále k dispozici k odpočtu.
+
+Typ běžné vydané faktury, účet pohledávky, účetní předpis a daňové členění
+vyúčtování nejsou schválené vzorem finální faktury. Výchozí `FAKTURA` je
+pracovní návrh kódu typu; musí v testovací firmě existovat, jinak jej nastavte
+na skutečný vhodný typ. Zdanitelné sazby jsou omezené na 12 % a 21 %,
+poplatek mimo DPH používá dosavadní explicitní mapování. Přeplatky, vratky,
+opravy, nepřenesené ZDD a již místně zaznamenané doplatky se zastaví.
+
+Zásadní testy jsou v `abra_final_invoice_trial_test.exs`: několik dílčích ZDD,
+haléře, poplatek, žádná přijatá záloha, nulový doplatek, vypnutí/připnutí cíle,
+nedokončený nebo vyčerpaný zdroj, timeout bez duplicity a neshoda daně či
+zdrojové vazby. Testy skutečné účetní schválení ani živé API nenahrazují.

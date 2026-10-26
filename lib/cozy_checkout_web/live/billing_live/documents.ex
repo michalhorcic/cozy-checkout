@@ -13,7 +13,10 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
      assign(socket,
        document: doc,
        abra_export: Accommodation.get_export(id),
-       abra_enabled?: Accommodation.enabled?(),
+       abra_enabled?:
+         Accommodation.enabled?() and
+           (doc.kind == "advance" or
+              (doc.kind == "final" and CozyCheckout.Abra.FinalInvoiceTrial.enabled?())),
        deliveries: Billing.list_deliveries(id),
        correction_form:
          to_form(
@@ -196,12 +199,15 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             </div>
           </section>
           <section
-            :if={@document.kind == "advance" && (@abra_enabled? || @abra_export)}
+            :if={@document.kind in ["advance", "final"] && (@abra_enabled? || @abra_export)}
             id="accommodation-abra"
             class="bg-white p-6 rounded-xl space-y-4"
           >
             <h2 class="text-xl font-bold">ABRA · ubytování</h2>
-            <p :if={!@abra_export}>Zálohová výzva zatím nebyla exportována.</p>
+            <p :if={@document.kind == "final"} class="text-amber-700">
+              Zkušební vyúčtování pro kontrolu s účetní. Používejte pouze testovací firmu; účetní mapování zatím není schválené.
+            </p>
+            <p :if={!@abra_export}>Doklad zatím nebyl exportován.</p>
             <div :if={@abra_export}>
               <p>Stav: {abra_state(@abra_export.state)} · pokusů: {@abra_export.attempts}</p>
               <p>Cílová firma: {@abra_export.company_id}</p>
