@@ -1,5 +1,5 @@
-defmodule CozyCheckout.Abra.FinalInvoiceTrial do
-  @moduledoc "Opt-in experimental final invoices for an explicitly pinned accounting test company."
+defmodule CozyCheckout.Abra.FinalInvoiceExport do
+  @moduledoc "Final accommodation invoice export with source ZDD deductions."
   import Ecto.Query
   alias CozyCheckout.Repo
 
@@ -15,44 +15,39 @@ defmodule CozyCheckout.Abra.FinalInvoiceTrial do
 
   alias CozyCheckout.Billing.{Document, Payment}
 
-  def enabled?(cfg \\ Accommodation.config()) do
-    cfg[:final_trial_enabled] == true and cfg[:final_trial_company_id] not in [nil, ""] and
-      cfg[:company_id] == cfg[:final_trial_company_id] and
-      cfg[:final_trial_base_url] not in [nil, ""] and cfg[:base_url] == cfg[:final_trial_base_url]
-  end
+  def enabled?(cfg \\ Accommodation.config()), do: cfg[:final_enabled] == true
 
   def prepare(%Document{kind: "final"} = doc, cfg) do
     required =
-      ~w(final_trial_type_code final_trial_vat_code final_trial_vat_report_code final_trial_service_account final_trial_fee_account final_trial_outside_vat_code final_trial_outside_vat_report_code)a
+      ~w(final_type_code final_vat_code final_vat_report_code final_service_account final_fee_account final_outside_vat_code final_outside_vat_report_code)a
 
     cond do
       not enabled?(cfg) ->
-        {:error, "Zkušební export vyúčtování není zapnutý pro tuto testovací firmu"}
+        {:error, "Export vyúčtování není zapnutý"}
 
       Enum.any?(required, &(cfg[&1] in [nil, ""])) ->
-        {:error, "Chybí zkušební mapování vyúčtování"}
+        {:error, "Chybí mapování vyúčtování"}
 
-      cfg[:final_trial_type_code] in [cfg[:advance_type_code], cfg[:tax_receipt_type_code]] ->
+      cfg[:final_type_code] in [cfg[:advance_type_code], cfg[:tax_receipt_type_code]] ->
         {:error, "Vyúčtování potřebuje vlastní typ faktury, nikoli typ zálohy nebo ZDD"}
 
       Repo.exists?(
         from p in Payment, where: p.booking_id == ^doc.booking_id and p.kind == "refund"
       ) ->
-        {:error, "Pobyt s vratkou vyžaduje účetní vzor; zkušební export je pozastaven"}
+        {:error, "Pobyt s vratkou vyžaduje účetní vzor; export je pozastaven"}
 
       Repo.exists?(
         from d in Document, where: d.booking_id == ^doc.booking_id and d.kind == "correction"
       ) ->
-        {:error, "Pobyt s opravou vyžaduje účetní vzor; zkušební export je pozastaven"}
+        {:error, "Pobyt s opravou vyžaduje účetní vzor; export je pozastaven"}
 
       Repo.exists?(from p in Payment, where: p.document_id == ^doc.id) ->
-        {:error,
-         "Faktura již má místní doplatek; jeho účetní přenos zatím není součástí zkušebního bloku"}
+        {:error, "Faktura již má místní doplatek; jeho účetní přenos zatím není podporovaný"}
 
       true ->
         with {:ok, sources} <- sources(doc, cfg),
              {:ok, payload, expected} <- FinalInvoiceBuilder.build(doc, sources, cfg) do
-          {:ok, payload, %{"kind" => "final_trial", "sources" => sources, "expected" => expected}}
+          {:ok, payload, %{"kind" => "final", "sources" => sources, "expected" => expected}}
         end
     end
   end

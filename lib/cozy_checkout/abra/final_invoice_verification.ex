@@ -1,5 +1,5 @@
 defmodule CozyCheckout.Abra.FinalInvoiceVerification do
-  @moduledoc "Strict read-back of trial invoice amounts, ordinary lines, deduction lines and source bindings."
+  @moduledoc "Strict read-back of final invoice amounts, ordinary lines, deduction lines and source bindings."
   alias CozyCheckout.Abra.BankVerification
 
   def check(invoice, metadata, snapshot) do
@@ -63,9 +63,7 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
 
     if fields == [],
       do: :ok,
-      else:
-        {:error,
-         "Zkušební faktura neprošla kontrolou: #{Enum.join(fields, ", ")}. Nic se nepřepisuje"}
+      else: {:error, "Faktura neprošla kontrolou: #{Enum.join(fields, ", ")}. Nic se nepřepisuje"}
   end
 
   defp signature(row) do

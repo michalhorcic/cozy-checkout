@@ -182,22 +182,15 @@ config :cozy_checkout, :abra_accommodation,
   tax_receipt_counter_account: System.get_env("ABRA_ACCOMMODATION_ZDD_COUNTER_ACCOUNT", "324001"),
   tax_receipt_vat12_account: System.get_env("ABRA_ACCOMMODATION_ZDD_VAT12_ACCOUNT", "343200"),
   tax_receipt_vat21_account: System.get_env("ABRA_ACCOMMODATION_ZDD_VAT21_ACCOUNT", "343100"),
-  # Trial defaults are hypotheses for accountant review, not an approved final-invoice template.
-  final_trial_enabled:
-    System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_ENABLED", "false") == "true",
-  final_trial_base_url: System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_BASE_URL", ""),
-  final_trial_company_id: System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_COMPANY_ID", ""),
-  final_trial_type_code: System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_TYPE_CODE", "FAKTURA"),
-  final_trial_vat_code: System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_VAT_CODE", "01-02"),
-  final_trial_vat_report_code:
-    System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_VAT_REPORT_CODE", "A.4-5.AUTO"),
-  final_trial_service_account:
-    System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_SERVICE_ACCOUNT", "602001"),
-  final_trial_fee_account: System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_FEE_ACCOUNT", "345100"),
-  final_trial_outside_vat_code:
-    System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_OUTSIDE_VAT_CODE", "000U"),
-  final_trial_outside_vat_report_code:
-    System.get_env("ABRA_ACCOMMODATION_FINAL_TRIAL_OUTSIDE_VAT_REPORT_CODE", "0.0."),
+  final_enabled: System.get_env("ABRA_ACCOMMODATION_FINAL_ENABLED", "false") == "true",
+  final_type_code: System.get_env("ABRA_ACCOMMODATION_FINAL_TYPE_CODE", "FAKTURA"),
+  final_vat_code: System.get_env("ABRA_ACCOMMODATION_FINAL_VAT_CODE", "01-02"),
+  final_vat_report_code: System.get_env("ABRA_ACCOMMODATION_FINAL_VAT_REPORT_CODE", "A.4-5.AUTO"),
+  final_service_account: System.get_env("ABRA_ACCOMMODATION_FINAL_SERVICE_ACCOUNT", "602001"),
+  final_fee_account: System.get_env("ABRA_ACCOMMODATION_FINAL_FEE_ACCOUNT", "345100"),
+  final_outside_vat_code: System.get_env("ABRA_ACCOMMODATION_FINAL_OUTSIDE_VAT_CODE", "000U"),
+  final_outside_vat_report_code:
+    System.get_env("ABRA_ACCOMMODATION_FINAL_OUTSIDE_VAT_REPORT_CODE", "0.0."),
   enabled_from: accommodation_enabled_from,
   base_url: System.get_env("ABRA_ACCOMMODATION_BASE_URL", abra_connection[:base_url]),
   company_id: System.get_env("ABRA_ACCOMMODATION_COMPANY_ID", abra_connection[:company_id]),

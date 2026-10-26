@@ -2,7 +2,7 @@ defmodule CozyCheckout.Abra.Accommodation do
   @moduledoc "Explicit, opt-in export of new accommodation advance requests."
   import Ecto.Query
   alias CozyCheckout.{Billing, Repo}
-  alias CozyCheckout.Abra.{AccommodationExport, AdvanceBuilder, Client, FinalInvoiceTrial}
+  alias CozyCheckout.Abra.{AccommodationExport, AdvanceBuilder, Client, FinalInvoiceExport}
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Workers.AbraAccommodationWorker
 
@@ -17,10 +17,10 @@ defmodule CozyCheckout.Abra.Accommodation do
       booking = Repo.one!(from b in Booking, where: b.id == ^doc.booking_id, lock: "FOR UPDATE")
 
       if doc.kind not in ["advance", "final"],
-        do: Repo.rollback("Tento export podporuje pouze výzvu a zkušební vyúčtování")
+        do: Repo.rollback("Tento export podporuje pouze výzvu a vyúčtování")
 
-      if doc.kind == "final" and not FinalInvoiceTrial.enabled?(cfg),
-        do: Repo.rollback("Zkušební export vyúčtování není zapnutý pro tuto testovací firmu")
+      if doc.kind == "final" and not FinalInvoiceExport.enabled?(cfg),
+        do: Repo.rollback("Export vyúčtování není zapnutý")
 
       if DateTime.compare(booking.inserted_at, cfg[:enabled_from]) == :lt,
         do: Repo.rollback("Starší pobyty jsou mimo novou integraci")
@@ -30,7 +30,7 @@ defmodule CozyCheckout.Abra.Accommodation do
           nil ->
             {payload, verification} =
               if doc.kind == "final" do
-                case FinalInvoiceTrial.prepare(doc, cfg) do
+                case FinalInvoiceExport.prepare(doc, cfg) do
                   {:ok, payload, verification} -> {payload, verification}
                   {:error, error} -> Repo.rollback(error)
                 end
@@ -82,7 +82,7 @@ defmodule CozyCheckout.Abra.Accommodation do
       not same_target?(export, cfg) ->
         fail(export, "Cílová firma se změnila; export je pozastaven", true)
 
-      export.verification["kind"] == "final_trial" and not FinalInvoiceTrial.enabled?(cfg) ->
+      export.verification["kind"] == "final" and not FinalInvoiceExport.enabled?(cfg) ->
         {:snooze, 60}
 
       cfg[:username] in [nil, ""] or cfg[:password] in [nil, ""] ->
@@ -110,8 +110,8 @@ defmodule CozyCheckout.Abra.Accommodation do
     end
   end
 
-  defp deliver(%{verification: %{"kind" => "final_trial"}} = export, cfg),
-    do: FinalInvoiceTrial.deliver(export, cfg)
+  defp deliver(%{verification: %{"kind" => "final"}} = export, cfg),
+    do: FinalInvoiceExport.deliver(export, cfg)
 
   defp deliver(export, cfg) do
     case Client.find_invoice(export.external_id, cfg) do

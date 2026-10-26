@@ -1,8 +1,9 @@
-# Zkušební cyklus ubytování pro kontrolu s účetní
+# Ověření fakturace ubytování s účetní
 
-Tento postup slouží k ověření pracovního návrhu v testovací firmě ABRA.
-Export konečné faktury zatím není účetně schválený. Nezapínejte jej v ostré
-firmě. Původní číslování, snapshoty a uložená PDF místních dokladů se nemění.
+Tento postup slouží ke společnému ověření fakturace s účetní. Export konečné
+faktury používá stejné připojení jako ostatní doklady ubytování. Účetní mapování
+je stále potřeba ověřit; číslování, snapshoty a uložená PDF vycházejí z místních
+dokladů.
 
 ## Co již vychází z podkladů a co je pracovní předpoklad
 
@@ -17,24 +18,28 @@ firmě. Původní číslování, snapshoty a uložená PDF místních dokladů s
 | Odpočty | Po jednotlivých ZDD, s explicitními základy, stabilními externími ID a režimem převzetí původních sazeb. Tvar požadavku a chování konkrétní verze API se zde dosud živě neověřily. |
 | Zaokrouhlení | Haléřové částky místních dokladů, bez automatického přijímání doporučených změn nebo zaokrouhlení na koruny. |
 
-## Spuštění pouze v testovací firmě
+## Zapnutí exportu
 
-Spusťte přidávací migraci `20261026180000_add_accommodation_export_verification.exs`.
-Stávající export ubytování a testovací přístupy zůstávají nastavené. Doplňte:
+Spusťte přidávací migraci `20261026180000_add_accommodation_export_verification.exs`
+a migraci `20261026180100_normalize_final_export_kind.exs`, která sjednotí
+interní označení existujících exportů bez změny jejich účetních podkladů.
+Pro zapnutí doplňte ke stávajícímu nastavení ubytování:
 
 ```sh
-ABRA_ACCOMMODATION_FINAL_TRIAL_ENABLED=true
-ABRA_ACCOMMODATION_FINAL_TRIAL_BASE_URL=<stejná URL jako testovací ABRA pro ubytování>
-ABRA_ACCOMMODATION_FINAL_TRIAL_COMPANY_ID=<stejné ID testovací firmy>
-ABRA_ACCOMMODATION_FINAL_TRIAL_TYPE_CODE=<kód běžné vydané faktury; výchozí FAKTURA>
+ABRA_ACCOMMODATION_FINAL_ENABLED=true
 ```
 
-Export se nezapne, pokud se připnutá URL a firma neshodují s aktivním cílem
-ubytování. Typ musí být odlišný od výzvy a ZDD. Změna cíle nesmí přesměrovat
-již uložený export. Samotné označení firmy jako testovací není technickým
-důkazem; nastavení musí ukazovat na vaši skutečnou testovací firmu.
+URL, firma a přístupy se přebírají ze stávající konfigurace ABRA pro ubytování;
+znovu se nezadávají. Typ faktury lze případně upravit pomocí
+`ABRA_ACCOMMODATION_FINAL_TYPE_CODE` (výchozí `FAKTURA`). Musí být odlišný
+od výzvy a ZDD. Již uložený export zůstává vázaný na původní URL a firmu,
+takže jej změna připojení nepřesměruje.
 
-Další proměnné s prefixem `ABRA_ACCOMMODATION_FINAL_TRIAL_`:
+Při přechodu ze starší konfigurace přejmenujte případné vlastní parametry
+na aktuální prefix uvedený níže. Samostatné nastavení cíle pro konečné faktury
+se již nepoužívá.
+
+Další proměnné s prefixem `ABRA_ACCOMMODATION_FINAL_`:
 `VAT_CODE`, `VAT_REPORT_CODE`, `SERVICE_ACCOUNT`, `FEE_ACCOUNT`,
 `OUTSIDE_VAT_CODE`, `OUTSIDE_VAT_REPORT_CODE`. Výchozí hodnoty jsou pracovní
 mapování popsané výše a v `config/runtime.exs`.
@@ -51,8 +56,8 @@ mapování popsané výše a v `config/runtime.exs`.
    každého ZDD. Zkontrolujte bankovní úhrady výzvy a vazby obou ZDD.
 4. Vystavte místní konečnou fakturu. V náhledu musí být celá cena pobytu
    11 400 Kč, odpočty obou ZDD a částka k doplacení 2 850 Kč.
-5. V detailu konečné faktury použijte **Exportovat do ABRA** v sekci označené
-   jako zkušební vyúčtování. **Obnovit stav exportu** načte výsledek.
+5. V detailu konečné faktury použijte **Exportovat do ABRA** v sekci
+   **ABRA · ubytování**. **Obnovit stav exportu** načte výsledek.
 6. V ABRA zkontrolujte fakturu, jednotlivé odpočty, zdrojové ZDD i jejich
    zbývající částky k odpočtu. Uložte XML faktury včetně položek a vazeb pro
    další doladění. Úspěch aplikace znamená shodu kontrolovaných dat, nikoli
@@ -89,7 +94,7 @@ příjmem, obyčejnými slevami nebo samostatnými zápornými položkami bez va
 
 Tento blok nezahrnuje potvrzení a export doplatku konečné faktury. Na přenesené
 faktuře je ponechána částka k úhradě; její potvrzení bude další samostatná etapa.
-Fakturu s již místně zaznamenaným doplatkem tento zkušební export odmítne.
+Fakturu s již místně zaznamenaným doplatkem export odmítne.
 Před zapnutím pro ostrou firmu je nutné schválit mapování a ověřit celý
 finanční cyklus včetně doplatků, oprav a vratek.
 

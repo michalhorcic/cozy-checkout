@@ -1,5 +1,5 @@
 defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
-  @moduledoc "Experimental final invoice from frozen local lines and explicit source-ZDD deductions."
+  @moduledoc "Final invoice from frozen local lines and explicit source-ZDD deductions."
   alias CozyCheckout.Billing.{Document, Money}
   alias CozyCheckout.Abra.{BankVerification, TaxReceiptBuilder}
 
@@ -9,7 +9,7 @@ defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
 
     cond do
       String.length(doc.number) > 20 or doc.snapshot["currency"] != "CZK" ->
-        {:error, "Zkušební export vyžaduje CZK a číslo nejvýše 20 znaků"}
+        {:error, "Export vyžaduje CZK a číslo nejvýše 20 znaků"}
 
       not Decimal.equal?(Money.total(doc.lines), doc.total) ->
         {:error, "Částka faktury neodpovídá uloženým položkám"}
@@ -26,7 +26,7 @@ defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
             "id" => "ext:cozy-checkout:accommodation:#{doc.id}",
             "kod" => doc.number,
             "varSym" => doc.variable_symbol,
-            "typDokl" => "code:#{cfg[:final_trial_type_code]}",
+            "typDokl" => "code:#{cfg[:final_type_code]}",
             "bankovniUcet" => "code:#{cfg[:bank_account_code]}",
             "mena" => "code:CZK",
             "datVyst" => to_string(doc.issued_on),
@@ -35,12 +35,12 @@ defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
             "datUcto" => to_string(doc.tax_date),
             "ucetni" => true,
             "bezPolozek" => false,
-            "clenDph" => "code:#{cfg[:final_trial_vat_code]}",
-            "clenKonVykDph" => "code:#{cfg[:final_trial_vat_report_code]}",
+            "clenDph" => "code:#{cfg[:final_vat_code]}",
+            "clenKonVykDph" => "code:#{cfg[:final_vat_report_code]}",
             "szbDphSniz" => "12",
             "szbDphZakl" => "21",
             "zaokrNaSumK" => "zaokrNa.zadne",
-            "popis" => "Zkušební vyúčtování #{doc.number} · k ověření s účetní",
+            "popis" => "Vyúčtování #{doc.number} · Cozy Checkout",
             "polozkyFaktury" => items
           }
 
@@ -132,18 +132,18 @@ defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
           "zaokrNaK" => "zaokrNa.setiny",
           "kopZklDalUcet" => false,
           "zklDalUcet" =>
-            "code:#{if outside?, do: cfg[:final_trial_fee_account], else: cfg[:final_trial_service_account]}",
+            "code:#{if outside?, do: cfg[:final_fee_account], else: cfg[:final_service_account]}",
           "kopClenDph" => false,
           "clenDph" =>
-            "code:#{if outside?, do: cfg[:final_trial_outside_vat_code], else: cfg[:final_trial_vat_code]}",
+            "code:#{if outside?, do: cfg[:final_outside_vat_code], else: cfg[:final_vat_code]}",
           "kopClenKonVykDph" => false,
           "clenKonVykDph" =>
-            "code:#{if outside?, do: cfg[:final_trial_outside_vat_report_code], else: cfg[:final_trial_vat_report_code]}"
+            "code:#{if outside?, do: cfg[:final_outside_vat_report_code], else: cfg[:final_vat_report_code]}"
         }
 
         {:cont, {:ok, rows ++ [item]}}
       else
-        {:halt, {:error, "Faktura obsahuje daňový režim nebo sazbu bez zkušebního mapování"}}
+        {:halt, {:error, "Faktura obsahuje daňový režim nebo sazbu bez podporovaného mapování"}}
       end
     end)
   end

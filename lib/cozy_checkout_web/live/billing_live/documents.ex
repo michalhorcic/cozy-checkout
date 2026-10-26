@@ -16,7 +16,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
        abra_enabled?:
          Accommodation.enabled?() and
            (doc.kind == "advance" or
-              (doc.kind == "final" and CozyCheckout.Abra.FinalInvoiceTrial.enabled?())),
+              (doc.kind == "final" and CozyCheckout.Abra.FinalInvoiceExport.enabled?())),
        deliveries: Billing.list_deliveries(id),
        correction_form:
          to_form(
@@ -204,9 +204,6 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             class="bg-white p-6 rounded-xl space-y-4"
           >
             <h2 class="text-xl font-bold">ABRA · ubytování</h2>
-            <p :if={@document.kind == "final"} class="text-amber-700">
-              Zkušební vyúčtování pro kontrolu s účetní. Používejte pouze testovací firmu; účetní mapování zatím není schválené.
-            </p>
             <p :if={!@abra_export}>Doklad zatím nebyl exportován.</p>
             <div :if={@abra_export}>
               <p>Stav: {abra_state(@abra_export.state)} · pokusů: {@abra_export.attempts}</p>

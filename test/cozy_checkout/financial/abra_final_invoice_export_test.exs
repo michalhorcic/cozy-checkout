@@ -1,4 +1,4 @@
-defmodule CozyCheckout.AbraFinalInvoiceTrialTest do
+defmodule CozyCheckout.AbraFinalInvoiceExportTest do
   use CozyCheckout.DataCase, async: false
   @moduletag :financial
   import CozyCheckout.BillingFixtures
@@ -23,7 +23,7 @@ defmodule CozyCheckout.AbraFinalInvoiceTrialTest do
       enabled: true,
       enabled_from: ~U[2020-01-01 00:00:00Z],
       base_url: "https://accounting.test",
-      company_id: "trial",
+      company_id: "accounting-test",
       username: "test",
       password: "test",
       advance_type_code: "ZÁLOHA",
@@ -37,16 +37,14 @@ defmodule CozyCheckout.AbraFinalInvoiceTrialTest do
       tax_receipt_vat12_account: "343200",
       tax_receipt_vat21_account: "343100",
       tax_receipt_outside_mode: "sumOsv",
-      final_trial_enabled: true,
-      final_trial_base_url: "https://accounting.test",
-      final_trial_company_id: "trial",
-      final_trial_type_code: "FAKTURA",
-      final_trial_vat_code: "01-02",
-      final_trial_vat_report_code: "A.4-5.AUTO",
-      final_trial_service_account: "602001",
-      final_trial_fee_account: "345100",
-      final_trial_outside_vat_code: "000U",
-      final_trial_outside_vat_report_code: "0.0."
+      final_enabled: true,
+      final_type_code: "FAKTURA",
+      final_vat_code: "01-02",
+      final_vat_report_code: "A.4-5.AUTO",
+      final_service_account: "602001",
+      final_fee_account: "345100",
+      final_outside_vat_code: "000U",
+      final_outside_vat_report_code: "0.0."
     ]
 
     Application.put_env(:cozy_checkout, :abra_accommodation, cfg)
@@ -158,24 +156,32 @@ defmodule CozyCheckout.AbraFinalInvoiceTrialTest do
     assert Agent.get(ctx.remote, & &1.posts) == 1
   end
 
-  test "disabled or unpinned trial and unfinished source prevent enqueue", ctx do
+  test "disabled final export and unfinished source prevent enqueue", ctx do
     confirmation = seed_receipt(ctx, "600", 100)
     doc = issue!(ctx.booking, "final")
 
-    for attrs <- [
-          [final_trial_enabled: false],
-          [final_trial_company_id: "other"],
-          [final_trial_base_url: "https://other.test"]
-        ] do
-      configure(ctx.cfg, attrs)
-      assert {:error, _} = Accommodation.enqueue(doc.id)
-    end
+    configure(ctx.cfg, final_enabled: false)
+    assert {:error, _} = Accommodation.enqueue(doc.id)
 
     configure(ctx.cfg, [])
     confirmation |> Ecto.Changeset.change(state: "conflict") |> Repo.update!()
     assert {:error, _} = Accommodation.enqueue(doc.id)
     refute Accommodation.get_export(doc.id)
     assert Repo.aggregate(AccommodationExport, :count) == 1
+  end
+
+  test "stored export keeps its original company and URL when connection configuration changes",
+       ctx do
+    {_doc, export} = final_export(ctx)
+
+    for attrs <- [[company_id: "other-company"], [base_url: "https://other.test"]] do
+      configure(ctx.cfg, attrs)
+      assert {:cancel, reason} = Accommodation.sync(export.id)
+      assert reason =~ "Cílová firma se změnila"
+      assert Accommodation.get_export(export.document_id).payload == export.payload
+    end
+
+    assert Agent.get(ctx.remote, & &1.posts) == 0
   end
 
   test "already deducted source stops before creation and preserves frozen export", ctx do
@@ -355,7 +361,7 @@ defmodule CozyCheckout.AbraFinalInvoiceTrialTest do
           else: Plug.Conn.send_resp(conn, 404, "")
 
       conn.method == "POST" ->
-        assert path == "/c/trial/faktura-vydana.json"
+        assert path == "/c/accounting-test/faktura-vydana.json"
         {:ok, body, conn} = Plug.Conn.read_body(conn)
         assert Jason.decode!(body) == state.export.payload
         [invoice] = state.export.payload["winstrom"]["faktura-vydana"]
