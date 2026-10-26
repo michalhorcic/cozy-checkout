@@ -1,14 +1,15 @@
 # Integrace fakturace ubytování s ABRA Flexi
 
-- Stav: návrh; možnosti API doloženy dokumentací, vzory zálohy a ZDD prozkoumány.
+- Stav: implementace první části — ruční export zálohové výzvy připraven k ověření.
   Finální mapování a celý cyklus čekají na další vzory a testovací firmu.
 - Vytvořeno: 2026-10-23
 - Aktualizováno: 2026-10-26
 - Související dokumentace / implementace: [Fakturace pobytů](../features/BILLING.md),
   [Integrace ABRA](../integrations/ABRA_INTEGRATION.md),
   [Billing](../../lib/cozy_checkout/billing.ex), [Abra](../../lib/cozy_checkout/abra.ex).
-- Implementace nebyla zahájena; začne až na výslovný pokyn v samostatném chatu.
-  Uživatel zajistí napojení na testovací firmu a vzor finální faktury dodá později.
+- Na pokyn uživatele zahájena první samostatná část: ruční export zálohové
+  výzvy. Další části až po jeho ověření a schválení PR.
+  [Nastavení a testovací postup](../integrations/ABRA_ACCOMMODATION.md).
 
 ## Problém a očekávaný výsledek
 
@@ -323,6 +324,7 @@ období se dohodnou s účetní; tímto plánem se nevymýšlejí.
 | 2026-10-23 | Doplnit doložené možnosti a omezení API; uživatel zajistí napojení na testovací firmu pro ověřování API a budoucí implementace. Tato aktualizace nezahajuje implementaci. | Uživatel |
 | 2026-10-26 | Vlastní vyhrazené řady aplikace, čísla přiděluje místní databáze a ABRA je přebírá. Externí původ bude viditelný, zůstává nezávislé místní vystavování a následný export. | Uživatel |
 | 2026-10-26 | Vzory zálohy a ZDD dodány; finální fakturu uživatel dodá později. Implementace začne až na výslovný pokyn v samostatném chatu. | Uživatel |
+| 2026-10-26 | Zahájit implementaci po samostatných PR; první krok ruční export zálohové výzvy. Reálné ověření v testovací firmě a schválení provede uživatel před pokračováním. | Uživatel |
 
 ## Otevřené otázky
 
@@ -427,22 +429,17 @@ zaokrouhlení a souběžné zásahy v Abře. Jejich ověření je podmínkou spu
   do [rejstříku plánů](README.md). Následně ověřena oficiální API dokumentace
   a veřejná metadata; zjištění a omezení doplněna se souhlasem uživatele.
   Dne 2026-10-26 prozkoumány XML zálohy a ZDD a schváleny vlastní řady aplikace.
-  Implementace integrace nebyla zahájena a tento chat ji nezahajuje.
+  Následně na pokyn uživatele připravena první část: ruční export zálohové
+  výzvy podle dodaných XML, samostatná evidence přenosu a Oban worker,
+  stav a opakování v detailu dokladu a zásadní testy. Integrace zůstává
+  ve výchozím stavu vypnutá. Lokální testy nebyly spuštěny; CI ověří uživatel.
 - Zbývá: napojení na testovací firmu, finální faktura a další účetní vzory,
   ověření celého cyklu a přesné mapování. Uživatel zajistí napojení a finální
   fakturu dodá později.
 - Blokuje dokončení: chybějící vzory včetně vyúčtování a dosud nepřipravené
   napojení na testovací firmu. Přístup k dokumentaci již není překážkou;
   API testovací firmy zde testováno nebylo.
-- Nejbližší další krok: v samostatném chatu na výslovný pokyn uživatele znovu
-  ověřit aktuální kód a stav přístupu. Bez finální faktury lze jako první
-  samostatný krok připravit a v testovací firmě ověřit vytvoření zálohy;
-  celý cyklus se dokončí až po dodání a ověření zbývajících vzorů. Před zápisem
-  ověřit cílovou testovací firmu, licenci, oprávnění, nastavení a vlastní řady.
-
-V novém chatu lze navázat například:
-
-> Přečti docs/plans/2026-10-23-abra-ubytovani.md. Napojení na testovací firmu
-> je připravené a mám vzory od účetní. Ověř doložené API operace a zbývající
-> scénáře v testovací firmě, porovnej výsledky s aktuálním kódem a doplň účetní
-> mapování. Zatím nezačínej implementaci.
+- Nejbližší další krok: uživatel nastaví testovací firmu a řadu, ověří
+  ruční export zálohy podle [postupu](../integrations/ABRA_ACCOMMODATION.md)
+  a schválí první PR. Před tímto schválením nepokračovat další etapou.
+  Potom lze navázat ZDD a platbami; finální fakturu a zbývající vzory dodá později.

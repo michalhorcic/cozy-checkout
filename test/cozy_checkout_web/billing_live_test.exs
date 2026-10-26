@@ -353,6 +353,38 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert Repo.get!(CozyCheckout.Billing.Document, final.id).pdf == nil
   end
 
+  test "manual accommodation export is available on an authenticated advance detail", %{
+    conn: conn,
+    booking: booking
+  } do
+    alias CozyCheckout.Abra.Accommodation
+    previous = Application.get_env(:cozy_checkout, :abra_accommodation)
+
+    Application.put_env(:cozy_checkout, :abra_accommodation,
+      enabled: true,
+      enabled_from: ~U[2020-01-01 00:00:00Z],
+      base_url: "https://accounting.test",
+      company_id: "test",
+      username: "test",
+      password: "test",
+      advance_type_code: "ZÁLOHA",
+      advance_series_code: "COZY-ZALOHY",
+      bank_account_code: "BANKOVNÍ ÚČET"
+    )
+
+    on_exit(fn -> Application.put_env(:cozy_checkout, :abra_accommodation, previous) end)
+    doc = issue!(booking, "advance")
+    {:ok, view, _} = live(conn, "/admin/billing/documents/#{doc.id}")
+    assert has_element?(view, "#accommodation-abra-export", "Exportovat do ABRA")
+    view |> element("#accommodation-abra-export") |> render_click()
+    assert has_element?(view, "#accommodation-abra", "Čeká na export")
+    refute has_element?(view, "#accommodation-abra-export")
+    assert Accommodation.get_export(doc.id).state == "queued"
+
+    assert {:error, {:redirect, %{to: "/admin/login"}}} =
+             live(build_conn(), "/admin/billing/documents/#{doc.id}")
+  end
+
   test "PDF and billing administration require authentication", %{booking: booking} do
     final = issue!(booking, "final")
     conn = build_conn() |> get("/admin/billing/documents/#{final.id}/pdf")

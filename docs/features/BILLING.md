@@ -1,5 +1,9 @@
 # Fakturace pobytů
 
+Zálohové výzvy lze po nastavení integrace ručně přenést do ABRA z detailu
+dokladu. Nastavení, limity první části a ověření popisuje
+[export zálohových výzev](../integrations/ABRA_ACCOMMODATION.md).
+
 ## První spuštění
 
 1. Spusťte migrace standardním nasazením. Migrační skript nic nevystavuje,

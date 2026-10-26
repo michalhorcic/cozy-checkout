@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.BillingLive.Documents do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Billing
+  alias CozyCheckout.Abra.Accommodation
   alias CozyCheckout.Billing.Presentation
   alias CozyCheckoutWeb.BillingLive.Helpers
   def mount(_, _, socket), do: {:ok, assign(socket, page_title: "Doklady z rezervací")}
@@ -11,6 +12,8 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     {:noreply,
      assign(socket,
        document: doc,
+       abra_export: Accommodation.get_export(id),
+       abra_enabled?: Accommodation.enabled?(),
        deliveries: Billing.list_deliveries(id),
        correction_form:
          to_form(
@@ -36,6 +39,21 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
   def handle_event("refresh", _, socket),
     do:
       {:noreply, assign(socket, :deliveries, Billing.list_deliveries(socket.assigns.document.id))}
+
+  def handle_event("abra-export", _, socket) do
+    case Accommodation.enqueue(socket.assigns.document.id) do
+      {:ok, export} ->
+        {:noreply,
+         socket |> assign(:abra_export, export) |> put_flash(:info, "Export do ABRA zařazen")}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, Helpers.error(error))}
+    end
+  end
+
+  def handle_event("abra-refresh", _, socket) do
+    {:noreply, assign(socket, :abra_export, Accommodation.get_export(socket.assigns.document.id))}
+  end
 
   def handle_event("email", %{"email" => attrs}, socket) do
     case Billing.enqueue_email(socket.assigns.document.id, attrs, attrs["request_id"]) do
@@ -176,6 +194,28 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
               >Doklady a platby pobytu</.link>
             </div>
           </section>
+          <section
+            :if={@document.kind == "advance" && (@abra_enabled? || @abra_export)}
+            id="accommodation-abra"
+            class="bg-white p-6 rounded-xl space-y-4"
+          >
+            <h2 class="text-xl font-bold">ABRA · ubytování</h2>
+            <p :if={!@abra_export}>Zálohová výzva zatím nebyla exportována.</p>
+            <div :if={@abra_export}>
+              <p>Stav: {abra_state(@abra_export.state)} · pokusů: {@abra_export.attempts}</p>
+              <p>Cílová firma: {@abra_export.company_id}</p>
+              <p :if={@abra_export.remote_id}>ID dokladu: {@abra_export.remote_id}</p>
+              <p :if={@abra_export.error} class="text-red-700">{@abra_export.error}</p>
+            </div>
+            <button
+              :if={@abra_enabled? && (!@abra_export || @abra_export.state == "failed")}
+              id="accommodation-abra-export"
+              phx-click="abra-export"
+              phx-disable-with="Zařazuji…"
+              class="btn btn-primary"
+            >{if @abra_export, do: "Opakovat export do ABRA", else: "Exportovat do ABRA"}</button>
+            <button phx-click="abra-refresh" class="btn">Obnovit stav exportu</button>
+          </section>
           <section class="bg-white p-6 rounded-xl space-y-4">
             <h2 class="text-xl font-bold">Odeslat e-mailem</h2>
             <CozyCheckoutWeb.BillingComponents.email_form id="billing-email" form={@email_form} />
@@ -237,6 +277,11 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     </Layouts.app>
     """
   end
+
+  defp abra_state("queued"), do: "Čeká na export"
+  defp abra_state("retrying"), do: "Čeká na opakování"
+  defp abra_state("failed"), do: "Chyba exportu"
+  defp abra_state("synced"), do: "Exportováno"
 
   defp delivery_label("accepted"), do: "Odesláno"
   defp delivery_label("queued"), do: "Ve frontě"
