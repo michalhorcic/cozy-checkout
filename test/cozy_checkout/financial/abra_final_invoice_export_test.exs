@@ -69,6 +69,8 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
           invoice: nil,
           sources: %{},
           posts: 0,
+          deduction_posts: 0,
+          applied: [],
           available_reads: 0,
           consumed: false,
           fault: nil
@@ -133,6 +135,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
     assert :ok = Accommodation.sync(export.id)
     assert :ok = Accommodation.sync(export.id)
     assert Agent.get(ctx.remote, & &1.posts) == 1
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 2
     assert Repo.aggregate(Payment, :count) == 2
     assert Repo.aggregate(Document, :count) == 4
   end
@@ -198,13 +201,49 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
        ctx do
     seed_receipt(ctx, "600", 100)
     {_doc, export} = final_export(ctx)
-    Agent.update(ctx.remote, &%{&1 | fault: :timeout})
+    Agent.update(ctx.remote, &%{&1 | fault: :deduction_timeout})
     assert {:error, _} = Accommodation.sync(export.id)
     reads = Agent.get(ctx.remote, & &1.available_reads)
     assert :ok = Accommodation.sync(export.id)
     assert Agent.get(ctx.remote, & &1.available_reads) == reads
     assert Agent.get(ctx.remote, & &1.posts) == 1
     assert Repo.aggregate(Payment, :count) == 1
+  end
+
+  test "creation timeout reuses the existing base invoice and then applies its deduction", ctx do
+    seed_receipt(ctx, "600", 100)
+    {_doc, export} = final_export(ctx)
+    Agent.update(ctx.remote, &%{&1 | fault: :timeout})
+    assert {:error, _} = Accommodation.sync(export.id)
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 0
+    assert :ok = Accommodation.sync(export.id)
+    assert Agent.get(ctx.remote, & &1.posts) == 1
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 1
+    assert Repo.aggregate(Payment, :count) == 1
+  end
+
+  test "partial deduction progress survives timeout and applies only the remaining ZDD", ctx do
+    seed_receipt(ctx, "600", 100)
+    seed_receipt(ctx, "400", 101)
+    {_doc, export} = final_export(ctx)
+    Agent.update(ctx.remote, &%{&1 | fault: :deduction_timeout})
+    assert {:error, _} = Accommodation.sync(export.id)
+    assert length(Agent.get(ctx.remote, & &1.applied)) == 1
+    assert :ok = Accommodation.sync(export.id)
+    assert Agent.get(ctx.remote, & &1.posts) == 1
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 2
+    assert Enum.sort(Agent.get(ctx.remote, & &1.applied)) == ["100", "101"]
+    assert Repo.aggregate(Payment, :count) == 2
+  end
+
+  test "a successful operation response without a verified deduction does not cause an immediate repeat",
+       ctx do
+    seed_receipt(ctx, "600", 100)
+    {_doc, export} = final_export(ctx)
+    Agent.update(ctx.remote, &%{&1 | fault: :no_effect})
+    assert {:error, reason} = Accommodation.sync(export.id)
+    assert reason =~ "nepotvrdila odpočet"
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 1
   end
 
   for fault <- [:tax_mismatch, :wrong_source] do
@@ -295,6 +334,12 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
         if String.contains?(path, source.external_id), do: source
       end)
 
+    applied =
+      if state.export,
+        do:
+          Enum.filter(state.export.verification["sources"], &(&1["remote_id"] in state.applied)),
+        else: []
+
     cond do
       conn.method == "GET" and source ->
         json(conn, "faktura-vydana", [source.invoice])
@@ -302,10 +347,9 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
       conn.method == "GET" and String.ends_with?(path, "/castky-k-odpoctu.json") ->
         id = path |> String.split("/") |> Enum.at(-2)
         source = Map.fetch!(state.sources, id)
-        exhausted? = state.consumed or not is_nil(state.invoice)
 
         totals =
-          if exhausted?,
+          if state.consumed or id in state.applied,
             do: Map.new(source.totals, fn {key, _} -> {key, "0.00"} end),
             else: source.totals
 
@@ -318,15 +362,11 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
         ordinary =
           Enum.map(invoice["polozkyFaktury"], &Map.put(&1, "typPolozkyK", "typPolozky.obecny"))
 
-        json(
-          conn,
-          "faktura-vydana-polozka",
-          ordinary ++ deduction_rows(state.export.verification["sources"])
-        )
+        json(conn, "faktura-vydana-polozka", ordinary ++ deduction_rows(applied))
 
       conn.method == "GET" and String.ends_with?(path, "/vazebni-doklady.json") ->
         links =
-          Enum.with_index(state.export.verification["sources"], 1)
+          Enum.with_index(applied, 1)
           |> Enum.map(fn {source, index} ->
             %{
               "idVazby" => index,
@@ -343,7 +383,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
 
       conn.method == "GET" and String.ends_with?(path, "/vazby.json") ->
         amounts =
-          Enum.with_index(state.export.verification["sources"], 1)
+          Enum.with_index(applied, 1)
           |> Enum.map(fn {source, index} ->
             %{
               "id" => index,
@@ -363,30 +403,117 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
       conn.method == "POST" ->
         assert path == "/c/accounting-test/faktura-vydana.json"
         {:ok, body, conn} = Plug.Conn.read_body(conn)
-        assert Jason.decode!(body) == state.export.payload
-        [invoice] = state.export.payload["winstrom"]["faktura-vydana"]
-        assert invoice["@create"] == "ok" and invoice["@update"] == "fail"
-        refute Map.has_key?(invoice, "hotovostni-uhrada")
-
-        remote =
-          Map.merge(invoice, state.export.verification["expected"])
-          |> Map.merge(%{"id" => 236, "storno" => false})
-
-        remote =
-          if state.fault == :tax_mismatch,
-            do: Map.update!(remote, "sumDphSniz", &to_string(Decimal.add(&1, "0.01"))),
-            else: remote
-
-        Agent.update(agent, &%{&1 | invoice: remote, posts: &1.posts + 1})
-
-        if state.fault == :timeout,
-          do: Req.Test.transport_error(conn, :timeout),
-          else: json(conn, "results", [%{"id" => 236}])
+        [request] = Jason.decode!(body)["winstrom"]["faktura-vydana"]
+        post_final(conn, agent, state, request)
 
       true ->
         flunk("Unexpected final-invoice request")
     end
   end
+
+  defp post_final(conn, agent, state, request) do
+    [definition] = state.export.payload["winstrom"]["faktura-vydana"]
+
+    cond do
+      request["@create"] == "ok" and Map.has_key?(request, "odpocty-zaloh") ->
+        # Model the reported ABRA failure: deduction runs before its target exists.
+        error(conn, "Doklad pro odpočet nenalezen: #{definition["kod"]}")
+
+      request["@create"] == "ok" ->
+        assert request == Map.delete(definition, "odpocty-zaloh")
+        assert request["@update"] == "fail"
+        refute Map.has_key?(request, "hotovostni-uhrada")
+        refute state.invoice
+        invoice = remote_header(state, [])
+
+        Agent.update(
+          agent,
+          &%{
+            &1
+            | invoice: invoice,
+              posts: &1.posts + 1,
+              fault: if(state.fault == :timeout, do: nil, else: state.fault)
+          }
+        )
+
+        if state.fault == :timeout,
+          do: Req.Test.transport_error(conn, :timeout),
+          else: json(conn, "results", [%{"id" => 236}])
+
+      request["@create"] == "fail" and request["@update"] == "ok" ->
+        if state.invoice do
+          assert request["id"] == "236"
+          refute Map.has_key?(request, "polozkyFaktury")
+          refute Map.has_key?(request, "kod")
+          [deduction] = request["odpocty-zaloh"]["odpocet"]
+          assert deduction in definition["odpocty-zaloh"]["odpocet"]
+          refute deduction["doklad"] in state.applied
+
+          applied =
+            if state.fault == :no_effect,
+              do: state.applied,
+              else: state.applied ++ [deduction["doklad"]]
+
+          invoice = remote_header(state, applied)
+
+          Agent.update(
+            agent,
+            &%{
+              &1
+              | invoice: invoice,
+                applied: applied,
+                deduction_posts: &1.deduction_posts + 1,
+                fault: if(state.fault == :deduction_timeout, do: nil, else: state.fault)
+            }
+          )
+
+          if state.fault == :deduction_timeout,
+            do: Req.Test.transport_error(conn, :timeout),
+            else: json(conn, "results", [%{"id" => 236}])
+        else
+          error(conn, "Doklad pro odpočet nenalezen: #{definition["kod"]}")
+        end
+
+      true ->
+        flunk("Unexpected final-invoice mutation")
+    end
+  end
+
+  defp remote_header(state, applied) do
+    [definition] = state.export.payload["winstrom"]["faktura-vydana"]
+    pending = Enum.reject(state.export.verification["sources"], &(&1["remote_id"] in applied))
+
+    totals =
+      Enum.reduce(pending, state.export.verification["expected"], fn source, totals ->
+        Map.new(totals, fn {key, value} ->
+          add =
+            case key do
+              "sumCelkem" -> source["gross"]
+              "zbyvaUhradit" -> source["gross"]
+              "juhSum" -> "0"
+              key -> source["totals"][key]
+            end
+
+          {key, to_string(Decimal.add(value, add))}
+        end)
+      end)
+
+    invoice =
+      definition
+      |> Map.delete("odpocty-zaloh")
+      |> Map.merge(totals)
+      |> Map.merge(%{"id" => 236, "storno" => false})
+
+    if state.fault == :tax_mismatch,
+      do: Map.update!(invoice, "sumDphSniz", &to_string(Decimal.add(&1, "0.01"))),
+      else: invoice
+  end
+
+  defp error(conn, message),
+    do:
+      conn
+      |> Plug.Conn.put_status(400)
+      |> json("results", [%{"errors" => [%{"message" => message}]}])
 
   defp deduction_rows(sources) do
     for source <- sources,

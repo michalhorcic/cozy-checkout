@@ -434,6 +434,14 @@ výsledné částky, položky i vazby. Nevytváří další bankovní nebo hotov
 příjem a nepřijímá automatické doporučené změny částek. ZDD musí mít dokončený
 přenos do stejného cíle a být stále k dispozici k odpočtu.
 
+Faktura se nejprve vytvoří bez odpočtů a zpětně ověří. Odpočty se pak přidávají
+po jednom samostatnou operací na již existujícím dokladu. Po každé operaci
+se ověří odpovídající mezistav včetně zbývající částky a zdrojových vazeb.
+Do dokončení přenosu tak ABRA může ukazovat celou cenu nebo jen část odpočtů.
+Při opakování se čte aktuální stav: hotová faktura se znovu nevytváří a již
+ověřený odpočet se znovu neposílá. Stejný uložený export lze použít i po chybě
+původního společného požadavku, pokud vzdálený stav projde kontrolami.
+
 Typ běžné vydané faktury, účet pohledávky, účetní předpis a daňové členění
 vyúčtování nejsou schválené vzorem finální faktury. Výchozí `FAKTURA` je
 pracovní návrh kódu typu; musí v testovací firmě existovat, jinak jej nastavte

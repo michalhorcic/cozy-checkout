@@ -107,19 +107,74 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
     [invoice] = export.payload["winstrom"]["faktura-vydana"]
 
     with {:ok, _payload, _verification} <- prepare(Repo.get!(Document, export.document_id), cfg),
-         :ok <- verify_sources(export.verification["sources"], cfg) do
-      case Client.read_invoice(export.external_id, cfg) do
-        {:ok, _} ->
-          verify_final(export, invoice, cfg)
+         :ok <- verify_sources(export.verification["sources"], cfg),
+         :ok <- ensure_invoice(export, invoice, cfg) do
+      complete_deductions(export, invoice, cfg, [])
+    end
+  end
 
-        :not_found ->
-          with :ok <- available_sources(export.verification["sources"], cfg),
-               {:ok, _} <- Client.create_invoice(export.payload, cfg) do
-            verify_final(export, invoice, cfg)
+  defp ensure_invoice(export, invoice, cfg) do
+    case Client.read_invoice(export.external_id, cfg) do
+      {:ok, _} ->
+        :ok
+
+      :not_found ->
+        # Deduction is an operation on an already persisted invoice. Keep the
+        # immutable payload, but send its create and deduction operations separately.
+        payload =
+          put_in(export.payload, ["winstrom", "faktura-vydana"], [
+            Map.delete(invoice, "odpocty-zaloh")
+          ])
+
+        with :ok <- available_sources(export.verification["sources"], cfg),
+             {:ok, _} <- Client.create_invoice(payload, cfg),
+             do: :ok
+
+      error ->
+        error
+    end
+  end
+
+  defp complete_deductions(export, invoice, cfg, required_ids) do
+    with {:ok, snapshot} <- Client.final_invoice_snapshot(export.external_id, cfg),
+         {:ok, applied} <-
+           CozyCheckout.Abra.FinalInvoiceVerification.progress(
+             invoice,
+             export.verification,
+             snapshot
+           ) do
+      applied_ids = Enum.map(applied, & &1["document_id"])
+      pending = Enum.find(export.verification["sources"], &(&1["document_id"] not in applied_ids))
+
+      cond do
+        not Enum.all?(required_ids, &(&1 in applied_ids)) ->
+          {:error, "ABRA nepotvrdila odpočet ZDD; přenos je pozastaven do další kontroly"}
+
+        is_nil(pending) ->
+          {:ok, to_string(snapshot.invoice["id"])}
+
+        true ->
+          operations = get_in(invoice, ["odpocty-zaloh", "odpocet"]) || []
+
+          deduction =
+            Enum.find(
+              operations,
+              &(&1["id"] == pending["deduction_id"] and &1["doklad"] == pending["remote_id"])
+            )
+
+          if deduction do
+            with :ok <- available_sources([pending], cfg),
+                 :ok <-
+                   Client.apply_invoice_deduction(
+                     to_string(snapshot.invoice["id"]),
+                     deduction,
+                     cfg
+                   ) do
+              complete_deductions(export, invoice, cfg, [pending["document_id"] | applied_ids])
+            end
+          else
+            {:error, "Uložený odpočet neodpovídá zdrojovému ZDD; nic se nepřepisuje"}
           end
-
-        {:error, reason} ->
-          {:error, reason}
       end
     end
   end
@@ -170,17 +225,5 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
           {:halt, error}
       end
     end)
-  end
-
-  defp verify_final(export, invoice, cfg) do
-    with {:ok, snapshot} <- Client.final_invoice_snapshot(export.external_id, cfg),
-         :ok <-
-           CozyCheckout.Abra.FinalInvoiceVerification.check(
-             invoice,
-             export.verification,
-             snapshot
-           ) do
-      {:ok, to_string(snapshot.invoice["id"])}
-    end
   end
 end

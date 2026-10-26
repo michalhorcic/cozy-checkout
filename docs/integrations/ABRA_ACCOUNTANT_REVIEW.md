@@ -106,8 +106,15 @@ vazbu/částku ke každému zdrojovému ZDD. Ověření úplného konkrétního 
 odpočtových položek a rozdělení jejich DPH po jednotlivých zdrojích je úkolem
 společného testu s účetní; součtová kontrola ho nenahrazuje.
 
-HTTP probíhá mimo místní transakce. Před vytvořením se kontrolují zbývající
-částky ZDD; ABRA může být mezi čtením a zápisem změněna jiným uživatelem.
+HTTP probíhá mimo místní transakce. Nejdřív se vytvoří a ověří faktura s celou
+cenou pobytu. Každý odpočet se pak samostatně připojí k již existující faktuře
+a znovu ověří. Stav „Exportováno“ znamená dokončení všech odpočtů; předtím
+může ABRA dočasně ukazovat plnou cenu nebo pouze některé odpočty. Po timeoutu
+se nejprve ověří aktuální mezistav a pokračuje se jen chybějícími odpočty.
+Úspěšná odpověď operace bez skutečně ověřené vazby přenos zastaví.
+
+Před vytvořením a před každým odpočtem se kontrolují zbývající částky ZDD;
+ABRA může být mezi čtením a zápisem změněna jiným uživatelem.
 Následná kontrola proto může skončit chybou i po vytvoření dokladu. V takovém
 případě nepřidávejte nový export ani nepřepisujte vydaný doklad, ale dohledáme
 konkrétní rozdíl. Opakování nejprve vyhledá existující fakturu podle externího ID.

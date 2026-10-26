@@ -2,6 +2,37 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
   @moduledoc "Strict read-back of final invoice amounts, ordinary lines, deduction lines and source bindings."
   alias CozyCheckout.Abra.BankVerification
 
+  @doc "Verify an exact intermediate state and identify only fully applied source deductions."
+  def progress(invoice, metadata, snapshot) do
+    applied =
+      Enum.filter(metadata["sources"], fn source ->
+        Enum.any?(snapshot.links, fn link ->
+          link["storno"] in [false, "false"] and link["modulK"] == "modulUcetni.FAV" and
+            to_string(link["uroven"]) == "1" and link["typVazbyK"] == "typVazbyDokl.odpocetZDD" and
+            to_string(link["idDokl"]) == source["remote_id"]
+        end)
+      end)
+
+    pending = Enum.reject(metadata["sources"], &(&1 in applied))
+
+    expected =
+      Enum.reduce(pending, metadata["expected"], fn source, totals ->
+        Map.new(totals, fn {key, value} ->
+          addition =
+            cond do
+              key in ["sumCelkem", "zbyvaUhradit"] -> source["gross"]
+              key == "juhSum" -> "0"
+              true -> source["totals"][key]
+            end
+
+          {key, to_string(Decimal.add(value, addition))}
+        end)
+      end)
+
+    stage = metadata |> Map.put("sources", applied) |> Map.put("expected", expected)
+    with :ok <- check(invoice, stage, snapshot), do: {:ok, applied}
+  end
+
   def check(invoice, metadata, snapshot) do
     remote = snapshot.invoice
     exact = ~w(kod varSym typDokl mena bankovniUcet clenDph clenKonVykDph)

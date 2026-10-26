@@ -195,6 +195,26 @@ defmodule CozyCheckout.Abra.Client do
     post_operation("faktura-vydana", payload, cfg)
   end
 
+  @doc "Apply one stable deduction to an existing invoice without resending its prices or header."
+  def apply_invoice_deduction(invoice_id, deduction, cfg) do
+    post_operation(
+      "faktura-vydana",
+      %{
+        "winstrom" => %{
+          "faktura-vydana" => [
+            %{
+              "@create" => "fail",
+              "@update" => "ok",
+              "id" => invoice_id,
+              "odpocty-zaloh" => %{"odpocet" => [deduction]}
+            }
+          ]
+        }
+      },
+      cfg
+    )
+  end
+
   defp post_operation(evidence, payload, cfg) do
     case Req.post("#{cfg[:base_url]}/c/#{cfg[:company_id]}/#{evidence}.json",
            json: payload,
@@ -207,8 +227,8 @@ defmodule CozyCheckout.Abra.Client do
           {:error, reason} -> {:error, reason}
         end
 
-      {:ok, %Req.Response{status: status}} ->
-        {:error, "ABRA operace HTTP #{status}"}
+      {:ok, %Req.Response{status: status, body: body}} ->
+        {:error, extract_error(body, status)}
 
       {:error, exception} ->
         {:error, Exception.message(exception)}
