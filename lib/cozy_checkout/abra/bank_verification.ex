@@ -44,6 +44,10 @@ defmodule CozyCheckout.Abra.BankVerification do
   def check(_, _, _, _), do: {:error, "ABRA nevrátila platný pohyb a úplné vazby"}
 
   defp check_links(bank, links, amounts, source_id, receipt_id) do
+    # This is a document graph, not just payment edges. Its root can be the
+    # bank movement itself. Discard only an identifiable root with no binding ID.
+    links = Enum.reject(links, &bank_root?(&1, bank))
+
     with {:ok, links} <- active(links), {:ok, amounts} <- active(amounts) do
       expected_amount = amount(bank["sumCelkem"])
 
@@ -65,7 +69,7 @@ defmodule CozyCheckout.Abra.BankVerification do
               :receipt
 
             true ->
-              :conflict
+              {:conflict, link_reason(link, binding, direct?, source_id, expected_amount)}
           end
         end)
 
@@ -75,9 +79,16 @@ defmodule CozyCheckout.Abra.BankVerification do
         end)
 
       cond do
-        :conflict in checks or not complete? or Enum.count(checks, &(&1 == :source)) > 1 or
-            Enum.count(checks, &(&1 == :receipt)) > 1 ->
-          {:error, "Pohyb má částečné, konfliktní nebo neznámé vazby; vyřešte je ručně"}
+        conflict = Enum.find(checks, &match?({:conflict, _}, &1)) ->
+          {:conflict, reason} = conflict
+          {:error, reason}
+
+        not complete? ->
+          {:error,
+           "API vrátilo částku vazby bez odpovídajícího cílového dokladu; platba nebyla potvrzena"}
+
+        Enum.count(checks, &(&1 == :source)) > 1 or Enum.count(checks, &(&1 == :receipt)) > 1 ->
+          {:error, "API vrátilo více vazeb na stejnou výzvu nebo ZDD; platba nebyla potvrzena"}
 
         :source not in checks and bank["sparovano"] not in [false, "false"] ->
           {:error, "Volnou částku bankovního pohybu nelze ověřit"}
@@ -87,6 +98,39 @@ defmodule CozyCheckout.Abra.BankVerification do
       end
     end
   end
+
+  defp bank_root?(link, bank) when is_map(link) do
+    to_string(link["idDokl"]) == to_string(bank["id"]) and
+      (link["modulK"] == "modulUcetni.BAN" or link["modul"] == "BAN") and
+      link["typVazbyK"] in [nil, ""] and link["idVazby"] in [nil, "", 0, "0", -1, "-1"]
+  end
+
+  defp bank_root?(_, _), do: false
+
+  defp link_reason(link, binding, direct?, source_id, expected_amount) do
+    detail =
+      "typ #{diagnostic(link["typVazbyK"])}, doklad #{diagnostic(link["idDokl"])}, modul #{diagnostic(link["modulK"] || link["modul"])}, úroveň #{diagnostic(link["uroven"])}"
+
+    cond do
+      direct? and link["typVazbyK"] in @payment_types and
+          to_string(link["idDokl"]) != to_string(source_id) ->
+        "Pohyb již hradí jiný doklad (#{detail}); očekávaná výzva má ID #{source_id}"
+
+      direct? and to_string(link["idDokl"]) == to_string(source_id) and
+        link["typVazbyK"] in @payment_types and is_nil(binding) ->
+        "U vazby na výzvu chybí ověřitelná částka (#{detail})"
+
+      direct? and to_string(link["idDokl"]) == to_string(source_id) and
+        link["typVazbyK"] in @payment_types and not is_nil(binding) and
+          not equal?(binding["castka"], expected_amount) ->
+        "Pohyb je s výzvou spárován jen částečně nebo jinou částkou (#{detail})"
+
+      true ->
+        "Aplikace nerozpoznala vazbu z API (#{detail}); platba nebyla potvrzena"
+    end
+  end
+
+  defp diagnostic(value), do: inspect(value, limit: 2, printable_limit: 60)
 
   defp active(rows) do
     if Enum.all?(rows, &(is_map(&1) and &1["storno"] in [true, false, "true", "false"])) do

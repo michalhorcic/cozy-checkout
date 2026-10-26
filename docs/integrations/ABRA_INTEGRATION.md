@@ -398,3 +398,10 @@ odpovědi při vytvoření ZDD, úhradě i vazbě, shodné a konfliktní párov�
 možná ruční duplicita a vypnutí funkce. HTTP simuluje `Req.Test`; skutečné
 účetní doklady v ABRA při testech nevznikají. Projektové testy nebyly lokálně
 spuštěny podle AGENTS.md; výsledky CI ověří uživatel.
+
+Přehled `vazebni-doklady` může kromě hran obsahovat i samotný výchozí doklad.
+Kontrola vynechá pouze jednoznačnou vlastní položku banky: shodné ID pohybu,
+modul banky, prázdný typ a žádné platné ID účetní vazby. Neodvozuje tím volnou
+částku; ostatní vazby a jejich částky musí stále projít úplnou kontrolou.
+Odmítnutí nově rozlišuje jiný cílový doklad, částečnou částku, chybějící
+protějšek a nerozpoznaný typ a uvádí identifikátory pro dohledání v ABRA.

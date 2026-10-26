@@ -290,6 +290,46 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
              )
   end
 
+  test "document graph root is not a payment; real or unaccounted bindings still block confirmation",
+       ctx do
+    {roots, []} = relations(%{paired: false, linked: false, foreign: false})
+
+    assert {:ok, %{source_paired?: false}} =
+             BankVerification.check(
+               %{bank: ctx.movement.raw, links: roots, amounts: []},
+               ctx.movement.raw,
+               "42"
+             )
+
+    root_with_binding = hd(roots) |> Map.put("idVazby", 123)
+
+    assert {:error, reason} =
+             BankVerification.check(
+               %{bank: ctx.movement.raw, links: [root_with_binding], amounts: []},
+               ctx.movement.raw,
+               "42"
+             )
+
+    assert reason =~ "nerozpoznala"
+    assert reason =~ "doklad 7"
+
+    amount = %{
+      "id" => 123,
+      "castka" => "100",
+      "typVazbyK" => "typVazbyDokl.uhrada",
+      "storno" => false
+    }
+
+    assert {:error, reason} =
+             BankVerification.check(
+               %{bank: ctx.movement.raw, links: roots, amounts: [amount]},
+               ctx.movement.raw,
+               "42"
+             )
+
+    assert reason =~ "bez odpovídajícího"
+  end
+
   defp respond(conn, remote, bank, export) do
     state = Agent.get(remote, & &1)
     [source] = export.payload["winstrom"]["faktura-vydana"]
@@ -419,6 +459,15 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
         %{"id" => id, "typVazbyK" => type, "castka" => amount, "storno" => false}
       end)
 
-    {links, amounts}
+    root = %{
+      "idDokl" => 7,
+      "modulK" => "modulUcetni.BAN",
+      "uroven" => 0,
+      "typVazbyK" => "",
+      "idVazby" => 0,
+      "storno" => false
+    }
+
+    {[root | links], amounts}
   end
 end
