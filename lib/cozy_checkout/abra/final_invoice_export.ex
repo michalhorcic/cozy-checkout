@@ -136,7 +136,9 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
   end
 
   defp complete_deductions(export, invoice, cfg, required_ids) do
-    with {:ok, snapshot} <- Client.final_invoice_snapshot(export.external_id, cfg),
+    source_ids = Enum.map(export.verification["sources"], & &1["remote_id"])
+
+    with {:ok, snapshot} <- Client.final_invoice_snapshot(export.external_id, cfg, source_ids),
          {:ok, applied} <-
            CozyCheckout.Abra.FinalInvoiceVerification.progress(
              invoice,

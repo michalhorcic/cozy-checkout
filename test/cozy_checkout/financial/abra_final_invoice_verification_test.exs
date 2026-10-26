@@ -3,6 +3,53 @@ defmodule CozyCheckout.AbraFinalInvoiceVerificationTest do
   @moduletag :financial
   alias CozyCheckout.Abra.FinalInvoiceVerification, as: Verification
 
+  test "deductions are read from source ZDDs even when final header bindings are empty" do
+    {invoice, metadata, snapshot} = fixture()
+
+    bindings =
+      Enum.map(snapshot.amounts, fn row ->
+        row
+        |> Map.update!("a@ref", &String.replace(&1, "/c/", "/v2/c/"))
+        |> Map.update!("b@ref", &String.replace(&1, "/c/", "/v2/c/"))
+      end)
+
+    unrelated = [
+      %{"id" => "9001", "storno" => false, "typVazbyK" => "typVazbyDokl.vazbaZDD"},
+      %{
+        "id" => "9002",
+        "storno" => false,
+        "typVazbyK" => "typVazbyDokl.odpocetZDD",
+        "a@ref" => "/v2/c/test/faktura-vydana-polozka/9999.json",
+        "b@ref" => "/v2/c/test/faktura-vydana/100.json"
+      }
+    ]
+
+    snapshot =
+      snapshot |> Map.put(:amounts, []) |> Map.put(:source_bindings, bindings ++ unrelated)
+
+    assert {:ok, applied} = Verification.progress(invoice, metadata, snapshot)
+    assert applied == metadata["sources"]
+  end
+
+  test "same binding returned by both endpoints is counted once" do
+    {invoice, metadata, snapshot} = fixture()
+    snapshot = Map.put(snapshot, :source_bindings, snapshot.amounts)
+    assert {:ok, _} = Verification.progress(invoice, metadata, snapshot)
+  end
+
+  test "source bindings do not hide a missing or cancelled deduction link" do
+    {invoice, metadata, snapshot} = fixture()
+    [_missing, cancelled | rest] = snapshot.amounts
+
+    snapshot =
+      snapshot
+      |> Map.put(:amounts, [])
+      |> Map.put(:source_bindings, [Map.put(cancelled, "storno", true) | rest])
+
+    assert {:error, reason} = Verification.progress(invoice, metadata, snapshot)
+    assert reason =~ "odpočtová položka nemá vazbu"
+  end
+
   test "multiple deduction items bind to each source ZDD; binding castka can be zero" do
     {invoice, metadata, snapshot} = fixture()
     assert {:ok, applied} = Verification.progress(invoice, metadata, snapshot)

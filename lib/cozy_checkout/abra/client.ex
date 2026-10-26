@@ -138,19 +138,40 @@ defmodule CozyCheckout.Abra.Client do
   end
 
   # polozkyFaktury is the import property; polozkyDokladu is the read relation.
-  def final_invoice_snapshot(id, cfg) do
+  def final_invoice_snapshot(id, cfg, source_ids \\ []) do
     path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
 
     with {:ok, invoice} <- read_invoice(id, cfg),
          {:ok, items} <-
            invoice_relation(path, "polozkyDokladu", "faktura-vydana-polozka", cfg),
          {:ok, links} <- invoice_relation(path, "vazebni-doklady", "vazebni-doklad", cfg),
-         {:ok, amounts} <- invoice_relation(path, "vazby", "vazba", cfg) do
-      {:ok, %{invoice: invoice, items: items, links: links, amounts: amounts}}
+         {:ok, amounts} <- invoice_relation(path, "vazby", "vazba", cfg),
+         {:ok, source_bindings} <- source_invoice_bindings(source_ids, cfg) do
+      {:ok,
+       %{
+         invoice: invoice,
+         items: items,
+         links: links,
+         amounts: amounts,
+         source_bindings: source_bindings
+       }}
     else
       :not_found -> {:error, "Vyúčtování v ABRA po importu chybí"}
       error -> error
     end
+  end
+
+  # A deduction's a endpoint is an invoice ITEM, so the final invoice's header
+  # relation need not contain it. Read the b endpoint (source ZDD) as documented.
+  defp source_invoice_bindings(source_ids, cfg) do
+    Enum.reduce_while(Enum.uniq(source_ids), {:ok, []}, fn id, {:ok, acc} ->
+      path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
+
+      case invoice_relation(path, "vazby", "vazba", cfg) do
+        {:ok, rows} -> {:cont, {:ok, acc ++ rows}}
+        {:error, reason} -> {:halt, {:error, "Čtení vazeb zdrojového ZDD ID #{id}: #{reason}"}}
+      end
+    end)
   end
 
   defp invoice_relation(path, relation, key, cfg) do

@@ -451,6 +451,12 @@ a volby odpočtu ZDD vycházejí z [dokumentace odpočtů](https://demo.flexibee
 Kontrola odpočtu vychází z [čerpání ZDD přes REST API](https://podpora.flexibee.eu/cs/articles/3422294-cerpani-zdd-rest-api):
 `vazby/vazba/a` odkazuje na konkrétní odpočtovou položku konečné faktury,
 `b` na zdrojové ZDD. V JSON jsou cíle dostupné přes `a@ref` a `b@ref`.
+Vazby se čtou také z relace `vazby` každého zdrojového ZDD: relace hlavičky
+konečné faktury může být prázdná, protože konec `a` míří na její položku.
+Ze zdrojových vazeb se vybírají pouze odpočty do položek právě ověřované
+faktury; bankovní vazby a odpočty do jiných faktur se do jejího výsledku
+nezapočítávají. Odkazy podporují i prefix `/v2/c/`. Stejná vazba vrácená
+z obou stran se započte jednou; nedostupné čtení zdroje přenos zastaví.
 Částky se kontrolují z navázaných položek, nikoli ze spárované částky `castka`
 na vazbě. Každá odpočtová položka musí mít právě jednu ověřenou vazbu;
 základy a DPH se porovnávají samostatně pro každé zdrojové ZDD. Jeden zdroj

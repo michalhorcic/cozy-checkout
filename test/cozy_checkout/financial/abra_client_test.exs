@@ -119,6 +119,46 @@ defmodule CozyCheckout.AbraClientTest do
     assert snapshot.links == [] and snapshot.amounts == []
   end
 
+  test "final snapshot reads deduction bindings from source ZDDs and propagates source failures" do
+    cfg = Application.fetch_env!(:cozy_checkout, :abra)
+
+    source_binding = %{
+      "id" => 900,
+      "typVazbyK" => "typVazbyDokl.odpocetZDD",
+      "a@ref" => "/v2/c/test/faktura-vydana-polozka/538.json",
+      "b@ref" => "/v2/c/test/faktura-vydana/200.json"
+    }
+
+    Req.Test.stub(Client, fn conn ->
+      case conn.request_path do
+        "/c/test/faktura-vydana/236.json" ->
+          Req.Test.json(conn, %{"winstrom" => %{"faktura-vydana" => [%{"id" => 236}]}})
+
+        "/c/test/faktura-vydana/236/polozkyDokladu.json" ->
+          Req.Test.json(conn, %{"winstrom" => %{"faktura-vydana-polozka" => []}})
+
+        "/c/test/faktura-vydana/236/vazebni-doklady.json" ->
+          Req.Test.json(conn, %{"winstrom" => %{"vazebni-doklad" => []}})
+
+        "/c/test/faktura-vydana/236/vazby.json" ->
+          Req.Test.json(conn, %{"winstrom" => %{"vazba" => []}})
+
+        "/c/test/faktura-vydana/200/vazby.json" ->
+          Req.Test.json(conn, %{"winstrom" => %{"vazba" => [source_binding]}})
+
+        "/c/test/faktura-vydana/201/vazby.json" ->
+          Plug.Conn.send_resp(conn, 404, "")
+      end
+    end)
+
+    assert {:ok, snapshot} = Client.final_invoice_snapshot("236", cfg, ["200"])
+    assert snapshot.amounts == []
+    assert snapshot.source_bindings == [source_binding]
+    assert {:error, reason} = Client.final_invoice_snapshot("236", cfg, ["200", "201"])
+    assert reason =~ "zdrojového ZDD ID 201"
+    assert reason =~ "HTTP 404"
+  end
+
   for failed_relation <- ["polozkyDokladu", "vazebni-doklady", "vazby"] do
     test "missing #{failed_relation} is reported explicitly and never interpreted as empty data" do
       failed = unquote(failed_relation)

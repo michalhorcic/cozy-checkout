@@ -150,6 +150,19 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
     deductions = Enum.filter(snapshot.items, &(&1["typPolozkyK"] == "typPolozky.odpocetZdd"))
     rows = Map.new(deductions, &{to_string(&1["id"]), &1})
     source_ids = Enum.map(sources, & &1["remote_id"])
+    # Source ZDDs also have bank bindings and may be deducted on other invoices.
+    # Select only deductions pointing at an item of THIS final invoice. The
+    # existing coverage check still requires a proven binding for every item.
+    from_sources =
+      Enum.filter(Map.get(snapshot, :source_bindings, []), fn binding ->
+        binding["typVazbyK"] == "typVazbyDokl.odpocetZDD" and
+          case reference(binding["a@ref"]) do
+            {_, "faktura-vydana-polozka", id} -> Map.has_key?(rows, id)
+            _ -> false
+          end
+      end)
+
+    bindings = Enum.uniq(snapshot.amounts ++ from_sources)
 
     with :ok <-
            require_binding(
@@ -158,10 +171,10 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
            ),
          :ok <-
            require_binding(
-             Enum.all?(snapshot.amounts, &valid_storno?/1),
+             Enum.all?(bindings, &valid_storno?/1),
              "neznámý stav storna vazby"
            ),
-         active = Enum.filter(snapshot.amounts, &active?/1),
+         active = Enum.filter(bindings, &active?/1),
          :ok <-
            require_binding(
              Enum.all?(active, &valid_id?(to_string(&1["id"]))) and
@@ -172,7 +185,11 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
          :ok <-
            require_binding(
              MapSet.new(Map.keys(rows)) == used,
-             "odpočtová položka nemá vazbu na ZDD"
+             "odpočtová položka nemá vazbu na ZDD; ID položek: " <>
+               Enum.join(
+                 Enum.sort(MapSet.to_list(MapSet.difference(MapSet.new(Map.keys(rows)), used))),
+                 ", "
+               )
            ),
          applied = Enum.filter(sources, &Map.has_key?(grouped, &1["remote_id"])),
          :ok <-
@@ -216,7 +233,15 @@ defmodule CozyCheckout.Abra.FinalInvoiceVerification do
   defp reference(ref) when is_binary(ref) do
     case URI.parse(ref).path do
       path when is_binary(path) ->
-        case path |> URI.decode() |> String.split("/", trim: true) do
+        segments = path |> URI.decode() |> String.split("/", trim: true)
+
+        segments =
+          case segments do
+            ["v2" | rest] -> rest
+            rest -> rest
+          end
+
+        case segments do
           ["c", company, evidence, id] ->
             id = String.replace(id, ~r/\.(json|xml)$/, "")
             if valid_id?(id), do: {company, evidence, id}

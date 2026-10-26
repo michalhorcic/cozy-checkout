@@ -405,14 +405,18 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
               %{
                 "id" => row["id"],
                 "castka" => "0.00",
-                "a@ref" => "/c/accounting-test/faktura-vydana-polozka/#{row["id"]}.json",
-                "b@ref" => "/c/accounting-test/faktura-vydana/#{source["remote_id"]}.json",
+                "a@ref" => "/v2/c/accounting-test/faktura-vydana-polozka/#{row["id"]}.json",
+                "b@ref" => "/v2/c/accounting-test/faktura-vydana/#{source["remote_id"]}.json",
                 "typVazbyK" => "typVazbyDokl.odpocetZDD",
                 "storno" => false
               }
             end)
           end)
 
+        # The final HEADER has no item-level deduction bindings. They are
+        # returned from each source ZDD's b endpoint instead.
+        source_id = path |> String.split("/") |> Enum.at(-2)
+        amounts = Enum.filter(amounts, &String.ends_with?(&1["b@ref"], "/#{source_id}.json"))
         json(conn, "vazba", amounts)
 
       conn.method == "GET" ->
