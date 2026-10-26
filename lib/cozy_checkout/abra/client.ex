@@ -9,8 +9,7 @@ defmodule CozyCheckout.Abra.Client do
   POSTs a new invoice (faktura-vydana) to Abra Flexi.
   Returns {:ok, abra_id} on success or {:error, reason} on failure.
   """
-  def create_invoice(payload) do
-    cfg = config()
+  def create_invoice(payload, cfg \\ config()) do
     url = "#{cfg[:base_url]}/c/#{cfg[:company_id]}/faktura-vydana.json"
 
     case Req.post(url,
@@ -31,6 +30,41 @@ defmodule CozyCheckout.Abra.Client do
         reason = Exception.message(exception)
         Logger.warning("[Abra] HTTP error: #{reason}")
         {:error, reason}
+    end
+  end
+
+  @doc "Reads an invoice by stable external identity without changing it."
+  def find_invoice(external_id, cfg) do
+    id = URI.encode(external_id, &URI.char_unreserved?/1)
+    url = "#{cfg[:base_url]}/c/#{cfg[:company_id]}/faktura-vydana/#{id}.json"
+
+    case Req.get(url,
+           params: [
+             detail:
+               "custom:id,kod,varSym,sumCelkem,mena,typDokl,bankovniUcet,ucetni,clenDph,clenKonVykDph"
+           ],
+           auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
+           headers: [{"Accept", "application/json"}],
+           retry: false
+         ) do
+      {:ok, %Req.Response{status: 200, body: %{"winstrom" => %{"faktura-vydana" => [invoice]}}}}
+      when is_map(invoice) ->
+        {:ok, invoice}
+
+      {:ok, %Req.Response{status: 200, body: %{"winstrom" => %{"faktura-vydana" => []}}}} ->
+        :not_found
+
+      {:ok, %Req.Response{status: 404}} ->
+        :not_found
+
+      {:ok, %Req.Response{status: 200}} ->
+        {:error, "unexpected_response"}
+
+      {:ok, %Req.Response{status: status}} ->
+        {:error, "ABRA lookup HTTP #{status}"}
+
+      {:error, exception} ->
+        {:error, Exception.message(exception)}
     end
   end
 

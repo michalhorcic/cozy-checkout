@@ -1,7 +1,8 @@
 # Integrace s ABRA Flexi
 
 Aplikace jednosměrně odesílá zaplacené barové objednávky jako vydané faktury
-do REST API ABRA Flexi. Pobytové doklady z modulu `Billing` zatím neexportuje.
+do REST API ABRA Flexi. Zálohové výzvy z modulu `Billing` mají samostatný,
+ve výchozím stavu vypnutý [ruční export](ABRA_ACCOMMODATION.md).
 Tento dokument popisuje současný kód a podklady pro jeho rozšíření;
 uživatelský postup fakturace pobytů je v [BILLING.md](../features/BILLING.md).
 

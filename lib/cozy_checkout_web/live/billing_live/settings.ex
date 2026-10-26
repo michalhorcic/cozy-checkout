@@ -68,7 +68,7 @@ defmodule CozyCheckoutWeb.BillingLive.Settings do
         %{
           "kind" => "advance",
           "year" => to_string(Billing.today().year),
-          "prefix" => "",
+          "prefix" => "COZY-ZF",
           "digits" => "5",
           "next_number" => "1"
         },
@@ -95,7 +95,10 @@ defmodule CozyCheckoutWeb.BillingLive.Settings do
         <section class="bg-white rounded-xl p-6 space-y-4">
           <h2 class="text-xl font-bold">Číselné řady</h2>
           <p>
-            Číslo tvoří označení + čtyřmístný rok + pořadové číslo. Např. FV202600001. Použitou řadu nelze měnit. Variabilní symbol se přiděluje samostatně a je jedinečný.
+            Číslo tvoří označení + čtyřmístný rok + pořadové číslo. Např. COZY-ZF202600009.
+            Použitou řadu nelze měnit. VS tvoří číslice druhu + rok + pětimístné pořadí:
+            1 = zálohová výzva, 2 = faktura, 3 = doklad k platbě, 4 = oprava.
+            Např. COZY-ZF202600009 má VS 1202600009. Nejvýše 99 999 dokladů za rok a druh.
           </p>
           <table class="table">
             <thead>
@@ -132,6 +135,7 @@ defmodule CozyCheckoutWeb.BillingLive.Settings do
               type="number"
               label="První číslo"
               min="1"
+              max="99999"
               required
             />
             <button class="btn btn-primary md:col-span-5">Uložit nepoužitou řadu</button>

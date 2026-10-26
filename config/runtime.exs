@@ -146,7 +146,7 @@ if config_env() == :prod do
 end
 
 # Abra Flexi REST API integration
-config :cozy_checkout, :abra,
+abra_connection = [
   base_url: System.get_env("ABRA_BASE_URL", "https://moruska.flexibee.eu"),
   company_id: System.get_env("ABRA_COMPANY_ID", "moruska_s_r_o_"),
   username: System.get_env("ABRA_USERNAME", ""),
@@ -154,6 +154,26 @@ config :cozy_checkout, :abra,
   cash_register_code: System.get_env("ABRA_CASH_REGISTER_CODE", "POKLADNA KČ"),
   document_series_code: System.get_env("ABRA_DOCUMENT_SERIES_CODE", "FAKTURA-BAR"),
   bank_account_code: System.get_env("ABRA_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
+]
+
+config :cozy_checkout, :abra, abra_connection
+
+# Accommodation shares the accounting connection but has independent document mapping.
+accommodation_enabled_from =
+  case DateTime.from_iso8601(System.get_env("ABRA_ACCOMMODATION_ENABLED_FROM", "")) do
+    {:ok, datetime, _} -> datetime
+    _ -> nil
+  end
+
+config :cozy_checkout, :abra_accommodation,
+  enabled: System.get_env("ABRA_ACCOMMODATION_ENABLED", "false") == "true",
+  enabled_from: accommodation_enabled_from,
+  base_url: System.get_env("ABRA_ACCOMMODATION_BASE_URL", abra_connection[:base_url]),
+  company_id: System.get_env("ABRA_ACCOMMODATION_COMPANY_ID", abra_connection[:company_id]),
+  username: abra_connection[:username],
+  password: abra_connection[:password],
+  advance_type_code: System.get_env("ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE", "ZÁLOHA"),
+  bank_account_code: System.get_env("ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
 
 if booking_ical_token = System.get_env("BOOKING_ICAL_TOKEN") do
   config :cozy_checkout, :booking_ical_token, booking_ical_token

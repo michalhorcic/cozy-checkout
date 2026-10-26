@@ -70,6 +70,7 @@ defmodule CozyCheckout.BillingConcurrencyTest do
 
     Sandbox.unboxed_run(Repo, fn ->
       assert Repo.aggregate(Document, :count) == 1
+      assert Repo.one!(Document).variable_symbol == "2#{Billing.today().year}00001"
       assert Repo.get_by!(Series, kind: "final", year: Billing.today().year).next_number == 2
     end)
   end

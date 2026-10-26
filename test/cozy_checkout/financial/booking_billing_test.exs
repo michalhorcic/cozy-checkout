@@ -9,6 +9,80 @@ defmodule CozyCheckout.BookingBillingTest do
     billing_fixture()
   end
 
+  test "variable symbols derive from kind, year and document ordinal without cross-kind collisions",
+       %{booking: booking} do
+    advance = issue!(booking, "advance")
+    second = issue!(booking, "advance")
+    payment = receipt!(booking, "1000")
+    tax_receipt = Billing.get_document!(payment.tax_document_id)
+    final = issue!(booking, "final")
+
+    assert {:ok, correction} =
+             Billing.correct(
+               final.id,
+               %{"amount" => "100", "reason" => "Oprava ceny"},
+               Ecto.UUID.generate()
+             )
+
+    year = to_string(Billing.today().year)
+    assert advance.number == "COZY-ZF#{year}00001"
+    assert advance.variable_symbol == "1#{year}00001"
+    assert final.variable_symbol == "2#{year}00001"
+    assert tax_receipt.variable_symbol == "3#{year}00001"
+    assert correction.variable_symbol == "4#{year}00001"
+
+    assert second.variable_symbol == "1#{year}00002"
+  end
+
+  test "variable symbol limit is enforced without truncating numbers or consuming the next ordinal",
+       %{booking: booking} do
+    series = Repo.get_by!(Series, kind: "advance", year: Billing.today().year)
+    series |> change(digits: 6, next_number: 99_999) |> Repo.update!()
+    last = issue!(booking, "advance")
+    assert last.variable_symbol == "1#{Billing.today().year}99999"
+    assert String.length(last.variable_symbol) == 10
+    {:ok, preview} = Billing.preview(booking.id, "advance")
+
+    assert {:error, message} =
+             Billing.issue(
+               booking.id,
+               "advance",
+               %{"preview_token" => preview.token},
+               Ecto.UUID.generate()
+             )
+
+    assert message =~ "99 999"
+    assert Repo.get!(Series, series.id).next_number == 100_000
+    assert Repo.aggregate(Document, :count) == 1
+
+    refute Series.changeset(%Series{}, %{
+             kind: "advance",
+             year: Billing.today().year,
+             prefix: "ZF",
+             digits: 6,
+             next_number: 100_000
+           }).valid?
+  end
+
+  test "collision with a historical variable symbol rolls back issuance", %{booking: booking} do
+    legacy = issue!(booking, "advance")
+    symbol = "1#{Billing.today().year}00002"
+    legacy |> change(variable_symbol: symbol) |> Repo.update!()
+    {:ok, preview} = Billing.preview(booking.id, "advance")
+
+    assert {:error, "Variabilní symbol koliduje s již vystaveným dokladem"} =
+             Billing.issue(
+               booking.id,
+               "advance",
+               %{"preview_token" => preview.token},
+               Ecto.UUID.generate()
+             )
+
+    assert Repo.get_by!(Series, kind: "advance", year: Billing.today().year).next_number == 2
+    assert Repo.aggregate(Document, :count) == 1
+    assert Billing.get_document!(legacy.id).variable_symbol == symbol
+  end
+
   for kind <- ["advance", "final"] do
     test "#{kind} can be previewed and issued with only the customer's name", %{booking: booking} do
       assert {:ok, customer} = Billing.save_customer(booking.id, %{"name" => "  Jana Nováková  "})
@@ -195,8 +269,11 @@ defmodule CozyCheckout.BookingBillingTest do
     attrs = %{"preview_token" => preview.token}
     key = Ecto.UUID.generate()
     assert {:ok, doc} = Billing.issue(booking.id, "advance", attrs, key)
+    # Simulate a document issued with the previous independent sequence.
+    doc = doc |> change(variable_symbol: "1000000014") |> Repo.update!()
     assert {:ok, same} = Billing.issue(booking.id, "advance", attrs, key)
     assert doc.id == same.id
+    assert same.variable_symbol == "1000000014"
     payment = receipt!(booking, "1000")
 
     assert {:ok, same_payment} =

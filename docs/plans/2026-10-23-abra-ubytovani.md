@@ -1,14 +1,15 @@
 # Integrace fakturace ubytování s ABRA Flexi
 
-- Stav: návrh; možnosti API doloženy dokumentací, vzory zálohy a ZDD prozkoumány.
+- Stav: implementace první části — ruční export zálohové výzvy připraven k ověření.
   Finální mapování a celý cyklus čekají na další vzory a testovací firmu.
 - Vytvořeno: 2026-10-23
 - Aktualizováno: 2026-10-26
 - Související dokumentace / implementace: [Fakturace pobytů](../features/BILLING.md),
   [Integrace ABRA](../integrations/ABRA_INTEGRATION.md),
   [Billing](../../lib/cozy_checkout/billing.ex), [Abra](../../lib/cozy_checkout/abra.ex).
-- Implementace nebyla zahájena; začne až na výslovný pokyn v samostatném chatu.
-  Uživatel zajistí napojení na testovací firmu a vzor finální faktury dodá později.
+- Na pokyn uživatele zahájena první samostatná část: ruční export zálohové
+  výzvy. Další části až po jeho ověření a schválení PR.
+  [Nastavení a testovací postup](../integrations/ABRA_ACCOMMODATION.md).
 
 ## Problém a očekávaný výsledek
 
@@ -129,9 +130,9 @@ nového exportu nemají slepě kopírovat.
 | Kontrolní hlášení | `code:0.0.` | `code:A.4-5.AUTO` |
 | Účetní operace | Nevyplněná | `code:ZÁLOHA PŘIJATÁ` |
 
-Řady ve vzorech popisují dosavadní práci účetní. Externí doklady aplikace budou
-používat vlastní vyhrazené řady podle rozhodnutí níže, nikoli automaticky tyto
-sdílené řady. Typy, předkontace a daňové členění se ještě ověří s účetní.
+Řady ve vzorech popisují dosavadní práci účetní. Čísla externích dokladů
+přidělují vlastní místní řady aplikace podle rozhodnutí níže; vazbu na řadu
+v ABRA export nevyžaduje. Typy, předkontace a daňové členění se ještě ověří s účetní.
 
 - ZDD používá `primUcet=code:324999`, `protiUcet=code:324001` a pro sníženou
   DPH `dphSnizUcet=code:343200`. Zjistit, které hodnoty převezme z typu dokladu
@@ -284,27 +285,27 @@ v jedné místní transakci. HTTP požadavky probíhají mimo ni.
 
 ### Číslování externích dokladů
 
-Čísla přiděluje aplikace ve vlastní vyhrazené řadě (případně řadách podle
-druhu dokladu). V Abře se připraví odpovídající samostatné řady pro externí
-doklady, odlišené od ručního vystavování účetní i od baru. Z označení bude
-patrné, že doklad vznikl v aplikaci. Konkrétní kódy, prefixy a členění podle
-období se dohodnou s účetní; tímto plánem se nevymýšlejí.
+Čísla přiděluje výhradně aplikace ve vlastních místních řadách podle druhu
+dokladu. Zálohové výzvy používají prefix `COZY-ZF`, např. `COZY-ZF202600009`.
+Vazba na číselník řad v ABRA se neposílá ani nekontroluje. Dříve zvolená
+vazba `COZY-ZALOHA` byla po reálném testu a domluvě s uživatelem opuštěna.
 
-- Místní databáze bezpečně přidělí jedinečné číslo při vystavení; export
-  předá původní číslo do `kod` a zachová místní VS. Stabilní externí ID zůstává
-  samostatnou identitou pro opakování exportu.
-- Účetní nebude vyhrazené řady používat pro ruční vystavování. Ověřit kolize,
-  limit 20 znaků `kod`, nastavení řad a přechod účetních období.
-- Číslování nepoužívá „maximum v Abře + 1“ ani průběžné přebírání čítače
-  z Abry. Čtení by číslo nerezervovalo a nezabránilo souběžným kolizím.
-- API zpřístupňuje stav řad přes `rada-faktury-vydane`, relaci `polozkyRady`
-  a `rocni-rada` (`cisAkt`, prefix, postfix, účetní období); to lze využít
-  pro kontrolu nastavení, nikoli jako místní generátor čísel.
-  [Metadata roční řady](https://demo.flexibee.eu/c/demo/rocni-rada/properties.json).
-- Aplikace tak nadále vystaví doklad a PDF nezávisle na dostupnosti Abry
-  a účetní export proběhne následně. Vydané doklady se dodatečně nepřečíslují.
-  API podporuje vlastní `kod`.
-  [Pravidla číslování přes API](https://podpora.flexibee.eu/cs/articles/9221020-api-aktualizace-dokladove-rady-na-dokladu).
+- Místní databáze pod zámkem přidělí jedinečné číslo; export předá původní
+  číslo do `kod` a zachová místní VS. Stabilní externí ID je samostatnou
+  identitou pro opakování exportu.
+- VS nových dokladů tvoří číselný kód druhu (`1` výzva, `2` konečná faktura,
+  `3` doklad k platbě, `4` oprava), čtyřmístný rok a pětimístné pořadí ze
+  stejné řady jako číslo dokladu. Např. `COZY-ZF202600009` → `1202600009`.
+  Limit je 99 999 dokladů za rok a druh, bez ořezávání číslic. Starší VS
+  se nemění; případná kolize s historickým VS zablokuje vystavení.
+- Migrace prefixu změní jen budoucí čísla zálohových výzev; zachová čítače,
+  vystavené doklady i PDF. Při rollbacku prefix nevrací zpět.
+- Účetní nebude místní prefix používat pro ruční doklady v ABRA. Ověřit
+  kolize, limit 20 znaků `kod` a přechod účetních období.
+- Číslování nečte maximum ani čítač z ABRA. Vystavení a PDF jsou nezávislé
+  na její dostupnosti. [Import vlastního čísla](https://podpora.flexibee.eu/cs/articles/9221020-api-aktualizace-dokladove-rady-na-dokladu).
+- Poznámka exportu uchová původní položky a výpočet zálohy ze snapshotu;
+  účetní položky zůstávají agregované podle daňových skupin zálohy.
 
 ## Rozhodnutí
 
@@ -323,6 +324,10 @@ období se dohodnou s účetní; tímto plánem se nevymýšlejí.
 | 2026-10-23 | Doplnit doložené možnosti a omezení API; uživatel zajistí napojení na testovací firmu pro ověřování API a budoucí implementace. Tato aktualizace nezahajuje implementaci. | Uživatel |
 | 2026-10-26 | Vlastní vyhrazené řady aplikace, čísla přiděluje místní databáze a ABRA je přebírá. Externí původ bude viditelný, zůstává nezávislé místní vystavování a následný export. | Uživatel |
 | 2026-10-26 | Vzory zálohy a ZDD dodány; finální fakturu uživatel dodá později. Implementace začne až na výslovný pokyn v samostatném chatu. | Uživatel |
+| 2026-10-26 | Zahájit implementaci po samostatných PR; první krok ruční export zálohové výzvy. Reálné ověření v testovací firmě a schválení provede uživatel před pokračováním. | Uživatel |
+| 2026-10-26 | Vlastní řada zálohových výzev aplikace používá kód `COZY-ZALOHA`. | Uživatel |
+| 2026-10-26 | Po testu používat pouze místní čísla s prefixem `COZY-ZF`; opustit vazbu na řadu ABRA a přidat původní rozpis položek do poznámky exportu. | Uživatel |
+| 2026-10-26 | VS odvozovat z druhu, roku a pořadí dokladu; místo písmen používat číselné kódy druhů a zachovat desetimístný limit. Historické VS se nemění. | Uživatel |
 
 ## Otevřené otázky
 
@@ -427,22 +432,17 @@ zaokrouhlení a souběžné zásahy v Abře. Jejich ověření je podmínkou spu
   do [rejstříku plánů](README.md). Následně ověřena oficiální API dokumentace
   a veřejná metadata; zjištění a omezení doplněna se souhlasem uživatele.
   Dne 2026-10-26 prozkoumány XML zálohy a ZDD a schváleny vlastní řady aplikace.
-  Implementace integrace nebyla zahájena a tento chat ji nezahajuje.
+  Následně na pokyn uživatele připravena první část: ruční export zálohové
+  výzvy podle dodaných XML, samostatná evidence přenosu a Oban worker,
+  stav a opakování v detailu dokladu a zásadní testy. Integrace zůstává
+  ve výchozím stavu vypnutá. Lokální testy nebyly spuštěny; CI ověří uživatel.
 - Zbývá: napojení na testovací firmu, finální faktura a další účetní vzory,
   ověření celého cyklu a přesné mapování. Uživatel zajistí napojení a finální
   fakturu dodá později.
 - Blokuje dokončení: chybějící vzory včetně vyúčtování a dosud nepřipravené
   napojení na testovací firmu. Přístup k dokumentaci již není překážkou;
   API testovací firmy zde testováno nebylo.
-- Nejbližší další krok: v samostatném chatu na výslovný pokyn uživatele znovu
-  ověřit aktuální kód a stav přístupu. Bez finální faktury lze jako první
-  samostatný krok připravit a v testovací firmě ověřit vytvoření zálohy;
-  celý cyklus se dokončí až po dodání a ověření zbývajících vzorů. Před zápisem
-  ověřit cílovou testovací firmu, licenci, oprávnění, nastavení a vlastní řady.
-
-V novém chatu lze navázat například:
-
-> Přečti docs/plans/2026-10-23-abra-ubytovani.md. Napojení na testovací firmu
-> je připravené a mám vzory od účetní. Ověř doložené API operace a zbývající
-> scénáře v testovací firmě, porovnej výsledky s aktuálním kódem a doplň účetní
-> mapování. Zatím nezačínej implementaci.
+- Nejbližší další krok: uživatel nastaví testovací firmu, ověří
+  ruční export zálohy podle [postupu](../integrations/ABRA_ACCOMMODATION.md)
+  a schválí první PR. Před tímto schválením nepokračovat další etapou.
+  Potom lze navázat ZDD a platbami; finální fakturu a zbývající vzory dodá později.

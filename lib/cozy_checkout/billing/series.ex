@@ -19,7 +19,7 @@ defmodule CozyCheckout.Billing.Series do
     |> validate_format(:prefix, ~r/\A[A-Za-z0-9-]+\z/)
     |> validate_number(:digits, greater_than: 0, less_than_or_equal_to: 8)
     |> validate_number(:year, greater_than_or_equal_to: 2000, less_than_or_equal_to: 9999)
-    |> validate_number(:next_number, greater_than: 0)
+    |> validate_number(:next_number, greater_than: 0, less_than_or_equal_to: 99_999)
     |> unique_constraint([:kind, :year])
   end
 end

@@ -1,5 +1,9 @@
 # Fakturace pobytů
 
+Zálohové výzvy lze po nastavení integrace ručně přenést do ABRA z detailu
+dokladu. Nastavení, limity první části a ověření popisuje
+[export zálohových výzev](../integrations/ABRA_ACCOMMODATION.md).
+
 ## První spuštění
 
 1. Spusťte migrace standardním nasazením. Migrační skript nic nevystavuje,
@@ -10,6 +14,8 @@
 3. S účetní nastavte čtyři číselné řady pro aktuální rok: zálohové výzvy, doklady
    k přijaté platbě, konečné faktury a opravné daňové doklady. Číslo je označení +
    čtyřmístný rok + pořadí doplněné nulami. Po prvním použití se řada uzamkne.
+   Zálohové výzvy používají označení `COZY-ZF` (např. `COZY-ZF202600009`).
+   Migrace zachová již vystavená čísla a nastaví tento prefix pro další výzvy.
    Pro nový rok je potřeba předem založit nové řady. Barové doklady mají vlastní
    původní číslování a jejich nastavení se nemění.
 4. V **Ceník ubytování** založte sezony. Kalendář žlutě označuje dny bez ceny.
@@ -19,6 +25,15 @@
 
 Volitelná proměnná `CHROME_EXECUTABLE` určuje cestu k prohlížeči (CI ji nastavuje
 podle instalace Chrome).
+
+Variabilní symbol nového dokladu tvoří **číslice druhu + čtyřmístný rok +
+pětimístné pořadí**. Druhy: `1` zálohová výzva, `2` konečná faktura, `3` doklad
+k platbě, `4` oprava. Například `COZY-ZF202600009` má VS `1202600009`.
+Pořadí pochází ze stejné místní řady jako číslo dokladu; textový prefix se do
+VS nepřenáší. VS má vždy deset číslic, bez zkracování. Řada dovoluje nejvýše
+99 999 dokladů ročně pro každý druh; užší nastavená šířka čísla může omezit
+kapacitu dříve. PDF, QR platba i ABRA používají stejný uložený VS. Dříve
+vystavené doklady a jejich VS se nemění ani při opakování požadavku.
 
 Výchozí splatnost je 14 dnů, měna CZK, jazyk čeština. API přístupy nikdy nepatří
 přímo do databáze profilů ani do Git repozitáře.

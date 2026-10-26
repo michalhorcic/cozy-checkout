@@ -38,7 +38,11 @@ defmodule CozyCheckout.BillingFixtures do
         Billing.save_series(%{
           "kind" => kind,
           "year" => to_string(today.year),
-          "prefix" => kind |> String.upcase() |> String.replace("_", ""),
+          "prefix" =>
+            if(kind == "advance",
+              do: "COZY-ZF",
+              else: kind |> String.upcase() |> String.replace("_", "")
+            ),
           "digits" => "5",
           "next_number" => "1"
         })
