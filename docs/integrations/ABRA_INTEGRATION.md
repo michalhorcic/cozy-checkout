@@ -240,9 +240,8 @@ s QR. Skutečné číselníky a vzdálenou idempotenci je nutné ověřit samost
 
 ## Načítání banky pro ubytování (samostatný čtecí blok)
 
-Samostatný přepínač `ABRA_ACCOMMODATION_BANK_ENABLED=true` zapíná načítání
-každých 15 minut. Výchozí stav je vypnutý a nezávisí na přepínači exportu
-`ABRA_ACCOMMODATION_ENABLED`. Používá stejnou pobytovou cílovou instanci,
+Společný přepínač `ABRA_ACCOMMODATION_ENABLED=true` zapíná také načítání
+banky každých 15 minut. Výchozí stav celé integrace je vypnutý. Používá stejnou pobytovou cílovou instanci,
 firmu, přístupové údaje a `ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE` jako zálohové
 výzvy. `ABRA_ACCOMMODATION_ENABLED_FROM` omezuje návrhy na nové pobyty.
 Před zapnutím je nutné spustit přidávací migraci bankovních tabulek.
@@ -304,15 +303,14 @@ zbývající částku výzvy tato implementace nepotvrzuje.
 
 Přidávací migrace `20261026160000_create_abra_bank_confirmations.exs` zavádí
 jedinečnou vazbu pohybu a místní platby i uložený požadavek na synchronizaci.
-Po migraci zůstává potvrzování vypnuté. Pro zkoušení v testovací firmě nastavte:
+Potvrzování řídí společný přepínač integrace. Pro zkoušení v testovací firmě nastavte:
 
 ```sh
 ABRA_ACCOMMODATION_ENABLED=true
-ABRA_ACCOMMODATION_BANK_CONFIRMATION_ENABLED=true
 ```
 
 Stávající nastavení instance, testovací firmy, účtu, přístupů a okamžiku
-zapojení nových pobytů se používá dál. Import banky má vlastní přepínač.
+zapojení nových pobytů se používá dál. Import banky řídí stejný společný přepínač.
 Čtyři místní číselné řady musí být nastavené; číslo ZDD smí mít nejvýše
 20 znaků. Ověření proti skutečné ABRA provádí uživatel na svém lokálu.
 
@@ -422,8 +420,8 @@ nastavení dál blokují přenos.
 ## Konečná faktura s odpočty
 
 Na výslovný požadavek uživatele lze připravit a exportovat pracovní vyúčtování
-ještě před dodáním schváleného účetního vzoru. Export má samostatný přepínač
-`ABRA_ACCOMMODATION_FINAL_ENABLED`, výchozím stavem vypnutý, a používá stávající
+ještě před dodáním schváleného účetního vzoru. Export řídí společný přepínač
+`ABRA_ACCOMMODATION_ENABLED`, výchozím stavem vypnutý, a používá stávající
 připojení k ABRA pro ubytování. Používá stávající detail dokladu a evidenci exportů; přidávací migrace
 ukládá neměnné podklady pro kontrolu výsledku a zdrojových ZDD.
 
@@ -486,11 +484,9 @@ obsahuje konkrétní název relace a HTTP stav, aby šla příčina dohledat.
 ## Bankovní doplatek konečné faktury
 
 Po migraci `20261026200000_add_bank_confirmation_kind.exs` zapněte
-`ABRA_ACCOMMODATION_FINAL_BANK_CONFIRMATION_ENABLED=true`. Výchozí stav je
-vypnutý. Používá stejné připojení a účet jako ubytování; vyžaduje zapnutou
-integraci ubytování a dokončený export konečné faktury včetně odpočtů (#44).
-Přepínač potvrzování záloh není pro doplatky nutný. Načítání banky se dál
-řídí `ABRA_ACCOMMODATION_BANK_ENABLED`.
+`ABRA_ACCOMMODATION_ENABLED=true`. Doplatky používají stejné připojení a účet
+jako ostatní části ubytování; vyžadují dokončený export konečné faktury
+včetně odpočtů (#44). Stejný přepínač řídí také zálohy a načítání banky.
 
 V přehledu **Bankovní pohyby** pod administrátorským PINem načtěte banku,
 vyberte návrh podle VS konečné faktury a použijte **Zkontrolovat přijetí
@@ -539,3 +535,78 @@ přehledu: všechny prošly (Elixir 1.20.4 / OTP 27). Dvě selhání způsoboval
 řetězcová kontrola částek; byla opravena na porovnání přes Decimal.
 CI ověří uživatel. Před ostrým použitím ověřte v testovací firmě celý i dílčí doplatek, saldokonto,
 odpočty, vrácené grafy vazeb a obnovu po timeoutu. Živá ABRA zde nebyla volána.
+
+## Automatický export a společný přehled přenosů
+
+Po migraci `20261026210000_allow_pending_accommodation_exports.exs` lze ke
+stávající konfiguraci přidat:
+
+```sh
+ABRA_ACCOMMODATION_ENABLED=true
+```
+
+Výchozí hodnota je `false`. Základní integrace musí být zapnutá a musí mít
+platný `ABRA_ACCOMMODATION_ENABLED_FROM`. Rozhoduje okamžik vytvoření pobytu,
+nikoli příjezd. Jde o jediný přepínač celé synchronizace ubytování: zapíná
+výzvy, konečné faktury, banku i přenos ZDD a doplatků. Potvrzování plateb
+zůstává výslovným úkonem obsluhy.
+
+Obsluha vystaví výzvu nebo konečnou fakturu obvyklým způsobem. Ve stejné místní
+transakci se uloží jedinečný požadavek na přenos a Oban job. Vystavení nevolá
+ABRA a nečeká na síť ani účetní přípravu exportu. Opakování stejného vystavení
+nevytvoří druhý požadavek. Rollback vrátí doklad, číslo, požadavek i job společně.
+PDF a e-mail pokračují svými dosavadními joby nezávisle na ABRA.
+
+Na pozadí se jednou připraví a uloží účetní payload z neměnného vydaného
+snapshotu. Před přípravou je požadavek uložen s prázdným payloadem; nejde o
+vzdálený doklad. Již připravený payload se při opakování nikdy nepřepočítává.
+URL a firma se zachytí při vystavení, pokud jsou vyplněné; chybějící hodnoty
+se doplní při první úspěšné přípravě. Již známou část cíle nelze přesměrovat
+jinam. Změna cíle přenos zastaví a zobrazí chybu.
+
+Konečná faktura počká ve stavu **Čeká na podmínky**, dokud se nedokončí přenos
+zdrojových ZDD a bankovních vazeb. Kontrola se opakuje po minutě bez vyčerpání
+počtu pokusů o přenos. Vypnutí celé integrace pozastaví provádění jobů.
+Chybějící či konfliktní zdroj, nepodporované účetní údaje nebo neúplná
+konfigurace skončí viditelnou chybou; po vyřešení lze obnovit stejný požadavek.
+Přechodné HTTP chyby opakuje Oban podle dosavadních pravidel, po timeoutu
+nejprve dohledá vzdálený doklad podle stabilního externího ID.
+
+Stav **Čeká na přenos / Čeká na podmínky / Přeneseno / Chyba** a vysvětlení
+jsou viditelné v seznamu dokladů i u dokladů pobytu. Obnovují se přibližně po
+10 sekundách bez přepsání rozpracovaného formuláře. Odkaz **Přenosy do ABRA**
+vede na PINem chráněný `/admin/billing/transfers`:
+
+- **Chyby a opakování** zobrazí chyby exportů i bankovních přenosů.
+- **Čekající** zobrazí frontu a závislosti; **Všechny** také dokončené přenosy.
+- **Ověřit a obnovit přenos** používá původní identitu a uložené podklady.
+  U bankovních vazeb provádí dosavadní čerstvou kontrolu před obnovou.
+
+Přehled je stránkovaný po 50 záznamech. ZDD přenášené při potvrzení zálohy se
+zobrazují u svého daňového dokladu; doplatek a jeho vazby u konečné faktury.
+Ruční export z detailu zůstává dostupný pro cílené doplnění staršího dokladu,
+pokud pobyt splňuje pravidla zapojení. Zapnutí automatiky samo **nic historicky
+nedoexportuje**. Nastavení `ABRA_ACCOMMODATION_ENABLED=false` zastaví nové
+zařazování i provádění přenosů a načítání banky. Již uložené požadavky
+zůstanou zachované pro pokračování po opětovném zapnutí.
+
+Automatika samostatně exportuje výzvy a konečné faktury. ZDD dál používají
+stávající bankovní tok. Hotovostní ZDD a opravné doklady tímto blokem novou
+účetní cestu nezískávají; přehled jejich nepřenesený stav výslovně označuje.
+Nasazení nemění vydané doklady, PDF, místní platby ani dosavadní účetní mapování.
+
+Cílené lokální ověření na dřívější výslovné povolení uživatele: 69 testů
+exportů, čekání na ZDD, bankovních plateb a administrace prošlo na
+Elixiru 1.20.4 / OTP 27. Prošly také formátování a kompilace s
+`--warnings-as-errors`. Celá projektová sada neběžela; CI používá OTP 29.
+Živou ABRA a účetní shodu nadále ověřuje uživatel s účetní.
+
+
+### Sjednocení přepínačů
+
+Pro deploy stačí `ABRA_ACCOMMODATION_ENABLED=true` pro celou synchronizaci
+ubytování. Původní samostatné proměnné s koncovkami `AUTO_EXPORT_ENABLED`,
+`BANK_ENABLED`, `BANK_CONFIRMATION_ENABLED`, `FINAL_ENABLED` a
+`FINAL_BANK_CONFIRMATION_ENABLED` se již nečtou a lze je z deploye odstranit.
+Připojení, účetní mapování a `ABRA_ACCOMMODATION_ENABLED_FROM` zůstávají beze
+změny. Barová integrace je nadále oddělená. Změna nevyžaduje další migraci.

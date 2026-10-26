@@ -1030,6 +1030,7 @@ defmodule CozyCheckout.Billing do
     {:ok, _} =
       %{document_id: doc.id} |> CozyCheckout.Workers.BillingPdfWorker.new() |> Oban.insert()
 
+    :ok = CozyCheckout.Abra.Accommodation.enqueue_issued(doc)
     doc
   end
 

@@ -23,7 +23,6 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     # Only accounting codes/totals from the supplied XML; no guest data or source identities.
     cfg = [
       enabled: true,
-      bank_confirmation_enabled: true,
       enabled_from: ~U[2020-01-01 00:00:00Z],
       base_url: "https://accounting.test",
       company_id: "test",
@@ -51,7 +50,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     end)
 
     fixture = billing_fixture()
-    doc = issue!(fixture.booking, "advance", %{"amount" => "1234.57"})
+    doc = issue_without_abra!(fixture.booking, "advance", %{"amount" => "1234.57"})
     {:ok, export} = Accommodation.enqueue(doc.id)
     export = export |> Ecto.Changeset.change(state: "synced", remote_id: "42") |> Repo.update!()
 
@@ -161,6 +160,13 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert Repo.aggregate(Document, :count) == 2
     payment = Repo.get!(Payment, first.payment_id)
     zdd = Billing.get_document!(payment.tax_document_id)
+    transfers = CozyCheckout.Abra.Transfers.list("all")
+    assert Enum.sort(Enum.map(transfers, & &1.category)) == ["document", "payment"]
+    assert Enum.find(transfers, &(&1.category == "payment")).document_id == zdd.id
+    assert [%{id: confirmation_id}] = CozyCheckout.Abra.Transfers.for_documents([zdd])[zdd.id]
+    assert confirmation_id == first.id
+    assert CozyCheckout.Abra.Transfers.list() == []
+    assert [%{category: "payment"}] = CozyCheckout.Abra.Transfers.list("pending")
     assert zdd.tax_date == ctx.movement.paid_on
     assert zdd.due_on == ctx.movement.paid_on
     assert Decimal.equal?(payment.amount, "600")
@@ -186,7 +192,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
   test "final invoice after preview invalidates the advance confirmation and retains issued history",
        ctx do
     {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
-    issue!(ctx.booking, "final")
+    issue_without_abra!(ctx.booking, "final")
     assert {:error, _} = BankPayments.confirm(preview.token)
     assert Repo.aggregate(Payment, :count) == 0
     assert Repo.aggregate(BankConfirmation, :count) == 0
@@ -264,7 +270,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     Application.put_env(
       :cozy_checkout,
       :abra_accommodation,
-      Keyword.put(ctx.cfg, :bank_confirmation_enabled, false)
+      Keyword.put(ctx.cfg, :enabled, false)
     )
 
     assert {:error, _} = BankPayments.preview(ctx.movement.id, ctx.document.id)

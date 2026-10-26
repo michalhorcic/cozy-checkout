@@ -15,6 +15,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     {"email", "Fakturační e-mail"}
   ]
   def mount(%{"booking_id" => id}, _, socket) do
+    if connected?(socket), do: Process.send_after(self(), :abra_tick, 10_000)
     booking = Bookings.get_booking!(id)
     buyer = Billing.customer(id).data
 
@@ -56,6 +57,17 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
        correction_form: to_form(%{}, as: :correction)
      )
      |> refresh()}
+  end
+
+  def handle_info(:abra_tick, socket) do
+    Process.send_after(self(), :abra_tick, 10_000)
+
+    {:noreply,
+     assign(
+       socket,
+       :abra_transfers,
+       CozyCheckout.Abra.Transfers.for_documents(socket.assigns.documents)
+     )}
   end
 
   def handle_event("refresh", _, socket), do: {:noreply, refresh(socket)}
@@ -278,13 +290,15 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     id = socket.assigns.booking.id
 
     calculation = Billing.calculation(id)
+    documents = Billing.list_documents(%{"booking_id" => id})
 
     socket =
       assign(socket,
         personal?: match?(%{state: "personal"}, calculation),
         calculation: calculation,
         pricing_hint: Billing.pricing_preview(id),
-        documents: Billing.list_documents(%{"booking_id" => id}),
+        documents: documents,
+        abra_transfers: CozyCheckout.Abra.Transfers.for_documents(documents),
         payments: Billing.list_payments(id),
         bank_suggestions: CozyCheckout.Abra.Bank.for_booking(id),
         bank_import: CozyCheckout.Abra.Bank.status(),
@@ -807,6 +821,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         >
           <div class="flex items-center justify-between gap-3">
             <h2 class="text-xl font-bold">Doklady</h2>
+            <.link navigate={~p"/admin/billing/transfers"} class="link text-sm">Přenosy do ABRA</.link>
             <span class="text-sm text-primary-400">Počet: {length(@documents)}</span>
           </div>
           <p :if={@documents == []} class="text-primary-400">Zatím nebyl vystaven žádný doklad.</p>
@@ -821,6 +836,10 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 {Billing.kind_label(doc.kind)} · {Presentation.date(doc.issued_on)}
               </p>
               <p class="mt-2 font-semibold tabular-nums">{Presentation.amount(doc.total)}</p>
+              <CozyCheckoutWeb.BillingComponents.abra_status
+                document={doc}
+                statuses={Map.get(@abra_transfers, doc.id, [])}
+              />
             </div>
             <div class="flex flex-wrap items-center gap-2">
               <.link

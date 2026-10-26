@@ -4,6 +4,44 @@ defmodule CozyCheckoutWeb.BillingComponents do
 
   alias CozyCheckout.Billing.Presentation
 
+  attr :document, :map, required: true
+  attr :statuses, :list, default: []
+
+  def abra_status(assigns) do
+    ~H"""
+    <div id={"abra-status-#{@document.id}"} class="mt-2 space-y-1 text-sm">
+      <p :if={@statuses == []} class="text-primary-400">
+        ABRA: {cond do
+          @document.kind == "correction" -> "Opravu vyřešte s účetní"
+          @document.kind == "tax_receipt" -> "ZDD bez bankovního přenosu"
+          true -> "Nepřeneseno"
+        end}
+      </p>
+      <div :for={status <- @statuses}>
+        <p class={
+          if status.state in ["failed", "conflict", "retrying"],
+            do: "text-red-700",
+            else: "text-primary-500"
+        }>
+          ABRA {if status.category == "payment", do: "· platba a vazby", else: "· doklad"}: {CozyCheckout.Abra.Transfers.label(
+            status.state
+          )}
+        </p>
+        <p :if={status.error} class="text-sm">{status.error}</p>
+        <.link
+          :if={status.state in ["failed", "conflict", "retrying", "waiting"]}
+          navigate={
+            if status.state == "waiting",
+              do: ~p"/admin/billing/transfers?mode=pending",
+              else: ~p"/admin/billing/transfers"
+          }
+          class="link"
+        >Řešit přenos</.link>
+      </div>
+    </div>
+    """
+  end
+
   attr :id, :string, required: true
   attr :document, :map, required: true
 

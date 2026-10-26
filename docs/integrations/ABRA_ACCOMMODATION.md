@@ -3,8 +3,11 @@
 První samostatně ověřitelná část integrace: **ruční export vystavené zálohové
 výzvy** z detailu `/admin/billing/documents/:id`. Export je ve výchozím stavu
 vypnutý. Nevytváří platbu, ZDD ani bankovní nebo pokladní pohyb. Přijetí peněz
-ani finanční stav pobytu se exportem nemění. Automatický export a celý platební
-cyklus přijdou až po reálném ověření této části.
+ani finanční stav pobytu se exportem nemění.
+
+Tento dokument popisuje původní ruční postup. Nyní lze zapnout také
+[automatický export výzev a konečných faktur se společným přehledem chyb](ABRA_INTEGRATION.md#automatický-export-a-společný-přehled-přenosů).
+Bankovní zálohy, ZDD, odpočty a doplatky popisuje navazující provozní dokumentace.
 
 ## Nastavení pro testovací firmu
 
@@ -22,7 +25,7 @@ server a firmu pomocí `ABRA_ACCOMMODATION_BASE_URL` a
 
 | Proměnná | Význam |
 | --- | --- |
-| `ABRA_ACCOMMODATION_ENABLED` | `true` povolí ruční export a provádění jobů; výchozí `false`. |
+| `ABRA_ACCOMMODATION_ENABLED` | `true` povolí celou synchronizaci ubytování včetně automatického exportu a banky; výchozí `false`. |
 | `ABRA_ACCOMMODATION_ENABLED_FROM` | Povinný okamžik zapojení **nově vytvořených rezervací**, ISO 8601 s časovou zónou, např. `2026-10-26T12:00:00+01:00`. Posuzuje se `booking.inserted_at`, nikoli datum příjezdu. |
 | `ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE` | Typ zálohy bez `code:`, výchozí `ZÁLOHA` podle XML. |
 | `ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE` | Kód účtu bez `code:`, výchozí `BANKOVNÍ ÚČET` podle XML. Musí odpovídat účtu na místním dokladu. |

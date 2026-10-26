@@ -15,7 +15,7 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
 
   alias CozyCheckout.Billing.{Document, Payment}
 
-  def enabled?(cfg \\ Accommodation.config()), do: cfg[:final_enabled] == true
+  def enabled?(cfg \\ Accommodation.config()), do: cfg[:enabled] == true
 
   def prepare(%Document{kind: "final"} = doc, cfg) do
     required =
@@ -69,6 +69,10 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
       cond do
         is_nil(zdd) or zdd.kind != "tax_receipt" or zdd.booking_id != doc.booking_id ->
           {:halt, {:error, "Odpočet neodkazuje na ZDD stejného pobytu"}}
+
+        not is_nil(confirmation) and confirmation.state in ["queued", "retrying"] and
+            CozyCheckout.Abra.BankPayments.same_target?(confirmation, cfg) ->
+          {:halt, {:waiting, "Čeká na dokončení přenosu zdrojového ZDD a jeho bankovních vazeb"}}
 
         is_nil(confirmation) or confirmation.state != "synced" or
             not CozyCheckout.Abra.BankPayments.same_target?(confirmation, cfg) ->
