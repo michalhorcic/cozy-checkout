@@ -47,10 +47,7 @@ defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
           invoice =
             if sources == [],
               do: invoice,
-              else:
-                Map.put(invoice, "odpocty-zaloh", %{
-                  "odpocet" => Enum.map(sources, &deduction/1)
-                })
+              else: Map.put(invoice, "odpocty-zaloh", Enum.map(sources, &deduction/1))
 
           buyer = doc.snapshot["customer"]
 

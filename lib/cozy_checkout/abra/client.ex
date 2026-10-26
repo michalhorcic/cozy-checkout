@@ -214,7 +214,8 @@ defmodule CozyCheckout.Abra.Client do
               "@create" => "fail",
               "@update" => "ok",
               "id" => invoice_id,
-              "odpocty-zaloh" => %{"odpocet" => [deduction]}
+              # JSON collections omit the XML child element (odpocet).
+              "odpocty-zaloh" => [deduction]
             }
           ]
         }

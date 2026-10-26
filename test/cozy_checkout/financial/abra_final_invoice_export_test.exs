@@ -109,7 +109,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
       assert item["cenaMj"] == original["unit"]
     end
 
-    deductions = invoice["odpocty-zaloh"]["odpocet"]
+    deductions = invoice["odpocty-zaloh"]
     assert length(deductions) == 2
     assert length(Enum.uniq_by(deductions, & &1["id"])) == 2
 
@@ -220,6 +220,22 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
     assert Agent.get(ctx.remote, & &1.posts) == 1
     assert Agent.get(ctx.remote, & &1.deduction_posts) == 1
     assert Repo.aggregate(Payment, :count) == 1
+  end
+
+  test "saved XML-shaped export resumes without rewriting its frozen payload", ctx do
+    seed_receipt(ctx, "600", 100)
+    {_doc, export} = final_export(ctx)
+    [invoice] = export.payload["winstrom"]["faktura-vydana"]
+    legacy = Map.put(invoice, "odpocty-zaloh", %{"odpocet" => invoice["odpocty-zaloh"]})
+    payload = put_in(export.payload, ["winstrom", "faktura-vydana"], [legacy])
+    export = export |> Ecto.Changeset.change(payload: payload) |> Repo.update!()
+    Agent.update(ctx.remote, &%{&1 | export: export})
+    Agent.update(ctx.remote, &%{&1 | fault: :timeout})
+    assert {:error, _} = Accommodation.sync(export.id)
+    assert :ok = Accommodation.sync(export.id)
+    assert Agent.get(ctx.remote, & &1.posts) == 1
+    assert Agent.get(ctx.remote, & &1.deduction_posts) == 1
+    assert Accommodation.get_export(export.document_id).payload == payload
   end
 
   test "partial deduction progress survives timeout and applies only the remaining ZDD", ctx do
@@ -445,8 +461,15 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
           assert request["id"] == "236"
           refute Map.has_key?(request, "polozkyFaktury")
           refute Map.has_key?(request, "kod")
-          [deduction] = request["odpocty-zaloh"]["odpocet"]
-          assert deduction in definition["odpocty-zaloh"]["odpocet"]
+          [deduction] = request["odpocty-zaloh"]
+
+          operations =
+            case definition["odpocty-zaloh"] do
+              %{"odpocet" => rows} -> rows
+              rows when is_list(rows) -> rows
+            end
+
+          assert deduction in operations
           refute deduction["doklad"] in state.applied
 
           applied =

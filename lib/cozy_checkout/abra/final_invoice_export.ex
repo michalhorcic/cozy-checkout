@@ -154,7 +154,14 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
           {:ok, to_string(snapshot.invoice["id"])}
 
         true ->
-          operations = get_in(invoice, ["odpocty-zaloh", "odpocet"]) || []
+          # Older frozen exports used the XML-shaped wrapper. Read it without
+          # rewriting the snapshot; Client always sends the JSON array form.
+          operations =
+            case invoice["odpocty-zaloh"] do
+              %{"odpocet" => operations} when is_list(operations) -> operations
+              operations when is_list(operations) -> operations
+              _ -> []
+            end
 
           deduction =
             Enum.find(

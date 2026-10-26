@@ -50,6 +50,44 @@ defmodule CozyCheckout.AbraClientTest do
     assert {:ok, "42"} = Client.create_invoice(payload)
   end
 
+  test "deduction JSON uses a direct array without the XML odpocet wrapper" do
+    deduction = %{
+      "id" => "ext:deduction:test",
+      "doklad" => "100",
+      "castkaSnizMen" => "500.00",
+      "castkyBezDph" => true,
+      "skupPlneni" => "OTHER"
+    }
+
+    Req.Test.expect(Client, fn conn ->
+      assert conn.method == "POST"
+      assert conn.request_path == "/c/test/faktura-vydana.json"
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+
+      assert Jason.decode!(body) == %{
+               "winstrom" => %{
+                 "faktura-vydana" => [
+                   %{
+                     "@create" => "fail",
+                     "@update" => "ok",
+                     "id" => "236",
+                     "odpocty-zaloh" => [deduction]
+                   }
+                 ]
+               }
+             }
+
+      Req.Test.json(conn, %{"winstrom" => %{"results" => [%{"id" => 236}]}})
+    end)
+
+    assert :ok =
+             Client.apply_invoice_deduction(
+               "236",
+               deduction,
+               Application.fetch_env!(:cozy_checkout, :abra)
+             )
+  end
+
   test "final invoice reads paginated items through the documented polozkyDokladu relation" do
     cfg = Application.fetch_env!(:cozy_checkout, :abra)
 

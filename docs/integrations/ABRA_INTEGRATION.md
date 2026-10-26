@@ -442,6 +442,12 @@ Při opakování se čte aktuální stav: hotová faktura se znovu nevytváří 
 ověřený odpočet se znovu neposílá. Stejný uložený export lze použít i po chybě
 původního společného požadavku, pokud vzdálený stav projde kontrolami.
 
+V JSON se odpočty posílají jako `"odpocty-zaloh": [{...}]`, bez XML obalu
+`odpocet` ([oficiální příklad JSON](https://podpora.flexibee.eu/cs/articles/4729457-odpocet-zaloh-a-zdd-api)).
+Starší uložené exporty s tímto obalem lze obnovit beze změny jejich snapshotu;
+samostatný požadavek na odpočet se odešle ve správném JSON formátu. Částky
+a volby odpočtu ZDD vycházejí z [dokumentace odpočtů](https://demo.flexibee.eu/devdoc/odpocet-zaloh).
+
 Typ běžné vydané faktury, účet pohledávky, účetní předpis a daňové členění
 vyúčtování nejsou schválené vzorem finální faktury. Výchozí `FAKTURA` je
 pracovní návrh kódu typu; musí v testovací firmě existovat, jinak jej nastavte
