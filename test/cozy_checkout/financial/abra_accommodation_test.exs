@@ -40,6 +40,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert invoice["kod"] == doc.number
     assert String.starts_with?(doc.number, "COZY-ZF")
     assert invoice["varSym"] == doc.variable_symbol
+    assert invoice["varSym"] == "1#{doc.issued_on.year}00001"
     assert invoice["nazFirmy"] == doc.snapshot["customer"]["name"]
     assert invoice["typDokl"] == "code:ZÁLOHA"
     refute Map.has_key?(invoice, "rada")

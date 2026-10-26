@@ -37,6 +37,12 @@ Proměnná `ABRA_ACCOMMODATION_ADVANCE_SERIES_CODE` se již nepoužívá.
 
 - Použije se uložený snapshot odběratele, původní číslo (`kod`, nejvýše
   20 znaků), VS, datum vystavení, splatnost a měna CZK.
+- Nový VS je odvozený ze stejné řady jako číslo dokladu: číslice druhu,
+  čtyřmístný rok a pětimístné pořadí. `COZY-ZF202600009` má VS `1202600009`.
+  Kódy druhů jsou `1` výzva, `2` konečná faktura, `3` doklad k platbě, `4` oprava.
+  Písmena se ve VS nepoužívají. Při překročení 99 999 dokladů ročně daného
+  druhu se vystavení odmítne, číslice se nikdy neořezávají. Historické VS z
+  dřívější nezávislé sekvence zůstávají zachované; export je nepřepočítává.
 - Podle XML jde o `faktura-vydana`, `ucetni=false`, `bezPolozek=false`, členění
   DPH `000U` a kontrolního hlášení `0.0.` na hlavičce i položkách; DUZP se
   neodesílá. Nevzniká daňový doklad ani úhrada.

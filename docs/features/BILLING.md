@@ -26,6 +26,15 @@ dokladu. Nastavení, limity první části a ověření popisuje
 Volitelná proměnná `CHROME_EXECUTABLE` určuje cestu k prohlížeči (CI ji nastavuje
 podle instalace Chrome).
 
+Variabilní symbol nového dokladu tvoří **číslice druhu + čtyřmístný rok +
+pětimístné pořadí**. Druhy: `1` zálohová výzva, `2` konečná faktura, `3` doklad
+k platbě, `4` oprava. Například `COZY-ZF202600009` má VS `1202600009`.
+Pořadí pochází ze stejné místní řady jako číslo dokladu; textový prefix se do
+VS nepřenáší. VS má vždy deset číslic, bez zkracování. Řada dovoluje nejvýše
+99 999 dokladů ročně pro každý druh; užší nastavená šířka čísla může omezit
+kapacitu dříve. PDF, QR platba i ABRA používají stejný uložený VS. Dříve
+vystavené doklady a jejich VS se nemění ani při opakování požadavku.
+
 Výchozí splatnost je 14 dnů, měna CZK, jazyk čeština. API přístupy nikdy nepatří
 přímo do databáze profilů ani do Git repozitáře.
 

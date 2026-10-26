@@ -16,6 +16,12 @@ defmodule CozyCheckout.Billing do
   }
 
   @categories [{"Dospělí", :adult}, {"Děti do 2 let", :infant}, {"Děti do 12 let", :child}]
+  @variable_symbol_codes %{
+    "advance" => "1",
+    "final" => "2",
+    "tax_receipt" => "3",
+    "correction" => "4"
+  }
   @party_fields ~w(name street city postcode country company_id vat_id email phone registry bank_account iban due_days)
   def categories, do: @categories
   def today, do: Date.utc_today()
@@ -955,6 +961,12 @@ defmodule CozyCheckout.Billing do
     if String.length(to_string(series.next_number)) > series.digits,
       do: fail("Číselná řada je vyčerpaná")
 
+    if series.next_number > 99_999,
+      do:
+        fail(
+          "Číselná řada je vyčerpaná: variabilní symbol dovoluje nejvýše 99 999 dokladů za rok a druh"
+        )
+
     number =
       series.prefix <>
         to_string(series.year) <>
@@ -963,8 +975,15 @@ defmodule CozyCheckout.Billing do
     if Repo.exists?(from d in Document, where: d.number == ^number),
       do: fail("Číslo koliduje s jinou řadou")
 
+    symbol =
+      Map.fetch!(@variable_symbol_codes, series.kind) <>
+        to_string(series.year) <>
+        String.pad_leading(to_string(series.next_number), 5, "0")
+
+    if Repo.exists?(from d in Document, where: d.variable_symbol == ^symbol),
+      do: fail("Variabilní symbol koliduje s již vystaveným dokladem")
+
     series |> Ecto.Changeset.change(next_number: series.next_number + 1) |> Repo.update!()
-    %{rows: [[symbol]]} = Repo.query!("SELECT nextval('billing_variable_symbols')::text")
 
     doc =
       struct!(
@@ -973,9 +992,14 @@ defmodule CozyCheckout.Billing do
       )
       |> Ecto.Changeset.change()
       |> Ecto.Changeset.unique_constraint(:number)
+      |> Ecto.Changeset.unique_constraint(:variable_symbol)
       |> Ecto.Changeset.unique_constraint(:request_id)
       |> Ecto.Changeset.unique_constraint(:booking_id, name: :billing_one_final)
-      |> Repo.insert!()
+      |> Repo.insert()
+      |> case do
+        {:ok, doc} -> doc
+        {:error, changeset} -> fail(changeset)
+      end
 
     {:ok, _} =
       %{document_id: doc.id} |> CozyCheckout.Workers.BillingPdfWorker.new() |> Oban.insert()

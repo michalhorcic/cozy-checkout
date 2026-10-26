@@ -293,6 +293,11 @@ vazba `COZY-ZALOHA` byla po reálném testu a domluvě s uživatelem opuštěna.
 - Místní databáze pod zámkem přidělí jedinečné číslo; export předá původní
   číslo do `kod` a zachová místní VS. Stabilní externí ID je samostatnou
   identitou pro opakování exportu.
+- VS nových dokladů tvoří číselný kód druhu (`1` výzva, `2` konečná faktura,
+  `3` doklad k platbě, `4` oprava), čtyřmístný rok a pětimístné pořadí ze
+  stejné řady jako číslo dokladu. Např. `COZY-ZF202600009` → `1202600009`.
+  Limit je 99 999 dokladů za rok a druh, bez ořezávání číslic. Starší VS
+  se nemění; případná kolize s historickým VS zablokuje vystavení.
 - Migrace prefixu změní jen budoucí čísla zálohových výzev; zachová čítače,
   vystavené doklady i PDF. Při rollbacku prefix nevrací zpět.
 - Účetní nebude místní prefix používat pro ruční doklady v ABRA. Ověřit
@@ -322,6 +327,7 @@ vazba `COZY-ZALOHA` byla po reálném testu a domluvě s uživatelem opuštěna.
 | 2026-10-26 | Zahájit implementaci po samostatných PR; první krok ruční export zálohové výzvy. Reálné ověření v testovací firmě a schválení provede uživatel před pokračováním. | Uživatel |
 | 2026-10-26 | Vlastní řada zálohových výzev aplikace používá kód `COZY-ZALOHA`. | Uživatel |
 | 2026-10-26 | Po testu používat pouze místní čísla s prefixem `COZY-ZF`; opustit vazbu na řadu ABRA a přidat původní rozpis položek do poznámky exportu. | Uživatel |
+| 2026-10-26 | VS odvozovat z druhu, roku a pořadí dokladu; místo písmen používat číselné kódy druhů a zachovat desetimístný limit. Historické VS se nemění. | Uživatel |
 
 ## Otevřené otázky
 
