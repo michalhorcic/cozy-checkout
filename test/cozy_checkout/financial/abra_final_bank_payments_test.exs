@@ -276,7 +276,7 @@ defmodule CozyCheckout.AbraFinalBankPaymentsTest do
         assert [%{"@content" => "236", "@type" => "faktura-vydana", "@castka" => amount}] =
                  request["sparovani"]["uhrazovanaFak"]
 
-        assert amount == state.banks[request["id"]]["sumCelkem"]
+        assert Decimal.equal?(Decimal.new(amount), state.banks[request["id"]]["sumCelkem"])
         refute Map.has_key?(state.paid, request["id"])
 
         Agent.update(

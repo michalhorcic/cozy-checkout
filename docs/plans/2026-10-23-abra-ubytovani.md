@@ -529,5 +529,8 @@ Oficiální dokumentace párování potvrzuje JSON `uhrazovanaFak` jako kolekci
 s `@content`, `@type` a `@castka`; opraven také dosavadní klient sdílený se
 zálohami. Provozní postup, konfigurace a limity jsou doplněné v
 [ABRA_INTEGRATION.md](../integrations/ABRA_INTEGRATION.md#bankovní-doplatek-konečné-faktury).
-Zásadní testy používají Req.Test. Podle AGENTS.md nebyly lokálně spuštěny,
+Zásadní testy používají Req.Test. Na navazující výslovný pokyn uživatele
+bylo lokálně spuštěno 39 testů doplatků a souvisejících záloh, exportu,
+banky a administrace: všechny prošly na Elixiru 1.20.4 / OTP 27. Dvě selhání
+způsobovala sdílená řetězcová kontrola částek; nyní používá Decimal.
 CI a skutečnou ABRA ověří uživatel.

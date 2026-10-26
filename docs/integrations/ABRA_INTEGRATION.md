@@ -533,6 +533,9 @@ Operace je dokumentovaná jako idempotentní. Podle [čtení vazeb úhrad](https
 je konec `a` faktura a `b` bankovní pohyb; čtení podporuje také `/v2/c/`.
 
 Zásadní scénáře přes `Req.Test` jsou v `abra_final_bank_payments_test.exs`.
-Lokální testy nebyly spuštěny podle AGENTS.md; CI ověří uživatel. Před ostrým
-použitím ověřte v testovací firmě celý i dílčí doplatek, saldokonto,
+Na výslovný navazující pokyn uživatele bylo lokálně spuštěno 39 testů
+doplatků, záloh, exportu konečné faktury, importu banky a PINem chráněného
+přehledu: všechny prošly (Elixir 1.20.4 / OTP 27). Dvě selhání způsobovala jedna sdílená
+řetězcová kontrola částek; byla opravena na porovnání přes Decimal.
+CI ověří uživatel. Před ostrým použitím ověřte v testovací firmě celý i dílčí doplatek, saldokonto,
 odpočty, vrácené grafy vazeb a obnovu po timeoutu. Živá ABRA zde nebyla volána.
