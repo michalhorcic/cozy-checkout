@@ -432,7 +432,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
 
     cond do
       request["@create"] == "ok" and Map.has_key?(request, "odpocty-zaloh") ->
-        # Model the reported ABRA failure: deduction runs before its target exists.
+        # This fixture requires separate creation and deduction requests.
         error(conn, "Doklad pro odpočet nenalezen: #{definition["kod"]}")
 
       request["@create"] == "ok" ->
