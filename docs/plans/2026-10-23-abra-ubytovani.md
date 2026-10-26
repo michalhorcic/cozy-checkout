@@ -425,7 +425,7 @@ bezpečně bez nového vystavování.
 Největší rizika jsou dvojí vytvoření úhrady, nesprávný odpočet záloh, rozdílné
 zaokrouhlení a souběžné zásahy v Abře. Jejich ověření je podmínkou spuštění.
 
-## Průběh a předání dalšímu chatu
+## Původní průběh a předání před implementací (historické)
 
 - Hotovo: průzkum dokumentace, implementace, migrací a relevantních testů;
   potvrzen rozsah s uživatelem. Návrh uložen do tohoto souboru a odkaz přidán
@@ -446,3 +446,22 @@ zaokrouhlení a souběžné zásahy v Abře. Jejich ověření je podmínkou spu
   ruční export zálohy podle [postupu](../integrations/ABRA_ACCOMMODATION.md)
   a schválí první PR. Před tímto schválením nepokračovat další etapou.
   Potom lze navázat ZDD a platbami; finální fakturu a zbývající vzory dodá později.
+
+### Navazující čtecí blok banky (2026-10-26)
+
+Po sloučení exportu zálohových výzev (#41) navazuje samostatný blok načítání
+banky a předběžných návrhů podle VS, bez potvrzování plateb a vytváření ZDD.
+Obsahuje přidávací migraci pohybů a stavu importu, samostatný vypínač,
+15minutový Oban import, ruční obnovení, PINem chráněný přehled a návrhy
+u pobytu. Identita pohybu je oddělena podle instance a firmy.
+
+Záměrná mezietapa: stránkované úplné průchody s trvalým bodem pokračování
+nahrazují zatím neověřené Changes API. Zachytí také pozdě importovaná starší
+data, aktualizace a nepřítomnost pohybů; při souběžných vzdálených změnách
+nemají konzistenci snapshotu. `sparovano=false` se nepovažuje za důkaz volné
+platby. Návrhy proto výslovně zůstávají neověřené; před navazujícím potvrzováním
+je nutné ověřit Changes API, změny vazeb a dostupnou částku v testovací firmě.
+Podrobnosti, konfigurace a limity jsou v [provozní dokumentaci](../integrations/ABRA_INTEGRATION.md#načítání-banky-pro-ubytování-samostatný-čtecí-blok).
+
+Zbývající účetní exporty, ověření API a celý finanční cyklus tento blok neuzavírá.
+Lokální testy nebyly spuštěny podle pravidel repozitáře; výsledky CI ověří uživatel.

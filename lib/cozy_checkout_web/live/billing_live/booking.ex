@@ -286,6 +286,8 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         pricing_hint: Billing.pricing_preview(id),
         documents: Billing.list_documents(%{"booking_id" => id}),
         payments: Billing.list_payments(id),
+        bank_suggestions: CozyCheckout.Abra.Bank.for_booking(id),
+        bank_import: CozyCheckout.Abra.Bank.status(),
         balance: Billing.balance(id)
       )
 
@@ -851,6 +853,28 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
           :if={not @personal?}
           class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-4 sm:p-6"
         >
+          <div id="booking-bank-suggestions" class="space-y-3">
+            <h2 class="text-xl font-bold">Návrhy bankovních plateb podle VS</h2>
+            <p>
+              Informativní návrhy nepotvrzují přijetí peněz. Dostupnost pohybu pro párování není ověřena.
+            </p>
+            <p
+              :if={@bank_import && (@bank_import.scan_id || @bank_import.error)}
+              class="text-amber-700"
+            >
+              Poslední načítání banky není dokončené. Návrhy mohou být neaktuální.
+            </p>
+            <.link navigate={~p"/admin/billing/bank"} class="link">Bankovní pohyby a stav načítání</.link>
+            <div :for={row <- @bank_suggestions} class="rounded-lg border p-3">
+              <p>
+                {Presentation.amount(row.movement.amount)} · {Presentation.date(row.movement.paid_on)} · {row.movement.counterparty} · VS {row.movement.variable_symbol}
+              </p>
+              <p>
+                Cílový doklad: {row.document.number} · rozdíl {Presentation.amount(row.difference)}
+              </p>
+              <p>{row.reason}</p>
+            </div>
+          </div>
           <h2 class="text-xl font-bold">Skutečně přijaté platby a vratky</h2>
           <p>
             Před vyúčtováním vznikne k přijaté záloze daňový doklad. Při vracení zdaněné zálohy nejprve vystavte opravu. Vratka pouze eviduje provedený převod.

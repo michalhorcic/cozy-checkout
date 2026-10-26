@@ -60,6 +60,7 @@ defmodule CozyCheckoutWeb.Router do
       layout: {CozyCheckoutWeb.Layouts, :admin} do
       live "/", DashboardLive
       live "/billing/settings", BillingLive.Settings
+      live "/billing/bank", BillingLive.Bank
       live "/billing/documents/:id", BillingLive.Documents, :show
       live "/billing", BillingLive.Documents, :index
       live "/accommodation-prices", BillingLive.Seasons

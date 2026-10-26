@@ -94,6 +94,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
       <div class="max-w-6xl mx-auto space-y-6">
         <h1 class="text-3xl font-bold">Doklady z rezervací</h1>
         <nav class="flex gap-3">
+          <.link navigate={~p"/admin/billing/bank"} class="link">Bankovní pohyby</.link>
           <.link navigate={~p"/admin/billing"} class="link">Seznam dokladů</.link><.link
             navigate={~p"/admin/billing/settings"}
             class="link"

@@ -237,3 +237,56 @@ Testy nevytvářejí skutečné doklady. Pokrývají HTTP/importní chyby, timeo
 uložené ID, opakování po ztracené odpovědi, stavy workeru, součty, smíšené sazby,
 historickou DPH, slevy, spropitné, soft delete, kombinované úhrady a shodu VS
 s QR. Skutečné číselníky a vzdálenou idempotenci je nutné ověřit samostatně.
+
+## Načítání banky pro ubytování (samostatný čtecí blok)
+
+Samostatný přepínač `ABRA_ACCOMMODATION_BANK_ENABLED=true` zapíná načítání
+každých 15 minut. Výchozí stav je vypnutý a nezávisí na přepínači exportu
+`ABRA_ACCOMMODATION_ENABLED`. Používá stejnou pobytovou cílovou instanci,
+firmu, přístupové údaje a `ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE` jako zálohové
+výzvy. `ABRA_ACCOMMODATION_ENABLED_FROM` omezuje návrhy na nové pobyty.
+Před zapnutím je nutné spustit přidávací migraci bankovních tabulek.
+
+Přehled **Doklady z rezervací → Bankovní pohyby** (`/admin/billing/bank`)
+chrání stávající admin PIN. Zobrazuje částku v měně pohybu, datum, VS,
+protistranu, vzdálené ID, návrh cílového dokladu, rozdíl a důvod ruční kontroly.
+Návrhy se zobrazují i ve fakturaci pobytu. Tlačítko **Načíst banku** zařadí
+Oban job; **Obnovit přehled** načte místní stav včetně posledního úspěchu,
+chyby a případného neúplného průchodu. Import má vlastní frontové úlohy,
+barový export se nemění.
+
+Import pouze čte `banka.json`, řadí podle ID a stránkuje po 100 záznamech.
+V databázi uchovává pouze nakonfigurovaný účet, příjmy i výdaje, původní data
+pohybu a stav hlášeného párování. Identita je jedinečná podle instance, firmy,
+evidence a vzdáleného ID. Stránka a bod pokračování se zapisují atomicky pod
+zámkem; opakování aktualizuje stejný pohyb. Každá nová dokončená synchronizace
+prochází celou evidenci bez filtru data, takže zahrne i pozdní starší pohyby,
+změny a chybějící záznamy. Chybějící záznamy označí až dokončený průchod,
+fyzicky je nemaže. Při výpadku pokračuje od uložené stránky.
+
+Jde o vědomou mezietapu oproti Changes API v plánu: úplný průchod je dražší
+a stránkování přes offset neposkytuje konzistentní vzdálený snapshot.
+Souběžné změny evidence mohou do příštího úplného průchodu způsobit vynechání
+nebo označení přítomného pohybu jako chybějícího. Před potvrzováním plateb je
+nutné ověřit počáteční synchronizaci, Changes API a úplnost sledování změn
+vazeb proti konkrétní testovací firmě. Tento blok tuto záruku neposkytuje.
+
+Návrh vyžaduje příjem v CZK se správným VS vydané výzvy nebo konečné faktury
+nového, nesmazaného pobytu. VS se porovnává přesně včetně úvodních nul.
+Starý VS výzvy vede ke konečné faktuře stejného pobytu, pokud již existuje.
+Rozdíl se počítá proti částce výzvy, nebo zbývající úhradě konečné faktury
+po místních platbách a opravách. Již evidované místní platby vyvolají upozornění
+na možnou duplicitu. Výdaje, cizí měny, chybějící VS, chybějící pohyby,
+nejednoznačnost a hlášené párování zůstávají bez návrhu k ruční kontrole.
+
+**Návrhy nepotvrzují dostupnost částky.** Ani `sparovano=false` nevylučuje
+částečné nebo konfliktní párování. Vazby a volnou částku bude muset budoucí
+potvrzovací blok ověřit novým čtením přímo v ABRA. Import nevolá
+`Billing.record_payment/2`, nevytváří ZDD ani neprovádí vzdálené zápisy.
+Stávající ruční evidence skutečných plateb zůstává samostatná.
+
+Zásadní testy jsou v `abra_bank_test.exs` a `abra_bank_live_test.exs`: opakování,
+stránkování a výpadek, starší pohyb, změna a chybějící pohyb, účet, měna, směr,
+párování, starší pobyty, izolace firem, starý VS a absence finančních zápisů,
+PIN ochrana. HTTP se simuluje přes `Req.Test`. Lokální testy nebyly spuštěny;
+výsledky CI ověří uživatel. Skutečné API testovací firmy nebylo ověřeno.
