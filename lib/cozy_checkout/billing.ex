@@ -745,6 +745,32 @@ defmodule CozyCheckout.Billing do
     end)
   end
 
+  @doc "Preview the ZDD that an explicitly confirmed bank advance will issue."
+  def preview_advance_payment(booking_id, amount, paid_on) do
+    transaction(fn ->
+      booking = lock_booking!(booking_id)
+      advance_payment_preview!(booking, Money.decimal(amount), paid_on)
+    end)
+  end
+
+  defp advance_payment_preview!(booking, amount, paid_on) do
+    if final_document(booking.id),
+      do: fail("Vyúčtování již existuje; příjem nelze potvrdit jako zálohu")
+
+    if Date.compare(paid_on, today()) == :gt, do: fail("Platba nemůže být v budoucnu")
+
+    if Date.compare(paid_on, booking.check_out_date || paid_on) != :lt,
+      do: fail("Pro platbu při dokončení pobytu nejprve vystavte konečnou fakturu")
+
+    data =
+      build_preview!(booking.id, "tax_receipt", %{"amount" => to_string(amount)})
+      |> Map.put(:tax_date, paid_on)
+      |> Map.put(:due_on, paid_on)
+      |> Map.delete(:token)
+
+    Map.put(data, :token, digest(data))
+  end
+
   def record_payment(booking_id, attrs) do
     transaction(fn ->
       booking = lock_booking!(booking_id)
@@ -806,7 +832,7 @@ defmodule CozyCheckout.Billing do
               payment
             else
               preview =
-                build_preview!(booking_id, "tax_receipt", %{"amount" => to_string(payment.amount)})
+                advance_payment_preview!(booking, payment.amount, payment.paid_on)
 
               # Overpayments are accepted and taxed too, even above the expected stay price.
               tax_doc =

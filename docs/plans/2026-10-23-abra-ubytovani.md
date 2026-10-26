@@ -465,3 +465,26 @@ Podrobnosti, konfigurace a limity jsou v [provozní dokumentaci](../integrations
 
 Zbývající účetní exporty, ověření API a celý finanční cyklus tento blok neuzavírá.
 Lokální testy nebyly spuštěny podle pravidel repozitáře; výsledky CI ověří uživatel.
+
+### Navazující potvrzení bankovní zálohy a export ZDD
+
+Uživatel autorizoval implementaci dalšího bloku a poskytl znovu XML
+`zdd-doklad-o-platbe.xml`. Účetní kódy a účty se přebírají z jeho hlavičky
+souhrnného ZDD jako konfigurovatelné výchozí hodnoty. Poplatek se podle vzoru
+vede v `sumOsv`, odděleně od zdanitelné nuly; číslo a haléřové částky zůstávají
+místní. Řada účetní a zaokrouhlení na koruny se nepřebírají.
+
+Samostatný vypínač chrání ruční potvrzení celého bankovního příjmu k již
+exportované výzvě. Potvrzení vždy nově čte pohyb, vazby včetně částek a výzvu.
+Platba, místní ZDD a požadavek na přenos vznikají atomicky s jedinečnou vazbou
+na pohyb. Worker používá stabilní identitu ZDD, páruje existující banku a
+připojí ZDD; před opakováním i po operacích čte výsledek a konflikty zastavuje.
+Změna již potvrzeného pohybu nemění vydané doklady nebo platby.
+
+Ověřování skutečné ABRA provede uživatel na lokálu. Projektové testy přes
+Req.Test jsou připraveny pro CI; toto prostředí nemá síťové povolení ani
+přístupy k testovací firmě. Účetní shoda celého cyklu, tvar a úplnost odpovědí
+relací i dopady automatizací musí být potvrzeny před ostrým zapnutím.
+První potvrzovací blok nezahrnuje doplatek konečné faktury, zálohu bez výzvy,
+přeplatek nad zbývající částku výzvy, rozdělení pohybu ani vratky.
+Provozní postup a mapování jsou v dokumentaci ABRA_INTEGRATION.md.

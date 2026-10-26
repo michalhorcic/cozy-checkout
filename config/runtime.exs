@@ -168,6 +168,20 @@ accommodation_enabled_from =
 config :cozy_checkout, :abra_accommodation,
   enabled: System.get_env("ABRA_ACCOMMODATION_ENABLED", "false") == "true",
   bank_enabled: System.get_env("ABRA_ACCOMMODATION_BANK_ENABLED", "false") == "true",
+  bank_confirmation_enabled:
+    System.get_env("ABRA_ACCOMMODATION_BANK_CONFIRMATION_ENABLED", "false") == "true",
+  # Accounting defaults copied from the supplied ZDD example; confirmation stays opt-in.
+  tax_receipt_outside_mode: System.get_env("ABRA_ACCOMMODATION_ZDD_OUTSIDE_MODE", "sumOsv"),
+  tax_receipt_type_code: System.get_env("ABRA_ACCOMMODATION_ZDD_TYPE_CODE", "ZDD"),
+  tax_receipt_vat_code: System.get_env("ABRA_ACCOMMODATION_ZDD_VAT_CODE", "01-02"),
+  tax_receipt_vat_report_code:
+    System.get_env("ABRA_ACCOMMODATION_ZDD_VAT_REPORT_CODE", "A.4-5.AUTO"),
+  tax_receipt_operation_code:
+    System.get_env("ABRA_ACCOMMODATION_ZDD_OPERATION_CODE", "ZÁLOHA PŘIJATÁ"),
+  tax_receipt_primary_account: System.get_env("ABRA_ACCOMMODATION_ZDD_PRIMARY_ACCOUNT", "324999"),
+  tax_receipt_counter_account: System.get_env("ABRA_ACCOMMODATION_ZDD_COUNTER_ACCOUNT", "324001"),
+  tax_receipt_vat12_account: System.get_env("ABRA_ACCOMMODATION_ZDD_VAT12_ACCOUNT", "343200"),
+  tax_receipt_vat21_account: System.get_env("ABRA_ACCOMMODATION_ZDD_VAT21_ACCOUNT", "343100"),
   enabled_from: accommodation_enabled_from,
   base_url: System.get_env("ABRA_ACCOMMODATION_BASE_URL", abra_connection[:base_url]),
   company_id: System.get_env("ABRA_ACCOMMODATION_COMPANY_ID", abra_connection[:company_id]),
