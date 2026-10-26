@@ -23,10 +23,10 @@ dokladů.
 Spusťte přidávací migraci `20261026180000_add_accommodation_export_verification.exs`
 a migraci `20261026180100_normalize_final_export_kind.exs`, která sjednotí
 interní označení existujících exportů bez změny jejich účetních podkladů.
-Pro zapnutí doplňte ke stávajícímu nastavení ubytování:
+Pro zapnutí celé integrace ubytování stačí společný přepínač:
 
 ```sh
-ABRA_ACCOMMODATION_FINAL_ENABLED=true
+ABRA_ACCOMMODATION_ENABLED=true
 ```
 
 URL, firma a přístupy se přebírají ze stávající konfigurace ABRA pro ubytování;

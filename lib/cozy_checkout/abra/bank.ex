@@ -8,7 +8,7 @@ defmodule CozyCheckout.Abra.Bank do
   alias CozyCheckout.Workers.AbraBankWorker
 
   @page_size 100
-  def enabled?, do: Accommodation.config()[:bank_enabled] == true
+  def enabled?, do: Accommodation.enabled?()
 
   def enqueue do
     if configured?() do
@@ -266,8 +266,7 @@ defmodule CozyCheckout.Abra.Bank do
         Map.put(base, :reason, "Neplatná částka příjmu")
 
       movement.pairing == "paired" ->
-        if (cfg[:bank_confirmation_enabled] == true or
-              cfg[:final_bank_confirmation_enabled] == true) and
+        if cfg[:enabled] == true and
              match?(%DateTime{}, cfg[:enabled_from]) do
           candidate = match_documents(base, cfg)
 

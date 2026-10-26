@@ -542,7 +542,7 @@ výzev a konečných faktur, viditelné chyby v přehledech a obnovu bez nutnost
 otevírat jednotlivé detaily. Vystavení dokladů a potvrzení plateb zůstává
 výslovným úkonem obsluhy. Automatické párování plateb není součástí bloku.
 
-Samostatný vypínač `ABRA_ACCOMMODATION_AUTO_EXPORT_ENABLED` zařazuje pouze
+Společný vypínač `ABRA_ACCOMMODATION_ENABLED` zařazuje pouze
 nově vystavené podporované doklady zapojených pobytů. Jedinečný požadavek
 se uloží atomicky s dokladem; příprava payloadu i HTTP běží až na pozadí.
 Konečná faktura může čekat na zdrojové ZDD bez vyčerpání přenosových pokusů.
@@ -556,3 +556,14 @@ záloh a doplatků a administrace: všechny prošly (Elixir 1.20.4 / OTP 27).
 Prošly také formátování, kompilace s warnings-as-errors a kontrola diffu.
 Celá projektová sada ani mix precommit neběžely; CI ověří uživatel.
 Živá ABRA zde nebyla volána.
+
+
+Na navazující výslovný požadavek uživatele byly provozní přepínače sjednoceny
+pod `ABRA_ACCOMMODATION_ENABLED`: automatický export, konečné faktury, banka,
+potvrzování záloh a doplatků. Ostatní nastavení a hranice zapojení pobytů
+zůstávají zachované; jednotlivá potvrzení plateb jsou nadále ruční.
+Původní dílčí přepínače popsané v historických blocích se již nepoužívají.
+
+Po sjednocení přepínačů prošlo 74 cílených testů exportů, banky a
+administrace na Elixiru 1.20.4 / OTP 27, formátování a kompilace
+s warnings-as-errors. Další migrace není potřeba.

@@ -373,7 +373,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     )
 
     on_exit(fn -> Application.put_env(:cozy_checkout, :abra_accommodation, previous) end)
-    doc = issue!(booking, "advance")
+    doc = issue_without_abra!(booking, "advance")
     {:ok, view, _} = live(conn, "/admin/billing/documents/#{doc.id}")
     assert has_element?(view, "#accommodation-abra-export", "Exportovat do ABRA")
     view |> element("#accommodation-abra-export") |> render_click()
@@ -392,7 +392,6 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
 
     Application.put_env(:cozy_checkout, :abra_accommodation,
       enabled: true,
-      auto_export_enabled: true,
       enabled_from: ~U[2020-01-01 00:00:00Z],
       base_url: "https://accounting.test",
       company_id: "test",

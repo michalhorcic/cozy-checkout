@@ -10,14 +10,12 @@ defmodule CozyCheckout.Abra.Accommodation do
   def enabled?, do: config()[:enabled] == true
   def get_export(document_id), do: Repo.get_by(AccommodationExport, document_id: document_id)
 
-  def automatic?, do: config()[:auto_export_enabled] == true
-
   @doc "Persist an export intent in the document-issuance transaction. No HTTP or payload preparation."
   def enqueue_issued(doc) do
     cfg = config()
     booking = Repo.get!(Booking, doc.booking_id)
 
-    if automatic?() and enabled?() and doc.kind in ["advance", "final"] and
+    if enabled?() and doc.kind in ["advance", "final"] and
          is_nil(booking.deleted_at) and match?(%DateTime{}, cfg[:enabled_from]) and
          DateTime.compare(booking.inserted_at, cfg[:enabled_from]) != :lt do
       if not Repo.in_transaction?(), do: raise("Export intent requires the issuance transaction")

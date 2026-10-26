@@ -16,7 +16,7 @@ defmodule CozyCheckout.Abra.FinalBankPayments do
     FinalInvoiceVerification
   }
 
-  def enabled?, do: Accommodation.config()[:final_bank_confirmation_enabled] == true
+  def enabled?, do: Accommodation.enabled?()
   def payable(doc), do: Decimal.add(doc.total, Money.total(doc.snapshot["deductions"] || []))
 
   def local_preview(doc, movement) do

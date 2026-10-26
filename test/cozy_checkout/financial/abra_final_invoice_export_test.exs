@@ -37,7 +37,6 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
       tax_receipt_vat12_account: "343200",
       tax_receipt_vat21_account: "343100",
       tax_receipt_outside_mode: "sumOsv",
-      final_enabled: true,
       final_type_code: "FAKTURA",
       final_vat_code: "01-02",
       final_vat_report_code: "A.4-5.AUTO",
@@ -56,7 +55,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
     end)
 
     fixture = billing_fixture()
-    advance = issue!(fixture.booking, "advance", %{"percent" => "100"})
+    advance = issue_without_abra!(fixture.booking, "advance", %{"percent" => "100"})
     {:ok, source_export} = Accommodation.enqueue(advance.id)
 
     source_export =
@@ -161,9 +160,9 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
 
   test "disabled final export and unfinished source prevent enqueue", ctx do
     confirmation = seed_receipt(ctx, "600", 100)
-    doc = issue!(ctx.booking, "final")
+    doc = issue_without_abra!(ctx.booking, "final")
 
-    configure(ctx.cfg, final_enabled: false)
+    configure(ctx.cfg, enabled: false)
     assert {:error, _} = Accommodation.enqueue(doc.id)
 
     configure(ctx.cfg, [])
@@ -282,12 +281,6 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
     confirmation = seed_receipt(ctx, "600.00", 100)
     confirmation |> Ecto.Changeset.change(state: "queued") |> Repo.update!()
 
-    Application.put_env(
-      :cozy_checkout,
-      :abra_accommodation,
-      Keyword.put(ctx.cfg, :auto_export_enabled, true)
-    )
-
     doc = issue!(ctx.booking, "final")
     export = Accommodation.get_export(doc.id)
     Agent.update(ctx.remote, &%{&1 | export: export})
@@ -371,7 +364,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
   end
 
   defp final_export(ctx) do
-    doc = issue!(ctx.booking, "final")
+    doc = issue_without_abra!(ctx.booking, "final")
     assert {:ok, export} = Accommodation.enqueue(doc.id)
     Agent.update(ctx.remote, &%{&1 | export: export})
     {doc, export}

@@ -10,8 +10,7 @@ defmodule CozyCheckout.AbraBankTest do
     options = Req.default_options()
 
     Application.put_env(:cozy_checkout, :abra_accommodation,
-      enabled: false,
-      bank_enabled: true,
+      enabled: true,
       enabled_from: ~U[2020-01-01 00:00:00Z],
       base_url: "https://accounting.test",
       company_id: "bank-test",
@@ -29,7 +28,12 @@ defmodule CozyCheckout.AbraBankTest do
     end)
 
     fixture = billing_fixture()
-    Map.put(fixture, :document, issue!(fixture.booking, "advance", %{"amount" => "1234.57"}))
+
+    Map.put(
+      fixture,
+      :document,
+      issue_without_abra!(fixture.booking, "advance", %{"amount" => "1234.57"})
+    )
   end
 
   test "repeated reads update one identity and suggest a final invoice for the old advance VS without financial writes",
@@ -42,7 +46,7 @@ defmodule CozyCheckout.AbraBankTest do
     assert first.document.id == doc.id
     assert Decimal.equal?(first.difference, 0)
 
-    final = issue!(booking, "final")
+    final = issue_without_abra!(booking, "final")
     expect_page([Map.put(movement, "sumCelkem", "1300.00")])
     assert :ok = Bank.sync()
     [second] = Bank.for_booking(booking.id)
@@ -83,7 +87,7 @@ defmodule CozyCheckout.AbraBankTest do
     assert Enum.all?(Bank.list(), &is_nil(&1.document))
   end
 
-  test "wrong account is excluded; currency, outgoing, pairing, missing VS and old bookings remain without suggestions",
+  test "invalid movements stay without suggestions; paired candidates require verification",
        %{booking: booking, document: doc} do
     rows = [
       movement(1, doc.variable_symbol) |> Map.put("banka", "code:OTHER"),
@@ -98,9 +102,16 @@ defmodule CozyCheckout.AbraBankTest do
     expect_page(rows)
     assert :ok = Bank.sync()
     assert Repo.aggregate(BankMovement, :count) == 5
-    assert Enum.all?(Bank.list(), &is_nil(&1.document))
+
+    assert Enum.all?(
+             Enum.reject(Bank.list(), &(&1.movement.remote_id == "4")),
+             &is_nil(&1.document)
+           )
+
     assert Decimal.equal?(Repo.get_by!(BankMovement, remote_id: "2").amount, 50)
-    assert Bank.for_booking(booking.id) == []
+    assert [paired] = Bank.for_booking(booking.id)
+    assert paired.document.id == doc.id
+    assert paired.reason =~ "ověřte"
 
     Repo.update_all(from(b in CozyCheckout.Bookings.Booking, where: b.id == ^booking.id),
       set: [inserted_at: ~U[2019-01-01 00:00:00Z]]
@@ -124,10 +135,10 @@ defmodule CozyCheckout.AbraBankTest do
     assert Bank.status().last_success_at == success
     assert Repo.aggregate(BankMovement, :count) == 1
 
-    configure(bank_enabled: false)
+    configure(enabled: false)
     assert :ok = Bank.sync()
     assert {:error, _} = Bank.enqueue()
-    configure(bank_enabled: true, company_id: "other-test")
+    configure(enabled: true, company_id: "other-test")
     assert Bank.list() == []
     assert Bank.status() == nil
     assert Repo.aggregate(BankImport, :count) == 1

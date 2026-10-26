@@ -15,7 +15,7 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
 
   alias CozyCheckout.Billing.{Document, Payment}
 
-  def enabled?(cfg \\ Accommodation.config()), do: cfg[:final_enabled] == true
+  def enabled?(cfg \\ Accommodation.config()), do: cfg[:enabled] == true
 
   def prepare(%Document{kind: "final"} = doc, cfg) do
     required =

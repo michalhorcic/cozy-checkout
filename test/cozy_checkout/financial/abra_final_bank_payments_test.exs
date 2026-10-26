@@ -25,7 +25,6 @@ defmodule CozyCheckout.AbraFinalBankPaymentsTest do
 
     cfg = [
       enabled: true,
-      final_bank_confirmation_enabled: true,
       enabled_from: ~U[2020-01-01 00:00:00Z],
       base_url: "https://accounting.test",
       company_id: "accounting-test",
@@ -42,7 +41,6 @@ defmodule CozyCheckout.AbraFinalBankPaymentsTest do
       tax_receipt_vat12_account: "343200",
       tax_receipt_vat21_account: "343100",
       tax_receipt_outside_mode: "sumOsv",
-      final_enabled: true,
       final_type_code: "FAKTURA",
       final_vat_code: "01-02",
       final_vat_report_code: "A.4-5.AUTO",
@@ -64,7 +62,7 @@ defmodule CozyCheckout.AbraFinalBankPaymentsTest do
     # The advance is a deduction, never a direct payment of the final invoice.
     advance = receipt!(fixture.booking, "600.00")
     zdd = Billing.get_document!(advance.tax_document_id)
-    doc = issue!(fixture.booking, "final")
+    doc = issue_without_abra!(fixture.booking, "final")
     {:ok, totals} = TaxReceiptBuilder.summary_totals(zdd.lines, cfg)
 
     sources = [

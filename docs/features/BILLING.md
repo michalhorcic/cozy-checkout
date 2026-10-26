@@ -1,6 +1,6 @@
 # Fakturace pobytů
 
-Po zapnutí automatického exportu se vystavené zálohové výzvy a konečné
+Po zapnutí `ABRA_ACCOMMODATION_ENABLED=true` se vystavené zálohové výzvy a konečné
 faktury samy zařadí k přenosu do ABRA. Stav a případné chyby jsou vidět
 v seznamu dokladů, u pobytu a ve společném přehledu **Přenosy do ABRA**,
 kde lze přenos obnovit. Vystavení dokladu ani potvrzení platby se neautomatizuje.

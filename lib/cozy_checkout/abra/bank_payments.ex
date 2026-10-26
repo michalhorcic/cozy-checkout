@@ -19,7 +19,7 @@ defmodule CozyCheckout.Abra.BankPayments do
   @salt "abra-bank-confirmation"
   def enabled_for?("final"), do: CozyCheckout.Abra.FinalBankPayments.enabled?()
   def enabled_for?(_), do: enabled?()
-  def enabled?, do: Accommodation.config()[:bank_confirmation_enabled] == true
+  def enabled?, do: Accommodation.enabled?()
   def state_label("queued"), do: "Čeká na přenos"
   def state_label("retrying"), do: "Opakuje se přenos"
   def state_label("failed"), do: "Chyba přenosu"

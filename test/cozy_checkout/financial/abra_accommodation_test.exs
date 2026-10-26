@@ -29,7 +29,12 @@ defmodule CozyCheckout.AbraAccommodationTest do
     end)
 
     fixture = billing_fixture()
-    Map.put(fixture, :document, issue!(fixture.booking, "advance", %{"amount" => "1234.57"}))
+
+    Map.put(
+      fixture,
+      :document,
+      issue_without_abra!(fixture.booking, "advance", %{"amount" => "1234.57"})
+    )
   end
 
   test "builder preserves the issued snapshot and non-accounting advance mapping", %{
@@ -149,7 +154,8 @@ defmodule CozyCheckout.AbraAccommodationTest do
     configure(enabled: true, enabled_from: DateTime.add(DateTime.utc_now(), 60, :second))
     assert {:error, _} = Accommodation.enqueue(doc.id)
     configure(enabled_from: ~U[2020-01-01 00:00:00Z])
-    final = issue!(booking, "final")
+    final = issue_without_abra!(booking, "final")
+    configure(enabled: false)
     assert {:error, _} = Accommodation.enqueue(final.id)
     assert Repo.aggregate(AccommodationExport, :count) == 0
   end
@@ -225,7 +231,6 @@ defmodule CozyCheckout.AbraAccommodationTest do
 
   test "automatic issuance commits one intent and job, repeats safely and rolls back together",
        ctx do
-    configure(auto_export_enabled: true)
     assert Accommodation.get_export(ctx.document.id) == nil
 
     assert {:error, :cancelled} =
@@ -251,7 +256,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
   end
 
   test "configuration failure never blocks issuance and can resume the same intent", ctx do
-    configure(auto_export_enabled: true, username: nil, base_url: nil, company_id: nil)
+    configure(username: nil, base_url: nil, company_id: nil)
     doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
     export = Accommodation.get_export(doc.id)
     assert {:cancel, _} = Accommodation.sync(export.id)
@@ -275,7 +280,6 @@ defmodule CozyCheckout.AbraAccommodationTest do
 
   test "automatic timeout resumes a frozen payload by external identity without a second POST",
        ctx do
-    configure(auto_export_enabled: true)
     doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
     export = Accommodation.get_export(doc.id)
 
@@ -300,17 +304,14 @@ defmodule CozyCheckout.AbraAccommodationTest do
   end
 
   test "automatic export respects the switch, cutoff and saved target without backfill", ctx do
-    configure(
-      auto_export_enabled: true,
-      enabled_from: DateTime.add(DateTime.utc_now(), 60, :second)
-    )
+    configure(enabled_from: DateTime.add(DateTime.utc_now(), 60, :second))
 
     old = issue!(ctx.booking, "advance", %{"amount" => "500"})
     assert Accommodation.get_export(old.id) == nil
-    configure(enabled_from: ~U[2020-01-01 00:00:00Z], auto_export_enabled: false)
+    configure(enabled_from: ~U[2020-01-01 00:00:00Z], enabled: false)
     manual = issue!(ctx.booking, "advance", %{"amount" => "500"})
     assert Accommodation.get_export(manual.id) == nil
-    configure(auto_export_enabled: true)
+    configure(enabled: true)
     doc = issue!(ctx.booking, "advance", %{"amount" => "500"})
     export = Accommodation.get_export(doc.id)
     configure(company_id: "other")

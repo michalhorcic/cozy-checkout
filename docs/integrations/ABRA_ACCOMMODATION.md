@@ -25,7 +25,7 @@ server a firmu pomocí `ABRA_ACCOMMODATION_BASE_URL` a
 
 | Proměnná | Význam |
 | --- | --- |
-| `ABRA_ACCOMMODATION_ENABLED` | `true` povolí ruční export a provádění jobů; výchozí `false`. |
+| `ABRA_ACCOMMODATION_ENABLED` | `true` povolí celou synchronizaci ubytování včetně automatického exportu a banky; výchozí `false`. |
 | `ABRA_ACCOMMODATION_ENABLED_FROM` | Povinný okamžik zapojení **nově vytvořených rezervací**, ISO 8601 s časovou zónou, např. `2026-10-26T12:00:00+01:00`. Posuzuje se `booking.inserted_at`, nikoli datum příjezdu. |
 | `ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE` | Typ zálohy bez `code:`, výchozí `ZÁLOHA` podle XML. |
 | `ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE` | Kód účtu bez `code:`, výchozí `BANKOVNÍ ÚČET` podle XML. Musí odpovídat účtu na místním dokladu. |

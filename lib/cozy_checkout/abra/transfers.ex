@@ -61,12 +61,6 @@ defmodule CozyCheckout.Abra.Transfers do
       ) ->
         "Konfigurace ABRA není úplná; doplňte připojení a mapování výzev."
 
-      not Accommodation.automatic?() ->
-        "Automatický export je vypnutý; doklady lze dál exportovat ručně."
-
-      cfg[:final_enabled] != true ->
-        "Export konečných faktur je vypnutý; jejich automatické požadavky čekají."
-
       true ->
         nil
     end

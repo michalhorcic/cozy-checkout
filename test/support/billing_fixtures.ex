@@ -95,6 +95,23 @@ defmodule CozyCheckout.BillingFixtures do
     doc
   end
 
+  # A document issued before integration was enabled, for explicit-export scenarios.
+  def issue_without_abra!(booking, kind, attrs \\ %{}) do
+    previous = Application.get_env(:cozy_checkout, :abra_accommodation, [])
+
+    Application.put_env(
+      :cozy_checkout,
+      :abra_accommodation,
+      Keyword.put(previous, :enabled, false)
+    )
+
+    try do
+      issue!(booking, kind, attrs)
+    after
+      Application.put_env(:cozy_checkout, :abra_accommodation, previous)
+    end
+  end
+
   def receipt!(booking, amount, overrides \\ %{}) do
     attrs =
       Map.merge(
