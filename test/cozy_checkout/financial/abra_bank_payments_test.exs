@@ -438,7 +438,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
               [movement] = payload["banka"]
               assert movement["@create"] == "fail"
               refute Map.has_key?(movement, "sumCelkem")
-              assert movement["sparovani"]["uhrazovanaFak"]["@castka"] == "600.00"
+              assert hd(movement["sparovani"]["uhrazovanaFak"])["@castka"] == "600.00"
               {:pair, %{paired: true}}
 
             hd(payload["faktura-vydana"])["vytvor-vazbu-zdd"] ->

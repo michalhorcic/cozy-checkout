@@ -509,3 +509,25 @@ navazujícími samostatnými kroky.
 Podklady pro společný test jsou v [ABRA_ACCOUNTANT_REVIEW.md](../integrations/ABRA_ACCOUNTANT_REVIEW.md).
 Projektové testy se lokálně nespouštěly; výsledky CI a živé účetní ověření
 provádí uživatel na lokálu s účetní. Původní podmínky ostrého spuštění trvají.
+
+### Navazující bankovní doplatek konečné faktury (2026-10-26)
+
+PR #44 byl ověřen jako sloučený; blok navazuje na `origin/main` s jeho
+posledními opravami čtení odpočtových vazeb. Výslovný požadavek uživatele
+rozšiřuje potvrzení banky o konečné faktury: stejná jedinečná evidence
+pohybu, místní platba bez ZDD a párování existující banky s existující
+fakturou. Záloha se započítává pouze odpočtem, nikoli přímou úhradou.
+
+Samostatný vypínač, čerstvý náhled i kontrola před potvrzením, zámek pobytu
+a pohybu, atomická místní platba/outbox a opakování přes Oban zachovávají
+historické doklady a PDF. Zpětná kontrola rozlišuje odpočty a přímé úhrady,
+ověřuje částku vazby, její cíle i zůstatek; po timeoutu přijme přesnou již
+existující vazbu. Podporuje několik samostatných doplatků. Přeplatky,
+rozdělení pohybu, vratky a opravy zůstávají odmítnuté.
+
+Oficiální dokumentace párování potvrzuje JSON `uhrazovanaFak` jako kolekci
+s `@content`, `@type` a `@castka`; opraven také dosavadní klient sdílený se
+zálohami. Provozní postup, konfigurace a limity jsou doplněné v
+[ABRA_INTEGRATION.md](../integrations/ABRA_INTEGRATION.md#bankovní-doplatek-konečné-faktury).
+Zásadní testy používají Req.Test. Podle AGENTS.md nebyly lokálně spuštěny,
+CI a skutečnou ABRA ověří uživatel.

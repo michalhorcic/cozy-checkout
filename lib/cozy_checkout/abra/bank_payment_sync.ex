@@ -18,6 +18,9 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
     cfg = Accommodation.config()
 
     cond do
+      confirmation.kind == "final" ->
+        CozyCheckout.Abra.FinalBankPayments.sync(confirmation, cfg, final?)
+
       confirmation.state in ["synced", "conflict"] ->
         :ok
 
@@ -38,7 +41,7 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
             Repo.transaction(fn ->
               current =
                 Repo.one!(
-                  from c in BankConfirmation, where: c.id == ^confirmation.id, lock: "FOR UPDATE"
+                  from(c in BankConfirmation, where: c.id == ^confirmation.id, lock: "FOR UPDATE")
                 )
 
               if current.state != "conflict" do
@@ -68,6 +71,15 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
   def recheck(id) do
     confirmation = Repo.get!(BankConfirmation, id) |> Repo.preload(:movement)
     cfg = Accommodation.config()
+
+    if confirmation.kind == "final" do
+      CozyCheckout.Abra.FinalBankPayments.recheck(confirmation, cfg)
+    else
+      recheck_advance(confirmation, cfg)
+    end
+  end
+
+  defp recheck_advance(confirmation, cfg) do
     source = Repo.get!(AccommodationExport, confirmation.source_export_id)
     [invoice] = confirmation.receipt_payload["winstrom"]["faktura-vydana"]
 

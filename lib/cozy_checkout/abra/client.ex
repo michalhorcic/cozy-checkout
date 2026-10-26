@@ -192,11 +192,13 @@ defmodule CozyCheckout.Abra.Client do
             "@update" => "ok",
             "id" => bank_id,
             "sparovani" => %{
-              "uhrazovanaFak" => %{
-                "@castka" => to_string(amount),
-                "@type" => "faktura-vydana",
-                "filter" => to_string(invoice_id)
-              },
+              "uhrazovanaFak" => [
+                %{
+                  "@castka" => to_string(amount),
+                  "@type" => "faktura-vydana",
+                  "@content" => to_string(invoice_id)
+                }
+              ],
               "zbytek" => "ne"
             }
           }

@@ -266,7 +266,9 @@ defmodule CozyCheckout.Abra.Bank do
         Map.put(base, :reason, "Neplatná částka příjmu")
 
       movement.pairing == "paired" ->
-        if cfg[:bank_confirmation_enabled] == true and match?(%DateTime{}, cfg[:enabled_from]) do
+        if (cfg[:bank_confirmation_enabled] == true or
+              cfg[:final_bank_confirmation_enabled] == true) and
+             match?(%DateTime{}, cfg[:enabled_from]) do
           candidate = match_documents(base, cfg)
 
           Map.put(
@@ -306,7 +308,13 @@ defmodule CozyCheckout.Abra.Bank do
         target =
           Repo.one(from d in Document, where: d.booking_id == ^booking_id and d.kind == "final")
 
-        target = target || if(length(matches) == 1, do: hd(matches))
+        target =
+          if base.confirmation do
+            payment = Repo.get!(CozyCheckout.Billing.Payment, base.confirmation.payment_id)
+            Repo.get!(Document, payment.document_id)
+          else
+            target || if(length(matches) == 1, do: hd(matches))
+          end
 
         if target do
           received = Billing.list_payments(booking_id)

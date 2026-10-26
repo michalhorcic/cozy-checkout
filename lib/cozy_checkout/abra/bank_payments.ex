@@ -17,6 +17,8 @@ defmodule CozyCheckout.Abra.BankPayments do
   alias CozyCheckout.Workers.AbraBankPaymentWorker
 
   @salt "abra-bank-confirmation"
+  def enabled_for?("final"), do: CozyCheckout.Abra.FinalBankPayments.enabled?()
+  def enabled_for?(_), do: enabled?()
   def enabled?, do: Accommodation.config()[:bank_confirmation_enabled] == true
   def state_label("queued"), do: "Čeká na přenos"
   def state_label("retrying"), do: "Opakuje se přenos"
@@ -75,10 +77,10 @@ defmodule CozyCheckout.Abra.BankPayments do
   def retry(id) do
     # Recheck uses fresh HTTP reads outside the local transaction. It never
     # edits a remote document or creates a new local payment/ZDD.
-    with :ok <- CozyCheckout.Abra.BankPaymentSync.recheck(id) do
+    with :ok <- retry_check(id) do
       Repo.transaction(fn ->
         confirmation =
-          Repo.one!(from c in BankConfirmation, where: c.id == ^id, lock: "FOR UPDATE")
+          Repo.one!(from(c in BankConfirmation, where: c.id == ^id, lock: "FOR UPDATE"))
 
         if not same_target?(confirmation, Accommodation.config()),
           do: Repo.rollback("Cílová firma se změnila")
@@ -93,7 +95,22 @@ defmodule CozyCheckout.Abra.BankPayments do
     end
   end
 
+  defp retry_check(id) do
+    case CozyCheckout.Abra.BankPaymentSync.recheck(id) do
+      {:ok, _} -> :ok
+      {:conflict, reason} -> {:error, reason}
+      result -> result
+    end
+  end
+
   defp prepare(movement_id, document_id) do
+    case Billing.get_document!(document_id).kind do
+      "final" -> CozyCheckout.Abra.FinalBankPayments.prepare(movement_id, document_id)
+      _ -> prepare_advance(movement_id, document_id)
+    end
+  end
+
+  defp prepare_advance(movement_id, document_id) do
     cfg = Accommodation.config()
     movement = Repo.get!(BankMovement, movement_id)
     doc = Billing.get_document!(document_id)
@@ -145,11 +162,17 @@ defmodule CozyCheckout.Abra.BankPayments do
   defp record(prepared, expected_digest) do
     Repo.transaction(fn ->
       doc = prepared.document
-      Repo.one!(from b in Booking, where: b.id == ^doc.booking_id, lock: "FOR UPDATE")
+      booking = Repo.one!(from(b in Booking, where: b.id == ^doc.booking_id, lock: "FOR UPDATE"))
+
+      if doc.kind == "final" and not is_nil(booking.deleted_at),
+        do: Repo.rollback("Pobyt byl mezitím odstraněn")
+
+      if doc.kind == "final" and Accommodation.get_export(doc.id) != prepared.export,
+        do: Repo.rollback("Stav exportu konečné faktury se mezitím změnil")
 
       movement =
         Repo.one!(
-          from m in BankMovement, where: m.id == ^prepared.movement.id, lock: "FOR UPDATE"
+          from(m in BankMovement, where: m.id == ^prepared.movement.id, lock: "FOR UPDATE")
         )
 
       case get(movement.id) do
@@ -165,46 +188,49 @@ defmodule CozyCheckout.Abra.BankPayments do
              do: Repo.rollback("Pohyb byl mezitím změněn importem")
 
           current_preview =
-            case Billing.preview_advance_payment(
-                   doc.booking_id,
-                   movement.amount,
-                   movement.paid_on
-                 ) do
+            case local_preview(doc, movement) do
               {:ok, preview} -> preview
               {:error, reason} -> Repo.rollback(reason)
             end
 
           current = %{prepared | tax_preview: current_preview, config: Accommodation.config()}
 
-          if digest(current) != expected_digest or not enabled?(),
+          if digest(current) != expected_digest or not enabled_for?(doc.kind),
             do: Repo.rollback("Návrh nebo konfigurace se mezitím změnily")
 
           recorded =
             Repo.one(
-              from p in Payment,
+              from(p in Payment,
                 where: p.document_id == ^doc.id and p.kind == "receipt",
                 select: coalesce(sum(p.amount), 0)
+              )
             )
 
-          if Decimal.gt?(movement.amount, Decimal.sub(doc.total, recorded)),
-            do: Repo.rollback("Na výzvě již místně zbývá méně; přeplatek vyřešte ručně")
+          limit =
+            if doc.kind == "final",
+              do: CozyCheckout.Abra.FinalBankPayments.payable(doc),
+              else: doc.total
+
+          if Decimal.gt?(movement.amount, Decimal.sub(limit, recorded)),
+            do: Repo.rollback("Na dokladu již místně zbývá méně; přeplatek vyřešte ručně")
 
           duplicate =
             Repo.exists?(
-              from p in Payment,
+              from(p in Payment,
                 left_join: c in BankConfirmation,
                 on: c.payment_id == p.id,
                 where:
                   p.booking_id == ^doc.booking_id and p.method == "bank" and p.kind == "receipt",
                 where:
                   p.amount == ^movement.amount and p.paid_on == ^movement.paid_on and is_nil(c.id)
+              )
             )
 
           if duplicate,
             do:
               Repo.rollback("Stejná bankovní platba již může být zapsána ručně; ověřte duplicitu")
 
-          if Repo.exists?(from p in Payment, where: p.request_id == ^movement.id),
+          if Repo.exists?(from(p in Payment, where: p.request_id == ^movement.id)),
             do: Repo.rollback("Identita pohybu již byla použita")
 
           attrs = %{
@@ -223,17 +249,12 @@ defmodule CozyCheckout.Abra.BankPayments do
               {:error, reason} -> Repo.rollback(reason)
             end
 
-          tax_doc = Billing.get_document!(payment.tax_document_id)
-
-          payload =
-            case TaxReceiptBuilder.build(tax_doc, current.config) do
-              {:ok, payload} -> payload
-              {:error, reason} -> Repo.rollback(reason)
-            end
+          payload = receipt_payload(payment, current.config, doc.kind)
 
           confirmation =
             %BankConfirmation{}
             |> Ecto.Changeset.change(
+              kind: doc.kind,
               movement_id: movement.id,
               payment_id: payment.id,
               source_export_id: prepared.export.id,
@@ -252,6 +273,21 @@ defmodule CozyCheckout.Abra.BankPayments do
     end)
   end
 
+  defp local_preview(%{kind: "final"} = doc, movement),
+    do: CozyCheckout.Abra.FinalBankPayments.local_preview(doc, movement)
+
+  defp local_preview(doc, movement),
+    do: Billing.preview_advance_payment(doc.booking_id, movement.amount, movement.paid_on)
+
+  defp receipt_payload(_payment, _cfg, "final"), do: %{}
+
+  defp receipt_payload(payment, cfg, _) do
+    case TaxReceiptBuilder.build(Billing.get_document!(payment.tax_document_id), cfg) do
+      {:ok, payload} -> payload
+      {:error, reason} -> Repo.rollback(reason)
+    end
+  end
+
   defp existing(confirmation, document_id) do
     payment = Repo.get!(Payment, confirmation.payment_id)
 
@@ -263,7 +299,7 @@ defmodule CozyCheckout.Abra.BankPayments do
   defp digest(prepared) do
     {prepared.document.id, prepared.export.id,
      BankVerification.fingerprint(prepared.bank_snapshot), prepared.tax_preview.token,
-     Keyword.drop(prepared.config, [:username, :password])}
+     Map.get(prepared, :remote_digest), Keyword.drop(prepared.config, [:username, :password])}
     |> :erlang.term_to_binary()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16()

@@ -470,7 +470,8 @@ vyúčtování nejsou schválené vzorem finální faktury. Výchozí `FAKTURA` 
 pracovní návrh kódu typu; musí v testovací firmě existovat, jinak jej nastavte
 na skutečný vhodný typ. Zdanitelné sazby jsou omezené na 12 % a 21 %,
 poplatek mimo DPH používá dosavadní explicitní mapování. Přeplatky, vratky,
-opravy, nepřenesené ZDD a již místně zaznamenané doplatky se zastaví.
+opravy, nepřenesené ZDD a doplatky zapsané před exportem se zastaví.
+Doplatek po dokončeném exportu lze potvrdit v navazujícím bankovním bloku níže.
 
 Zásadní testy jsou v `abra_final_invoice_export_test.exs`: několik dílčích ZDD,
 haléře, poplatek, žádná přijatá záloha, nulový doplatek, vypnutí a ochrana uloženého cíle,
@@ -481,3 +482,57 @@ Položky vydané faktury se načítají přes relaci `polozkyDokladu`; název
 `polozkyFaktury` slouží pro zápis položek do faktury. Čtení stránkuje všechny
 položky i vazby. Chybějící relace se nepovažuje za prázdný seznam: chyba
 obsahuje konkrétní název relace a HTTP stav, aby šla příčina dohledat.
+
+## Bankovní doplatek konečné faktury
+
+Po migraci `20261026200000_add_bank_confirmation_kind.exs` zapněte
+`ABRA_ACCOMMODATION_FINAL_BANK_CONFIRMATION_ENABLED=true`. Výchozí stav je
+vypnutý. Používá stejné připojení a účet jako ubytování; vyžaduje zapnutou
+integraci ubytování a dokončený export konečné faktury včetně odpočtů (#44).
+Přepínač potvrzování záloh není pro doplatky nutný. Načítání banky se dál
+řídí `ABRA_ACCOMMODATION_BANK_ENABLED`.
+
+V přehledu **Bankovní pohyby** pod administrátorským PINem načtěte banku,
+vyberte návrh podle VS konečné faktury a použijte **Zkontrolovat přijetí
+doplatku**. Náhled nic nezapisuje. Výslovné **Potvrdit doplatek a spárovat
+fakturu** znovu načte banku, její vazby a konečnou fakturu s položkami,
+odpočty a zbývající částkou. Změna návrhu vyžaduje nový náhled.
+
+Potvrzení atomicky uloží místní platbu a požadavek pro Oban pod jedinečnou
+identitou bankovního pohybu. Nevytváří ZDD ani nový bankovní pohyb.
+Worker páruje existující banku s existující fakturou. PDF a vydané doklady
+zůstávají neměnné. Přenos následně ověří vazbu i přesnou částku a celkový
+součet přímých úhrad a zůstatek faktury, včetně původních odpočtů ZDD.
+
+**Odpočet není přímá úhrada.** Pobyt 7 500 Kč minus ZDD 3 750 Kč dává
+konečnou fakturu na 3 750 Kč, přímo uhrazeno 0 Kč. Až nový bankovní příjem
+3 750 Kč zvýší přímé úhrady na 3 750 Kč a sníží zůstatek na nulu. Původní
+zálohu znovu nepárujte. Lze potvrdit také několik samostatných příjmů
+(například 1 000 Kč a 2 750 Kč). Každý pohyb se použije celý na jednu fakturu.
+Platba před DUZP vyžaduje řešení zálohy, není doplatkem.
+
+Přeplatek nad místní nebo vzdálený zůstatek, cizí či částečná vazba,
+rozdělení pohybu, jiná měna, vratky a opravy se odmítají s vysvětlením.
+Potvrzení podle starého VS výzvy se pro doplatek odmítne; původní již
+potvrzená záloha zůstává v přehledu navázaná na svůj původní doklad.
+Neznámé přímé úhrady v ABRA vyžadují účetní kontrolu.
+
+Stav a chyba jsou viditelné u pohybu. Po timeoutu se nejprve načtou existující
+vazby: přesná již provedená úhrada se přijme bez nového párování. Ruční
+**Znovu ověřit a obnovit přenos** používá stejnou místní platbu a potvrzení;
+nezakládejte náhradní platbu. Konflikt se změněným pohybem se nesmí řešit
+přepisováním místních dokladů. Nejprve prověřte skutečný účetní stav.
+HTTP probíhá mimo místní transakce; souběžný zásah v ABRA může způsobit
+zastavení při následné kontrole i po úspěšném párování.
+
+Formát ověřen podle [oficiálního párování plateb](https://demo.flexibee.eu/devdoc/parovani-plateb):
+JSON kolekce `sparovani.uhrazovanaFak` s `@content`, `@type=faktura-vydana`
+a `@castka`, režim `zbytek=ne`, zákaz vytvoření banky `@create=fail`.
+Explicitní částka umožňuje dílčí úhradu faktury při spotřebování celého pohybu.
+Operace je dokumentovaná jako idempotentní. Podle [čtení vazeb úhrad](https://podpora.flexibee.eu/cs/articles/3422310-pouziti-detail-custom-pro-zjisteni-zpusobu-parovani)
+je konec `a` faktura a `b` bankovní pohyb; čtení podporuje také `/v2/c/`.
+
+Zásadní scénáře přes `Req.Test` jsou v `abra_final_bank_payments_test.exs`.
+Lokální testy nebyly spuštěny podle AGENTS.md; CI ověří uživatel. Před ostrým
+použitím ověřte v testovací firmě celý i dílčí doplatek, saldokonto,
+odpočty, vrácené grafy vazeb a obnovu po timeoutu. Živá ABRA zde nebyla volána.
