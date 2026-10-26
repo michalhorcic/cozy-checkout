@@ -68,6 +68,31 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  @doc "Reads one bank page; no date filter, so late imports are included."
+  def bank_page(offset, limit, cfg) do
+    url = "#{cfg[:base_url]}/c/#{cfg[:company_id]}/banka.json"
+
+    case Req.get(url,
+           params: [detail: "full", limit: limit, start: offset, order: "id"],
+           auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
+           headers: [{"Accept", "application/json"}],
+           retry: false
+         ) do
+      {:ok, %Req.Response{status: 200, body: %{"winstrom" => %{"banka" => rows}}}}
+      when is_list(rows) ->
+        {:ok, rows}
+
+      {:ok, %Req.Response{status: 200}} ->
+        {:error, "ABRA vrátila neplatný seznam bankovních pohybů"}
+
+      {:ok, %Req.Response{status: status}} ->
+        {:error, "ABRA banka HTTP #{status}"}
+
+      {:error, exception} ->
+        {:error, Exception.message(exception)}
+    end
+  end
+
   defp parse_abra_id(%{"winstrom" => %{"results" => [%{} = result | _]}}) do
     case Map.get(result, "errors") do
       [error | _] = errors ->

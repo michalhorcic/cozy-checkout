@@ -167,6 +167,7 @@ accommodation_enabled_from =
 
 config :cozy_checkout, :abra_accommodation,
   enabled: System.get_env("ABRA_ACCOMMODATION_ENABLED", "false") == "true",
+  bank_enabled: System.get_env("ABRA_ACCOMMODATION_BANK_ENABLED", "false") == "true",
   enabled_from: accommodation_enabled_from,
   base_url: System.get_env("ABRA_ACCOMMODATION_BASE_URL", abra_connection[:base_url]),
   company_id: System.get_env("ABRA_ACCOMMODATION_COMPANY_ID", abra_connection[:company_id]),
