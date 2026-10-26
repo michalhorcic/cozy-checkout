@@ -17,6 +17,7 @@ defmodule CozyCheckoutWeb.AdminNavigation do
       {"Přehled", "/admin", "hero-squares-2x2"},
       {"Rezervace", "/admin/bookings/calendar", "hero-calendar-days"},
       {"Stravování", "/admin/meal-planner", "hero-clipboard-document-list"},
+      {"Doklady", "/admin/billing", "hero-document-text"},
       {"Barový sklad", "/admin/bar-stock", "hero-beaker"},
       {"Emaily hostům", "/admin/emails", "hero-envelope"},
       {"Barové účty a platby", "/admin/orders", "hero-banknotes"}
@@ -54,9 +55,6 @@ defmodule CozyCheckoutWeb.AdminNavigation do
        [
          {"Barové platby", "/admin/payments"},
          {"Ekonomika pobytů", "/admin/economy"},
-         {"Faktury z rezervací", "/admin/billing"},
-         {"Ceník ubytování", "/admin/accommodation-prices"},
-         {"Nastavení fakturace", "/admin/billing/settings"},
          {"Statistiky prodeje", "/admin/statistics"},
          {"Export POHODA", "/admin/pohoda-export"}
        ]}
@@ -66,8 +64,12 @@ defmodule CozyCheckoutWeb.AdminNavigation do
   def active?(path, "/admin"), do: path in ["/admin", "/admin/"]
 
   def active?(path, "/admin/bookings/calendar") do
-    String.starts_with?(path, "/admin/bookings") and not String.ends_with?(path, "/menu")
+    String.starts_with?(path, "/admin/bookings") and
+      not String.ends_with?(path, "/menu") and not String.ends_with?(path, "/billing")
   end
+
+  def active?(path, "/admin/billing"),
+    do: not is_nil(CozyCheckoutWeb.BillingNavigation.section(path))
 
   def active?(path, "/admin/meal-planner") do
     Enum.any?(

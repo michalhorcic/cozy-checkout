@@ -112,17 +112,13 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app
+      flash={@flash}
+      content_class="mx-auto w-full max-w-7xl space-y-6"
+      main_class="px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
       <div class="max-w-6xl mx-auto space-y-6">
         <h1 class="text-3xl font-bold">Doklady z rezervací</h1>
-        <nav class="flex gap-3">
-          <.link navigate={~p"/admin/billing/transfers"} class="link">Přenosy do ABRA</.link>
-          <.link navigate={~p"/admin/billing/bank"} class="link">Bankovní pohyby</.link>
-          <.link navigate={~p"/admin/billing"} class="link">Seznam dokladů</.link><.link
-            navigate={~p"/admin/billing/settings"}
-            class="link"
-          >Nastavení</.link><.link navigate={~p"/admin/accommodation-prices"} class="link">Ceník ubytování</.link>
-        </nav>
         <div :if={!@document} class="space-y-4">
           <.form
             for={@filter_form}

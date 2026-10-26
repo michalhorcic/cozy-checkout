@@ -430,10 +430,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             else: "Odjezd není vyplněný"}
         </p>
         <nav class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <.link navigate={~p"/admin/accommodation-prices"} class="link">Ceník ubytování</.link><.link
-            navigate={~p"/admin/billing/settings"}
-            class="link"
-          >Dodavatel a číselné řady</.link><button class="link" phx-click="refresh">Obnovit přehled</button>
+          <button class="link" phx-click="refresh">Obnovit přehled</button>
         </nav>
         <p
           :if={@personal?}
