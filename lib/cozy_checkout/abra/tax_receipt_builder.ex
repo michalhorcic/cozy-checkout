@@ -54,7 +54,7 @@ defmodule CozyCheckout.Abra.TaxReceiptBuilder do
             {"postcode", "psc"},
             {"company_id", "ic"},
             {"vat_id", "dic"},
-            {"email", "email"}
+            {"email", "kontaktEmail"}
           ],
           invoice,
           fn {source, target}, acc ->

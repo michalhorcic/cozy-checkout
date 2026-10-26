@@ -125,13 +125,18 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
       issued_on: Billing.today(),
       due_on: Billing.today(),
       tax_date: Billing.today(),
-      snapshot: %{"currency" => "CZK", "customer" => %{"name" => "Test"}},
+      snapshot: %{
+        "currency" => "CZK",
+        "customer" => %{"name" => "Test", "email" => "test@example.invalid"}
+      },
       lines: lines,
       total: Money.total(lines)
     }
 
     assert {:ok, payload} = TaxReceiptBuilder.build(doc, cfg)
     [invoice] = payload["winstrom"]["faktura-vydana"]
+    assert invoice["kontaktEmail"] == "test@example.invalid"
+    refute Map.has_key?(invoice, "email")
     assert invoice["kod"] == doc.number
     assert invoice["id"] == "ext:cozy-checkout:accommodation:#{doc.id}"
     assert invoice["sumZklSniz"] == "241107.14"
@@ -330,6 +335,59 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert reason =~ "bez odpovídajícího"
   end
 
+  test "legacy email payload can be rechecked and resumed without another payment or ZDD", ctx do
+    {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    {:ok, confirmation} = BankPayments.confirm(preview.token)
+    [invoice] = confirmation.receipt_payload["winstrom"]["faktura-vydana"]
+    legacy = invoice |> Map.put("email", invoice["kontaktEmail"]) |> Map.delete("kontaktEmail")
+
+    confirmation
+    |> Ecto.Changeset.change(receipt_payload: %{"winstrom" => %{"faktura-vydana" => [legacy]}})
+    |> Repo.update!()
+
+    Agent.update(ctx.remote, &%{&1 | fault: :create_timeout})
+    assert {:error, _} = BankPaymentSync.sync(confirmation.id)
+
+    confirmation
+    |> Ecto.Changeset.change(state: "conflict", error: "legacy verification failure")
+    |> Repo.update!()
+
+    assert {:ok, queued} = BankPayments.retry(confirmation.id)
+    assert queued.id == confirmation.id
+    assert queued.state == "queued"
+    assert Agent.get(ctx.remote, & &1.posts) == [:create]
+    assert :ok = BankPaymentSync.sync(confirmation.id)
+    assert Enum.sort(Agent.get(ctx.remote, & &1.posts)) == Enum.sort([:create, :pair, :link])
+    assert Repo.aggregate(Payment, :count) == 1
+    assert Repo.aggregate(Document, :count) == 2
+  end
+
+  test "mismatched receipt identifies fields and cannot resume until fresh data matches the immutable payload",
+       ctx do
+    {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    {:ok, confirmation} = BankPayments.confirm(preview.token)
+    Agent.update(ctx.remote, &%{&1 | fault: :create_timeout})
+    assert {:error, _} = BankPaymentSync.sync(confirmation.id)
+    original = Agent.get(ctx.remote, & &1.receipt)
+
+    Agent.update(
+      ctx.remote,
+      &%{&1 | receipt: Map.merge(original, %{"varSym" => "different", "sumCelkem" => "601"})}
+    )
+
+    assert {:cancel, reason} = BankPaymentSync.sync(confirmation.id)
+    assert reason =~ "varSym"
+    assert reason =~ "sumCelkem"
+    refute reason =~ "different"
+    assert {:error, _} = BankPayments.retry(confirmation.id)
+    assert Agent.get(ctx.remote, & &1.posts) == [:create]
+    Agent.update(ctx.remote, &%{&1 | receipt: original})
+    assert {:ok, _} = BankPayments.retry(confirmation.id)
+    assert :ok = BankPaymentSync.sync(confirmation.id)
+    assert Repo.aggregate(Payment, :count) == 1
+    assert Repo.aggregate(Document, :count) == 2
+  end
+
   defp respond(conn, remote, bank, export) do
     state = Agent.get(remote, & &1)
     [source] = export.payload["winstrom"]["faktura-vydana"]
@@ -401,7 +459,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
               {:create,
                %{
                  receipt:
-                   Map.merge(invoice, %{
+                   Map.merge(Map.delete(invoice, "email"), %{
                      "id" => 84,
                      "sumCelkem" => to_string(total),
                      "storno" => false

@@ -137,11 +137,11 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
             </p>
             <p :if={row.confirmation.error} class="text-red-700">{row.confirmation.error}</p>
             <button
-              :if={row.confirmation.state in ["failed", "retrying"]}
+              :if={row.confirmation.state in ["failed", "retrying", "conflict"]}
               class="btn btn-sm"
               phx-click="retry-payment-sync"
               phx-value-id={row.confirmation.id}
-            >Opakovat účetní synchronizaci</button>
+            >Znovu ověřit a obnovit přenos</button>
           </div>
           <div :if={row.document}>
             <.link navigate={~p"/admin/bookings/#{row.booking_id}/billing"} class="link">Pobyt · {row.document.number}</.link>

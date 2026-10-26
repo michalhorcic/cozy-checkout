@@ -73,17 +73,24 @@ defmodule CozyCheckout.Abra.BankPayments do
   end
 
   def retry(id) do
-    Repo.transaction(fn ->
-      confirmation = Repo.one!(from c in BankConfirmation, where: c.id == ^id, lock: "FOR UPDATE")
-      if confirmation.state == "conflict", do: Repo.rollback("Konflikt vyžaduje účetní kontrolu")
+    # Recheck uses fresh HTTP reads outside the local transaction. It never
+    # edits a remote document or creates a new local payment/ZDD.
+    with :ok <- CozyCheckout.Abra.BankPaymentSync.recheck(id) do
+      Repo.transaction(fn ->
+        confirmation =
+          Repo.one!(from c in BankConfirmation, where: c.id == ^id, lock: "FOR UPDATE")
 
-      if confirmation.state != "synced" do
-        {:ok, _} = %{confirmation_id: id} |> AbraBankPaymentWorker.new() |> Oban.insert()
-        confirmation |> Ecto.Changeset.change(state: "queued", error: nil) |> Repo.update!()
-      else
-        confirmation
-      end
-    end)
+        if not same_target?(confirmation, Accommodation.config()),
+          do: Repo.rollback("Cílová firma se změnila")
+
+        if confirmation.state != "synced" do
+          {:ok, _} = %{confirmation_id: id} |> AbraBankPaymentWorker.new() |> Oban.insert()
+          confirmation |> Ecto.Changeset.change(state: "queued", error: nil) |> Repo.update!()
+        else
+          confirmation
+        end
+      end)
+    end
   end
 
   defp prepare(movement_id, document_id) do

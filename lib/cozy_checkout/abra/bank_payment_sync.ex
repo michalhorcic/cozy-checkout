@@ -1,7 +1,7 @@
 defmodule CozyCheckout.Abra.BankPaymentSync do
   @moduledoc "Recovery by stable invoice identity and read-back of existing bank relationships."
   import Ecto.Query
-  alias CozyCheckout.{Billing, Repo}
+  alias CozyCheckout.Repo
 
   alias CozyCheckout.Abra.{
     Accommodation,
@@ -9,7 +9,8 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
     BankConfirmation,
     BankPayments,
     BankVerification,
-    Client
+    Client,
+    TaxReceiptVerification
   }
 
   def sync(id, final? \\ false) do
@@ -63,6 +64,43 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
     end
   end
 
+  @doc "Read-only preflight before manually resuming an existing confirmation."
+  def recheck(id) do
+    confirmation = Repo.get!(BankConfirmation, id) |> Repo.preload(:movement)
+    cfg = Accommodation.config()
+    source = Repo.get!(AccommodationExport, confirmation.source_export_id)
+    [invoice] = confirmation.receipt_payload["winstrom"]["faktura-vydana"]
+
+    cond do
+      confirmation.state == "synced" ->
+        :ok
+
+      not BankPayments.enabled?() or not Accommodation.enabled?() ->
+        {:error, "Účetní synchronizace je vypnutá"}
+
+      not BankPayments.same_target?(confirmation, cfg) ->
+        {:error, "Cílová firma se změnila"}
+
+      true ->
+        with :ok <- source_ready(source, cfg),
+             {:ok, remote_source} <- read_source(source, cfg),
+             {:ok, remote_receipt} <- lookup_receipt(invoice, cfg),
+             {:ok, links} <- checked_bank(confirmation, source, remote_receipt, cfg),
+             :ok <-
+               BankPayments.verify_source(
+                 source,
+                 remote_source,
+                 confirmation.movement.amount,
+                 links.source_paired?
+               ) do
+          :ok
+        else
+          {:conflict, reason} -> {:error, reason}
+          {:error, reason} -> {:error, reason}
+        end
+    end
+  end
+
   defp deliver(confirmation, cfg) do
     source = Repo.get!(AccommodationExport, confirmation.source_export_id)
     [invoice] = confirmation.receipt_payload["winstrom"]["faktura-vydana"]
@@ -112,7 +150,7 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
         {:ok, nil}
 
       {:ok, remote} ->
-        with :ok <- verify_receipt(invoice, remote), do: {:ok, remote}
+        with :ok <- conflict(TaxReceiptVerification.check(invoice, remote)), do: {:ok, remote}
 
       error ->
         error
@@ -166,44 +204,6 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
   defp require_pair(_), do: {:error, "ABRA nepotvrdila vazbu úhrady výzvy"}
   defp require_complete(%{source_paired?: true, receipt_linked?: true}), do: :ok
   defp require_complete(_), do: {:error, "ABRA nepotvrdila obě účetní vazby"}
-
-  defp verify_receipt(invoice, remote) do
-    exact =
-      ~w(kod varSym typDokl mena bankovniUcet clenDph clenKonVykDph typUcOp primUcet protiUcet dphSnizUcet dphZaklUcet)
-
-    totals =
-      ~w(sumOsv sumZklSniz sumDphSniz sumZklSniz2 sumDphSniz2 sumZklZakl sumDphZakl szbDphSniz szbDphZakl)
-
-    dates = ~w(datVyst datSplat duzpPuv datUcto)
-
-    expected =
-      Billing.Money.sum(
-        Enum.map(
-          ~w(sumOsv sumZklSniz sumDphSniz sumZklZakl sumDphZakl),
-          &Decimal.new(invoice[&1])
-        )
-      )
-
-    buyer =
-      Enum.filter(~w(nazFirmy ulice mesto psc ic dic email stat), &Map.has_key?(invoice, &1))
-
-    valid? =
-      Enum.all?(exact ++ buyer, &(remote[&1] == invoice[&1])) and
-        Enum.all?(totals, &BankVerification.equal?(remote[&1], Decimal.new(invoice[&1]))) and
-        Enum.all?(
-          dates,
-          &(is_binary(remote[&1]) and String.slice(remote[&1], 0, 10) == invoice[&1])
-        ) and
-        remote["ucetni"] in [true, "true"] and remote["bezPolozek"] in [true, "true"] and
-        remote["storno"] in [false, "false"] and
-        BankVerification.equal?(remote["sumCelkem"], expected) and
-        ((is_integer(remote["id"]) and remote["id"] > 0) or
-           (is_binary(remote["id"]) and remote["id"] != ""))
-
-    if valid?,
-      do: :ok,
-      else: {:conflict, "ZDD v ABRA neodpovídá místnímu snapshotu; nic se nepřepisuje"}
-  end
 
   defp conflict({:error, reason}), do: {:conflict, reason}
   defp conflict(result), do: result

@@ -380,7 +380,11 @@ konflikt; aplikace nepřepisuje místní historii ani neopravuje cizí párován
 Změna, storno nebo nepřítomnost již potvrzeného pohybu při dalším importu
 vyvolá stav **Vyžaduje účetní kontrolu**, včetně již přeneseného potvrzení.
 Takový konflikt nemá automatické opakování ani tlačítko vrácení platby.
-Běžnou chybu přenosu lze opakovat samostatným tlačítkem.
+Tlačítko **Znovu ověřit a obnovit přenos** lze použít i po konfliktu.
+Nejdřív pouze čte aktuální ZDD, výzvu, pohyb a vazby. Pokud stále neodpovídají
+uloženému potvrzení, přenos neobnoví. Pokud všechny kontroly projdou, zařadí
+přenos stejného potvrzení; nová místní platba ani nový místní ZDD nevzniká.
+Stávající vzdálené ZDD se dál dohledává pod stejnou stabilní identitou.
 
 ### Lokální ověření před zapnutím
 
@@ -405,3 +409,12 @@ modul banky, prázdný typ a žádné platné ID účetní vazby. Neodvozuje tí
 částku; ostatní vazby a jejich částky musí stále projít úplnou kontrolou.
 Odmítnutí nově rozlišuje jiný cílový doklad, částečnou částku, chybějící
 protějšek a nerozpoznaný typ a uvádí identifikátory pro dohledání v ABRA.
+
+
+Kontaktní e-mail se na vydané faktuře posílá jako `kontaktEmail`.
+Dřívější uložené požadavky mohly obsahovat nesprávný klíč `email`, který ABRA
+nepodporuje. Kontrola jeho vrácení již nevyžaduje; jejich uložený payload ani
+vydané doklady se nepřepisují. Nové požadavky kontrolují skutečné pole
+`kontaktEmail`. Při neshodě ZDD hláška vypisuje názvy odlišných polí bez jejich
+hodnot a bez zveřejnění osobních údajů. Chybná částka, daňové nebo účetní
+nastavení dál blokují přenos.
