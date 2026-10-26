@@ -257,7 +257,10 @@ barový export se nemění.
 
 Import pouze čte `banka.json`, řadí podle ID a stránkuje po 100 záznamech.
 V databázi uchovává pouze nakonfigurovaný účet, příjmy i výdaje, původní data
-pohybu a stav hlášeného párování. Identita je jedinečná podle instance, firmy,
+pohybu a stav hlášeného párování. Účet bankovního pohybu čte z pole `banka`
+(relace `bankovni-ucet`); fakturové pole `bankovniUcet` se zde nepoužívá.
+Chyba neplatného pohybu uvádí pořadí záznamu a název odmítnutého pole,
+bez hodnot a osobních údajů. Identita je jedinečná podle instance, firmy,
 evidence a vzdáleného ID. Stránka a bod pokračování se zapisují atomicky pod
 zámkem; opakování aktualizuje stejný pohyb. Každá nová dokončená synchronizace
 prochází celou evidenci bez filtru data, takže zahrne i pozdní starší pohyby,

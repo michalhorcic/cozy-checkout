@@ -120,39 +120,48 @@ defmodule CozyCheckout.Abra.Bank do
   end
 
   defp parse_rows(rows, state, cfg) do
-    Enum.reduce_while(rows, {:ok, []}, fn row, {:ok, acc} ->
+    rows
+    |> Enum.with_index(state.offset + 1)
+    |> Enum.reduce_while({:ok, []}, fn {row, index}, {:ok, acc} ->
       case parse(row, state, cfg) do
-        {:ok, attrs} -> {:cont, {:ok, [attrs | acc]}}
-        :skip -> {:cont, {:ok, acc}}
-        :error -> {:halt, {:error, "Neplatný bankovní pohyb; bod pokračování nebyl posunut"}}
+        {:ok, attrs} ->
+          {:cont, {:ok, [attrs | acc]}}
+
+        :skip ->
+          {:cont, {:ok, acc}}
+
+        {:error, field} ->
+          {:halt,
+           {:error,
+            "Neplatný bankovní pohyb (záznam #{index}, pole #{field}); bod pokračování nebyl posunut"}}
       end
     end)
   end
 
   defp parse(row, state, cfg) when is_map(row) do
-    if row["bankovniUcet"] != "code:#{cfg[:bank_account_code]}" and is_binary(row["bankovniUcet"]) do
+    if row["banka"] != "code:#{cfg[:bank_account_code]}" and is_binary(row["banka"]) do
       :skip
     else
       parse_movement(row, state, cfg)
     end
   end
 
-  defp parse(_, _, _), do: :error
+  defp parse(_, _, _), do: {:error, "záznam"}
 
   defp parse_movement(row, state, cfg) do
-    with id when is_integer(id) or is_binary(id) <- row["id"],
-         true <- to_string(id) != "",
-         account when is_binary(account) <- row["bankovniUcet"],
-         value = if(row["mena"] == "code:CZK", do: row["sumCelkem"], else: row["sumCelkemMen"]),
-         {:ok, amount} <- parse_decimal(value),
-         true <- not Decimal.nan?(amount) and not Decimal.inf?(amount),
-         date when is_binary(date) <- row["datVyst"],
-         {:ok, paid_on} <- Date.from_iso8601(String.slice(date, 0, 10)),
-         currency when is_binary(currency) <- row["mena"],
-         direction when is_binary(direction) <- row["typPohybuK"],
-         true <- is_nil(row["varSym"]) or is_binary(row["varSym"]),
-         true <- is_nil(row["nazFirmy"]) or is_binary(row["nazFirmy"]),
-         true <- is_nil(row["popis"]) or is_binary(row["popis"]) do
+    amount_field = if row["mena"] == "code:CZK", do: "sumCelkem", else: "sumCelkemMen"
+
+    with {:ok, id} <-
+           field(row, "id", &((is_integer(&1) and &1 > 0) or (is_binary(&1) and &1 != ""))),
+         {:ok, account} <- field(row, "banka", &is_binary/1),
+         {:ok, currency} <- field(row, "mena", &is_binary/1),
+         {:ok, amount} <- movement_amount(row, amount_field),
+         {:ok, date} <- field(row, "datVyst", &is_binary/1),
+         {:ok, paid_on} <- movement_date(date),
+         {:ok, direction} <- field(row, "typPohybuK", &is_binary/1),
+         {:ok, symbol} <- field(row, "varSym", &(is_nil(&1) or is_binary(&1))),
+         {:ok, counterparty} <- field(row, "nazFirmy", &(is_nil(&1) or is_binary(&1))),
+         {:ok, description} <- field(row, "popis", &(is_nil(&1) or is_binary(&1))) do
       {:ok,
        %{
          base_url: cfg[:base_url],
@@ -164,15 +173,34 @@ defmodule CozyCheckout.Abra.Bank do
          currency: currency,
          direction: direction,
          paid_on: paid_on,
-         variable_symbol: row["varSym"],
-         counterparty: row["nazFirmy"] || row["popis"],
+         variable_symbol: symbol,
+         counterparty: counterparty || description,
          raw: row,
          pairing: if(row["sparovano"] in [true, "true"], do: "paired", else: "unverified"),
          scan_id: state.scan_id,
          missing_at: nil
        }}
+    end
+  end
+
+  defp field(row, key, valid?) do
+    value = row[key]
+    if valid?.(value), do: {:ok, value}, else: {:error, key}
+  end
+
+  defp movement_amount(row, key) do
+    with {:ok, amount} <- parse_decimal(row[key]),
+         false <- Decimal.nan?(amount) or Decimal.inf?(amount) do
+      {:ok, amount}
     else
-      _ -> :error
+      _ -> {:error, key}
+    end
+  end
+
+  defp movement_date(date) do
+    case Date.from_iso8601(String.slice(date, 0, 10)) do
+      {:ok, date} -> {:ok, date}
+      _ -> {:error, "datVyst"}
     end
   end
 

@@ -37,6 +37,7 @@ defmodule CozyCheckout.AbraBankTest do
     movement = movement(1, doc.variable_symbol)
     expect_page([movement])
     assert :ok = Bank.sync()
+    refute Map.has_key?(movement, "bankovniUcet")
     [first] = Bank.for_booking(booking.id)
     assert first.document.id == doc.id
     assert Decimal.equal?(first.difference, 0)
@@ -85,7 +86,7 @@ defmodule CozyCheckout.AbraBankTest do
   test "wrong account is excluded; currency, outgoing, pairing, missing VS and old bookings remain without suggestions",
        %{booking: booking, document: doc} do
     rows = [
-      movement(1, doc.variable_symbol) |> Map.put("bankovniUcet", "code:OTHER"),
+      movement(1, doc.variable_symbol) |> Map.put("banka", "code:OTHER"),
       movement(2, doc.variable_symbol)
       |> Map.merge(%{"mena" => "code:EUR", "sumCelkemMen" => "50.00"}),
       movement(3, doc.variable_symbol) |> Map.put("typPohybuK", "typPohybu.vydej"),
@@ -116,7 +117,9 @@ defmodule CozyCheckout.AbraBankTest do
     assert :ok = Bank.sync()
     success = Bank.status().last_success_at
     expect_page([movement(2, doc.variable_symbol), %{"id" => 3}])
-    assert {:error, _} = Bank.sync()
+    assert {:error, reason} = Bank.sync()
+    assert reason =~ "záznam 2, pole banka"
+    assert Bank.status().error == reason
     assert Bank.status().offset == 0
     assert Bank.status().last_success_at == success
     assert Repo.aggregate(BankMovement, :count) == 1
@@ -133,7 +136,7 @@ defmodule CozyCheckout.AbraBankTest do
   defp movement(id, symbol) do
     %{
       "id" => id,
-      "bankovniUcet" => "code:TEST",
+      "banka" => "code:TEST",
       "sumCelkem" => "1234.57",
       "mena" => "code:CZK",
       "typPohybuK" => "typPohybu.prijem",
