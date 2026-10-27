@@ -173,7 +173,7 @@ defmodule CozyCheckout.Billing.Pdf do
       data["name"],
       data["street"],
       "#{data["postcode"]} #{data["city"]}",
-      data["country"],
+      Presentation.country_name(data["country"]),
       if(data["company_id"] not in [nil, ""], do: "IČO: #{data["company_id"]}"),
       if(data["vat_id"] not in [nil, ""], do: "DIČ: #{data["vat_id"]}"),
       data["registry"]

@@ -11,7 +11,7 @@ defmodule CozyCheckoutWeb.BillingLive.Settings do
     {"country", "Země (CZ)"},
     {"company_id", "IČO"},
     {"vat_id", "DIČ"},
-    {"registry", "Zápis v rejstříku (soud, oddíl, vložka)"},
+    {"registry", "Zápis v rejstříku (nepovinné)"},
     {"email", "E-mail"},
     {"phone", "Telefon"},
     {"bank_account", "Český účet (číslo/kód banky)"},

@@ -89,6 +89,28 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert document.snapshot["customer"]["country"] == ""
   end
 
+  test "new customers default to the Czech country name and retain its accounting code", %{
+    conn: conn,
+    booking: booking
+  } do
+    Repo.delete!(Billing.customer(booking.id))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+
+    selector = "#billing-customer input[name='buyer[country]'][value='Česká Republika']"
+    assert has_element?(view, selector)
+
+    view
+    |> form("#billing-customer", buyer: %{name: "Jana Nováková", country: "Česká Republika"})
+    |> render_submit()
+
+    assert Billing.customer(booking.id).data["country"] == "CZ"
+    document = issue!(booking, "final")
+    assert CozyCheckout.Billing.Pdf.html(document) =~ "Česká Republika"
+
+    {:ok, reloaded, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    assert has_element?(reloaded, selector)
+  end
+
   test "customer name validation keeps the entered optional details on error", %{
     conn: conn,
     booking: booking

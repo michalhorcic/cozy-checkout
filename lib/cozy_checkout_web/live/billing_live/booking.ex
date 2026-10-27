@@ -9,7 +9,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     {"street", "Ulice a číslo"},
     {"city", "Město"},
     {"postcode", "PSČ"},
-    {"country", "Země (CZ)"},
+    {"country", "Země"},
     {"company_id", "IČO"},
     {"vat_id", "DIČ"},
     {"email", "Fakturační e-mail"}
@@ -24,9 +24,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         do: %{
           "name" => booking.guest.name,
           "email" => booking.guest.email || "",
-          "country" => "CZ"
+          "country" => "Česká Republika"
         },
         else: buyer
+
+    buyer = Map.update(buyer, "country", "Česká Republika", &Presentation.country_name/1)
 
     {:ok,
      socket
