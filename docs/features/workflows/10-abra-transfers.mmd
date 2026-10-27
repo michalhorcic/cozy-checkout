@@ -1,0 +1,22 @@
+flowchart TD
+    accTitle: Přenos pobytových dokladů do ABRA a obnova chyb
+    accDescr: Zapojené nové rezervace automaticky řadí výzvy a konečné faktury k přenosu. Stav přenosu se sleduje samostatně a při chybě se obnovuje stejný požadavek.
+    issue["Vystavím zálohovou výzvu<br/>nebo konečnou fakturu"]
+    enabled{"Integrace je zapnutá<br/>pro tento nový pobyt?"}
+    local(["Doklad zůstává v aplikaci<br/>starší pobyty se automaticky nezapojují"])
+    queue["Aplikace automaticky zařadí přenos<br/>výpadek ABRA neruší vydaný doklad"]
+    review["Doklady → Přenosy do ABRA<br/>otevřu příslušný záznam"]
+    status{"Jaký je stav?"}
+    done(["Přeneseno<br/>úhradu ověřuji zvlášť"])
+    pending["Přenos je ve frontě nebo probíhá<br/>počkám a obnovím přehled"]
+    wait["Čeká na podklady<br/>dokončím zdrojové ZDD a bankovní vazby"]
+    fail["Chyba nebo nesoulad<br/>prověřím příčinu a případně účetní řešení"]
+    retry["Zvolím Ověřit a obnovit přenos<br/>pokračuje stejný požadavek"]
+    issue --> enabled
+    enabled -->|Ne| local
+    enabled -->|Ano| queue --> review --> status
+    status -->|Přeneseno| done
+    status -->|Ve frontě / probíhá| pending --> review
+    status -->|Čeká na podklady| wait --> retry
+    status -->|Chyba / opakování / konflikt| fail --> retry
+    retry --> review

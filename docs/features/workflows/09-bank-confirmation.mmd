@@ -1,0 +1,20 @@
+flowchart TD
+    accTitle: Potvrzení bankovní zálohy nebo doplatku
+    accDescr: Bankovní import pouze navrhuje shody. Až kontrola a výslovné potvrzení vytvoří platbu. Záloha tvoří ZDD, doplatek nikoli.
+    source["Bankovní pohyb už existuje v ABRA<br/>příslušná výzva nebo faktura je přenesena"]
+    import["Doklady → Bankovní pohyby<br/>Načíst banku nebo počkám na pravidelné načtení"]
+    suggestion{"Správný doklad<br/>podle VS?"}
+    inspect(["Prověřím VS, firmu, účet a přenos dokladu<br/>bez správného návrhu nic nepotvrzuji"])
+    check["Zvolím Zkontrolovat přijetí<br/>zálohy nebo doplatku"]
+    review["V náhledu ověřím částku, datum a protistranu<br/>aplikace znovu čte podklady z ABRA"]
+    kind{"Jaký doklad<br/>platím?"}
+    advance["Potvrdím zálohu a vystavím ZDD<br/>vznikne místní platba a ZDD"]
+    final["Potvrdím doplatek a spáruji fakturu<br/>vznikne místní platba, bez nového ZDD"]
+    sync["Proběhne účetní synchronizace<br/>a propojení s existujícím pohybem"]
+    done(["Zkontroluji stav přenosu a zůstatek<br/>každý další pohyb potvrzuji zvlášť"])
+    source --> import --> suggestion
+    suggestion -->|Ne nebo nesoulad| inspect
+    suggestion -->|Ano| check --> review --> kind
+    kind -->|Výzva; před dokončením pobytu| advance --> sync
+    kind -->|Konečná faktura; nejdříve v DUZP| final --> sync
+    sync --> done

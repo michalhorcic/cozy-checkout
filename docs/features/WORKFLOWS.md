@@ -1,163 +1,166 @@
 # Jak s aplikací pracovat — mapy postupů
 
-Začněte mapou aplikace. Pro první podrobný postup následuje příprava stravování
-a nákupu pro pobyt. Odkazy pod grafy vedou k podrobnějším návodům.
+Vyber si postup podle cíle. Grafy jsou vložené jako **PNG obrázky** i pro mobilní
+GitHub; odkaz **SVG** otevře vektorovou verzi pro zvětšení. **Mermaid** je upravitelný zdroj.
 
-Grafy jsou v Mermaid a zobrazují se přímo na GitHubu. Zůstávají textem vedle
-kódu, takže lze při změně chování upravit i příslušný postup.
+Obdélník je krok, kosočtverec rozhodnutí. Doporučené pořadí není vždy podmínkou
+uložení; automatické akce jsou v grafu výslovně popsané. Administrace vyžaduje PIN,
+hostovský POS zůstává veřejný.
 
-## 1. Mapa aplikace
+| Oblast | Postupy |
+| --- | --- |
+| Orientace a pobyty | [01. Mapa aplikace](#01-mapa-aplikace) · [02. Rezervace](#02-rezervace) · [03. Import rezervací](#03-import-rezervací) |
+| Kuchyň | [04. Stravování a nákup](#04-stravování-a-nákup) |
+| Pobytové finance | [05. Kalkulace a zálohová výzva](#05-kalkulace-a-zálohová-výzva) · [06. Zálohy a konečné vyúčtování](#06-zálohy-a-konečné-vyúčtování) · [07. Opravy a vratky](#07-opravy-a-vratky) · [08. PDF a odeslání dokladů](#08-pdf-a-odeslání-dokladů) |
+| ABRA a banka | [09. Potvrzení bankovní platby](#09-potvrzení-bankovní-platby) · [10. Přenosy do ABRA](#10-přenosy-do-abra) |
+| Bar a zásoby | [11. Barová spotřeba](#11-barová-spotřeba) · [12. Zaplacení baru](#12-zaplacení-baru) · [13. Produkty a ceny](#13-produkty-a-ceny) · [14. Barový sklad](#14-barový-sklad) · [15. Celkový sklad a naskladnění](#15-celkový-sklad-a-naskladnění) |
+| Komunikace a přehledy | [16. Emaily hostům](#16-emaily-hostům) · [17. Přehledy a statistiky](#17-přehledy-a-statistiky) · [18. Export do POHODA](#18-export-do-pohoda) |
 
-**Rezervace propojuje několik samostatných agend.** Větve neznamenají povinné
-pořadí: menu můžete připravovat souběžně s kalkulací a komunikací s hosty.
-Šipky v této mapě ukazují vztah nebo předání podkladů, nikoli automatické
-provedení dalšího kroku.
+## 01. Mapa aplikace
 
-```mermaid
-flowchart TD
-    booking["Rezervace<br/>ruční založení nebo import iCal"]
-    overview["Přehled a kalendář<br/>příjezdy, odjezdy, obsazenost a upozornění"]
-    food["Stravování rezervace<br/>penze, počty strávníků a hranice jídel"]
-    menu["Menu rezervace<br/>varianta, náhled a potvrzení"]
-    kitchen["Plán jídel a nákup<br/>porce pro výdej a suroviny podle receptů"]
-    calculation["Kalkulace pobytu<br/>osoby, noci, ceny a odběratel"]
-    billing["Pobytové doklady a platby<br/>zálohy, vyúčtování, PDF a odeslání"]
-    email["Emaily hostům<br/>výběr příjemců, náhled a odeslání"]
-    bar["Barový účet v POS<br/>host připisuje spotřebu"]
-    barpay["Platba baru<br/>obsluha s PINem, případně po částech"]
-    quick["Rychlý účet<br/>bez rezervace"]
-    catalog["Produkty, ceny a barový sklad<br/>příprava a průběžná správa baru"]
+Rezervace propojuje samostatné agendy. Větve této mapy ukazují vztahy, ne povinné pořadí práce.
 
-    booking --> overview
-    booking --> food --> menu --> kitchen
-    booking --> calculation --> billing
-    booking --> email
-    booking -->|výběr aktivní rezervace| bar
-    quick --> bar --> barpay
-    catalog -.->|podklady pro prodej| bar
-```
+![Mapa aplikace — workflow](workflows/01-overview.png)
 
-- **Administrace vyžaduje PIN.** Host si ve veřejném POS vybere účet a přidává
-  položky; platbu a rozdělení účtu autorizuje obsluha PINem.
-- **Bar a pobyt mají oddělené platby a doklady.** Úhrada baru sama neuhradí pobyt.
-  Účetní přenos má vlastní stav; úspěšný přenos není potvrzením úhrady.
-- **Počty mají různé účely.** Obsazenost vychází z osob v kalkulaci, porce
-  z údajů stravování rezervace a peníze z vydaných dokladů a evidovaných plateb.
-  Změna jednoho údaje neznamená automatické doplnění ostatních.
-- **Soukromý pobyt** může mít obsazenost a stravování bez finanční evidence.
+[SVG](workflows/01-overview.svg) · [PNG](workflows/01-overview.png) · [Mermaid](workflows/01-overview.mmd) · [Podrobný návod: Administrace](ADMINISTRATION.md)
 
-Kde začít podle cíle:
+## 02. Rezervace
 
-| Chci… | Otevřu | Výsledek |
-| --- | --- | --- |
-| Zjistit, co dnes řešit | Přehled | Příjezdy, odjezdy a upozornění na chybějící podklady |
-| Připravit pobyt | Rezervace → detail pobytu | Termín, hosté, pokoje a odkazy na navazující agendy |
-| Připravit jídlo a nákup | Detail rezervace → Stravování; dále postup níže | Menu, porce a nákupní seznam |
-| Vyúčtovat pobyt | Detail rezervace → Otevřít kalkulaci, doklady a platby; společný přehled v Doklady | Vydané doklady a evidence skutečných úhrad |
-| Poslat informace před příjezdem | Emaily hostům | Zprávy zařazené k samostatnému odeslání příjemcům |
-| Připsat spotřebu nebo zaplatit bar | POS; přehled obsluhy v Barové účty a platby | Barový účet a jeho úhrady |
-| Doplnit zásoby nebo upravit prodejní ceny | Barový sklad; Další agenda → Produkty a ceny / Skladová evidence | Podklady pro barový provoz |
+Začátek: **Přehled → Rezervace**. Obsazenost, stravování a finanční evidence mají vlastní podklady. Zrušení rezervace nevrací peníze.
 
-Podrobnosti: [administrace](ADMINISTRATION.md), [rezervace a kalendář](CALENDAR_VIEW.md),
-[fakturace](BILLING.md), [emaily](GUEST_EMAILS.md), [POS](POS_SYSTEM.md)
-a [barové platby](PAYMENT_FUNCTIONALITY.md).
+![Rezervace — workflow](workflows/02-reservations.png)
 
-## 2. Připravit stravování a nákup pro pobyt
+[SVG](workflows/02-reservations.svg) · [PNG](workflows/02-reservations.png) · [Mermaid](workflows/02-reservations.mmd) · [Podrobný návod: Kalendář a rezervace](CALENDAR_VIEW.md)
 
-**Cíl:** vědět, co se pro skupinu vaří, kolik porcí vydat a kolik surovin nakoupit.
-Postup provádí obsluha v administraci. Počítá s existující rezervací;
-vydání faktury ani zaplacení pobytu není podmínkou.
+## 03. Import rezervací
 
-Toto je doporučené pořadí práce. Aplikace dovolí připravit menu i před znalostí
-počtů strávníků, ale pro úplný výpočet porcí a nákupu potřebuje oba počty včetně nul.
+Začátek: **Další agenda → Pobyty a hosté → Import rezervací**. Jednorázový import souboru; existující rezervace nepřepisuje a není obousměrnou synchronizací.
 
-```mermaid
-flowchart TD
-    start["Otevřu rezervaci<br/>a upravím Stravování"]
-    plan{"Jak se skupina stravuje?"}
-    unknown["Zjistím a doplním režim<br/>Nevyplněno není Bez stravy"]
-    none["Uložím Bez stravy<br/>tento pobyt do nákupu nevstupuje"]
-    details["Doplním termín, dospělé a děti<br/>a první i poslední jídlo"]
-    variant["V Menu rezervace vyberu variantu<br/>odpovídající délce a režimu pobytu"]
-    preview["Zobrazím náhled<br/>zkontroluji data, jídla, porce a chyby"]
-    apply["Použiji variantu pro tuto rezervaci<br/>vznikne její vlastní menu"]
-    recipes["Zkontroluji recepty a doplňky<br/>včetně normy snídaňového bufetu"]
-    portions["V Plánu jídel zkontroluji<br/>porce skupiny a tisk pro kuchyň"]
-    shopping["Otevřu Nákup pro pobyt<br/>nebo Nákup pro všechny skupiny<br/>a nastavím období"]
-    issues{"Jsou v nákupu upozornění?"}
-    fix["Podle odkazu opravím podklady<br/>a přepočítám z aktuálního menu"]
-    done["Zkontroluji množství a balení<br/>vytisknu seznam a nakoupím"]
+![Import rezervací — workflow](workflows/03-ical-import.png)
 
-    start --> plan
-    plan -->|Nevyplněno| unknown --> start
-    plan -->|Bez stravy| none
-    plan -->|Polopenze nebo Plná penze| details
-    details --> variant --> preview
-    preview -->|po vyřešení chyb| apply --> recipes
-    recipes --> portions
-    recipes --> shopping --> issues
-    issues -->|Ano| fix --> shopping
-    issues -->|Ne| done
-```
+[SVG](workflows/03-ical-import.svg) · [PNG](workflows/03-ical-import.png) · [Mermaid](workflows/03-ical-import.mmd) · [Podrobný návod: Import iCal](../integrations/ICAL_IMPORT.md)
 
-Plán jídel a Nákup jsou dvě navazující možnosti ze stejných podkladů;
-jejich vzájemné pořadí není vynucené. Upozornění nemusí zablokovat zobrazení
-ani tisk nákupu: seznam může obsahovat jen část potřebných surovin. Proto je
-kontrola upozornění krokem obsluhy, nikoli automatickou zárukou úplnosti.
+## 04. Stravování a nákup
 
-### Co v jednotlivých krocích hlídat
+Začátek: **Detail rezervace → Stravování**. Menu lze připravit před znalostí počtů, ale pro porce a nákup vyplň oba počty včetně nul. Seznam s upozorněními může být neúplný.
 
-1. **Stravování rezervace:** polopenze znamená snídani a večeři. Zadejte první
-   jídlo při příjezdu a poslední při odjezdu; počítá se i odjezdová snídaně.
-   Nevyplněné údaje se hlásí jako neúplné, nenahrazují se nulami.
-2. **Varianta a náhled:** délka zahrnuje příjezdový i odjezdový den
-   (pátek–neděle jsou 3 dny, 2 noci). Penze i první a poslední jídlo musí souhlasit.
-   Pokud vhodná varianta chybí, připravte ji přes **Spravovat varianty**.
-   Náhled nic neukládá; menu vznikne až tlačítkem **Použít variantu pro tuto rezervaci**.
-   Pokud se podklady mezitím změní, vytvořte nový náhled.
-3. **Recepty:** text jídla sám nestačí k výpočtu surovin. Zkontrolujte hlavní
-   recept i doplňky přes **Recepty a suroviny**. U bufetu před prvním použitím
-   ověřte pracovní odhady přes **Upravit normy bufetu**.
-4. **Porce a nákup:** pro výdej je porce dospělý i dítě. Množství surovin používá
-   dětský koeficient, zvlášť pro snídaně a teplá jídla. Pro nákup více skupin
-   použijte společný seznam, aby se balení zaokrouhlovala až ze společného součtu.
-   Nákup neodečítá sklad ani nepřidává rezervu; zásoby zkontrolujte sami.
+![Stravování a nákup — workflow](workflows/04-catering.png)
 
-### Když se pobyt později změní
+[SVG](workflows/04-catering.svg) · [PNG](workflows/04-catering.png) · [Mermaid](workflows/04-catering.mmd) · [Podrobný návod: Stravování, receptury a nákup](CATERING.md)
 
-| Změna | Co aplikace udělá | Co udělám já |
-| --- | --- | --- |
-| Jen počty dospělých nebo dětí | Při dalším výpočtu použije nové počty; menu nepotřebuje nové potvrzení | Zkontroluji porce a v již otevřeném nákupu použiji **Přepočítat z aktuálního menu** |
-| Termín, penze nebo první/poslední jídlo | Dosavadní menu označí k nové kontrole a vynechá je z kuchyňského přehledu a výpočtu nákupu | Vyberu odpovídající variantu, znovu projdu náhled a použiji ji |
-| Text jídla nebo doplňků | Odpojí příslušné recepty, aby nepočítala suroviny pro jiné jídlo | Znovu zkontroluji vazby receptů a přepočítám nákup |
-| Varianta v knihovně | Již přiřazené menu rezervace automaticky nepřepíše | Pokud chci změnu převzít, znovu projdu náhled a použití varianty |
-| Ruční úprava menu rezervace | Chrání ji před přepsáním variantou | Přepsání povolím jen vědomě přes **Povolit přepsání při použití varianty**; úpravy mimo nový rozpis mohou použití blokovat |
+## 05. Kalkulace a zálohová výzva
 
-Odškrtávání nákupu platí jen v daném prohlížeči pro vybrané období a skupinu.
-Neznamená společný stav nákupu pro všechny pracovníky ani naskladnění.
+Začátek: **Detail rezervace → Otevřít kalkulaci, doklady a platby**. Ceník vybírá ceny podle příjezdu; jeho pozdější změna sama nepřecení kalkulaci ani vydané doklady.
 
-Příklad: pátek–neděle, plná penze, večeře–snídaně, 10 dospělých a 5 dětí
-znamená **15 pátečních večeří, 15 sobotních snídaní, obědů a večeří a 15 nedělních
-snídaní**. Při dětském koeficientu 70 % se suroviny pro jedno jídlo počítají
-na 13,5 dospělé porce; pro výdej zůstává 15 porcí.
+![Kalkulace a zálohová výzva — workflow](workflows/05-calculation-advance.png)
 
-Podrobný návod: [Stravování, receptury a nákup](CATERING.md).
+[SVG](workflows/05-calculation-advance.svg) · [PNG](workflows/05-calculation-advance.png) · [Mermaid](workflows/05-calculation-advance.mmd) · [Podrobný návod: Fakturace pobytů](BILLING.md)
 
-## Podklady a hranice ověření
+## 06. Zálohy a konečné vyúčtování
 
-Mapy byly porovnány se zdrojovým kódem, schématy, související migrací a existujícími
-testy dne 27. 10. 2026, nad checkoutem `0523bb7`. Nejde o ověření nasazené
-aplikace ani reálného nákupu, odesílání pošty či účetních přenosů.
-Podklady byly po aktualizaci z GitHubu zkontrolovány proti aktuálnímu `origin/main`.
+Začátek: **Kalkulace, doklady a platby**. Pro zapojené bankovní platby použij postup 09. Pozdě nalezenou platbu před DUZP nelze jednoduše zapsat jako doplatek.
 
-| Oblast | Zdroj chování | Existující testové podklady |
-| --- | --- | --- |
-| Navigace a vstupy | [Navigace administrace](../../lib/cozy_checkout_web/admin_navigation.ex), [router](../../lib/cozy_checkout_web/router.ex), [POS](../../lib/cozy_checkout_web/live/pos_live/guest_selection.ex) | [POS platby](../../test/cozy_checkout_web/live/financial/pos_payments_test.exs) |
-| Stravování a nevyplněné údaje | [Schéma rezervace](../../lib/cozy_checkout/bookings/booking.ex), [formulář](../../lib/cozy_checkout_web/live/booking_live/form_component.ex), [migrace](../../priv/repo/migrations/20261021170000_add_meal_details_to_bookings.exs) | [Stravování rezervací](../../test/cozy_checkout/booking_meals_test.exs) |
-| Náhled, potvrzení, změny a ochrana menu | [MenuPlanning](../../lib/cozy_checkout/meals/menu_planning.ex), [obrazovka menu](../../lib/cozy_checkout_web/live/booking_live/menu.ex) | [Menu rezervace](../../test/cozy_checkout/meals/booking_menus_test.exs) |
-| Porce, suroviny a nákup | [Porce](../../lib/cozy_checkout/meals/portion_counts.ex), [spotřeba](../../lib/cozy_checkout/recipes/consumption.ex), [nákupní výpočet](../../lib/cozy_checkout/kitchen/shopping_list.ex) | [Nákup](../../test/cozy_checkout/kitchen/shopping_list_test.exs), [obrazovka nákupu](../../test/cozy_checkout_web/shopping_live_test.exs) |
+![Zálohy a konečné vyúčtování — workflow](workflows/06-final-settlement.png)
 
-Lokální testy nebyly spouštěny; jde pouze o dokumentaci. Výsledky CI ověří uživatel.
-Další vhodné samostatné grafy jsou vyúčtování pobytu (včetně aktuální integrace
-ABRA a bankovních návrhů), barová spotřeba a platba, emaily hostům a doplňování
-barového skladu. Každý potřebuje vlastní postup, aby přehled zůstal čitelný.
+[SVG](workflows/06-final-settlement.svg) · [PNG](workflows/06-final-settlement.png) · [Mermaid](workflows/06-final-settlement.mmd) · [Podrobný návod: Fakturace pobytů](BILLING.md)
+
+## 07. Opravy a vratky
+
+Začátek: **Detail dokladu**. Vydaný doklad se nepřepisuje. Převod peněz provádíš mimo aplikaci; pobyty s opravou nebo vratkou vyžadují samostatné účetní řešení přenosu do ABRA.
+
+![Opravy a vratky — workflow](workflows/07-corrections-refunds.png)
+
+[SVG](workflows/07-corrections-refunds.svg) · [PNG](workflows/07-corrections-refunds.png) · [Mermaid](workflows/07-corrections-refunds.mmd) · [Podrobný návod: Opravy a vratky](BILLING.md#opravy-a-vratky)
+
+## 08. PDF a odeslání dokladů
+
+Začátek: **Doklady v kalkulaci pobytu**. Stažení i email používají původní uložené PDF. Příjemce a zprávu zkontroluj před každým novým odesláním.
+
+![PDF a odeslání dokladů — workflow](workflows/08-document-delivery.png)
+
+[SVG](workflows/08-document-delivery.svg) · [PNG](workflows/08-document-delivery.png) · [Mermaid](workflows/08-document-delivery.mmd) · [Podrobný návod: PDF a pošta](BILLING.md#pdf-pošta-a-provoz)
+
+## 09. Potvrzení bankovní platby
+
+Začátek: **Doklady → Bankovní pohyby**; vyžaduje zapojenou a nastavenou integraci. Návrh podle VS není platba. Přeplatky, možné duplicity a nesoulady nejdřív prověř.
+
+![Potvrzení bankovní platby — workflow](workflows/09-bank-confirmation.png)
+
+[SVG](workflows/09-bank-confirmation.svg) · [PNG](workflows/09-bank-confirmation.png) · [Mermaid](workflows/09-bank-confirmation.mmd)
+
+## 10. Přenosy do ABRA
+
+Začátek: **Doklady → Přenosy do ABRA**. Automaticky se řadí podporované výzvy a vyúčtování zapojených nových pobytů. Odpočítávané ZDD musí mít dokončené účetní vazby; ručně evidované doplatky, opravy a vratky mohou export vyúčtování blokovat.
+
+![Přenosy do ABRA — workflow](workflows/10-abra-transfers.png)
+
+[SVG](workflows/10-abra-transfers.svg) · [PNG](workflows/10-abra-transfers.png) · [Mermaid](workflows/10-abra-transfers.mmd)
+
+## 11. Barová spotřeba
+
+Začátek: **POS**. Servisní režim označuje nestandardní účty; sám nezavádí jinou cenu ani osvobození od placení. Historická cena a DPH zůstávají u připsané položky.
+
+![Barová spotřeba — workflow](workflows/11-pos-account.png)
+
+[SVG](workflows/11-pos-account.svg) · [PNG](workflows/11-pos-account.png) · [Mermaid](workflows/11-pos-account.mmd) · [Podrobný návod: Samoobslužný bar](POS_SYSTEM.md)
+
+## 12. Zaplacení baru
+
+Začátek: **Účet v POS → Platba nebo rozdělení účtu**. QR náhled nezapisuje platbu ani automaticky neověřuje banku. Platba baru neuhradí pobyt.
+
+![Zaplacení baru — workflow](workflows/12-pos-payment.png)
+
+[SVG](workflows/12-pos-payment.svg) · [PNG](workflows/12-pos-payment.png) · [Mermaid](workflows/12-pos-payment.mmd) · [Podrobný návod: Barové platby](PAYMENT_FUNCTIONALITY.md)
+
+## 13. Produkty a ceny
+
+Začátek: **Další agenda → Produkty a ceny**. Barový ceník a ceník ubytování jsou oddělené. Změna ceny v katalogu nemění staré položky účtů.
+
+![Produkty a ceny — workflow](workflows/13-catalog-prices.png)
+
+[SVG](workflows/13-catalog-prices.svg) · [PNG](workflows/13-catalog-prices.png) · [Mermaid](workflows/13-catalog-prices.mmd) · [Podrobný návod: Výběr produktu v ceníku](AUTOCOMPLETE_FEATURE.md)
+
+## 14. Barový sklad
+
+Začátek: **Barový sklad**. Sleduje se odděleně od celkového skladu. Odebrání připsané položky vrací evidovanou barovou spotřebu; fyzickou ztrátu zapiš jako odpis.
+
+![Barový sklad — workflow](workflows/14-bar-stock.png)
+
+[SVG](workflows/14-bar-stock.svg) · [PNG](workflows/14-bar-stock.png) · [Mermaid](workflows/14-bar-stock.mmd)
+
+## 15. Celkový sklad a naskladnění
+
+Začátek: **Další agenda → Skladová evidence**. Rychlé naskladnění ukládá nulové nákupní ceny; pro ocenění doplň nákupní ceny. Doplnění baru není automatický převod mezi sklady.
+
+![Celkový sklad a naskladnění — workflow](workflows/15-total-stock.png)
+
+[SVG](workflows/15-total-stock.svg) · [PNG](workflows/15-total-stock.png) · [Mermaid](workflows/15-total-stock.mmd)
+
+## 16. Emaily hostům
+
+Začátek: **Emaily hostům**. Jde o informační zprávy, odesílání dokladů je v postupu 08. Přijetí poskytovatelem nepotvrzuje doručení do schránky hosta.
+
+![Emaily hostům — workflow](workflows/16-guest-emails.png)
+
+[SVG](workflows/16-guest-emails.svg) · [PNG](workflows/16-guest-emails.png) · [Mermaid](workflows/16-guest-emails.mmd) · [Podrobný návod: Emaily hostům](GUEST_EMAILS.md)
+
+## 17. Přehledy a statistiky
+
+Začátek podle cíle v grafu. Statistiky baru filtrují stavy účtů a servisní režim; nepovažuj celý zobrazený prodej automaticky za přijaté peníze.
+
+![Přehledy a statistiky — workflow](workflows/17-reports.png)
+
+[SVG](workflows/17-reports.svg) · [PNG](workflows/17-reports.png) · [Mermaid](workflows/17-reports.mmd)
+
+## 18. Export do POHODA
+
+Začátek: **Další agenda → Finance a přehledy → Export POHODA**. Jen barové účty. Období se řídí vznikem účtu; aplikace neeviduje, zda byl soubor již importován do POHODA.
+
+![Export do POHODA — workflow](workflows/18-pohoda.png)
+
+[SVG](workflows/18-pohoda.svg) · [PNG](workflows/18-pohoda.png) · [Mermaid](workflows/18-pohoda.mmd) · [Podrobný návod: Export POHODA](../integrations/POHODA_EXPORT.md)
+
+---
+
+Postupy vycházejí z kódu aplikace k 27. 10. 2026. Produkční nastavení integrací se může lišit.
+[Technické podklady, hranice ověření a obnova obrázků](../development/WORKFLOW_DIAGRAMS.md).

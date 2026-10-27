@@ -1,0 +1,22 @@
+flowchart TD
+    accTitle: Zálohy a konečné vyúčtování pobytu
+    accDescr: Přijatá záloha vytvoří daňový doklad. Konečná faktura odpočítá skutečné zálohy a určí doplatek nebo přeplatek.
+    calc["Mám zkontrolovanou kalkulaci<br/>a údaje odběratele"]
+    advance{"Zbývá přijatá záloha<br/>k zaevidování?"}
+    record["Zaeviduji skutečně přijatou zálohu<br/>ručně nebo potvrzením bankovního návrhu"]
+    receipt["Vznikne platba a daňový doklad<br/>k přijaté platbě — ZDD"]
+    preview["Zkontroluji náhled konečné faktury<br/>položky, DUZP, splatnost a odpočty"]
+    issue["Vystavím konečnou fakturu<br/>neuhrazené výzvy se neodpočítají"]
+    balance{"Výsledek vyúčtování?"}
+    pay["Přijatý doplatek přiřadím faktuře<br/>bankovní návrh používá VS faktury"]
+    paid(["Uhrazeno<br/>PDF a odeslání podle potřeby"])
+    refund(["Přeplatek<br/>vratku řeším samostatně"])
+    calc --> advance
+    advance -->|Ano| record --> receipt
+    receipt -->|Každou zálohu eviduji jen jednou| advance
+    advance -->|Ne| preview
+    preview -->|Po dokončení kontroly, bez budoucího DUZP| issue --> balance
+    balance -->|Kladný doplatek| pay
+    pay -->|Po každé částečné platbě| balance
+    balance -->|Nula| paid
+    balance -->|Přeplatek| refund

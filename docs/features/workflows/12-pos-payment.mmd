@@ -1,0 +1,19 @@
+flowchart TD
+    accTitle: Zaplacení baru v hotovosti nebo QR
+    accDescr: Obsluha autorizuje platbu PINem. QR náhled nic neplatí; potvrzení uloží úhradu a plně zaplacený účet zařadí k ABRA synchronizaci.
+    open["Zkontroluji barový účet<br/>zvolím celý účet nebo rozdělení podle položek"]
+    pin["Obsluha zadá PIN<br/>zkontroluje částku, případně slevu a spropitné"]
+    method{"Jak bude host platit?"}
+    cash["Převezmu hotovost<br/>a zapíšu hotovostní úhradu"]
+    qr["Zobrazím QR náhled<br/>host zadá platbu v bankovní aplikaci"]
+    confirm["Obsluha ověří přijetí peněz<br/>a výslovně potvrdí QR platbu"]
+    record["Aplikace uloží úhradu<br/>a přepočítá zbývající částku"]
+    balance{"Zbývá doplatek?"}
+    partial["Účet je částečně zaplacený<br/>další platba pracuje se zůstatkem"]
+    paid(["Účet je zaplacený, lze zobrazit účtenku<br/>automaticky se zařadí barový přenos do ABRA"])
+    open --> pin --> method
+    method -->|Hotovost| cash --> record
+    method -->|QR| qr --> confirm --> record
+    record --> balance
+    balance -->|Ano| partial --> open
+    balance -->|Ne| paid

@@ -1,0 +1,18 @@
+flowchart TD
+    accTitle: Provoz a inventura barového skladu
+    accDescr: Bar má samostatnou evidenci. Doplnění, prodej, odpis a inventura vytvářejí pohyby; přidání položky do účtu odečítá zásobu již před platbou.
+    tracked{"Sleduji produkt<br/>v baru?"}
+    add["V Barovém skladu jej přidám<br/>zadám počáteční stav a minimální zásobu"]
+    action{"Co se právě stalo?"}
+    restock["Doplnění baru<br/>zadám přidané množství"]
+    sale["Položka přibyla na barový účet<br/>zásoba se odečte už při připsání"]
+    waste["Ztráta nebo rozlití<br/>zadám množství a důvod odpisu"]
+    count["Inventura<br/>zadám skutečně napočítaný stav"]
+    adjustment["Aplikace zapíše rozdíl<br/>kladný i záporný"]
+    review(["Zkontroluji stav, pohyby a ztráty<br/>při nízké zásobě zajistím doplnění"])
+    tracked -->|Ne| add --> action
+    tracked -->|Ano| action
+    action -->|Doplnění| restock --> review
+    action -->|Spotřeba| sale --> review
+    action -->|Odpis| waste --> review
+    action -->|Počítání| count --> adjustment --> review

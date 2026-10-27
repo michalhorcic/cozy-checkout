@@ -1,0 +1,18 @@
+flowchart TD
+    accTitle: Připisování barové spotřeby
+    accDescr: Veřejný POS nabízí aktivní rezervaci nebo rychlý účet. Přidání položky ukládá tehdejší cenu a u sledovaného produktu odečítá barový sklad.
+    start["Otevřu POS<br/>případně zvolím servisní režim"]
+    kind{"Ke komu patří spotřeba?"}
+    booking["Vyberu aktivní rezervaci<br/>a její účet, případně konkrétního hosta"]
+    quick["Založím pojmenovaný rychlý účet<br/>bez rezervace"]
+    products["Vyberu produkt nebo zkratku<br/>u jednotkového produktu zvolím množství"]
+    saved["Aplikace uloží položku s cenou a DPH<br/>a odečte sledovaný barový sklad"]
+    check{"Další spotřeba?"}
+    review["Zkontroluji položky a součet<br/>případné omyly odstraním"]
+    pay(["Účet nechám otevřený<br/>nebo požádám obsluhu o platbu"])
+    start --> kind
+    kind -->|Pobyt| booking --> products
+    kind -->|Bez rezervace| quick --> products
+    products --> saved --> check
+    check -->|Ano| products
+    check -->|Ne| review --> pay

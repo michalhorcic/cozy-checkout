@@ -1,0 +1,20 @@
+flowchart TD
+    accTitle: Rezervace od založení po dokončení
+    accDescr: Obsluha založí rezervaci, samostatně doplní obsazenost a stravování a průběžně aktualizuje stav. Zrušení nevrací peníze.
+    start["Přihlásím se PINem<br/>Přehled → Rezervace"]
+    guest["Vyberu hosta<br/>nebo založím nový kontakt"]
+    save["Uložím termín, stav a pokoje<br/>případně další hosty a poznámky"]
+    people["V kalkulaci doplním osoby a noci<br/>podklad pro obsazenost"]
+    food["Ve Stravování doplním režim<br/>a samostatné počty strávníků"]
+    check["V kalendáři a Přehledu<br/>zkontroluji pobyt a upozornění"]
+    state{"Jak pobyt pokračuje?"}
+    update["Upravím termín, stav nebo údaje<br/>při změně zkontroluji navazující agendy"]
+    done(["Označím Dokončeno<br/>zvlášť dořeším bar a vyúčtování"])
+    cancel(["Označím Zrušeno<br/>peníze a doklady dořeším samostatně"])
+    start --> guest --> save
+    save --> people --> check
+    save --> food --> check
+    check --> state
+    state -->|Změna| update --> check
+    state -->|Pobyt proběhl| done
+    state -->|Pobyt se ruší| cancel

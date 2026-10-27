@@ -1,0 +1,18 @@
+flowchart TD
+    accTitle: Oprava dokladu a vrácení peněz
+    accDescr: Doklady se nepřepisují. Oprava ceny a skutečný bankovní převod jsou samostatné kroky; zrušení rezervace je neprovádí.
+    start["Zjistím změnu ceny nebo přeplatek<br/>otevřu doklady daného pobytu"]
+    correction{"Měním cenu<br/>vydaného dokladu?"}
+    document["Otevřu správný doklad<br/>po vyúčtování konečnou fakturu"]
+    issue["Vystavím zvýšení nebo snížení<br/>s částkou a důvodem"]
+    balance["Zkontroluji nový zůstatek<br/>a dostupnou částku pro vratku"]
+    money{"Co zbývá<br/>finančně dořešit?"}
+    refund["Peníze skutečně vrátím<br/>mimo aplikaci"]
+    record(["Až poté zaeviduji vratku<br/>s datem, částkou a referencí"])
+    settle(["Případný další příjem eviduji<br/>jinak je oprava hotová"])
+    start --> correction
+    correction -->|Ano| document --> issue --> balance
+    correction -->|Ne, nezdaněný přeplatek| balance
+    balance --> money
+    money -->|Vrátit peníze| refund --> record
+    money -->|Doplatek nebo nula| settle

@@ -1,0 +1,28 @@
+flowchart TD
+    accTitle: Připravit stravování a nákup
+    accDescr: Režim stravování, menu, recepty, porce a nákup včetně kontroly neúplných podkladů.
+    start["Otevřu rezervaci<br/>a upravím Stravování"]
+    plan{"Jak se skupina stravuje?"}
+    unknown["Zjistím a doplním režim<br/>Nevyplněno není Bez stravy"]
+    none["Uložím Bez stravy<br/>tento pobyt do nákupu nevstupuje"]
+    details["Doplním termín, dospělé a děti<br/>a první i poslední jídlo"]
+    variant["V Menu rezervace vyberu variantu<br/>odpovídající délce a režimu pobytu"]
+    preview["Zobrazím náhled<br/>zkontroluji data, jídla, porce a chyby"]
+    apply["Použiji variantu pro tuto rezervaci<br/>vznikne její vlastní menu"]
+    recipes["Zkontroluji recepty a doplňky<br/>včetně normy snídaňového bufetu"]
+    portions["V Plánu jídel zkontroluji<br/>porce skupiny a tisk pro kuchyň"]
+    shopping["Otevřu Nákup pro pobyt<br/>nebo Nákup pro všechny skupiny<br/>a nastavím období"]
+    issues{"Jsou v nákupu upozornění?"}
+    fix["Podle odkazu opravím podklady<br/>a přepočítám z aktuálního menu"]
+    done["Zkontroluji množství a balení<br/>vytisknu seznam a nakoupím"]
+
+    start --> plan
+    plan -->|Nevyplněno| unknown --> start
+    plan -->|Bez stravy| none
+    plan -->|Polopenze nebo Plná penze| details
+    details --> variant --> preview
+    preview -->|po vyřešení chyb| apply --> recipes
+    recipes --> portions
+    recipes --> shopping --> issues
+    issues -->|Ano| fix --> shopping
+    issues -->|Ne| done

@@ -1,0 +1,16 @@
+flowchart TD
+    accTitle: Import rezervací z iCal
+    accDescr: Nahrání ICS, kontrola výsledků a ruční doplnění rezervací. Duplicity podle hosta a příjezdu se nepřepisují.
+    upload["Import rezervací<br/>nahraji soubor ICS"]
+    run["Spustím Import Bookings"]
+    parse["Aplikace načte podporované události<br/>jméno, příjezd a odjezd jsou nutné"]
+    guest["Najde nebo vytvoří hosta<br/>podle emailu; bez emailu podle jména"]
+    duplicate{"Stejný host<br/>a datum příjezdu?"}
+    skip["Existující rezervaci přeskočí<br/>její údaje nepřepíše"]
+    create["Založí rezervaci<br/>stravování zůstává nevyplněné"]
+    review["Projdu souhrn, chyby<br/>a vzniklé rezervace"]
+    complete(["Doplním pokoje, osoby a stravování<br/>zkontroluji termín a kontakt"])
+    upload --> run --> parse --> guest --> duplicate
+    duplicate -->|Ano| skip --> review
+    duplicate -->|Ne| create --> review
+    review --> complete
