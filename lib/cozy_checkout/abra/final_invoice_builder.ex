@@ -1,6 +1,6 @@
 defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
   @moduledoc "Final invoice from frozen local lines and explicit source-ZDD deductions."
-  alias CozyCheckout.Billing.{Document, Money}
+  alias CozyCheckout.Billing.{Document, Money, Presentation}
   alias CozyCheckout.Abra.{BankVerification, TaxReceiptBuilder}
 
   def build(%Document{kind: "final"} = doc, sources, cfg) do
@@ -41,6 +41,8 @@ defmodule CozyCheckout.Abra.FinalInvoiceBuilder do
             "szbDphZakl" => "21",
             "zaokrNaSumK" => "zaokrNa.zadne",
             "popis" => "Vyúčtování #{doc.number} · Cozy Checkout",
+            "uvodTxt" =>
+              "Fakturujeme Vám ubytování a související služby za pobyt od #{Presentation.date(doc.snapshot["check_in"])} do #{Presentation.date(doc.snapshot["check_out"])}.",
             "polozkyFaktury" => items
           }
 

@@ -54,6 +54,13 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert invoice["clenDph"] == "code:000U"
     assert invoice["ucetni"] == false
     assert invoice["poznam"] =~ "Záloha zadaná částkou: 1 234,57 CZK"
+    assert get_in(doc.snapshot, ["advance_calculation", "person_stays"]) == [
+             %{"quantity" => 2, "nights" => 3}
+           ]
+
+    assert Enum.all?(invoice["polozkyFaktury"], fn item ->
+             item["nazev"] == "Záloha na ubytování 2 osob za 3 noci"
+           end)
     refute Map.has_key?(invoice, "hotovostni-uhrada")
     refute Map.has_key?(invoice, "duzpPuv")
 
@@ -84,6 +91,51 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert fee["typSzbDphK"] == "typSzbDph.dphOsv"
     assert fee["typCenyDphK"] == "typCeny.bezDph"
     assert fee["cenaMj"] == "35.00"
+    assert fee["nazev"] == "Záloha na poplatek obci"
+  end
+
+  test "advance labels count all person rows, group equal nights and retain the issued counts", %{
+    booking: booking
+  } do
+    alias CozyCheckout.Billing
+
+    for {name, quantity, nights, price, type, mode, rate} <- [
+          {"Dítě zdarma", 1, 2, "0", "person", "taxable", "12"},
+          {"Další hosté", 3, 3, "100", "person", "taxable", "12"},
+          {"Příplatek", 10, 5, "10", "extra", "taxable", "12"},
+          {"Poplatek obci", 6, 3, "35", "extra", "outside", "0"}
+        ] do
+      assert {:ok, _} =
+               Billing.save_item(booking.id, %{
+                 name: name,
+                 quantity: quantity,
+                 nights: nights,
+                 price_per_night: price,
+                 item_type: type,
+                 tax_mode: mode,
+                 vat_rate: rate
+               })
+    end
+
+    doc = issue_without_abra!(booking, "advance", %{"percent" => "50"})
+    assert {:ok, payload} = AdvanceBuilder.build(doc, Accommodation.config())
+    [invoice] = payload["winstrom"]["faktura-vydana"]
+
+    for {item, line} <- Enum.zip(invoice["polozkyFaktury"], doc.lines) do
+      assert item["nazev"] ==
+               if(line["tax_mode"] == "outside",
+                 do: "Záloha na poplatek obci",
+                 else: "Záloha na ubytování 6 osob (1 osoba za 2 noci, 5 osob za 3 noci)"
+               )
+
+      assert item["mnozMj"] == "1"
+      assert item["cenaMj"] == line["gross"]
+    end
+
+    item = Enum.find(Billing.calculation(booking.id).items, &(&1.name == "Dítě zdarma"))
+    assert {:ok, _} = Billing.save_item(booking.id, %{quantity: 20}, item.id)
+    assert {:ok, ^payload} =
+             AdvanceBuilder.build(Billing.get_document!(doc.id), Accommodation.config())
   end
 
   test "enqueue is atomic and repeated clicks keep one export, payload and active job", %{
@@ -143,6 +195,8 @@ defmodule CozyCheckout.AbraAccommodationTest do
     [legacy_invoice] = legacy["winstrom"]["faktura-vydana"]
     assert legacy_invoice["poznam"] =~ "Původní rozpis položek nebyl u tohoto dokladu uložen."
     refute legacy_invoice["poznam"] =~ "Přijatá záloha"
+    assert Enum.all?(legacy_invoice["polozkyFaktury"], &(&1["nazev"] == "Záloha na ubytování"))
+    assert invoice["polozkyFaktury"] == legacy_invoice["polozkyFaktury"]
   end
 
   test "disabled export, old bookings and other document kinds cannot enqueue", %{
