@@ -69,7 +69,11 @@ defmodule CozyCheckoutWeb.BillingLive.Seasons do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash}>
+    <Layouts.app
+      flash={@flash}
+      content_class="mx-auto w-full max-w-7xl space-y-6"
+      main_class="px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
       <div class="max-w-6xl mx-auto space-y-6">
         <h1 class="text-3xl font-bold">Ceník ubytování s polopenzí</h1>
         <p>

@@ -185,16 +185,32 @@ defmodule CozyCheckoutWeb.Layouts do
 
   @doc "Renders the shared internal header around authenticated admin pages."
   def admin(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :billing_section,
+        CozyCheckoutWeb.BillingNavigation.section(assigns.admin_path)
+      )
+
     ~H"""
     <div id="admin-shell" class="min-h-screen bg-secondary-50 lg:flex">
       <aside
         id="admin-sidebar"
         class="hidden h-dvh w-60 shrink-0 overflow-y-auto border-r border-secondary-200 bg-white lg:sticky lg:top-0 lg:block print:hidden"
       >
-        <p class="px-6 py-6 text-xs font-semibold uppercase tracking-wider text-primary-400">
+        <p
+          :if={!@billing_section}
+          class="px-6 py-6 text-xs font-semibold uppercase tracking-wider text-primary-400"
+        >
           Administrace
         </p>
-        <.admin_navigation id="admin-desktop" path={@admin_path} />
+        <.admin_navigation :if={!@billing_section} id="admin-desktop" path={@admin_path} />
+        <.billing_navigation
+          :if={@billing_section}
+          id="billing-desktop"
+          path={@admin_path}
+          active={@billing_section}
+        />
       </aside>
       <div id="admin-workspace" class="min-w-0 flex-1">
         <.admin_header />
@@ -205,13 +221,85 @@ defmodule CozyCheckoutWeb.Layouts do
           phx-key="Escape"
         >
           <summary class="flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold text-primary-500">
-            <.icon name="hero-bars-3" class="h-5 w-5" />Navigace administrace
+            <.icon name="hero-bars-3" class="h-5 w-5" />
+            {if @billing_section,
+              do: "Doklady · #{CozyCheckoutWeb.BillingNavigation.label(@admin_path)}",
+              else: "Navigace administrace"}
           </summary>
-          <.admin_navigation id="admin-mobile" path={@admin_path} />
+          <.admin_navigation :if={!@billing_section} id="admin-mobile" path={@admin_path} />
+          <.billing_navigation
+            :if={@billing_section}
+            id="billing-mobile"
+            path={@admin_path}
+            active={@billing_section}
+          />
         </details>
+        <nav
+          :if={@billing_section}
+          id="billing-breadcrumbs"
+          aria-label="Drobečková navigace"
+          class="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 pt-6 text-xs text-primary-400 sm:px-6 lg:px-8 print:hidden"
+        >
+          <.link navigate={~p"/admin"} class="text-tertiary-600 hover:underline">Administrace</.link>
+          <span aria-hidden="true">/</span>
+          <.link navigate={~p"/admin/billing"} class="text-tertiary-600 hover:underline">Doklady</.link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{CozyCheckoutWeb.BillingNavigation.label(@admin_path)}</span>
+        </nav>
         {@inner_content}
       </div>
     </div>
+    """
+  end
+
+  attr :id, :string, required: true
+  attr :path, :string, required: true
+  attr :active, :atom, required: true
+
+  defp billing_navigation(assigns) do
+    assigns = assign(assigns, :groups, CozyCheckoutWeb.BillingNavigation.groups())
+
+    ~H"""
+    <nav id={@id} aria-label="Doklady" class="p-4">
+      <.link
+        navigate={~p"/admin/billing"}
+        class="mb-6 hidden items-center gap-3 px-2 py-2 font-bold text-primary-500 lg:flex"
+      >
+        <img src={~p"/images/cozy-knot.svg"} alt="" width="28" height="28" class="shrink-0" />
+        <span><span class="block text-sm">Cozy Checkout</span><span class="block text-xs font-normal text-primary-400">Doklady</span></span>
+      </.link>
+      <details class="mb-5 rounded-lg border border-secondary-200">
+        <summary class="cursor-pointer px-3 py-2 text-xs font-semibold text-primary-400">
+          Přejít do jiné oblasti
+        </summary>
+        <.admin_navigation id={@id <> "-admin"} path={@path} compact />
+      </details>
+      <div :for={{label, entries} <- @groups} class="mb-5">
+        <p class="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-primary-400">
+          {label}
+        </p>
+        <.link
+          :for={{section, title, path, icon} <- entries}
+          id={"#{@id}-#{section}"}
+          navigate={path}
+          phx-click={JS.remove_attribute("open", to: "#admin-mobile-navigation")}
+          aria-current={@active == section && "page"}
+          class={[
+            "mb-1 flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition focus-visible:outline-2 focus-visible:outline-tertiary-500",
+            if(@active == section,
+              do: "bg-tertiary-100 font-semibold text-tertiary-800",
+              else: "text-primary-500 hover:bg-secondary-50"
+            )
+          ]}
+        ><.icon name={icon} class="h-4 w-4 shrink-0" />{title}</.link>
+      </div>
+      <.link
+        navigate={~p"/admin"}
+        class="mt-4 flex items-center gap-2 border-t border-secondary-200 px-3 pt-5 text-xs text-tertiary-600 hover:underline"
+      >
+        <.icon name="hero-arrow-left" class="h-4 w-4" />Zpět do administrace
+      </.link>
+    </nav>
     """
   end
 

@@ -25,6 +25,46 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     )
   end
 
+  test "billing screens share desktop and mobile navigation", %{conn: conn, booking: booking} do
+    document = issue!(booking, "advance", %{"percent" => "50"})
+
+    for {path, section, label} <- [
+          {"/admin/billing", :documents, "Seznam dokladů"},
+          {"/admin/billing/documents/#{document.id}", :documents, "Detail dokladu"},
+          {"/admin/bookings/#{booking.id}/billing", :documents, "Fakturace pobytu"},
+          {"/admin/billing/transfers", :transfers, "Přenosy do ABRA"},
+          {"/admin/billing/bank", :bank, "Bankovní pohyby"},
+          {"/admin/billing/settings", :settings, "Nastavení fakturace"},
+          {"/admin/accommodation-prices", :prices, "Ceník ubytování"}
+        ] do
+      {:ok, view, _} = live(conn, path)
+      assert has_element?(view, "#billing-breadcrumbs [aria-current='page']", label)
+      refute has_element?(view, "#admin-desktop")
+
+      for device <- ["desktop", "mobile"] do
+        nav = "#billing-#{device}"
+        assert has_element?(view, "#{nav}-#{section}[aria-current='page']")
+        assert view |> element("#{nav} a[aria-current='page']") |> render()
+
+        for entry <- [:documents, :transfers, :bank, :settings, :prices] do
+          assert has_element?(view, "#{nav}-#{entry}")
+        end
+      end
+    end
+  end
+
+  test "main menu opens documents and sidebar links navigate across the module", %{conn: conn} do
+    {:ok, dashboard, _} = live(conn, "/admin")
+    result = dashboard |> element("#admin-desktop a[href='/admin/billing']") |> render_click()
+    {:ok, documents, _} = follow_redirect(result, conn, "/admin/billing")
+    result = documents |> element("#billing-desktop-transfers") |> render_click()
+    {:ok, transfers, _} = follow_redirect(result, conn, "/admin/billing/transfers")
+    assert has_element?(transfers, "#billing-desktop-transfers[aria-current='page']")
+    result = transfers |> element("#billing-mobile-bank") |> render_click()
+    {:ok, bank, _} = follow_redirect(result, conn, "/admin/billing/bank")
+    assert has_element?(bank, "#billing-desktop-bank[aria-current='page']")
+  end
+
   test "customer form requires only a name and keeps optional fields in collapsed details", %{
     conn: conn,
     booking: booking
