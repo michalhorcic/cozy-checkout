@@ -45,6 +45,8 @@ The PIN must contain 6 to 8 digits. Five incorrect attempts from the same client
 
 ## Dokumentace
 
+Dokumentaci lze procházet také jako [HTML web s menu a vyhledáváním](docs/development/DOCUMENTATION_WEB.md).
+
 [Rozcestník dokumentace](docs/README.md) obsahuje provozní návody, technické
 podklady a [plány nových funkcí](docs/plans/README.md).
 
