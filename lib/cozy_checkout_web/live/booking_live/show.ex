@@ -339,7 +339,6 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
               </div>
             <% end %>
           </div>
-
         </div>
       </div>
     </Layouts.app>

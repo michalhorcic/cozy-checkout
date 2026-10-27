@@ -634,7 +634,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                         <.link
                           :if={MapSet.member?(@pending_bank_bookings, booking.id)}
                           id={"booking-bank-pending-#{booking.id}"}
-                          navigate={~p"/admin/bookings/#{booking.id}/billing#booking-bank-suggestions"}
+                          navigate={
+                            ~p"/admin/bookings/#{booking.id}/billing#booking-bank-suggestions"
+                          }
                           class="flex items-start gap-1.5 text-xs font-medium text-warning-dark hover:underline"
                           title="Nalezen návrh podle VS. Přijetí platby ještě není ověřeno."
                         >
