@@ -191,7 +191,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
 
     assert {:ok, legacy} =
              AdvanceBuilder.build(
-               %{doc | snapshot: Map.delete(doc.snapshot, "advance_calculation")},
+               %{note_doc | snapshot: Map.delete(note_doc.snapshot, "advance_calculation")},
                Accommodation.config()
              )
 
