@@ -1,0 +1,10 @@
+flowchart TD
+    accTitle: Ruční export barových účtů do POHODA
+    accDescr: Export vybírá zaplacené barové účty podle data vytvoření. Soubor se do POHODA importuje ručně a aplikace tento import nepotvrzuje.
+    open["Další agenda → Finance a přehledy<br/>Export POHODA"]
+    dates["Nastavím období podle vytvoření účtu<br/>načtu zaplacené barové účty"]
+    select["Označím účty<br/>zkontroluji i servisní a smíšené platby"]
+    export["Zvolím Export Selected Orders<br/>stáhnu XML"]
+    review["Před importem zkontroluji XML<br/>a nastavení cílového účetnictví"]
+    import(["Ručně importuji do POHODA<br/>a ověřím výsledek i případné duplicity"])
+    open --> dates --> select --> export --> review --> import

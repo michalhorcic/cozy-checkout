@@ -1,0 +1,17 @@
+flowchart LR
+    accTitle: Vybrat správný provozní nebo finanční přehled
+    accDescr: Přehledy mají různé zdroje. Obsazenost, porce, kalkulace a přijaté platby nejsou stejná veličina.
+    goal{"Co potřebuji zjistit?"}
+    today["Přehled / Kalendář / Časová osa<br/>příjezdy, odjezdy a obsazenost"]
+    meals["Plán jídel / Nákup<br/>porce, menu a suroviny"]
+    billing["Doklady / evidence konkrétního pobytu<br/>vydané doklady a skutečné úhrady"]
+    economy["Ekonomika pobytů<br/>interní kalkulace a jejich stavy"]
+    sales["Statistiky prodeje<br/>období, stavy účtů a servisní filtr"]
+    inventory["Skladové reporty / Barový sklad<br/>pohyby, ocenění nebo ztráty"]
+    check(["Ověřím období, filtry a zdroj částek<br/>kalkulace ani objednávka nejsou důkaz úhrady"])
+    goal -->|Dnešní provoz| today --> check
+    goal -->|Kuchyň| meals --> check
+    goal -->|Peníze za pobyt| billing --> check
+    goal -->|Plánované částky| economy --> check
+    goal -->|Barový prodej| sales --> check
+    goal -->|Zásoby| inventory --> check

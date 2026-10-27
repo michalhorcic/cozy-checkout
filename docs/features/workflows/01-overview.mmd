@@ -1,0 +1,20 @@
+flowchart LR
+    accTitle: Mapa aplikace
+    accDescr: Vztahy agend kolem rezervace. Větve nevyžadují pevné pořadí.
+    booking["Rezervace<br/>ruční založení nebo import iCal"]
+    overview["Přehled a kalendář<br/>příjezdy, odjezdy, obsazenost a upozornění"]
+    food["Stravování<br/>menu, porce a nákup"]
+    billing["Kalkulace, doklady a platby<br/>zálohy a vyúčtování pobytu"]
+    email["Emaily hostům<br/>výběr příjemců, náhled a odeslání"]
+    bar["Barový účet v POS<br/>host připisuje spotřebu"]
+    barpay["Platba baru<br/>obsluha s PINem, případně po částech"]
+    quick["Rychlý účet<br/>bez rezervace"]
+    catalog["Produkty, ceny a barový sklad<br/>příprava a průběžná správa baru"]
+
+    booking --> overview
+    booking --> food
+    booking --> billing
+    booking --> email
+    booking -->|výběr aktivní rezervace| bar
+    quick --> bar --> barpay
+    catalog -.->|podklady pro prodej| bar

@@ -1,0 +1,14 @@
+flowchart TD
+    accTitle: Připravit produkt a ceny pro prodej
+    accDescr: Produkt a kategorie musí být viditelné pro POS, ceny mají platnost a mohou mít varianty množství. Staré položky si zachovají původní cenu.
+    category["Další agenda → Produkty a ceny<br/>vyberu nebo založím kategorii"]
+    product["Založím produkt<br/>název, jednotka a předvolená množství"]
+    visibility["Nastavím aktivitu a viditelnost<br/>produktu i kategorie pro POS"]
+    price["Ve Správě cen doplním platnou cenu<br/>nebo ceny pro jednotlivá množství a DPH"]
+    review{"Chybí nebo neplatí<br/>některá cena?"}
+    fix["Doplním nebo opravím ceník"]
+    pos["Ověřím nabídku a cenu v POS<br/>volitelně připravím zkratky a tisk ceníku"]
+    stock(["Podle potřeby zapnu sledování zásob<br/>celkový sklad a bar nastavuji zvlášť"])
+    category --> product --> visibility --> price --> review
+    review -->|Ano| fix --> review
+    review -->|Ne| pos --> stock

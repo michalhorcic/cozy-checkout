@@ -1,0 +1,15 @@
+flowchart TD
+    accTitle: Poslat informace hostům
+    accDescr: Obsluha vybere rezervace a příjemce, zkontroluje osobní náhled a odešle zprávy do fronty. Stav přijetí poskytovatelem není potvrzené doručení.
+    select["Emaily hostům<br/>nastavím období a vyberu rezervace"]
+    contacts["Ověřím adresy a případné další příjemce<br/>podle potřeby upravím oslovení"]
+    content["Zvolím šablonu nebo vlastní text<br/>a doplním předmět"]
+    preview["Prohlédnu náhled pro vybraný pobyt<br/>u více pobytů přepínám náhledy"]
+    send["Potvrdím odeslání<br/>obsah se uloží pro každého příjemce zvlášť"]
+    queue["Fronta odesílá samostatné emaily<br/>přechodné chyby automaticky opakuje"]
+    status{"Jak dopadlo odeslání?"}
+    accepted(["Přijato poskytovatelem<br/>historie je v detailu rezervace"])
+    error(["Chyba / vyčerpané pokusy<br/>prověřím adresu, konfiguraci a důvod"])
+    select --> contacts --> content --> preview --> send --> queue --> status
+    status -->|Přijato| accepted
+    status -->|Trvalá chyba| error

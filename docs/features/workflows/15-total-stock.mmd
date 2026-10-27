@@ -1,0 +1,16 @@
+flowchart TD
+    accTitle: Naskladnění a celková skladová evidence
+    accDescr: Naskladnění vytváří nákupní objednávku s položkami. Celkový stav vzniká z příjmů, spotřeby a korekcí, odděleně od barových pohybů.
+    start["Otevřu Celkový sklad<br/>zkontroluji chybějící zásoby"]
+    choose{"Co potřebuji zaevidovat?"}
+    batch["V Naskladnění vyberu produkty<br/>množství a balení; příjem má nulové ceny"]
+    manual["V Nákupních objednávkách<br/>doplním příjem a nákupní ceny"]
+    correction["Ve Skladových korekcích<br/>zadám změnu, typ a důvod"]
+    receipt["Položky nákupní objednávky<br/>zvyšují celkový sklad"]
+    stock["Zkontroluji stav<br/>příjmy − spotřeba + korekce"]
+    bar(["Při fyzickém doplnění baru<br/>zapíšu také Doplnění v Barovém skladu"])
+    start --> choose
+    choose -->|Rychlý příjem| batch --> receipt
+    choose -->|Podrobný příjem| manual --> receipt
+    choose -->|Oprava evidence| correction --> stock
+    receipt --> stock --> bar

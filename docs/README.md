@@ -12,6 +12,7 @@ Podrobnosti jsou rozdělené podle účelu:
 
 ## Funkce a provoz
 
+- [Grafické postupy práce — pobyty, kuchyň, doklady, ABRA, bar a sklady](features/WORKFLOWS.md)
 - [Administrace a provozní přehled](features/ADMINISTRATION.md)
 - [POS / samoobslužný bar](features/POS_SYSTEM.md)
 - [Barové platby](features/PAYMENT_FUNCTIONALITY.md)
@@ -39,6 +40,7 @@ uživatelský postup je ve [fakturaci](features/BILLING.md#ověření-a-další-
 - [Barvy a téma](development/COLOR_SYSTEM_GUIDE.md)
 - [Formátování peněz a čísel](development/CURRENCY_CONFIG.md)
 - [Diagnostika LiveView](development/COMMON_LIVEVIEW_ERRORS.md)
+- [Zdroje a obnova workflow obrázků](development/WORKFLOW_DIAGRAMS.md)
 
 Cesty ke zdrojům uvedené jako kód jsou relativní ke kořeni repozitáře.
 Instrukce pro agenty zůstávají v [AGENTS.md](../AGENTS.md).

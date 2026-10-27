@@ -1,0 +1,27 @@
+{
+  "theme": "base",
+  "look": "classic",
+  "htmlLabels": false,
+  "markdownAutoWrap": false,
+  "themeCSS": ".node polygon { fill: #fff3d8 !important; stroke: #aa8548 !important; }",
+  "fontFamily": "DejaVu Sans, Arial, sans-serif",
+  "themeVariables": {
+    "fontFamily": "DejaVu Sans, Arial, sans-serif",
+    "fontSize": "17px",
+    "primaryColor": "#f1f5fa",
+    "primaryTextColor": "#1c3345",
+    "primaryBorderColor": "#70899b",
+    "lineColor": "#526d7e",
+    "secondaryColor": "#fff3d8",
+    "tertiaryColor": "#e4f2ed",
+    "edgeLabelBackground": "#ffffff"
+  },
+  "flowchart": {
+    "htmlLabels": false,
+    "wrappingWidth": 420,
+    "curve": "linear",
+    "nodeSpacing": 28,
+    "rankSpacing": 42,
+    "padding": 14
+  }
+}

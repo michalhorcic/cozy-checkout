@@ -1,0 +1,21 @@
+flowchart TD
+    accTitle: Kalkulace pobytu a požadavek na zálohu
+    accDescr: Ceník, počty a odběratel tvoří kalkulaci. Zálohová výzva je volitelná a neznamená přijetí peněz.
+    settings["Při prvním použití: Doklady → Nastavení<br/>dodavatel, roční řady a ceník ubytování"]
+    open["Rezervace → Otevřít kalkulaci,<br/>doklady a platby"]
+    private{"Soukromý pobyt?"}
+    personal(["Označím soukromý pobyt<br/>osoby a stravování zůstávají, bez dokladů"])
+    items["Doplním osoby, noci a služby<br/>zkontroluji ceny, DPH a odběratele"]
+    price{"Ceny odpovídají<br/>dohodě?"}
+    edit["Upravím ručně nebo použiji<br/>aktuální ceník přes náhled a potvrzení"]
+    advance{"Chci výzvu<br/>k záloze?"}
+    preview["Zvolím procento nebo částku<br/>zkontroluji náhled a vystavím výzvu"]
+    send(["Stáhnu PDF nebo odešlu výzvu<br/>výzva sama nepotvrzuje platbu"])
+    wait(["Pokračuji v přípravě pobytu<br/>skutečnou platbu eviduji až po přijetí"])
+    settings -.->|Jednorázová příprava| open --> private
+    private -->|Ano, před vydáním dokladů| personal
+    private -->|Ne| items --> price
+    price -->|Ne| edit --> items
+    price -->|Ano| advance
+    advance -->|Ano| preview --> send
+    advance -->|Ne| wait

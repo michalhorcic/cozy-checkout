@@ -1,0 +1,19 @@
+flowchart TD
+    accTitle: PDF a odeslání pobytového dokladu
+    accDescr: Stažení i email používají původní PDF. Odeslání vyžaduje potvrzený souhlas a sleduje se odděleně od úhrady i ABRA.
+    open["Doklady v kalkulaci pobytu<br/>nebo Detail dokladu"]
+    choice{"Jak doklad předám?"}
+    download["Zvolím Stáhnout PDF"]
+    email["Zvolím Odeslat emailem<br/>zkontroluji příjemce, předmět a zprávu"]
+    consent["Potvrdím souhlas<br/>s elektronickou podobou dokladu"]
+    queue["Potvrdím odeslání<br/>zpráva se zařadí do fronty"]
+    pdf["Aplikace připraví původní PDF<br/>nebo použije již uložený soubor"]
+    result{"Krok uspěl?"}
+    done(["Stažený soubor / přijetí poskytovatelem<br/>není to potvrzení platby ani doručení"])
+    error["Projdu Detail a historii<br/>po opravě příčiny obnovím příslušný krok"]
+    open --> choice
+    choice -->|Soubor| download --> pdf
+    choice -->|Email| email --> consent --> queue --> pdf
+    pdf --> result
+    result -->|Ano| done
+    result -->|Ne| error -.-> choice

@@ -49,6 +49,7 @@ The PIN must contain 6 to 8 digits. Five incorrect attempts from the same client
 podklady a [plány nových funkcí](docs/plans/README.md).
 
 - [Administrace a provozní přehled](docs/features/ADMINISTRATION.md)
+- [Grafické postupy práce s aplikací](docs/features/WORKFLOWS.md)
 - [Samoobslužný bar / POS](docs/features/POS_SYSTEM.md) a [platby](docs/features/PAYMENT_FUNCTIONALITY.md)
 - [Fakturace pobytů](docs/features/BILLING.md)
 - [Stravování, receptury a nákup](docs/features/CATERING.md)
