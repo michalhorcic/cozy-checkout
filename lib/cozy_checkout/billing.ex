@@ -114,7 +114,13 @@ defmodule CozyCheckout.Billing do
   def save_customer(booking_id, attrs) do
     transaction(fn ->
       lock_booking!(booking_id)
-      updated = party_data(attrs)
+
+      updated =
+        party_data(attrs)
+        |> Map.update!("country", fn country ->
+          if String.downcase(country) == "česká republika", do: "CZ", else: country
+        end)
+
       validate_party!(updated, false)
 
       if Repo.exists?(from d in Document, where: d.booking_id == ^booking_id) and
@@ -947,7 +953,7 @@ defmodule CozyCheckout.Billing do
   defp validate_party!(data, supplier?) do
     fields =
       if supplier?,
-        do: ~w(name street city postcode country company_id vat_id registry bank_account),
+        do: ~w(name street city postcode country company_id vat_id bank_account),
         else: ~w(name)
 
     missing = Enum.filter(fields, &(String.trim(data[&1] || "") == ""))

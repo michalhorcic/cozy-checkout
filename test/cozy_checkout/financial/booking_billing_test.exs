@@ -450,6 +450,13 @@ defmodule CozyCheckout.BookingBillingTest do
     assert {:error, _} = Billing.preview(booking.id, "advance")
   end
 
+  test "supplier registry is optional when issuing a document", %{booking: booking} do
+    assert {:ok, _} = Billing.save_profile(Map.put(supplier_attrs(), "registry", ""))
+    document = issue!(booking, "final")
+    assert document.snapshot["supplier"]["registry"] == ""
+    refute CozyCheckout.Billing.Pdf.html(document) =~ "Městský soud"
+  end
+
   test "tiny advances across four tax groups never create a negative allocation" do
     lines = [
       Money.line("Ubytování", 1, 1, "1", "12"),

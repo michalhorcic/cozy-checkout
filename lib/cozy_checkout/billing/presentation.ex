@@ -12,6 +12,9 @@ defmodule CozyCheckout.Billing.Presentation do
   def date(value) when is_binary(value), do: value |> Date.from_iso8601!() |> date()
   def date(value), do: Calendar.strftime(value, "%d.%m.%Y")
 
+  def country_name("CZ"), do: "Česká Republika"
+  def country_name(country), do: country
+
   def lines(%{kind: "advance", total: total}), do: [%{"gross" => to_string(total)}]
   def lines(document), do: document.lines
 
