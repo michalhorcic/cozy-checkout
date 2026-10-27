@@ -114,6 +114,7 @@ defmodule CozyCheckout.Billing do
   def save_customer(booking_id, attrs) do
     transaction(fn ->
       lock_booking!(booking_id)
+
       updated =
         party_data(attrs)
         |> Map.update!("country", fn country ->
