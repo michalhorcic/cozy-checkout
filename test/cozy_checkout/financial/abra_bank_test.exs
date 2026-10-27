@@ -2,7 +2,17 @@ defmodule CozyCheckout.AbraBankTest do
   use CozyCheckout.DataCase, async: false
   @moduletag :financial
   import CozyCheckout.BillingFixtures
-  alias CozyCheckout.Abra.{Accommodation, Bank, BankImport, BankMovement, Client}
+
+  alias CozyCheckout.Abra.{
+    Accommodation,
+    AccommodationExport,
+    Bank,
+    BankConfirmation,
+    BankImport,
+    BankMovement,
+    Client
+  }
+
   alias CozyCheckout.Billing.{Document, Payment}
 
   setup do
@@ -59,6 +69,71 @@ defmodule CozyCheckout.AbraBankTest do
     assert Bank.status().last_success_at
   end
 
+  test "pending booking IDs include only actionable suggestions and exclude confirmed movements",
+       %{booking: booking, document: doc} do
+    expect_page([
+      movement(1, doc.variable_symbol),
+      movement(2, doc.variable_symbol),
+      movement(3, doc.variable_symbol) |> Map.put("sparovano", true)
+    ])
+
+    assert :ok = Bank.sync()
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new([booking.id])
+    assert Bank.pending_booking_ids([]) == MapSet.new()
+    assert Bank.pending_booking_ids([Ecto.UUID.generate()]) == MapSet.new()
+    assert Repo.aggregate(Payment, :count) == 0
+
+    # A confirmation has already recorded a payment, including when its remote sync failed.
+    export =
+      %AccommodationExport{}
+      |> Ecto.Changeset.change(
+        document_id: doc.id,
+        base_url: "https://accounting.test",
+        company_id: "bank-test",
+        external_id: "ext:cozy-checkout:accommodation:#{doc.id}",
+        payload: %{}
+      )
+      |> Repo.insert!()
+
+    for row <- Bank.for_booking(booking.id) do
+      payment = receipt!(booking, "100", %{"document_id" => doc.id})
+
+      %BankConfirmation{}
+      |> Ecto.Changeset.change(
+        movement_id: row.movement.id,
+        payment_id: payment.id,
+        source_export_id: export.id,
+        base_url: "https://accounting.test",
+        company_id: "bank-test",
+        bank_snapshot: %{},
+        receipt_payload: %{},
+        state: "failed"
+      )
+      |> Repo.insert!()
+    end
+
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new()
+  end
+
+  test "pending suggestions respect bank identity, eligibility and missing movements",
+       %{booking: booking, document: doc} do
+    expect_page([movement(1, doc.variable_symbol)])
+    assert :ok = Bank.sync()
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new([booking.id])
+
+    configure(company_id: "another-company")
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new()
+    configure(company_id: "bank-test", enabled: false)
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new()
+    configure(enabled: true, enabled_from: ~U[2099-01-01 00:00:00Z])
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new()
+    configure(enabled_from: ~U[2020-01-01 00:00:00Z])
+
+    expect_page([])
+    assert :ok = Bank.sync()
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new()
+  end
+
   test "page retry preserves checkpoint; complete scan detects changes, missing rows and late older receipts",
        %{document: doc} do
     rows = for id <- 1..100, do: movement(id, doc.variable_symbol)
@@ -109,6 +184,7 @@ defmodule CozyCheckout.AbraBankTest do
            )
 
     assert Decimal.equal?(Repo.get_by!(BankMovement, remote_id: "2").amount, 50)
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new([booking.id])
     assert [paired] = Bank.for_booking(booking.id)
     assert paired.document.id == doc.id
     assert paired.reason =~ "ověřte"
@@ -120,6 +196,7 @@ defmodule CozyCheckout.AbraBankTest do
     expect_page([movement(7, doc.variable_symbol)])
     assert :ok = Bank.sync()
     assert Bank.for_booking(booking.id) == []
+    assert Bank.pending_booking_ids([booking.id]) == MapSet.new()
   end
 
   test "malformed page is atomic and cannot advance the checkpoint or last success; disabled import and changed targets are isolated",

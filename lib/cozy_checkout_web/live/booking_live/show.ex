@@ -49,17 +49,20 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} show_header={false} main_class="" content_class="">
-      <div class="max-w-7xl mx-auto px-4 py-8">
-        <div class="mb-8">
+      <div class="max-w-7xl mx-auto px-4 py-5">
+        <div class="mb-5">
           <.link
             navigate={build_path_with_params(~p"/admin/bookings", @filter_params)}
             class="text-tertiary-600 hover:text-tertiary-800 mb-2 inline-block"
           >
             ← Back to Bookings
           </.link>
-          <div class="flex items-center justify-between">
-            <h1 class="text-4xl font-bold text-primary-500">{@page_title}</h1>
-            <div class="flex space-x-3">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="min-w-0">
+              <h1 class="text-2xl font-bold text-primary-500 sm:text-3xl">{@page_title}</h1>
+              <p class="mt-1 break-words font-medium text-primary-500">{@booking.guest.name}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
               <.link
                 navigate={~p"/admin/bookings/#{@booking}/guests"}
                 class="inline-flex items-center px-4 py-2 bg-tertiary-500 hover:bg-tertiary-600 text-white font-semibold rounded-lg shadow-md transition-colors duration-200"
@@ -75,34 +78,95 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
           </div>
         </div>
 
-        <div class="space-y-6">
-          <%!-- Guest Information --%>
-          <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-primary-500 mb-4">Guest Information</h2>
-            <div class="grid grid-cols-2 gap-4">
-              <div>
-                <p class="text-sm text-primary-400">Name</p>
-                <p class="text-lg font-medium text-primary-500">{@booking.guest.name}</p>
-              </div>
-              <div :if={@booking.guest.email}>
-                <p class="text-sm text-primary-400">Email</p>
-                <p class="text-lg font-medium text-primary-500">{@booking.guest.email}</p>
-              </div>
-              <div :if={@booking.guest.phone}>
-                <p class="text-sm text-primary-400">Phone</p>
-                <p class="text-lg font-medium text-primary-500">{@booking.guest.phone}</p>
+        <div id="booking-detail-grid" class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+          <section id="booking-meals" class="min-w-0 bg-white shadow rounded-lg p-4">
+            <div class="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+              <h2 class="text-lg font-bold text-primary-500">Stravování</h2>
+              <.link
+                id="booking-menu-link"
+                navigate={~p"/admin/bookings/#{@booking.id}/menu"}
+                class="font-semibold text-tertiary-600 underline"
+              >Menu rezervace</.link>
+              <.link
+                :if={
+                  @booking.check_out_date && @booking.meal_plan != "none" &&
+                    @booking.status != "cancelled"
+                }
+                id="booking-shopping-link"
+                navigate={
+                  ~p"/admin/kitchen-shopping?#{%{from: Date.to_iso8601(@booking.check_in_date), to: Date.to_iso8601(@booking.check_out_date), booking: @booking.id}}"
+                }
+                class="text-sm font-semibold text-emerald-700 underline"
+              >Nákup pro pobyt</.link>
+            </div>
+            <p id="booking-meal-plan" class="font-semibold">{meal_plan_label(@booking.meal_plan)}</p>
+            <p
+              :if={@booking.meal_plan != "none" and not @meal_details_complete}
+              id="booking-meals-incomplete"
+              class="mt-2 text-warning"
+            >
+              Rezervace není zahrnuta do součtů porcí. Doplňte stravování a oba počty osob
+              (včetně nul), nebo potvrďte pobyt bez stravy.
+            </p>
+            <div :if={@booking.dietary_restrictions} class="mt-3">
+              <p class="text-sm text-primary-400">Dietary Restrictions</p>
+              <div class="bg-error-light border-l-4 border-error px-4 py-3 rounded">
+                <p class="text-error whitespace-pre-line">{@booking.dietary_restrictions}</p>
               </div>
             </div>
-            <div :if={@booking.guest.notes} class="mt-4">
-              <p class="text-sm text-primary-400">Guest Notes</p>
-              <p class="text-primary-500">{@booking.guest.notes}</p>
+            <div :if={@meal_details_complete} class="mt-3">
+              <p>{@booking.meal_adults} dospělí · {@booking.meal_children} děti</p>
+              <p class="mt-1 text-sm text-primary-400">
+                První jídlo: {meal_label(@booking.first_meal)} · Poslední jídlo: {meal_label(
+                  @booking.last_meal
+                )}
+              </p>
+              <p :if={@booking.status == "cancelled"} class="mt-2 text-warning">
+                Zrušená rezervace se nezapočítává do porcí.
+              </p>
+              <details id="booking-meal-schedule" class="mt-3">
+                <summary class="cursor-pointer text-sm font-medium text-tertiary-700">
+                  Rozpis porcí po dnech
+                </summary>
+                <div class="mt-2 overflow-x-auto">
+                  <table class="w-full text-left">
+                    <thead>
+                      <tr>
+                        <th class="p-2">Den</th><th class="p-2">Snídaně</th>
+                        <th class="p-2">Oběd</th><th class="p-2">Večeře</th>
+                      </tr>
+                    </thead>
+                    <tbody id="booking-meal-days" phx-update="stream">
+                      <tr
+                        :for={{id, day} <- @streams.meal_days}
+                        id={id}
+                        class="border-t border-secondary-200"
+                      >
+                        <td class="p-2">{Calendar.strftime(day.date, "%d.%m.%Y")}</td>
+                        <td :for={type <- ["breakfast", "lunch", "dinner"]} class="p-2">
+                          <.portion_count
+                            id={"booking-portions-#{day.date}-#{type}"}
+                            counts={Map.fetch!(day.counts, type)}
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </details>
             </div>
-          </div>
+          </section>
 
+          <%!-- Invoice Details --%>
+          <.live_component
+            module={CozyCheckoutWeb.BookingLive.InvoiceComponent}
+            id="booking-invoice"
+            booking={@booking}
+          />
           <%!-- Booking Information --%>
-          <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-primary-500 mb-4">Booking Details</h2>
-            <div class="grid grid-cols-2 gap-4">
+          <div class="min-w-0 bg-white shadow rounded-lg p-4">
+            <h2 class="text-lg font-bold text-primary-500 mb-3">Booking Details</h2>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div :if={@rooms != []}>
                 <p class="text-sm text-primary-400">Rooms</p>
                 <div class="flex flex-wrap gap-2 mt-1">
@@ -127,38 +191,55 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
               </div>
               <div>
                 <p class="text-sm text-primary-400">Check-in Date</p>
-                <p class="text-lg font-medium text-primary-500">
+                <p class="text-sm font-medium break-words text-primary-500">
                   {Calendar.strftime(@booking.check_in_date, "%B %d, %Y")}
                 </p>
               </div>
               <div :if={@booking.check_out_date}>
                 <p class="text-sm text-primary-400">Check-out Date</p>
-                <p class="text-lg font-medium text-primary-500">
+                <p class="text-sm font-medium break-words text-primary-500">
                   {Calendar.strftime(@booking.check_out_date, "%B %d, %Y")}
                 </p>
               </div>
             </div>
-            <div :if={@booking.short_note} class="mt-4">
+            <div :if={@booking.short_note} class="mt-3">
               <p class="text-sm text-primary-400">Group/Tag</p>
               <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-info-light text-tertiary-800">
                 {@booking.short_note}
               </span>
             </div>
-            <div :if={@booking.notes} class="mt-4">
+            <div :if={@booking.notes} class="mt-3">
               <p class="text-sm text-primary-400">Booking Notes</p>
               <p class="text-primary-500">{@booking.notes}</p>
             </div>
-            <div :if={@booking.dietary_restrictions} class="mt-4">
-              <p class="text-sm text-primary-400">Dietary Restrictions</p>
-              <div class="bg-error-light border-l-4 border-error px-4 py-3 rounded">
-                <p class="text-error whitespace-pre-line">{@booking.dietary_restrictions}</p>
+          </div>
+
+          <%!-- Guest Information --%>
+          <div class="min-w-0 bg-white shadow rounded-lg p-4">
+            <h2 class="text-lg font-bold text-primary-500 mb-3">Guest Information</h2>
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <p class="text-sm text-primary-400">Name</p>
+                <p class="text-sm font-medium break-words text-primary-500">{@booking.guest.name}</p>
               </div>
+              <div :if={@booking.guest.email}>
+                <p class="text-sm text-primary-400">Email</p>
+                <p class="text-sm font-medium break-words text-primary-500">{@booking.guest.email}</p>
+              </div>
+              <div :if={@booking.guest.phone}>
+                <p class="text-sm text-primary-400">Phone</p>
+                <p class="text-sm font-medium break-words text-primary-500">{@booking.guest.phone}</p>
+              </div>
+            </div>
+            <div :if={@booking.guest.notes} class="mt-3">
+              <p class="text-sm text-primary-400">Guest Notes</p>
+              <p class="text-primary-500">{@booking.guest.notes}</p>
             </div>
           </div>
 
           <%!-- Email History --%>
-          <section id="booking-email-history" class="rounded-lg bg-white p-6 shadow-lg">
-            <h2 class="mb-4 text-2xl font-bold text-primary-500">Email History</h2>
+          <section id="booking-email-history" class="min-w-0 rounded-lg bg-white p-4 shadow">
+            <h2 class="mb-3 text-lg font-bold text-primary-500">Email History</h2>
             <p :if={@email_deliveries == []} class="text-primary-400">
               No emails have been queued for this booking.
             </p>
@@ -205,35 +286,35 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
           </section>
 
           <%!-- Associated Orders --%>
-          <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-primary-500 mb-4">Orders</h2>
+          <div class="min-w-0 bg-white shadow rounded-lg p-4">
+            <h2 class="text-lg font-bold text-primary-500 mb-3">Orders</h2>
             <%= if @booking.orders == [] do %>
               <p class="text-primary-400">No orders yet for this booking.</p>
             <% else %>
-              <div class="overflow-hidden">
+              <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                   <thead class="bg-secondary-50">
                     <tr>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
+                      <th class="px-3 py-2 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Order Date
                       </th>
-                      <th class="px-6 py-3 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
+                      <th class="px-3 py-2 text-left text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Status
                       </th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
+                      <th class="px-3 py-2 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Total
                       </th>
-                      <th class="px-6 py-3 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
+                      <th class="px-3 py-2 text-right text-xs font-medium text-primary-400 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
                   <tbody class="bg-white divide-y divide-gray-200">
                     <tr :for={order <- @booking.orders} class="hover:bg-secondary-50">
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500">
+                      <td class="px-3 py-2 whitespace-nowrap text-sm text-primary-500">
                         {Calendar.strftime(order.inserted_at, "%b %d, %Y %I:%M %p")}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap">
+                      <td class="px-3 py-2 whitespace-nowrap">
                         <span class={[
                           "px-2 inline-flex text-xs leading-5 font-semibold rounded-full",
                           order_status_badge_class(order.status)
@@ -241,10 +322,10 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
                           {String.capitalize(order.status)}
                         </span>
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-500 text-right">
+                      <td class="px-3 py-2 whitespace-nowrap text-sm text-primary-500 text-right">
                         {CozyCheckoutWeb.CurrencyHelper.format_currency(order.total_amount)}
                       </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
                         <.link
                           navigate={~p"/admin/orders/#{order}"}
                           class="text-tertiary-600 hover:text-white-900"
@@ -259,79 +340,6 @@ defmodule CozyCheckoutWeb.BookingLive.Show do
             <% end %>
           </div>
 
-          <section id="booking-meals" class="bg-white shadow-lg rounded-lg p-6">
-            <div class="mb-4 flex items-center justify-between gap-4">
-              <h2 class="text-2xl font-bold text-primary-500">Stravování</h2>
-              <.link
-                id="booking-menu-link"
-                navigate={~p"/admin/bookings/#{@booking.id}/menu"}
-                class="font-semibold text-tertiary-600 underline"
-              >Menu rezervace</.link>
-              <.link
-                :if={
-                  @booking.check_out_date && @booking.meal_plan != "none" &&
-                    @booking.status != "cancelled"
-                }
-                id="booking-shopping-link"
-                navigate={
-                  ~p"/admin/kitchen-shopping?#{%{from: Date.to_iso8601(@booking.check_in_date), to: Date.to_iso8601(@booking.check_out_date), booking: @booking.id}}"
-                }
-                class="ml-3 text-sm font-semibold text-emerald-700 underline"
-              >Nákup pro pobyt</.link>
-            </div>
-            <p id="booking-meal-plan" class="font-semibold">{meal_plan_label(@booking.meal_plan)}</p>
-            <p
-              :if={@booking.meal_plan != "none" and not @meal_details_complete}
-              id="booking-meals-incomplete"
-              class="mt-2 text-warning"
-            >
-              Rezervace není zahrnuta do součtů porcí. Doplňte stravování a oba počty osob
-              (včetně nul), nebo potvrďte pobyt bez stravy.
-            </p>
-            <div :if={@meal_details_complete} class="mt-4">
-              <p>{@booking.meal_adults} dospělí · {@booking.meal_children} děti</p>
-              <p class="mt-1 text-sm text-primary-400">
-                První jídlo: {meal_label(@booking.first_meal)} · Poslední jídlo: {meal_label(
-                  @booking.last_meal
-                )}
-              </p>
-              <p :if={@booking.status == "cancelled"} class="mt-2 text-warning">
-                Zrušená rezervace se nezapočítává do porcí.
-              </p>
-              <div class="mt-4 overflow-x-auto">
-                <table class="w-full text-left">
-                  <thead>
-                    <tr>
-                      <th class="p-2">Den</th><th class="p-2">Snídaně</th>
-                      <th class="p-2">Oběd</th><th class="p-2">Večeře</th>
-                    </tr>
-                  </thead>
-                  <tbody id="booking-meal-days" phx-update="stream">
-                    <tr
-                      :for={{id, day} <- @streams.meal_days}
-                      id={id}
-                      class="border-t border-secondary-200"
-                    >
-                      <td class="p-2">{Calendar.strftime(day.date, "%d.%m.%Y")}</td>
-                      <td :for={type <- ["breakfast", "lunch", "dinner"]} class="p-2">
-                        <.portion_count
-                          id={"booking-portions-#{day.date}-#{type}"}
-                          counts={Map.fetch!(day.counts, type)}
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          <%!-- Invoice Details --%>
-          <.live_component
-            module={CozyCheckoutWeb.BookingLive.InvoiceComponent}
-            id="booking-invoice"
-            booking={@booking}
-          />
         </div>
       </div>
     </Layouts.app>

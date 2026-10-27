@@ -14,10 +14,10 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
 
   def render(assigns) do
     ~H"""
-    <section class="bg-white shadow rounded-xl p-6 space-y-4">
-      <h2 class="text-2xl font-bold">Kalkulace a fakturace pobytu</h2>
+    <section id="booking-billing-summary" class="min-w-0 bg-white shadow rounded-lg p-4 space-y-3">
+      <h2 class="text-lg font-bold text-primary-500">Kalkulace a fakturace pobytu</h2>
       <p :if={@personal?} id="booking-personal">Soukromý pobyt · bez finanční evidence</p>
-      <div :if={not @personal?} class="flex flex-wrap gap-6">
+      <div :if={not @personal?} class="grid grid-cols-1 gap-x-4 gap-y-2 text-sm sm:grid-cols-2">
         <p><strong>{Billing.payment_state(@balance)}</strong></p>
         <p>
           Cena:
@@ -30,7 +30,10 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
         </p>
       </div>
       <p :if={not @personal?}>{length(@documents)} vystavených dokladů</p>
-      <.link navigate={~p"/admin/bookings/#{@booking.id}/billing"} class="btn btn-primary">Otevřít kalkulaci, doklady a platby</.link>
+      <.link
+        navigate={~p"/admin/bookings/#{@booking.id}/billing"}
+        class="btn btn-primary h-auto min-h-10 py-2 text-center whitespace-normal"
+      >Otevřít kalkulaci, doklady a platby</.link>
     </section>
     """
   end

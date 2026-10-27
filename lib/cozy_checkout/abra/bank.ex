@@ -2,7 +2,7 @@ defmodule CozyCheckout.Abra.Bank do
   @moduledoc "Read-only bank mirror and provisional VS suggestions. Never records payments."
   import Ecto.Query
   alias CozyCheckout.{Billing, Repo}
-  alias CozyCheckout.Abra.{Accommodation, BankImport, BankMovement, Client}
+  alias CozyCheckout.Abra.{Accommodation, BankConfirmation, BankImport, BankMovement, Client}
   alias CozyCheckout.Billing.Document
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Workers.AbraBankWorker
@@ -241,6 +241,35 @@ defmodule CozyCheckout.Abra.Bank do
     )
     |> Enum.map(&suggestion(&1, cfg))
     |> Enum.filter(&(&1.booking_id == booking_id))
+  end
+
+  @doc "Booking IDs with an unconfirmed, unambiguous bank suggestion in the current bank mirror."
+  def pending_booking_ids([]), do: MapSet.new()
+
+  def pending_booking_ids(booking_ids) do
+    cfg = Accommodation.config()
+
+    if cfg[:enabled] == true and match?(%DateTime{}, cfg[:enabled_from]) do
+      # Issued document variable symbols are unique across bookings.
+      Repo.all(
+        from m in BankMovement,
+          join: d in Document,
+          on: d.variable_symbol == m.variable_symbol and d.kind in ["advance", "final"],
+          join: b in Booking,
+          on: b.id == d.booking_id,
+          left_join: c in BankConfirmation,
+          on: c.movement_id == m.id,
+          where: ^target(cfg),
+          where: b.id in ^booking_ids and b.inserted_at >= ^cfg[:enabled_from],
+          where: is_nil(b.deleted_at) and is_nil(m.missing_at) and is_nil(c.id),
+          where: m.currency == "code:CZK" and m.direction == "typPohybu.prijem" and m.amount > 0,
+          distinct: true,
+          select: b.id
+      )
+      |> MapSet.new()
+    else
+      MapSet.new()
+    end
   end
 
   defp suggestion(movement, cfg) do

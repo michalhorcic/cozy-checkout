@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.Bookings
+  alias CozyCheckout.Abra.Bank
   alias CozyCheckout.Billing.BookingSummary
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Meals.MenuPlanning
@@ -57,6 +58,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
           socket
           |> assign(:bookings, bookings_with_rooms)
+          |> assign(:pending_bank_bookings, Bank.pending_booking_ids(Enum.map(bookings, & &1.id)))
           |> assign(:menu_variants, MenuPlanning.list_variants())
           |> assign(
             :booking_menus,
@@ -68,6 +70,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         {:error, meta} ->
           socket
           |> assign(:bookings, [])
+          |> assign(:pending_bank_bookings, MapSet.new())
           |> assign(:menu_variants, [])
           |> assign(:booking_menus, %{})
           |> assign(:meta, meta)
@@ -536,7 +539,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                           <button
                             type="button"
                             phx-click={JS.toggle(to: "#status-menu-#{booking.id}")}
-                            class="w-full min-w-0 text-left inline-flex items-center justify-between gap-1 hover:opacity-80 transition-opacity"
+                            class="max-w-full min-w-0 text-left inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity"
                             title={"Stav rezervace: " <> String.capitalize(booking.status)}
                             aria-label="Změnit stav rezervace"
                           >
@@ -628,6 +631,16 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                         </div>
 
                         <.billing_summary booking={booking} summary={booking.billing_summary} />
+                        <.link
+                          :if={MapSet.member?(@pending_bank_bookings, booking.id)}
+                          id={"booking-bank-pending-#{booking.id}"}
+                          navigate={~p"/admin/bookings/#{booking.id}/billing#booking-bank-suggestions"}
+                          class="flex items-start gap-1.5 text-xs font-medium text-warning-dark hover:underline"
+                          title="Nalezen návrh podle VS. Přijetí platby ještě není ověřeno."
+                        >
+                          <.icon name="hero-banknotes" class="size-3.5 shrink-0 mt-0.5" />
+                          <span>Platba z banky k ověření</span>
+                        </.link>
                       </div>
                     </td>
                     <td class="col-span-2 min-w-0 py-2 text-right align-top 2xl:px-2 2xl:py-3">
@@ -727,7 +740,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       >
         <.icon
           name="hero-document-currency-dollar"
-          class="hidden size-3.5 shrink-0 text-primary-400 2xl:inline-block"
+          class="size-3.5 shrink-0 text-primary-400"
         />
         <span
           id={if @summary.payment_state, do: "booking-payment-#{@booking.id}"}
