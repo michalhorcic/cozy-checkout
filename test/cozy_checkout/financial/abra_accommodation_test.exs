@@ -54,6 +54,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert invoice["clenDph"] == "code:000U"
     assert invoice["ucetni"] == false
     assert invoice["poznam"] =~ "Záloha zadaná částkou: 1 234,57 CZK"
+
     assert get_in(doc.snapshot, ["advance_calculation", "person_stays"]) == [
              %{"quantity" => 2, "nights" => 3}
            ]
@@ -61,6 +62,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert Enum.all?(invoice["polozkyFaktury"], fn item ->
              item["nazev"] == "Záloha na ubytování 2 osob za 3 noci"
            end)
+
     refute Map.has_key?(invoice, "hotovostni-uhrada")
     refute Map.has_key?(invoice, "duzpPuv")
 
@@ -134,6 +136,7 @@ defmodule CozyCheckout.AbraAccommodationTest do
 
     item = Enum.find(Billing.calculation(booking.id).items, &(&1.name == "Dítě zdarma"))
     assert {:ok, _} = Billing.save_item(booking.id, %{quantity: 20}, item.id)
+
     assert {:ok, ^payload} =
              AdvanceBuilder.build(Billing.get_document!(doc.id), Accommodation.config())
   end

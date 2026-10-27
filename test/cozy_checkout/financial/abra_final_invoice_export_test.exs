@@ -104,6 +104,7 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
 
     for {item, original} <- Enum.zip(invoice["polozkyFaktury"], doc.lines) do
       assert item["nazev"] == original["name"]
+
       assert Decimal.equal?(
                Decimal.new(item["mnozMj"]),
                Decimal.mult(original["quantity"], original["nights"])
