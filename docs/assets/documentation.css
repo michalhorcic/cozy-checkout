@@ -1,0 +1,27 @@
+:root {
+  --md-text-font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --md-code-font-family: ui-monospace, "Cascadia Code", monospace;
+}
+
+.md-grid { max-width: 88rem; }
+.md-typeset { font-size: .85rem; line-height: 1.7; }
+.md-typeset h1 { color: #203b49; font-weight: 650; }
+.md-typeset img { height: auto; border-radius: .3rem; }
+.md-typeset table:not([class]) { font-size: .75rem; }
+.md-nav__link { padding-block: .12rem; }
+
+/* Tall workflow images retain readable labels; open the image for full detail. */
+.md-typeset img[alt$="— workflow"] {
+  display: block;
+  max-height: 68rem;
+  width: auto;
+  max-width: 100%;
+  margin-inline: auto;
+  border: 1px solid #e0e8ed;
+}
+
+@media print {
+  .md-header, .md-sidebar, .md-footer, .md-top { display: none; }
+  .md-content { margin: 0; }
+  .md-typeset img[alt$="— workflow"] { max-height: none; }
+}

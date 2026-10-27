@@ -1,0 +1,35 @@
+site_name: Cozy Checkout · Dokumentace
+site_description: Praktické návody a grafické postupy pro Jindřichův dům
+docs_dir: docs
+site_dir: site
+extra:
+  source_repository: https://github.com/michalhorcic/cozy-checkout
+theme:
+  name: material
+  language: cs
+  font: false
+  palette:
+    scheme: default
+    primary: teal
+    accent: teal
+  features:
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - search.suggest
+plugins:
+  - search
+hooks:
+  - tools/docs/hooks.py
+extra_css:
+  - assets/documentation.css
+markdown_extensions:
+  - tables
+  - fenced_code
+  - toc:
+      permalink: true
+      slugify: !!python/name:markdown.extensions.toc.slugify_unicode
+validation:
+  links:
+    not_found: warn
+    anchors: warn
