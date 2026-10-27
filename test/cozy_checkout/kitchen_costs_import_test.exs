@@ -2,7 +2,26 @@ defmodule CozyCheckout.KitchenCosts.ImportTest do
   use CozyCheckout.DataCase, async: true
   import CozyCheckout.RecipeFixtures
   alias CozyCheckout.{KitchenCosts, Recipes}
-  alias CozyCheckout.KitchenCosts.{Import, Purchase}
+  alias CozyCheckout.KitchenCosts.{Import, Purchase, Mapping}
+
+  test "mapping lookup accepts empty drafts and excludes archived mappings" do
+    assert KitchenCosts.mapping_for(nil, nil) == nil
+    assert KitchenCosts.mapping_for("", "") == nil
+
+    assert KitchenCosts.mapping_versions(%{"merchant" => "", "lines" => [%{"source_name" => ""}]}) ==
+             %{{"", ""} => nil}
+
+    ingredient = ingredient_fixture()
+    assert {:ok, mapping} = KitchenCosts.set_mapping("Obchod", "Zboží 1 kg", ingredient.id, nil)
+    assert KitchenCosts.mapping_for(" OBCHOD ", "zboží  1 kg").id == mapping.id
+
+    mapping
+    |> Ecto.Changeset.change(archived_at: DateTime.truncate(DateTime.utc_now(), :second))
+    |> Repo.update!()
+
+    assert KitchenCosts.mapping_for("Obchod", "Zboží 1 kg") == nil
+    assert Repo.get!(Mapping, mapping.id).archived_at
+  end
 
   defp example do
     Application.app_dir(:cozy_checkout, "priv/kitchen_costs/receipt-v1.example.json")

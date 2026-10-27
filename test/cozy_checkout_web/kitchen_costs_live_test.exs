@@ -22,6 +22,13 @@ defmodule CozyCheckoutWeb.KitchenCostsLiveTest do
        Plug.Test.init_test_session(conn, %{AdminAuth.session_key() => System.system_time(:second)})}
   end
 
+  test "purchase entry mounts with a blank merchant and source name", %{conn: conn} do
+    {:ok, view, _} = live(conn, "/admin/kitchen-costs/new")
+    assert has_element?(view, "#kitchen-import-form")
+    assert has_element?(view, "#kitchen-purchase-form")
+    refute has_element?(view, "#kitchen-cost-error")
+  end
+
   defp receipt(ingredient) do
     data =
       Application.app_dir(:cozy_checkout, "priv/kitchen_costs/receipt-v1.example.json")

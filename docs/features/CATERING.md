@@ -234,5 +234,7 @@ bez CSV a samostatného PDF.
 
 Testy pokrývají kontexty, import, souběh na samostatných DB spojeních,
 PIN ochranu a LiveView průchod od účtenky po uložený report. Lokálně byla
-ověřena kompilace a formátování, testy se nespouštěly; výsledky CI ověří
-uživatel. Ověření skutečných účtenek a jednoho víkendového menu zatím zbývá.
+ověřena kompilace a formátování. Při opravě pádu načítání slovníku prošly dva
+cílené lokální regresní testy (prázdný formulář a filtr archivovaných vazeb).
+Celá testovací sada lokálně neběžela; výsledky CI ověří uživatel. Ověření
+skutečných účtenek a jednoho víkendového menu zatím zbývá.

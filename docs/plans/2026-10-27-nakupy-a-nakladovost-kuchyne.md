@@ -279,8 +279,15 @@ neúplnost výsledku. Nákupní cena není důkaz skutečné skladové spotřeby
 - Ověření: kompilace aplikace s `--warnings-as-errors`, kompilace nových
   testovacích modulů bez spuštění testů a projektový formatter prošly.
   Lokálně je Elixir 1.20.4 / Erlang 29.1.2; přesně připnutý Erlang 29.1 není
-  nainstalovaný, shoda formátování s CI proto není ověřená. Lokální testy ani
-  migrace nebyly spuštěny; výsledky CI ověří uživatel.
+  nainstalovaný, shoda formátování s CI proto není ověřená. Při původní
+  implementaci lokální testy ani migrace spuštěny nebyly; výsledky CI ověří uživatel.
+- Oprava při provozním ověřování: otevření nákupu padalo kvůli
+  `Repo.get_by(..., archived_at: nil)`. Dotaz nyní používá explicitní
+  `is_nil(m.archived_at)`. Dva cílené lokální regresní testy prošly: otevření
+  prázdného formuláře a vyhledání vazby včetně vynechání archivovaných vazeb.
+  Testovací příkaz: `PGUSER=elixir PGPASSWORD='' MIX_ENV=test mix test
+  test/cozy_checkout/kitchen_costs_import_test.exs:7
+  test/cozy_checkout_web/kitchen_costs_live_test.exs:25`. Celá sada lokálně neběžela.
 - Zbývá: ověřit CI a opravit případné nálezy, provést skutečný import účtenek
   a ručně porovnat jednotkové ceny i náklad jednoho víkendového menu. Pro tento
   krok jsou potřeba skutečné doklady od uživatele. UI zatím nebylo ručně

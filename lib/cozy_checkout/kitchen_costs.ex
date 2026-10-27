@@ -83,10 +83,13 @@ defmodule CozyCheckout.KitchenCosts do
   end
 
   def mapping_for(merchant, name) do
-    Repo.get_by(Mapping,
-      merchant_key: normalize_purchase_name(merchant),
-      source_key: normalize_purchase_name(name),
-      archived_at: nil
+    merchant_key = normalize_purchase_name(merchant)
+    source_key = normalize_purchase_name(name)
+
+    Repo.one(
+      from m in Mapping,
+        where: m.merchant_key == ^merchant_key and m.source_key == ^source_key,
+        where: is_nil(m.archived_at)
     )
   end
 
