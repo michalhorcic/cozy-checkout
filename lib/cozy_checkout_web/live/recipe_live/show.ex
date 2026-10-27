@@ -31,6 +31,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
      |> assign(:back_label, CozyCheckoutWeb.FoodNavigation.back_label(params, "Zpět na recepty"))
      |> assign(:page_title, recipe.name)
      |> assign(:recipe, recipe)
+     |> assign_costs(recipe)
      |> assign(:error, nil)
      |> assign(
        :calculator,
@@ -40,6 +41,18 @@ defmodule CozyCheckoutWeb.RecipeLive.Show do
        )
      )
      |> assign(:result, Consumption.calculate([recipe], adults, children, factor))}
+  end
+
+  defp assign_costs(socket, recipe) do
+    settings = Recipes.settings()
+    today = Date.utc_today()
+
+    assign(socket, :portion_costs, [
+      {"Teplé jídlo",
+       CozyCheckout.KitchenCosts.recipe_cost(recipe, today, settings.hot_child_factor)},
+      {"Snídaně",
+       CozyCheckout.KitchenCosts.recipe_cost(recipe, today, settings.breakfast_child_factor)}
+    ])
   end
 
   @impl true

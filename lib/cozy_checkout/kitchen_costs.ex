@@ -11,7 +11,7 @@ defmodule CozyCheckout.KitchenCosts do
   import Ecto.Changeset
   alias CozyCheckout.{Repo, Recipes}
   alias CozyCheckout.Recipes.Ingredient
-  alias CozyCheckout.KitchenCosts.{ManualPrice, Purchase, PurchaseLine}
+  alias CozyCheckout.KitchenCosts.{ManualPrice, Purchase, PurchaseLine, Mapping}
 
   @doc """
   Atomically stores a reviewed purchase. Repeated import IDs return the original.
@@ -36,16 +36,176 @@ defmodule CozyCheckout.KitchenCosts do
           check_duplicate!(cs, replaces_id, opts)
           cs = snapshot_lines(cs)
 
-          cs
-          |> put_change(:confirmed_at, DateTime.truncate(DateTime.utc_now(), :second))
-          |> put_change(:replaces_id, replaces_id)
-          |> Repo.insert()
-          |> unwrap!()
+          saved =
+            cs
+            |> put_change(:confirmed_at, DateTime.truncate(DateTime.utc_now(), :second))
+            |> put_change(:replaces_id, replaces_id)
+            |> Repo.insert()
+            |> unwrap!()
+
+          Enum.each(Keyword.get(opts, :mapping_updates, []), fn update ->
+            case set_mapping(
+                   update.merchant,
+                   update.source_name,
+                   update.ingredient_id,
+                   update.expected_version
+                 ) do
+              {:ok, _} -> :ok
+              {:error, error} -> Repo.rollback(error)
+            end
+          end)
+
+          saved
         end
       end)
     else
       {:error, cs}
     end
+  end
+
+  def normalize_purchase_name(text) when is_binary(text),
+    do:
+      text
+      |> String.normalize(:nfc)
+      |> String.downcase()
+      |> String.trim()
+      |> String.replace(~r/\s+/u, " ")
+
+  def normalize_purchase_name(_), do: ""
+
+  def list_mappings do
+    Repo.all(
+      from m in Mapping,
+        where: is_nil(m.archived_at),
+        order_by: [m.merchant_key, m.source_key],
+        preload: :ingredient
+    )
+  end
+
+  def mapping_for(merchant, name) do
+    Repo.get_by(Mapping,
+      merchant_key: normalize_purchase_name(merchant),
+      source_key: normalize_purchase_name(name),
+      archived_at: nil
+    )
+  end
+
+  def mapping_versions(attrs) do
+    Map.new(review_lines(attrs["lines"] || []), fn line ->
+      mapping = mapping_for(attrs["merchant"], line["source_name"])
+
+      {{normalize_purchase_name(attrs["merchant"]), normalize_purchase_name(line["source_name"])},
+       mapping && mapping.lock_version}
+    end)
+  end
+
+  @doc "Explicit dictionary edit; expected_version is nil for a previously unknown name."
+  def set_mapping(merchant, source_name, ingredient_id, expected_version) do
+    key = {normalize_purchase_name(merchant), normalize_purchase_name(source_name)}
+
+    Repo.transaction(fn ->
+      if not match?({:ok, _}, Ecto.UUID.cast(ingredient_id)),
+        do: Repo.rollback(:invalid_ingredient)
+
+      lock_key("kitchen-mapping:" <> Jason.encode!(Tuple.to_list(key)))
+      current = mapping_for(merchant, source_name)
+
+      if (current && current.lock_version) != expected_version,
+        do: Repo.rollback(:mapping_changed)
+
+      ingredient = lock_ingredient(ingredient_id)
+
+      if is_nil(ingredient) or not is_nil(ingredient.archived_at),
+        do: Repo.rollback(:invalid_ingredient)
+
+      cs =
+        Mapping.changeset(current || %Mapping{}, %{
+          merchant_key: elem(key, 0),
+          source_key: elem(key, 1),
+          source_name: source_name,
+          ingredient_id: ingredient_id
+        })
+
+      cs = if current, do: optimistic_lock(cs, :lock_version), else: cs
+      cs |> Repo.insert_or_update() |> unwrap!()
+    end)
+  end
+
+  @doc "Confirmation boundary for the admin form. Dictionary writes require a separate opt-in."
+  def confirm_reviewed_purchase(attrs, opts \\ []) do
+    lines = review_lines(attrs["lines"] || [])
+    versions = Keyword.get(opts, :mapping_versions, %{})
+
+    confirmed? =
+      Enum.all?(lines, fn line ->
+        line["classification"] != "ingredient" or
+          (line["ingredient_id"] not in [nil, ""] and
+             line["confirmed_ingredient_id"] == line["ingredient_id"])
+      end)
+
+    if confirmed? do
+      updates =
+        for line <- lines, line["classification"] == "ingredient", line["remember"] == "true" do
+          key =
+            {normalize_purchase_name(attrs["merchant"]),
+             normalize_purchase_name(line["source_name"])}
+
+          %{
+            merchant: attrs["merchant"],
+            source_name: line["source_name"],
+            ingredient_id: line["ingredient_id"],
+            expected_version: Map.get(versions, key, :not_reviewed)
+          }
+        end
+
+      grouped =
+        Enum.group_by(
+          updates,
+          &{normalize_purchase_name(&1.merchant), normalize_purchase_name(&1.source_name)}
+        )
+
+      if Enum.any?(grouped, fn {_, entries} ->
+           length(Enum.uniq_by(entries, & &1.ingredient_id)) > 1
+         end) do
+        {:error, "Stejný nákupní název nelze současně zapamatovat pro dvě suroviny"}
+      else
+        updates =
+          grouped |> Enum.sort_by(&elem(&1, 0)) |> Enum.map(fn {_, entries} -> hd(entries) end)
+
+        confirm_purchase(
+          Map.put(attrs, "lines", lines),
+          Keyword.put(opts, :mapping_updates, updates)
+        )
+      end
+    else
+      {:error, :unconfirmed_mapping}
+    end
+  end
+
+  def review_lines(lines) when is_list(lines), do: lines
+
+  def review_lines(lines) when is_map(lines),
+    do: lines |> Enum.sort_by(fn {key, _} -> String.to_integer(key) end) |> Enum.map(&elem(&1, 1))
+
+  def price_history(ingredient_id) do
+    Repo.all(
+      from l in PurchaseLine,
+        join: p in subquery(current_purchases()),
+        on: p.id == l.purchase_id,
+        where: l.ingredient_id == ^ingredient_id,
+        order_by: [desc: p.purchased_on, asc: l.line_number],
+        preload: :purchase
+    )
+  end
+
+  def recipe_cost(recipe, date, factor) do
+    adult =
+      recipe |> then(&Recipes.Consumption.calculate([&1], 1, 0, factor)) |> cost_consumption(date)
+
+    child =
+      recipe |> then(&Recipes.Consumption.calculate([&1], 0, 1, factor)) |> cost_consumption(date)
+
+    %{adult: adult, child: child}
   end
 
   def get_purchase!(id), do: Purchase |> Repo.get!(id) |> Repo.preload(:lines)
@@ -105,8 +265,26 @@ defmodule CozyCheckout.KitchenCosts do
   def cost_consumption(consumption, %Date{} = date) do
     rows =
       Enum.map(consumption.quantities, fn row ->
-        price = price_for(row.id, date)
-        cost = if price.unit_price, do: Decimal.mult(row.quantity, price.unit_price)
+        zero? = Decimal.equal?(row.quantity, 0)
+
+        price =
+          if zero?,
+            do: %{
+              unit_price: nil,
+              unit: row.unit,
+              source: "not_required",
+              lines: [],
+              warnings: []
+            },
+            else: price_for(row.id, date)
+
+        cost =
+          cond do
+            zero? -> Decimal.new(0)
+            price.unit_price -> Decimal.mult(row.quantity, price.unit_price)
+            true -> nil
+          end
+
         Map.merge(row, %{price: price, cost: cost})
       end)
 

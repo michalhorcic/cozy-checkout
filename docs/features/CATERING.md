@@ -144,37 +144,95 @@ koeficient se uplatní samostatně. Normy jsou v `priv/recipes/breakfast_buffet.
 Před prvním víkendem je zkontrolujte přes **Upravit normy bufetu**; nepoužívané
 položky lze nastavit na 0, další suroviny přidat běžným formulářem receptu.
 
-## Nákupy a kalkulované náklady surovin — rozpracováno
+## Nákupy a kalkulované náklady surovin
 
-První část modulu je datový základ bez obrazovek pro obsluhu. Migrace
-`20261027120000` přidává samostatné tabulky `kitchen_purchases`,
-`kitchen_purchase_lines` a `kitchen_manual_prices`; barové nákupy ani účetnictví
-nemění. Nevyžaduje novou konfiguraci, OpenAI API klíč ani změnu ABRA.
-Další postup zachycuje [implementační plán](../plans/2026-10-27-nakupy-a-nakladovost-kuchyne.md).
+V **Stravování → Nákupy a ceny** otevřete **Nový nákup / import**. Stejný
+formulář slouží pro ruční nákup i kontrolu JSONu z ChatGPT. Nové tabulky přidávají
+migrace `20261027120000` a `20261027130000`; modul nevyžaduje novou konfiguraci,
+OpenAI API klíč ani změnu ABRA. S barovými nákupy a skladem není propojený.
+Implementace zůstává na větvi `codex/kitchen-costs-foundation` v PR #55, dokud
+neproběhne ověření celku. Do `main` se v této etapě neslučuje.
 
-Kontext `KitchenCosts` přijímá přes `confirm_purchase/2` zkontrolovaný nákup
-s řádky: celkové množství `quantity` v `unit`, konečná cena `line_total` včetně
-DPH a zařazení `ingredient`, `unassigned` nebo `other`. Volitelné údaje
-`package_count`, `package_quantity`, `package_unit` musí odpovídat celkovému
-množství. Součet řádků a `rounding` se musí rovnat `total_paid` v CZK.
-Převody používají stávající pravidla kg/g, l/ml a ks; velikost balení se
-nepřebírá ze starého nákupu. Společné slevy musí být již přiřazené do cen řádků.
+### Import účtenky a ruční nákup
 
-Importní `import_id` je jedinečné; opakování vrátí uložený nákup. Při shodě
-údajů dokladu vrací kontext `:possible_duplicate`; potvrzenou duplicitu lze
-uložit s volbou `allow_duplicate: true`. Oprava používá `replaces_id: id`
-a ukládá celý nový nákup. Původní nákup i řádky zůstávají zachované; další
-oprava již nahrazené verze vrátí `:already_replaced`. Tyto volby nejsou součástí
-importovaného JSONu. Ceny používají jen poslední verzi každého nákupu.
+1. Stáhněte **Export katalogu pro ChatGPT**. Obsahuje stabilní ID, názvy,
+   základní jednotky, archivaci a potvrzená přiřazení nákupních názvů.
+2. V novém nákupu stáhněte instrukce `CHATGPT.md` a schéma
+   `receipt-v1.schema.json`; přiložte je s katalogem a fotkami do ChatGPT.
+   Fotky zůstávají v chatu. Ukázkový `receipt-v1.example.json` má záměrně
+   prázdná ID a obsahuje balené i vážené zboží, drogerii a společnou slevu.
+3. Výsledný JSON vložte do náhledu. Načtení nic neukládá. Nečitelné údaje
+   mohou být `null`; před potvrzením doplňte povinné údaje, jednotky, množství
+   a ceny. Limitem je 1 MB a 500 řádků. Verze je 1, částky a množství jsou
+   desetinné řetězce. Obrázky, odkazy k načtení a nepovolená pole se odmítají.
+4. Zkontrolujte **celkové množství**, například dvě balení po 140 g = 280 g.
+   Volitelné údaje o balení musí s celkovým množstvím souhlasit. Převádí se
+   pouze g/kg, ml/l a ks/ks. Hmotnost kusu ani hustota se neodhaduje.
+5. Řádkové slevy už patří do konečné ceny řádku včetně DPH. Společnou slevu
+   buď výslovně poměrně rozdělte, nebo ji ručně zahrňte do dotčených řádků
+   a označte **Sleva už je zahrnuta v řádcích**. Poměrné rozdělení pracuje
+   v haléřích a zbytek přiřadí v pořadí řádků. Zaokrouhlení dokladu je zvlášť.
+6. Známé přiřazení se předvyplní ze slovníku, návrh JSONu zůstane vedle něj
+   pro kontrolu včetně případného konfliktu a upozornění. Potvrďte vazbu každé
+   suroviny. Název je kontrolní, rozhoduje existující ID. Změna ID vyžaduje
+   nové potvrzení. Slovník se mění jen samostatným zaškrtnutím zapamatování.
+7. Neznámý řádek lze nechat **Dořešit později**, drogerii označit
+   **Mimo suroviny**. Obě skupiny zůstávají v součtu účtenky a nevstupují
+   do cen surovin. Nové suroviny zakládejte v běžném katalogu.
+8. **Potvrdit celý nákup** uloží celý doklad atomicky, pouze pokud součet
+   řádků a zaokrouhlení souhlasí se zaplacenou částkou. Původní JSON zůstává
+   uložený. Vratky a záporné položky tato verze nepodporuje.
 
-`price_for/2` vybírá cenu k datu jídla z posledních 90 kalendářních dní
-včetně daného dne. Váží ji základním množstvím. Bez nákupu v okně použije
-poslední starší nákupní den (více řádků téhož dne opět váží množstvím),
-pak datovaný ruční odhad z `create_manual_price/1`, jinak vrací chybějící cenu.
-Budoucí ceny se nepoužijí. `cost_consumption/2` ocení výsledek stávajícího
-výpočtu spotřeby a vrátí známý mezisoučet, zdroje cen a upozornění.
-Chybějící cena znamená neúplnou kalkulaci; starší nebo odhadovaná cena má
-upozornění. Výsledky nepředstavují skutečnou skladovou spotřebu.
+Opakované `import_id` vrací stejný nákup. Shodný obchod, datum, číslo a částka
+vyžadují výslovné potvrzení možné duplicity. Oprava nákupu ukládá **náhradní
+verzi**; původní řádky, množství, ceny, názvy a jednotky se nemění. Nové výpočty
+používají poslední verzi. Uložení reportu nebrání opravě nákupu a oprava nemění
+již uložený report. Seznam **Položky k dořešení** odkazuje na opravu nákupu.
 
-Testy kontextu jsou v `test/cozy_checkout/kitchen_costs_test.exs`.
-Lokální testy se v této etapě nespouštěly; výsledky CI ověří uživatel.
+Slovník rozlišuje obchod a úplný normalizovaný nákupní název. Normalizace
+sjednocuje velikost písmen a mezery, zachovává značky, čísla a velikost balení.
+Změna slovníku platí jen pro další nákupy. Souběžná změna přiřazení zablokuje
+jeho přepsání: obnovte náhled přiřazení a znovu potvrďte vazby. Jednotku suroviny
+použité v historickém nákupu či ruční ceně již nelze změnit.
+
+### Ceny, historie a recepty
+
+V **Historie a chybějící ceny** vyhledejte surovinu a otevřete její nákupní
+historii. Zobrazuje obchod, balení, cenu za základní jednotku a změnu proti
+předchozímu nákupu. Cena k datu jídla je vážený průměr podle množství za
+90 kalendářních dní včetně dne jídla. Budoucí nákupy se nepoužívají.
+Bez nákupu v tomto okně se použije poslední starší nákupní den s upozorněním;
+při více nákupech v tomto dni se ceny opět váží množstvím. Bez předchozího
+nákupu lze doplnit datovaný ruční odhad s poznámkou. Bez něj cena chybí.
+
+U receptu se zobrazují aktuální kalkulované náklady na jednu dospělou a dětskou
+porci pro koeficient teplého jídla i snídaně. Jde o současnou recepturu, ne
+průměr skutečně vydaných porcí. Nulové normy spotřeby nepotřebují smyšlenou
+nulovou cenu. Chybějící cena při kladné spotřebě znamená neúplnou kalkulaci;
+částka je pouze známý mezisoučet. Starší a odhadované ceny mají upozornění.
+
+### Nákladové reporty
+
+V **Stravování → Náklady kuchyně** vyberte období nejvýše 366 dní a volitelně
+jednu rezervaci. Rozhodují data jednotlivých jídel včetně příjezdu a odjezdu.
+Výpočet zahrnuje dokončené pobyty a vynechává zrušené, smazané a pobyty bez
+stravy. Používá stejné porce a spotřebu jako nákupní seznam, hlavní recepty,
+doplňky a samostatné dětské koeficienty. Nákupní balení a sezonní zaokrouhlování
+nemají na nákladovou spotřebu vliv.
+
+Report zobrazuje celkový známý náklad, porce, průměr na porci, rozpad podle
+rezervací a jednotlivých dat/jídel, receptů a surovin, zdrojové ceny a jejich
+množství. Chybějící ceny, menu, recepty a neaktuální menu jsou viditelné
+v neúplnosti a upozorněních. Z výsledku nevyvozujte skutečnou skladovou spotřebu.
+
+**Uložit neměnný report** uchová snapshot receptur, množství, porcí,
+koeficientů, cen i upozornění. Pozdější změna katalogu, rezervace či nákupu
+uložený report nepřepíše. **Nový přepočet z aktuálních podkladů** umožní uložit
+další verzi. První výpočet minulého období používá současné receptury;
+neuloženou historickou podobu nelze zpětně odvodit. Výstupy jsou v Cozy,
+bez CSV a samostatného PDF.
+
+Testy pokrývají kontexty, import, souběh na samostatných DB spojeních,
+PIN ochranu a LiveView průchod od účtenky po uložený report. Lokálně byla
+ověřena kompilace a formátování, testy se nespouštěly; výsledky CI ověří
+uživatel. Ověření skutečných účtenek a jednoho víkendového menu zatím zbývá.

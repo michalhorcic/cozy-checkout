@@ -75,6 +75,8 @@ defmodule CozyCheckout.Kitchen.ShoppingList do
       services: 0,
       covered_services: 0,
       portions: 0,
+      meal_services: [],
+      booking_summaries: [],
       buffet?: false
     }
 
@@ -93,7 +95,15 @@ defmodule CozyCheckout.Kitchen.ShoppingList do
           acc = %{
             acc
             | services: acc.services + length(services),
-              portions: acc.portions + Enum.reduce(services, 0, &(&1.counts.total + &2))
+              portions: acc.portions + Enum.reduce(services, 0, &(&1.counts.total + &2)),
+              booking_summaries: [
+                %{
+                  booking_id: booking.id,
+                  booking_name: booking.guest.name,
+                  portions: Enum.reduce(services, 0, &(&1.counts.total + &2))
+                }
+                | acc.booking_summaries
+              ]
           }
 
           menu = menus[booking.id]
@@ -157,6 +167,8 @@ defmodule CozyCheckout.Kitchen.ShoppingList do
       services: result.services,
       covered_services: result.covered_services,
       portions: result.portions,
+      meal_services: Enum.reverse(result.meal_services),
+      booking_summaries: Enum.reverse(result.booking_summaries),
       groups: length(bookings),
       booking_options: options,
       buffet?: result.buffet?,
@@ -185,6 +197,23 @@ defmodule CozyCheckout.Kitchen.ShoppingList do
       if service.type == "breakfast",
         do: settings.breakfast_child_factor,
         else: settings.hot_child_factor
+
+    acc = %{
+      acc
+      | meal_services: [
+          %{
+            booking: booking,
+            item: item,
+            date: service.date,
+            meal_type: service.type,
+            counts: service.counts,
+            factor: factor,
+            recipes: recipes,
+            issues: issues
+          }
+          | acc.meal_services
+        ]
+    }
 
     {acc, issues} =
       Enum.reduce(recipes, {acc, issues}, fn recipe, {acc, issues} ->

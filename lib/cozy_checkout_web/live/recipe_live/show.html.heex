@@ -113,6 +113,37 @@
           </section>
         </aside>
         <div class="space-y-6">
+          <section
+            id="recipe-portion-costs"
+            class="space-y-3 rounded-lg border border-secondary-200 bg-white p-5"
+          >
+            <h2 class="font-bold">Aktuální kalkulované náklady na suroviny na porci</h2>
+            <p class="text-sm">
+              Podle současné receptury a cen včetně DPH k dnešnímu dni. Bez práce, energií a odpadu.
+            </p>
+            <div :for={{label, costs} <- @portion_costs} class="border-t pt-3">
+              <p class="font-semibold">
+                {label} · dětský koeficient {CozyCheckoutWeb.CurrencyHelper.format_number(
+                  costs.child.factor
+                )}
+              </p>
+              <p>
+                Dospělá porce: {CozyCheckoutWeb.CurrencyHelper.format_currency(
+                  costs.adult.known_total
+                )} · dětská porce: {CozyCheckoutWeb.CurrencyHelper.format_currency(
+                  costs.child.known_total
+                )}
+              </p>
+              <p
+                :if={!costs.adult.complete? or !costs.child.complete?}
+                class="font-semibold text-amber-800"
+              >
+                Neúplná kalkulace — zobrazen je pouze známý mezisoučet.
+              </p>
+              <p :for={issue <- costs.adult.issues} class="text-sm text-amber-800">{issue}</p>
+            </div>
+            <.link navigate={~p"/admin/kitchen-costs/prices"} class="text-tertiary-700">Doplnit ceny a historii surovin</.link>
+          </section>
           <.consumption_table result={@result} />
           <details class="rounded-lg border border-secondary-200 bg-white p-5">
             <summary class="cursor-pointer text-sm font-semibold text-primary-500">
