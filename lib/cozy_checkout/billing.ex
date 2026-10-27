@@ -660,6 +660,10 @@ defmodule CozyCheckout.Billing do
                 "percent" => if(percent, do: to_string(percent)),
                 "amount" => to_string(amount),
                 "stay_total" => to_string(Money.total(lines)),
+                "person_stays" =>
+                  invoice.items
+                  |> Enum.filter(&(&1.item_type == "person" and &1.quantity > 0))
+                  |> Enum.map(&%{"quantity" => &1.quantity, "nights" => &1.nights}),
                 "lines" => lines
               })
             else

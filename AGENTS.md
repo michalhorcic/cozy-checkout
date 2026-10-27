@@ -31,6 +31,7 @@ and daisyUI; Docker deployment through Coolify.
 
 ## Validation and delivery
 
+- Use the Elixir and Erlang versions pinned in `.tool-versions`, matching CI. After code changes, run `MIX_ENV=test mix format <changed files>` from the repository root with dependencies installed, so `.formatter.exs`, dependency rules and the HEEx plugin apply. Before committing, run `MIX_ENV=test mix format --check-formatted` across the project and fix all reported differences. Formatting checks are required even when local tests are left to CI; `git diff --check` and manual whitespace edits do not replace the formatter. If the pinned toolchain is unavailable, report that limitation instead of claiming CI-compatible formatting was verified.
 - Add or update tests for business-logic changes. By default, leave test execution to GitHub CI; do not run local tests or `mix precommit`, wait for CI completion, or poll its status. Run local tests only when explicitly requested or necessary to reproduce and fix the issue being addressed. State in the PR and final response that local tests were not run and the user will verify CI results, or report any local tests actually run.
 - Local PostgreSQL uses the `elixir` role: `PGUSER=elixir PGPASSWORD='' mix test` (or `mix precommit` with the same environment).
 - Create a feature branch, commit, push and open a pull request without additional confirmation unless the user requests otherwise. Include checks and verification limits in the PR.

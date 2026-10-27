@@ -32,7 +32,7 @@ defmodule CozyCheckout.Abra.AdvanceBuilder do
           "clenDph" => "code:000U",
           "clenKonVykDph" => "code:0.0.",
           "zaokrNaSumK" => "zaokrNa.zadne",
-          "polozkyFaktury" => Enum.map(doc.lines, &item/1)
+          "polozkyFaktury" => Enum.map(doc.lines, &item(&1, accommodation_label(doc)))
         }
 
         buyer = doc.snapshot["customer"]
@@ -100,9 +100,52 @@ defmodule CozyCheckout.Abra.AdvanceBuilder do
     end
   end
 
-  defp item(line) do
+  defp accommodation_label(doc) do
+    calculation = Presentation.advance_breakdown(doc) || %{}
+    stays = calculation["person_stays"] || []
+
+    groups =
+      stays
+      |> Enum.group_by(& &1["nights"], & &1["quantity"])
+      |> Enum.map(fn {nights, quantities} -> {nights, Enum.sum(quantities)} end)
+      |> Enum.sort()
+
+    persons = stays |> Enum.map(& &1["quantity"]) |> Enum.sum()
+
+    case groups do
+      [] ->
+        "Záloha na ubytování"
+
+      [{nights, _}] ->
+        "Záloha na ubytování #{persons} #{persons_label(persons, :genitive)} za #{nights} #{nights_label(nights)}"
+
+      _ ->
+        breakdown =
+          Enum.map_join(groups, ", ", fn {nights, count} ->
+            "#{count} #{persons_label(count, :nominative)} za #{nights} #{nights_label(nights)}"
+          end)
+
+        "Záloha na ubytování #{persons} #{persons_label(persons, :genitive)} (#{breakdown})"
+    end
+  end
+
+  defp persons_label(1, :genitive), do: "osoby"
+  defp persons_label(_, :genitive), do: "osob"
+  defp persons_label(1, :nominative), do: "osoba"
+  defp persons_label(count, :nominative) when count in 2..4, do: "osoby"
+  defp persons_label(_, :nominative), do: "osob"
+
+  defp nights_label(1), do: "noc"
+  defp nights_label(count) when count in 2..4, do: "noci"
+  defp nights_label(_), do: "nocí"
+
+  defp item(line, accommodation_label) do
     %{
-      "nazev" => "Záloha na pobyt",
+      "nazev" =>
+        if(line["tax_mode"] == "outside",
+          do: "Záloha na poplatek obci",
+          else: accommodation_label
+        ),
       "mnozMj" => "1",
       "cenaMj" => line["gross"],
       "typCenyDphK" =>

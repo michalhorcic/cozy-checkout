@@ -99,7 +99,12 @@ defmodule CozyCheckout.AbraFinalInvoiceExportTest do
     {doc, export} = final_export(ctx)
     [invoice] = export.payload["winstrom"]["faktura-vydana"]
 
+    assert invoice["uvodTxt"] ==
+             "Fakturujeme Vám ubytování a související služby za pobyt od #{CozyCheckout.Billing.Presentation.date(doc.snapshot["check_in"])} do #{CozyCheckout.Billing.Presentation.date(doc.snapshot["check_out"])}."
+
     for {item, original} <- Enum.zip(invoice["polozkyFaktury"], doc.lines) do
+      assert item["nazev"] == original["name"]
+
       assert Decimal.equal?(
                Decimal.new(item["mnozMj"]),
                Decimal.mult(original["quantity"], original["nights"])
