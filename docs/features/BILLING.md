@@ -105,8 +105,17 @@ V řádku je pouze kompaktní štítek stavu úhrady (před vyúčtováním stav
 Číslo dokladu, částky a podrobnosti jsou v plovoucí kartě po najetí myší,
 při zaměření klávesnicí nebo po klepnutí na štítek. Odtud lze otevřít evidenci
 pobytu. Kartu zavře Escape nebo kliknutí mimo ni. Finanční stav nelze ručně přepsat.
-Přehled se aktualizuje při otevření seznamu nebo změně filtru. Bankovní párování
-zatím není zapojené.
+Přehled se aktualizuje při otevření seznamu nebo změně filtru.
+
+U rezervace s nalezeným návrhem podle VS se zobrazuje **Platba z banky k ověření**.
+Kliknutí otevře dialog přímo nad seznamem rezervací. Vyberte návrh a použijte
+**Zkontrolovat přijetí zálohy** nebo **Zkontrolovat přijetí doplatku**. Následuje
+stejné ověření v ABRA a výslovné potvrzení jako v přehledu bankovních pohybů.
+Samotné otevření dialogu ani náhled platbu nezapisují. Po potvrzení se obnoví
+stav úhrady i upozornění v seznamu; dialog ukáže stav zařazeného přenosu a
+umožní vybrat další návrh. Zavření zachová filtry a stránku seznamu.
+Pravidla párování a účetní synchronizace se nemění; podrobnosti popisuje
+[bankovní integrace ABRA](../integrations/ABRA_INTEGRATION.md).
 
 ## Opravy a vratky
 

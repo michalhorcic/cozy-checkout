@@ -175,33 +175,10 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
           show
           on_cancel={JS.push("cancel-payment")}
         >
-          <h2 class="text-xl font-bold">
-            {if @confirmation_preview.document.kind == "final",
-              do: "Potvrdit bankovní doplatek",
-              else: "Potvrdit přijetí zálohy"}
-          </h2>
-          <p>
-            Doklad {@confirmation_preview.document.number} · VS {@confirmation_preview.movement.variable_symbol}
-          </p>
-          <p>
-            {Presentation.amount(@confirmation_preview.movement.amount)} · {Presentation.date(
-              @confirmation_preview.movement.paid_on
-            )} · {@confirmation_preview.movement.counterparty}
-          </p>
-          <p :if={@confirmation_preview.document.kind == "final"}>
-            Potvrzením se zaeviduje doplatek a existující bankovní pohyb se spáruje s konečnou fakturou v ABRA. Nevznikne ZDD ani nový bankovní pohyb.
-          </p>
-          <p :if={@confirmation_preview.document.kind == "advance"}>
-            Potvrzením vznikne skutečná platba a uzamčený daňový doklad k přijaté záloze. Účetní vazby se následně přenesou do ABRA. Potvrzení nelze jednoduše vrátit zpět.
-          </p>
-          <button
-            id="bank-confirm-payment"
-            class="btn btn-primary mt-4"
-            phx-click="confirm-payment"
-            phx-disable-with="Potvrzuji…"
-          >{if @confirmation_preview.document.kind == "final",
-            do: "Potvrdit doplatek a spárovat fakturu",
-            else: "Potvrdit zálohu a vystavit ZDD"}</button>
+          <CozyCheckoutWeb.BillingComponents.bank_payment_confirmation
+            id="bank-confirmation-modal"
+            preview={@confirmation_preview}
+          />
         </.modal>
         <nav class="flex gap-4">
           <.link :if={@page > 1} patch={~p"/admin/billing/bank?page=#{@page - 1}"} class="link">Předchozí</.link>
