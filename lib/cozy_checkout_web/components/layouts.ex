@@ -186,7 +186,11 @@ defmodule CozyCheckoutWeb.Layouts do
   @doc "Renders the shared internal header around authenticated admin pages."
   def admin(assigns) do
     assigns =
-      assign(assigns, :billing_section, CozyCheckoutWeb.BillingNavigation.section(assigns.admin_path))
+      assign(
+        assigns,
+        :billing_section,
+        CozyCheckoutWeb.BillingNavigation.section(assigns.admin_path)
+      )
 
     ~H"""
     <div id="admin-shell" class="min-h-screen bg-secondary-50 lg:flex">

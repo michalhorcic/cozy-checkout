@@ -12,7 +12,8 @@ defmodule CozyCheckoutWeb.BillingNavigation do
       {"Nastavení",
        [
          {:prices, "Ceník ubytování", "/admin/accommodation-prices", "hero-tag"},
-         {:settings, "Nastavení fakturace", "/admin/billing/settings", "hero-adjustments-horizontal"}
+         {:settings, "Nastavení fakturace", "/admin/billing/settings",
+          "hero-adjustments-horizontal"}
        ]}
     ]
   end
@@ -34,8 +35,12 @@ defmodule CozyCheckoutWeb.BillingNavigation do
 
   def label(path) do
     cond do
-      String.match?(path, ~r{^/admin/bookings/[^/]+/billing$}) -> "Fakturace pobytu"
-      String.starts_with?(path, "/admin/billing/documents/") -> "Detail dokladu"
+      String.match?(path, ~r{^/admin/bookings/[^/]+/billing$}) ->
+        "Fakturace pobytu"
+
+      String.starts_with?(path, "/admin/billing/documents/") ->
+        "Detail dokladu"
+
       true ->
         groups()
         |> Enum.flat_map(fn {_, entries} -> entries end)
