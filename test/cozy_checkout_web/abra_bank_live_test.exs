@@ -29,7 +29,7 @@ defmodule CozyCheckoutWeb.AbraBankLiveTest do
     refute has_element?(view, "[phx-click=confirm]")
   end
 
-  test "booking list links pending bank suggestions without marking an invoice paid", %{
+  test "booking list opens bank suggestions in a dialog without marking an invoice paid", %{
     conn: conn
   } do
     previous = Application.get_env(:cozy_checkout, :abra_accommodation)
@@ -72,12 +72,44 @@ defmodule CozyCheckoutWeb.AbraBankLiveTest do
 
     assert has_element?(
              view,
-             "#booking-bank-pending-#{booking.id}[href='/admin/bookings/#{booking.id}/billing#booking-bank-suggestions']",
+             "#booking-bank-pending-#{booking.id}[phx-click='open-bank-payment']",
              "Platba z banky k ověření"
            )
 
     assert has_element?(view, "#booking-payment-#{booking.id}", "Neuhrazeno")
     assert CozyCheckout.Billing.list_payments(booking.id) == []
+
+    second_movement =
+      %CozyCheckout.Abra.BankMovement{}
+      |> Ecto.Changeset.change(
+        Map.take(
+          movement,
+          ~w(base_url company_id account amount currency direction paid_on variable_symbol pairing scan_id raw)a
+        )
+        |> Map.put(:remote_id, "2")
+      )
+      |> CozyCheckout.Repo.insert!()
+
+    view |> element("#booking-bank-pending-#{booking.id}") |> render_click()
+    assert has_element?(view, "#booking-bank-payment-modal", "Spárovat platbu z banky")
+    assert has_element?(view, "#booking-bank-movement-#{movement.id}", doc.number)
+    assert has_element?(view, "#booking-bank-movement-#{second_movement.id}", doc.number)
+    refute has_element?(view, "#booking-bank-confirm-payment")
+    assert CozyCheckout.Billing.list_payments(booking.id) == []
+    assert has_element?(view, "#booking-payment-#{booking.id}", "Neuhrazeno")
+
+    # A stale proposal must disappear on refresh, without leaving the list.
+    second_movement
+    |> Ecto.Changeset.change(missing_at: DateTime.utc_now(:second))
+    |> CozyCheckout.Repo.update!()
+
+    view |> element("#booking-bank-payment-modal button", "Obnovit návrhy") |> render_click()
+    refute has_element?(view, "#booking-bank-movement-#{second_movement.id}")
+    assert has_element?(view, "#booking-bank-movement-#{movement.id}")
+
+    view |> element("#booking-bank-payment-modal button", "Zavřít") |> render_click()
+    refute has_element?(view, "#booking-bank-payment-modal")
+    assert has_element?(view, "#booking-bank-pending-#{booking.id}")
 
     movement
     |> Ecto.Changeset.change(missing_at: DateTime.utc_now(:second))

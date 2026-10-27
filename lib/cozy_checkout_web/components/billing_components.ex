@@ -4,6 +4,46 @@ defmodule CozyCheckoutWeb.BillingComponents do
 
   alias CozyCheckout.Billing.Presentation
 
+  attr :id, :string, required: true
+  attr :preview, :map, required: true
+  attr :target, :any, default: nil
+  attr :confirm_id, :string, default: "bank-confirm-payment"
+
+  def bank_payment_confirmation(assigns) do
+    ~H"""
+    <div class="space-y-4">
+      <h2 id={@id <> "-title"} class="pr-10 text-xl font-bold">
+        {if @preview.document.kind == "final",
+          do: "Potvrdit bankovní doplatek",
+          else: "Potvrdit přijetí zálohy"}
+      </h2>
+      <p id={@id <> "-description"}>
+        Doklad {@preview.document.number} · VS {@preview.movement.variable_symbol}
+      </p>
+      <p>
+        {Presentation.amount(@preview.movement.amount)} · {Presentation.date(
+          @preview.movement.paid_on
+        )} · {@preview.movement.counterparty}
+      </p>
+      <p :if={@preview.document.kind == "final"}>
+        Potvrzením se zaeviduje doplatek a existující bankovní pohyb se spáruje s konečnou fakturou v ABRA. Nevznikne ZDD ani nový bankovní pohyb.
+      </p>
+      <p :if={@preview.document.kind == "advance"}>
+        Potvrzením vznikne skutečná platba a uzamčený daňový doklad k přijaté záloze. Účetní vazby se následně přenesou do ABRA. Potvrzení nelze jednoduše vrátit zpět.
+      </p>
+      <button
+        id={@confirm_id}
+        class="btn btn-primary mt-4"
+        phx-click="confirm-payment"
+        phx-target={@target}
+        phx-disable-with="Potvrzuji…"
+      >{if @preview.document.kind == "final",
+        do: "Potvrdit doplatek a spárovat fakturu",
+        else: "Potvrdit zálohu a vystavit ZDD"}</button>
+    </div>
+    """
+  end
+
   attr :document, :map, required: true
   attr :statuses, :list, default: []
 
