@@ -66,13 +66,15 @@
           class="mt-4 space-y-3"
         >
           <p>{@mapping_editor.merchant_key} · {@mapping_editor.source_name}</p>
-          <.input
+          <.ingredient_picker
             field={@mapping_form[:ingredient_id]}
-            type="select"
-            label="Nové přiřazení pro další nákupy"
-            options={ingredient_options(@ingredients)}
+            ingredients={@ingredients}
+            index="mapping"
+            query={@ingredient_queries["mapping"]}
+            open={@active_ingredient == "mapping"}
+            focus_id="save-mapping"
           />
-          <button class="btn btn-primary">Potvrdit změnu slovníku</button>
+          <button id="save-mapping" class="btn btn-primary">Potvrdit změnu slovníku</button>
         </.form>
       </section>
     </div>
@@ -217,13 +219,25 @@
                 {"Mimo suroviny", "other"}
               ]}
             />
-            <.input
-              field={lf[:ingredient_id]}
-              type="select"
-              label="Existující surovina"
-              options={ingredient_options(@ingredients)}
-              prompt="Bez přiřazení"
-            />
+            <div class="space-y-2">
+              <.ingredient_picker
+                field={lf[:ingredient_id]}
+                ingredients={@ingredients}
+                index={to_string(line["line_number"])}
+                query={@ingredient_queries[to_string(line["line_number"])]}
+                open={@active_ingredient == to_string(line["line_number"])}
+                required={line["classification"] == "ingredient"}
+              />
+              <button
+                type="button"
+                id={"new-purchase-ingredient-#{index}"}
+                phx-click="new_ingredient"
+                phx-value-index={line["line_number"]}
+                class="text-sm font-semibold text-tertiary-700"
+              >
+                <.icon name="hero-plus" class="mr-1 h-4 w-4" />Založit novou surovinu
+              </button>
+            </div>
           </div>
           <p :if={mapping} class="text-sm">
             Slovník: {Enum.find_value(@ingredients, mapping.ingredient_id, fn i ->
@@ -291,4 +305,38 @@
       </.form>
     </div>
   </div>
+  <.modal
+    :if={@new_ingredient_line}
+    id="new-purchase-ingredient-modal"
+    show
+    on_cancel={JS.push("close_new_ingredient")}
+  >
+    <h2 class="mb-3 text-xl font-bold">Nová surovina do katalogu</h2>
+    <p class="mb-5 text-sm">
+      Rozpracovaný nákup zůstane zachovaný. Surovinu vybereme u této položky. Recepturu můžete doplnit později.
+    </p>
+    <.form
+      for={@new_ingredient_form}
+      id="new-purchase-ingredient-form"
+      phx-submit="save_new_ingredient"
+      class="space-y-4"
+    >
+      <.input field={@new_ingredient_form[:name]} label="Název suroviny" required />
+      <.input field={@new_ingredient_form[:category]} label="Kategorie" required />
+      <.input
+        field={@new_ingredient_form[:base_unit]}
+        type="select"
+        label="Základní jednotka"
+        options={[{"Kilogram (kg)", "kg"}, {"Litr (l)", "l"}, {"Kus (ks)", "ks"}]}
+      />
+      <.input field={@new_ingredient_form[:notes]} label="Poznámka (volitelně)" />
+      <button class="btn btn-primary" phx-disable-with="Ukládám…">Vytvořit a vybrat v nákupu</button>
+      <button
+        id="cancel-new-purchase-ingredient"
+        type="button"
+        phx-click="close_new_ingredient"
+        class="btn"
+      >Zrušit</button>
+    </.form>
+  </.modal>
 </Layouts.app>

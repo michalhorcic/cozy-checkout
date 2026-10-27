@@ -29,6 +29,194 @@ defmodule CozyCheckoutWeb.KitchenCostsLiveTest do
     refute has_element?(view, "#kitchen-cost-error")
   end
 
+  defp search_ingredient(view, row, line_number, query) do
+    view
+    |> element("#purchase-line-#{row}_ingredient_id-search")
+    |> render_change(%{
+      "ingredient_search" => %{to_string(line_number) => query},
+      "_target" => ["ingredient_search", to_string(line_number)]
+    })
+  end
+
+  test "purchase autocomplete searches all words and preserves receipt quantity and unit", %{
+    conn: conn
+  } do
+    ingredient =
+      ingredient_fixture(%{
+        name: "Čerstvé mléko nákup",
+        category: "Snídaně",
+        notes: "Bez laktózy",
+        base_unit: "l"
+      })
+
+    archived =
+      ingredient_fixture(%{
+        name: "Čerstvé mléko archiv nákup",
+        category: "Snídaně",
+        notes: "Bez laktózy",
+        base_unit: "l"
+      })
+
+    {:ok, _} = CozyCheckout.Recipes.archive_ingredient(archived)
+    {:ok, view, _} = live(conn, "/admin/kitchen-costs/new")
+
+    view
+    |> form("#kitchen-purchase-form",
+      purchase: %{
+        merchant: "Autocomplete",
+        total_paid: "49.90",
+        lines: %{
+          "0" => %{source_name: "Mléko 250 ml", quantity: "250", unit: "ml", line_total: "49.90"}
+        }
+      }
+    )
+    |> render_change()
+
+    search_ingredient(view, 0, 1, "laktozy snidane cerstve")
+    assert has_element?(view, "#purchase-line-0_ingredient_id-option-#{ingredient.id}")
+    refute has_element?(view, "#purchase-line-0_ingredient_id-option-#{archived.id}")
+    view |> element("#purchase-line-0_ingredient_id-option-#{ingredient.id}") |> render_click()
+    assert has_element?(view, "#purchase-line-0_ingredient_id-search[value='#{ingredient.name}']")
+    assert has_element?(view, "#purchase-line-0_quantity[value='250']")
+    assert has_element?(view, "#purchase-line-0_unit option[value='ml'][selected]")
+
+    view
+    |> form("#kitchen-purchase-form",
+      purchase: %{lines: %{"0" => %{confirmed_ingredient_id: ingredient.id}}}
+    )
+    |> render_submit()
+
+    [purchase] = KitchenCosts.list_purchases()
+    assert Decimal.equal?(hd(purchase.lines).base_quantity, "0.25")
+    assert hd(purchase.lines).ingredient_id == ingredient.id
+  end
+
+  test "typing another name clears the previous ID and its mapping confirmation", %{conn: conn} do
+    ingredient = ingredient_fixture()
+    {:ok, view, _} = live(conn, "/admin/kitchen-costs/new")
+
+    view
+    |> form("#kitchen-import-form", import: %{json: Jason.encode!(receipt(ingredient))})
+    |> render_submit()
+
+    view
+    |> form("#kitchen-purchase-form",
+      purchase: %{lines: %{"0" => %{confirmed_ingredient_id: ingredient.id, remember: "true"}}}
+    )
+    |> render_change()
+
+    search_ingredient(view, 0, 1, "neexistujici_surovina_abc")
+
+    assert has_element?(
+             view,
+             "#purchase-line-0_ingredient_id-options",
+             "Žádná surovina nenalezena"
+           )
+
+    refute has_element?(
+             view,
+             "#purchase-line-0_ingredient_id option[value='#{ingredient.id}'][selected]"
+           )
+
+    refute has_element?(
+             view,
+             "input[name='purchase[lines][0][confirmed_ingredient_id]'][checked]"
+           )
+
+    view |> form("#kitchen-purchase-form") |> render_submit()
+    assert has_element?(view, "#kitchen-cost-error", "Potvrďte přiřazení")
+    assert KitchenCosts.list_purchases() == []
+  end
+
+  test "a new ingredient is created without a recipe and selected without losing the purchase", %{
+    conn: conn
+  } do
+    {:ok, view, _} = live(conn, "/admin/kitchen-costs/new")
+
+    view
+    |> form("#kitchen-purchase-form",
+      purchase: %{
+        merchant: "Snídaně",
+        total_paid: "80",
+        lines: %{
+          "0" => %{source_name: "Snídaňová kaše", quantity: "500", unit: "g", line_total: "80"}
+        }
+      }
+    )
+    |> render_change()
+
+    search_ingredient(view, 0, 1, "Nová kaše")
+    view |> element("#new-purchase-ingredient-0") |> render_click()
+    assert has_element?(view, "#new-purchase-ingredient-form input[value='Nová kaše']")
+    assert has_element?(view, "#ingredient_base_unit option[value='kg'][selected]")
+
+    view
+    |> form("#new-purchase-ingredient-form",
+      ingredient: %{name: "Nová snídaňová kaše nákup", category: "Snídaně", base_unit: "kg"}
+    )
+    |> render_submit()
+
+    [ingredient] = CozyCheckout.Recipes.list_ingredients("Nová snídaňová kaše nákup")
+    refute has_element?(view, "#new-purchase-ingredient-form")
+    assert has_element?(view, "#purchase_merchant[value='Snídaně']")
+    assert has_element?(view, "#purchase-line-0_quantity[value='500']")
+    assert has_element?(view, "#purchase-line-0_line_total[value='80']")
+
+    assert has_element?(
+             view,
+             "#purchase-line-0_ingredient_id option[value='#{ingredient.id}'][selected]"
+           )
+
+    refute Repo.get_by(CozyCheckout.Recipes.RecipeLine, ingredient_id: ingredient.id)
+
+    view
+    |> form("#kitchen-purchase-form",
+      purchase: %{lines: %{"0" => %{confirmed_ingredient_id: ingredient.id}}}
+    )
+    |> render_submit()
+
+    assert hd(hd(KitchenCosts.list_purchases()).lines).ingredient_id == ingredient.id
+  end
+
+  test "new ingredient validation and cancellation preserve the draft", %{conn: conn} do
+    ingredient = ingredient_fixture(%{name: "Existující snídaňová surovina"})
+    {:ok, view, _} = live(conn, "/admin/kitchen-costs/new")
+
+    view
+    |> form("#kitchen-purchase-form", purchase: %{merchant: "Zachovat nákup"})
+    |> render_change()
+
+    view |> element("#new-purchase-ingredient-0") |> render_click()
+
+    view
+    |> form("#new-purchase-ingredient-form",
+      ingredient: %{name: ingredient.name, category: "Snídaně", base_unit: "kg"}
+    )
+    |> render_submit()
+
+    assert has_element?(view, "#new-purchase-ingredient-form")
+    assert CozyCheckout.Recipes.list_ingredients(ingredient.name) == [ingredient]
+    view |> element("#cancel-new-purchase-ingredient") |> render_click()
+    refute has_element?(view, "#new-purchase-ingredient-form")
+    assert has_element?(view, "#purchase_merchant[value='Zachovat nákup']")
+  end
+
+  test "search stays on its purchase row after another row is removed", %{conn: conn} do
+    ingredient = ingredient_fixture(%{name: "Mléko stabilní řádek", base_unit: "l"})
+    {:ok, view, _} = live(conn, "/admin/kitchen-costs/new")
+    view |> element("#add-purchase-line") |> render_click()
+    search_ingredient(view, 1, 2, "stabilni mleko")
+    view |> element("button[phx-click='remove_line'][phx-value-index='0']") |> render_click()
+    assert has_element?(view, "#purchase-line-0_ingredient_id-search[value='stabilni mleko']")
+    view |> element("#purchase-line-0_ingredient_id-search") |> render_focus()
+    view |> element("#purchase-line-0_ingredient_id-option-#{ingredient.id}") |> render_click()
+
+    assert has_element?(
+             view,
+             "#purchase-line-0_ingredient_id option[value='#{ingredient.id}'][selected]"
+           )
+  end
+
   defp receipt(ingredient) do
     data =
       Application.app_dir(:cozy_checkout, "priv/kitchen_costs/receipt-v1.example.json")

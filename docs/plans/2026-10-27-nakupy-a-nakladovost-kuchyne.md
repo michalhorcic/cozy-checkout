@@ -288,10 +288,17 @@ neúplnost výsledku. Nákupní cena není důkaz skutečné skladové spotřeby
   Testovací příkaz: `PGUSER=elixir PGPASSWORD='' MIX_ENV=test mix test
   test/cozy_checkout/kitchen_costs_import_test.exs:7
   test/cozy_checkout_web/kitchen_costs_live_test.exs:25`. Celá sada lokálně neběžela.
-- Zbývá: ověřit CI a opravit případné nálezy, provést skutečný import účtenek
+- Navazující rozšíření: uživatel potvrdil funkčnost po opravě načítání
+  formuláře; na jeho navazující žádost
+  přibyl slovní autocomplete bez diakritiky (název, kategorie, poznámka)
+  a výslovné založení nové suroviny přímo u řádku nákupu bez receptury.
+  Tato úprava zachovává cenu, množství a jednotku rozepsaného nákupu; po výběru
+  vyžaduje nové potvrzení vazby. Doplněné testy pro toto rozšíření nebyly
+  lokálně spuštěny, výsledky CI ověří uživatel.
+- Zbývá: ověřit CI a případné nálezy, provést skutečný import účtenek
   a ručně porovnat jednotkové ceny i náklad jednoho víkendového menu. Pro tento
-  krok jsou potřeba skutečné doklady od uživatele. UI zatím nebylo ručně
-  ověřené v běžící aplikaci. Podrobný provozní postup je v CATERING.md.
+  krok jsou potřeba skutečné doklady od uživatele. Nový autocomplete a zakládání
+  surovin ještě čekají na ruční ověření. Provozní postup je v CATERING.md.
 - Nejbližší další krok: po ověření CI nasadit tuto větev do testovacího prostředí
   obvyklým postupem se spuštěním obou migrací. Pod PINem otevřít
   `/admin/kitchen-costs`, projít skutečný nákup a následně report za víkend.

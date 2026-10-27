@@ -176,9 +176,16 @@ neproběhne ověření celku. Do `main` se v této etapě neslučuje.
    pro kontrolu včetně případného konfliktu a upozornění. Potvrďte vazbu každé
    suroviny. Název je kontrolní, rozhoduje existující ID. Změna ID vyžaduje
    nové potvrzení. Slovník se mění jen samostatným zaškrtnutím zapamatování.
+   Existující surovinu vyhledejte v našeptávači: všechna zadaná slova se hledají
+   v názvu, kategorii a poznámce, nezávisle na pořadí slov a diakritice.
+   Výsledek vyberte kliknutím; samotný napsaný text není přiřazení.
 7. Neznámý řádek lze nechat **Dořešit později**, drogerii označit
    **Mimo suroviny**. Obě skupiny zůstávají v součtu účtenky a nevstupují
-   do cen surovin. Nové suroviny zakládejte v běžném katalogu.
+   do cen surovin. **Založit novou surovinu** u řádku otevře formulář názvu,
+   kategorie, základní jednotky a poznámky. Surovina se výslovným potvrzením
+   uloží do stávajícího katalogu bez nutnosti receptury a vybere u dané položky.
+   Rozpracovaný nákup, jeho ceny, množství i jednotky zůstanou zachované;
+   přiřazení nové suroviny ještě potvrďte. Recepturu lze doplnit později.
 8. **Potvrdit celý nákup** uloží celý doklad atomicky, pouze pokud součet
    řádků a zaokrouhlení souhlasí se zaplacenou částkou. Původní JSON zůstává
    uložený. Vratky a záporné položky tato verze nepodporuje.

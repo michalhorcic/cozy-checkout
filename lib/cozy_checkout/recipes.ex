@@ -29,6 +29,18 @@ defmodule CozyCheckout.Recipes do
   end
 
   def get_ingredient!(id), do: Repo.get!(Ingredient, id)
+
+  def search_ingredients(ingredients, query) do
+    words = query |> normalize() |> String.split()
+
+    Enum.filter(ingredients, fn ingredient ->
+      text =
+        normalize(Enum.join([ingredient.name, ingredient.category, ingredient.notes || ""], " "))
+
+      Enum.all?(words, &String.contains?(text, &1))
+    end)
+  end
+
   def create_ingredient(attrs), do: %Ingredient{} |> Ingredient.changeset(attrs) |> Repo.insert()
 
   def update_ingredient(ingredient, attrs) do

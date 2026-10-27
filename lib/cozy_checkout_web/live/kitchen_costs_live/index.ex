@@ -2,7 +2,9 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.{KitchenCosts, Recipes}
   alias CozyCheckout.KitchenCosts.{Import, Purchase}
+  alias CozyCheckout.Recipes.Ingredient
   import CozyCheckoutWeb.KitchenCostsLive.Helpers
+  import CozyCheckoutWeb.KitchenComponents, only: [ingredient_picker: 1]
 
   @receipt_fields ~w(merchant purchased_on document_number total_paid rounding)
   @line_fields ~w(line_number source_name classification ingredient_id quantity unit package_count package_quantity package_unit line_total confirmed_ingredient_id remember)
@@ -14,6 +16,9 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
      |> assign(:page_title, "Nákupy kuchyně")
      |> assign(:food_context, %{})
      |> assign(:ingredients, Recipes.list_ingredients())
+     |> assign(:ingredient_queries, %{})
+     |> assign(:active_ingredient, nil)
+     |> assign(:new_ingredient_line, nil)
      |> assign(:mapping_editor, nil)}
   end
 
@@ -84,6 +89,95 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
     {:noreply, socket |> assign(:error, nil) |> assign_draft(merge_attrs(socket, attrs))}
   end
 
+  def handle_event("open_ingredient_search", %{"index" => index}, socket),
+    do: {:noreply, assign(socket, :active_ingredient, index)}
+
+  def handle_event("close_ingredient_search", _, socket),
+    do: {:noreply, assign(socket, :active_ingredient, nil)}
+
+  def handle_event(
+        "search_ingredients",
+        %{"ingredient_search" => queries, "_target" => ["ingredient_search", index]},
+        socket
+      ) do
+    socket =
+      socket
+      |> assign(
+        :ingredient_queries,
+        Map.put(socket.assigns.ingredient_queries, index, queries[index])
+      )
+      |> assign(:active_ingredient, index)
+
+    if index == "mapping" do
+      {:noreply, assign(socket, :mapping_form, to_form(%{"ingredient_id" => ""}, as: :mapping))}
+    else
+      {:noreply,
+       update_ingredient_line(socket, index, fn line ->
+         line
+         |> Map.put("ingredient_id", "")
+         |> Map.delete("confirmed_ingredient_id")
+         |> Map.put("remember", "false")
+       end)}
+    end
+  end
+
+  def handle_event("select_ingredient", %{"index" => index, "id" => id}, socket) do
+    case Enum.find(socket.assigns.ingredients, &(&1.id == id && is_nil(&1.archived_at))) do
+      nil -> {:noreply, socket}
+      ingredient -> {:noreply, select_ingredient(socket, index, ingredient)}
+    end
+  end
+
+  def handle_event("new_ingredient", %{"index" => index}, socket) do
+    case ingredient_line(socket, index) do
+      nil ->
+        {:noreply, socket}
+
+      line ->
+        unit =
+          case line["unit"] do
+            u when u in ["kg", "g"] -> "kg"
+            u when u in ["l", "ml"] -> "l"
+            _ -> "ks"
+          end
+
+        name = socket.assigns.ingredient_queries[index] || line["source_name"] || ""
+
+        {:noreply,
+         socket
+         |> assign(:new_ingredient_line, index)
+         |> assign(:active_ingredient, nil)
+         |> assign(
+           :new_ingredient_form,
+           to_form(Ingredient.changeset(%Ingredient{}, %{name: name, base_unit: unit}))
+         )}
+    end
+  end
+
+  def handle_event("close_new_ingredient", _, socket),
+    do: {:noreply, assign(socket, :new_ingredient_line, nil)}
+
+  def handle_event("save_new_ingredient", %{"ingredient" => attrs}, socket) do
+    index = socket.assigns.new_ingredient_line
+
+    if ingredient_line(socket, index) do
+      case Recipes.create_ingredient(attrs) do
+        {:ok, ingredient} ->
+          {:noreply,
+           socket
+           |> assign(:ingredients, Recipes.list_ingredients())
+           |> select_ingredient(index, ingredient)
+           |> assign(:new_ingredient_line, nil)
+           |> put_flash(:success, "Surovina vytvořena a vybrána v nákupu. Potvrďte přiřazení.")}
+
+        {:error, cs} ->
+          {:noreply, assign(socket, :new_ingredient_form, to_form(cs))}
+      end
+    else
+      {:noreply, assign(socket, :new_ingredient_line, nil)}
+    end
+  end
+
   def handle_event("refresh_mappings", _, socket) do
     attrs =
       Map.update!(socket.assigns.attrs, "lines", fn lines ->
@@ -106,6 +200,20 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
   end
 
   def handle_event("remove_line", %{"index" => index}, socket) do
+    removed = Enum.at(socket.assigns.attrs["lines"], String.to_integer(index))
+
+    socket =
+      if removed,
+        do:
+          socket
+          |> assign(
+            :ingredient_queries,
+            Map.delete(socket.assigns.ingredient_queries, to_string(removed["line_number"]))
+          )
+          |> assign(:active_ingredient, nil)
+          |> assign(:new_ingredient_line, nil),
+        else: socket
+
     {:noreply,
      assign_draft(
        socket,
@@ -161,6 +269,8 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
     {:noreply,
      socket
      |> assign(:mapping_editor, mapping)
+     |> assign(:ingredient_queries, Map.delete(socket.assigns.ingredient_queries, "mapping"))
+     |> assign(:active_ingredient, nil)
      |> assign(:mapping_form, to_form(%{"ingredient_id" => mapping.ingredient_id}, as: :mapping))}
   end
 
@@ -186,6 +296,15 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
   end
 
   defp assign_draft(socket, attrs, refresh \\ false) do
+    socket =
+      if refresh,
+        do:
+          socket
+          |> assign(:ingredient_queries, %{})
+          |> assign(:active_ingredient, nil)
+          |> assign(:new_ingredient_line, nil),
+        else: socket
+
     mappings =
       Map.new(attrs["lines"], fn line ->
         {to_string(line["line_number"]),
@@ -204,6 +323,39 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
     |> assign(:form, to_form(attrs, as: :purchase))
     |> assign(:line_mappings, mappings)
     |> assign(:mapping_versions, versions)
+  end
+
+  defp ingredient_line(socket, index),
+    do: Enum.find(socket.assigns.attrs["lines"], &(to_string(&1["line_number"]) == index))
+
+  defp update_ingredient_line(socket, index, fun) do
+    attrs =
+      Map.update!(socket.assigns.attrs, "lines", fn lines ->
+        Enum.map(lines, fn line ->
+          if to_string(line["line_number"]) == index, do: fun.(line), else: line
+        end)
+      end)
+
+    assign_draft(socket, attrs)
+  end
+
+  defp select_ingredient(socket, index, ingredient) do
+    socket =
+      socket
+      |> assign(:ingredient_queries, Map.delete(socket.assigns.ingredient_queries, index))
+      |> assign(:active_ingredient, nil)
+
+    if index == "mapping" do
+      assign(socket, :mapping_form, to_form(%{"ingredient_id" => ingredient.id}, as: :mapping))
+    else
+      update_ingredient_line(socket, index, fn line ->
+        line
+        |> Map.put("ingredient_id", ingredient.id)
+        |> Map.put("classification", "ingredient")
+        |> Map.delete("confirmed_ingredient_id")
+        |> Map.put("remember", "false")
+      end)
+    end
   end
 
   defp merge_attrs(socket, params) do
@@ -274,9 +426,6 @@ defmodule CozyCheckoutWeb.KitchenCostsLive.Index do
 
     Map.put(attrs, "lines", lines)
   end
-
-  defp ingredient_options(ingredients),
-    do: Enum.map(ingredients, &{"#{&1.name} (#{&1.base_unit})", &1.id})
 
   defp proposal(items, number),
     do:
