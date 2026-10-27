@@ -12,6 +12,7 @@ Podrobnosti jsou rozdělené podle účelu:
 
 ## Funkce a provoz
 
+- [Jak s aplikací pracovat — přehledová mapa a workflow stravování](features/WORKFLOWS.md)
 - [Administrace a provozní přehled](features/ADMINISTRATION.md)
 - [POS / samoobslužný bar](features/POS_SYSTEM.md)
 - [Barové platby](features/PAYMENT_FUNCTIONALITY.md)
