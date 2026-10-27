@@ -60,6 +60,7 @@ defmodule CozyCheckoutWeb.AbraBankLiveTest do
         paid_on: CozyCheckout.Billing.today(),
         variable_symbol: doc.variable_symbol,
         pairing: "unverified",
+        scan_id: Ecto.UUID.generate(),
         raw: %{}
       )
       |> CozyCheckout.Repo.insert!()
