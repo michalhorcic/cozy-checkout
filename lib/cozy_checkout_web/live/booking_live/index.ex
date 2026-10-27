@@ -11,7 +11,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, assign(socket, :catering_errors, %{})}
+    {:ok, assign(socket, catering_errors: %{}, bank_booking: nil)}
   end
 
   # Apply default filter to show only current and future bookings
@@ -99,6 +99,11 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   end
 
   @impl true
+  def handle_info({CozyCheckoutWeb.BillingLive.BankPaymentDialog, :payment_saved}, socket) do
+    handle_params(socket.assigns.current_params, nil, socket)
+  end
+
+  @impl true
   def handle_info({CozyCheckoutWeb.BookingLive.FormComponent, {:saved, _booking}}, socket) do
     # Re-fetch bookings to show updated data, preserving current filters
     {:noreply,
@@ -119,6 +124,14 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   end
 
   @impl true
+  def handle_event("open-bank-payment", %{"id" => id}, socket) do
+    booking = Enum.find(socket.assigns.bookings, &(&1.id == id))
+    {:noreply, assign(socket, :bank_booking, booking)}
+  end
+
+  def handle_event("close-bank-payment", _, socket),
+    do: {:noreply, assign(socket, :bank_booking, nil)}
+
   def handle_event(
         "update_catering",
         %{"id" => id, "inline" => attrs, "_target" => ["inline", field]},
@@ -631,18 +644,20 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                         </div>
 
                         <.billing_summary booking={booking} summary={booking.billing_summary} />
-                        <.link
+                        <button
                           :if={MapSet.member?(@pending_bank_bookings, booking.id)}
                           id={"booking-bank-pending-#{booking.id}"}
-                          navigate={
-                            ~p"/admin/bookings/#{booking.id}/billing#booking-bank-suggestions"
-                          }
-                          class="flex items-start gap-1.5 text-xs font-medium text-warning-dark hover:underline"
+                          type="button"
+                          phx-click="open-bank-payment"
+                          phx-value-id={booking.id}
+                          aria-haspopup="dialog"
+                          aria-controls="booking-bank-payment-modal"
+                          class="flex items-start gap-1.5 rounded text-left text-xs font-medium text-warning-dark hover:underline focus-visible:outline-2 focus-visible:outline-offset-2"
                           title="Nalezen návrh podle VS. Přijetí platby ještě není ověřeno."
                         >
                           <.icon name="hero-banknotes" class="size-3.5 shrink-0 mt-0.5" />
                           <span>Platba z banky k ověření</span>
-                        </.link>
+                        </button>
                       </div>
                     </td>
                     <td class="col-span-2 min-w-0 py-2 text-right align-top 2xl:px-2 2xl:py-3">
@@ -693,6 +708,19 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           <!-- Pagination -->
           <.pagination meta={@meta} path={~p"/admin/bookings"} />
         </div>
+
+        <.modal
+          :if={@bank_booking}
+          id="booking-bank-payment-modal"
+          show
+          on_cancel={JS.push("close-bank-payment")}
+        >
+          <.live_component
+            module={CozyCheckoutWeb.BillingLive.BankPaymentDialog}
+            id={"booking-bank-payment-#{@bank_booking.id}"}
+            booking={@bank_booking}
+          />
+        </.modal>
 
         <.modal
           :if={@live_action in [:new, :edit]}
