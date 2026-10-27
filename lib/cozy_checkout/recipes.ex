@@ -39,7 +39,7 @@ defmodule CozyCheckout.Recipes do
 
       cs =
         if get_change(cs, :base_unit) &&
-             Repo.exists?(from l in RecipeLine, where: l.ingredient_id == ^ingredient.id),
+             ingredient_unit_used?(ingredient.id),
            do:
              add_error(
                cs,
@@ -53,6 +53,14 @@ defmodule CozyCheckout.Recipes do
         {:error, cs} -> Repo.rollback(cs)
       end
     end)
+  end
+
+  defp ingredient_unit_used?(id) do
+    Repo.exists?(from l in RecipeLine, where: l.ingredient_id == ^id) or
+      Repo.exists?(
+        from l in CozyCheckout.KitchenCosts.PurchaseLine, where: l.ingredient_id == ^id
+      ) or
+      Repo.exists?(from p in CozyCheckout.KitchenCosts.ManualPrice, where: p.ingredient_id == ^id)
   end
 
   def archive_ingredient(i),

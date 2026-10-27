@@ -143,3 +143,38 @@ káva 8 g, kakao 5 g, mléko 150 ml, máslo 15 g a pečivo 2 ks. Snídaňový d�
 koeficient se uplatní samostatně. Normy jsou v `priv/recipes/breakfast_buffet.json`.
 Před prvním víkendem je zkontrolujte přes **Upravit normy bufetu**; nepoužívané
 položky lze nastavit na 0, další suroviny přidat běžným formulářem receptu.
+
+## Nákupy a kalkulované náklady surovin — rozpracováno
+
+První část modulu je datový základ bez obrazovek pro obsluhu. Migrace
+`20261027120000` přidává samostatné tabulky `kitchen_purchases`,
+`kitchen_purchase_lines` a `kitchen_manual_prices`; barové nákupy ani účetnictví
+nemění. Nevyžaduje novou konfiguraci, OpenAI API klíč ani změnu ABRA.
+Další postup zachycuje [implementační plán](../plans/2026-10-27-nakupy-a-nakladovost-kuchyne.md).
+
+Kontext `KitchenCosts` přijímá přes `confirm_purchase/2` zkontrolovaný nákup
+s řádky: celkové množství `quantity` v `unit`, konečná cena `line_total` včetně
+DPH a zařazení `ingredient`, `unassigned` nebo `other`. Volitelné údaje
+`package_count`, `package_quantity`, `package_unit` musí odpovídat celkovému
+množství. Součet řádků a `rounding` se musí rovnat `total_paid` v CZK.
+Převody používají stávající pravidla kg/g, l/ml a ks; velikost balení se
+nepřebírá ze starého nákupu. Společné slevy musí být již přiřazené do cen řádků.
+
+Importní `import_id` je jedinečné; opakování vrátí uložený nákup. Při shodě
+údajů dokladu vrací kontext `:possible_duplicate`; potvrzenou duplicitu lze
+uložit s volbou `allow_duplicate: true`. Oprava používá `replaces_id: id`
+a ukládá celý nový nákup. Původní nákup i řádky zůstávají zachované; další
+oprava již nahrazené verze vrátí `:already_replaced`. Tyto volby nejsou součástí
+importovaného JSONu. Ceny používají jen poslední verzi každého nákupu.
+
+`price_for/2` vybírá cenu k datu jídla z posledních 90 kalendářních dní
+včetně daného dne. Váží ji základním množstvím. Bez nákupu v okně použije
+poslední starší nákupní den (více řádků téhož dne opět váží množstvím),
+pak datovaný ruční odhad z `create_manual_price/1`, jinak vrací chybějící cenu.
+Budoucí ceny se nepoužijí. `cost_consumption/2` ocení výsledek stávajícího
+výpočtu spotřeby a vrátí známý mezisoučet, zdroje cen a upozornění.
+Chybějící cena znamená neúplnou kalkulaci; starší nebo odhadovaná cena má
+upozornění. Výsledky nepředstavují skutečnou skladovou spotřebu.
+
+Testy kontextu jsou v `test/cozy_checkout/kitchen_costs_test.exs`.
+Lokální testy se v této etapě nespouštěly; výsledky CI ověří uživatel.

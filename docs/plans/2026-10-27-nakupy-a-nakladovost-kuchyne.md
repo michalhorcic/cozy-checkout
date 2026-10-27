@@ -1,6 +1,7 @@
 # Nákupy surovin a nákladovost kuchyně
 
-- Stav: **připraveno**; implementace nezahájena.
+- Stav: **rozpracováno**; první část implementuje datový a cenový základ,
+  uživatelské rozhraní a import zatím nejsou dostupné.
 - Vytvořeno: 2026-10-27
 - Aktualizováno: 2026-10-27
 - Podklad: plán a rozhodnutí potvrzená uživatelem v chatu.
@@ -194,8 +195,13 @@ Všechna následující rozhodnutí byla potvrzena v chatu dne 2026-10-27:
 
 ## Postup realizace
 
-- [ ] V novém vlákně ověřit aktuální `main`, související kontexty a tento plán.
+- [x] V novém vlákně ověřit aktuální `main`, související kontexty a tento plán.
 - [ ] Přidat samostatný kontext, migrace, omezení databáze a cenové výpočty.
+  - [x] Kontext `KitchenCosts`, potvrzené nákupy a řádky, náhradní verze,
+    datované ruční ceny, UUID a databázová omezení.
+  - [x] Vážený průměr včetně dne jídla a 89 předchozích dní; starší nákup,
+    ruční odhad, chybějící cena a ocenění stávajícího výpočtu spotřeby.
+  - [ ] Slovník přiřazení a datový model uložených reportů.
 - [ ] Připravit export katalogu, verzované JSON schéma, příklady a instrukce
   pro ChatGPT včetně baleného a váženého zboží a slev.
 - [ ] Přidat importní náhled, ruční zadání, potvrzování a verzování nákupů,
@@ -223,8 +229,8 @@ Testy pokryjí zejména:
 
 Na skutečných dokladech ručně porovnat přepočet ceny za kg/l/ks a cenu jednoho
 menu. Podle instrukcí repozitáře poběží testy standardně v CI; lokální spuštění
-vyžaduje samostatný pokyn. Při uložení tohoto plánu se aplikace nemění
-a aplikační testy se nespouštějí.
+vyžaduje samostatný pokyn. Testy první části jsou doplněné, lokálně nebyly
+spuštěny; výsledky CI ověří uživatel.
 
 ## Nasazení a rizika
 
@@ -236,14 +242,42 @@ neúplnost výsledku. Nákupní cena není důkaz skutečné skladové spotřeby
 
 ## Průběh a předání dalšímu chatu
 
-- Hotovo: průzkum současných surovin, receptur, spotřeby a menu; potvrzení
-  rozhodnutí; sepsání plánu.
-- Zbývá: celá implementace podle postupu výše.
+- Hotovo: opětovné ověření kódu proti čerstvě načtenému `origin/main`
+  (`26f12f3`); první část kontextu `KitchenCosts` a migrace `20261027120000`.
+  Uložení potvrzeného nákupu je atomické, kontroluje součet včetně samostatného
+  zaokrouhlení, jednotky, balení a všechny vazby. Nepřiřazené a ostatní řádky
+  zůstávají v dokladu, ale nevstupují do cen surovin. Cena řádku je konečná
+  cena po slevách včetně DPH; rozdělování společné slevy ještě není hotové.
+  Původní JSON a snapshot názvu/jednotky suroviny zůstávají uložené.
+  Oprava vytváří náhradní verzi, původní nákup nemění. Nové výpočty vynechají
+  nahrazené verze. Opakované ID importu vrací původní záznam; zámky a unikátní
+  indexy chrání souběh. Shodný obchod (bez ohledu na velikost písmen a krajní
+  mezery), datum, číslo a částka vyžadují výslovné potvrzení možné duplicity.
+  Historické nákupy i ruční ceny blokují změnu základní jednotky suroviny.
+  Cenový výpočet vrací zdrojové řádky a upozornění; při více starších nákupech
+  v posledním nákupním dni použije jejich vážený průměr.
+- Testy první části: balené a vážené zboží, změna balení, dvě značky jedné
+  suroviny, smíšený doklad, součty a zaokrouhlení, převody g/ml/ks, atomické
+  odmítnutí, opakované importy, duplicity, náhradní verze, neměnnost původních
+  dat, 90denní hranice, budoucí ceny, starší a ruční ceny, známý mezisoučet
+  a dětský koeficient stávajícího výpočtu. Skutečný souběh samostatných
+  databázových spojení a PIN ochrana budoucí administrace ještě čekají na testy.
+- Ověření první části: kompilace s `--warnings-as-errors` a projektový
+  formatter včetně `MIX_ENV=test mix format --check-formatted` prošly.
+  Lokálně je Elixir 1.20.4 / Erlang 29.1.2; přesně připnutý Erlang 29.1 není
+  nainstalovaný, shoda formátování s CI proto není ověřená. Lokální testy ani
+  migrace nebyly spuštěny; výsledky CI ověří uživatel.
+- Zbývá: importní kontrakt a export, slovník, editovatelný náhled a ruční
+  formulář, administrace pod PINem, historie cen v UI, kalkulace u receptů,
+  reporty a jejich neměnné snapshoty, provozní ověření na skutečných dokladech.
 - Blokuje: nic pro zahájení implementace. Ukázkové účtenky budou potřeba
   pro závěrečné provozní ověření čtení a importu.
-- Nejbližší další krok: v novém vlákně po výslovném pokynu k implementaci
-  načíst aktuální `main`, tento dokument a související kód; začít datovým
-  modelem a importním kontraktem. Tento dokument sám implementaci nespouští.
+- Nejbližší další krok: navázat verzovaným JSON schématem, příklady baleného
+  a váženého zboží, instrukcemi pro ChatGPT a exportem katalogu; poté přidat
+  slovník a náhled. `KitchenCosts.confirm_purchase/2` zatím přijímá pouze
+  zkontrolovaná data z interního volání; nejde o parser nedůvěryhodného JSONu.
+  Příznaky potvrzení duplicity a náhrady musí předávat obsluha přes aplikaci,
+  nikoli importovaný JSON. Potvrzená rozhodnutí v tomto plánu zůstávají beze změny.
 
 Pro nové vlákno lze použít:
 
