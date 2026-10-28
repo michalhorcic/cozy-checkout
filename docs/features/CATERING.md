@@ -205,7 +205,9 @@ použité v historickém nákupu či ruční ceně již nelze změnit.
 ### Ceny, historie a recepty
 
 V **Historie a chybějící ceny** vyhledejte surovinu a otevřete její nákupní
-historii. Zobrazuje obchod, balení, cenu za základní jednotku a změnu proti
+historii. Hledání lze kombinovat s filtrem kategorií; oba filtry zůstanou
+zachované při otevření detailu suroviny. Přepínání filtrů neposílá další dotazy
+do databáze. Historie zobrazuje obchod, balení, cenu za základní jednotku a změnu proti
 předchozímu nákupu. Cena k datu jídla je vážený průměr podle množství za
 90 kalendářních dní včetně dne jídla. Budoucí nákupy se nepoužívají.
 Bez nákupu v tomto okně se použije poslední starší nákupní den s upozorněním;
@@ -243,5 +245,7 @@ Testy pokrývají kontexty, import, souběh na samostatných DB spojeních,
 PIN ochranu a LiveView průchod od účtenky po uložený report. Lokálně byla
 ověřena kompilace a formátování. Při opravě pádu načítání slovníku prošly dva
 cílené lokální regresní testy (prázdný formulář a filtr archivovaných vazeb).
+Při optimalizaci přehledu cen prošlo šest dalších cílených testů cenových
+pravidel, konstantního počtu SQL dotazů, kategorií a otevírání historie.
 Celá testovací sada lokálně neběžela; výsledky CI ověří uživatel. Ověření
 skutečných účtenek a jednoho víkendového menu zatím zbývá.

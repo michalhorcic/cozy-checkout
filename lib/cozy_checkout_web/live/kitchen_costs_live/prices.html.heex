@@ -8,13 +8,27 @@
     <p :if={@error} id="price-error" role="alert" class="rounded-lg bg-red-50 p-4 text-red-800">
       {@error}
     </p>
-    <.form for={to_form(%{"search" => @search})} id="cost-price-search" phx-change="search">
+    <.form
+      for={to_form(%{"search" => @search, "category" => @category})}
+      id="cost-price-search"
+      phx-change="search"
+      class="grid gap-4 md:grid-cols-2"
+    >
       <.input
         name="search"
         value={@search}
         label="Hledat surovinu"
         type="search"
         phx-debounce="200"
+      />
+      <.input
+        id="cost-price-category"
+        name="category"
+        value={@category}
+        type="select"
+        label="Kategorie"
+        options={Enum.map(@categories, &{&1, &1})}
+        prompt="Všechny kategorie"
       />
     </.form>
     <div class="overflow-x-auto rounded-lg border bg-white">
@@ -25,11 +39,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr :for={row <- filtered(@rows, @search)} id={"price-#{row.ingredient.id}"}>
+          <tr :for={row <- filtered(@rows, @search, @category)} id={"price-#{row.ingredient.id}"}>
             <td>
-              <.link patch={~p"/admin/kitchen-costs/prices?#{%{ingredient: row.ingredient.id}}"}>{row.ingredient.name}</.link><span :if={
-                row.ingredient.archived_at
-              }> (archiv)</span>
+              <.link patch={
+                ~p"/admin/kitchen-costs/prices?#{%{ingredient: row.ingredient.id, category: @category, search: @search}}"
+              }>{row.ingredient.name}</.link><span :if={row.ingredient.archived_at}> (archiv)</span>
             </td>
             <td>{money(row.price.unit_price)} / {row.ingredient.base_unit}</td>
             <td>

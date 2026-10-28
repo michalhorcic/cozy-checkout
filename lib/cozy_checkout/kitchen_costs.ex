@@ -264,6 +264,102 @@ defmodule CozyCheckout.KitchenCosts do
     end
   end
 
+  @doc """
+  Aggregate prices for an already loaded catalogue, using at most three queries.
+  This overview omits source lines; use price_for/2 for the full calculation trail.
+  """
+  def price_summaries([], %Date{}), do: %{}
+
+  def price_summaries(ingredients, %Date{} = date) do
+    ids = Enum.map(ingredients, & &1.id)
+    first = Date.add(date, -89)
+
+    recent =
+      purchase_totals(ids, date)
+      |> where([_l, p], p.purchased_on >= ^first)
+      |> Repo.all()
+      |> Map.new(&{&1.ingredient_id, &1})
+
+    older_ids = Enum.reject(ids, &Map.has_key?(recent, &1))
+
+    older =
+      if older_ids == [] do
+        %{}
+      else
+        latest =
+          from l in PurchaseLine,
+            join: p in subquery(current_purchases()),
+            on: p.id == l.purchase_id,
+            where: l.ingredient_id in ^older_ids and p.purchased_on < ^first,
+            group_by: l.ingredient_id,
+            select: %{ingredient_id: l.ingredient_id, purchased_on: max(p.purchased_on)}
+
+        purchase_totals(older_ids, date)
+        |> join(:inner, [l, p], last in subquery(latest),
+          on: last.ingredient_id == l.ingredient_id and last.purchased_on == p.purchased_on
+        )
+        |> Repo.all()
+        |> Map.new(&{&1.ingredient_id, &1})
+      end
+
+    manual_ids = Enum.reject(older_ids, &Map.has_key?(older, &1))
+
+    manual =
+      if manual_ids == [],
+        do: %{},
+        else:
+          Repo.all(
+            from m in ManualPrice,
+              where:
+                m.ingredient_id in ^manual_ids and m.valid_from <= ^date and is_nil(m.archived_at),
+              distinct: m.ingredient_id,
+              order_by: [asc: m.ingredient_id, desc: m.valid_from]
+          )
+          |> Map.new(&{&1.ingredient_id, &1})
+
+    Map.new(ingredients, fn ingredient ->
+      price =
+        cond do
+          totals = recent[ingredient.id] ->
+            summary_price(totals, ingredient, "weighted_average", [])
+
+          totals = older[ingredient.id] ->
+            summary_price(totals, ingredient, "older_purchase", older_price_warnings(ingredient))
+
+          true ->
+            manual_price_result(manual[ingredient.id], ingredient) |> Map.delete(:lines)
+        end
+
+      {ingredient.id, price}
+    end)
+  end
+
+  defp purchase_totals(ids, date) do
+    from l in PurchaseLine,
+      join: p in subquery(current_purchases()),
+      on: p.id == l.purchase_id,
+      where: l.ingredient_id in ^ids and p.purchased_on <= ^date,
+      group_by: l.ingredient_id,
+      select: %{
+        ingredient_id: l.ingredient_id,
+        quantity: sum(l.base_quantity),
+        total: sum(l.line_total)
+      }
+  end
+
+  defp summary_price(totals, ingredient, source, warnings),
+    do: %{
+      unit_price: Decimal.div(totals.total, totals.quantity),
+      quantity: totals.quantity,
+      total: totals.total,
+      unit: ingredient.base_unit,
+      source: source,
+      warnings: warnings
+    }
+
+  defp older_price_warnings(ingredient),
+    do: ["Cena #{ingredient.name} pochází z nákupu staršího než 90 dní"]
+
   @doc "Adds costs to Recipes.Consumption output; missing prices keep the known subtotal incomplete."
   def cost_consumption(consumption, %Date{} = date) do
     rows =
@@ -338,9 +434,7 @@ defmodule CozyCheckout.KitchenCosts do
     if latest do
       lines = Repo.all(from [l, p] in query, where: p.purchased_on == ^latest)
 
-      purchase_price(lines, "older_purchase", [
-        "Cena #{ingredient.name} pochází z nákupu staršího než 90 dní"
-      ])
+      purchase_price(lines, "older_purchase", older_price_warnings(ingredient))
     else
       manual =
         Repo.one(
@@ -352,27 +446,29 @@ defmodule CozyCheckout.KitchenCosts do
             limit: 1
         )
 
-      if manual do
-        %{
-          unit_price: manual.unit_price,
-          unit: manual.base_unit,
-          source: "manual_estimate",
-          valid_from: manual.valid_from,
-          manual_price_id: manual.id,
-          lines: [],
-          warnings: ["Ruční odhad ceny: #{ingredient.name}"]
-        }
-      else
-        %{
-          unit_price: nil,
-          unit: ingredient.base_unit,
-          source: "missing",
-          lines: [],
-          warnings: ["Chybí cena: #{ingredient.name}"]
-        }
-      end
+      manual_price_result(manual, ingredient)
     end
   end
+
+  defp manual_price_result(nil, ingredient),
+    do: %{
+      unit_price: nil,
+      unit: ingredient.base_unit,
+      source: "missing",
+      lines: [],
+      warnings: ["Chybí cena: #{ingredient.name}"]
+    }
+
+  defp manual_price_result(manual, ingredient),
+    do: %{
+      unit_price: manual.unit_price,
+      unit: manual.base_unit,
+      source: "manual_estimate",
+      valid_from: manual.valid_from,
+      manual_price_id: manual.id,
+      lines: [],
+      warnings: ["Ruční odhad ceny: #{ingredient.name}"]
+    }
 
   defp purchase_price(lines, source, warnings) do
     quantity = Enum.reduce(lines, Decimal.new(0), &Decimal.add(&1.quantity, &2))

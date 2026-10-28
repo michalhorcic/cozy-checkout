@@ -6,7 +6,7 @@
   Podle pokynu uživatele pokračuje celá funkcionalita ve stejném PR, odděleně
   od `main`; sloučení se v této etapě neprovádí.
 - Vytvořeno: 2026-10-27
-- Aktualizováno: 2026-10-27
+- Aktualizováno: 2026-10-28
 - Podklad: plán a rozhodnutí potvrzená uživatelem v chatu.
 - Související dokumentace: [Stravování, receptury a nákup](../features/CATERING.md).
 
@@ -299,6 +299,21 @@ neúplnost výsledku. Nákupní cena není důkaz skutečné skladové spotřeby
   a ručně porovnat jednotkové ceny i náklad jednoho víkendového menu. Pro tento
   krok jsou potřeba skutečné doklady od uživatele. Nový autocomplete a zakládání
   surovin ještě čekají na ruční ověření. Provozní postup je v CATERING.md.
+- Optimalizace cenového přehledu (schváleno uživatelem 2026-10-28): příčinou
+  pomalého načítání bylo N+1 volání `price_for/2`. Na lokálním katalogu 174
+  surovin bez nákupů vznikalo 697 SQL dotazů pro jedno načtení dat. Přehled
+  nyní používá nejvýše čtyři dotazy včetně katalogu; sumy množství a cen se
+  seskupují v SQL. Zdrojové řádky a uložené reporty se nemění. Otevření detailu
+  načítá jen historii (nejvýše dva dotazy), uložení ruční ceny obnovuje jen
+  příslušný řádek. Filtr kategorií se kombinuje s hledáním bez dalších SQL
+  dotazů a zachovává se při otevření detailu. Stránkování ani migrace nepřibyly.
+  Druhé lokální měření samotného načtení dat: 107,2 ms před úpravou a 21,4 ms
+  po ní; nejde o měření celé stránky ani produkčních dat. Šest cílených testů
+  v `kitchen_cost_price_summaries_test.exs` a `kitchen_cost_prices_live_test.exs`
+  prošlo, včetně shody s jednotlivým cenovým výpočtem a počtu dotazů. Celá sada
+  lokálně neběžela; výsledky CI ověří uživatel. Do `AGENTS.md` bylo na výslovný
+  pokyn uživatele přidané pravidlo hlídat N+1, upozornit na něj a nechat si
+  schválit efektivnější řešení.
 - Nejbližší další krok: po ověření CI nasadit tuto větev do testovacího prostředí
   obvyklým postupem se spuštěním obou migrací. Pod PINem otevřít
   `/admin/kitchen-costs`, projít skutečný nákup a následně report za víkend.
