@@ -325,6 +325,12 @@
                       {(row.ingredient.purchase_mode == "Sezona" && "Na celé období") ||
                         row.ingredient.purchase_mode || "Nákup není nastavený"}
                     </p>
+                    <div :if={@live_action != :print} class="print:hidden">
+                      <.freezer_notice
+                        items={Map.get(@freezer.by_ingredient, row.id, [])}
+                        context={@food_context}
+                      />
+                    </div>
                   </div>
                   <div class="shopping-item-quantity text-right">
                     <p
@@ -442,6 +448,18 @@
           >
             Všechny zobrazené suroviny máte odškrtnuté.
           </p>
+          <div :if={@live_action != :print} class="print:hidden">
+            <.freezer_notice
+              items={@freezer.prepared}
+              title="Hotová jídla v mrazáku"
+              context={@food_context}
+            />
+            <.freezer_notice
+              items={@freezer.unlinked}
+              title="Další zásoby k využití"
+              context={@food_context}
+            />
+          </div>
           <p :if={@live_action != :print} class="mt-6 text-xs text-primary-400">
             Odškrtnutí se ukládá v tomto prohlížeči pro vybrané období a skupinu. Když se podklady položky změní, odškrtnutí se zruší.
           </p>

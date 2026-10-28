@@ -3,7 +3,9 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
   alias CozyCheckout.Bookings
   alias CozyCheckout.Meals.{MenuPlanning, BookingMenuItem, PortionCounts}
   import CozyCheckoutWeb.MealComponents
-  import CozyCheckoutWeb.KitchenComponents, only: [menu_recipe_links: 1, kitchen_header: 1]
+
+  import CozyCheckoutWeb.KitchenComponents,
+    only: [menu_recipe_links: 1, kitchen_header: 1, freezer_notice: 1]
 
   @impl true
   def mount(%{"booking_id" => id} = params, _, socket) do
@@ -165,6 +167,13 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
       CozyCheckoutWeb.FoodNavigation.for_booking(booking)
       |> Map.merge(socket.assigns.request_context)
       |> Map.put("booking", booking.id)
+    )
+    |> assign(
+      :freezer,
+      CozyCheckout.Kitchen.Freezer.presentation(
+        if MenuPlanning.stale?(menu, booking) || booking.status == "cancelled" ||
+             booking.deleted_at, do: [], else: rows
+      )
     )
     |> assign(:booking, booking)
     |> assign(:menu, menu)

@@ -175,6 +175,10 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
         "booking" => booking_id
       })
     )
+    |> assign(
+      :freezer,
+      CozyCheckout.Kitchen.Freezer.presentation(Enum.map(result.meal_services, & &1.item))
+    )
     |> assign(:result, result)
     |> assign(:range_error, nil)
     |> assign(:booking_id, booking_id || "")

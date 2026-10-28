@@ -249,3 +249,44 @@ Při optimalizaci přehledu cen prošlo šest dalších cílených testů cenov�
 pravidel, konstantního počtu SQL dotazů, kategorií a otevírání historie.
 Celá testovací sada lokálně neběžela; výsledky CI ověří uživatel. Ověření
 skutečných účtenek a jednoho víkendového menu zatím zbývá.
+
+
+## Mrazák
+
+V navigaci kuchyně otevřete **Mrazák** (`/admin/freezer`, chráněno admin PINem).
+Přidejte název, množství, jednotku kg/g/l/ml/ks/porce a datum zamrazení
+(výchozí datum aplikace je UTC). Umístění a poznámka jsou volitelné.
+Každá krabička či várka zůstává samostatnou položkou; nejstarší jsou první.
+Přehled umožňuje hledání podle názvu a přepnutí na vyřazené položky.
+
+Volitelně vyberte surovinu nebo hotové jídlo (recept). Výběr předvyplní název,
+který můžete upravit. Surovina vyžaduje slučitelnou jednotku (g/kg, ml/l nebo
+ks); u receptu lze použít i porce. Mezi hmotností, objemem a porcemi se nic
+neodhaduje. Archivované vazby zůstávají označené a dohledatelné, nové vazby
+se vybírají z aktivního katalogu. Surovině použité v evidenci nelze změnit
+základní jednotku.
+
+**Odebrat** umožní část ve stejné jednotce nebo **Vše**; nulový zůstatek
+položku vyřadí. **Upravit** opraví údaje a **Vyřadit** zásobu archivuje bez
+smazání. Při souběžné změně se přehled obnoví a je potřeba položku znovu
+otevřít. V ostatních otevřených oknech načtěte stránku znovu; v nákupu lze
+použít jeho obnovení dat.
+
+U platného menu pobytu a u skupin v plánovači se rozbalí **V mrazáku** s
+počtem relevantních zásob, názvy, množstvím, datem, stářím a umístěním.
+Shody vycházejí výhradně z ID hlavního receptu, doplňků a jejich surovin;
+podobný název nestačí. Zásoba se v jednom bloku zobrazuje jednou.
+Pro minulá jídla, neaktuální menu a zrušené pobyty se konkrétní shody nenabízejí.
+Odkaz v navigaci zůstává dostupný. Nepropojené zásoby jsou u menu a nákupu
+samostatně jako nejvýše pět nejstarších **Dalších zásob k využití**.
+
+Nákup ukazuje zásoby u surovin a samostatně hotová jídla pro recepty v období
+či vybraném pobytu. Jde vždy o **aktuální fyzický stav**, nikoli historickou
+rekonstrukci. Datum zamrazení se nefiltruje podle období pobytu. Stáří neurčuje
+trvanlivost a žádná zásoba se nerezervuje pro konkrétní skupinu.
+
+Informace jsou pouze na obrazovce, mimo tisk nákupu. **Nákupní množství,
+spotřeba, balení, zdroje, náklady ani lokální odškrtnutí se nemění.** Odebrání
+je vždy ruční; otevření menu, uplynutí data jídla ani odškrtnutí nákupu nic
+neodepisuje. První naplnění je ruční inventura. Nasazení vyžaduje migraci
+`20261028120000_create_kitchen_freezer_items`, žádnou novou konfiguraci.

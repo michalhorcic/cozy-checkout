@@ -1,6 +1,6 @@
 # Jednoduchá evidence mrazáku
 
-- Stav: **připraveno**; implementace nezahájena.
+- Stav: **dokončeno**; implementace připravena v jednom PR, ověření CI a ruční průchod zbývají.
 - Vytvořeno: 2026-10-28
 - Aktualizováno: 2026-10-28
 - Podklad: rozsah potvrzený uživatelem v chatu; podrobnosti níže jsou návrh implementace.
@@ -162,14 +162,14 @@ další skladovací místa ponechat další etapě.
 
 ## Postup realizace
 
-- [ ] Na začátku implementace ověřit aktuální `main`, AGENTS.md a tento plán.
-- [ ] Přidat migraci, schéma a kontext pro evidenci, archivaci a bezpečné odebrání.
-- [ ] Přidat administrační přehled, formulář, hledání a navigaci Mrazák.
-- [ ] Připravit hromadné párování podle ID surovin/receptů včetně doplňků.
-- [ ] Doplnit informační bloky do menu pobytu, plánovače a nákupního seznamu.
-- [ ] Doplnit regresní testy neměnnosti nákupů a testy evidence, shod a oprávnění.
-- [ ] Aktualizovat návod stravování a stav tohoto plánu podle skutečné implementace.
-- [ ] Ručně ověřit zadání a použití na jednom reálném menu pobytu.
+- [x] Na začátku implementace ověřit aktuální `main`, AGENTS.md a tento plán.
+- [x] Přidat migraci, schéma a kontext pro evidenci, archivaci a bezpečné odebrání.
+- [x] Přidat administrační přehled, formulář, hledání a navigaci Mrazák.
+- [x] Připravit hromadné párování podle ID surovin/receptů včetně doplňků.
+- [x] Doplnit informační bloky do menu pobytu, plánovače a nákupního seznamu.
+- [x] Doplnit regresní testy neměnnosti nákupů a testy evidence, shod a oprávnění.
+- [x] Aktualizovat návod stravování a stav tohoto plánu podle skutečné implementace.
+- [ ] Ručně ověřit zadání a použití na jednom reálném menu pobytu (uživatel po nasazení).
 
 ## Ověření a podmínky dokončení
 
@@ -204,18 +204,18 @@ a vyřadit položku. Dalším je záměna doporučení za rezervovanou zásobu n
 odečet nákupu; řeší ji jasné označení a regresní testy. První verze nevede
 úplný deník skladových pohybů ani historickou skladovou kalkulaci.
 
-## Průběh a předání dalšímu chatu
+## Průběh a předání
 
-- Hotovo: průzkum existující aplikace, upřesnění jednoduchého rozsahu,
-  sepsání plánu. Aplikační kód se tímto plánem nemění.
-- Zbývá: celá implementace podle postupu výše.
-- Blokuje: nic pro přípravu implementace; tento dokument ji sám nezahajuje.
-- Nejbližší další krok: po pokynu k implementaci ověřit aktuální kód a začít
-  datovým modelem a jednoduchým formulářem evidence.
-
-Pro nový chat:
-
-> Přečti plán v `docs/plans/2026-10-28-evidence-mrazaku.md`, ověř aktuální
-> `main` a začni implementovat jednoduchou evidenci mrazáku. Zachovej nákupní
-> množství beze změny a nepřidávej rezervace zásob ani externí notifikace.
-> Průběžně aktualizuj stav a dokončené kroky v plánu.
+- Hotovo: migrace, kontext `Kitchen.Freezer`, optimistické zámky, admin přehled,
+  formulář a ruční odebrání, společná navigace, hromadné ID shody a informační
+  bloky u menu, plánovače a nákupu. Doplněny kontextové a LiveView testy,
+  regresní porovnání celého výstupu `ShoppingList.generate` a návod stravování.
+- Ověřeno: `MIX_ENV=test mix compile --warnings-as-errors`, celoprojektové
+  `MIX_ENV=test mix format --check-formatted` a `git diff --check`, na Elixiru
+  1.20.4 / Erlangu 29.1 podle `.tool-versions`.
+- Zbývá ověření: lokální testy nebyly spuštěny podle AGENTS.md; GitHub CI
+  ověří uživatel. Ruční průchod reálným menu, odškrtnutím a tiskem zbývá
+  po nasazení, bez přístupu k produkčním datům zde nebyl proveden.
+- Implementace zachovává datum aplikace UTC stejně jako ostatní kuchyňské
+  obrazovky; zásoby s jinými jednotkami nesčítá ani nepřepočítává na porce.
+- Nasazení vyžaduje jednu novou migraci, bez nové konfigurace.

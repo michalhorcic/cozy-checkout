@@ -75,6 +75,7 @@ defmodule CozyCheckoutWeb.AdminNavigation do
     Enum.any?(
       [
         "/admin/meal-planner",
+        "/admin/freezer",
         "/admin/kitchen-shopping",
         "/admin/kitchen-costs",
         "/admin/recipes",
