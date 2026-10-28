@@ -36,6 +36,8 @@ Na `origin/main` jsou samostatné kontexty `Sales`, `Billing` a moduly `Abra`.
 párování pobytových plateb. Jeho životní cyklus a přepínače patří fakturaci,
 nikoli ekonomickému reportingu. `Abra.Transfers` řeší stav účetních přenosů.
 Stávající statistiky vycházejí ze Sales, nejsou celofiremní výsledovkou.
+Nově sloučený `KitchenCosts` eviduje nákupy a kalkulované náklady kuchyně;
+Economics na něm nebude záviset ani jeho náklady přičítat k účetním nákladům.
 
 Ověřené integrační body: `lib/cozy_checkout_web/router.ex` obsahuje admin
 pipeline i LiveView `on_mount` s PINem; `admin_navigation.ex` společnou navigaci;
@@ -294,7 +296,7 @@ oprávnění; hesla předat konfigurací prostředí, nikoli v chatu nebo v Gitu
 
 Mimo první verzi: účetní zápisy, opravy ABRY, změny fakturace a párování,
 předpověď zisku, daňová přiznání, rozpočty, automatické dělení společných
-nákladů, detailní zisk baru/kuchyně, OCR účtenek a kombinace s budoucími
+nákladů, detailní zisk baru/kuchyně, OCR účtenek a kombinace s
 kalkulovanými náklady kuchyně. Ekonomika nepřebírá plán nákupů surovin.
 
 ## Ověření a podmínky dokončení
