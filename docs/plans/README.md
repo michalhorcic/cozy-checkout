@@ -11,6 +11,10 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
   — připraveno; JSON import nákupů, přiřazení ke stávajícím surovinám,
   historie cen a nákladové reporty. Implementace začne v novém vlákně.
 
+- [Ekonomický dashboard firmy z ABRA Flexi](2026-10-28-ekonomicky-dashboard.md)
+  — návrh; samostatný modul, účetní ukazatele a kontrola úplnosti dat,
+  minimální zásahy do aplikace. Obsahuje dotazy pro účetní a etapy implementace.
+
 ## Jak plán uložit a znovu otevřít
 
 1. Nejprve společně připravíme plán a vyjasníme rozsah a otevřené otázky.
