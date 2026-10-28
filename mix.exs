@@ -68,7 +68,7 @@ defmodule CozyCheckout.MixProject do
       {:gettext, "~> 1.0.0"},
       {:jason, "~> 1.4"},
       {:dns_cluster, "~> 0.3.1"},
-      {:bandit, "~> 1.14"},
+      {:bandit, "~> 1.14.1"},
       {:oban, "~> 2.24"},
       {:oban_live_dashboard, "~> 0.2"}
     ]
