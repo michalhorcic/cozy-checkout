@@ -73,7 +73,13 @@ defmodule CozyCheckoutWeb.AdminNavigation do
 
   def active?(path, "/admin/meal-planner") do
     Enum.any?(
-      ["/admin/meal-planner", "/admin/kitchen-shopping", "/admin/recipes", "/admin/ingredients"],
+      [
+        "/admin/meal-planner",
+        "/admin/kitchen-shopping",
+        "/admin/kitchen-costs",
+        "/admin/recipes",
+        "/admin/ingredients"
+      ],
       &within?(path, &1)
     ) or
       (String.starts_with?(path, "/admin/bookings/") and String.ends_with?(path, "/menu"))

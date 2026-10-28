@@ -1,0 +1,168 @@
+<Layouts.app
+  food_section={:cost_reports}
+  food_context={@food_context}
+  flash={@flash}
+  show_header={false}
+>
+  <div class="space-y-6">
+    <h1 class="text-2xl font-bold">Kalkulované náklady na suroviny</h1>
+    <p>Včetně DPH, bez skladových zásob, výdeje, odpadu, práce a energií.</p>
+    <.form
+      for={@range}
+      id="cost-report-range"
+      phx-submit="calculate"
+      class="grid items-end gap-3 rounded-lg border bg-white p-5 md:grid-cols-4"
+    >
+      <.input field={@range[:from]} type="date" label="Jídla od" required />
+      <.input field={@range[:to]} type="date" label="Jídla do (včetně)" required />
+      <.input field={@range[:booking]} type="select" label="Rezervace" options={@booking_options} />
+      <button class="btn btn-primary">Nový přepočet z aktuálních podkladů</button>
+    </.form>
+    <p
+      :if={@error}
+      id="cost-report-error"
+      role="alert"
+      class="rounded-lg bg-red-50 p-4 text-red-800"
+    >
+      {@error}
+    </p>
+    <section :if={@report} id="cost-report" class="space-y-5">
+      <div class="rounded-lg border bg-white p-5">
+        <p :if={@saved} id="saved-cost-report" class="font-bold">
+          Uložený neměnný report · {@saved.calculated_at}
+        </p>
+        <p :if={!@saved}>Náhled · {@report["calculated_at"]}</p>
+        <h2 id="cost-report-total" class="mt-3 text-xl font-bold">
+          {if @report["complete"], do: "Kalkulované náklady", else: "Známý mezisoučet"}: {money(
+            @report["known_total"]
+          )}
+        </h2>
+        <p :if={!@report["complete"]} id="incomplete-cost-report" class="font-bold text-amber-800">
+          Neúplná kalkulace
+        </p>
+        <p>
+          {@report["portions"]} vydaných porcí · {@report["services"]} podání · {@report["groups"]} rezervací
+        </p>
+        <p>
+          {if @report["complete"],
+            do: "Průměr na vydanou porci",
+            else: "Známý mezisoučet na vydanou porci"}: {if @report["average_per_portion"],
+            do: money(@report["average_per_portion"]),
+            else: "—"}
+        </p>
+        <p class="mt-3 text-sm">{@report["historical_recipe_notice"]}</p>
+        <button
+          :if={!@saved}
+          id="save-cost-report"
+          type="button"
+          phx-click="save"
+          class="btn btn-primary mt-4"
+        >Uložit neměnný report</button>
+      </div>
+      <div
+        :if={@report["issues"] != [] or @report["warnings"] != []}
+        id="cost-report-warnings"
+        class="rounded-lg bg-amber-50 p-5"
+      >
+        <h2 class="font-bold">Upozornění a neúplné podklady</h2>
+        <p :for={issue <- @report["issues"]}>
+          {issue["booking_name"]}: {issue["message"]}
+          <.link
+            :if={issue["booking_id"]}
+            navigate={~p"/admin/bookings/#{issue["booking_id"]}/menu"}
+          >Otevřít menu</.link>
+        </p>
+        <p :for={warning <- @report["warnings"]}>{warning}</p>
+        <.link navigate={~p"/admin/kitchen-costs/prices"}>Doplnit a zkontrolovat ceny</.link>
+      </div>
+      <section class="rounded-lg border bg-white p-5">
+        <h2 class="font-bold">Známé náklady podle rezervace</h2>
+        <p :for={booking <- @report["booking_totals"]} class="border-b py-2">
+          {booking["booking_name"]} · {booking["portions"]} porcí · {money(booking["known_total"])} · {if booking[
+                                                                                                            "average_per_portion"
+                                                                                                          ],
+                                                                                                          do:
+                                                                                                            money(
+                                                                                                              booking[
+                                                                                                                "average_per_portion"
+                                                                                                              ]
+                                                                                                            ),
+                                                                                                          else:
+                                                                                                            "—"} na porci
+        </p>
+      </section>
+      <details :for={meal <- @report["meals"]} class="rounded-lg border bg-white p-5">
+        <summary class="cursor-pointer font-bold">
+          {meal["booking_name"]} · {meal["date"]} · {meal_label(meal["meal_type"])} · {meal[
+            "portions"
+          ]} porcí
+        </summary>
+        <p class="mt-3 font-semibold">
+          Známý náklad na toto podání: {money(meal["known_total"])}
+        </p>
+        <p class="my-3 text-sm">
+          Dospělí {meal["adults"]}, děti {meal["children"]}, dětský koeficient {number(
+            meal["factor"]
+          )}
+        </p>
+        <p :for={issue <- meal["issues"]} class="text-amber-800">{issue}</p>
+        <div :for={recipe <- meal["recipes"]} class="mt-4 border-t pt-3">
+          <h3 class="font-bold">
+            {recipe["name"]} · základní dávka {number(recipe["base_servings"])} porcí
+          </h3>
+          <p>Známý náklad receptu: {money(recipe["known_total"])}</p>
+          <div class="overflow-x-auto">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Surovina</th><th>Spotřeba</th><th>Cena / jednotka</th><th>Zdroj</th><th>
+                    Náklad
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr :for={line <- recipe["lines"]}>
+                  <td>
+                    <.link navigate={
+                      ~p"/admin/kitchen-costs/prices?#{%{ingredient: line["ingredient_id"]}}"
+                    }>{line["ingredient_name"]}</.link>
+                  </td>
+                  <td>{number(line["quantity"])} {line["unit"]}</td><td>
+                    {money(line["price"]["unit_price"])} / {line["unit"]}
+                  </td>
+                  <td>
+                    {source(line["price"]["source"])}<span
+                      :if={line["price"]["valid_from"]}
+                      class="block text-xs"
+                    >Platí od {line["price"]["valid_from"]}</span><span
+                      :for={p <- line["price"]["lines"]}
+                      class="block text-xs"
+                    ><.link navigate={~p"/admin/kitchen-costs/#{p["purchase_id"]}"}>{p[
+                      "purchased_on"
+                    ]} · {number(p["quantity"])} {p["unit"]} · {money(p["total"])}</.link></span>
+                  </td>
+                  <td>{money(line["cost"])}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <details class="mt-2 text-sm">
+            <summary>Uložená receptura základní dávky</summary><p :for={
+              line <- recipe["source_lines"]
+            }>
+              {line["ingredient_name"]} · {number(line["quantity"])} {line["unit"]}
+            </p>
+          </details>
+        </div>
+      </details>
+    </section>
+    <section class="rounded-lg border bg-white p-5">
+      <h2 class="mb-3 text-lg font-bold">Uložené verze reportů</h2>
+      <p :for={r <- @saved_reports} class="border-b py-2">
+        <.link navigate={~p"/admin/kitchen-costs/reports/#{r.id}"}>{r.start_date} – {r.end_date} · {r.calculated_at} · {money(
+          r.snapshot["known_total"]
+        )}</.link>
+      </p>
+    </section>
+  </div>
+</Layouts.app>

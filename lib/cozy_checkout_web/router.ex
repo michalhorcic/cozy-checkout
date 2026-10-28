@@ -48,6 +48,8 @@ defmodule CozyCheckoutWeb.Router do
     pipe_through [:browser, :admin_auth]
 
     get "/billing/documents/:id/pdf", BillingDocumentController, :show
+    get "/kitchen-costs/catalog.json", KitchenCostsController, :catalog
+    get "/kitchen-costs/contract/:file", KitchenCostsController, :contract
 
     import Phoenix.LiveDashboard.Router
 
@@ -152,6 +154,13 @@ defmodule CozyCheckoutWeb.Router do
 
       live "/kitchen-shopping", ShoppingLive.Index, :index
       live "/kitchen-shopping/print", ShoppingLive.Index, :print
+      live "/kitchen-costs", KitchenCostsLive.Index, :index
+      live "/kitchen-costs/new", KitchenCostsLive.Index, :new
+      live "/kitchen-costs/prices", KitchenCostsLive.Prices, :index
+      live "/kitchen-costs/reports", KitchenCostsLive.Reports, :index
+      live "/kitchen-costs/reports/:id", KitchenCostsLive.Reports, :show
+      live "/kitchen-costs/:id/edit", KitchenCostsLive.Index, :edit
+      live "/kitchen-costs/:id", KitchenCostsLive.Index, :show
 
       # Kitchen recipes and ingredients
       live "/recipes", RecipeLive.Index, :index

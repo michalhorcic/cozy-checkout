@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "import_id": "550e8400-e29b-41d4-a716-446655440000",
+  "receipt": {
+    "merchant": "Ukázkový obchod",
+    "purchased_on": "2026-10-27",
+    "document_number": "UKAZKA-123",
+    "currency": "CZK",
+    "total_paid": "151.00",
+    "rounding": "-0.39",
+    "shared_discount": "10.00"
+  },
+  "items": [
+    {
+      "line_number": 1,
+      "source_name": "Rajský protlak značka A 140 g",
+      "kind": "packaged",
+      "quantity": "280",
+      "unit": "g",
+      "line_total_after_discount": "59.80",
+      "proposed_ingredient_id": null,
+      "proposed_ingredient_name": null,
+      "mapping_reason": null,
+      "warnings": [],
+      "package_count": "2",
+      "package_quantity": "140",
+      "package_unit": "g"
+    },
+    {
+      "line_number": 2,
+      "source_name": "Mrkev vážená",
+      "kind": "weighed",
+      "quantity": "0.723",
+      "unit": "kg",
+      "line_total_after_discount": "21.69",
+      "proposed_ingredient_id": null,
+      "proposed_ingredient_name": null,
+      "mapping_reason": null,
+      "warnings": []
+    },
+    {
+      "line_number": 3,
+      "source_name": "Čisticí prostředek 1 ks",
+      "kind": "packaged",
+      "quantity": "1",
+      "unit": "ks",
+      "line_total_after_discount": "79.90",
+      "proposed_ingredient_id": null,
+      "proposed_ingredient_name": null,
+      "mapping_reason": null,
+      "warnings": [],
+      "package_count": "1",
+      "package_quantity": "1",
+      "package_unit": "ks"
+    }
+  ],
+  "warnings": [
+    "Ukázkový doklad; ID surovin doplňte z aktuálního exportu katalogu. Společnou slevu je třeba výslovně rozdělit."
+  ]
+}

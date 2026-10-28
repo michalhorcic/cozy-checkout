@@ -4,6 +4,20 @@ defmodule CozyCheckout.Recipes.CatalogTest do
   alias CozyCheckout.Recipes
   alias CozyCheckout.Recipes.{Recipe, RecipeLine, Ingredient}
 
+  test "ingredient autocomplete matches all words across name, category and notes without accents" do
+    breakfast =
+      ingredient_fixture(%{name: "Čerstvé mléko", category: "Snídaně", notes: "Bez laktózy"})
+
+    other = ingredient_fixture(%{name: "Jiné mléko", category: "Snídaně"})
+
+    assert Recipes.search_ingredients([breakfast, other], "LAKTOZY snidane cerstve") == [
+             breakfast
+           ]
+
+    assert Recipes.search_ingredients([breakfast, other], "  mleko  ") == [breakfast, other]
+    assert Recipes.search_ingredients([breakfast, other], "neexistuje") == []
+  end
+
   test "migration imports every audited recipe, ingredient and source quantity" do
     snapshot =
       Application.app_dir(:cozy_checkout, "priv/recipes/drive_reference.json")

@@ -1,8 +1,12 @@
 # Nákupy surovin a nákladovost kuchyně
 
-- Stav: **připraveno**; implementace nezahájena.
+- Stav: **implementováno k ověření celku**; doplněný import, administrace,
+  ceny a reporty. CI a provozní ověření na skutečných dokladech ještě zbývají.
+- Pracovní větev: `codex/kitchen-costs-foundation`, [PR #55](https://github.com/michalhorcic/cozy-checkout/pull/55).
+  Podle pokynu uživatele pokračuje celá funkcionalita ve stejném PR, odděleně
+  od `main`; sloučení se v této etapě neprovádí.
 - Vytvořeno: 2026-10-27
-- Aktualizováno: 2026-10-27
+- Aktualizováno: 2026-10-28
 - Podklad: plán a rozhodnutí potvrzená uživatelem v chatu.
 - Související dokumentace: [Stravování, receptury a nákup](../features/CATERING.md).
 
@@ -194,15 +198,20 @@ Všechna následující rozhodnutí byla potvrzena v chatu dne 2026-10-27:
 
 ## Postup realizace
 
-- [ ] V novém vlákně ověřit aktuální `main`, související kontexty a tento plán.
-- [ ] Přidat samostatný kontext, migrace, omezení databáze a cenové výpočty.
-- [ ] Připravit export katalogu, verzované JSON schéma, příklady a instrukce
+- [x] V novém vlákně ověřit aktuální `main`, související kontexty a tento plán.
+- [x] Přidat samostatný kontext, migrace, omezení databáze a cenové výpočty.
+  - [x] Kontext `KitchenCosts`, potvrzené nákupy a řádky, náhradní verze,
+    datované ruční ceny, UUID a databázová omezení.
+  - [x] Vážený průměr včetně dne jídla a 89 předchozích dní; starší nákup,
+    ruční odhad, chybějící cena a ocenění stávajícího výpočtu spotřeby.
+  - [x] Slovník přiřazení a datový model uložených reportů.
+- [x] Připravit export katalogu, verzované JSON schéma, příklady a instrukce
   pro ChatGPT včetně baleného a váženého zboží a slev.
-- [ ] Přidat importní náhled, ruční zadání, potvrzování a verzování nákupů,
+- [x] Přidat importní náhled, ruční zadání, potvrzování a verzování nákupů,
   slovník přiřazení a seznam položek k dořešení.
-- [ ] Přidat historii cen a aktuální kalkulace porcí u receptů.
-- [ ] Přidat reporty za období s rozpadem nákladů a neměnnými uloženými verzemi.
-- [ ] Doplnit administraci, PIN ochranu, testy a provozní dokumentaci.
+- [x] Přidat historii cen a aktuální kalkulace porcí u receptů.
+- [x] Přidat reporty za období s rozpadem nákladů a neměnnými uloženými verzemi.
+- [x] Doplnit administraci, PIN ochranu, testy a provozní dokumentaci.
 - [ ] Ověřit několik skutečných účtenek a jedno víkendové menu.
 
 Modul dostane vlastní administraci pod stávajícím PINem: nákupy/import,
@@ -223,8 +232,8 @@ Testy pokryjí zejména:
 
 Na skutečných dokladech ručně porovnat přepočet ceny za kg/l/ks a cenu jednoho
 menu. Podle instrukcí repozitáře poběží testy standardně v CI; lokální spuštění
-vyžaduje samostatný pokyn. Při uložení tohoto plánu se aplikace nemění
-a aplikační testy se nespouštějí.
+vyžaduje samostatný pokyn. Testy všech implementovaných částí jsou doplněné, lokálně nebyly
+spuštěny; výsledky CI ověří uživatel.
 
 ## Nasazení a rizika
 
@@ -236,17 +245,76 @@ neúplnost výsledku. Nákupní cena není důkaz skutečné skladové spotřeby
 
 ## Průběh a předání dalšímu chatu
 
-- Hotovo: průzkum současných surovin, receptur, spotřeby a menu; potvrzení
-  rozhodnutí; sepsání plánu.
-- Zbývá: celá implementace podle postupu výše.
-- Blokuje: nic pro zahájení implementace. Ukázkové účtenky budou potřeba
-  pro závěrečné provozní ověření čtení a importu.
-- Nejbližší další krok: v novém vlákně po výslovném pokynu k implementaci
-  načíst aktuální `main`, tento dokument a související kód; začít datovým
-  modelem a importním kontraktem. Tento dokument sám implementaci nespouští.
-
-Pro nové vlákno lze použít:
-
-> Přečti plán v `docs/plans/2026-10-27-nakupy-a-nakladovost-kuchyne.md`,
-> ověř aktuální stav kódu a začni jeho implementaci. Zachovej potvrzená
-> rozhodnutí a průběžně aktualizuj stav a dokončené kroky v plánu.
+- Hotovo: ověření proti čerstvě načtenému `origin/main` (`26f12f3`), datový
+  základ z první etapy a navazující celý tok v administraci. Potvrzená
+  rozhodnutí v tomto dokumentu zůstala zachovaná.
+- Data: migrace `20261027120000` (nákupy, řádky, ruční ceny) a
+  `20261027130000` (slovník, neměnné reporty). Opravy nákupů jsou náhradní
+  verze; změna slovníku minulý řádek nepřepíše. Cenové zdroje jsou dohledatelné
+  ve snapshotech; historické ceny a základní jednotky jsou chráněné.
+- Import: verzované schéma, ukázka a instrukce jsou v `priv/kitchen_costs/`.
+  Export katalogu i podkladů je dostupný z administrace pod PINem.
+  Parser pouze připravuje náhled. Obrázky ani externí odkazy se nenačítají.
+  Balíčky i vážené zboží používají explicitní celkové množství; konečné ceny
+  jsou včetně DPH. Nejasné údaje lze v JSONu nechat null a doplnit v náhledu.
+- Potvrzování: známé vazby se předvyplní, návrh JSONu zůstává viditelný.
+  Každá surovina má výslovné potvrzení; změna ID ho zneplatní. Slovník se
+  ukládá jen po samostatném souhlasu. Souběžná změna slovníku vyžaduje nový
+  náhled a potvrzení. Poměrné rozdělení společné slevy probíhá výslovně,
+  v haléřích; zbývající haléře se přiřazují v pořadí řádků. Zaokrouhlení
+  dokladu zůstává zvlášť. Vratky a záporné položky tato verze nepodporuje.
+- Ceny: 90 dní včetně dne jídla; poslední starší nákupní den s upozorněním,
+  datovaný ruční odhad, jinak chybějící cena. Více nákupů v posledním starším
+  dni se váží množstvím. Nulové normy nevyžadují cenu. V UI jsou historie,
+  trend a aktuální dospělá/dětská porce pro oba stávající koeficienty.
+- Reporty: období a rezervace, stejné skutečné porce jako nákupní seznam,
+  hlavní recepty a doplňky. Rozpad podle rezervací, dat/jídel, receptů a surovin;
+  zdrojové ceny a upozornění; uložení neměnného snapshotu a nový přepočet jako
+  další verze. Původní receptury neuložených historických období se neobnovují.
+- Testy: první etapa a nové soubory `kitchen_costs_import_test.exs`,
+  `kitchen_cost_reports_test.exs`, `kitchen_costs_concurrency_test.exs`,
+  `kitchen_costs_live_test.exs`. Zahrnují samostatná DB spojení pro souběh,
+  PIN ochranu exportů a administrace, import → potvrzení → ceny → report,
+  duplicity, slevy, hranice cen, dětské koeficienty, doplňky a neměnnost reportů.
+- Ověření: kompilace aplikace s `--warnings-as-errors`, kompilace nových
+  testovacích modulů bez spuštění testů a projektový formatter prošly.
+  Lokálně je Elixir 1.20.4 / Erlang 29.1.2; přesně připnutý Erlang 29.1 není
+  nainstalovaný, shoda formátování s CI proto není ověřená. Při původní
+  implementaci lokální testy ani migrace spuštěny nebyly; výsledky CI ověří uživatel.
+- Oprava při provozním ověřování: otevření nákupu padalo kvůli
+  `Repo.get_by(..., archived_at: nil)`. Dotaz nyní používá explicitní
+  `is_nil(m.archived_at)`. Dva cílené lokální regresní testy prošly: otevření
+  prázdného formuláře a vyhledání vazby včetně vynechání archivovaných vazeb.
+  Testovací příkaz: `PGUSER=elixir PGPASSWORD='' MIX_ENV=test mix test
+  test/cozy_checkout/kitchen_costs_import_test.exs:7
+  test/cozy_checkout_web/kitchen_costs_live_test.exs:25`. Celá sada lokálně neběžela.
+- Navazující rozšíření: uživatel potvrdil funkčnost po opravě načítání
+  formuláře; na jeho navazující žádost
+  přibyl slovní autocomplete bez diakritiky (název, kategorie, poznámka)
+  a výslovné založení nové suroviny přímo u řádku nákupu bez receptury.
+  Tato úprava zachovává cenu, množství a jednotku rozepsaného nákupu; po výběru
+  vyžaduje nové potvrzení vazby. Doplněné testy pro toto rozšíření nebyly
+  lokálně spuštěny, výsledky CI ověří uživatel.
+- Zbývá: ověřit CI a případné nálezy, provést skutečný import účtenek
+  a ručně porovnat jednotkové ceny i náklad jednoho víkendového menu. Pro tento
+  krok jsou potřeba skutečné doklady od uživatele. Nový autocomplete a zakládání
+  surovin ještě čekají na ruční ověření. Provozní postup je v CATERING.md.
+- Optimalizace cenového přehledu (schváleno uživatelem 2026-10-28): příčinou
+  pomalého načítání bylo N+1 volání `price_for/2`. Na lokálním katalogu 174
+  surovin bez nákupů vznikalo 697 SQL dotazů pro jedno načtení dat. Přehled
+  nyní používá nejvýše čtyři dotazy včetně katalogu; sumy množství a cen se
+  seskupují v SQL. Zdrojové řádky a uložené reporty se nemění. Otevření detailu
+  načítá jen historii (nejvýše dva dotazy), uložení ruční ceny obnovuje jen
+  příslušný řádek. Filtr kategorií se kombinuje s hledáním bez dalších SQL
+  dotazů a zachovává se při otevření detailu. Stránkování ani migrace nepřibyly.
+  Druhé lokální měření samotného načtení dat: 107,2 ms před úpravou a 21,4 ms
+  po ní; nejde o měření celé stránky ani produkčních dat. Šest cílených testů
+  v `kitchen_cost_price_summaries_test.exs` a `kitchen_cost_prices_live_test.exs`
+  prošlo, včetně shody s jednotlivým cenovým výpočtem a počtu dotazů. Celá sada
+  lokálně neběžela; výsledky CI ověří uživatel. Do `AGENTS.md` bylo na výslovný
+  pokyn uživatele přidané pravidlo hlídat N+1, upozornit na něj a nechat si
+  schválit efektivnější řešení.
+- Nejbližší další krok: po ověření CI nasadit tuto větev do testovacího prostředí
+  obvyklým postupem se spuštěním obou migrací. Pod PINem otevřít
+  `/admin/kitchen-costs`, projít skutečný nákup a následně report za víkend.
+  Do `main` zatím neslučovat; další opravy pokračují na stejné větvi a PR #55.

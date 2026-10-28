@@ -10,6 +10,9 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 - [Nákupy surovin a nákladovost kuchyně](2026-10-27-nakupy-a-nakladovost-kuchyne.md)
   — připraveno; JSON import nákupů, přiřazení ke stávajícím surovinám,
   historie cen a nákladové reporty. Implementace začne v novém vlákně.
+- [Jednoduchá evidence mrazáku](2026-10-28-evidence-mrazaku.md)
+  — připraveno; ruční evidence a informace u menu, plánovače a nákupu.
+  Nákupní množství zůstávají beze změny; bez rezervací a externích notifikací.
 
 - [Ekonomický dashboard firmy z ABRA Flexi](2026-10-28-ekonomicky-dashboard.md)
   — návrh; samostatný modul, účetní ukazatele a kontrola úplnosti dat,

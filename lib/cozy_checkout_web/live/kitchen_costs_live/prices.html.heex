@@ -1,0 +1,98 @@
+<Layouts.app food_section={:costs} food_context={@food_context} flash={@flash} show_header={false}>
+  <div class="space-y-6">
+    <h1 class="text-2xl font-bold">Historie a ceny surovin</h1>
+    <.link navigate={~p"/admin/kitchen-costs"} class="text-tertiary-700">Zpět na nákupy</.link>
+    <p>
+      Ceny včetně DPH za základní jednotku k dnešnímu dni. Starší ceny a ruční odhady jsou označené.
+    </p>
+    <p :if={@error} id="price-error" role="alert" class="rounded-lg bg-red-50 p-4 text-red-800">
+      {@error}
+    </p>
+    <.form
+      for={to_form(%{"search" => @search, "category" => @category})}
+      id="cost-price-search"
+      phx-change="search"
+      class="grid gap-4 md:grid-cols-2"
+    >
+      <.input
+        name="search"
+        value={@search}
+        label="Hledat surovinu"
+        type="search"
+        phx-debounce="200"
+      />
+      <.input
+        id="cost-price-category"
+        name="category"
+        value={@category}
+        type="select"
+        label="Kategorie"
+        options={Enum.map(@categories, &{&1, &1})}
+        prompt="Všechny kategorie"
+      />
+    </.form>
+    <div class="overflow-x-auto rounded-lg border bg-white">
+      <table class="table" id="ingredient-cost-prices">
+        <thead>
+          <tr>
+            <th>Surovina</th><th>Cena / jednotka</th><th>Zdroj</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :for={row <- filtered(@rows, @search, @category)} id={"price-#{row.ingredient.id}"}>
+            <td>
+              <.link patch={
+                ~p"/admin/kitchen-costs/prices?#{%{ingredient: row.ingredient.id, category: @category, search: @search}}"
+              }>{row.ingredient.name}</.link><span :if={row.ingredient.archived_at}> (archiv)</span>
+            </td>
+            <td>{money(row.price.unit_price)} / {row.ingredient.base_unit}</td>
+            <td>
+              {source(row.price.source)}
+              <p :for={warning <- row.price.warnings} class="text-xs text-amber-800">{warning}</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <section
+      :if={@selected}
+      id="ingredient-price-history"
+      class="space-y-4 rounded-lg border bg-white p-5"
+    >
+      <h2 class="text-xl font-bold">{@selected.name} — historie nákupních cen</h2>
+      <p :if={@history == []}>Zatím žádný potvrzený nákup.</p>
+      <div :for={{line, index} <- Enum.with_index(@history)} class="border-b py-3">
+        <.link navigate={~p"/admin/kitchen-costs/#{line.purchase_id}"}>{line.purchase.purchased_on} · {line.purchase.merchant} · {line.source_name}</.link>
+        <p>
+          {number(line.base_quantity)} {line.base_unit} · {money(line.line_total)} · {money(
+            unit_price(line)
+          )} / {line.base_unit}
+        </p>
+        <p :if={line.package_count}>
+          Balení {number(line.package_count)} × {number(line.package_quantity)} {line.package_unit}
+        </p>
+        <p class="text-sm">{trend(@history, index)}</p>
+      </div>
+      <.form
+        :if={is_nil(@selected.archived_at)}
+        for={@manual_form}
+        id="manual-price-form"
+        phx-submit="manual_price"
+        class="space-y-3 border-t pt-4"
+      >
+        <h3 class="font-bold">Datovaný ruční odhad ceny</h3>
+        <p class="text-sm">
+          Použije se jen bez předchozího nákupu. Nový odhad přidejte s novým datem platnosti.
+        </p>
+        <.input field={@manual_form[:valid_from]} type="date" label="Platí od" required />
+        <.input
+          field={@manual_form[:unit_price]}
+          label={"Cena s DPH v CZK za 1 #{@selected.base_unit}"}
+          required
+        />
+        <.input field={@manual_form[:note]} label="Podklad / poznámka k odhadu" required />
+        <button class="btn btn-primary">Uložit označený odhad</button>
+      </.form>
+    </section>
+  </div>
+</Layouts.app>

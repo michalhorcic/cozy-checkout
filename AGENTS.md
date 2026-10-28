@@ -15,6 +15,7 @@ and daisyUI; Docker deployment through Coolify.
 - Before starting work, fetch the latest `origin/main` and base new work on its latest commit. When continuing an existing branch, first compare it with the freshly fetched `origin/main` and reconcile relevant changes.
 
 - Inspect the relevant implementation, schemas, migrations and tests first. Follow existing patterns, keep business logic in contexts, and prefer simple solutions. Ask when a material business requirement cannot be resolved from the repository.
+- V příštích pracích si hlídej N+1 problém. Vždy na něj upozorni a nech si schválit efektivnější řešení.
 - Keep guest-facing POS flows simple, touch-friendly and short; administrative complexity belongs in admin screens.
 - Preserve existing admin PIN authentication for admin routes, LiveViews and billing downloads; POS stays public. Do not assume generated Phoenix account authentication exists.
 - Use Ecto migrations for schema changes; preserve UUID keys, timestamps, database constraints and soft deletes on business records.
