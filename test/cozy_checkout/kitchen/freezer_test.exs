@@ -118,6 +118,16 @@ defmodule CozyCheckout.Kitchen.FreezerTest do
       })
 
     item = hd(menu.items)
+    # Give the supplement real text before linking it. Ecto normalizes "" to nil,
+    # so clearing an already-empty label would leave its recipe link unchanged.
+    {:ok, item} =
+      CozyCheckout.Meals.MenuPlanning.update_booking_item(
+        booking.id,
+        item.id,
+        %{supplements: extra.name},
+        CozyCheckout.Meals.MenuPlanning.item_version(item)
+      )
+
     # Attach a second recipe using the same public API as the menu editor.
     {:ok, _} =
       CozyCheckout.Recipes.Links.save(
@@ -159,7 +169,22 @@ defmodule CozyCheckout.Kitchen.FreezerTest do
       CozyCheckout.Meals.MenuPlanning.update_booking_item(
         booking.id,
         item.id,
-        %{menu_text: "Jiné jídlo", supplements: ""},
+        %{menu_text: "Jiné jídlo"},
+        CozyCheckout.Meals.MenuPlanning.item_version(item)
+      )
+
+    # The supplement still uses the shared ingredient after the main dish changes.
+    assert Enum.sort(Enum.map(Freezer.presentation(menu.items).by_item[item.id], & &1.id)) ==
+             Enum.sort([stock.id, prepared.id])
+
+    item = CozyCheckout.Recipes.Links.load!("booking", item.id)
+    assert is_nil(item.recipe_id)
+
+    {:ok, _} =
+      CozyCheckout.Meals.MenuPlanning.update_booking_item(
+        booking.id,
+        item.id,
+        %{supplements: ""},
         CozyCheckout.Meals.MenuPlanning.item_version(item)
       )
 
