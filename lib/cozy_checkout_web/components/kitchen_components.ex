@@ -83,6 +83,8 @@ defmodule CozyCheckoutWeb.KitchenComponents do
   attr :index, :string, required: true
   attr :query, :string, default: nil
   attr :open, :boolean, default: false
+  attr :required, :boolean, default: true
+  attr :focus_id, :string, default: nil
 
   def ingredient_picker(assigns) do
     available =
@@ -94,16 +96,13 @@ defmodule CozyCheckoutWeb.KitchenComponents do
     selected = Enum.find(available, &(&1.id == to_string(assigns.field.value)))
     query = assigns.query || if(selected, do: selected.name, else: "")
 
-    words =
+    search =
       if selected && query == selected.name,
-        do: [],
-        else: String.split(CozyCheckout.Recipes.normalize(query))
+        do: "",
+        else: query
 
     matches =
-      Enum.filter(available, fn ingredient ->
-        name = CozyCheckout.Recipes.normalize(ingredient.name)
-        Enum.all?(words, &String.contains?(name, &1))
-      end)
+      CozyCheckout.Recipes.search_ingredients(available, search)
 
     assigns =
       assigns
@@ -111,6 +110,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
       |> assign(:matches, Enum.take(matches, 8))
       |> assign(:match_count, length(matches))
       |> assign(:options, Enum.map(available, &{&1.name <> " (" <> &1.base_unit <> ")", &1.id}))
+      |> assign(:focus_id, assigns.focus_id || assigns.field.form[:quantity].id)
 
     ~H"""
     <div
@@ -124,7 +124,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
         type="search"
         value={@query}
         label="Surovina"
-        placeholder="Hledat surovinu podle názvu…"
+        placeholder="Hledat podle názvu, kategorie nebo poznámky…"
         autocomplete="off"
         phx-change="search_ingredients"
         phx-debounce="150"
@@ -137,7 +137,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
         aria-invalid={to_string(@field.errors != [])}
         aria-describedby={@field.errors != [] && "#{@field.id}-error"}
         class={field_class()}
-        required
+        required={@required}
       />
       <div
         :if={@open}
@@ -149,7 +149,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
           :for={ingredient <- @matches}
           id={"#{@field.id}-option-#{ingredient.id}"}
           type="button"
-          phx-click={JS.push("select_ingredient") |> JS.focus(to: "##{@field.form[:quantity].id}")}
+          phx-click={JS.push("select_ingredient") |> JS.focus(to: "##{@focus_id}")}
           phx-value-index={@index}
           phx-value-id={ingredient.id}
           class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-primary-500 transition hover:bg-tertiary-50 focus:bg-secondary-100 focus:outline-none"
@@ -157,7 +157,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
           <span>{ingredient.name}</span><span class="shrink-0 text-xs text-primary-400">{ingredient.base_unit}</span>
         </button>
         <p :if={@match_count == 0} class="px-3 py-3 text-sm text-primary-400" role="status">
-          Žádná surovina nenalezena. Zkuste jiný název nebo založte novou surovinu dole ve formuláři.
+          Žádná surovina nenalezena. Zkuste jiný název nebo založte novou surovinu.
         </p>
         <p
           :if={@match_count > 8}

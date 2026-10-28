@@ -143,3 +143,109 @@ káva 8 g, kakao 5 g, mléko 150 ml, máslo 15 g a pečivo 2 ks. Snídaňový d�
 koeficient se uplatní samostatně. Normy jsou v `priv/recipes/breakfast_buffet.json`.
 Před prvním víkendem je zkontrolujte přes **Upravit normy bufetu**; nepoužívané
 položky lze nastavit na 0, další suroviny přidat běžným formulářem receptu.
+
+## Nákupy a kalkulované náklady surovin
+
+V **Stravování → Nákupy a ceny** otevřete **Nový nákup / import**. Stejný
+formulář slouží pro ruční nákup i kontrolu JSONu z ChatGPT. Nové tabulky přidávají
+migrace `20261027120000` a `20261027130000`; modul nevyžaduje novou konfiguraci,
+OpenAI API klíč ani změnu ABRA. S barovými nákupy a skladem není propojený.
+Implementace zůstává na větvi `codex/kitchen-costs-foundation` v PR #55, dokud
+neproběhne ověření celku. Do `main` se v této etapě neslučuje.
+
+### Import účtenky a ruční nákup
+
+1. Stáhněte **Export katalogu pro ChatGPT**. Obsahuje stabilní ID, názvy,
+   základní jednotky, archivaci a potvrzená přiřazení nákupních názvů.
+2. V novém nákupu stáhněte instrukce `CHATGPT.md` a schéma
+   `receipt-v1.schema.json`; přiložte je s katalogem a fotkami do ChatGPT.
+   Fotky zůstávají v chatu. Ukázkový `receipt-v1.example.json` má záměrně
+   prázdná ID a obsahuje balené i vážené zboží, drogerii a společnou slevu.
+3. Výsledný JSON vložte do náhledu. Načtení nic neukládá. Nečitelné údaje
+   mohou být `null`; před potvrzením doplňte povinné údaje, jednotky, množství
+   a ceny. Limitem je 1 MB a 500 řádků. Verze je 1, částky a množství jsou
+   desetinné řetězce. Obrázky, odkazy k načtení a nepovolená pole se odmítají.
+4. Zkontrolujte **celkové množství**, například dvě balení po 140 g = 280 g.
+   Volitelné údaje o balení musí s celkovým množstvím souhlasit. Převádí se
+   pouze g/kg, ml/l a ks/ks. Hmotnost kusu ani hustota se neodhaduje.
+5. Řádkové slevy už patří do konečné ceny řádku včetně DPH. Společnou slevu
+   buď výslovně poměrně rozdělte, nebo ji ručně zahrňte do dotčených řádků
+   a označte **Sleva už je zahrnuta v řádcích**. Poměrné rozdělení pracuje
+   v haléřích a zbytek přiřadí v pořadí řádků. Zaokrouhlení dokladu je zvlášť.
+6. Známé přiřazení se předvyplní ze slovníku, návrh JSONu zůstane vedle něj
+   pro kontrolu včetně případného konfliktu a upozornění. Potvrďte vazbu každé
+   suroviny. Název je kontrolní, rozhoduje existující ID. Změna ID vyžaduje
+   nové potvrzení. Slovník se mění jen samostatným zaškrtnutím zapamatování.
+   Existující surovinu vyhledejte v našeptávači: všechna zadaná slova se hledají
+   v názvu, kategorii a poznámce, nezávisle na pořadí slov a diakritice.
+   Výsledek vyberte kliknutím; samotný napsaný text není přiřazení.
+7. Neznámý řádek lze nechat **Dořešit později**, drogerii označit
+   **Mimo suroviny**. Obě skupiny zůstávají v součtu účtenky a nevstupují
+   do cen surovin. **Založit novou surovinu** u řádku otevře formulář názvu,
+   kategorie, základní jednotky a poznámky. Surovina se výslovným potvrzením
+   uloží do stávajícího katalogu bez nutnosti receptury a vybere u dané položky.
+   Rozpracovaný nákup, jeho ceny, množství i jednotky zůstanou zachované;
+   přiřazení nové suroviny ještě potvrďte. Recepturu lze doplnit později.
+8. **Potvrdit celý nákup** uloží celý doklad atomicky, pouze pokud součet
+   řádků a zaokrouhlení souhlasí se zaplacenou částkou. Původní JSON zůstává
+   uložený. Vratky a záporné položky tato verze nepodporuje.
+
+Opakované `import_id` vrací stejný nákup. Shodný obchod, datum, číslo a částka
+vyžadují výslovné potvrzení možné duplicity. Oprava nákupu ukládá **náhradní
+verzi**; původní řádky, množství, ceny, názvy a jednotky se nemění. Nové výpočty
+používají poslední verzi. Uložení reportu nebrání opravě nákupu a oprava nemění
+již uložený report. Seznam **Položky k dořešení** odkazuje na opravu nákupu.
+
+Slovník rozlišuje obchod a úplný normalizovaný nákupní název. Normalizace
+sjednocuje velikost písmen a mezery, zachovává značky, čísla a velikost balení.
+Změna slovníku platí jen pro další nákupy. Souběžná změna přiřazení zablokuje
+jeho přepsání: obnovte náhled přiřazení a znovu potvrďte vazby. Jednotku suroviny
+použité v historickém nákupu či ruční ceně již nelze změnit.
+
+### Ceny, historie a recepty
+
+V **Historie a chybějící ceny** vyhledejte surovinu a otevřete její nákupní
+historii. Hledání lze kombinovat s filtrem kategorií; oba filtry zůstanou
+zachované při otevření detailu suroviny. Přepínání filtrů neposílá další dotazy
+do databáze. Historie zobrazuje obchod, balení, cenu za základní jednotku a změnu proti
+předchozímu nákupu. Cena k datu jídla je vážený průměr podle množství za
+90 kalendářních dní včetně dne jídla. Budoucí nákupy se nepoužívají.
+Bez nákupu v tomto okně se použije poslední starší nákupní den s upozorněním;
+při více nákupech v tomto dni se ceny opět váží množstvím. Bez předchozího
+nákupu lze doplnit datovaný ruční odhad s poznámkou. Bez něj cena chybí.
+
+U receptu se zobrazují aktuální kalkulované náklady na jednu dospělou a dětskou
+porci pro koeficient teplého jídla i snídaně. Jde o současnou recepturu, ne
+průměr skutečně vydaných porcí. Nulové normy spotřeby nepotřebují smyšlenou
+nulovou cenu. Chybějící cena při kladné spotřebě znamená neúplnou kalkulaci;
+částka je pouze známý mezisoučet. Starší a odhadované ceny mají upozornění.
+
+### Nákladové reporty
+
+V **Stravování → Náklady kuchyně** vyberte období nejvýše 366 dní a volitelně
+jednu rezervaci. Rozhodují data jednotlivých jídel včetně příjezdu a odjezdu.
+Výpočet zahrnuje dokončené pobyty a vynechává zrušené, smazané a pobyty bez
+stravy. Používá stejné porce a spotřebu jako nákupní seznam, hlavní recepty,
+doplňky a samostatné dětské koeficienty. Nákupní balení a sezonní zaokrouhlování
+nemají na nákladovou spotřebu vliv.
+
+Report zobrazuje celkový známý náklad, porce, průměr na porci, rozpad podle
+rezervací a jednotlivých dat/jídel, receptů a surovin, zdrojové ceny a jejich
+množství. Chybějící ceny, menu, recepty a neaktuální menu jsou viditelné
+v neúplnosti a upozorněních. Z výsledku nevyvozujte skutečnou skladovou spotřebu.
+
+**Uložit neměnný report** uchová snapshot receptur, množství, porcí,
+koeficientů, cen i upozornění. Pozdější změna katalogu, rezervace či nákupu
+uložený report nepřepíše. **Nový přepočet z aktuálních podkladů** umožní uložit
+další verzi. První výpočet minulého období používá současné receptury;
+neuloženou historickou podobu nelze zpětně odvodit. Výstupy jsou v Cozy,
+bez CSV a samostatného PDF.
+
+Testy pokrývají kontexty, import, souběh na samostatných DB spojeních,
+PIN ochranu a LiveView průchod od účtenky po uložený report. Lokálně byla
+ověřena kompilace a formátování. Při opravě pádu načítání slovníku prošly dva
+cílené lokální regresní testy (prázdný formulář a filtr archivovaných vazeb).
+Při optimalizaci přehledu cen prošlo šest dalších cílených testů cenových
+pravidel, konstantního počtu SQL dotazů, kategorií a otevírání historie.
+Celá testovací sada lokálně neběžela; výsledky CI ověří uživatel. Ověření
+skutečných účtenek a jednoho víkendového menu zatím zbývá.

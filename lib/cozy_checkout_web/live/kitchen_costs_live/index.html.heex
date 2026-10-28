@@ -1,0 +1,342 @@
+<Layouts.app food_section={:costs} food_context={@food_context} flash={@flash} show_header={false}>
+  <div class="space-y-6">
+    <h1 class="text-2xl font-bold">Nákupy a ceny kuchyně</h1>
+    <p>
+      Kalkulované náklady na suroviny včetně DPH. Bez skladového výdeje, odpadu, práce a energií.
+    </p>
+    <nav class="flex flex-wrap gap-4 text-tertiary-700">
+      <.link navigate={~p"/admin/kitchen-costs"}>Nákupy a přiřazení</.link>
+      <.link id="new-kitchen-purchase" navigate={~p"/admin/kitchen-costs/new"}>Nový nákup / import</.link>
+      <.link navigate={~p"/admin/kitchen-costs/prices"}>Historie a chybějící ceny</.link>
+      <.link navigate={~p"/admin/kitchen-costs/reports"}>Nákladové reporty</.link>
+      <a href={~p"/admin/kitchen-costs/catalog.json"}>Export katalogu pro ChatGPT</a>
+    </nav>
+    <p
+      :if={@error}
+      id="kitchen-cost-error"
+      role="alert"
+      class="rounded-lg bg-red-50 p-4 text-red-800"
+    >
+      {@error}
+    </p>
+
+    <div :if={@live_action == :index} class="space-y-6">
+      <section class="rounded-lg border bg-white p-5">
+        <h2 class="mb-4 text-lg font-bold">Potvrzené nákupy a jejich verze</h2>
+        <p :if={@purchases == []}>Zatím žádný nákup. Začněte ručním zadáním nebo importem.</p>
+        <div
+          :for={p <- @purchases}
+          id={"purchase-#{p.id}"}
+          class="flex flex-wrap justify-between gap-3 border-b py-3"
+        >
+          <.link navigate={~p"/admin/kitchen-costs/#{p.id}"}>{p.purchased_on} · {p.merchant} · {p.document_number} · {money(
+            p.total_paid
+          )}</.link>
+          <span :if={Enum.any?(@purchases, &(&1.replaces_id == p.id))}>Nahrazená verze</span>
+          <span :if={p.replaces_id}>Oprava dřívějšího nákupu</span>
+        </div>
+      </section>
+      <section id="unassigned-purchases" class="rounded-lg border bg-white p-5">
+        <h2 class="text-lg font-bold">Položky k dořešení ({length(@unassigned)})</h2>
+        <p class="my-2 text-sm">
+          Přiřazení historického řádku provedete opravou nákupu. Změna slovníku starý nákup nepřepíše.
+        </p>
+        <p :for={line <- @unassigned} class="border-b py-2">
+          <.link navigate={~p"/admin/kitchen-costs/#{line.purchase_id}/edit"}>{line.purchase.purchased_on} · {line.source_name} · {money(
+            line.line_total
+          )} — dořešit</.link>
+        </p>
+      </section>
+      <section id="purchase-mappings" class="rounded-lg border bg-white p-5">
+        <h2 class="text-lg font-bold">Potvrzená přiřazení pro další importy</h2>
+        <div :for={m <- @mappings} class="flex flex-wrap justify-between gap-3 border-b py-2">
+          <span>{m.merchant_key} · {m.source_name} → {m.ingredient.name}</span>
+          <button
+            type="button"
+            phx-click="edit_mapping"
+            phx-value-id={m.id}
+            class="text-tertiary-700"
+          >Upravit přiřazení</button>
+        </div>
+        <.form
+          :if={@mapping_editor}
+          for={@mapping_form}
+          id="mapping-form"
+          phx-submit="save_mapping"
+          class="mt-4 space-y-3"
+        >
+          <p>{@mapping_editor.merchant_key} · {@mapping_editor.source_name}</p>
+          <.ingredient_picker
+            field={@mapping_form[:ingredient_id]}
+            ingredients={@ingredients}
+            index="mapping"
+            query={@ingredient_queries["mapping"]}
+            open={@active_ingredient == "mapping"}
+            focus_id="save-mapping"
+          />
+          <button id="save-mapping" class="btn btn-primary">Potvrdit změnu slovníku</button>
+        </.form>
+      </section>
+    </div>
+
+    <section :if={@live_action == :show} class="space-y-4 rounded-lg border bg-white p-5">
+      <h2 class="text-lg font-bold">{@purchase.merchant} · {@purchase.purchased_on}</h2>
+      <p>
+        Doklad {@purchase.document_number} · {money(@purchase.total_paid)} · zaokrouhlení {money(
+          @purchase.rounding
+        )}
+      </p>
+      <p :if={@purchase.replaces_id}>
+        <.link navigate={~p"/admin/kitchen-costs/#{@purchase.replaces_id}"}>Zobrazit původní verzi</.link>
+      </p>
+      <p :for={p <- Enum.filter(@purchases, &(&1.replaces_id == @purchase.id))}>
+        <.link navigate={~p"/admin/kitchen-costs/#{p.id}"}>Tento nákup má novější verzi — otevřít</.link>
+      </p>
+      <.link
+        :if={!Enum.any?(@purchases, &(&1.replaces_id == @purchase.id))}
+        id="replace-purchase"
+        navigate={~p"/admin/kitchen-costs/#{@purchase.id}/edit"}
+        class="btn"
+      >Opravit náhradní verzí</.link>
+      <div :for={line <- @purchase.lines} class="border-b py-3">
+        <p>
+          {line.line_number}. {line.source_name} · {number(line.quantity)} {line.unit} · {money(
+            line.line_total
+          )}
+        </p>
+        <p>
+          {line.ingredient_name ||
+            if(line.classification == "other", do: "Mimo suroviny", else: "Nepřiřazeno")}
+        </p>
+        <p :if={line.package_count}>
+          Balení: {number(line.package_count)} × {number(line.package_quantity)} {line.package_unit}
+        </p>
+      </div>
+      <details :if={@purchase.original_json}>
+        <summary>Původní JSON</summary><pre class="overflow-auto whitespace-pre-wrap text-xs">{Jason.encode!(@purchase.original_json, pretty: true)}</pre>
+      </details>
+    </section>
+
+    <div :if={@live_action in [:new, :edit]} class="space-y-6">
+      <p :if={@replaces_id} class="rounded-lg bg-amber-50 p-4">
+        Ukládáte náhradní verzi celého nákupu. Původní verze a uložené reporty zůstanou zachované. Znovu potvrďte přiřazení surovin.
+      </p>
+      <details class="rounded-lg border bg-white p-5" open={@live_action == :new}>
+        <summary class="cursor-pointer font-bold">Import návrhu z ChatGPT</summary>
+        <div class="my-3 flex flex-wrap gap-4 text-tertiary-700">
+          <a href={~p"/admin/kitchen-costs/contract/CHATGPT.md"}>Instrukce pro ChatGPT</a>
+          <a href={~p"/admin/kitchen-costs/contract/receipt-v1.schema.json"}>JSON schéma v1</a>
+          <a href={~p"/admin/kitchen-costs/contract/receipt-v1.example.json"}>Ukázkový JSON</a>
+        </div>
+        <.form for={@import_form} id="kitchen-import-form" phx-submit="import" class="space-y-3">
+          <.input
+            field={@import_form[:json]}
+            type="textarea"
+            rows="8"
+            label="Vložte JSON návrhu (nejvýše 1 MB)"
+          />
+          <button class="btn">Načíst do editovatelného náhledu</button>
+        </.form>
+      </details>
+      <ul :if={@warnings != []} class="rounded-lg bg-amber-50 p-4">
+        <li :for={warning <- @warnings}>{warning}</li>
+      </ul>
+      <section class="rounded-lg border bg-white p-5">
+        <h2 class="text-lg font-bold">Společná sleva</h2>
+        <p class="my-2 text-sm">
+          Rozdělení upraví konečné ceny řádků poměrně v haléřích. Řádkové slevy už mají být započtené. Zkontrolujte ceny včetně ostatního zboží.
+        </p>
+        <.form
+          for={to_form(%{"amount" => @discount}, as: :discount)}
+          id="discount-form"
+          phx-submit="distribute_discount"
+          class="flex flex-wrap items-end gap-3"
+        >
+          <.input name="discount[amount]" value={@discount} label="Společná sleva CZK" />
+          <button class="btn">Výslovně rozdělit slevu</button>
+          <button type="button" class="btn" phx-click="discount_applied">Sleva už je zahrnuta v řádcích</button>
+        </.form>
+      </section>
+      <.form
+        for={@form}
+        id="kitchen-purchase-form"
+        phx-change="validate"
+        phx-submit="save"
+        class="space-y-5"
+      >
+        <div class="grid gap-4 rounded-lg border bg-white p-5 md:grid-cols-3">
+          <.input field={@form[:merchant]} label="Obchod" required />
+          <.input field={@form[:purchased_on]} type="date" label="Datum nákupu" required />
+          <.input field={@form[:document_number]} label="Číslo dokladu" />
+          <.input field={@form[:total_paid]} label="Celkem zaplaceno včetně DPH (CZK)" required />
+          <.input field={@form[:rounding]} label="Samostatné zaokrouhlení (CZK)" required />
+        </div>
+        <fieldset
+          :for={{line, index} <- Enum.with_index(@attrs["lines"])}
+          id={"purchase-line-#{index}"}
+          class="space-y-3 rounded-lg border bg-white p-5"
+        >
+          <% lf = to_form(line, as: "purchase[lines][#{index}]", id: "purchase-line-#{index}") %>
+          <% mapping = @line_mappings[to_string(line["line_number"])] %>
+          <% proposed = proposal(@import_items, line["line_number"]) %>
+          <legend class="font-bold">Položka {line["line_number"]}</legend>
+          <input type="hidden" name={lf[:line_number].name} value={line["line_number"]} />
+          <div class="grid gap-3 md:grid-cols-3">
+            <.input
+              field={lf[:source_name]}
+              label="Původní název včetně značky a balení"
+              required
+            />
+            <.input field={lf[:quantity]} label="Celkové nakoupené množství" required />
+            <.input
+              field={lf[:unit]}
+              type="select"
+              label="Jednotka celkového množství"
+              options={~w(kg g l ml ks)}
+              prompt="Vyberte"
+            />
+            <.input field={lf[:package_count]} label="Počet balení (volitelně)" />
+            <.input field={lf[:package_quantity]} label="Množství v jednom balení" />
+            <.input
+              field={lf[:package_unit]}
+              type="select"
+              label="Jednotka balení"
+              options={~w(kg g l ml ks)}
+              prompt="Bez údajů o balení"
+            />
+            <.input
+              field={lf[:line_total]}
+              label="Konečná cena řádku po slevách (CZK)"
+              required
+            />
+            <.input
+              field={lf[:classification]}
+              type="select"
+              label="Zařazení"
+              options={[
+                {"Surovina", "ingredient"},
+                {"Dořešit později", "unassigned"},
+                {"Mimo suroviny", "other"}
+              ]}
+            />
+            <div class="space-y-2">
+              <.ingredient_picker
+                field={lf[:ingredient_id]}
+                ingredients={@ingredients}
+                index={to_string(line["line_number"])}
+                query={@ingredient_queries[to_string(line["line_number"])]}
+                open={@active_ingredient == to_string(line["line_number"])}
+                required={line["classification"] == "ingredient"}
+              />
+              <button
+                type="button"
+                id={"new-purchase-ingredient-#{index}"}
+                phx-click="new_ingredient"
+                phx-value-index={line["line_number"]}
+                class="text-sm font-semibold text-tertiary-700"
+              >
+                <.icon name="hero-plus" class="mr-1 h-4 w-4" />Založit novou surovinu
+              </button>
+            </div>
+          </div>
+          <p :if={mapping} class="text-sm">
+            Slovník: {Enum.find_value(@ingredients, mapping.ingredient_id, fn i ->
+              if i.id == mapping.ingredient_id, do: i.name
+            end)} · {mapping.ingredient_id}
+          </p>
+          <div :if={proposed} class="rounded-lg bg-secondary-50 p-3 text-sm">
+            <p>
+              Návrh JSON: {proposed["proposed_ingredient_name"] || "bez návrhu"} · {proposed[
+                "proposed_ingredient_id"
+              ]}
+            </p>
+            <p>{proposed["mapping_reason"]}</p>
+            <p
+              :if={
+                mapping && proposed["proposed_ingredient_id"] &&
+                  mapping.ingredient_id != proposed["proposed_ingredient_id"]
+              }
+              class="font-bold text-amber-800"
+            >
+              Konflikt návrhu se slovníkem — vyberte správnou surovinu.
+            </p>
+            <p :for={warning <- proposed["warnings"]}>{warning}</p>
+          </div>
+          <div :if={line["classification"] == "ingredient"} class="space-y-3">
+            <label class="flex items-center gap-3">
+              <input
+                type="checkbox"
+                name={lf[:confirmed_ingredient_id].name}
+                value={line["ingredient_id"]}
+                checked={
+                  line["ingredient_id"] not in [nil, ""] &&
+                    line["confirmed_ingredient_id"] == line["ingredient_id"]
+                }
+              /> Potvrzuji přiřazení tohoto řádku ke zvolené surovině
+            </label>
+            <.input
+              field={lf[:remember]}
+              type="checkbox"
+              label="Výslovně uložit toto přiřazení do slovníku pro další nákupy"
+              checked={line["remember"] == "true"}
+            />
+          </div>
+          <button
+            type="button"
+            phx-click="remove_line"
+            phx-value-index={index}
+            class="text-red-700"
+          >Odebrat řádek</button>
+        </fieldset>
+        <button type="button" id="add-purchase-line" phx-click="add_line" class="btn">Přidat řádek</button>
+        <p :if={!validation_errors(@attrs).valid?} class="text-sm text-primary-500">
+          Před potvrzením doplňte všechny údaje a zkontrolujte součet řádků se zaokrouhlením.
+        </p>
+        <.input
+          field={@form[:allow_duplicate]}
+          type="checkbox"
+          checked={@attrs["allow_duplicate"] == "true"}
+          label="Zkontroloval/a jsem možnou duplicitu a přesto chci uložit další nákup"
+        />
+        <div class="flex flex-wrap gap-3">
+          <button id="confirm-kitchen-purchase" class="btn btn-primary">Potvrdit celý nákup</button>
+          <button type="button" phx-click="refresh_mappings" class="btn">Obnovit náhled přiřazení</button>
+        </div>
+      </.form>
+    </div>
+  </div>
+  <.modal
+    :if={@new_ingredient_line}
+    id="new-purchase-ingredient-modal"
+    show
+    on_cancel={JS.push("close_new_ingredient")}
+  >
+    <h2 class="mb-3 text-xl font-bold">Nová surovina do katalogu</h2>
+    <p class="mb-5 text-sm">
+      Rozpracovaný nákup zůstane zachovaný. Surovinu vybereme u této položky. Recepturu můžete doplnit později.
+    </p>
+    <.form
+      for={@new_ingredient_form}
+      id="new-purchase-ingredient-form"
+      phx-submit="save_new_ingredient"
+      class="space-y-4"
+    >
+      <.input field={@new_ingredient_form[:name]} label="Název suroviny" required />
+      <.input field={@new_ingredient_form[:category]} label="Kategorie" required />
+      <.input
+        field={@new_ingredient_form[:base_unit]}
+        type="select"
+        label="Základní jednotka"
+        options={[{"Kilogram (kg)", "kg"}, {"Litr (l)", "l"}, {"Kus (ks)", "ks"}]}
+      />
+      <.input field={@new_ingredient_form[:notes]} label="Poznámka (volitelně)" />
+      <button class="btn btn-primary" phx-disable-with="Ukládám…">Vytvořit a vybrat v nákupu</button>
+      <button
+        id="cancel-new-purchase-ingredient"
+        type="button"
+        phx-click="close_new_ingredient"
+        class="btn"
+      >Zrušit</button>
+    </.form>
+  </.modal>
+</Layouts.app>

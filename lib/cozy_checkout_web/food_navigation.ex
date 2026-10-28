@@ -3,6 +3,8 @@ defmodule CozyCheckoutWeb.FoodNavigation do
   @paths %{
     planner: "/admin/meal-planner",
     shopping: "/admin/kitchen-shopping",
+    costs: "/admin/kitchen-costs",
+    cost_reports: "/admin/kitchen-costs/reports",
     variants: "/admin/meal-planner/variants",
     recipes: "/admin/recipes",
     ingredients: "/admin/ingredients",

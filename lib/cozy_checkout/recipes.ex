@@ -29,6 +29,18 @@ defmodule CozyCheckout.Recipes do
   end
 
   def get_ingredient!(id), do: Repo.get!(Ingredient, id)
+
+  def search_ingredients(ingredients, query) do
+    words = query |> normalize() |> String.split()
+
+    Enum.filter(ingredients, fn ingredient ->
+      text =
+        normalize(Enum.join([ingredient.name, ingredient.category, ingredient.notes || ""], " "))
+
+      Enum.all?(words, &String.contains?(text, &1))
+    end)
+  end
+
   def create_ingredient(attrs), do: %Ingredient{} |> Ingredient.changeset(attrs) |> Repo.insert()
 
   def update_ingredient(ingredient, attrs) do
@@ -39,7 +51,7 @@ defmodule CozyCheckout.Recipes do
 
       cs =
         if get_change(cs, :base_unit) &&
-             Repo.exists?(from l in RecipeLine, where: l.ingredient_id == ^ingredient.id),
+             ingredient_unit_used?(ingredient.id),
            do:
              add_error(
                cs,
@@ -53,6 +65,14 @@ defmodule CozyCheckout.Recipes do
         {:error, cs} -> Repo.rollback(cs)
       end
     end)
+  end
+
+  defp ingredient_unit_used?(id) do
+    Repo.exists?(from l in RecipeLine, where: l.ingredient_id == ^id) or
+      Repo.exists?(
+        from l in CozyCheckout.KitchenCosts.PurchaseLine, where: l.ingredient_id == ^id
+      ) or
+      Repo.exists?(from p in CozyCheckout.KitchenCosts.ManualPrice, where: p.ingredient_id == ^id)
   end
 
   def archive_ingredient(i),
