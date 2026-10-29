@@ -397,7 +397,7 @@ defmodule CozyCheckout.Economics.CostMapping do
 
       Enum.any?(
         rules,
-        &((&1.partner_id && not MapSet.member?(partners, &1.partner_id)) and
+        &(not is_nil(&1.partner_id) and not MapSet.member?(partners, &1.partner_id) and
               not MapSet.member?(old_rule_targets, {&1.account, &1.partner_id}))
       ) ->
         {:error, :invalid_partner}

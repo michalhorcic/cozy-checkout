@@ -98,6 +98,19 @@ defmodule CozyCheckout.Economics.CostMappingTest do
 
   defp equal(a, b), do: assert(Decimal.equal?(a, b))
 
+  @tag :cost_preview_regression
+  test "account rules without a partner can be previewed and published", %{base: base} do
+    for partner <- [nil, ""] do
+      assert {:ok, result} = preview(base, [rule(%{"partner_id" => partner})])
+      assert [%{changed: [%{behavior: "variable"}]}] = result.impacts
+    end
+
+    assert {:ok, result} = preview(base, [rule()])
+    assert {:ok, version} = Economics.publish_cost_mapping(result.token)
+    assert version.state == "active"
+    assert {:ok, %{rules: [%{partner_id: nil}]}} = Economics.costs()
+  end
+
   test "preview is inactive; publication is atomic and repeatable only against its baseline", %{
     base: base,
     snapshot: snapshot
