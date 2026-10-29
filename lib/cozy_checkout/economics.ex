@@ -18,6 +18,23 @@ defmodule CozyCheckout.Economics do
   def enabled?, do: Config.enabled?()
   def mapping, do: CozyCheckout.Economics.AccountMapping.entries()
 
+  def home_summary(today \\ Date.utc_today()) do
+    with {:ok, source} <- current_source() do
+      snapshots = Repo.all(from s in Snapshot, where: s.source_id == ^source.id and s.active)
+      confirmations = Repo.all(from c in Confirmation, where: c.source_id == ^source.id)
+
+      latest_run =
+        Repo.one(
+          from r in ImportRun,
+            where: r.source_id == ^source.id,
+            order_by: [desc: r.generation],
+            limit: 1
+        )
+
+      {:ok, CozyCheckout.Economics.Attention.build(snapshots, confirmations, latest_run, today)}
+    end
+  end
+
   def connection_info do
     cfg = Config.get()
     uri = URI.parse(cfg[:base_url] || "")
@@ -61,7 +78,7 @@ defmodule CozyCheckout.Economics do
         Repo.all(
           from s in Snapshot,
             where: s.source_id == ^source.id and s.active,
-            order_by: [desc: s.period_code],
+            order_by: [desc: fragment("?->'period'->>'from'", s.payload)],
             select: %{code: s.period_code, id: s.id}
         )
 
@@ -85,13 +102,36 @@ defmodule CozyCheckout.Economics do
 
       confirmations = Repo.all(from c in Confirmation, where: c.source_id == ^source.id)
 
+      current_saldo =
+        Repo.one(
+          from s in Snapshot,
+            where:
+              s.source_id == ^source.id and s.active and
+                not is_nil(fragment("?->'current_saldo'", s.payload)),
+            order_by: [
+              desc: fragment("?->'current_saldo'->>'date'", s.payload),
+              desc: s.checked_at
+            ],
+            select: fragment("?->'current_saldo'", s.payload),
+            limit: 1
+        )
+
+      report =
+        if snapshot do
+          select_report(snapshot, params, confirmations)
+          |> Map.put(
+            :current_saldo,
+            CozyCheckout.Economics.Attention.saldo(current_saldo, Date.utc_today())
+          )
+        end
+
       {:ok,
        %{
          source: source,
          periods: periods,
          snapshot: snapshot,
          latest_run: latest_run,
-         report: if(snapshot, do: select_report(snapshot, params, confirmations))
+         report: report
        }}
     end
   end
@@ -120,7 +160,7 @@ defmodule CozyCheckout.Economics do
             source_id: source.id,
             snapshot_id: snapshot.id,
             month: date,
-            fingerprint: Reports.fingerprint(data),
+            fingerprint: Reports.month_fingerprint(data),
             evidence: String.trim(evidence)
           },
           on_conflict: :nothing,
@@ -198,7 +238,7 @@ defmodule CozyCheckout.Economics do
             Enum.find(
               confirmations,
               &(to_string(&1.month) == data["from"] and
-                  &1.fingerprint == Reports.fingerprint(data))
+                  &1.fingerprint == Reports.month_fingerprint(data))
             )
 
           %{
@@ -242,9 +282,23 @@ defmodule CozyCheckout.Economics do
         warnings: selected |> Enum.flat_map(& &1["warnings"]) |> Enum.uniq(),
         period: snapshot.payload["period"],
         snapshot_id: snapshot.id,
-        checked_at: snapshot.checked_at
+        checked_at: snapshot.checked_at,
+        cost_categories: cost_categories(accounts)
       }
     end
+  end
+
+  defp cost_categories(accounts) do
+    accounts
+    |> Enum.filter(&(&1.kind == "expense"))
+    |> Enum.group_by(& &1.category)
+    |> Enum.map(fn {category, rows} ->
+      amount = Enum.reduce(rows, @zero, &Decimal.add(Reports.number!(&1.totals["expense"]), &2))
+      %{category: category, amount: Decimal.to_string(amount, :normal), accounts: rows}
+    end)
+    |> Enum.sort(fn a, b ->
+      Decimal.compare(Reports.number!(a.amount), Reports.number!(b.amount)) != :lt
+    end)
   end
 
   defp open_totals(items, date) do

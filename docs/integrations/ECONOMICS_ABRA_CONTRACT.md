@@ -81,3 +81,18 @@ hodnoty nelze bez vysvětlení použít jako ověřený stav.
 
 Neznámé parametry mohou být ignorovány i při HTTP 200. Klient a import proto
 ověřují obálku, data, stav zaúčtování a součty; dostupnost URL nestačí.
+
+## Identifikační údaje (ověřeno 29. 10. 2026)
+
+V obou evidencích lze ve stejném GET vyžádat `nazFirmy`, `firma`, `popis`,
+`varSym` a `cisDosle`. Pohyby navíc vracejí lidské číslo v `doklad` a popisek
+protiúčtu v `protiUcet@showAs`; saldo má lidské číslo v `kod`. Vzorky běžných
+pohybů, pohybů na účtu 604001 a denního salda odpověděly HTTP 200; názvy,
+čísla a popisy byly neprázdné. Soukromé hodnoty vzorků se neukládají do Gitu
+ani logů. `firma@showAs` slouží jen jako záložní název firmy, nikoli klíč pro
+sériové načítání adresáře. Žádné další GET pro jednotlivé doklady nevznikají.
+
+Klient stále čte pouze výslovně vyjmenovaná pole. Volné poznámky, adresy,
+kontaktní údaje ani kompletní doklad se kvůli identifikaci nepřebírají.
+Chybějící identifikační pole nebrání finančnímu importu; požadavky na částky,
+kontrolní součty, účetní typy a datumové filtry se nemění.

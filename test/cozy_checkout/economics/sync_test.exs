@@ -39,7 +39,7 @@ defmodule CozyCheckout.Economics.SyncTest do
     :ok
   end
 
-  defp stub(transform \\ fn _, rows -> rows end) do
+  defp stub(transform \\ fn _, rows -> rows end, fail_daily \\ false) do
     Req.Test.stub(AbraClient, fn conn ->
       assert conn.method == "GET"
       path = URI.decode(conn.request_path)
@@ -76,7 +76,12 @@ defmodule CozyCheckout.Economics.SyncTest do
              ]}
         end
 
-      Req.Test.json(conn, %{"winstrom" => %{key => transform.(key, rows)}})
+      if fail_daily and key == "saldo-k-datu" and
+           Plug.Conn.fetch_query_params(conn).query_params["datum"] == to_string(Date.utc_today()) do
+        Plug.Conn.send_resp(conn, 503, "")
+      else
+        Req.Test.json(conn, %{"winstrom" => %{key => transform.(key, rows)}})
+      end
     end)
   end
 
@@ -85,6 +90,7 @@ defmodule CozyCheckout.Economics.SyncTest do
     assert {:ok, second} = Sync.run("FY-TEST")
     assert first.id == second.id
     assert Repo.aggregate(Snapshot, :count) == 1
+    assert second.payload["current_saldo"]["date"] == to_string(Date.utc_today())
     assert {:ok, %{report: report}} = Economics.overview()
     assert Decimal.equal?(report.open_totals["receivable"]["total"], "75")
     assert Decimal.equal?(report.open_totals["receivable"]["credits"], "-10")
@@ -133,6 +139,23 @@ defmodule CozyCheckout.Economics.SyncTest do
     assert Repo.aggregate(Confirmation, :count) == 1
   end
 
+  test "home summary reads only local data after an import" do
+    assert {:ok, _} = Sync.run("FY-TEST")
+    Req.Test.stub(AbraClient, fn _ -> flunk("The home overview must never call ABRA") end)
+    assert {:ok, summary} = Economics.home_summary()
+    assert summary.saldo.date == to_string(Date.utc_today())
+    assert summary.saldo.fresh
+  end
+
+  test "a failed daily saldo read preserves the entire last published snapshot" do
+    assert {:ok, previous} = Sync.run("FY-TEST")
+
+    stub(fn _, rows -> rows end, true)
+    assert {:error, {:http, 503}} = Sync.run("FY-TEST")
+    assert Repo.get!(Snapshot, previous.id).active
+    assert Repo.aggregate(Snapshot, :count) == 1
+  end
+
   test "changing source isolates all data and disabled jobs make no requests" do
     assert {:ok, _} = Sync.run("FY-TEST")
 
@@ -143,6 +166,7 @@ defmodule CozyCheckout.Economics.SyncTest do
     )
 
     assert {:error, :not_imported} = Economics.overview()
+    assert {:error, :not_imported} = Economics.home_summary()
     Application.put_env(:cozy_checkout, :economics, enabled: false)
     assert :ok = SyncWorker.perform(%Oban.Job{args: %{}})
     assert {:error, :disabled} = Economics.request_sync()

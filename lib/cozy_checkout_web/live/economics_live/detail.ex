@@ -50,13 +50,15 @@ defmodule CozyCheckoutWeb.EconomicsLive.Detail do
           <table id="economics-movements" class="table">
             <thead>
               <tr>
-                <th>Datum účtování</th><th>Modul / doklad</th><th>Zápis ABRA</th><th>MD</th><th>
+                <th>Datum účtování</th><th>Firma a doklad · popis pohybu</th><th>Zápis ABRA</th><th>
+                  MD
+                </th><th>
                   Dal
                 </th>
               </tr>
             </thead><tbody>
               <tr :for={row <- Enum.sort_by(@detail.rows, &{&1["date"], &1["journal_id"]})}>
-                <td>{row["date"]}</td><td>{row["module"]} / {row["document_id"]}</td><td>
+                <td>{row["date"]}</td><td><.document_identity record={row} /></td><td>
                   {row["journal_id"]}
                 </td><td>{money(row["md"])}</td><td>{money(row["dal"])}</td>
               </tr>

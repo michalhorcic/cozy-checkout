@@ -83,8 +83,8 @@ session. Vypnutý modul přesměruje přímé otevření na admin přehled.
    posledních úspěšných dat.
 3. Vyberte hospodářský rok a jeden či více měsíců; prázdné od/do znamená
    celý dostupný rozsah. Změna roku použije skutečné hranice jeho snapshotu.
-4. Detail čísla účtu ukáže data účtování, strany MD/Dal a reference zápisů
-   a dokladů ABRA, bez osobních popisů. Tabulka salda řadí položky podle
+4. Detail čísla účtu ukáže data účtování, strany MD/Dal, firmu, číslo dokladu,
+   krátký popis a reference zápisů ABRA. Tabulka salda řadí položky podle
    splatnosti; dobropisy jsou oddělené od kladných pohledávek a závazků.
 5. Na stránce Zdroj a úplnost lze po dohodě s účetní potvrdit jednotlivý
    ukončený měsíc a uvést podklad. Výchozí stav všech měsíců je Neověřeno.
@@ -99,14 +99,91 @@ Nový snapshot vzniká bokem a publikuje se atomicky až po všech kontrolách.
 Neúspěch ponechá poslední úspěšnou verzi. Identický import obnoví jen čas
 kontroly, nevytvoří duplicitní report. Starší verze zůstávají zachované;
 automatické mazání není zapnuté. Retenci a velikost reálných importů je nutné
-stanovit před produkčním nasazením. Ukládají se jen finanční pole a reference,
-nikoli adresy, osobní/mzdové popisy nebo celé původní HTTP odpovědi.
+stanovit před produkčním nasazením. Ukládají se finanční pole, reference
+a omezené identifikační údaje dokladů (firma, čísla, krátký účetní popis).
+Adresy, kontakty, volné poznámky a celé původní HTTP odpovědi se neukládají.
 
 Technická čerstvost, shoda s předvahou a účetní úplnost jsou oddělené.
 Potvrzení úplnosti vyžaduje uzavřený kalendářní měsíc a text podkladu
 (minimálně 10 znaků). Jde o místní záznam po dohodě s účetní, nikoli uzamčení
-ABRY. Změna dat měsíce jeho potvrzení zneplatní; záznam zůstane pro dohledání.
+ABRY. Změna finančních dat měsíce jeho potvrzení zneplatní; záznam zůstane
+pro dohledání. Doplnění či změna identifikačních popisů potvrzení nemění.
 Potvrzení úplnosti neověřuje banku, fyzickou hotovost ani kontrakt salda.
 
 Deaktivace přepínačem zastaví nové importy a skryje navigaci. Data zůstanou
 uložená. Návrat ke starší aplikaci nevyžaduje mazání nových tabulek.
+
+## Úvodní přehled, úkoly a grafy
+
+Při zapnutém Economics přibývají na úvodním `/admin` čtyři karty: výsledek
+posledního potvrzeného ukončeného měsíce (s výnosy a náklady), pohledávky po
+splatnosti, závazky splatné od data salda do 14 dnů včetně a účetní zůstatek
+banky z posledního dostupného měsíce, jehož konec není v budoucnosti. Banka
+má přesné datum a zůstává neověřená proti výpisu; potvrzení úplnosti ji
+neoznačuje jako ověřenou. Chybějící potvrzený měsíc nebo bankovní podklad
+znamená Nedostupné, nikoli nulu. Skutečná hotovost se na úvod nepřidává.
+
+Sekce Vyžaduje pozornost je přesunutá nahoru. Vedle provozních úkolů ukazuje
+částku a počet otevřených pohledávek a závazků po splatnosti, blížící se
+závazky, selhání importu, neaktuální/nepodporované saldo, chybějící splatnosti
+a změny dříve potvrzených měsíců. Každá položka vede k podkladům nebo správě
+zdroje. Nepotvrzený měsíc a záporný výsledek samy nevyvolávají červený alarm.
+
+Pro každodenní rozhodování každý úplný import nově čte také
+`saldo-k-datu?datum=<dnešek>&dleUcto=true`. Normalizované položky a datum
+ukládá atomicky jako `current_saldo` uvnitř existujícího payloadu snapshotu;
+nevzniká nová tabulka ani migrace. Měsíční historické saldo zůstává oddělené.
+Selhání kteréhokoli čtení, včetně denního salda, ponechá předchozí snapshot.
+Rozšíření začne fungovat po prvním novém importu; starší snapshot bez tohoto
+pole je podporovaný a zobrazí výzvu k aktualizaci.
+
+Denní část je v Ekonomice pod nadpisem Denní splatnosti. Odkazy z úvodního
+přehledu rovnou zvolí pohledávky po splatnosti, závazky do 14 dnů nebo již
+prošlé závazky. Splatnost v den salda ještě není po splatnosti. Záporné
+položky se nesnižují proti nesouvisejícím dluhům a chybějící splatnosti se
+počítají zvlášť. Celé saldo zůstává předběžné do účetního ověření kontraktu.
+Starší saldo zachovává své datum a vlastní 14denní okno a výslovně upozorní,
+že od té doby mohly přijít úhrady. Obrazovka nic nestahuje z ABRY.
+
+Souhrn hlavního přehledu načítá zdroj, všechny aktivní snapshoty, potvrzení
+a poslední běh čtyřmi dotazy nezávisle na počtu účtů nebo dokladů. Výběr
+potvrzeného měsíce a upozornění probíhá v paměti. Vypnutý Economics neprovádí
+žádný z těchto dotazů. Přehled se obnovuje existujícím minutovým intervalem;
+ABRU aktualizuje pouze ruční nebo denní Oban import.
+
+V Ekonomice přibyly dva serverové HTML/CSS grafy podle stávajícího přístupu
+v Ekonomice pobytů, bez nové knihovny a JavaScriptu:
+
+- Měsíční výnosy/náklady ve sdružených sloupcích a výsledek kolem nulové osy
+  ve stejném měřítku. Kliknutí na měsíc zvolí jeho účty. Potvrzení úplnosti
+  je označené u každého měsíce; přesné částky zůstávají v přilehlé tabulce.
+- Náklady podle kategorií v sestupném pořadí. Rozbalení kategorie ukáže účty
+  s odkazy do účetních zápisů. Záporné opravy jsou na opačné straně nuly.
+
+Výpočty měřítek používají Decimal, nula nemá vymyšlenou minimální výšku.
+Grafy a ovládání mají textové popisy, viditelné hodnoty a podporují klávesnici;
+barva není jediný nositel významu.
+
+## Identifikace dokladů a pohybů
+
+Denní podklady k řešení, historické saldo a detail účtu ukazují vedle částek:
+firmu, lidské číslo dokladu, typ dokladu, popis z ABRY, variabilní symbol,
+číslo dodavatelského dokladu a u pohybů také protiúčet. Technické ID ABRA
+zůstává dostupné pro dohledání. Z bankovních a pokladních analytik lze
+kliknout do stejných detailů pohybů jako z výsledkových účtů.
+
+Údaje se přebírají přímo z `saldo-k-datu` a `pohyb-na-uctech` během běžného
+stránkovaného GET importu. Nevzniká další požadavek pro každý doklad ani
+přímé dotazy z obrazovky. `nazFirmy` má přednost před popiskem reference
+`firma@showAs`; prázdné hodnoty zůstávají neuvedené. Popis má nejvýše 500
+znaků a název firmy 200 (při zkrácení je přidaná výpustka). Jde o účetní
+popis dodaný ABROU; souhrnný doklad se automaticky nerozpadá na produktové
+řádky. Formátování bezpečně escapuje vložené HTML.
+
+Starší snapshot bez identifikačních polí dál funguje a nabídne aktualizaci.
+Údaje se doplní po aktualizaci z ABRY pro příslušné období. Popisy jsou
+součástí nové verze snapshotu, ale jsou vyloučené z otisku finančního
+potvrzení. Výpočet tohoto otisku je kompatibilní se staršími potvrzeními
+bez popisů; změna firmy nebo popisu sama nevyžaduje znovu potvrdit částky.
+Změny účetních částek, účtů, salda a ostatních finančních podkladů jeho
+platnost nadále ruší.

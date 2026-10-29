@@ -93,6 +93,12 @@ defmodule CozyCheckoutWeb.CurrencyHelper do
     # Split integer and decimal parts
     [integer_part | decimal_parts] = String.split(number_str, ".")
 
+    {sign, integer_part} =
+      case integer_part do
+        "-" <> digits -> {"-", digits}
+        digits -> {"", digits}
+      end
+
     # Add thousand separators to integer part (non-breaking space for Czech format)
     formatted_integer =
       integer_part
@@ -102,6 +108,8 @@ defmodule CozyCheckoutWeb.CurrencyHelper do
       |> Enum.map(&Enum.join/1)
       |> Enum.join(" ")
       |> String.reverse()
+
+    formatted_integer = sign <> formatted_integer
 
     # Combine with decimal part if it exists
     case decimal_parts do

@@ -31,6 +31,73 @@ defmodule CozyCheckout.Economics.ReportsTest do
     refute Map.has_key?(hd(month["open_items"]), "zbyvaUhradit")
   end
 
+  test "normalizes identification for movements and saldo without changing money" do
+    assert {:ok, month} = build(posted(), trial(), [open_item()])
+    sale = Enum.find(month["movements"], &(&1["account"] == "602001"))
+
+    assert sale["identification"] == %{
+             "company" => "Ukázkový odběratel s.r.o.",
+             "document_number" => "FV-2026-1",
+             "description" => "Prodej čaje a limonády",
+             "variable_symbol" => "2026001",
+             "supplier_number" => "OBJ-001",
+             "counter_account" => "311001: Odběratelé"
+           }
+
+    assert hd(month["open_items"])["identification"]["company"] == "Ukázková firma s.r.o."
+    assert hd(month["open_items"])["identification"]["document_number"] == "FV-2026-100"
+    assert month["totals"]["result"] == "74.50"
+  end
+
+  test "optional identification tolerates empty data, uses the company reference and bounds free text" do
+    row =
+      open_item(%{
+        "nazFirmy" => "  ",
+        "firma@showAs" => "Firma z reference",
+        "popis" => String.duplicate("á", 600),
+        "varSym" => nil
+      })
+
+    assert {:ok, [normalized]} = Reports.saldo([row], ~D[2026-07-31])
+    assert normalized["identification"]["company"] == "Firma z reference"
+    assert String.length(normalized["identification"]["description"]) == 501
+    assert String.ends_with?(normalized["identification"]["description"], "…")
+    assert is_nil(normalized["identification"]["variable_symbol"])
+  end
+
+  test "financial confirmation hashes remain compatible with legacy snapshots and ignore labels" do
+    assert {:ok, month} = build(posted(), trial(), [open_item()])
+
+    legacy =
+      month
+      |> Map.update!("movements", fn rows ->
+        Enum.map(rows, &Map.delete(&1, "identification")) |> Enum.sort()
+      end)
+      |> Map.update!("open_items", fn rows ->
+        Enum.map(rows, &Map.delete(&1, "identification"))
+      end)
+
+    assert Reports.month_fingerprint(month) == Reports.fingerprint(legacy)
+
+    enriched =
+      month
+      |> Map.update!("movements", fn rows ->
+        Enum.reverse(rows)
+        |> Enum.map(&put_in(&1, ["identification", "company"], "Opravený název firmy"))
+      end)
+      |> Map.update!("open_items", fn rows ->
+        Enum.map(rows, &put_in(&1, ["identification", "description"], "Doplněný popis"))
+      end)
+
+    assert Reports.month_fingerprint(enriched) == Reports.month_fingerprint(month)
+    refute Reports.fingerprint(enriched) == Reports.fingerprint(month)
+
+    changed =
+      Map.update!(month, "movements", fn [row | rest] -> [Map.put(row, "md", "999") | rest] end)
+
+    refute Reports.month_fingerprint(changed) == Reports.month_fingerprint(month)
+  end
+
   test "negative corrections and unmapped accounts stay in totals by ABRA kind, irrespective of code prefix" do
     catalog = catalog() ++ [account("999001", "Další náklad", "vysledkovy", "naklady")]
     correction = movement("999001", "-0.25", "0", "4")

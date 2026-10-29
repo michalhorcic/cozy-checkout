@@ -97,12 +97,16 @@ defmodule CozyCheckout.Economics.Sync do
          {:ok, periods} <- Reports.periods(rows),
          {:ok, period} <- choose_period(periods, code),
          {:ok, catalog} <- AbraClient.accounts(),
-         {:ok, months} <- months(period, catalog) do
+         {:ok, months} <- months(period, catalog),
+         today = Date.utc_today(),
+         {:ok, current_rows} <- AbraClient.open_items(today),
+         {:ok, current_items} <- Reports.saldo(current_rows, today) do
       {:ok,
        %{
          "period" => period,
          "months" => months,
          "posting_state" => "posted",
+         "current_saldo" => %{"date" => to_string(today), "items" => current_items},
          "mapping_version" => CozyCheckout.Economics.AccountMapping.version()
        }}
     end

@@ -5,6 +5,50 @@ defmodule CozyCheckoutWeb.EconomicsLive.Components do
   def money(nil), do: "Nedostupné"
   def money(value), do: value |> Decimal.new() |> CurrencyHelper.format_currency()
 
+  attr :record, :map, required: true
+
+  def document_identity(assigns) do
+    assigns = assign(assigns, :info, assigns.record["identification"] || %{})
+
+    ~H"""
+    <div class="max-w-2xl space-y-1 whitespace-normal break-words" data-document-identity>
+      <p class="font-semibold">{@info["company"] || "Firma neuvedena"}</p>
+      <p class="text-sm">
+        <span class="font-medium">{@info["document_number"] || "Číslo dokladu neuvedeno"}</span><span class="ml-2 text-base-content/60">{module_label(
+          @record["module"]
+        )}</span>
+      </p>
+      <p :if={@info["description"]} class="text-sm">{@info["description"]}</p>
+      <p
+        :if={@info["variable_symbol"] || @info["supplier_number"]}
+        class="text-xs text-base-content/70"
+      >
+        <span :if={@info["variable_symbol"]}>VS: {@info["variable_symbol"]}</span><span
+          :if={@info["supplier_number"]}
+          class="ml-3"
+        >Doklad dodavatele: {@info["supplier_number"]}</span>
+      </p>
+      <p :if={@info["counter_account"]} class="text-xs text-base-content/70">
+        Protiúčet: {@info["counter_account"]}
+      </p>
+      <p class="text-xs text-base-content/50">ABRA {@record["module"]} / {@record["document_id"]}</p>
+      <p :if={!@record["identification"]} class="text-xs text-base-content/60">
+        Další údaje doplní aktualizace z ABRY.
+      </p>
+    </div>
+    """
+  end
+
+  defp module_label("FAV"), do: "Vydaná faktura"
+  defp module_label("FAP"), do: "Přijatá faktura"
+  defp module_label("PHL"), do: "Ostatní pohledávka"
+  defp module_label("ZAV"), do: "Ostatní závazek"
+  defp module_label("BAN"), do: "Banka"
+  defp module_label("POK"), do: "Pokladna"
+  defp module_label("SKL"), do: "Skladový pohyb"
+  defp module_label("INT"), do: "Interní doklad"
+  defp module_label(other), do: other
+
   def warning("missing_currency"),
     do:
       "U části tuzemských pohybů ABRA neuvádí měnu dokladu. Částky jsou převzaté z tuzemských MD/Dal."
@@ -89,23 +133,4 @@ defmodule CozyCheckoutWeb.EconomicsLive.Components do
       "Poslední import selhal (#{code}). Zobrazují se poslední úspěšná data, pokud jsou dostupná."
 
   def run_label(%{state: "succeeded", completed_at: at}), do: "Poslední úspěšný import: #{at}"
-
-  def bar_width(value, months) do
-    max_value =
-      months
-      |> Enum.flat_map(&[&1["totals"]["revenue"], &1["totals"]["expense"]])
-      |> Enum.map(&(Decimal.new(&1) |> Decimal.abs()))
-      |> Enum.max(Decimal)
-
-    if Decimal.equal?(max_value, 0),
-      do: 0,
-      else:
-        value
-        |> Decimal.new()
-        |> Decimal.abs()
-        |> Decimal.div(max_value)
-        |> Decimal.mult(100)
-        |> Decimal.round(0)
-        |> Decimal.to_integer()
-  end
 end

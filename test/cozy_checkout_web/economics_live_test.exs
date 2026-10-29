@@ -80,6 +80,11 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     refute html =~ "never-render-this-secret"
     assert has_element?(view, "#economics-report")
     assert has_element?(view, "#economics-accounts")
+    assert has_element?(view, "#economics-monthly-chart")
+    assert has_element?(view, "#economics-cost-chart details summary", "Potraviny")
+    assert has_element?(view, "#economics-cost-chart a[href*='/accounts/501100']")
+    assert has_element?(view, "#economics-bank-accounts a[href*='/accounts/221001']")
+    assert has_element?(view, "[data-document-identity]", "Ukázková firma s.r.o.")
 
     assert has_element?(
              view,
@@ -113,6 +118,15 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
 
     assert has_element?(
              detail,
+             "#economics-movements [data-document-identity]",
+             "Ukázkový odběratel s.r.o."
+           )
+
+    assert has_element?(detail, "#economics-movements", "Prodej čaje a limonády")
+    assert has_element?(detail, "#economics-movements", "FV-2026-1")
+
+    assert has_element?(
+             detail,
              "#admin-desktop > a[href='/admin/economics'][aria-current='page']"
            )
 
@@ -135,6 +149,60 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
 
     assert render(view) =~ "Potvrzeno"
     assert {:ok, %{report: %{confirmations: [%{confirmed: true}]}}} = Economics.overview()
+  end
+
+  test "home cards and alerts use the daily saldo and link to the matching documents", %{
+    conn: conn
+  } do
+    snapshot = Repo.one!(Snapshot)
+    today = Date.utc_today()
+    date = to_string(today)
+
+    {:ok, items} =
+      Reports.saldo(
+        [
+          open_item(%{
+            "idDokl" => "daily-receivable",
+            "datSplat" => to_string(Date.add(today, -1))
+          }),
+          open_item(%{
+            "idDokl" => "daily-payable",
+            "modul" => "FAP",
+            "datSplat" => to_string(Date.add(today, 14))
+          })
+        ],
+        today
+      )
+
+    payload = Map.put(snapshot.payload, "current_saldo", %{"date" => date, "items" => items})
+    snapshot |> Ecto.Changeset.change(payload: payload) |> Repo.update!()
+
+    assert {:ok, _} =
+             Economics.confirm_month(snapshot.id, "2026-07-01", "Potvrzeno po kontrole s účetní.")
+
+    {:ok, home, html} = live(conn, "/admin")
+    assert has_element?(home, "#dashboard-economics")
+    assert has_element?(home, "[data-economics-issue='overdue_receivables']")
+    assert has_element?(home, "[data-economics-issue='upcoming_payables']")
+    assert html =~ "2026-07"
+    refute html =~ "never-render-this-secret"
+    assert {:ok, summary} = Economics.home_summary(today)
+    assert summary.saldo.payables.count == 1
+    assert summary.result.month == "2026-07-01"
+    {:ok, economics, _} = live(conn, "/admin/economics?saldo=payables-upcoming")
+    assert has_element?(economics, "#economics-daily-items", "daily-payable")
+    assert has_element?(economics, "#economics-daily-items", "Ukázková firma s.r.o.")
+    assert has_element?(economics, "#economics-daily-items", "Dodávka občerstvení")
+    refute has_element?(economics, "#economics-daily-items", "daily-receivable")
+  end
+
+  test "disabled reporting leaves the operational home without financial queries or cards", %{
+    conn: conn
+  } do
+    Application.put_env(:cozy_checkout, :economics, enabled: false)
+    {:ok, home, _} = live(conn, "/admin")
+    refute has_element?(home, "#dashboard-economics")
+    refute has_element?(home, "[data-economics-issue]")
   end
 
   test "all reporting URLs require the existing admin PIN" do
