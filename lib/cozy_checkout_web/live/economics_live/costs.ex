@@ -1100,7 +1100,11 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
               </.form>
             </div>
           </div>
-          <details id="cost-mapping-entries" class="rounded-xl border border-base-300 p-4 space-y-3">
+          <details
+            id="cost-mapping-entries"
+            phx-mounted={JS.ignore_attributes("open")}
+            class="rounded-xl border border-base-300 p-4 space-y-3"
+          >
             <summary class="cursor-pointer font-semibold">
               {if @editable,
                 do: "Pravidla a výjimky v návrhu",
