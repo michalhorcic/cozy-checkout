@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.EconomicsLive.Index do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Economics
+  alias CozyCheckoutWeb.EconomicsLive.{Charts, HomeComponents}
   import CozyCheckoutWeb.EconomicsLive.Components
 
   @impl true
@@ -193,8 +194,11 @@ defmodule CozyCheckoutWeb.EconomicsLive.Index do
             status="Předběžné historické saldo"
           />
         </div>
+        <HomeComponents.current_saldo saldo={@report.current_saldo} focus={@params["saldo"] || "all"} />
+        <Charts.monthly report={@report} />
+        <Charts.costs report={@report} />
         <section class="rounded-xl border border-base-300 p-5">
-          <h2 class="text-xl font-semibold">Měsíční vývoj</h2>
+          <h2 class="text-xl font-semibold">Měsíční vývoj · přesné částky</h2>
           <div class="overflow-x-auto">
             <table class="table">
               <thead>
@@ -207,18 +211,10 @@ defmodule CozyCheckoutWeb.EconomicsLive.Index do
                 <tr :for={month <- @report.months}>
                   <td>{String.slice(month["from"], 0, 7)}</td>
                   <td>
-                    <span>{money(month["totals"]["revenue"])}</span><div
-                      class="mt-1 h-1.5 rounded bg-primary"
-                      style={"width: #{bar_width(month["totals"]["revenue"], @report.months)}%"}
-                    >
-                    </div>
+                    <span>{money(month["totals"]["revenue"])}</span>
                   </td>
                   <td>
-                    <span>{money(month["totals"]["expense"])}</span><div
-                      class="mt-1 h-1.5 rounded bg-warning"
-                      style={"width: #{bar_width(month["totals"]["expense"], @report.months)}%"}
-                    >
-                    </div>
+                    <span>{money(month["totals"]["expense"])}</span>
                   </td>
                   <td class="font-semibold">{money(month["totals"]["result"])}</td>
                   <td>
@@ -262,7 +258,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Index do
             </table>
           </div>
         </section>
-        <section class="rounded-xl border border-base-300 p-5">
+        <section id="economics-bank-accounts" class="rounded-xl border border-base-300 p-5">
           <h2 class="text-xl font-semibold">Banka a hotovost · podkladové účty</h2>
           <div class="overflow-x-auto">
             <table class="table">

@@ -1,7 +1,8 @@
 defmodule CozyCheckoutWeb.DashboardLive do
   use CozyCheckoutWeb, :live_view
 
-  alias CozyCheckout.Dashboard
+  alias CozyCheckout.{Dashboard, Economics}
+  alias CozyCheckoutWeb.EconomicsLive.HomeComponents
 
   @impl true
   def mount(_params, _session, socket) do
@@ -13,7 +14,14 @@ defmodule CozyCheckoutWeb.DashboardLive do
 
   defp load_overview(socket) do
     if connected?(socket), do: Process.send_after(self(), :refresh_overview, 60_000)
-    assign(socket, page_title: "Přehled", overview: Dashboard.overview())
+    economic_overview = if Economics.enabled?(), do: Economics.home_summary()
+
+    assign(socket,
+      page_title: "Přehled",
+      overview: Dashboard.overview(),
+      economic_overview: economic_overview,
+      economic_issues: HomeComponents.issues(economic_overview)
+    )
   end
 
   @impl true
@@ -38,6 +46,46 @@ defmodule CozyCheckoutWeb.DashboardLive do
             <.icon name="hero-plus" class="h-4 w-4" />Nová rezervace
           </.link>
         </header>
+
+        <section
+          :if={@overview.issues != [] || @economic_issues != []}
+          id="dashboard-attention"
+          aria-labelledby="attention-heading"
+          class="mb-7 overflow-hidden rounded-2xl border border-warning bg-white shadow-sm"
+        >
+          <div class="flex items-center gap-3 border-b border-secondary-100 px-6 py-4">
+            <.icon name="hero-exclamation-triangle" class="h-5 w-5 text-warning" />
+            <h2 id="attention-heading" class="font-semibold text-primary-500">
+              Vyžaduje pozornost
+              <span class="ml-2 text-sm font-normal text-primary-400">{length(@overview.issues) +
+                length(@economic_issues)}</span>
+            </h2>
+          </div>
+          <p class="px-6 pt-3 text-xs text-primary-400">
+            Provozní a ekonomické úkoly s odkazy na podklady
+          </p>
+          <ul class="divide-y divide-secondary-100">
+            <HomeComponents.attention_item :for={issue <- @economic_issues} issue={issue} />
+            <li :for={issue <- @overview.issues}>
+              <.link
+                id={"dashboard-issue-#{issue.kind}-#{issue.booking.id}"}
+                navigate={issue_path(issue)}
+                class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm hover:bg-secondary-50"
+              >
+                <div>
+                  <span class="font-semibold text-primary-500">{issue.booking.guest.name}</span><span class="ml-2 text-xs text-primary-400">{date(
+                    issue.booking.check_in_date
+                  )}</span><p class="mt-1 text-primary-400">{issue.reason}</p>
+                </div>
+                <span class="font-medium text-tertiary-600">{if issue.kind == :details,
+                  do: "Doplnit údaje",
+                  else: "Zkontrolovat menu"} →</span>
+              </.link>
+            </li>
+          </ul>
+        </section>
+
+        <HomeComponents.cards :if={@economic_overview} result={@economic_overview} />
 
         <div class="mb-7 grid gap-3 sm:grid-cols-3">
           <.summary
@@ -217,42 +265,6 @@ defmodule CozyCheckoutWeb.DashboardLive do
             </div>
           </div>
         </div>
-
-        <section
-          :if={@overview.issues != []}
-          id="dashboard-attention"
-          aria-labelledby="attention-heading"
-          class="mt-6 overflow-hidden rounded-2xl border border-warning bg-white shadow-sm"
-        >
-          <div class="flex items-center gap-3 border-b border-secondary-100 px-6 py-4">
-            <.icon name="hero-exclamation-triangle" class="h-5 w-5 text-warning" />
-            <h2 id="attention-heading" class="font-semibold text-primary-500">
-              Vyžaduje pozornost
-              <span class="ml-2 text-sm font-normal text-primary-400">{length(@overview.issues)}</span>
-            </h2>
-          </div>
-          <p class="px-6 pt-3 text-xs text-primary-400">
-            Stravování probíhajících pobytů a příjezdů v následujícím měsíci
-          </p>
-          <ul class="divide-y divide-secondary-100">
-            <li :for={issue <- @overview.issues}>
-              <.link
-                id={"dashboard-issue-#{issue.kind}-#{issue.booking.id}"}
-                navigate={issue_path(issue)}
-                class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm hover:bg-secondary-50"
-              >
-                <div>
-                  <span class="font-semibold text-primary-500">{issue.booking.guest.name}</span><span class="ml-2 text-xs text-primary-400">{date(
-                    issue.booking.check_in_date
-                  )}</span><p class="mt-1 text-primary-400">{issue.reason}</p>
-                </div>
-                <span class="font-medium text-tertiary-600">{if issue.kind == :details,
-                  do: "Doplnit údaje",
-                  else: "Zkontrolovat menu"} →</span>
-              </.link>
-            </li>
-          </ul>
-        </section>
       </div>
     </Layouts.app>
     """

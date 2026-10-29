@@ -89,23 +89,4 @@ defmodule CozyCheckoutWeb.EconomicsLive.Components do
       "Poslední import selhal (#{code}). Zobrazují se poslední úspěšná data, pokud jsou dostupná."
 
   def run_label(%{state: "succeeded", completed_at: at}), do: "Poslední úspěšný import: #{at}"
-
-  def bar_width(value, months) do
-    max_value =
-      months
-      |> Enum.flat_map(&[&1["totals"]["revenue"], &1["totals"]["expense"]])
-      |> Enum.map(&(Decimal.new(&1) |> Decimal.abs()))
-      |> Enum.max(Decimal)
-
-    if Decimal.equal?(max_value, 0),
-      do: 0,
-      else:
-        value
-        |> Decimal.new()
-        |> Decimal.abs()
-        |> Decimal.div(max_value)
-        |> Decimal.mult(100)
-        |> Decimal.round(0)
-        |> Decimal.to_integer()
-  end
 end
