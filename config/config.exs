@@ -75,8 +75,14 @@ config :cozy_checkout,
 # Oban background job processing
 config :cozy_checkout, Oban,
   repo: CozyCheckout.Repo,
-  queues: [abra_sync: 3, booking_emails: 5, billing: 2],
-  plugins: [{Oban.Plugins.Cron, crontab: [{"*/15 * * * *", CozyCheckout.Workers.AbraBankWorker}]}]
+  queues: [abra_sync: 3, booking_emails: 5, billing: 2, economics_sync: 1],
+  plugins: [
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"*/15 * * * *", CozyCheckout.Workers.AbraBankWorker},
+       {"0 4 * * *", CozyCheckout.Economics.SyncWorker}
+     ]}
+  ]
 
 config :cozy_checkout,
   email_from_address: "jindrichuvdum@jindrichuvdum.cz"
