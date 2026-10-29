@@ -48,18 +48,7 @@ defmodule CozyCheckout.Economics.Reports do
       reconcile!(movements, balances)
       totals = totals(movements)
 
-      open_items =
-        Enum.map(saldo, &open_item!(&1, last)) |> Enum.sort_by(&{&1["module"], &1["document_id"]})
-
-      if length(Enum.uniq_by(open_items, &{&1["module"], &1["document_id"]})) !=
-           length(open_items),
-         do: throw(:duplicate_open_item)
-
-      open_items =
-        Enum.reject(
-          open_items,
-          &(not is_nil(&1["amount"]) and Decimal.equal?(number!(&1["amount"]), 0))
-        )
+      open_items = open_items!(saldo, last)
 
       warnings = []
 
@@ -95,6 +84,18 @@ defmodule CozyCheckout.Economics.Reports do
         "mapping_version" => AccountMapping.version()
       }
     end)
+  end
+
+  def saldo(rows, %Date{} = date), do: safely(fn -> open_items!(rows, date) end)
+
+  defp open_items!(rows, date) do
+    items =
+      Enum.map(rows, &open_item!(&1, date)) |> Enum.sort_by(&{&1["module"], &1["document_id"]})
+
+    if length(Enum.uniq_by(items, &{&1["module"], &1["document_id"]})) != length(items),
+      do: throw(:duplicate_open_item)
+
+    Enum.reject(items, &(not is_nil(&1["amount"]) and Decimal.equal?(number!(&1["amount"]), 0)))
   end
 
   def fingerprint(value),
