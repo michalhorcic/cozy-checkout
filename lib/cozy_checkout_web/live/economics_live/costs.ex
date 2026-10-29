@@ -1,8 +1,10 @@
 defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Economics
+  alias CozyCheckoutWeb.EconomicsLive.CostMappingComponents
   alias CozyCheckout.Economics.{CostMapping, CostRule, CostOverride, Costs}
   import CozyCheckoutWeb.EconomicsLive.Components
+  import CozyCheckoutWeb.EconomicsLive.CostMappingComponents, only: [mapping_tables: 1]
   import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
 
   @behaviors [
@@ -91,6 +93,10 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
           draft_items: data.items,
           mapping_query: "",
           mapping_page: 1,
+          entries_query: "",
+          expanded_entries: MapSet.new(),
+          mapping_catalog:
+            CostMappingComponents.catalog(data.classification_months, data.accounts),
           editable: editable,
           preview: nil,
           accounts: accounts,
@@ -172,6 +178,29 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
          range_open: nil,
          range_queries: Map.delete(socket.assigns.range_queries, index)
        )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("entries-search", %{"entries_search" => %{"query" => query}}, socket) do
+    {:noreply, assign(socket, entries_query: query)}
+  end
+
+  def handle_event("entry-detail", %{"kind" => kind, "index" => index}, socket)
+      when kind in ["rule", "override"] do
+    rows = if kind == "rule", do: socket.assigns.draft_rules, else: socket.assigns.draft_overrides
+
+    if at(rows, index) do
+      key = "#{kind}-#{index}"
+      expanded = socket.assigns.expanded_entries
+
+      expanded =
+        if MapSet.member?(expanded, key),
+          do: MapSet.delete(expanded, key),
+          else: MapSet.put(expanded, key)
+
+      {:noreply, assign(socket, expanded_entries: expanded)}
     else
       {:noreply, socket}
     end
@@ -455,7 +484,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
       )
 
     page = min(socket.assigns.mapping_page, mapping_pages(items, socket.assigns.mapping_query))
-    assign(socket, draft_items: items, mapping_page: page)
+    assign(socket, draft_items: items, mapping_page: page, expanded_entries: MapSet.new())
   end
 
   defp mapping_items(items, query) do
@@ -1073,78 +1102,21 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
           </div>
           <details id="cost-mapping-entries" class="rounded-xl border border-base-300 p-4 space-y-3">
             <summary class="cursor-pointer font-semibold">
-              Pravidla a výjimky v návrhu · {length(@draft_rules)} pravidel · {length(
+              {if @editable,
+                do: "Pravidla a výjimky v návrhu",
+                else: "Pravidla a výjimky ve vybrané verzi"} · {length(@draft_rules)} pravidel · {length(
                 @draft_overrides
               )} výjimek
             </summary>
-            <div id="cost-draft-rules" class="space-y-2">
-              <article
-                :for={{rule, index} <- Enum.with_index(@draft_rules)}
-                class="rounded-lg border border-base-300 p-3"
-              >
-                <p>
-                  {rule["account"]} · firma {rule["partner_id"] || "libovolná"} · popis obsahuje {rule[
-                    "description_contains"
-                  ] || "—"} · {rule["valid_from"]} až {rule["valid_to"] || "bez konce"} · {behavior(
-                    rule["behavior"]
-                  )} · {if rule["extraordinary"], do: "mimořádné"} · fixní podíl {rule[
-                    "fixed_percent"
-                  ] ||
-                    "neurčen"}
-                </p><p>{rule["reason"]}</p>
-                <button
-                  :if={@editable}
-                  phx-click="edit-entry"
-                  phx-value-kind="rule"
-                  phx-value-index={index}
-                  class="btn btn-xs"
-                >Upravit</button>
-                <button
-                  :if={@editable}
-                  phx-click="remove-entry"
-                  phx-value-kind="rule"
-                  phx-value-index={index}
-                  class="btn btn-xs btn-outline"
-                >Odebrat z nové verze</button>
-              </article>
-            </div>
-            <div id="cost-draft-overrides" class="space-y-2">
-              <article
-                :for={{override, index} <- Enum.with_index(@draft_overrides)}
-                class="rounded-lg border border-base-300 p-3"
-              >
-                <p>
-                  Výjimka {override["module"]} / {override["document_id"]} / {override["account"]} / {override[
-                    "month"
-                  ]} · {behavior(override["behavior"])} · {if override["extraordinary"],
-                    do: "mimořádné"} · {override[
-                    "reason"
-                  ]}
-                </p>
-                <p
-                  :if={
-                    Enum.any?(@data.missing_overrides, &(CostMapping.override_attrs(&1) == override))
-                  }
-                  class="text-warning"
-                >
-                  Podklad v tomto snapshotu chybí nebo byl přesunut. Výjimka vyžaduje kontrolu.
-                </p>
-                <button
-                  :if={@editable}
-                  phx-click="edit-entry"
-                  phx-value-kind="override"
-                  phx-value-index={index}
-                  class="btn btn-xs"
-                >Upravit</button>
-                <button
-                  :if={@editable}
-                  phx-click="remove-entry"
-                  phx-value-kind="override"
-                  phx-value-index={index}
-                  class="btn btn-xs btn-outline"
-                >Odebrat z nové verze</button>
-              </article>
-            </div>
+            <.mapping_tables
+              rules={@draft_rules}
+              overrides={@draft_overrides}
+              catalog={@mapping_catalog}
+              query={@entries_query}
+              expanded={@expanded_entries}
+              editable={@editable}
+              source_id={@data.source.id}
+            />
           </details>
           <div :if={@editable} class="rounded-xl border border-base-300 p-5 space-y-4">
             <.form

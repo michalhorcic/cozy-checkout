@@ -239,8 +239,17 @@ Po uložení položky se seznam přepočítá podle celého rozpracovaného náv
 takže zmizí i další doklady pokryté stejným pravidlem. Další podklad si
 uživatel vybírá ručně. Konflikty a pozastavené výjimky zůstávají k řešení;
 po úpravě nebo odebrání pravidla se může podklad znovu objevit.
-Pravidla a výjimky jsou pod formulářem ve sbaleném seznamu. Více změn lze
-připravit a poté publikovat v jediné verzi. Průběžný seznam používá už
+Pravidla a výjimky jsou pod formulářem ve sbalené sekci se dvěma tabulkami.
+Pravidla ukazují účet s názvem, firmu, textovou podmínku, platnost, chování,
+rozdělení a mimořádnost. Výjimky ukazují číslo dokladu a firmu, účet, měsíc,
+zařazení a stav (platná, pozastavená kvůli změně či přesunu, chybějící podklad).
+U smíšených je výslovně Nerozděleno nebo ruční odhad obou procentních složek.
+Důvod a technické reference jsou v rozbalovacím detailu příslušného řádku.
+Společné hledání prochází obě tabulky včetně důvodů. Pravidla se řadí podle
+účtu a firmy, výjimky podle měsíce a dokladu. Na mobilu se řádky zobrazují
+pod sebou s popisky jednotlivých sloupců. Názvy pocházejí z načtených dat;
+chybějící údaje se nedohledávají po jednotlivých dokladech přes API.
+Více změn lze připravit a poté publikovat v jediné verzi. Průběžný seznam používá už
 načtené podklady bez dalších SQL nebo HTTP dotazů a nemění publikované součty.
 
 Přednost: výjimka, účet + firma + text, účet + firma, účet + text, účet.
