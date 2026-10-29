@@ -83,6 +83,8 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     assert has_element?(view, "#economics-monthly-chart")
     assert has_element?(view, "#economics-cost-chart details summary", "Potraviny")
     assert has_element?(view, "#economics-cost-chart a[href*='/accounts/501100']")
+    assert has_element?(view, "#economics-bank-accounts a[href*='/accounts/221001']")
+    assert has_element?(view, "[data-document-identity]", "Ukázková firma s.r.o.")
 
     assert has_element?(
              view,
@@ -113,6 +115,15 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
 
     assert html =~ "602001"
     assert has_element?(detail, "#economics-movements")
+
+    assert has_element?(
+             detail,
+             "#economics-movements [data-document-identity]",
+             "Ukázkový odběratel s.r.o."
+           )
+
+    assert has_element?(detail, "#economics-movements", "Prodej čaje a limonády")
+    assert has_element?(detail, "#economics-movements", "FV-2026-1")
 
     assert has_element?(
              detail,
@@ -180,6 +191,8 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     assert summary.result.month == "2026-07-01"
     {:ok, economics, _} = live(conn, "/admin/economics?saldo=payables-upcoming")
     assert has_element?(economics, "#economics-daily-items", "daily-payable")
+    assert has_element?(economics, "#economics-daily-items", "Ukázková firma s.r.o.")
+    assert has_element?(economics, "#economics-daily-items", "Dodávka občerstvení")
     refute has_element?(economics, "#economics-daily-items", "daily-receivable")
   end
 

@@ -1,6 +1,8 @@
 defmodule CozyCheckoutWeb.EconomicsLive.HomeComponents do
   use CozyCheckoutWeb, :html
-  import CozyCheckoutWeb.EconomicsLive.Components, only: [money: 1, error: 1]
+
+  import CozyCheckoutWeb.EconomicsLive.Components,
+    only: [money: 1, error: 1, document_identity: 1]
 
   def issues(nil), do: []
   def issues({:ok, data}), do: data.issues
@@ -171,12 +173,12 @@ defmodule CozyCheckoutWeb.EconomicsLive.HomeComponents do
           <table id="economics-daily-items" class="table">
             <thead>
               <tr>
-                <th>Druh</th><th>Reference ABRA</th><th>Splatnost</th><th>Zbývalo k datu</th>
+                <th>Druh</th><th>Firma a doklad · popis</th><th>Splatnost</th><th>Zbývalo k datu</th>
               </tr>
             </thead><tbody>
               <tr :for={item <- @items}>
                 <td>{if item["kind"] == "receivable", do: "Pohledávka", else: "Závazek"}</td><td>
-                  {item["module"]} / {item["document_id"]}
+                  <.document_identity record={item} />
                 </td><td>{item["due"] || "Splatnost neznámá"}</td><td>{money(item["amount"])}</td>
               </tr>
             </tbody>

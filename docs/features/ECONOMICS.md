@@ -83,8 +83,8 @@ session. Vypnutý modul přesměruje přímé otevření na admin přehled.
    posledních úspěšných dat.
 3. Vyberte hospodářský rok a jeden či více měsíců; prázdné od/do znamená
    celý dostupný rozsah. Změna roku použije skutečné hranice jeho snapshotu.
-4. Detail čísla účtu ukáže data účtování, strany MD/Dal a reference zápisů
-   a dokladů ABRA, bez osobních popisů. Tabulka salda řadí položky podle
+4. Detail čísla účtu ukáže data účtování, strany MD/Dal, firmu, číslo dokladu,
+   krátký popis a reference zápisů ABRA. Tabulka salda řadí položky podle
    splatnosti; dobropisy jsou oddělené od kladných pohledávek a závazků.
 5. Na stránce Zdroj a úplnost lze po dohodě s účetní potvrdit jednotlivý
    ukončený měsíc a uvést podklad. Výchozí stav všech měsíců je Neověřeno.
@@ -99,13 +99,15 @@ Nový snapshot vzniká bokem a publikuje se atomicky až po všech kontrolách.
 Neúspěch ponechá poslední úspěšnou verzi. Identický import obnoví jen čas
 kontroly, nevytvoří duplicitní report. Starší verze zůstávají zachované;
 automatické mazání není zapnuté. Retenci a velikost reálných importů je nutné
-stanovit před produkčním nasazením. Ukládají se jen finanční pole a reference,
-nikoli adresy, osobní/mzdové popisy nebo celé původní HTTP odpovědi.
+stanovit před produkčním nasazením. Ukládají se finanční pole, reference
+a omezené identifikační údaje dokladů (firma, čísla, krátký účetní popis).
+Adresy, kontakty, volné poznámky a celé původní HTTP odpovědi se neukládají.
 
 Technická čerstvost, shoda s předvahou a účetní úplnost jsou oddělené.
 Potvrzení úplnosti vyžaduje uzavřený kalendářní měsíc a text podkladu
 (minimálně 10 znaků). Jde o místní záznam po dohodě s účetní, nikoli uzamčení
-ABRY. Změna dat měsíce jeho potvrzení zneplatní; záznam zůstane pro dohledání.
+ABRY. Změna finančních dat měsíce jeho potvrzení zneplatní; záznam zůstane
+pro dohledání. Doplnění či změna identifikačních popisů potvrzení nemění.
 Potvrzení úplnosti neověřuje banku, fyzickou hotovost ani kontrakt salda.
 
 Deaktivace přepínačem zastaví nové importy a skryje navigaci. Data zůstanou
@@ -161,3 +163,27 @@ v Ekonomice pobytů, bez nové knihovny a JavaScriptu:
 Výpočty měřítek používají Decimal, nula nemá vymyšlenou minimální výšku.
 Grafy a ovládání mají textové popisy, viditelné hodnoty a podporují klávesnici;
 barva není jediný nositel významu.
+
+## Identifikace dokladů a pohybů
+
+Denní podklady k řešení, historické saldo a detail účtu ukazují vedle částek:
+firmu, lidské číslo dokladu, typ dokladu, popis z ABRY, variabilní symbol,
+číslo dodavatelského dokladu a u pohybů také protiúčet. Technické ID ABRA
+zůstává dostupné pro dohledání. Z bankovních a pokladních analytik lze
+kliknout do stejných detailů pohybů jako z výsledkových účtů.
+
+Údaje se přebírají přímo z `saldo-k-datu` a `pohyb-na-uctech` během běžného
+stránkovaného GET importu. Nevzniká další požadavek pro každý doklad ani
+přímé dotazy z obrazovky. `nazFirmy` má přednost před popiskem reference
+`firma@showAs`; prázdné hodnoty zůstávají neuvedené. Popis má nejvýše 500
+znaků a název firmy 200 (při zkrácení je přidaná výpustka). Jde o účetní
+popis dodaný ABROU; souhrnný doklad se automaticky nerozpadá na produktové
+řádky. Formátování bezpečně escapuje vložené HTML.
+
+Starší snapshot bez identifikačních polí dál funguje a nabídne aktualizaci.
+Údaje se doplní po aktualizaci z ABRY pro příslušné období. Popisy jsou
+součástí nové verze snapshotu, ale jsou vyloučené z otisku finančního
+potvrzení. Výpočet tohoto otisku je kompatibilní se staršími potvrzeními
+bez popisů; změna firmy nebo popisu sama nevyžaduje znovu potvrdit částky.
+Změny účetních částek, účtů, salda a ostatních finančních podkladů jeho
+platnost nadále ruší.

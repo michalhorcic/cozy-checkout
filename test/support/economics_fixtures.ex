@@ -36,6 +36,13 @@ defmodule CozyCheckout.EconomicsFixtures do
       "sumTuzMd" => md,
       "sumTuzDal" => dal,
       "zuctovano" => "true",
+      "doklad" => "FV-2026-" <> id,
+      "nazFirmy" => "Ukázkový odběratel s.r.o.",
+      "popis" => "Prodej čaje a limonády",
+      "varSym" => "2026001",
+      "cisDosle" => "OBJ-001",
+      "protiUcet" => "code:311001",
+      "protiUcet@showAs" => "311001: Odběratelé",
       "mena" => "code:CZK"
     }
 
@@ -65,6 +72,11 @@ defmodule CozyCheckout.EconomicsFixtures do
       Map.merge(
         %{
           "idDokl" => "100",
+          "kod" => "FV-2026-100",
+          "nazFirmy" => "Ukázková firma s.r.o.",
+          "popis" => "Dodávka občerstvení",
+          "varSym" => "2026100",
+          "cisDosle" => "DOD-100",
           "modul" => "FAV",
           "datUcto" => "2026-07-01+02:00",
           "datSplat" => "2026-07-20+02:00",

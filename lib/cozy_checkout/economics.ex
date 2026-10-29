@@ -160,7 +160,7 @@ defmodule CozyCheckout.Economics do
             source_id: source.id,
             snapshot_id: snapshot.id,
             month: date,
-            fingerprint: Reports.fingerprint(data),
+            fingerprint: Reports.month_fingerprint(data),
             evidence: String.trim(evidence)
           },
           on_conflict: :nothing,
@@ -238,7 +238,7 @@ defmodule CozyCheckout.Economics do
             Enum.find(
               confirmations,
               &(to_string(&1.month) == data["from"] and
-                  &1.fingerprint == Reports.fingerprint(data))
+                  &1.fingerprint == Reports.month_fingerprint(data))
             )
 
           %{

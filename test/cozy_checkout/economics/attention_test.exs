@@ -93,7 +93,7 @@ defmodule CozyCheckout.Economics.AttentionTest do
 
   test "the result requires a matching confirmation; a later edit produces a task" do
     month = month()
-    confirmation = %{month: ~D[2026-07-01], fingerprint: Reports.fingerprint(month)}
+    confirmation = %{month: ~D[2026-07-01], fingerprint: Reports.month_fingerprint(month)}
     data = Attention.build([snapshot([month], daily([]))], [confirmation], nil, @today)
     assert data.result.month == "2026-07-01"
     assert data.result.totals["result"] == "74.50"
@@ -117,7 +117,7 @@ defmodule CozyCheckout.Economics.AttentionTest do
   test "months are selected by dates across fiscal codes, and future closing bank balances are excluded" do
     july = month()
     future = %{july | "from" => "2026-10-01", "to" => "2026-10-31"}
-    confirmation = %{month: ~D[2026-07-01], fingerprint: Reports.fingerprint(july)}
+    confirmation = %{month: ~D[2026-07-01], fingerprint: Reports.month_fingerprint(july)}
 
     data =
       Attention.build(
