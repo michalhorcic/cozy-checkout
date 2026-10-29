@@ -39,13 +39,57 @@ defmodule CozyCheckoutWeb.FreezerLive.Index do
   def handle_event("close", _, socket),
     do: {:noreply, assign(socket, editing: nil, removing: nil)}
 
+  def handle_event("open_link_search", _, socket),
+    do: {:noreply, assign(socket, :link_search_open, true)}
+
+  def handle_event("close_link_search", _, socket),
+    do: {:noreply, assign(socket, :link_search_open, false)}
+
+  def handle_event("search_links", %{"link_search" => %{"0" => query}}, socket) do
+    attrs = draft_attrs(socket) |> Map.put("link", "") |> linked_attrs()
+
+    {:noreply,
+     socket
+     |> assign(link_query: query, link_search_open: true)
+     |> assign(:form, to_form(FreezerItem.changeset(socket.assigns.editing, attrs)))}
+  end
+
+  def handle_event("select_link", %{"id" => id}, socket) do
+    case Enum.find(
+           link_options(
+             socket.assigns.ingredients,
+             socket.assigns.recipes,
+             socket.assigns.editing
+           ),
+           &(&1.id == id)
+         ) do
+      nil ->
+        {:noreply, socket}
+
+      option ->
+        attrs =
+          draft_attrs(socket)
+          |> Map.merge(%{"link" => option.id, "name" => option.name})
+          |> linked_attrs()
+
+        {:noreply,
+         socket
+         |> assign(link_query: nil, link_search_open: false)
+         |> assign(:form, to_form(FreezerItem.changeset(socket.assigns.editing, attrs)))}
+    end
+  end
+
+  def handle_event("clear_link", _, socket) do
+    attrs = draft_attrs(socket) |> Map.put("link", "") |> linked_attrs()
+
+    {:noreply,
+     socket
+     |> assign(link_query: nil, link_search_open: false)
+     |> assign(:form, to_form(FreezerItem.changeset(socket.assigns.editing, attrs)))}
+  end
+
   def handle_event("validate", %{"freezer_item" => attrs}, socket) do
-    attrs =
-      case attrs["link"] do
-        "ingredient:" <> id -> Map.merge(attrs, %{"ingredient_id" => id, "recipe_id" => ""})
-        "recipe:" <> id -> Map.merge(attrs, %{"recipe_id" => id, "ingredient_id" => ""})
-        _ -> Map.merge(attrs, %{"ingredient_id" => "", "recipe_id" => ""})
-      end
+    attrs = linked_attrs(attrs)
 
     selected =
       Enum.find(
@@ -72,15 +116,24 @@ defmodule CozyCheckoutWeb.FreezerLive.Index do
   end
 
   def handle_event("save", %{"freezer_item" => attrs}, socket) do
-    attrs =
-      case attrs["link"] do
-        "ingredient:" <> id -> Map.merge(attrs, %{"ingredient_id" => id, "recipe_id" => ""})
-        "recipe:" <> id -> Map.merge(attrs, %{"recipe_id" => id, "ingredient_id" => ""})
-        _ -> Map.merge(attrs, %{"ingredient_id" => "", "recipe_id" => ""})
-      end
+    attrs = linked_attrs(attrs)
 
     item = socket.assigns.editing
-    result = if item.id, do: Freezer.update_item(item, attrs), else: Freezer.create_item(attrs)
+
+    result =
+      if attrs["link"] in [nil, ""] && String.trim(socket.assigns.link_query || "") != "" do
+        cs =
+          FreezerItem.changeset(item, attrs)
+          |> Ecto.Changeset.add_error(
+            :ingredient_id,
+            "Vyberte položku z nabídky nebo zvolte Bez propojení."
+          )
+          |> Map.put(:action, :validate)
+
+        {:error, cs}
+      else
+        if item.id, do: Freezer.update_item(item, attrs), else: Freezer.create_item(attrs)
+      end
 
     case result do
       {:error, %Ecto.Changeset{} = cs} -> {:noreply, assign(socket, :form, to_form(cs))}
@@ -127,7 +180,13 @@ defmodule CozyCheckoutWeb.FreezerLive.Index do
        |> put_flash(:error, "Položka se mezitím změnila. Přehled byl obnoven; otevřete ji znovu.")}
 
   defp edit(socket, item),
-    do: assign(socket, editing: item, form: to_form(FreezerItem.changeset(item, %{})))
+    do:
+      assign(socket,
+        editing: item,
+        link_query: nil,
+        link_search_open: false,
+        form: to_form(FreezerItem.changeset(item, %{}))
+      )
 
   defp reload(socket),
     do:
@@ -140,9 +199,48 @@ defmodule CozyCheckoutWeb.FreezerLive.Index do
   defp link_value(%{recipe_id: id}) when not is_nil(id), do: "recipe:" <> id
   defp link_value(_), do: ""
 
-  defp options(socket_items, current, prefix) do
-    socket_items
-    |> Enum.filter(&(is_nil(&1.archived_at) || link_value(current) == prefix <> &1.id))
-    |> Enum.map(&{&1.name <> if(&1.archived_at, do: " (archivováno)", else: ""), prefix <> &1.id})
+  defp current_link(form, item), do: form.params["link"] || link_value(item)
+
+  defp link_error(form) do
+    errors =
+      for {field, error} <- form.errors,
+          field in [:ingredient_id, :recipe_id],
+          do: translate_error(error)
+
+    if errors != [], do: Enum.join(errors, " ")
+  end
+
+  defp draft_attrs(socket) do
+    attrs =
+      Map.new(~w(name quantity unit frozen_on location notes)a, fn field ->
+        {Atom.to_string(field), socket.assigns.form[field].value}
+      end)
+
+    Map.put(attrs, "link", current_link(socket.assigns.form, socket.assigns.editing))
+  end
+
+  defp linked_attrs(attrs) do
+    case attrs["link"] do
+      "ingredient:" <> id -> Map.merge(attrs, %{"ingredient_id" => id, "recipe_id" => ""})
+      "recipe:" <> id -> Map.merge(attrs, %{"recipe_id" => id, "ingredient_id" => ""})
+      _ -> Map.merge(attrs, %{"ingredient_id" => "", "recipe_id" => ""})
+    end
+  end
+
+  defp link_options(ingredients, recipes, current) do
+    for {items, prefix, label} <- [
+          {ingredients, "ingredient:", "Surovina"},
+          {recipes, "recipe:", "Hotové jídlo (recept)"}
+        ],
+        item <- items,
+        is_nil(item.archived_at) || link_value(current) == prefix <> item.id do
+      %{
+        id: prefix <> item.id,
+        name: item.name,
+        hint: label <> if(item.archived_at, do: " · archivováno", else: ""),
+        search_text:
+          Enum.join([item.name, label, Map.get(item, :category, ""), item.notes || ""], " ")
+      }
+    end
   end
 end

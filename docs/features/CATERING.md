@@ -259,7 +259,9 @@ Přidejte název, množství, jednotku kg/g/l/ml/ks/porce a datum zamrazení
 Každá krabička či várka zůstává samostatnou položkou; nejstarší jsou první.
 Přehled umožňuje hledání podle názvu a přepnutí na vyřazené položky.
 
-Volitelně vyberte surovinu nebo hotové jídlo (recept). Výběr předvyplní název,
+V poli **Propojení** vyhledejte surovinu nebo hotové jídlo (recept); hledání
+ignoruje diakritiku a nabídka rozlišuje oba typy položek. Tlačítko **Bez propojení**
+vazbu odstraní. Výběr předvyplní název,
 který můžete upravit. Surovina vyžaduje slučitelnou jednotku (g/kg, ml/l nebo
 ks); u receptu lze použít i porce. Mezi hmotností, objemem a porcemi se nic
 neodhaduje. Archivované vazby zůstávají označené a dohledatelné, nové vazby
