@@ -202,3 +202,11 @@ end
 if chrome_executable = System.get_env("CHROME_EXECUTABLE") do
   config :cozy_checkout, :chrome_executable, chrome_executable
 end
+
+# Reporting has an explicit, independent target and is disabled by default.
+config :cozy_checkout, :economics,
+  enabled: System.get_env("ECONOMICS_ENABLED", "false") == "true",
+  base_url: System.get_env("ECONOMICS_ABRA_BASE_URL"),
+  company_id: System.get_env("ECONOMICS_ABRA_COMPANY_ID"),
+  username: System.get_env("ECONOMICS_ABRA_USERNAME"),
+  password: System.get_env("ECONOMICS_ABRA_PASSWORD")
