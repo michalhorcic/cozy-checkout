@@ -71,25 +71,24 @@
       {if @editing.id, do: "Upravit zásobu", else: "Přidat zásobu"}
     </h2>
     <.form for={@form} id="freezer-form" phx-change="validate" phx-submit="save" class="space-y-3">
-      <.input
-        name="freezer_item[link]"
-        id="freezer-link"
-        value={@form.params["link"] || link_value(@editing)}
-        type="select"
+      <.searchable_picker
+        field={to_form(%{"link" => current_link(@form, @editing)}, as: :freezer_item)[:link]}
+        options={link_options(@ingredients, @recipes, @editing)}
+        query={@link_query}
+        open={@link_search_open}
+        required={false}
+        focus_id={@form[:quantity].id}
         label="Propojení"
-        options={[
-          {"Bez propojení", ""},
-          {"Surovina", options(@ingredients, @editing, "ingredient:")},
-          {"Hotové jídlo (recept)", options(@recipes, @editing, "recipe:")}
-        ]}
+        prompt="Bez propojení"
+        placeholder="Hledat surovinu nebo hotové jídlo…"
+        search_name="link_search"
+        search_event="search_links"
+        open_event="open_link_search"
+        close_event="close_link_search"
+        select_event="select_link"
+        error_message={link_error(@form)}
       />
-      <p
-        :for={{field, {message, _}} <- @form.errors}
-        :if={field in [:ingredient_id, :recipe_id]}
-        class="text-error"
-      >
-        {message}
-      </p>
+      <button type="button" phx-click="clear_link" class="text-sm text-tertiary-600 underline">Bez propojení</button>
       <.input field={@form[:name]} label="Název" required />
       <.input
         field={@form[:quantity]}

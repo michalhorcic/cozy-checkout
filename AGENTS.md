@@ -21,6 +21,7 @@ and daisyUI; Docker deployment through Coolify.
 - Use Ecto migrations for schema changes; preserve UUID keys, timestamps, database constraints and soft deletes on business records.
 - Use existing helpers and dependencies, including `Req` for HTTP and Oban for retryable background work. External operations must tolerate failures and retries. Never hardcode secrets, credentials or production URLs.
 - Follow the existing light theme, shared layouts and components (`Layouts.app`, `.input`, `.icon`). Keep JavaScript in `assets/js`, imported through `app.js`, rather than adding inline scripts; preserve the existing theme-bootstrap exception.
+- V UI musí být select s více než 30 položkami vyhledávatelný; používej existující sdílenou komponentu, pokud je vhodná.
 
 ## Financial integrity
 

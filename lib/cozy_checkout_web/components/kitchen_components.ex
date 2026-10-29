@@ -87,55 +87,114 @@ defmodule CozyCheckoutWeb.KitchenComponents do
   attr :focus_id, :string, default: nil
 
   def ingredient_picker(assigns) do
-    available =
-      Enum.reject(
-        assigns.ingredients,
-        &(&1.archived_at && &1.id != to_string(assigns.field.value))
-      )
+    options =
+      assigns.ingredients
+      |> Enum.reject(&(&1.archived_at && &1.id != to_string(assigns.field.value)))
+      |> Enum.map(fn ingredient ->
+        %{
+          id: ingredient.id,
+          name: ingredient.name,
+          hint: ingredient.base_unit,
+          search_text:
+            Enum.join([ingredient.name, ingredient.category, ingredient.notes || ""], " ")
+        }
+      end)
 
-    selected = Enum.find(available, &(&1.id == to_string(assigns.field.value)))
+    error_message =
+      if assigns.field.errors != [] do
+        if assigns.field.value in [nil, ""],
+          do: "Vyberte surovinu z nabídky.",
+          else: Enum.map_join(assigns.field.errors, " ", &translate_error/1)
+      end
+
+    assigns = assigns |> assign(:options, options) |> assign(:error_message, error_message)
+
+    ~H"""
+    <.searchable_picker
+      field={@field}
+      options={@options}
+      index={@index}
+      query={@query}
+      open={@open}
+      required={@required}
+      focus_id={@focus_id || @field.form[:quantity].id}
+      label="Surovina"
+      placeholder="Hledat podle názvu, kategorie nebo poznámky…"
+      search_name="ingredient_search"
+      search_event="search_ingredients"
+      open_event="open_ingredient_search"
+      close_event="close_ingredient_search"
+      select_event="select_ingredient"
+      prompt="Vyberte surovinu"
+      count_label="surovin"
+      empty_message="Žádná surovina nenalezena. Zkuste jiný název nebo založte novou surovinu."
+      error_message={@error_message}
+    />
+    """
+  end
+
+  attr :field, Phoenix.HTML.FormField, required: true
+  attr :options, :list, required: true
+  attr :index, :string, default: "0"
+  attr :query, :string, default: nil
+  attr :open, :boolean, default: false
+  attr :required, :boolean, default: true
+  attr :focus_id, :string, default: nil
+  attr :label, :string, required: true
+  attr :placeholder, :string, default: "Hledat podle názvu…"
+  attr :prompt, :string, default: "Vyberte položku"
+  attr :empty_message, :string, default: "Žádná položka nenalezena. Zkuste jiný název."
+  attr :count_label, :string, default: "položek"
+  attr :error_message, :string, default: nil
+  attr :search_name, :string, required: true
+  attr :search_event, :string, required: true
+  attr :open_event, :string, required: true
+  attr :close_event, :string, required: true
+  attr :select_event, :string, required: true
+
+  @doc "Searchable options with id, name and hint; optional search_text includes extra keywords."
+  def searchable_picker(assigns) do
+    selected = Enum.find(assigns.options, &(&1.id == to_string(assigns.field.value)))
     query = assigns.query || if(selected, do: selected.name, else: "")
-
-    search =
-      if selected && query == selected.name,
-        do: "",
-        else: query
+    search = if selected && query == selected.name, do: "", else: query
+    words = search |> CozyCheckout.Recipes.normalize() |> String.split()
 
     matches =
-      CozyCheckout.Recipes.search_ingredients(available, search)
+      Enum.filter(assigns.options, fn option ->
+        text = CozyCheckout.Recipes.normalize(Map.get(option, :search_text, option.name))
+        Enum.all?(words, &String.contains?(text, &1))
+      end)
 
     assigns =
       assigns
       |> assign(:query, query)
       |> assign(:matches, Enum.take(matches, 8))
       |> assign(:match_count, length(matches))
-      |> assign(:options, Enum.map(available, &{&1.name <> " (" <> &1.base_unit <> ")", &1.id}))
-      |> assign(:focus_id, assigns.focus_id || assigns.field.form[:quantity].id)
 
     ~H"""
     <div
       id={"#{@field.id}-picker"}
       class="relative min-w-0"
-      phx-click-away={@open && "close_ingredient_search"}
+      phx-click-away={@open && @close_event}
     >
       <.input
         id={"#{@field.id}-search"}
-        name={"ingredient_search[#{@index}]"}
+        name={"#{@search_name}[#{@index}]"}
         type="search"
         value={@query}
-        label="Surovina"
-        placeholder="Hledat podle názvu, kategorie nebo poznámky…"
+        label={@label}
+        placeholder={@placeholder}
         autocomplete="off"
-        phx-change="search_ingredients"
+        phx-change={@search_event}
         phx-debounce="150"
-        phx-focus="open_ingredient_search"
+        phx-focus={@open_event}
         phx-value-index={@index}
-        phx-keydown="close_ingredient_search"
+        phx-keydown={@close_event}
         phx-key="Escape"
         aria-controls={"#{@field.id}-options"}
         aria-expanded={to_string(@open)}
-        aria-invalid={to_string(@field.errors != [])}
-        aria-describedby={@field.errors != [] && "#{@field.id}-error"}
+        aria-invalid={to_string(not is_nil(@error_message))}
+        aria-describedby={not is_nil(@error_message) && "#{@field.id}-error"}
         class={field_class()}
         required={@required}
       />
@@ -143,46 +202,52 @@ defmodule CozyCheckoutWeb.KitchenComponents do
         :if={@open}
         id={"#{@field.id}-options"}
         class="absolute left-0 right-0 z-30 max-h-72 overflow-y-auto overscroll-contain rounded-lg border border-secondary-200 bg-white p-1 shadow-xl"
-        aria-label="Nalezené suroviny"
+        aria-label={@label}
       >
         <button
-          :for={ingredient <- @matches}
-          id={"#{@field.id}-option-#{ingredient.id}"}
+          :for={option <- @matches}
+          id={"#{@field.id}-option-#{option.id}"}
           type="button"
-          phx-click={JS.push("select_ingredient") |> JS.focus(to: "##{@focus_id}")}
+          phx-click={picker_select(@select_event, @focus_id)}
           phx-value-index={@index}
-          phx-value-id={ingredient.id}
+          phx-value-id={option.id}
           class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-primary-500 transition hover:bg-tertiary-50 focus:bg-secondary-100 focus:outline-none"
         >
-          <span>{ingredient.name}</span><span class="shrink-0 text-xs text-primary-400">{ingredient.base_unit}</span>
+          <span>{option.name}</span><span class="shrink-0 text-xs text-primary-400">{option.hint}</span>
         </button>
         <p :if={@match_count == 0} class="px-3 py-3 text-sm text-primary-400" role="status">
-          Žádná surovina nenalezena. Zkuste jiný název nebo založte novou surovinu.
+          {@empty_message}
         </p>
         <p
           :if={@match_count > 8}
           class="border-t border-secondary-200 px-3 py-2 text-xs text-primary-400"
           role="status"
         >
-          Zobrazeno 8 z {@match_count} surovin. Upřesněte název.
+          Zobrazeno 8 z {@match_count} {@count_label}. Upřesněte název.
         </p>
       </div>
       <div hidden>
-        <.input field={@field} type="select" options={@options} prompt="Vyberte surovinu" />
+        <.input
+          field={@field}
+          type="select"
+          options={Enum.map(@options, &{&1.name, &1.id})}
+          prompt={@prompt}
+        />
       </div>
       <p
-        :if={@field.errors != []}
+        :if={not is_nil(@error_message)}
         id={"#{@field.id}-error"}
         role="alert"
         class="mt-1 text-sm text-red-700"
       >
-        {if @field.value in [nil, ""],
-          do: "Vyberte surovinu z nabídky.",
-          else: Enum.map_join(@field.errors, " ", &translate_error/1)}
+        {@error_message}
       </p>
     </div>
     """
   end
+
+  defp picker_select(event, nil), do: JS.push(event)
+  defp picker_select(event, focus_id), do: JS.push(event) |> JS.focus(to: "##{focus_id}")
 
   attr :title, :string, required: true
   attr :subtitle, :string, default: ""
