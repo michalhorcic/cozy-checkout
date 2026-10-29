@@ -54,6 +54,7 @@ podklady a [plány nových funkcí](docs/plans/README.md).
 - [Grafické postupy práce s aplikací](docs/features/WORKFLOWS.md)
 - [Samoobslužný bar / POS](docs/features/POS_SYSTEM.md) a [platby](docs/features/PAYMENT_FUNCTIONALITY.md)
 - [Fakturace pobytů](docs/features/BILLING.md)
+- [Ekonomika firmy z ABRY](docs/features/ECONOMICS.md)
 - [Stravování, receptury a nákup](docs/features/CATERING.md)
 - [Emaily hostům](docs/features/GUEST_EMAILS.md)
 - [Kalendář rezervací](docs/features/CALENDAR_VIEW.md)
