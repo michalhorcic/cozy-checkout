@@ -2,10 +2,11 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
   use CozyCheckoutWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
   import CozyCheckout.EconomicsFixtures
-  import Oban.Testing, only: [assert_enqueued: 1]
+  use Oban.Testing, repo: CozyCheckout.Repo
   alias CozyCheckout.{Economics, Repo}
   alias CozyCheckout.Economics.{Reports, Source, ImportRun, Snapshot, SyncWorker}
   alias CozyCheckoutWeb.AdminAuth
+  alias CozyCheckoutWeb.CurrencyHelper
 
   setup %{conn: conn} do
     previous = Application.get_env(:cozy_checkout, :economics)
@@ -99,7 +100,8 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
 
     assert html =~ "602001"
     assert has_element?(detail, "#economics-movements")
-    assert html =~ "120 CZK"
+    expected_amount = CurrencyHelper.format_currency(Decimal.new("120"))
+    assert has_element?(detail, "#economics-movements tbody tr td:nth-child(5)", expected_amount)
   end
 
   test "confirmation uses a local snapshot fingerprint and never displays credentials", %{
