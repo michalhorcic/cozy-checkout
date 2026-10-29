@@ -9,12 +9,12 @@ defmodule CozyCheckout.Economics.AbraClient do
   @saldo_fields "idSaldoKdatu,idDokl,modul,datUcto,datSplat,sumCelkem,sumCelkemAkt,juhSumDat,mena,storno"
 
   def periods, do: fetch("ucetni-obdobi", "kod,platiOdData,platiDoData", [], "id")
-  def accounts, do: fetch("ucetni-osnova", "kod,nazev,typUctuK,druhUctuK", [], "id")
+  def accounts, do: fetch("ucet", "kod,nazev,typUctuK,druhUctuK", [], "id")
 
   def movements(%Date{} = first, %Date{} = last, state \\ "posted")
       when state in ["posted", "unposted"] do
     path = "pohyb-na-uctech/(datUcto >= #{first} and datUcto <= #{last})"
-    fetch(path, @movement_fields, [postingState: state], "idUcetniDenik,ucet")
+    fetch(path, @movement_fields, [postingState: state], ["idUcetniDenik", "ucet"])
   end
 
   def trial_balance(period, %Date{} = last, months) when is_integer(months) and months in 1..23 do
@@ -42,7 +42,10 @@ defmodule CozyCheckout.Economics.AbraClient do
   defp fetch(path, fields, params, order) do
     with {:ok, cfg} <- Config.connection() do
       key = path |> String.split("/") |> hd()
-      params = [detail: "custom:" <> fields, order: order] ++ params
+
+      params =
+        [detail: "custom:" <> fields] ++ Enum.map(List.wrap(order), &{:order, &1}) ++ params
+
       pages(cfg, path, key, params, 0, [], MapSet.new())
     end
   end

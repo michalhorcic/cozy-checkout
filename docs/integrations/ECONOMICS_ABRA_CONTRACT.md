@@ -14,12 +14,15 @@ Všechny níže uvedené evidence odpověděly HTTP 200 a JSON obálkou
 | Evidence | Kontrakt pro Economics |
 | --- | --- |
 | `ucetni-obdobi` | `kod`, `platiOdData`, `platiDoData`; období `2026` je 1. 7. 2026–30. 6. 2027, `2025` je 1. 7. 2025–30. 6. 2026 |
-| `ucetni-osnova` | `kod`, `nazev`, `typUctuK`, `druhUctuK`; druhy `druhUctu.naklady` a `druhUctu.vynosy` jsou rozhodující pro výsledovku |
+| `ucet` (firemní účtový rozvrh) | `kod`, `nazev`, `typUctuK`, `druhUctuK`; druhy `druhUctu.naklady` a `druhUctu.vynosy` jsou rozhodující pro výsledovku |
 | `pohyb-na-uctech` | `idUcetniDenik`, `idDokl`, `modul`, `ucet`, `protiUcet`, `datUcto`, `sumTuzMd`, `sumTuzDal`, `zuctovano`, `mena` |
 | `ucetni-denik` | Dostupný alternativní zdroj, ale MD/Dal v jednom řádku; pro první verzi preferujeme pohyby na účtech |
 | `obratova-predvaha`, `hlavni-kniha` | `ucet`, `ucetniObdobi`, `mena`, `pocatekMd`, `pocatekDal`, `pocatekMesic`, `obratMdVyb`, `obratDalVyb`, `zustatekMd`, `zustatekDal` |
 | `stav-uctu` | Dostupná měsíční pole `obratMd01`…`obratMd23` a `obratDal01`…`obratDal23`; jejich indexování v hospodářském roce zatím nepoužíváme |
 | `saldo-k-datu` | `idSaldoKdatu`, `idDokl`, `modul`, `datUcto`, `datSplat`, `sumCelkem`, `sumCelkemAkt`, `juhSumDat`, `mena`, `storno` |
+
+Evidence `ucetni-osnova` také odpověděla, ale obsahuje obecnou osnovu
+s třímístnými kódy. Pro firemní analytiky z pohybů se musí použít `ucet`.
 
 Čísla jsou desetinné řetězce. Reference účtů/měn mají tvar `code:602001`,
 `code:CZK`; datum například `2026-09-30+02:00`. `zuctovano` je řetězec

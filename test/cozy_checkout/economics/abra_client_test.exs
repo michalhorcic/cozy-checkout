@@ -69,7 +69,7 @@ defmodule CozyCheckout.Economics.AbraClientTest do
       Req.Test.expect(AbraClient, fn conn ->
         assert Plug.Conn.fetch_query_params(conn).query_params["start"] == to_string(offset)
         rows = if offset == 0, do: Enum.map(1..1000, &%{"id" => &1}), else: []
-        Req.Test.json(conn, %{"winstrom" => %{"ucetni-osnova" => rows}})
+        Req.Test.json(conn, %{"winstrom" => %{"ucet" => rows}})
       end)
     end
 
@@ -79,7 +79,7 @@ defmodule CozyCheckout.Economics.AbraClientTest do
 
   test "a repeated full page fails instead of publishing duplicates" do
     Req.Test.expect(AbraClient, 2, fn conn ->
-      Req.Test.json(conn, %{"winstrom" => %{"ucetni-osnova" => Enum.map(1..1000, &%{"id" => &1})}})
+      Req.Test.json(conn, %{"winstrom" => %{"ucet" => Enum.map(1..1000, &%{"id" => &1})}})
     end)
 
     assert {:error, :repeated_page} = AbraClient.accounts()
