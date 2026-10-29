@@ -14,6 +14,10 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
   — implementováno; ruční evidence a informace u menu, plánovače a nákupu.
   Nákupní množství zůstávají beze změny; bez rezervací a externích notifikací.
 
+- [Ekonomický dashboard firmy z ABRA Flexi](2026-10-28-ekonomicky-dashboard.md)
+  — návrh; samostatný modul, účetní ukazatele a kontrola úplnosti dat,
+  minimální zásahy do aplikace. Obsahuje dotazy pro účetní a etapy implementace.
+
 ## Jak plán uložit a znovu otevřít
 
 1. Nejprve společně připravíme plán a vyjasníme rozsah a otevřené otázky.
