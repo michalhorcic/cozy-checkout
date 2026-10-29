@@ -15,8 +15,12 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
   Nákupní množství zůstávají beze změny; bez rezervací a externích notifikací.
 
 - [Ekonomický dashboard firmy z ABRA Flexi](2026-10-28-ekonomicky-dashboard.md)
-  — návrh; samostatný modul, účetní ukazatele a kontrola úplnosti dat,
-  minimální zásahy do aplikace. Obsahuje dotazy pro účetní a etapy implementace.
+  — implementováno; samostatný modul, účetní ukazatele, kontrola úplnosti,
+  denní saldo a grafy. Účetní odsouhlasení podkladů zůstává samostatným krokem.
+
+- [Fixní a variabilní náklady v Ekonomice firmy](2026-10-29-fixni-a-variabilni-naklady.md)
+  — návrh; samostatná záložka Nákladovost, editovatelné a verzované mapování,
+  fixní/variabilní/smíšené náklady a oddělené označení mimořádných položek.
 
 ## Jak plán uložit a znovu otevřít
 
