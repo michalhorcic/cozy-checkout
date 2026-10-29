@@ -96,6 +96,10 @@ defmodule CozyCheckoutWeb.EconomicsLive.Components do
         class={["btn btn-sm", @active == "overview" && "btn-primary"]}
       >Přehled</.link>
       <.link
+        navigate={~p"/admin/economics/costs"}
+        class={["btn btn-sm", @active == "costs" && "btn-primary"]}
+      >Nákladovost</.link>
+      <.link
         navigate={~p"/admin/economics/settings"}
         class={["btn btn-sm", @active == "settings" && "btn-primary"]}
       >Zdroj a úplnost</.link>

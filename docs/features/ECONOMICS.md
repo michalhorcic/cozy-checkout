@@ -187,3 +187,88 @@ potvrzení. Výpočet tohoto otisku je kompatibilní se staršími potvrzeními
 bez popisů; změna firmy nebo popisu sama nevyžaduje znovu potvrdit částky.
 Změny účetních částek, účtů, salda a ostatních finančních podkladů jeho
 platnost nadále ruší.
+
+## Nákladovost: fixní a variabilní náklady
+
+Záložka **Nákladovost** (`/admin/economics/costs`) používá stejný admin PIN
+jako ostatní Economics. Čte pouze místní snapshoty. Součet fixní složky,
+variabilní složky, smíšených bez rozdělení a nezařazených odpovídá nákladům
+MD − Dal; mimořádné jsou samostatně označená podmnožina těchto částek.
+Dobropisy zachovávají znaménko. Odpisy na nákladových účtech `551*` jsou
+viditelně nepeněžní. Nejde o platby ani o očekávaný smluvní měsíční základ.
+
+Přehled obsahuje měsíční součty, kategorie, firmy a rozbalovací podklady
+se všemi zahrnutými zápisy a použitými pravidly. Podklady lze filtrovat
+na mimořádné, nevyřešené, konfliktní a odhadované; seznam má stránky po 50.
+Firmy bez stabilního ID se neslučují podle názvu. Podíl pokrytí vychází
+z absolutních hodnot podkladů, nikoli z čistého výsledku po dobropisech.
+Nulový absolutní objem nemá vypočtené procento. Účetní úplnost se zobrazuje
+samostatně a mapování ji nemění.
+
+### Práce s mapováním
+
+1. Vyberte aktuální snapshot požadovaného období a aktivní verzi mapování.
+   V záložce Mapování vytvořte pravidlo, případně v detailu podkladu zvolte
+   **Jen tento podklad** nebo **Pravidlo pro další doklady**.
+2. Pravidlo používá přesný nákladový účet, volitelně interní ID firmy a text
+   „popis obsahuje“ bez rozlišení velikosti písmen. Všechny podmínky se musí
+   splnit. Uveďte důvod a celé měsíce platnosti od/do včetně. Konec může být
+   prázdný. Nové snapshoty uchovávají nákladové účty z rozvrhu; starší nabízejí
+   nákladové účty doložené pohyby. Účty a firmy se vybírají vyhledáváním.
+3. Zvolte chování, samostatný příznak mimořádné a případný ruční odhad
+   fixního podílu 0–100 % (nejvýše šest desetinných míst). Pro smíšené
+   bez podílu se částka nerozděluje. S podílem je variabilní složka přesný
+   zbytek; zobrazení dorovnává haléřové zaokrouhlení.
+4. **Uložit položku do návrhu** zatím nemění aktivní přehled. Návrh žije
+   pouze v otevřené stránce; obnovení nebo změna období jej zahodí. Přepnutí
+   Přehled nákladů / Mapování jej zachovává. Lze upravovat a odebírat pravidla
+   i výjimky a hromadně přidat pracovní návrhy pro dosud nemapované účty.
+   Žádný návrh se nepřijímá automaticky.
+5. Vyplňte důvod publikace a přepočítejte náhled. Náhled ukáže dopad na
+   všechna načtená aktivní období, měsíční složky před/po, změněné podklady
+   a konflikty. Publikace tak výslovně může změnit výklad minulých měsíců.
+6. Tlačítko **Publikovat tuto verzi mapování** atomicky zveřejní celou sadu.
+   Změna snapshotů nebo aktivní verze od náhledu publikaci odmítne; náhled
+   také vyprší po hodině. Obnovte data a připravte jej znovu.
+
+Přednost: výjimka, účet + firma + text, účet + firma, účet + text, účet.
+Rozdílné výsledky stejné přednosti vytvoří konflikt a částku nezařadí.
+Shodné výsledky zůstanou dohledatelné se všemi odpovídajícími pravidly.
+Textový filtr pracuje nad uloženým popisem; detail upozorní na zkrácení.
+
+Výjimka se vztahuje na celý podklad **zdroj + modul + idDokl + účet + měsíc**,
+nikoli na produktový řádek. Finanční otisk zahrnuje částky a složení zápisů;
+změna podkladu výjimku pozastaví bez přechodu na obecné pravidlo. Zaniklé
+nebo přesunuté podklady jsou dohledatelné v Mapování. Přejmenování firmy
+ani změna popisu tento otisk nemění. Novou kontrolu změněného podkladu
+zahajte opět z jeho detailu; pouhá editace důvodu výjimky otisk neobnoví.
+
+### Identita, historie a nasazení
+
+Import pohybů a salda nově žádá `use-internal-id=true` podle
+[dokumentace ABRA](https://podpora.flexibee.eu/cs/articles/4713911-sestavovani-url).
+Z `firma@internalId` (případně explicitní číselné reference `firma`) se
+ukládá interní `partner_id` v rámci zdroje. Kódy a jména se za interní ID
+nevydávají. Pokud ho server neposkytne nebo jde o starší snapshot, pravidla
+na tuto firmu nelze nově vytvořit. Ověření odpovědi konkrétního firemního
+serveru a několika pravidel s majitelem zůstává součástí nasazení.
+
+Nová přidávací migrace `20261029180000_create_economics_cost_mapping`
+vytvoří `economics_cost_mapping_versions`, `economics_cost_rules` a
+`economics_cost_overrides`, včetně UUID, cizích klíčů, omezení, unikátních
+indexů a ochrany publikovaných položek proti přepsání či smazání. Publikace
+zamyká zdroj stejně jako import. Odebrání pravidla vytvoří další úplnou
+verzi; předchozí řádky zůstávají v historii. Nepublikovaný návrh se do DB
+neukládá. Není potřeba nová konfigurace ani přepis starých snapshotů.
+
+V horním výběru lze kombinovat historický snapshot s publikovanou verzí
+mapování (nebo volbou Bez pravidel) a zopakovat tehdejší výklad. Historický
+pohled neumožňuje editaci. Historie obsahuje čas a důvod; sdílený PIN
+neidentifikuje konkrétní osobu. Pravidla a výjimky se načítají po dávkách,
+klasifikace neprovádí SQL ani HTTP pro jednotlivé podklady.
+
+Pro první použití aplikujte novou migraci, obnovte import vybraného období,
+zkontrolujte interní ID firem, výslovně přijměte návrhy a porovnejte náklady
+s původním přehledem. Živé ověření, měření odezvy na skutečném objemu a
+potvrzení smluv/podílů s majitelem nejsou nahrazeny syntetickými testy.
+Pravidelné smluvní závazky a provozní jednotkové ukazatele jsou další etapa.

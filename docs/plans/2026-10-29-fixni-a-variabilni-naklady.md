@@ -1,6 +1,6 @@
 # Fixní a variabilní náklady v Ekonomice firmy
 
-- Stav: **návrh řešení a implementační plán**; tento PR obsahuje dokumentaci, aplikační implementace této funkce ještě nezačala.
+- Stav: **implementace první verze (kroky 1–2) připravena k CI a ručnímu ověření**. Kroky 3–4 zůstávají další etapou.
 - Vytvořeno: 2026-10-29
 - Aktualizováno: 2026-10-29
 - Zadání: samostatná záložka v Ekonomice firmy, měnitelné mapování nákladů a postupné rozšiřování pohledu na náklady a možnosti jejich ovlivnění.
@@ -318,10 +318,24 @@ nových tabulek; účetní snapshoty a potvrzení úplnosti se nepřepisují.
 
 ## Průběh a předání
 
-- Hotovo: průzkum aktuálního `main`, návrh mapování a uložený plán. Aplikační
-  kód, databáze, účetní data ani ABRA se v této plánovací práci nemění.
-- Zbývá: všechny implementační kroky výše. První verze zahrnuje pouze 1–2.
-- Blokuje finální zařazení některých nákladů: znalost smluv a potvrzení
-  jejich chování; technicky ověření stabilních identifikátorů.
-- Nejbližší krok: při pokračování projít navržené řešení a zahájit krok 1,
-  následně dodat první použitelnou záložku s editovatelným mapováním.
+- Implementováno: metadata interního ID firmy a zkrácení popisu, nákladové
+  účty z rozvrhu, přidávací migrace, čistá klasifikace, verzované publikace,
+  náhled pro všechna načtená období, pravidla a výjimky, historie a záložka
+  Nákladovost v existující PIN ochraně. Celá první verze je v jednom PR.
+- Návrhy existují pouze v otevřené LiveView stránce; do DB vstupují celé
+  sady v jedné publikační transakci. Přepnutí záložek je zachová, obnovení
+  nebo změna období je zahodí. Samostatné ukládání rozpracovaných návrhů
+  mezi návštěvami tato první verze nezavádí.
+- Ověřeno lokálně: kompilace aplikace s varováními jako chybami, kompilace
+  změněných testovacích modulů bez jejich spuštění a projektový formatter.
+  Testy se lokálně nespouštějí podle AGENTS.md; výsledky CI ověří uživatel.
+- K dokončení provozního ověření kroků 1–2: skutečný tvar interního ID firmy
+  z firemní ABRY, několik pravidel a odhadů s majitelem, reprezentativní
+  měsíc, mobilní zobrazení a odezva na skutečném objemu. V implementačním
+  běhu nebylo nakonfigurované připojení Economics ani reálný snapshot.
+- Interní ID je vyžádané dokumentovaným `use-internal-id=true` ve stávajících
+  GET a normalizuje se `firma@internalId`; při absenci zůstávají k dispozici
+  účet, text a výjimka. Podrobnosti a omezení jsou v aktualizovaném kontraktu
+  ABRA a `docs/features/ECONOMICS.md`.
+- Kroky 3–4 (smluvní měsíční základ a provozní ukazatele) se neimplementují
+  bez samostatného upřesnění. Nejasné smlouvy samy nevytvářejí aktivní pravidla.

@@ -144,6 +144,7 @@ defmodule CozyCheckoutWeb.Router do
       live "/economy", EconomyLive.Index
       live "/economics", EconomicsLive.Index
       live "/economics/settings", EconomicsLive.Settings
+      live "/economics/costs", EconomicsLive.Costs
       live "/economics/accounts/:account", EconomicsLive.Detail
 
       # Statistics

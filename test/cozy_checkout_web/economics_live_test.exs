@@ -205,10 +205,119 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     refute has_element?(home, "[data-economics-issue]")
   end
 
+  test "cost mapping requires explicit preview and publication and preserves accounting totals",
+       %{conn: conn} do
+    {:ok, view, html} = live(conn, "/admin/economics/costs?tab=mapping")
+    assert html =~ "Nákladovost"
+    refute html =~ "never-render-this-secret"
+    assert has_element?(view, "#cost-editor")
+    assert has_element?(view, "#cost-history")
+    view |> element("#cost-suggestions") |> render_click()
+    assert has_element?(view, "#cost-draft-rules", "501100")
+    assert {:ok, %{version: nil}} = Economics.costs()
+    refute has_element?(view, "#cost-publish")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Potvrzený návrh potravin."})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-preview", "1 změněných podkladů")
+    view |> element("#cost-publish") |> render_click()
+    assert render(view) =~ "Nová verze mapování byla publikována"
+    assert {:ok, data} = Economics.costs()
+    assert Decimal.equal?(data.totals.variable, "45.50")
+    assert Decimal.equal?(data.totals.total, data.report.totals["expense"])
+    assert data.version.number == 1
+    {:ok, overview, _} = live(conn, "/admin/economics/costs")
+    assert has_element?(overview, "#cost-totals")
+    assert has_element?(overview, "#cost-months")
+    assert has_element?(overview, "#cost-categories", "Potraviny")
+    assert has_element?(overview, "#cost-documents", "Variabilní")
+  end
+
+  test "cost editor stores a scoped exception, previews it and never changes source postings", %{
+    conn: conn
+  } do
+    snapshot = Repo.one!(Snapshot)
+    {:ok, view, _} = live(conn, "/admin/economics/costs")
+    view |> element("button[phx-click='from-item'][phx-value-kind='override']") |> render_click()
+    assert has_element?(view, "#cost-editor")
+
+    view
+    |> form("#cost-editor",
+      editor: %{
+        behavior: "mixed",
+        fixed_percent: "50",
+        extraordinary: "true",
+        reason: "Ruční odhad poloviny podle smlouvy."
+      }
+    )
+    |> render_submit()
+
+    assert has_element?(view, "#cost-draft-overrides", "Ruční odhad poloviny")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Výjimka pro jediný podklad."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+    assert {:ok, %{items: [item]}} = Economics.costs()
+    assert item.estimated and item.extraordinary and item.via == :override
+    assert Decimal.equal?(item.fixed, "22.75")
+    assert Repo.get!(Snapshot, snapshot.id).payload == snapshot.payload
+  end
+
+  test "cost rules use searchable accounts and draft survives tab switching", %{conn: conn} do
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#editor_account-search") |> render_focus()
+    assert has_element?(view, "#editor_account-option-501100")
+    view |> element("#editor_account-option-501100") |> render_click()
+
+    view
+    |> form("#cost-editor",
+      editor: %{behavior: "fixed", reason: "Syntetický potvrzený paušál.", valid_from: "2026-07"}
+    )
+    |> render_submit()
+
+    assert has_element?(view, "#cost-draft-rules", "Syntetický potvrzený paušál")
+    view |> element("a", "Přehled nákladů") |> render_click()
+    view |> element("a", "Mapování") |> render_click()
+    assert has_element?(view, "#cost-draft-rules", "Syntetický potvrzený paušál")
+    assert {:ok, %{version: nil}} = Economics.costs()
+  end
+
+  test "stale cost preview requires reload and disabled reporting rejects a pending mutation", %{
+    conn: conn
+  } do
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-suggestions") |> render_click()
+    view |> form("#cost-preview-form", publication: %{note: "První kontrola."}) |> render_submit()
+    snapshot = Repo.one!(Snapshot)
+    snapshot |> Ecto.Changeset.change(fingerprint: "changed-import") |> Repo.update!()
+    view |> element("#cost-publish") |> render_click()
+    assert render(view) =~ "Podklady nebo aktivní mapování se změnily"
+    refute has_element?(view, "#cost-publish")
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 0
+    Application.put_env(:cozy_checkout, :economics, enabled: false)
+    render_click(view, "suggestions", %{})
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 0
+  end
+
+  test "cost historical snapshots and versions expose no mutation controls", %{conn: conn} do
+    snapshot = Repo.one!(Snapshot)
+    snapshot |> Ecto.Changeset.change(active: false) |> Repo.update!()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?snapshot=#{snapshot.id}&tab=mapping")
+    refute has_element?(view, "#cost-editor")
+    refute has_element?(view, "#cost-preview-form")
+    render_click(view, "publish", %{})
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 0
+  end
+
   test "all reporting URLs require the existing admin PIN" do
     for path <- [
           "/admin/economics",
           "/admin/economics/settings",
+          "/admin/economics/costs",
           "/admin/economics/accounts/602001"
         ] do
       conn = build_conn() |> get(path)
@@ -230,6 +339,7 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     for path <- [
           "/admin/economics",
           "/admin/economics/settings",
+          "/admin/economics/costs",
           "/admin/economics/accounts/602001"
         ] do
       assert {:error, {:redirect, %{to: "/admin"}}} = live(conn, path)
