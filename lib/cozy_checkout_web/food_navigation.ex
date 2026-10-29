@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.FoodNavigation do
   @moduledoc "Shared food navigation and a bounded, URL-based planning context."
   @paths %{
     planner: "/admin/meal-planner",
+    freezer: "/admin/freezer",
     shopping: "/admin/kitchen-shopping",
     costs: "/admin/kitchen-costs",
     cost_reports: "/admin/kitchen-costs/reports",

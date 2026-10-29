@@ -244,6 +244,9 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     portion_counts = Meals.get_portion_counts_for_range(week_start, week_end)
     kitchen = MenuPlanning.kitchen_for_range(week_start, week_end)
 
+    freezer =
+      CozyCheckout.Kitchen.Freezer.presentation(kitchen.groups |> Map.values() |> List.flatten())
+
     # Load guest counts for the week
     occupancy_map = Bookings.get_occupancy_for_range(week_start, week_end)
 
@@ -263,7 +266,11 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
           portions: Map.fetch!(portion_counts, date),
           group_menus:
             Map.new(["breakfast", "lunch", "dinner"], fn type ->
-              {type, Map.get(kitchen.groups, {date, type}, [])}
+              {type,
+               Enum.map(
+                 Map.get(kitchen.groups, {date, type}, []),
+                 &Map.put(&1, :freezer_items, Map.get(freezer.by_item, &1.id, []))
+               )}
             end),
           meals: Map.get(meals_by_date, date, []) |> meals_to_map()
         }

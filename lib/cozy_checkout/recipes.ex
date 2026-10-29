@@ -68,7 +68,8 @@ defmodule CozyCheckout.Recipes do
   end
 
   defp ingredient_unit_used?(id) do
-    Repo.exists?(from l in RecipeLine, where: l.ingredient_id == ^id) or
+    Repo.exists?(from f in CozyCheckout.Kitchen.FreezerItem, where: f.ingredient_id == ^id) or
+      Repo.exists?(from l in RecipeLine, where: l.ingredient_id == ^id) or
       Repo.exists?(
         from l in CozyCheckout.KitchenCosts.PurchaseLine, where: l.ingredient_id == ^id
       ) or

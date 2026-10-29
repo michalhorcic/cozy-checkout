@@ -272,4 +272,40 @@ defmodule CozyCheckoutWeb.KitchenComponents do
     </section>
     """
   end
+
+  attr :items, :list, required: true
+  attr :title, :string, default: "V mrazáku"
+  attr :context, :map, default: %{}
+
+  def freezer_notice(assigns) do
+    ~H"""
+    <details
+      :if={@items != []}
+      class="my-2 rounded-lg border border-secondary-200 bg-secondary-50 p-3 text-xs print:hidden"
+      data-freezer-notice
+    >
+      <summary class="cursor-pointer font-semibold">{@title} ({length(@items)})</summary>
+      <p class="my-2">
+        Aktuální stav, informativní; nákupní množství se nemění. Zásoby nejsou rezervované.
+      </p>
+      <ul class="space-y-1">
+        <li :for={item <- @items}>
+          {item.name} · {CozyCheckout.Recipes.format_quantity(item.quantity, item.unit)} · zamrazeno {Calendar.strftime(
+            item.frozen_on,
+            "%d. %m. %Y"
+          )} · {Date.diff(CozyCheckout.Kitchen.Freezer.today(), item.frozen_on)} dní
+          <span :if={item.location}> · {item.location}</span>
+          <span :if={
+            (item.ingredient && item.ingredient.archived_at) ||
+              (item.recipe && item.recipe.archived_at)
+          }> · vazba archivována</span>
+        </li>
+      </ul>
+      <.link
+        navigate={CozyCheckoutWeb.FoodNavigation.path(:freezer, @context)}
+        class="mt-2 inline-block underline"
+      >Otevřít mrazák</.link>
+    </details>
+    """
+  end
 end

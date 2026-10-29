@@ -32,6 +32,7 @@ defmodule CozyCheckoutWeb.FoodNavigationLiveTest do
     for {path, section} <- [
           {"/admin/meal-planner", :planner},
           {"/admin/kitchen-shopping", :shopping},
+          {"/admin/freezer", :freezer},
           {"/admin/recipes", :recipes},
           {"/admin/recipes/#{recipe.id}", :recipes},
           {"/admin/recipes/#{recipe.id}/edit", :recipes},
@@ -49,7 +50,16 @@ defmodule CozyCheckoutWeb.FoodNavigationLiveTest do
       assert has_element?(view, "#food-mobile-#{section}[aria-current='page']")
       assert view |> element("#food-desktop a[aria-current='page']") |> render()
 
-      for entry <- [:planner, :shopping, :variants, :recipes, :ingredients, :templates, :settings] do
+      for entry <- [
+            :planner,
+            :shopping,
+            :freezer,
+            :variants,
+            :recipes,
+            :ingredients,
+            :templates,
+            :settings
+          ] do
         assert has_element?(view, "#food-desktop-#{entry}")
         assert has_element?(view, "#food-mobile-#{entry}")
       end

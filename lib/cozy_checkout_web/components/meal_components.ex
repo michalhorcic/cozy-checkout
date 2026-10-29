@@ -116,6 +116,10 @@ defmodule CozyCheckoutWeb.MealComponents do
           phx-click="noop"
           class="mt-2 inline-block text-xs font-semibold text-tertiary-600 underline"
         >Suroviny pro skupinu</.link>
+        <CozyCheckoutWeb.KitchenComponents.freezer_notice
+          items={Map.get(group, :freezer_items, [])}
+          context={%{"week" => Date.to_iso8601(group.date), "booking" => group.booking.id}}
+        />
         <p :if={group.manually_edited} class="mt-1 text-xs font-semibold text-tertiary-600">
           Ruční úprava
         </p>

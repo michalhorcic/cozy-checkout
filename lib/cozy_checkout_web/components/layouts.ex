@@ -109,6 +109,7 @@ defmodule CozyCheckoutWeb.Layouts do
         {"Provoz",
          [
            {:planner, "Plán jídel", "hero-calendar-days"},
+           {:freezer, "Mrazák", "hero-archive-box"},
            {:shopping, "Nákup", "hero-shopping-cart"},
            {:costs, "Nákupy a ceny", "hero-receipt-percent"},
            {:cost_reports, "Náklady kuchyně", "hero-chart-bar"}
@@ -177,6 +178,7 @@ defmodule CozyCheckoutWeb.Layouts do
     do:
       %{
         planner: "Plán jídel",
+        freezer: "Mrazák",
         shopping: "Nákup",
         costs: "Nákupy a ceny",
         cost_reports: "Náklady kuchyně",

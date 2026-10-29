@@ -11,7 +11,7 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
   — připraveno; JSON import nákupů, přiřazení ke stávajícím surovinám,
   historie cen a nákladové reporty. Implementace začne v novém vlákně.
 - [Jednoduchá evidence mrazáku](2026-10-28-evidence-mrazaku.md)
-  — připraveno; ruční evidence a informace u menu, plánovače a nákupu.
+  — implementováno; ruční evidence a informace u menu, plánovače a nákupu.
   Nákupní množství zůstávají beze změny; bez rezervací a externích notifikací.
 
 ## Jak plán uložit a znovu otevřít
