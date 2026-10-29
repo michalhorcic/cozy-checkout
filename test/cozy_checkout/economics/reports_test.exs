@@ -109,6 +109,11 @@ defmodule CozyCheckout.Economics.ReportsTest do
              build(posted(), trial(), [open_item(%{"datUcto" => "2026-08-01"})])
   end
 
+  test "settled items are removed by Decimal zero comparison" do
+    assert {:ok, month} = build(posted(), trial(), [open_item(%{"juhSumDat" => "100.00"})])
+    assert month["open_items"] == []
+  end
+
   test "fiscal boundaries come from actual dates rather than the code" do
     rows = [
       %{

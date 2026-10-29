@@ -18,10 +18,14 @@ defmodule CozyCheckoutWeb.AdminNavigation do
       {"Rezervace", "/admin/bookings/calendar", "hero-calendar-days"},
       {"Stravování", "/admin/meal-planner", "hero-clipboard-document-list"},
       {"Doklady", "/admin/billing", "hero-document-text"},
+      if(CozyCheckout.Economics.enabled?(),
+        do: {"Ekonomika firmy", "/admin/economics", "hero-chart-bar"}
+      ),
       {"Barový sklad", "/admin/bar-stock", "hero-beaker"},
       {"Emaily hostům", "/admin/emails", "hero-envelope"},
       {"Barové účty a platby", "/admin/orders", "hero-banknotes"}
     ]
+    |> Enum.reject(&is_nil/1)
   end
 
   def groups do
