@@ -330,7 +330,7 @@ defmodule CozyCheckout.Economics.CostsTest do
     end
   end
 
-  test "rule and override validations reject invalid percentages, dates and empty reasons" do
+  test "rule and override validations reject invalid percentages, dates and missing estimate reasons" do
     valid = %{
       "account" => "501100",
       "valid_from" => "2026-07-01",
@@ -349,11 +349,46 @@ defmodule CozyCheckout.Economics.CostsTest do
           %{"valid_to" => "2026-06-01"},
           %{"valid_to" => "2026-08-02"},
           %{"behavior" => "other"},
-          %{"reason" => "  "}
+          %{"reason" => "  ", "fixed_percent" => "50"}
         ] do
       refute CostRule.changeset(%CostRule{}, Map.merge(valid, attrs)).valid?
     end
 
     refute CostOverride.changeset(%CostOverride{}, %{}).valid?
+  end
+
+  test "reasons are optional except for manual mixed estimates, including zero and 100 percent" do
+    rule_attrs = %{"account" => "501100", "valid_from" => "2026-07-01"}
+
+    override_attrs = %{
+      "account" => "501100",
+      "module" => "FAP",
+      "document_id" => "1",
+      "month" => "2026-07-01",
+      "fingerprint" => String.duplicate("a", 64)
+    }
+
+    for {schema, attrs} <- [{CostRule, rule_attrs}, {CostOverride, override_attrs}],
+        behavior <- ["fixed", "variable", "mixed", "unclassified"],
+        reason <- [nil, "", "  "] do
+      values = Map.merge(attrs, %{"behavior" => behavior, "reason" => reason})
+      assert schema.changeset(struct(schema), values).valid?
+
+      for percent <- ["0", "50", "100"] do
+        values = Map.merge(values, %{"behavior" => "mixed", "fixed_percent" => percent})
+        refute schema.changeset(struct(schema), values).valid?
+
+        assert schema.changeset(struct(schema), Map.put(values, "reason", "Podklad odhadu")).valid?
+      end
+    end
+
+    changeset =
+      CostRule.changeset(
+        %CostRule{reason: "Dřívější poznámka"},
+        Map.merge(rule_attrs, %{"behavior" => "fixed", "reason" => nil})
+      )
+
+    assert changeset.valid?
+    assert is_nil(Ecto.Changeset.get_field(changeset, :reason))
   end
 end

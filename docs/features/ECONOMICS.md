@@ -213,8 +213,9 @@ samostatně a mapování ji nemění.
 2. Pravidlo používá přesný nákladový účet, volitelně firmu a text
    „popis obsahuje“ bez rozlišení velikosti písmen. Firmu lze vybrat podle
    interního ID, nebo výslovně podle přesného názvu pro podklady bez ID.
-   Všechny podmínky se musí splnit. Uveďte důvod a celé měsíce platnosti od/do včetně. Konec může být
-   prázdný. Nové snapshoty uchovávají nákladové účty z rozvrhu; starší nabízejí
+   Všechny podmínky se musí splnit. Uveďte celé měsíce platnosti od/do včetně;
+   konec může být prázdný. Důvod jednotlivého pravidla i výjimky je volitelný,
+   povinný zůstává pouze podklad ručního procentního odhadu smíšeného nákladu. Nové snapshoty uchovávají nákladové účty z rozvrhu; starší nabízejí
    nákladové účty doložené pohyby. Účty a firmy se vybírají vyhledáváním.
 3. Zvolte chování, samostatný příznak mimořádné a případný ruční odhad
    fixního podílu 0–100 % (nejvýše šest desetinných míst). Pro smíšené
@@ -310,3 +311,8 @@ Rozšíření názvového mapování vyžaduje přidávací migraci
 publikované řádky zůstanou s `partner_name = NULL`. Pravidla podle ID se nemění,
 nová konfigurace ani nový import nejsou pro názvová pravidla potřeba, pokud
 snapshot už název obsahuje. Výběr používá načtené podklady, bez dotazů po firmách.
+
+Migrace `20261029210000_make_cost_mapping_reasons_optional` umožňuje chybějící
+`reason` u pravidel a výjimek a upravuje databázová omezení. Pro zadaný fixní
+podíl smíšeného nákladu (včetně 0 a 100 %) zůstává důvod povinný. Stávající
+poznámky se nepřepisují; důvod publikace celé verze je nadále povinný.

@@ -503,6 +503,9 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   defp mapping_page_items(items, query, page),
     do: items |> mapping_items(query) |> Enum.slice((page - 1) * 20, 20)
 
+  defp estimate_reason_required?(attrs),
+    do: attrs["behavior"] == "mixed" and attrs["fixed_percent"] not in [nil, ""]
+
   defp editor_partner_attrs("override", _, _), do: {:ok, %{}}
 
   defp editor_partner_attrs("rule", choice, _) when choice in [nil, ""],
@@ -1092,8 +1095,12 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
                 <.input
                   field={@editor[:reason]}
                   type="textarea"
-                  label="Důvod / podklad odhadu"
-                  required
+                  label={
+                    if estimate_reason_required?(@editor.params),
+                      do: "Podklad ručního odhadu (povinný)",
+                      else: "Důvod zařazení (volitelné)"
+                  }
+                  required={estimate_reason_required?(@editor.params)}
                   maxlength="1000"
                 />
                 <button type="submit" class="btn btn-primary sm:col-span-2">Uložit položku do návrhu</button>

@@ -89,7 +89,9 @@ a její chování se zvolí zvlášť. Potraviny nejsou mimořádné jen proto,
 ### Pravidla a jejich přednost
 
 Všechna pravidla patří konkrétnímu zdroji ABRA, mají období platnosti,
-poznámku s důvodem a přiřazení obou výše uvedených informací.
+volitelnou poznámku s důvodem a přiřazení obou výše uvedených informací.
+Podklad ručního procentního odhadu a důvod publikace celé verze zůstávají
+povinné; volitelnost ostatních důvodů schválil uživatel 29. 10. 2026.
 Účet se vybírá přesně, podle skutečného rozvrhu; neodhaduje se podle názvu.
 Platnost je v první verzi po celých kalendářních měsících (od měsíce / do
 měsíce včetně), aby se jeden měsíční podklad nemapoval více způsoby podle
@@ -216,7 +218,7 @@ Návrh přidávacích tabulek, s UUID, timestamps, cizími klíči a omezeními:
   partner, případný text, rozsah platnosti, chování, mimořádnost a volitelné
   procento fixní složky. Validace typu, rozsahu 0–100 a dat od/do.
 - `economics_cost_overrides`: výjimky dané verze s identitou podkladu,
-  finančním otiskem, přiřazením a důvodem. Unikátní cíl v rámci verze.
+  finančním otiskem, přiřazením a volitelným důvodem (povinným pro procentní odhad). Unikátní cíl v rámci verze.
 
 Publikované verze a jejich pravidla budou neměnné. Úprava vytvoří další
 verzi; odebrání pravidla bude zachované v historii, bez fyzického mazání

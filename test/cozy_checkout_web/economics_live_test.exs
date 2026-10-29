@@ -379,12 +379,18 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     cost_queue_snapshot()
     {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
     view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
-    view |> form("#cost-editor", editor: %{behavior: "fixed", reason: ""}) |> render_submit()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "mixed", fixed_percent: "50", reason: ""})
+    |> render_submit()
+
     assert has_element?(view, "#cost-mapping-item-0")
     assert has_element?(view, "#cost-mapping-selected", "QUEUE-A")
 
     view
-    |> form("#cost-editor", editor: %{behavior: "fixed", reason: "Fixní podle smlouvy."})
+    |> form("#cost-editor",
+      editor: %{behavior: "fixed", fixed_percent: "", reason: "Fixní podle smlouvy."}
+    )
     |> render_submit()
 
     refute has_element?(view, "#cost-mapping-item-0")
@@ -699,6 +705,46 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
 
     view |> element("#cost-publish") |> render_click()
     assert {:ok, %{rules: [%{partner_id: nil, partner_name: nil}]}} = Economics.costs()
+  end
+
+  test "mapping reasons are optional for rules and exceptions but version publication still needs a note",
+       %{conn: conn} do
+    cost_queue_snapshot()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    refute has_element?(view, "#editor_reason[required]")
+    assert has_element?(view, "#cost-preview-form textarea[required]")
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+    view |> form("#cost-editor", editor: %{behavior: "fixed", reason: ""}) |> render_submit()
+    refute has_element?(view, "#cost-mapping-item-0")
+    refute has_element?(view, "#cost-mapping-item-1")
+    view |> element("#cost-mapping-item-2 button[phx-value-kind='override']") |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "mixed", fixed_percent: "50", reason: ""})
+    |> render_change()
+
+    assert has_element?(view, "#editor_reason[required]")
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "variable", fixed_percent: "", reason: ""})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-empty", "Všechny podklady")
+    view |> element("#cost-entry-rule-0 button[phx-click='entry-detail']") |> render_click()
+    assert has_element?(view, "#cost-entry-detail-rule-0", "Neuveden")
+    view |> form("#cost-preview-form", publication: %{note: ""}) |> render_submit()
+    refute has_element?(view, "#cost-publish")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Společná poznámka celé verze."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+
+    assert {:ok, %{rules: [%{reason: nil}], overrides: [%{reason: nil}], version: version}} =
+             Economics.costs()
+
+    assert version.note == "Společná poznámka celé verze."
   end
 
   test "stale cost preview requires reload and disabled reporting rejects a pending mutation", %{

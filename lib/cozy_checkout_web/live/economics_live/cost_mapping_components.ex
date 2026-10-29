@@ -419,7 +419,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.CostMappingComponents do
             class="block bg-base-200/50 lg:table-row"
           >
             <td colspan="8" class="block whitespace-normal break-words p-4 lg:table-cell">
-              <p><strong>Důvod:</strong> {row.reason}</p>
+              <p><strong>Důvod:</strong> {row.reason || "Neuveden"}</p>
               <dl class="mt-3 grid gap-2 text-xs sm:grid-cols-2">
                 <div>
                   <dt class="font-semibold">ID zdroje</dt><dd class="break-all">{@source_id}</dd>

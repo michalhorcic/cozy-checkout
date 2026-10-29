@@ -410,7 +410,7 @@ defmodule CozyCheckout.Economics.CostMappingTest do
              assert {:ok, [%{status: :unclassified}]} = Economics.cost_draft_items(data, [], [])
 
              assert {:error, %Ecto.Changeset{}} =
-                      Economics.cost_draft_items(data, [rule(%{"reason" => ""})], [])
+                      Economics.cost_draft_items(data, [rule(%{"account" => nil})], [])
            end) == 0
 
     assert {:ok, %{version: nil, items: [%{status: :unclassified}]}} = Economics.costs()
@@ -483,6 +483,42 @@ defmodule CozyCheckout.Economics.CostMappingTest do
 
     assert {:error, :invalid_partner_name} =
              preview(base, [rule(%{"partner_name" => "Firma druhého zdroje"})])
+  end
+
+  test "rules and overrides publish without reasons while the version note and estimate evidence stay required",
+       %{base: base, snapshot: snapshot} do
+    [bundle] = Costs.bundles(snapshot.payload["months"])
+    rules = [rule(%{"reason" => nil})]
+
+    overrides = [
+      %{
+        "account" => bundle.account,
+        "module" => bundle.module,
+        "document_id" => bundle.document_id,
+        "month" => bundle.month,
+        "fingerprint" => bundle.fingerprint,
+        "behavior" => "fixed"
+      }
+    ]
+
+    assert {:error, :invalid_note} = Economics.preview_cost_mapping(rules, overrides, "  ", base)
+
+    assert {:error, %Ecto.Changeset{}} =
+             preview(base, [
+               rule(%{"behavior" => "mixed", "fixed_percent" => "50", "reason" => nil})
+             ])
+
+    assert {:error, %Ecto.Changeset{}} =
+             preview(base, [], [
+               Map.merge(hd(overrides), %{"behavior" => "mixed", "fixed_percent" => "0"})
+             ])
+
+    assert {:ok, p} = preview(base, rules, overrides)
+    assert {:ok, version} = Economics.publish_cost_mapping(p.token)
+    assert version.note == "Kontrola mapování s majitelem"
+    assert [%{reason: nil}] = Repo.all(CostRule)
+    assert [%{reason: nil}] = Repo.all(CostOverride)
+    assert Repo.get!(Snapshot, snapshot.id).payload == snapshot.payload
   end
 
   test "invalid range and invalid version input are rejected without UUID casts" do
