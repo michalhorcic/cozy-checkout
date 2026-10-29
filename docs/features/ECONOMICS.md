@@ -70,7 +70,7 @@ vyžadují další nezávislé účetní srovnání před ostrým zapnutím.
 
 ## Obsluha v administraci
 
-Po zapnutí je v navigaci Finance a přehledy položka **Ekonomika firmy**
+Po zapnutí je v hlavní navigaci vedle Dokladů položka **Ekonomika firmy**
 (`/admin/economics`). Přehled, `/admin/economics/settings` i detail účtu
 `/admin/economics/accounts/:account` chrání existující admin PIN a LiveView
 session. Vypnutý modul přesměruje přímé otevření na admin přehled.

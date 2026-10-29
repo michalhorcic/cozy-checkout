@@ -80,6 +80,16 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     refute html =~ "never-render-this-secret"
     assert has_element?(view, "#economics-report")
     assert has_element?(view, "#economics-accounts")
+
+    assert has_element?(
+             view,
+             "#admin-desktop > a[href='/admin/economics'][aria-current='page']",
+             "Ekonomika firmy"
+           )
+
+    refute has_element?(view, "#admin-desktop-more a[href='/admin/economics']")
+    refute has_element?(view, "#admin-desktop-more[open]")
+    assert has_element?(view, "#admin-mobile-navigation a[href='/admin/economics']")
     view |> element("#economics-import") |> render_click()
     assert_enqueued(worker: SyncWorker, args: %{period: "current"})
     assert has_element?(view, "#economics-report")
@@ -100,6 +110,12 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
 
     assert html =~ "602001"
     assert has_element?(detail, "#economics-movements")
+
+    assert has_element?(
+             detail,
+             "#admin-desktop > a[href='/admin/economics'][aria-current='page']"
+           )
+
     expected_amount = CurrencyHelper.format_currency(Decimal.new("120"))
     assert has_element?(detail, "#economics-movements tbody tr td:nth-child(5)", expected_amount)
   end
@@ -134,6 +150,10 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
 
   test "disabled module hides navigation and rejects direct LiveView access", %{conn: conn} do
     Application.put_env(:cozy_checkout, :economics, enabled: false)
+
+    refute Enum.any?(CozyCheckoutWeb.AdminNavigation.primary(), fn {_, path, _} ->
+             path == "/admin/economics"
+           end)
 
     refute Enum.any?(CozyCheckoutWeb.AdminNavigation.groups(), fn {_, links} ->
              Enum.any?(links, fn {_, path} -> path == "/admin/economics" end)
