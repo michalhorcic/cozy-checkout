@@ -393,6 +393,29 @@ defmodule CozyCheckout.Economics.CostMappingTest do
     end
   end
 
+  test "draft classification uses loaded data without queries or changing the active mapping" do
+    assert {:ok, data} = Economics.costs()
+
+    assert count_queries(fn ->
+             assert {:ok, [%{status: :classified, behavior: "fixed"}]} =
+                      Economics.cost_draft_items(data, [rule(%{"behavior" => "fixed"})], [])
+
+             assert {:ok, [%{status: :conflict}]} =
+                      Economics.cost_draft_items(
+                        data,
+                        [rule(), rule(%{"behavior" => "fixed"})],
+                        []
+                      )
+
+             assert {:ok, [%{status: :unclassified}]} = Economics.cost_draft_items(data, [], [])
+
+             assert {:error, %Ecto.Changeset{}} =
+                      Economics.cost_draft_items(data, [rule(%{"reason" => ""})], [])
+           end) == 0
+
+    assert {:ok, %{version: nil, items: [%{status: :unclassified}]}} = Economics.costs()
+  end
+
   test "invalid range and invalid version input are rejected without UUID casts" do
     assert {:error, :invalid_range} = Economics.costs(%{"from" => "2020-01"})
     assert {:error, :invalid_version} = Economics.costs(%{"version" => "bad-uuid"})

@@ -231,6 +231,18 @@ samostatně a mapování ji nemění.
    Změna snapshotů nebo aktivní verze od náhledu publikaci odmítne; náhled
    také vyprší po hodině. Obnovte data a připravte jej znovu.
 
+Přímo v Mapování je vedle formuláře seznam nevyřešených podkladů pro
+vybrané období a měsíce (na mobilu nad formulářem). Lze hledat podle firmy,
+čísla dokladu, účtu nebo popisu a listovat po 20 podkladech. Z podkladu
+zvolte pravidlo nebo výjimku; vedle formuláře zůstane jeho identifikace.
+Po uložení položky se seznam přepočítá podle celého rozpracovaného návrhu,
+takže zmizí i další doklady pokryté stejným pravidlem. Další podklad si
+uživatel vybírá ručně. Konflikty a pozastavené výjimky zůstávají k řešení;
+po úpravě nebo odebrání pravidla se může podklad znovu objevit.
+Pravidla a výjimky jsou pod formulářem ve sbaleném seznamu. Více změn lze
+připravit a poté publikovat v jediné verzi. Průběžný seznam používá už
+načtené podklady bez dalších SQL nebo HTTP dotazů a nemění publikované součty.
+
 Přednost: výjimka, účet + firma + text, účet + firma, účet + text, účet.
 Rozdílné výsledky stejné přednosti vytvoří konflikt a částku nezařadí.
 Shodné výsledky zůstanou dohledatelné se všemi odpovídajícími pravidly.

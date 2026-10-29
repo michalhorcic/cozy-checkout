@@ -112,6 +112,7 @@ defmodule CozyCheckout.Economics.CostMapping do
                overrides: overrides,
                report: report,
                items: items,
+               classification_months: months,
                totals: Costs.totals(items),
                monthly:
                  Enum.map(report.months, fn month ->
@@ -196,6 +197,15 @@ defmodule CozyCheckout.Economics.CostMapping do
 
       {to_string(field), value}
     end)
+  end
+
+  def draft_items(data, rule_attrs, override_attrs) do
+    with {:ok, rules} <- validate(rule_attrs, CostRule),
+         {:ok, overrides} <- validate(override_attrs, CostOverride) do
+      selected = MapSet.new(data.items, & &1.key)
+      result = Costs.classify(data.classification_months, rules, overrides)
+      {:ok, Enum.filter(result.items, &MapSet.member?(selected, &1.key))}
+    end
   end
 
   def preview(rule_attrs, override_attrs, note, expected_base)

@@ -88,6 +88,9 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
           draft_rules: Enum.map(data.rules, &CostMapping.rule_attrs/1),
           draft_overrides: Enum.map(data.overrides, &CostMapping.override_attrs/1),
           draft_base: %{source_id: data.source.id, version_id: version_id(data.active_version)},
+          draft_items: data.items,
+          mapping_query: "",
+          mapping_page: 1,
           editable: editable,
           preview: nil,
           accounts: accounts,
@@ -186,6 +189,18 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
          put_flash(socket, :error, "Úpravy jsou dostupné v aktuálním snapshotu a aktivní verzi.")}
   end
 
+  defp edit_event("mapping-search", %{"mapping_search" => %{"query" => query}}, socket) do
+    {:noreply, assign(socket, mapping_query: query, mapping_page: 1)}
+  end
+
+  defp edit_event("mapping-page", %{"direction" => direction}, socket) do
+    delta = if direction == "next", do: 1, else: -1
+    pages = mapping_pages(socket.assigns.draft_items, socket.assigns.mapping_query)
+
+    {:noreply,
+     assign(socket, mapping_page: max(1, min(pages, socket.assigns.mapping_page + delta)))}
+  end
+
   defp edit_event("editor-change", %{"editor" => attrs}, socket) do
     {:noreply, update_editor(socket, attrs)}
   end
@@ -264,6 +279,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
            edit_kind: kind,
            edit_index: existing,
            editor: to_form(attrs, as: :editor),
+           mapping_item: item,
            picker_queries: %{},
            picker_open: nil,
            preview: nil
@@ -291,6 +307,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
            edit_kind: kind,
            edit_index: String.to_integer(index),
            editor: to_form(attrs, as: :editor),
+           mapping_item: nil,
            picker_queries: %{},
            picker_open: nil,
            preview: nil
@@ -308,6 +325,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
        socket
        |> assign(key, List.delete_at(rows, String.to_integer(index)))
        |> assign(preview: nil)
+       |> refresh_draft_items()
        |> reset_editor()}
     else
       {:noreply, socket}
@@ -346,6 +364,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
          socket
          |> assign(key, rows)
          |> assign(preview: nil)
+         |> refresh_draft_items()
          |> reset_editor()
          |> put_flash(
            :info,
@@ -365,7 +384,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
           else: rules ++ [suggestion]
       end)
 
-    {:noreply, assign(socket, draft_rules: rules, preview: nil)}
+    {:noreply, socket |> assign(draft_rules: rules, preview: nil) |> refresh_draft_items()}
   end
 
   defp edit_event("preview", %{"publication" => %{"note" => note}}, socket) do
@@ -406,6 +425,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
     assign(socket,
       edit_kind: "rule",
       edit_index: nil,
+      mapping_item: nil,
       picker_queries: %{},
       picker_open: nil,
       editor:
@@ -425,6 +445,52 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
         )
     )
   end
+
+  defp refresh_draft_items(socket) do
+    {:ok, items} =
+      Economics.cost_draft_items(
+        socket.assigns.data,
+        socket.assigns.draft_rules,
+        socket.assigns.draft_overrides
+      )
+
+    page = min(socket.assigns.mapping_page, mapping_pages(items, socket.assigns.mapping_query))
+    assign(socket, draft_items: items, mapping_page: page)
+  end
+
+  defp mapping_items(items, query) do
+    words = query |> String.downcase() |> String.split()
+
+    items
+    |> Enum.with_index()
+    |> Enum.filter(fn {item, _} ->
+      text =
+        ([item.account, item.name, item.module, item.document_id, item.month] ++
+           Enum.flat_map(item.rows, fn row ->
+             info = row["identification"] || %{}
+
+             Enum.map(
+               [
+                 "company",
+                 "document_number",
+                 "description",
+                 "variable_symbol",
+                 "supplier_number"
+               ],
+               &info[&1]
+             )
+           end))
+        |> Enum.join(" ")
+        |> String.downcase()
+
+      item.status != :classified and Enum.all?(words, &String.contains?(text, &1))
+    end)
+  end
+
+  defp mapping_pages(items, query), do: max(1, div(length(mapping_items(items, query)) + 19, 20))
+
+  defp mapping_page_items(items, query, page),
+    do: items |> mapping_items(query) |> Enum.slice((page - 1) * 20, 20)
 
   defp update_editor(socket, attrs) do
     # Identity of an exception comes exclusively from the chosen local bundle.
@@ -764,176 +830,323 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
           <p :if={@partners == []} class="alert">
             Snapshot neobsahuje ověřená interní ID firem. Lze použít účet, text nebo výjimku. Názvy firem nejsou identifikátory.
           </p>
-          <div
+          <details
             :if={@editable && @suggestions != []}
             class="rounded-xl border border-base-300 p-4 space-y-2"
           >
+            <summary class="cursor-pointer font-semibold">Pracovní návrhy pro běžné náklady</summary>
             <p :for={suggestion <- @suggestions}>
               {suggestion["account"]} · {behavior(suggestion["behavior"])} · {suggestion["reason"]}
             </p>
             <button id="cost-suggestions" phx-click="suggestions" class="btn btn-outline">Přidat návrhy pro účty bez pravidla</button>
             <p class="text-sm">Návrhy se aktivují teprve po náhledu a výslovném publikování.</p>
-          </div>
-          <div id="cost-draft-rules" class="space-y-2">
-            <article
-              :for={{rule, index} <- Enum.with_index(@draft_rules)}
-              class="rounded-lg border border-base-300 p-3"
+          </details>
+          <div
+            :if={@editable}
+            id="cost-mapping-workbench"
+            class="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] items-start"
+          >
+            <aside
+              class="min-w-0 rounded-xl border border-base-300 p-4 space-y-3"
+              aria-label="Nevyřešené podklady k mapování"
             >
-              <p>
-                {rule["account"]} · firma {rule["partner_id"] || "libovolná"} · popis obsahuje {rule[
-                  "description_contains"
-                ] || "—"} · {rule["valid_from"]} až {rule["valid_to"] || "bez konce"} · {behavior(
-                  rule["behavior"]
-                )} · {if rule["extraordinary"], do: "mimořádné"} · fixní podíl {rule["fixed_percent"] ||
-                  "neurčen"}
-              </p><p>{rule["reason"]}</p>
-              <button
-                :if={@editable}
-                phx-click="edit-entry"
-                phx-value-kind="rule"
-                phx-value-index={index}
-                class="btn btn-xs"
-              >Upravit</button>
-              <button
-                :if={@editable}
-                phx-click="remove-entry"
-                phx-value-kind="rule"
-                phx-value-index={index}
-                class="btn btn-xs btn-outline"
-              >Odebrat z nové verze</button>
-            </article>
-          </div>
-          <div id="cost-draft-overrides" class="space-y-2">
-            <article
-              :for={{override, index} <- Enum.with_index(@draft_overrides)}
-              class="rounded-lg border border-base-300 p-3"
-            >
-              <p>
-                Výjimka {override["module"]} / {override["document_id"]} / {override["account"]} / {override[
-                  "month"
-                ]} · {behavior(override["behavior"])} · {if override["extraordinary"], do: "mimořádné"} · {override[
-                  "reason"
-                ]}
+              <h3 class="text-lg font-semibold">Nevyřešené podklady</h3>
+              <p id="cost-mapping-progress" role="status" aria-live="polite">
+                Nevyřešené podklady podle návrhu: {Enum.count(
+                  @draft_items,
+                  &(&1.status != :classified)
+                )}.
               </p>
-              <p
-                :if={
-                  Enum.any?(@data.missing_overrides, &(CostMapping.override_attrs(&1) == override))
-                }
-                class="text-warning"
+              <p class="text-sm text-base-content/70">
+                Po uložení zmizí všechny podklady vyřešené tímto návrhem. Další vyberte ručně. Aktivní verze se změní až publikací.
+              </p>
+              <.form
+                for={to_form(%{"query" => @mapping_query}, as: :mapping_search)}
+                id="cost-mapping-search"
+                phx-change="mapping-search"
               >
-                Podklad v tomto snapshotu chybí nebo byl přesunut. Výjimka vyžaduje kontrolu.
-              </p>
-              <button
-                :if={@editable}
-                phx-click="edit-entry"
-                phx-value-kind="override"
-                phx-value-index={index}
-                class="btn btn-xs"
-              >Upravit</button>
-              <button
-                :if={@editable}
-                phx-click="remove-entry"
-                phx-value-kind="override"
-                phx-value-index={index}
-                class="btn btn-xs btn-outline"
-              >Odebrat z nové verze</button>
-            </article>
-          </div>
-          <div :if={@editable} class="rounded-xl border border-base-300 p-5 space-y-4">
-            <button phx-click="new-rule" class="btn btn-sm btn-outline">Nové pravidlo</button>
-            <h3 class="font-semibold">
-              {if @edit_kind == "override", do: "Výjimka pro celý podklad", else: "Pravidlo"}
-            </h3>
-            <p :if={@edit_kind == "override"}>
-              {@editor.params["module"]} / {@editor.params["document_id"]} · účet {@editor.params[
-                "account"
-              ]} · měsíc {@editor.params["month"]}. Platí pro všechny zápisy tohoto podkladu; finanční změna vyžádá novou kontrolu.
-            </p>
-            <.form
-              for={@editor}
-              id="cost-editor"
-              phx-change="editor-change"
-              phx-submit="save-entry"
-              class="grid gap-4 sm:grid-cols-2"
+                <.input
+                  type="search"
+                  name="mapping_search[query]"
+                  value={@mapping_query}
+                  label="Hledat firmu, doklad, účet nebo popis"
+                  phx-debounce="200"
+                />
+              </.form>
+              <div class="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  phx-click="mapping-page"
+                  phx-value-direction="previous"
+                  disabled={@mapping_page <= 1}
+                  class="btn btn-sm"
+                >Předchozí</button>
+                <span>{@mapping_page} / {mapping_pages(@draft_items, @mapping_query)}</span>
+                <button
+                  type="button"
+                  phx-click="mapping-page"
+                  phx-value-direction="next"
+                  disabled={@mapping_page >= mapping_pages(@draft_items, @mapping_query)}
+                  class="btn btn-sm"
+                >Další</button>
+              </div>
+              <div
+                id="cost-mapping-queue"
+                class="max-h-72 space-y-3 overflow-y-auto pr-1 sm:max-h-96 lg:max-h-[65vh]"
+              >
+                <article
+                  :for={
+                    {item, index} <- mapping_page_items(@draft_items, @mapping_query, @mapping_page)
+                  }
+                  id={"cost-mapping-item-#{index}"}
+                  class={[
+                    "rounded-lg border p-3 space-y-2",
+                    if(@mapping_item && @mapping_item.key == item.key,
+                      do: "border-primary bg-primary/5",
+                      else: "border-base-300"
+                    )
+                  ]}
+                >
+                  <p class="font-semibold">
+                    {(hd(item.rows)["identification"] || %{})["company"] || "Firma neuvedena"}
+                  </p>
+                  <p>
+                    {(hd(item.rows)["identification"] || %{})["document_number"] ||
+                      "#{item.module} / #{item.document_id}"}
+                  </p>
+                  <p class="text-sm">
+                    {item.account} · {String.slice(item.month, 0, 7)} · {amount(item.amount)}
+                  </p>
+                  <p class="text-sm">{status(item.status)}</p>
+                  <p :for={match <- item.matches} class="text-xs text-base-content/70">
+                    {match.reason}
+                  </p>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      phx-click={JS.push("from-item") |> JS.focus(to: "#cost-mapping-editor")}
+                      phx-value-index={index}
+                      phx-value-kind="rule"
+                      class="btn btn-sm"
+                    >Pravidlo pro další doklady</button>
+                    <button
+                      type="button"
+                      phx-click={JS.push("from-item") |> JS.focus(to: "#cost-mapping-editor")}
+                      phx-value-index={index}
+                      phx-value-kind="override"
+                      class="btn btn-sm btn-outline"
+                    >Jen tento podklad</button>
+                  </div>
+                </article>
+                <p
+                  :if={mapping_items(@draft_items, @mapping_query) == []}
+                  id="cost-mapping-empty"
+                  class="rounded-lg bg-base-200 p-4"
+                >
+                  {if Enum.any?(@draft_items, &(&1.status != :classified)),
+                    do: "Hledání neodpovídá žádný nevyřešený podklad.",
+                    else:
+                      "Všechny podklady ve vybraném období jsou podle návrhu vyřešené. Můžete přejít k náhledu a publikaci."}
+                </p>
+              </div>
+            </aside>
+            <div
+              id="cost-mapping-editor"
+              tabindex="-1"
+              class="min-w-0 rounded-xl border border-base-300 p-5 space-y-4 lg:sticky lg:top-4 lg:self-start"
             >
-              <.searchable_picker
-                :if={@edit_kind == "rule"}
-                field={@editor[:account]}
-                options={@accounts}
-                index="account"
-                label="Přesný nákladový účet"
-                query={@picker_queries["account"]}
-                open={@picker_open == "account"}
-                search_name="picker_query"
-                search_event="picker-search"
-                open_event="picker-open"
-                close_event="picker-close"
-                select_event="picker-select"
-              />
-              <div :if={@edit_kind == "rule"}>
+              <button phx-click="new-rule" class="btn btn-sm btn-outline">Nové pravidlo</button>
+              <h3 class="font-semibold">
+                {if @edit_kind == "override", do: "Výjimka pro celý podklad", else: "Pravidlo"}
+              </h3>
+              <p :if={@edit_kind == "override"}>
+                {@editor.params["module"]} / {@editor.params["document_id"]} · účet {@editor.params[
+                  "account"
+                ]} · měsíc {@editor.params["month"]}. Platí pro všechny zápisy tohoto podkladu; finanční změna vyžádá novou kontrolu.
+              </p>
+              <div
+                :if={@mapping_item}
+                id="cost-mapping-selected"
+                class="rounded-lg bg-base-200 p-3 space-y-3"
+              >
+                <p class="font-semibold">
+                  Vybraný podklad · {@mapping_item.account} · {String.slice(@mapping_item.month, 0, 7)} · {amount(
+                    @mapping_item.amount
+                  )}
+                </p>
+                <div :for={row <- @mapping_item.rows}>
+                  <.document_identity record={row} />
+                  <p
+                    :if={get_in(row, ["identification", "description_truncated"])}
+                    class="text-sm text-warning"
+                  >
+                    Popis byl zkrácen.
+                  </p>
+                </div>
+              </div>
+              <.form
+                for={@editor}
+                id="cost-editor"
+                phx-change="editor-change"
+                phx-submit="save-entry"
+                class="grid gap-4 sm:grid-cols-2"
+              >
                 <.searchable_picker
-                  field={@editor[:partner_id]}
-                  options={@partners}
-                  index="partner_id"
-                  label="Firma (volitelná)"
-                  required={false}
-                  query={@picker_queries["partner_id"]}
-                  open={@picker_open == "partner_id"}
+                  :if={@edit_kind == "rule"}
+                  field={@editor[:account]}
+                  options={@accounts}
+                  index="account"
+                  label="Přesný nákladový účet"
+                  query={@picker_queries["account"]}
+                  open={@picker_open == "account"}
                   search_name="picker_query"
                   search_event="picker-search"
                   open_event="picker-open"
                   close_event="picker-close"
                   select_event="picker-select"
                 />
-                <button type="button" phx-click="clear-partner" class="btn btn-xs">Libovolná firma</button>
-              </div>
-              <.input
-                :if={@edit_kind == "rule"}
-                field={@editor[:description_contains]}
-                label="Popis obsahuje (bez rozlišení velikosti písmen)"
-                maxlength="500"
-              />
-              <.input
-                :if={@edit_kind == "rule"}
-                field={@editor[:valid_from]}
-                type="month"
-                label="Platnost od měsíce včetně"
-                required
-              />
-              <.input
-                :if={@edit_kind == "rule"}
-                field={@editor[:valid_to]}
-                type="month"
-                label="Platnost do měsíce včetně (volitelné)"
-              />
-              <.input
-                field={@editor[:behavior]}
-                type="select"
-                label="Chování nákladu"
-                options={@behaviors}
-              />
-              <.input
-                field={@editor[:extraordinary]}
-                type="checkbox"
-                label="Mimořádný náklad (samostatný příznak)"
-              />
-              <.input
-                field={@editor[:fixed_percent]}
-                type="number"
-                label="Ruční odhad fixního podílu % (jen smíšené; prázdné = nerozdělovat)"
-                min="0"
-                max="100"
-                step="0.000001"
-              />
-              <.input
-                field={@editor[:reason]}
-                type="textarea"
-                label="Důvod / podklad odhadu"
-                required
-                maxlength="1000"
-              />
-              <button type="submit" class="btn btn-primary sm:col-span-2">Uložit položku do návrhu</button>
-            </.form>
+                <div :if={@edit_kind == "rule"}>
+                  <.searchable_picker
+                    field={@editor[:partner_id]}
+                    options={@partners}
+                    index="partner_id"
+                    label="Firma (volitelná)"
+                    required={false}
+                    query={@picker_queries["partner_id"]}
+                    open={@picker_open == "partner_id"}
+                    search_name="picker_query"
+                    search_event="picker-search"
+                    open_event="picker-open"
+                    close_event="picker-close"
+                    select_event="picker-select"
+                  />
+                  <button type="button" phx-click="clear-partner" class="btn btn-xs">Libovolná firma</button>
+                </div>
+                <.input
+                  :if={@edit_kind == "rule"}
+                  field={@editor[:description_contains]}
+                  label="Popis obsahuje (bez rozlišení velikosti písmen)"
+                  maxlength="500"
+                />
+                <.input
+                  :if={@edit_kind == "rule"}
+                  field={@editor[:valid_from]}
+                  type="month"
+                  label="Platnost od měsíce včetně"
+                  required
+                />
+                <.input
+                  :if={@edit_kind == "rule"}
+                  field={@editor[:valid_to]}
+                  type="month"
+                  label="Platnost do měsíce včetně (volitelné)"
+                />
+                <.input
+                  field={@editor[:behavior]}
+                  type="select"
+                  label="Chování nákladu"
+                  options={@behaviors}
+                />
+                <.input
+                  field={@editor[:extraordinary]}
+                  type="checkbox"
+                  label="Mimořádný náklad (samostatný příznak)"
+                />
+                <.input
+                  field={@editor[:fixed_percent]}
+                  type="number"
+                  label="Ruční odhad fixního podílu % (jen smíšené; prázdné = nerozdělovat)"
+                  min="0"
+                  max="100"
+                  step="0.000001"
+                />
+                <.input
+                  field={@editor[:reason]}
+                  type="textarea"
+                  label="Důvod / podklad odhadu"
+                  required
+                  maxlength="1000"
+                />
+                <button type="submit" class="btn btn-primary sm:col-span-2">Uložit položku do návrhu</button>
+              </.form>
+            </div>
+          </div>
+          <details id="cost-mapping-entries" class="rounded-xl border border-base-300 p-4 space-y-3">
+            <summary class="cursor-pointer font-semibold">
+              Pravidla a výjimky v návrhu · {length(@draft_rules)} pravidel · {length(
+                @draft_overrides
+              )} výjimek
+            </summary>
+            <div id="cost-draft-rules" class="space-y-2">
+              <article
+                :for={{rule, index} <- Enum.with_index(@draft_rules)}
+                class="rounded-lg border border-base-300 p-3"
+              >
+                <p>
+                  {rule["account"]} · firma {rule["partner_id"] || "libovolná"} · popis obsahuje {rule[
+                    "description_contains"
+                  ] || "—"} · {rule["valid_from"]} až {rule["valid_to"] || "bez konce"} · {behavior(
+                    rule["behavior"]
+                  )} · {if rule["extraordinary"], do: "mimořádné"} · fixní podíl {rule[
+                    "fixed_percent"
+                  ] ||
+                    "neurčen"}
+                </p><p>{rule["reason"]}</p>
+                <button
+                  :if={@editable}
+                  phx-click="edit-entry"
+                  phx-value-kind="rule"
+                  phx-value-index={index}
+                  class="btn btn-xs"
+                >Upravit</button>
+                <button
+                  :if={@editable}
+                  phx-click="remove-entry"
+                  phx-value-kind="rule"
+                  phx-value-index={index}
+                  class="btn btn-xs btn-outline"
+                >Odebrat z nové verze</button>
+              </article>
+            </div>
+            <div id="cost-draft-overrides" class="space-y-2">
+              <article
+                :for={{override, index} <- Enum.with_index(@draft_overrides)}
+                class="rounded-lg border border-base-300 p-3"
+              >
+                <p>
+                  Výjimka {override["module"]} / {override["document_id"]} / {override["account"]} / {override[
+                    "month"
+                  ]} · {behavior(override["behavior"])} · {if override["extraordinary"],
+                    do: "mimořádné"} · {override[
+                    "reason"
+                  ]}
+                </p>
+                <p
+                  :if={
+                    Enum.any?(@data.missing_overrides, &(CostMapping.override_attrs(&1) == override))
+                  }
+                  class="text-warning"
+                >
+                  Podklad v tomto snapshotu chybí nebo byl přesunut. Výjimka vyžaduje kontrolu.
+                </p>
+                <button
+                  :if={@editable}
+                  phx-click="edit-entry"
+                  phx-value-kind="override"
+                  phx-value-index={index}
+                  class="btn btn-xs"
+                >Upravit</button>
+                <button
+                  :if={@editable}
+                  phx-click="remove-entry"
+                  phx-value-kind="override"
+                  phx-value-index={index}
+                  class="btn btn-xs btn-outline"
+                >Odebrat z nové verze</button>
+              </article>
+            </div>
+          </details>
+          <div :if={@editable} class="rounded-xl border border-base-300 p-5 space-y-4">
             <.form
               for={to_form(%{"note" => @note}, as: :publication)}
               id="cost-preview-form"

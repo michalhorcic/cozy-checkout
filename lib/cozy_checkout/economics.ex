@@ -186,6 +186,9 @@ defmodule CozyCheckout.Economics do
 
   def costs(params \\ %{}), do: CozyCheckout.Economics.CostMapping.workspace(params)
 
+  def cost_draft_items(data, rules, overrides),
+    do: CozyCheckout.Economics.CostMapping.draft_items(data, rules, overrides)
+
   def preview_cost_mapping(rules, overrides, note, base),
     do: CozyCheckout.Economics.CostMapping.preview(rules, overrides, note, base)
 
