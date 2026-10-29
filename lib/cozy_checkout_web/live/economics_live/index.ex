@@ -268,7 +268,14 @@ defmodule CozyCheckoutWeb.EconomicsLive.Index do
                 </tr>
               </thead><tbody>
                 <tr :for={balance <- @report.balances}>
-                  <td>{balance["account"]}</td><td>{balance["name"]}</td><td>
+                  <td>
+                    <.link
+                      navigate={
+                        ~p"/admin/economics/accounts/#{balance["account"]}?#{%{period: @data.snapshot.period_code, from: @report.from, to: @report.to}}"
+                      }
+                      class="link link-primary"
+                    >{balance["account"]}</.link>
+                  </td><td>{balance["name"]}</td><td>
                     {money(balance["opening"])}
                   </td><td>{money(balance["closing"])}</td>
                 </tr>
@@ -302,7 +309,9 @@ defmodule CozyCheckoutWeb.EconomicsLive.Index do
             <table class="table">
               <thead>
                 <tr>
-                  <th>Druh</th><th>Reference ABRA</th><th>Splatnost</th><th>Zbývalo k datu</th>
+                  <th>Druh</th><th>Firma a doklad · popis</th><th>Splatnost</th><th>
+                    Zbývalo k datu
+                  </th>
                 </tr>
               </thead><tbody>
                 <tr
@@ -310,7 +319,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Index do
                   :if={item["amount"] != "0"}
                 >
                   <td>{if item["kind"] == "receivable", do: "Pohledávka", else: "Závazek"}</td><td>
-                    {item["module"]} / {item["document_id"]}
+                    <.document_identity record={item} />
                   </td><td>{item["due"] || "Splatnost neznámá"}</td><td>{money(item["amount"])}</td>
                 </tr>
               </tbody>

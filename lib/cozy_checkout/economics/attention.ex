@@ -214,5 +214,5 @@ defmodule CozyCheckout.Economics.Attention do
       Enum.reduce(rows, @zero, &Decimal.add(Reports.number!(&1[field]), &2))
       |> Decimal.to_string(:normal)
 
-  defp key(month), do: {month["from"], Reports.fingerprint(month)}
+  defp key(month), do: {month["from"], Reports.month_fingerprint(month)}
 end

@@ -46,13 +46,26 @@ defmodule CozyCheckout.Economics.AbraClientTest do
     end
   end
 
-  test "movement requests restrict date and posting state, GET only, without personal fields" do
+  test "movement requests include document identification without addresses or contact details" do
     Req.Test.expect(AbraClient, fn conn ->
       conn = Plug.Conn.fetch_query_params(conn)
       assert conn.method == "GET"
       assert URI.decode(conn.request_path) =~ "(datUcto >= 2026-09-01 and datUcto <= 2026-09-30)"
       assert conn.query_params["postingState"] == "posted"
-      refute conn.query_params["detail"] =~ "nazFirmy"
+
+      for field <- ["doklad", "nazFirmy", "popis", "varSym", "cisDosle", "protiUcet"] do
+        assert field in String.split(
+                 String.replace_prefix(conn.query_params["detail"], "custom:", ""),
+                 ","
+               )
+      end
+
+      for field <- ["ulice", "email", "telefon", "poznam"] do
+        refute field in String.split(
+                 String.replace_prefix(conn.query_params["detail"], "custom:", ""),
+                 ","
+               )
+      end
 
       assert Plug.Conn.get_req_header(conn, "authorization") == [
                "Basic " <> Base.encode64("reader:secret")
@@ -101,6 +114,11 @@ defmodule CozyCheckout.Economics.AbraClientTest do
       assert params["datum"] == "2026-09-30"
       assert params["dleUcto"] == "true"
       refute params["detail"] =~ "zbyvaUhradit"
+
+      for field <- ["kod", "nazFirmy", "popis", "varSym", "cisDosle"] do
+        assert field in String.split(String.replace_prefix(params["detail"], "custom:", ""), ",")
+      end
+
       Req.Test.json(conn, %{"winstrom" => %{"saldo-k-datu" => []}})
     end)
 

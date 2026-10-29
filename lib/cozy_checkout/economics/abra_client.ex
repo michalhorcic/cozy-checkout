@@ -4,9 +4,9 @@ defmodule CozyCheckout.Economics.AbraClient do
 
   @page_size 1000
   @max_pages 100
-  @movement_fields "idUcetniDenik,idDokl,modul,ucet,protiUcet,datUcto,sumTuzMd,sumTuzDal,zuctovano,mena"
+  @movement_fields "idUcetniDenik,idDokl,modul,ucet,protiUcet,datUcto,sumTuzMd,sumTuzDal,zuctovano,mena,doklad,nazFirmy,firma,popis,varSym,cisDosle"
   @balance_fields "ucet,ucetniObdobi,mena,pocatekMd,pocatekDal,pocatekMesic,obratMdVyb,obratDalVyb,zustatekMd,zustatekDal"
-  @saldo_fields "idSaldoKdatu,idDokl,modul,datUcto,datSplat,sumCelkem,sumCelkemAkt,juhSumDat,mena,storno"
+  @saldo_fields "idSaldoKdatu,idDokl,modul,datUcto,datSplat,sumCelkem,sumCelkemAkt,juhSumDat,mena,storno,kod,nazFirmy,firma,popis,varSym,cisDosle"
 
   def periods, do: fetch("ucetni-obdobi", "kod,platiOdData,platiDoData", [], "id")
   def accounts, do: fetch("ucet", "kod,nazev,typUctuK,druhUctuK", [], "id")

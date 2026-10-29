@@ -98,6 +98,19 @@ defmodule CozyCheckout.Economics.Reports do
     Enum.reject(items, &(not is_nil(&1["amount"]) and Decimal.equal?(number!(&1["amount"]), 0)))
   end
 
+  @doc "Financial confirmation hash, compatible with snapshots predating document labels."
+  def month_fingerprint(month) do
+    month
+    |> Map.update!("movements", fn rows ->
+      Enum.map(rows, &Map.delete(&1, "identification")) |> Enum.sort()
+    end)
+    |> Map.update!("open_items", fn rows ->
+      Enum.map(rows, &Map.delete(&1, "identification"))
+      |> Enum.sort_by(&{&1["module"], &1["document_id"]})
+    end)
+    |> fingerprint()
+  end
+
   def fingerprint(value),
     do: :crypto.hash(:sha256, :erlang.term_to_binary(value)) |> Base.encode16(case: :lower)
 
@@ -179,7 +192,8 @@ defmodule CozyCheckout.Economics.Reports do
       "currency" => currency,
       "journal_id" => text!(row["idUcetniDenik"]),
       "document_id" => text!(row["idDokl"]),
-      "module" => text!(row["modul"])
+      "module" => text!(row["modul"]),
+      "identification" => identification(row, "doklad")
     }
   end
 
@@ -242,9 +256,32 @@ defmodule CozyCheckout.Economics.Reports do
       "date" => to_string(booked),
       "due" => due,
       "amount" => amount,
-      "kind" => if(module in ["FAV", "PHL"], do: "receivable", else: "payable")
+      "kind" => if(module in ["FAV", "PHL"], do: "receivable", else: "payable"),
+      "identification" => identification(row, "kod")
     }
   end
+
+  defp identification(row, document_field) do
+    %{
+      "company" => optional_text(row["nazFirmy"], 200) || optional_text(row["firma@showAs"], 200),
+      "document_number" => optional_text(row[document_field], 120),
+      "description" => optional_text(row["popis"], 500),
+      "variable_symbol" => optional_text(row["varSym"], 120),
+      "supplier_number" => optional_text(row["cisDosle"], 120),
+      "counter_account" =>
+        optional_text(row["protiUcet@showAs"], 200) || optional_text(row["protiUcet"], 120)
+    }
+  end
+
+  defp optional_text(value, limit) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      text -> if String.length(text) > limit, do: String.slice(text, 0, limit) <> "…", else: text
+    end
+  end
+
+  defp optional_text(value, _limit) when is_integer(value), do: to_string(value)
+  defp optional_text(_, _), do: nil
 
   defp account!(catalog, code) do
     case Map.fetch(catalog, code) do
