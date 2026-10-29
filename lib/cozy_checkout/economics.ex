@@ -48,6 +48,14 @@ defmodule CozyCheckout.Economics do
   end
 
   def overview(params \\ %{}) do
+    if Enum.all?(["period", "from", "to"], &(is_nil(params[&1]) or is_binary(params[&1]))) do
+      do_overview(params)
+    else
+      {:error, :invalid_range}
+    end
+  end
+
+  defp do_overview(params) do
     with {:ok, source} <- current_source() do
       periods =
         Repo.all(
@@ -88,11 +96,12 @@ defmodule CozyCheckout.Economics do
     end
   end
 
-  def confirm_month(snapshot_id, month, evidence) do
+  def confirm_month(snapshot_id, month, evidence)
+      when is_binary(snapshot_id) and is_binary(month) and is_binary(evidence) do
     with {:ok, source} <- current_source(),
          {:ok, date} <- Date.from_iso8601(month),
          true <- date.day == 1 and Date.compare(Date.end_of_month(date), Date.utc_today()) == :lt,
-         true <- is_binary(evidence) and String.length(String.trim(evidence)) in 10..1000 do
+         true <- String.length(String.trim(evidence)) in 10..1000 do
       Repo.transaction(fn ->
         Repo.one!(from s in Source, where: s.id == ^source.id, lock: "FOR UPDATE")
 
@@ -122,6 +131,8 @@ defmodule CozyCheckout.Economics do
       _ -> {:error, :invalid_confirmation}
     end
   end
+
+  def confirm_month(_, _, _), do: {:error, :invalid_confirmation}
 
   def account_detail(params, code) do
     with {:ok, %{report: %{months: months} = report}} <- overview(params),

@@ -55,9 +55,11 @@ defmodule CozyCheckoutWeb.AdminNavigation do
        [
          {"Barové platby", "/admin/payments"},
          {"Ekonomika pobytů", "/admin/economy"},
+         if(CozyCheckout.Economics.enabled?(), do: {"Ekonomika firmy", "/admin/economics"}),
          {"Statistiky prodeje", "/admin/statistics"},
          {"Export POHODA", "/admin/pohoda-export"}
-       ]}
+       ]
+       |> Enum.reject(&is_nil/1)}
     ]
   end
 

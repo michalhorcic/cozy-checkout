@@ -68,6 +68,31 @@ položky, nesnižují nesouvisející dluhy. Starší otevřené doklady se čto
 spodního omezení data. Částečné úhrady, dobropisy a import starších dluhů
 vyžadují další nezávislé účetní srovnání před ostrým zapnutím.
 
+## Obsluha v administraci
+
+Po zapnutí je v navigaci Finance a přehledy položka **Ekonomika firmy**
+(`/admin/economics`). Přehled, `/admin/economics/settings` i detail účtu
+`/admin/economics/accounts/:account` chrání existující admin PIN a LiveView
+session. Vypnutý modul přesměruje přímé otevření na admin přehled.
+
+1. Na stránce Zdroj a úplnost zkontrolujte server a identifikátor firmy.
+   Tlačítkem Načíst celé období zařaďte `current` nebo skutečný kód období
+   z ABRY. Hesla se ve formulářích nezadávají ani nezobrazují.
+2. Po dokončení jobu klikněte na Obnovit přehled. Obrazovka čte pouze místní
+   snapshot a nespouští síťové dotazy. Chyba importu je viditelná i vedle
+   posledních úspěšných dat.
+3. Vyberte hospodářský rok a jeden či více měsíců; prázdné od/do znamená
+   celý dostupný rozsah. Změna roku použije skutečné hranice jeho snapshotu.
+4. Detail čísla účtu ukáže data účtování, strany MD/Dal a reference zápisů
+   a dokladů ABRA, bez osobních popisů. Tabulka salda řadí položky podle
+   splatnosti; dobropisy jsou oddělené od kladných pohledávek a závazků.
+5. Na stránce Zdroj a úplnost lze po dohodě s účetní potvrdit jednotlivý
+   ukončený měsíc a uvést podklad. Výchozí stav všech měsíců je Neověřeno.
+
+Graf měsíčního vývoje se vykresluje serverově, bez nového JavaScriptu.
+Peníze formátuje existující CurrencyHelper. Chybějící bankovní/pokladní
+účty nebo nepodporované saldo se zobrazují jako Nedostupné, nikoli nula.
+
 ## Verze a úplnost
 
 Nový snapshot vzniká bokem a publikuje se atomicky až po všech kontrolách.

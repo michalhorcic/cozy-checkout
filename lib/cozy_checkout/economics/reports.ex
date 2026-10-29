@@ -55,6 +55,12 @@ defmodule CozyCheckout.Economics.Reports do
            length(open_items),
          do: throw(:duplicate_open_item)
 
+      open_items =
+        Enum.reject(
+          open_items,
+          &(not is_nil(&1["amount"]) and Decimal.equal?(number!(&1["amount"]), 0))
+        )
+
       warnings = []
 
       warnings =

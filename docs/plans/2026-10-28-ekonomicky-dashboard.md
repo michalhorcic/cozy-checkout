@@ -1,11 +1,11 @@
 # Ekonomický dashboard firmy z ABRA Flexi
 
-- Stav: **návrh**; rozsah a oddělení modulu potvrzené, účetní podklady a živé API čekají na ověření. Implementace nezahájena.
+- Stav: **implementace připravena v PR**; čtecí API a kontrolní součty ověřeny, samostatný kontext, import a admin UI připraveny. CI ověří uživatel; účetní odsouhlasení a ostré zapnutí zbývají.
 - Vytvořeno: 2026-10-28
-- Aktualizováno: 2026-10-28
+- Aktualizováno: 2026-10-29
 - Zadání: přehled ekonomiky celé firmy pro uživatele bez účetní specializace; samostatně uspořádaný kód s minimálním dopadem na ostatní aplikaci.
 - Související: [Integrace ABRA](../integrations/ABRA_INTEGRATION.md), [ověření s účetní](../integrations/ABRA_ACCOUNTANT_REVIEW.md), [nákladovost kuchyně](2026-10-27-nakupy-a-nakladovost-kuchyne.md).
-- Tento PR ukládá plán, nikoli implementaci ani pokyn k nasazení.
+- Implementace navazuje třemi samostatnými PR; nejde o pokyn k ostrému zapnutí.
 
 ## Problém a očekávaný výsledek
 
@@ -165,9 +165,13 @@ publikaci příslušného výsledku jako úplného.
 
 ## API a synchronizace
 
-Oficiální dokumentace byla v chatu otevřena webovým nástrojem. Přímý přístup
-z vývojového prostředí byl blokovaný síťovou politikou; živá firemní ABRA
-nebyla volána. Zpřístupnění dokumentace není ověření firemního API.
+Dne 29. 10. 2026 byl ověřen GET přístup do testovací firmy pomocí lokálního
+`rel/env.sh.eex`, včetně skutečného Elixir klienta a výpočtů za 07–10/2026.
+Pohyby po účtech souhlasí s předvahou; červenec–září i s agregáty výše.
+Firemní analytiky se čtou z `ucet`, nikoli obecné `ucetni-osnova`.
+Přesný kontrakt, omezení a zbývající neověřené případy salda jsou v
+[ECONOMICS_ABRA_CONTRACT.md](../integrations/ECONOMICS_ABRA_CONTRACT.md).
+Žádný zápis do ABRY ani přepočet účetnictví nebyl proveden.
 
 Zdroje:
 
@@ -283,11 +287,11 @@ oprávnění; hesla předat konfigurací prostředí, nikoli v chatu nebo v Gitu
 - [ ] **1. Kontrakt a podklady:** ověřit GET evidence, formáty, hranice období,
   zaúčtování, počáteční stavy a historické saldo v testovací firmě; zapsat
   odpovědi a syntetické fixtures. Výstupem je přesné mapování API → ukazatel.
-- [ ] **2. Izolovaný základ:** kontext Economics, vlastní konfigurace a klient,
+- [x] **2. Izolovaný základ:** kontext Economics, vlastní konfigurace a klient,
   přidávací migrace, vypnutý přepínač, vlastní fronta. Bez změny běžných toků.
-- [ ] **3. Import a výpočty:** verzované snapshoty, měsíční obraty, mapování,
+- [x] **3. Import a výpočty:** verzované snapshoty, měsíční obraty, mapování,
   počátky a saldo, idempotence, retry a kontroly kvality; porovnání se sestavou.
-- [ ] **4. Admin UI:** vlastní routy a odkaz, filtry hospodářského roku,
+- [x] **4. Admin UI:** vlastní routy a odkaz, filtry hospodářského roku,
   vysvětlivky, rozpad účtů, chyby/čerstvost/úplnost a ruční aktualizace.
 - [ ] **5. Ověření a zapnutí:** účetní odsouhlasení jednoho společného období,
   banka a hotovost, provozní měření importu, aktualizace návodu a postup obnovy.
@@ -337,10 +341,23 @@ nových tabulek. Mazání tabulek není provozní opravou nekonzistentního impo
 | 2026-10-28 | Samostatný kontext a vlastní data, minimum zásahů do zbytku aplikace | Výslovný požadavek uživatele |
 | 2026-10-28 | Září ani peněžní zůstatky zatím neoznačovat jako ověřené | Analýza exportů a nepotvrzená úplnost |
 
-- Hotovo: průzkum existující integrace, veřejné dokumentace a exportů;
-  tento plán a seznam dotazů. Žádná část dashboardu zatím není implementovaná.
-- Zbývá: všechny implementační etapy výše.
-- Blokuje důvěryhodné ostré výsledky: účetní odpovědi, společný rozsah sestav,
-  ověření banky/hotovosti a API konkrétní firmy. Neblokuje přípravu modulu.
-- Nejbližší krok: doplnit doručené odpovědi a provést read-only ověření API;
-  následně zahájit první implementační PR podle tohoto plánu.
+- Hotovo: ověřený GET kontrakt, samostatný klient, tabulky `economics_*`,
+  verzované snapshoty, Oban import, Decimal výpočty, kontrola po účtech,
+  chráněné admin UI, filtry, detaily a místní potvrzování úplnosti.
+- PR: [kontrakt #59](https://github.com/michalhorcic/cozy-checkout/pull/59),
+  [snapshoty a import #61](https://github.com/michalhorcic/cozy-checkout/pull/61),
+  navazující PR s admin UI. Závislosti sloučit v uvedeném pořadí.
+- Ověřeno: kompilace bez varování, projektový formatter, živé GET výpočty
+  07–10/2026 a syntetické vykreslení všech tří obrazovek. Lokální testy ani
+  databázová migrace nebyly spuštěny; výsledky GitHub CI ověří uživatel.
+  Lokální toolchain je Elixir 1.20.4 / OTP 29, Erlang 29.1.2; přesně pinovaný
+  Erlang 29.1 nebyl k dispozici.
+- Zbývá z etapy 1: nezávislé ověření částečných úhrad/dobropisů a oprav
+  historického salda, počátků a účetních podkladů; potvrzení licence a verze
+  instalace nad rámec úspěšných GET evidencí. Saldo je předběžné a rozdílné
+  hodnoty původního/aktuálního dokladu znepřístupní jeho celkový ukazatel.
+- Zbývá etapa 5: CI, migrace a konfigurace testovací instalace, účetní
+  odsouhlasení společného období, banka/hotovost, stanovení retence a měření
+  importu před ostrým zapnutím. Feature zůstává ve výchozím stavu vypnutá.
+- Volitelné peněžní toky (etapa 6) nejsou implementované.
+- Návod k obsluze a nasazení: [ECONOMICS.md](../features/ECONOMICS.md).
