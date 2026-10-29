@@ -31,6 +31,74 @@ defmodule CozyCheckoutWeb.EconomicsLive.CostMappingComponents do
   end
 
   @doc false
+  def partner_options(months, rules) do
+    options =
+      months
+      |> Costs.bundles()
+      |> Enum.flat_map(& &1.rows)
+      |> Enum.flat_map(fn row ->
+        info = row["identification"] || %{}
+
+        cond do
+          info["partner_id"] ->
+            [
+              %{
+                id: info["partner_id"],
+                name: info["company"] || "Firma bez názvu",
+                hint: "Podle interního ID",
+                partner_name: nil
+              }
+            ]
+
+          Costs.normalize_partner_name(info["company"]) ->
+            [name_option(info["company"])]
+
+          true ->
+            []
+        end
+      end)
+
+    existing =
+      Enum.flat_map(rules, fn rule ->
+        cond do
+          rule.partner_id ->
+            [
+              %{
+                id: rule.partner_id,
+                name: "Firma ID #{rule.partner_id}",
+                hint: "Pravidlo mimo tento snapshot",
+                partner_name: nil
+              }
+            ]
+
+          rule.partner_name ->
+            [name_option(rule.partner_name)]
+
+          true ->
+            []
+        end
+      end)
+
+    (options ++ existing) |> Enum.uniq_by(& &1.id) |> Enum.sort_by(&String.downcase(&1.name))
+  end
+
+  @doc false
+  def partner_choice(%{"partner_name" => name}) when not is_nil(name), do: name_option(name).id
+  def partner_choice(attrs), do: attrs["partner_id"] || ""
+
+  defp name_option(name) do
+    name = String.trim(name)
+    key = name |> Costs.normalize_partner_name() |> Base.url_encode64(padding: false)
+
+    %{
+      id: "name-" <> key,
+      name: name <> " (podle názvu)",
+      hint: "Bez interního ID",
+      partner_name: name
+    }
+  end
+
+  @doc false
   def entries(rules, overrides, catalog, query) do
     words = query |> String.downcase() |> String.split()
 
@@ -49,9 +117,16 @@ defmodule CozyCheckoutWeb.EconomicsLive.CostMappingComponents do
 
   defp rule_row(rule, index, catalog) do
     firm =
-      if rule["partner_id"],
-        do: Map.get(catalog.partners, rule["partner_id"], "Název firmy není v podkladech"),
-        else: "Všechny firmy"
+      cond do
+        rule["partner_name"] ->
+          rule["partner_name"]
+
+        rule["partner_id"] ->
+          Map.get(catalog.partners, rule["partner_id"], "Název firmy není v podkladech")
+
+        true ->
+          "Všechny firmy"
+      end
 
     row(
       "rule",
@@ -59,7 +134,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.CostMappingComponents do
       rule,
       [
         cell("Účet", rule["account"], catalog.accounts[rule["account"]]),
-        cell("Firma", firm),
+        cell("Firma", firm, if(rule["partner_name"], do: "Firma podle názvu · pouze bez ID")),
         cell("Popis obsahuje", rule["description_contains"] || "Bez omezení"),
         cell(
           "Platnost",
@@ -69,7 +144,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.CostMappingComponents do
         split_cell(rule),
         extraordinary_cell(rule)
       ],
-      [{"ID firmy", rule["partner_id"]}],
+      [{"ID firmy", rule["partner_id"]}, {"Přesný název firmy", rule["partner_name"]}],
       {rule["account"], String.downcase(firm), rule["description_contains"] || "",
        rule["valid_from"], index}
     )

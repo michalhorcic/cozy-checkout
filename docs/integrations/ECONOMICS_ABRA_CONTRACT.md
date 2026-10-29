@@ -113,8 +113,11 @@ Tento kontrakt je doložen dokumentací a syntetickými Req.Test podklady;
 v implementačním běhu nebylo dostupné připojení Economics k firemní ABŘE.
 Konkrétní tvar odpovědi odvozeného účetního výstupu proto vyžaduje živou
 kontrolu po importu. Při chybějícím interním ID zůstane účetní import platný,
-ale nová pravidla na firmu se nenabízejí. Nevzniká párování podle jména ani
-nové požadavky na adresář nebo jednotlivé doklady.
+uživatel však může výslovně zvolit náhradní pravidlo „Firma podle názvu“.
+Název se neukládá do `partner_id`; pravidlo používá samostatný `partner_name`
+a přesnou shodu bez velikosti písmen a okolních mezer pouze nad podklady
+bez interního ID. Neprobíhá přibližné párování ani nové požadavky na adresář
+nebo jednotlivé doklady.
 
 Identita ruční výjimky je zdroj + modul + `idDokl` + účet + účetní měsíc.
 `idUcetniDenik` se používá pouze uvnitř finančního otisku složení podkladu;

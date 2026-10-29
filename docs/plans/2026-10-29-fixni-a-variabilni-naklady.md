@@ -107,8 +107,12 @@ různých dnů účtování téhož dokladu.
 Všechny podmínky pravidla se musí splnit. Textový filtr je prosté
 „popis obsahuje“, bez rozlišení velikosti písmen, nad uloženým popisem;
 nepoužívá uživatelské regulární výrazy. Pokud byl popis zkrácen, UI to ukáže.
-Firma se porovnává podle ID v rámci zdroje, nikoli podle zobrazovaného názvu.
-Chybějící ID nevyvolá automatické slučování stejnojmenných firem.
+Výchozí identifikace firmy je ID v rámci zdroje. Po výslovném potvrzení
+uživatelem 29. 10. 2026 lze pro podklady bez ID zvolit „Firma podle názvu“:
+přesná shoda celého uloženého názvu bez velikosti písmen a okolních mezer,
+se samostatným polem `partner_name`. Žádné přibližné ani automatické párování.
+Pravidlo platí jen pro podklady, jejichž všechny zápisy nemají ID a mají
+shodný název. Přejmenování nebo doplnění ID může vyžadovat nové pravidlo.
 
 Dvě současně platná pravidla se stejnou předností a různým výsledkem vytvoří
 **Konflikt mapování**. Takový náklad zůstane nevyřešený a započte se do
@@ -229,8 +233,9 @@ a výchozí verzi mapování; jejich mezitímní změna zneplatní náhled.
 
 Změna cílové firmy nevynutí přenesení mapování mezi zdroji. Pravidla,
 výjimky i jejich identifikátory zůstávají oddělené. Starší snapshot bez
-stabilního ID partnera podporuje pravidlo na účet a výjimku na podklad;
-pravidlo na firmu vyžaduje doplnění údaje novým importem.
+stabilního ID partnera podporuje pravidlo na účet, výjimku na podklad a
+nově výslovné názvové pravidlo pro podklady bez ID. Pravidlo na interní ID
+stále vyžaduje doplnění tohoto údaje importem.
 
 Všechny nové routy a mutace zůstávají ve stávající admin PIN ochraně.
 Účetní data se čtou z místních snapshotů. Pravidla se načtou jedním dávkovým
@@ -298,7 +303,8 @@ navrženou implementací.
 - Pro energie zvolit prozatím nerozdělovat nebo výslovný ruční odhad.
   Krátká historie a zálohy na energie nedokládají skutečnou spotřebu.
 - Ověřit stabilní ID partnera a chování souvisejících dokladových identit
-  přes opravy. Pokud se nepotvrdí, nezavádět odhadované párování podle jména.
+  přes opravy. Odhadované párování podle jména se nezavádí; výslovně zvolené
+  přesné názvové pravidlo je samostatná možnost pro podklady bez ID.
 
 Tyto otázky neblokují datový základ a klasifikaci podle účtů. Pravidla
 vyžadující neověřená vstupní data se do vyřešení neaktivují.
@@ -335,7 +341,14 @@ nových tabulek; účetní snapshoty a potvrzení úplnosti se nepřepisují.
   běhu nebylo nakonfigurované připojení Economics ani reálný snapshot.
 - Interní ID je vyžádané dokumentovaným `use-internal-id=true` ve stávajících
   GET a normalizuje se `firma@internalId`; při absenci zůstávají k dispozici
-  účet, text a výjimka. Podrobnosti a omezení jsou v aktualizovaném kontraktu
+  účet, text, výjimka a nově výslovné názvové pravidlo. Podrobnosti a omezení jsou v aktualizovaném kontraktu
   ABRA a `docs/features/ECONOMICS.md`.
 - Kroky 3–4 (smluvní měsíční základ a provozní ukazatele) se neimplementují
   bez samostatného upřesnění. Nejasné smlouvy samy nevytvářejí aktivní pravidla.
+
+### Doplnění schválené 29. 10. 2026
+
+Uživatel výslovně schválil mapování podle přesného názvu firmy pro podklady
+bez interního ID. Implementace používá samostatné nullable pole `partner_name`,
+přidávací migraci, kontrolu výlučnosti ID/názvu a stejné verzování i náhled.
+Podrobnosti, omezení a označení v UI jsou v `docs/features/ECONOMICS.md`.

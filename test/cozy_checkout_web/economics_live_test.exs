@@ -612,6 +612,95 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     assert has_element?(view, "#cost-entry-detail-rule-0", data.source.id)
   end
 
+  test "a firm without an internal ID can be selected by name, edited and published", %{
+    conn: conn
+  } do
+    cost_queue_snapshot()
+    name = "Dodavatel QUEUE-A"
+
+    choice =
+      CozyCheckoutWeb.EconomicsLive.CostMappingComponents.partner_choice(%{
+        "partner_name" => name
+      })
+
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+    view |> element("#editor_partner_choice-search") |> render_focus()
+
+    assert has_element?(
+             view,
+             "#editor_partner_choice-option-#{choice}",
+             "Dodavatel QUEUE-A (podle názvu)"
+           )
+
+    view |> element("#editor_partner_choice-option-#{choice}") |> render_click()
+    assert has_element?(view, "#cost-editor", "Firma podle názvu: přesná shoda")
+
+    view
+    |> form("#cost-editor",
+      editor: %{behavior: "fixed", reason: "Pravidlo pouze podle názvu firmy."}
+    )
+    |> render_submit()
+
+    refute has_element?(view, "#cost-mapping-item-0")
+    assert has_element?(view, "#cost-mapping-item-1")
+    assert has_element?(view, "#cost-entry-rule-0", "Firma podle názvu")
+    assert has_element?(view, "#cost-entry-rule-0", name)
+
+    view |> element("#cost-entry-edit-rule-0") |> render_click()
+    assert has_element?(view, "#editor_partner_choice option[value='#{choice}'][selected]")
+
+    view
+    |> form("#cost-editor", editor: %{reason: "Upravený důvod názvového pravidla."})
+    |> render_submit()
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Výslovné mapování firmy podle názvu."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+
+    assert {:ok, %{rules: [%{partner_id: nil, partner_name: ^name}], totals: totals}} =
+             Economics.costs()
+
+    assert Decimal.equal?(totals.fixed, "45.50")
+    assert Decimal.equal?(totals.unclassified, "50")
+  end
+
+  test "clearing a name choice removes its condition instead of leaving a hidden name filter", %{
+    conn: conn
+  } do
+    cost_queue_snapshot()
+
+    choice =
+      CozyCheckoutWeb.EconomicsLive.CostMappingComponents.partner_choice(%{
+        "partner_name" => "Dodavatel QUEUE-A"
+      })
+
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+    view |> element("#editor_partner_choice-search") |> render_focus()
+    view |> element("#editor_partner_choice-option-#{choice}") |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "fixed", reason: "Podle názvu."})
+    |> render_submit()
+
+    view |> element("#cost-entry-edit-rule-0") |> render_click()
+    view |> element("button[phx-click='clear-partner']") |> render_click()
+    view |> form("#cost-editor", editor: %{reason: "Změna na celý účet."}) |> render_submit()
+    refute has_element?(view, "#cost-mapping-item-0")
+    refute has_element?(view, "#cost-mapping-item-1")
+    assert has_element?(view, "#cost-entry-rule-0", "Všechny firmy")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Obecné pravidlo celého účtu."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+    assert {:ok, %{rules: [%{partner_id: nil, partner_name: nil}]}} = Economics.costs()
+  end
+
   test "stale cost preview requires reload and disabled reporting rejects a pending mutation", %{
     conn: conn
   } do

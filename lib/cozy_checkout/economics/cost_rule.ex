@@ -8,6 +8,7 @@ defmodule CozyCheckout.Economics.CostRule do
     belongs_to :version, CozyCheckout.Economics.CostMappingVersion
     field :account, :string
     field :partner_id, :string
+    field :partner_name, :string
     field :description_contains, :string
     field :valid_from, :date
     field :valid_to, :date
@@ -24,6 +25,7 @@ defmodule CozyCheckout.Economics.CostRule do
     |> cast(attrs, [
       :account,
       :partner_id,
+      :partner_name,
       :description_contains,
       :valid_from,
       :valid_to,
@@ -32,6 +34,8 @@ defmodule CozyCheckout.Economics.CostRule do
       :fixed_percent,
       :reason
     ])
+    |> update_change(:partner_name, &String.trim/1)
+    |> validate_partner_identity()
     |> update_change(:description_contains, &String.trim/1)
     |> CostAssignment.validate()
     |> validate_required([:valid_from])
@@ -46,5 +50,14 @@ defmodule CozyCheckout.Economics.CostRule do
         do: [valid_to: "Konec předchází začátku."],
         else: []
     end)
+  end
+
+  defp validate_partner_identity(changeset) do
+    changeset = validate_length(changeset, :partner_name, min: 1, max: 201)
+
+    if get_field(changeset, :partner_id) && get_field(changeset, :partner_name),
+      do:
+        add_error(changeset, :partner_name, "Zvolte interní ID nebo název firmy, nikoli obojí."),
+      else: changeset
   end
 end

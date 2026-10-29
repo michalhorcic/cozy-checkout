@@ -2,7 +2,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Economics
   alias CozyCheckoutWeb.EconomicsLive.CostMappingComponents
-  alias CozyCheckout.Economics.{CostMapping, CostRule, CostOverride, Costs}
+  alias CozyCheckout.Economics.{CostMapping, CostRule, CostOverride}
   import CozyCheckoutWeb.EconomicsLive.Components
   import CozyCheckoutWeb.EconomicsLive.CostMappingComponents, only: [mapping_tables: 1]
   import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
@@ -34,28 +34,13 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   defp load(socket, params) do
     case Economics.costs(params) do
       {:ok, data} ->
-        bundles = Costs.bundles(data.snapshot.payload["months"])
-
         accounts =
           Enum.map(
             data.accounts,
             &%{id: &1["account"], name: "#{&1["account"]} · #{&1["name"]}", hint: &1["category"]}
           )
 
-        partners =
-          bundles
-          |> Enum.flat_map(& &1.rows)
-          |> Enum.map(& &1["identification"])
-          |> Enum.reject(&(is_nil(&1) or is_nil(&1["partner_id"])))
-          |> Enum.uniq_by(& &1["partner_id"])
-          |> Enum.map(
-            &%{
-              id: &1["partner_id"],
-              name: &1["company"] || "Firma bez názvu",
-              hint: "ID #{&1["partner_id"]}"
-            }
-          )
-          |> Enum.sort_by(& &1.name)
+        partners = CostMappingComponents.partner_options(data.classification_months, data.rules)
 
         accounts =
           (accounts ++
@@ -63,19 +48,6 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
                data.rules,
                &%{id: &1.account, name: &1.account, hint: "Pravidlo mimo tento snapshot"}
              ))
-          |> Enum.uniq_by(& &1.id)
-
-        partners =
-          (partners ++
-             (data.rules
-              |> Enum.reject(&is_nil(&1.partner_id))
-              |> Enum.map(
-                &%{
-                  id: &1.partner_id,
-                  name: "Firma ID #{&1.partner_id}",
-                  hint: "Pravidlo mimo tento snapshot"
-                }
-              )))
           |> Enum.uniq_by(& &1.id)
 
         editable =
@@ -251,7 +223,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   defp edit_event("picker-close", _, socket), do: {:noreply, assign(socket, picker_open: nil)}
 
   defp edit_event("picker-select", %{"index" => index, "id" => id}, socket)
-       when index in ["account", "partner_id"] do
+       when index in ["account", "partner_choice"] do
     options = if index == "account", do: socket.assigns.accounts, else: socket.assigns.partners
 
     if Enum.any?(options, &(&1.id == id)) do
@@ -268,7 +240,9 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   end
 
   defp edit_event("clear-partner", _, socket),
-    do: {:noreply, socket |> update_editor(%{"partner_id" => ""}) |> assign(picker_queries: %{})}
+    do:
+      {:noreply,
+       socket |> update_editor(%{"partner_choice" => ""}) |> assign(picker_queries: %{})}
 
   defp edit_event("new-rule", _, socket), do: {:noreply, reset_editor(socket)}
 
@@ -294,7 +268,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
           "fingerprint" => item.fingerprint,
           "valid_from" => String.slice(item.month, 0, 7),
           "valid_to" => "",
-          "partner_id" => "",
+          "partner_choice" => "",
           "description_contains" => "",
           "behavior" => "unclassified",
           "extraordinary" => false,
@@ -329,6 +303,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
           attrs
           |> Map.update("valid_from", "", &month_input/1)
           |> Map.update("valid_to", "", &month_input/1)
+          |> then(&Map.put(&1, "partner_choice", CostMappingComponents.partner_choice(&1)))
 
         {:noreply,
          assign(socket,
@@ -373,7 +348,14 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
 
     schema = if kind == "rule", do: CostRule, else: CostOverride
 
-    case schema.changeset(struct(schema), attrs) |> Ecto.Changeset.apply_action(:insert) do
+    result =
+      with {:ok, partner_attrs} <-
+             editor_partner_attrs(kind, attrs["partner_choice"], socket.assigns.partners) do
+        schema.changeset(struct(schema), Map.merge(attrs, partner_attrs))
+        |> Ecto.Changeset.apply_action(:insert)
+      end
+
+    case result do
       {:ok, entry} ->
         key = if kind == "rule", do: :draft_rules, else: :draft_overrides
 
@@ -400,8 +382,8 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
            "Položka přidána do návrhu. Pro použití zobrazte náhled a publikujte verzi."
          )}
 
-      {:error, changeset} ->
-        {:noreply, put_flash(socket, :error, validation_error(changeset))}
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, mapping_error(reason))}
     end
   end
 
@@ -461,7 +443,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
         to_form(
           %{
             "account" => "",
-            "partner_id" => "",
+            "partner_choice" => "",
             "description_contains" => "",
             "valid_from" => first,
             "valid_to" => "",
@@ -521,10 +503,23 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   defp mapping_page_items(items, query, page),
     do: items |> mapping_items(query) |> Enum.slice((page - 1) * 20, 20)
 
+  defp editor_partner_attrs("override", _, _), do: {:ok, %{}}
+
+  defp editor_partner_attrs("rule", choice, _) when choice in [nil, ""],
+    do: {:ok, %{"partner_id" => nil, "partner_name" => nil}}
+
+  defp editor_partner_attrs("rule", choice, options) do
+    case Enum.find(options, &(&1.id == choice)) do
+      nil -> {:error, :invalid_partner}
+      %{partner_name: nil} = option -> {:ok, %{"partner_id" => option.id, "partner_name" => nil}}
+      option -> {:ok, %{"partner_id" => nil, "partner_name" => option.partner_name}}
+    end
+  end
+
   defp update_editor(socket, attrs) do
     # Identity of an exception comes exclusively from the chosen local bundle.
     allowed =
-      ~w(account partner_id description_contains valid_from valid_to behavior extraordinary fixed_percent reason)
+      ~w(account partner_choice description_contains valid_from valid_to behavior extraordinary fixed_percent reason)
 
     allowed = if socket.assigns.edit_kind == "override", do: allowed -- ["account"], else: allowed
     values = Map.merge(socket.assigns.editor.params, Map.take(attrs, allowed))
@@ -598,9 +593,8 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
   defp mapping_error(:stale_preview),
     do: "Podklady nebo aktivní mapování se změnily. Obnovte přehled a připravte nový náhled."
 
-  defp mapping_error(:invalid_partner),
-    do:
-      "Firma nemá ověřené interní ID v dostupných podkladech. Načtěte nové údaje, nebo použijte účet či výjimku."
+  defp mapping_error(reason) when reason in [:invalid_partner, :invalid_partner_name],
+    do: "Vyberte firmu z nabídky podle interního ID nebo přesného názvu dostupného v podkladech."
 
   defp mapping_error(:invalid_account), do: "Zvolte skutečný nákladový účet z načtených podkladů."
 
@@ -857,7 +851,7 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
             Pravidla se vyhodnocují podle přesnosti: výjimka, účet + firma + text, účet + firma, účet + text, účet. Rozdílné výsledky stejné přednosti zůstanou konfliktem. Změny návrhu jsou zatím jen v této otevřené stránce.
           </p>
           <p :if={@partners == []} class="alert">
-            Snapshot neobsahuje ověřená interní ID firem. Lze použít účet, text nebo výjimku. Názvy firem nejsou identifikátory.
+            V načtených podkladech nejsou dostupné firmy pro výběr. Lze použít účet, text nebo výjimku.
           </p>
           <details
             :if={@editable && @suggestions != []}
@@ -1036,19 +1030,25 @@ defmodule CozyCheckoutWeb.EconomicsLive.Costs do
                 />
                 <div :if={@edit_kind == "rule"}>
                   <.searchable_picker
-                    field={@editor[:partner_id]}
+                    field={@editor[:partner_choice]}
                     options={@partners}
-                    index="partner_id"
-                    label="Firma (volitelná)"
+                    index="partner_choice"
+                    label="Firma podle ID nebo názvu (volitelné)"
                     required={false}
-                    query={@picker_queries["partner_id"]}
-                    open={@picker_open == "partner_id"}
+                    query={@picker_queries["partner_choice"]}
+                    open={@picker_open == "partner_choice"}
                     search_name="picker_query"
                     search_event="picker-search"
                     open_event="picker-open"
                     close_event="picker-close"
                     select_event="picker-select"
                   />
+                  <p
+                    :if={String.starts_with?(@editor.params["partner_choice"] || "", "name-")}
+                    class="mt-2 text-sm text-base-content/70"
+                  >
+                    Firma podle názvu: přesná shoda bez rozlišení velikosti písmen a okolních mezer, pouze pro doklady bez interního ID. Přejmenování vyžaduje kontrolu pravidla.
+                  </p>
                   <button type="button" phx-click="clear-partner" class="btn btn-xs">Libovolná firma</button>
                 </div>
                 <.input

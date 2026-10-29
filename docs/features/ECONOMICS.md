@@ -210,9 +210,10 @@ samostatně a mapování ji nemění.
 1. Vyberte aktuální snapshot požadovaného období a aktivní verzi mapování.
    V záložce Mapování vytvořte pravidlo, případně v detailu podkladu zvolte
    **Jen tento podklad** nebo **Pravidlo pro další doklady**.
-2. Pravidlo používá přesný nákladový účet, volitelně interní ID firmy a text
-   „popis obsahuje“ bez rozlišení velikosti písmen. Všechny podmínky se musí
-   splnit. Uveďte důvod a celé měsíce platnosti od/do včetně. Konec může být
+2. Pravidlo používá přesný nákladový účet, volitelně firmu a text
+   „popis obsahuje“ bez rozlišení velikosti písmen. Firmu lze vybrat podle
+   interního ID, nebo výslovně podle přesného názvu pro podklady bez ID.
+   Všechny podmínky se musí splnit. Uveďte důvod a celé měsíce platnosti od/do včetně. Konec může být
    prázdný. Nové snapshoty uchovávají nákladové účty z rozvrhu; starší nabízejí
    nákladové účty doložené pohyby. Účty a firmy se vybírají vyhledáváním.
 3. Zvolte chování, samostatný příznak mimořádné a případný ruční odhad
@@ -249,8 +250,8 @@ Společné hledání prochází obě tabulky včetně důvodů. Pravidla se řad
 účtu a firmy, výjimky podle měsíce a dokladu. Na mobilu se řádky zobrazují
 pod sebou s popisky jednotlivých sloupců. Názvy pocházejí z načtených dat;
 chybějící údaje se nedohledávají po jednotlivých dokladech přes API.
-Více změn lze připravit a poté publikovat v jediné verzi. Průběžný seznam používá už
-načtené podklady bez dalších SQL nebo HTTP dotazů a nemění publikované součty.
+Více změn lze připravit a poté publikovat v jediné verzi. Průběžný seznam
+používá už načtené podklady bez dalších SQL nebo HTTP dotazů a nemění publikované součty.
 
 Přednost: výjimka, účet + firma + text, účet + firma, účet + text, účet.
 Rozdílné výsledky stejné přednosti vytvoří konflikt a částku nezařadí.
@@ -270,9 +271,18 @@ Import pohybů a salda nově žádá `use-internal-id=true` podle
 [dokumentace ABRA](https://podpora.flexibee.eu/cs/articles/4713911-sestavovani-url).
 Z `firma@internalId` (případně explicitní číselné reference `firma`) se
 ukládá interní `partner_id` v rámci zdroje. Kódy a jména se za interní ID
-nevydávají. Pokud ho server neposkytne nebo jde o starší snapshot, pravidla
-na tuto firmu nelze nově vytvořit. Ověření odpovědi konkrétního firemního
-serveru a několika pravidel s majitelem zůstává součástí nasazení.
+nevydávají. Pokud ho server neposkytne nebo jde o starší snapshot, je v nabídce
+firma označená „podle názvu“. Takové pravidlo má samostatný `partner_name`,
+nikoli domnělé interní ID. Porovnává se celý uložený název bez rozlišení
+velikosti písmen a okolních mezer. Vnitřní mezery, diakritika a zbytek názvu
+se nemění; nejde o „obsahuje“ ani přibližné párování. Všechny zápisy podkladu
+musí mít shodný název a chybějící interní ID. Podklady se známým ID toto
+pravidlo nezasáhne. Změna názvu nebo doplnění ID může vyžadovat nové pravidlo;
+stejnojmenné firmy samotný název nerozliší. V tabulce i editoru je zřetelně
+uvedeno „Firma podle názvu“. Název má při vyhodnocení stejnou konkrétnost
+jako podmínka na firmu podle ID; různé výsledky stejné přednosti jsou konflikt.
+Ověření odpovědi konkrétního firemního serveru a několika pravidel s majitelem
+zůstává součástí nasazení.
 
 Nová přidávací migrace `20261029180000_create_economics_cost_mapping`
 vytvoří `economics_cost_mapping_versions`, `economics_cost_rules` a
@@ -293,3 +303,10 @@ zkontrolujte interní ID firem, výslovně přijměte návrhy a porovnejte nákl
 s původním přehledem. Živé ověření, měření odezvy na skutečném objemu a
 potvrzení smluv/podílů s majitelem nejsou nahrazeny syntetickými testy.
 Pravidelné smluvní závazky a provozní jednotkové ukazatele jsou další etapa.
+
+Rozšíření názvového mapování vyžaduje přidávací migraci
+`20261029200000_add_name_to_economics_cost_rules`, která přidá nullable
+`partner_name` a databázové omezení vzájemné výlučnosti názvu a ID. Existující
+publikované řádky zůstanou s `partner_name = NULL`. Pravidla podle ID se nemění,
+nová konfigurace ani nový import nejsou pro názvová pravidla potřeba, pokud
+snapshot už název obsahuje. Výběr používá načtené podklady, bez dotazů po firmách.

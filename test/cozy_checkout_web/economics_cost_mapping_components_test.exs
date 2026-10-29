@@ -167,6 +167,34 @@ defmodule CozyCheckoutWeb.EconomicsCostMappingComponentsTest do
     assert field(row, "Doklad a firma").secondary == "Firma neuvedena"
   end
 
+  test "name-only firms have safe searchable choices and an explicit label in the rule table" do
+    months =
+      Enum.map(
+        months(),
+        &Map.update!(&1, "movements", fn rows ->
+          Enum.map(rows, fn row -> put_in(row, ["identification", "partner_id"], nil) end)
+        end)
+      )
+
+    options = Components.partner_options(months, [])
+    assert [%{name: "Čaj & káva (podle názvu)", partner_name: "Čaj & káva", id: id}] = options
+    assert id =~ ~r/^name-[A-Za-z0-9_-]+$/
+    assert Components.partner_choice(%{"partner_name" => " ČAJ & KÁVA "}) == id
+    assert Components.partner_choice(%{"partner_id" => "42"}) == "42"
+    assert [%{partner_name: nil, id: "42"}] = Components.partner_options(months(), [])
+
+    [row] =
+      Components.entries(
+        [rule(%{"partner_id" => nil, "partner_name" => "Čaj & káva"})],
+        [],
+        catalog(),
+        "čaj"
+      ).rules
+
+    assert field(row, "Firma").value == "Čaj & káva"
+    assert field(row, "Firma").secondary =~ "Firma podle názvu"
+  end
+
   test "table details stay collapsed and untrusted text is escaped in read-only views" do
     rules = [rule(%{"reason" => "<script>secret reason</script>"})]
     html = render_tables(rules, [override()])

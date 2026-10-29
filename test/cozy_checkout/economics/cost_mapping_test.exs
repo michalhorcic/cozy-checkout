@@ -416,6 +416,75 @@ defmodule CozyCheckout.Economics.CostMappingTest do
     assert {:ok, %{version: nil, items: [%{status: :unclassified}]}} = Economics.costs()
   end
 
+  test "name mapping is explicitly previewed, versioned and limited to known source names", %{
+    base: base,
+    snapshot: snapshot
+  } do
+    name = "  UKÁZKOVÝ ODBĚRATEL S.R.O.  "
+
+    assert {:error, :invalid_partner_name} =
+             preview(base, [rule(%{"partner_name" => "Neznámá firma"})])
+
+    assert {:error, %Ecto.Changeset{}} =
+             preview(base, [rule(%{"partner_name" => name, "partner_id" => "42"})])
+
+    assert {:ok, p} = preview(base, [rule(%{"partner_name" => name})])
+    assert [%{changed: [%{behavior: "variable"}]}] = p.impacts
+    assert {:ok, version} = Economics.publish_cost_mapping(p.token)
+    assert [%{partner_id: nil, partner_name: "UKÁZKOVÝ ODBĚRATEL S.R.O."}] = Repo.all(CostRule)
+    assert Repo.get!(Snapshot, snapshot.id).payload == snapshot.payload
+
+    # A later import with an internal ID no longer qualifies for the name fallback.
+    payload =
+      update_in(snapshot.payload, ["months"], fn months ->
+        Enum.map(
+          months,
+          &Map.update!(&1, "movements", fn rows ->
+            Enum.map(rows, fn row -> put_in(row, ["identification", "partner_id"], "42") end)
+          end)
+        )
+      end)
+
+    snapshot
+    |> Ecto.Changeset.change(payload: payload, fingerprint: Reports.fingerprint(payload))
+    |> Repo.update!()
+
+    assert {:ok, %{items: [%{status: :unclassified}]}} = Economics.costs()
+    assert {:ok, _} = preview(%{base | version_id: version.id}, [rule(%{"partner_name" => name})])
+    assert {:ok, p} = preview(%{base | version_id: version.id}, [rule(%{"partner_id" => "42"})])
+    assert {:ok, _} = Economics.publish_cost_mapping(p.token)
+    assert {:ok, %{items: [%{status: :classified}]}} = Economics.costs()
+    assert {:ok, old} = Economics.costs(%{"version" => version.id})
+    assert hd(old.rules).partner_name == "UKÁZKOVÝ ODBĚRATEL S.R.O."
+  end
+
+  test "names found only under another source cannot be published here", %{
+    base: base,
+    source: source
+  } do
+    other = Repo.insert!(%Source{base_url: source.base_url, company_id: "name-other"})
+    snapshot = insert_snapshot(other)
+
+    payload =
+      update_in(snapshot.payload, ["months"], fn months ->
+        Enum.map(
+          months,
+          &Map.update!(&1, "movements", fn rows ->
+            Enum.map(rows, fn row ->
+              put_in(row, ["identification", "company"], "Firma druhého zdroje")
+            end)
+          end)
+        )
+      end)
+
+    snapshot
+    |> Ecto.Changeset.change(payload: payload, fingerprint: Reports.fingerprint(payload))
+    |> Repo.update!()
+
+    assert {:error, :invalid_partner_name} =
+             preview(base, [rule(%{"partner_name" => "Firma druhého zdroje"})])
+  end
+
   test "invalid range and invalid version input are rejected without UUID casts" do
     assert {:error, :invalid_range} = Economics.costs(%{"from" => "2020-01"})
     assert {:error, :invalid_version} = Economics.costs(%{"version" => "bad-uuid"})

@@ -13,7 +13,7 @@ defmodule CozyCheckout.Economics.CostMapping do
   }
 
   @salt "economics-cost-preview-v1"
-  @rule_fields ~w(account partner_id description_contains valid_from valid_to behavior extraordinary fixed_percent reason)a
+  @rule_fields ~w(account partner_id partner_name description_contains valid_from valid_to behavior extraordinary fixed_percent reason)a
   @override_fields ~w(account module document_id month fingerprint behavior extraordinary fixed_percent reason)a
 
   def workspace(params) do
@@ -387,7 +387,7 @@ defmodule CozyCheckout.Economics.CostMapping do
     accounts = MapSet.new(accounts(snapshots), & &1["account"])
     old_targets = MapSet.new(old_overrides, &{Costs.override_key(&1), &1.fingerprint})
     targets = MapSet.new(bundles, &{&1.key, &1.fingerprint})
-    old_rule_targets = MapSet.new(old_rules, &{&1.account, &1.partner_id})
+    old_rule_targets = MapSet.new(old_rules, &rule_target/1)
 
     partners =
       Enum.flat_map(bundles, fn b ->
@@ -395,22 +395,36 @@ defmodule CozyCheckout.Economics.CostMapping do
       end)
       |> MapSet.new()
 
+    partner_names =
+      bundles
+      |> Enum.flat_map(& &1.rows)
+      |> Enum.filter(&is_nil(get_in(&1, ["identification", "partner_id"])))
+      |> MapSet.new(&Costs.normalize_partner_name(get_in(&1, ["identification", "company"])))
+
     keys = Enum.map(overrides, &Costs.override_key/1)
 
     cond do
       Enum.any?(
         rules,
         &(not MapSet.member?(accounts, &1.account) and
-              not MapSet.member?(old_rule_targets, {&1.account, &1.partner_id}))
+              not MapSet.member?(old_rule_targets, rule_target(&1)))
       ) ->
         {:error, :invalid_account}
 
       Enum.any?(
         rules,
         &(not is_nil(&1.partner_id) and not MapSet.member?(partners, &1.partner_id) and
-              not MapSet.member?(old_rule_targets, {&1.account, &1.partner_id}))
+              not MapSet.member?(old_rule_targets, rule_target(&1)))
       ) ->
         {:error, :invalid_partner}
+
+      Enum.any?(
+        rules,
+        &(not is_nil(&1.partner_name) and
+            not MapSet.member?(partner_names, Costs.normalize_partner_name(&1.partner_name)) and
+              not MapSet.member?(old_rule_targets, rule_target(&1)))
+      ) ->
+        {:error, :invalid_partner_name}
 
       length(Enum.uniq(keys)) != length(keys) ->
         {:error, :duplicate_override}
@@ -426,6 +440,9 @@ defmodule CozyCheckout.Economics.CostMapping do
         :ok
     end
   end
+
+  defp rule_target(rule),
+    do: {rule.account, rule.partner_id, Costs.normalize_partner_name(rule.partner_name)}
 
   defp insert_entries(rows, schema, version, now) do
     fields = schema.__schema__(:fields) -- [:__meta__]

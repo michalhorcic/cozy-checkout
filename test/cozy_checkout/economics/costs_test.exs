@@ -97,6 +97,66 @@ defmodule CozyCheckout.Economics.CostsTest do
     assert item.behavior == "variable" and not item.extraordinary
   end
 
+  test "explicit name rules match only exact trimmed case-insensitive names without an internal ID" do
+    named = rule(%{partner_name: "  Alza.cz a.s.  ", behavior: "variable"})
+
+    without_id =
+      put_in(row(), ["identification"], %{"company" => " ALZA.CZ A.S. ", "partner_id" => nil})
+
+    assert [%{status: :classified, behavior: "variable"}] = classify([without_id], [named]).items
+    with_id = put_in(without_id, ["identification", "partner_id"], "42")
+    assert [%{status: :unclassified}] = classify([with_id], [named]).items
+    assert [%{behavior: "fixed"}] = classify([with_id], [named, rule(%{partner_id: "42"})]).items
+
+    for company <- [nil, "", "Alza", "Alza.cz a.s. nová", "Alza.cz  a.s."] do
+      assert [%{status: :unclassified}] =
+               classify([put_in(without_id, ["identification", "company"], company)], [named]).items
+    end
+
+    second = Map.put(with_id, "journal_id", "21")
+    assert [%{status: :unclassified}] = classify([without_id, second], [named]).items
+
+    other_firm =
+      without_id
+      |> put_in(["identification", "company"], "Jiná firma")
+      |> Map.put("journal_id", "21")
+
+    assert [%{status: :unclassified}] = classify([without_id, other_firm], [named]).items
+  end
+
+  test "name rules share firm specificity, support text and expose conflicts" do
+    without_id = put_in(row(), ["identification", "partner_id"], nil)
+
+    rules = [
+      rule(),
+      rule(%{description_contains: "úklid", behavior: "variable"}),
+      rule(%{partner_name: "Firma", behavior: "mixed"}),
+      rule(%{partner_name: "Firma", description_contains: "úklid", behavior: "variable"})
+    ]
+
+    assert [%{behavior: "variable"}] = classify([without_id], rules).items
+    assert [%{behavior: "mixed"}] = classify([without_id], Enum.take(rules, 3)).items
+
+    assert [%{status: :conflict}] =
+             classify([without_id], [
+               rule(%{partner_name: "Firma"}),
+               rule(%{partner_name: " FIRMA ", behavior: "variable"})
+             ]).items
+
+    attrs = %{
+      "account" => "501100",
+      "valid_from" => "2026-07-01",
+      "behavior" => "fixed",
+      "reason" => "Důvod",
+      "partner_name" => " Firma "
+    }
+
+    changeset = CostRule.changeset(%CostRule{}, attrs)
+    assert changeset.valid?
+    assert Ecto.Changeset.get_field(changeset, :partner_name) == "Firma"
+    refute CostRule.changeset(%CostRule{}, Map.put(attrs, "partner_id", "42")).valid?
+  end
+
   test "same precedence conflicting outcomes remain unclassified; identical outcomes retain evidence" do
     a = rule()
     b = rule(%{behavior: "variable"})

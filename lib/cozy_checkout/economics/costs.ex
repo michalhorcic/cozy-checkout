@@ -105,8 +105,7 @@ defmodule CozyCheckout.Economics.Costs do
 
     Date.compare(month, rule.valid_from) != :lt and
       (is_nil(rule.valid_to) or Date.compare(month, rule.valid_to) != :gt) and
-      (is_nil(rule.partner_id) or
-         Enum.uniq(Enum.map(infos, & &1["partner_id"])) == [rule.partner_id]) and
+      partner_matches?(rule, infos) and
       (is_nil(rule.description_contains) or
          Enum.any?(infos, fn info ->
            String.contains?(
@@ -116,8 +115,32 @@ defmodule CozyCheckout.Economics.Costs do
          end))
   end
 
-  defp priority(%{partner_id: p, description_contains: d}) do
-    case {not is_nil(p), not is_nil(d)} do
+  @doc "Exact stored company name comparison; only surrounding whitespace and case are ignored."
+  def normalize_partner_name(value) when is_binary(value) do
+    case value |> String.trim() |> String.downcase() do
+      "" -> nil
+      name -> name
+    end
+  end
+
+  def normalize_partner_name(_), do: nil
+
+  defp partner_matches?(%{partner_id: id}, infos) when not is_nil(id),
+    do: Enum.all?(infos, &(&1["partner_id"] == id))
+
+  defp partner_matches?(%{partner_name: name}, infos) when not is_nil(name) do
+    expected = normalize_partner_name(name)
+
+    Enum.all?(
+      infos,
+      &(is_nil(&1["partner_id"]) and normalize_partner_name(&1["company"]) == expected)
+    )
+  end
+
+  defp partner_matches?(_, _), do: true
+
+  defp priority(%{partner_id: p, partner_name: name, description_contains: d}) do
+    case {not is_nil(p) or not is_nil(name), not is_nil(d)} do
       {true, true} -> 4
       {true, false} -> 3
       {false, true} -> 2
