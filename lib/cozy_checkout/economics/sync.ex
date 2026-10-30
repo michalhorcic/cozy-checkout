@@ -105,6 +105,7 @@ defmodule CozyCheckout.Economics.Sync do
        %{
          "period" => period,
          "months" => months,
+         "cost_accounts" => Reports.cost_accounts(catalog),
          "posting_state" => "posted",
          "current_saldo" => %{"date" => to_string(today), "items" => current_items},
          "mapping_version" => CozyCheckout.Economics.AccountMapping.version()

@@ -205,10 +205,581 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     refute has_element?(home, "[data-economics-issue]")
   end
 
+  test "cost mapping requires explicit preview and publication and preserves accounting totals",
+       %{conn: conn} do
+    {:ok, view, html} = live(conn, "/admin/economics/costs?tab=mapping")
+    assert html =~ "Nákladovost"
+    refute html =~ "never-render-this-secret"
+    assert has_element?(view, "#cost-editor")
+    assert has_element?(view, "#cost-history")
+    view |> element("#cost-suggestions") |> render_click()
+    assert has_element?(view, "#cost-draft-rules", "501100")
+    assert {:ok, %{version: nil}} = Economics.costs()
+    refute has_element?(view, "#cost-publish")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Potvrzený návrh potravin."})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-preview", "1 změněných podkladů")
+    view |> element("#cost-publish") |> render_click()
+    assert render(view) =~ "Nová verze mapování byla publikována"
+    assert {:ok, data} = Economics.costs()
+    assert Decimal.equal?(data.totals.variable, "45.50")
+    assert Decimal.equal?(data.totals.total, data.report.totals["expense"])
+    assert data.version.number == 1
+    {:ok, overview, _} = live(conn, "/admin/economics/costs")
+    assert has_element?(overview, "#cost-totals")
+    assert has_element?(overview, "#cost-months")
+    assert has_element?(overview, "#cost-categories", "Potraviny")
+    assert has_element?(overview, "#cost-documents", "Variabilní")
+  end
+
+  test "cost editor stores a scoped exception, previews it and never changes source postings", %{
+    conn: conn
+  } do
+    snapshot = Repo.one!(Snapshot)
+    {:ok, view, _} = live(conn, "/admin/economics/costs")
+    view |> element("button[phx-click='from-item'][phx-value-kind='override']") |> render_click()
+    assert has_element?(view, "#cost-editor")
+
+    view
+    |> form("#cost-editor",
+      editor: %{
+        behavior: "mixed",
+        fixed_percent: "50",
+        extraordinary: "true",
+        reason: "Ruční odhad poloviny podle smlouvy."
+      }
+    )
+    |> render_submit()
+
+    view |> element("#cost-entry-override-0 button[phx-click='entry-detail']") |> render_click()
+    assert has_element?(view, "#cost-entry-detail-override-0", "Ruční odhad poloviny")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Výjimka pro jediný podklad."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+    assert {:ok, %{items: [item]}} = Economics.costs()
+    assert item.estimated and item.extraordinary and item.via == :override
+    assert Decimal.equal?(item.fixed, "22.75")
+    assert Repo.get!(Snapshot, snapshot.id).payload == snapshot.payload
+  end
+
+  test "cost rules use searchable accounts and draft survives tab switching", %{conn: conn} do
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#editor_account-search") |> render_focus()
+    assert has_element?(view, "#editor_account-option-501100")
+    view |> element("#editor_account-option-501100") |> render_click()
+
+    view
+    |> form("#cost-editor",
+      editor: %{behavior: "fixed", reason: "Syntetický potvrzený paušál.", valid_from: "2026-07"}
+    )
+    |> render_submit()
+
+    view |> element("#cost-entry-rule-0 button[phx-click='entry-detail']") |> render_click()
+    assert has_element?(view, "#cost-entry-detail-rule-0", "Syntetický potvrzený paušál")
+    view |> element("a", "Přehled nákladů") |> render_click()
+    view |> element("a", "Mapování") |> render_click()
+    assert has_element?(view, "#cost-entry-detail-rule-0", "Syntetický potvrzený paušál")
+    assert {:ok, %{version: nil}} = Economics.costs()
+  end
+
+  defp cost_queue_snapshot do
+    snapshot = Repo.one!(Snapshot)
+    [month] = snapshot.payload["months"]
+    original = Enum.find(month["movements"], &(&1["kind"] == "expense"))
+
+    rows =
+      for {id, account, number, price} <- [
+            {"queue-a", "501100", "QUEUE-A", "45.50"},
+            {"queue-b", "501100", "QUEUE-B", "20"},
+            {"queue-c", "518001", "QUEUE-C", "30"}
+          ] do
+        original
+        |> Map.merge(%{
+          "document_id" => id,
+          "journal_id" => id,
+          "account" => account,
+          "md" => price
+        })
+        |> Map.put("identification", %{
+          "company" => "Dodavatel #{number}",
+          "document_number" => number,
+          "description" => "Syntetický podklad #{number}"
+        })
+      end
+
+    movements = Enum.reject(month["movements"], &(&1["kind"] == "expense")) ++ rows
+    month = Map.merge(month, %{"movements" => movements, "totals" => Reports.totals(movements)})
+    payload = Map.put(snapshot.payload, "months", [month])
+
+    snapshot
+    |> Ecto.Changeset.change(payload: payload, fingerprint: Reports.fingerprint(payload))
+    |> Repo.update!()
+  end
+
+  test "mapping queue lets the admin manually process several documents in one version", %{
+    conn: conn
+  } do
+    snapshot = cost_queue_snapshot()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    assert has_element?(view, "#cost-mapping-workbench #cost-editor")
+    assert has_element?(view, "#cost-mapping-queue #cost-mapping-item-0", "QUEUE-A")
+    assert has_element?(view, "#cost-mapping-queue #cost-mapping-item-1", "QUEUE-B")
+    assert has_element?(view, "#cost-mapping-queue #cost-mapping-item-2", "QUEUE-C")
+
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+    assert has_element?(view, "#cost-mapping-selected", "QUEUE-A")
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "fixed", reason: "Společné pravidlo účtu."})
+    |> render_submit()
+
+    refute has_element?(view, "#cost-mapping-item-0")
+    refute has_element?(view, "#cost-mapping-item-1")
+    assert has_element?(view, "#cost-mapping-item-2", "QUEUE-C")
+    assert has_element?(view, "#cost-mapping-progress", "Nevyřešené podklady podle návrhu: 1")
+    refute has_element?(view, "#cost-mapping-selected")
+    assert {:ok, %{version: nil, totals: totals}} = Economics.costs()
+    assert Decimal.equal?(totals.unclassified, "95.50")
+
+    view |> element("#cost-mapping-item-2 button[phx-value-kind='override']") |> render_click()
+    assert has_element?(view, "#cost-mapping-selected", "QUEUE-C")
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "variable", reason: "Výjimka pro tento podklad."})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-empty", "Všechny podklady")
+    refute has_element?(view, "#cost-mapping-queue article")
+    assert has_element?(view, "#cost-draft-rules [data-mapping-entry]", "501100")
+    assert has_element?(view, "#cost-draft-overrides [data-mapping-entry]", "QUEUE-C")
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 0
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Hromadné mapování tří podkladů."})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-preview", "3 změněných podkladů")
+    view |> element("#cost-publish") |> render_click()
+    assert {:ok, %{version: %{number: 1}, items: items, totals: totals}} = Economics.costs()
+    assert length(items) == 3
+    assert Decimal.equal?(totals.fixed, "65.50")
+    assert Decimal.equal?(totals.variable, "30")
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 1
+    assert Repo.get!(Snapshot, snapshot.id).payload == snapshot.payload
+  end
+
+  test "draft edits, conflicts and removals put unresolved documents back into the mapping queue",
+       %{conn: conn} do
+    cost_queue_snapshot()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "mixed", fixed_percent: "50", reason: ""})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-item-0")
+    assert has_element?(view, "#cost-mapping-selected", "QUEUE-A")
+
+    view
+    |> form("#cost-editor",
+      editor: %{behavior: "fixed", fixed_percent: "", reason: "Fixní podle smlouvy."}
+    )
+    |> render_submit()
+
+    refute has_element?(view, "#cost-mapping-item-0")
+
+    view
+    |> element("#cost-entry-edit-rule-0")
+    |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "unclassified", reason: "Vyžaduje kontrolu."})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-item-0")
+    assert has_element?(view, "#cost-mapping-item-1")
+
+    view
+    |> element("#cost-entry-edit-rule-0")
+    |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "fixed", reason: "Fixní podle smlouvy."})
+    |> render_submit()
+
+    view
+    |> form("#cost-editor",
+      editor: %{account: "501100", behavior: "variable", reason: "Konfliktní pravidlo."}
+    )
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-item-0", "Konflikt mapování")
+    assert has_element?(view, "#cost-mapping-item-1", "Konflikt mapování")
+
+    view
+    |> element("#cost-draft-rules button[phx-click='remove-entry'][phx-value-index='1']")
+    |> render_click()
+
+    refute has_element?(view, "#cost-mapping-item-0")
+
+    view
+    |> element("#cost-draft-rules button[phx-click='remove-entry'][phx-value-index='0']")
+    |> render_click()
+
+    assert has_element?(view, "#cost-mapping-item-0")
+    assert has_element?(view, "#cost-mapping-item-1")
+    assert has_element?(view, "#cost-mapping-item-2")
+  end
+
+  test "searching the mapping queue preserves document identity and draft state across tabs", %{
+    conn: conn
+  } do
+    cost_queue_snapshot()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> form("#cost-mapping-search", mapping_search: %{query: "QUEUE-C"}) |> render_change()
+    refute has_element?(view, "#cost-mapping-item-0")
+    assert has_element?(view, "#cost-mapping-item-2")
+    view |> element("#cost-mapping-item-2 button[phx-value-kind='rule']") |> render_click()
+    assert has_element?(view, "#cost-mapping-selected", "QUEUE-C")
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "variable", reason: "Pravidlo po vyhledání."})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-empty", "Hledání neodpovídá")
+    assert has_element?(view, "#cost-mapping-progress", "Nevyřešené podklady podle návrhu: 2")
+
+    view |> element("a", "Přehled nákladů") |> render_click()
+    view |> element("a", "Mapování") |> render_click()
+    assert has_element?(view, "#cost-draft-rules [data-mapping-entry]", "518001")
+    view |> form("#cost-mapping-search", mapping_search: %{query: ""}) |> render_change()
+    assert has_element?(view, "#cost-mapping-item-0")
+    assert has_element?(view, "#cost-mapping-item-1")
+    refute has_element?(view, "#cost-mapping-item-2")
+  end
+
+  test "mapping queue pagination keeps the chosen identity and clamps after a rule resolves a page",
+       %{conn: conn} do
+    snapshot = cost_queue_snapshot()
+    [month] = snapshot.payload["months"]
+    row = Enum.find(month["movements"], &(&1["document_id"] == "queue-a"))
+
+    extra =
+      for i <- 1..20 do
+        id = "queue-extra-#{String.pad_leading(to_string(i), 2, "0")}"
+
+        row
+        |> Map.merge(%{"document_id" => id, "journal_id" => id})
+        |> put_in(["identification", "document_number"], id)
+      end
+
+    movements = month["movements"] ++ extra
+
+    payload =
+      Map.put(snapshot.payload, "months", [
+        Map.merge(month, %{"movements" => movements, "totals" => Reports.totals(movements)})
+      ])
+
+    snapshot
+    |> Ecto.Changeset.change(payload: payload, fingerprint: Reports.fingerprint(payload))
+    |> Repo.update!()
+
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    assert has_element?(view, "#cost-mapping-queue article:nth-child(20)")
+    refute has_element?(view, "#cost-mapping-queue article:nth-child(21)")
+
+    view
+    |> element("button[phx-click='mapping-page'][phx-value-direction='next']")
+    |> render_click()
+
+    assert has_element?(view, "#cost-mapping-item-20", "queue-extra-18")
+    view |> element("#cost-mapping-item-20 button[phx-value-kind='rule']") |> render_click()
+    assert has_element?(view, "#cost-mapping-selected", "queue-extra-18")
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "fixed", reason: "Pravidlo ze druhé stránky."})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-item-2", "QUEUE-C")
+    refute has_element?(view, "#cost-mapping-item-20")
+
+    assert has_element?(
+             view,
+             "button[phx-click='mapping-page'][phx-value-direction='next'][disabled]"
+           )
+  end
+
+  test "accepting suggestions updates the unresolved mapping queue without publishing", %{
+    conn: conn
+  } do
+    cost_queue_snapshot()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-suggestions") |> render_click()
+    refute has_element?(view, "#cost-mapping-item-0")
+    refute has_element?(view, "#cost-mapping-item-1")
+    assert has_element?(view, "#cost-mapping-item-2")
+    assert {:ok, %{version: nil}} = Economics.costs()
+  end
+
+  test "mapping tables search and sort without changing which rule is edited or removed", %{
+    conn: conn
+  } do
+    cost_queue_snapshot()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-mapping-item-2 button[phx-value-kind='rule']") |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "variable", reason: "První pravidlo služeb."})
+    |> render_submit()
+
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+
+    view
+    |> form("#cost-editor",
+      editor: %{behavior: "mixed", fixed_percent: "30", reason: "Druhé pravidlo potravin."}
+    )
+    |> render_submit()
+
+    assert has_element?(view, "#cost-draft-rules thead th", "Firma")
+
+    assert has_element?(
+             view,
+             "#cost-draft-rules > tbody:first-of-type > #cost-entry-rule-1",
+             "501100"
+           )
+
+    assert has_element?(view, "#cost-entry-rule-1", "Odhad: 30 % fixní")
+    refute has_element?(view, "#cost-entry-detail-rule-1")
+
+    view |> form("#cost-entries-search", entries_search: %{query: "518001"}) |> render_change()
+    assert has_element?(view, "#cost-entry-rule-0", "518001")
+    refute has_element?(view, "#cost-entry-rule-1")
+    view |> element("#cost-entry-edit-rule-0") |> render_click()
+    assert has_element?(view, "#editor_account option[value='518001'][selected]")
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "fixed", reason: "Upravené pravidlo služeb."})
+    |> render_submit()
+
+    view |> element("#cost-entry-rule-0 button[phx-click='entry-detail']") |> render_click()
+    assert has_element?(view, "#cost-entry-detail-rule-0", "Upravené pravidlo služeb")
+
+    view |> form("#cost-entries-search", entries_search: %{query: "501100"}) |> render_change()
+    view |> element("#cost-entry-rule-1 button[phx-click='remove-entry']") |> render_click()
+    assert has_element?(view, "#cost-draft-rules", "Hledání neodpovídá žádná položka")
+    view |> form("#cost-entries-search", entries_search: %{query: ""}) |> render_change()
+    assert has_element?(view, "#cost-entry-rule-0", "518001")
+    assert has_element?(view, "#cost-entry-rule-0", "Fixní")
+    refute has_element?(view, "#cost-entry-rule-1")
+    assert {:ok, %{version: nil}} = Economics.costs()
+  end
+
+  test "historical mapping tables allow search and details while keeping mutation controls absent",
+       %{conn: conn} do
+    {:ok, data} = Economics.costs()
+
+    rules = [
+      %{
+        "account" => "501100",
+        "valid_from" => "2026-07-01",
+        "behavior" => "variable",
+        "reason" => "Potvrzené pravidlo potravin."
+      }
+    ]
+
+    {:ok, preview} =
+      Economics.preview_cost_mapping(rules, [], "První verze pro kontrolu historie.", %{
+        source_id: data.source.id,
+        version_id: nil
+      })
+
+    {:ok, version} = Economics.publish_cost_mapping(preview.token)
+    data.snapshot |> Ecto.Changeset.change(active: false) |> Repo.update!()
+
+    {:ok, view, _} =
+      live(
+        conn,
+        "/admin/economics/costs?snapshot=#{data.snapshot.id}&version=#{version.id}&tab=mapping"
+      )
+
+    assert has_element?(view, "#cost-entry-rule-0", "Variabilní")
+    refute has_element?(view, "#cost-entry-edit-rule-0")
+    refute has_element?(view, "#cost-draft-rules button[phx-click='remove-entry']")
+    view |> form("#cost-entries-search", entries_search: %{query: "potravin"}) |> render_change()
+    view |> element("#cost-entry-rule-0 button[phx-click='entry-detail']") |> render_click()
+    assert has_element?(view, "#cost-entry-detail-rule-0", "Potvrzené pravidlo potravin")
+    assert has_element?(view, "#cost-entry-detail-rule-0", data.source.id)
+  end
+
+  test "a firm without an internal ID can be selected by name, edited and published", %{
+    conn: conn
+  } do
+    cost_queue_snapshot()
+    name = "Dodavatel QUEUE-A"
+
+    choice =
+      CozyCheckoutWeb.EconomicsLive.CostMappingComponents.partner_choice(%{
+        "partner_name" => name
+      })
+
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+    view |> element("#editor_partner_choice-search") |> render_focus()
+
+    assert has_element?(
+             view,
+             "#editor_partner_choice-option-#{choice}",
+             "Dodavatel QUEUE-A (podle názvu)"
+           )
+
+    view |> element("#editor_partner_choice-option-#{choice}") |> render_click()
+    assert has_element?(view, "#cost-editor", "Firma podle názvu: přesná shoda")
+
+    view
+    |> form("#cost-editor",
+      editor: %{behavior: "fixed", reason: "Pravidlo pouze podle názvu firmy."}
+    )
+    |> render_submit()
+
+    refute has_element?(view, "#cost-mapping-item-0")
+    assert has_element?(view, "#cost-mapping-item-1")
+    assert has_element?(view, "#cost-entry-rule-0", "Firma podle názvu")
+    assert has_element?(view, "#cost-entry-rule-0", name)
+
+    view |> element("#cost-entry-edit-rule-0") |> render_click()
+    assert has_element?(view, "#editor_partner_choice option[value='#{choice}'][selected]")
+
+    view
+    |> form("#cost-editor", editor: %{reason: "Upravený důvod názvového pravidla."})
+    |> render_submit()
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Výslovné mapování firmy podle názvu."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+
+    assert {:ok, %{rules: [%{partner_id: nil, partner_name: ^name}], totals: totals}} =
+             Economics.costs()
+
+    assert Decimal.equal?(totals.fixed, "45.50")
+    assert Decimal.equal?(totals.unclassified, "50")
+  end
+
+  test "clearing a name choice removes its condition instead of leaving a hidden name filter", %{
+    conn: conn
+  } do
+    cost_queue_snapshot()
+
+    choice =
+      CozyCheckoutWeb.EconomicsLive.CostMappingComponents.partner_choice(%{
+        "partner_name" => "Dodavatel QUEUE-A"
+      })
+
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+    view |> element("#editor_partner_choice-search") |> render_focus()
+    view |> element("#editor_partner_choice-option-#{choice}") |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "fixed", reason: "Podle názvu."})
+    |> render_submit()
+
+    view |> element("#cost-entry-edit-rule-0") |> render_click()
+    view |> element("button[phx-click='clear-partner']") |> render_click()
+    view |> form("#cost-editor", editor: %{reason: "Změna na celý účet."}) |> render_submit()
+    refute has_element?(view, "#cost-mapping-item-0")
+    refute has_element?(view, "#cost-mapping-item-1")
+    assert has_element?(view, "#cost-entry-rule-0", "Všechny firmy")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Obecné pravidlo celého účtu."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+    assert {:ok, %{rules: [%{partner_id: nil, partner_name: nil}]}} = Economics.costs()
+  end
+
+  test "mapping reasons are optional for rules and exceptions but version publication still needs a note",
+       %{conn: conn} do
+    cost_queue_snapshot()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    refute has_element?(view, "#editor_reason[required]")
+    assert has_element?(view, "#cost-preview-form textarea[required]")
+    view |> element("#cost-mapping-item-0 button[phx-value-kind='rule']") |> render_click()
+    view |> form("#cost-editor", editor: %{behavior: "fixed", reason: ""}) |> render_submit()
+    refute has_element?(view, "#cost-mapping-item-0")
+    refute has_element?(view, "#cost-mapping-item-1")
+    view |> element("#cost-mapping-item-2 button[phx-value-kind='override']") |> render_click()
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "mixed", fixed_percent: "50", reason: ""})
+    |> render_change()
+
+    assert has_element?(view, "#editor_reason[required]")
+
+    view
+    |> form("#cost-editor", editor: %{behavior: "variable", fixed_percent: "", reason: ""})
+    |> render_submit()
+
+    assert has_element?(view, "#cost-mapping-empty", "Všechny podklady")
+    view |> element("#cost-entry-rule-0 button[phx-click='entry-detail']") |> render_click()
+    assert has_element?(view, "#cost-entry-detail-rule-0", "Neuveden")
+    view |> form("#cost-preview-form", publication: %{note: ""}) |> render_submit()
+    refute has_element?(view, "#cost-publish")
+
+    view
+    |> form("#cost-preview-form", publication: %{note: "Společná poznámka celé verze."})
+    |> render_submit()
+
+    view |> element("#cost-publish") |> render_click()
+
+    assert {:ok, %{rules: [%{reason: nil}], overrides: [%{reason: nil}], version: version}} =
+             Economics.costs()
+
+    assert version.note == "Společná poznámka celé verze."
+  end
+
+  test "stale cost preview requires reload and disabled reporting rejects a pending mutation", %{
+    conn: conn
+  } do
+    {:ok, view, _} = live(conn, "/admin/economics/costs?tab=mapping")
+    view |> element("#cost-suggestions") |> render_click()
+    view |> form("#cost-preview-form", publication: %{note: "První kontrola."}) |> render_submit()
+    snapshot = Repo.one!(Snapshot)
+    snapshot |> Ecto.Changeset.change(fingerprint: "changed-import") |> Repo.update!()
+    view |> element("#cost-publish") |> render_click()
+    assert render(view) =~ "Podklady nebo aktivní mapování se změnily"
+    refute has_element?(view, "#cost-publish")
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 0
+    Application.put_env(:cozy_checkout, :economics, enabled: false)
+    render_click(view, "suggestions", %{})
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 0
+  end
+
+  test "cost historical snapshots and versions expose no mutation controls", %{conn: conn} do
+    snapshot = Repo.one!(Snapshot)
+    snapshot |> Ecto.Changeset.change(active: false) |> Repo.update!()
+    {:ok, view, _} = live(conn, "/admin/economics/costs?snapshot=#{snapshot.id}&tab=mapping")
+    refute has_element?(view, "#cost-editor")
+    refute has_element?(view, "#cost-mapping-workbench")
+    refute has_element?(view, "#cost-preview-form")
+    render_click(view, "publish", %{})
+    assert Repo.aggregate(CozyCheckout.Economics.CostMappingVersion, :count) == 0
+  end
+
   test "all reporting URLs require the existing admin PIN" do
     for path <- [
           "/admin/economics",
           "/admin/economics/settings",
+          "/admin/economics/costs",
           "/admin/economics/accounts/602001"
         ] do
       conn = build_conn() |> get(path)
@@ -230,6 +801,7 @@ defmodule CozyCheckoutWeb.EconomicsLiveTest do
     for path <- [
           "/admin/economics",
           "/admin/economics/settings",
+          "/admin/economics/costs",
           "/admin/economics/accounts/602001"
         ] do
       assert {:error, {:redirect, %{to: "/admin"}}} = live(conn, path)

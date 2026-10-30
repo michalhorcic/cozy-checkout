@@ -52,6 +52,7 @@ defmodule CozyCheckout.Economics.AbraClientTest do
       assert conn.method == "GET"
       assert URI.decode(conn.request_path) =~ "(datUcto >= 2026-09-01 and datUcto <= 2026-09-30)"
       assert conn.query_params["postingState"] == "posted"
+      assert conn.query_params["use-internal-id"] == "true"
 
       for field <- ["doklad", "nazFirmy", "popis", "varSym", "cisDosle", "protiUcet"] do
         assert field in String.split(
@@ -113,6 +114,7 @@ defmodule CozyCheckout.Economics.AbraClientTest do
       params = Plug.Conn.fetch_query_params(conn).query_params
       assert params["datum"] == "2026-09-30"
       assert params["dleUcto"] == "true"
+      assert params["use-internal-id"] == "true"
       refute params["detail"] =~ "zbyvaUhradit"
 
       for field <- ["kod", "nazFirmy", "popis", "varSym", "cisDosle"] do

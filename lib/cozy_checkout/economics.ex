@@ -184,7 +184,24 @@ defmodule CozyCheckout.Economics do
     end
   end
 
-  defp current_source do
+  def costs(params \\ %{}), do: CozyCheckout.Economics.CostMapping.workspace(params)
+
+  def cost_draft_items(data, rules, overrides),
+    do: CozyCheckout.Economics.CostMapping.draft_items(data, rules, overrides)
+
+  def preview_cost_mapping(rules, overrides, note, base),
+    do: CozyCheckout.Economics.CostMapping.preview(rules, overrides, note, base)
+
+  def publish_cost_mapping(token), do: CozyCheckout.Economics.CostMapping.publish(token)
+
+  @doc false
+  def report_for_snapshot(snapshot, params) do
+    confirmations = Repo.all(from c in Confirmation, where: c.source_id == ^snapshot.source_id)
+    select_report(snapshot, params, confirmations)
+  end
+
+  @doc false
+  def current_source do
     with {:ok, cfg} <- Config.connection() do
       {base, company} = Config.identity(cfg)
 

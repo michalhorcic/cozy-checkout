@@ -14,7 +14,11 @@ defmodule CozyCheckout.Economics.AbraClient do
   def movements(%Date{} = first, %Date{} = last, state \\ "posted")
       when state in ["posted", "unposted"] do
     path = "pohyb-na-uctech/(datUcto >= #{first} and datUcto <= #{last})"
-    fetch(path, @movement_fields, [postingState: state], ["idUcetniDenik", "ucet"])
+
+    fetch(path, @movement_fields, [{:postingState, state}, {"use-internal-id", true}], [
+      "idUcetniDenik",
+      "ucet"
+    ])
   end
 
   def trial_balance(period, %Date{} = last, months) when is_integer(months) and months in 1..23 do
@@ -34,7 +38,7 @@ defmodule CozyCheckout.Economics.AbraClient do
     fetch(
       "saldo-k-datu",
       @saldo_fields,
-      [datum: Date.to_iso8601(date), dleUcto: true],
+      [{:datum, Date.to_iso8601(date)}, {:dleUcto, true}, {"use-internal-id", true}],
       "idSaldoKdatu"
     )
   end

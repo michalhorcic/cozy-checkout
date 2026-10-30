@@ -37,6 +37,8 @@ defmodule CozyCheckout.Economics.ReportsTest do
 
     assert sale["identification"] == %{
              "company" => "Ukázkový odběratel s.r.o.",
+             "partner_id" => nil,
+             "description_truncated" => false,
              "document_number" => "FV-2026-1",
              "description" => "Prodej čaje a limonády",
              "variable_symbol" => "2026001",

@@ -96,3 +96,31 @@ Klient stále čte pouze výslovně vyjmenovaná pole. Volné poznámky, adresy,
 kontaktní údaje ani kompletní doklad se kvůli identifikaci nepřebírají.
 Chybějící identifikační pole nebrání finančnímu importu; požadavky na částky,
 kontrolní součty, účetní typy a datumové filtry se nemění.
+
+## Interní identita firmy pro Nákladovost (29. 10. 2026)
+
+Oficiální [sestavování URL](https://podpora.flexibee.eu/cs/articles/4713911-sestavovani-url)
+popisuje `use-internal-id=true`: k referencím se přidává atribut `internalId`.
+Klient jej nově posílá v existujících GET pro pohyby a saldo. Normalizace
+přebírá kladné číselné `firma@internalId` do `identification.partner_id`;
+podporuje i explicitní číselnou referenci `firma`. `code:...`, názvy, prázdné
+nebo neplatné hodnoty nejsou interním ID. Příznak zkráceného popisu je
+`identification.description_truncated`. Obojí zůstává mimo finanční otisk
+měsíčního potvrzení. Rozvrh nákladových účtů se ukládá jako `cost_accounts`
+na úrovni nového snapshotu, bez změny měsíčních finančních otisků.
+
+Tento kontrakt je doložen dokumentací a syntetickými Req.Test podklady;
+v implementačním běhu nebylo dostupné připojení Economics k firemní ABŘE.
+Konkrétní tvar odpovědi odvozeného účetního výstupu proto vyžaduje živou
+kontrolu po importu. Při chybějícím interním ID zůstane účetní import platný,
+uživatel však může výslovně zvolit náhradní pravidlo „Firma podle názvu“.
+Název se neukládá do `partner_id`; pravidlo používá samostatný `partner_name`
+a přesnou shodu bez velikosti písmen a okolních mezer pouze nad podklady
+bez interního ID. Neprobíhá přibližné párování ani nové požadavky na adresář
+nebo jednotlivé doklady.
+
+Identita ruční výjimky je zdroj + modul + `idDokl` + účet + účetní měsíc.
+`idUcetniDenik` se používá pouze uvnitř finančního otisku složení podkladu;
+není samo o sobě klíčem výjimky. Změna zápisů nebo jejich ID vyvolá kontrolu,
+i když se čistý součet nezměnil. Stabilita odvozených deníkových ID přes
+opravy se tím nepředpokládá.

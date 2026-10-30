@@ -86,6 +86,19 @@ defmodule CozyCheckout.Economics.Reports do
     end)
   end
 
+  def cost_accounts(catalog) do
+    catalog
+    |> Enum.filter(&(kind!(&1) == "expense"))
+    |> Enum.map(
+      &%{
+        "account" => text!(&1["kod"]),
+        "name" => text!(&1["nazev"]),
+        "category" => AccountMapping.category(&1["kod"])
+      }
+    )
+    |> Enum.sort_by(& &1["account"])
+  end
+
   def saldo(rows, %Date{} = date), do: safely(fn -> open_items!(rows, date) end)
 
   defp open_items!(rows, date) do
@@ -264,6 +277,9 @@ defmodule CozyCheckout.Economics.Reports do
   defp identification(row, document_field) do
     %{
       "company" => optional_text(row["nazFirmy"], 200) || optional_text(row["firma@showAs"], 200),
+      "partner_id" => partner_id(row["firma@internalId"]) || partner_id(row["firma"]),
+      "description_truncated" =>
+        is_binary(row["popis"]) and String.length(String.trim(row["popis"])) > 500,
       "document_number" => optional_text(row[document_field], 120),
       "description" => optional_text(row["popis"], 500),
       "variable_symbol" => optional_text(row["varSym"], 120),
@@ -272,6 +288,17 @@ defmodule CozyCheckout.Economics.Reports do
         optional_text(row["protiUcet@showAs"], 200) || optional_text(row["protiUcet"], 120)
     }
   end
+
+  # Only explicit internal numeric identifiers are accepted. Mutable code/name references
+  # stay unavailable for partner matching until ABRA provides an internal ID.
+  defp partner_id(value) when is_integer(value) and value > 0, do: to_string(value)
+  defp partner_id("id:" <> value), do: partner_id(value)
+
+  defp partner_id(value) when is_binary(value) do
+    if Regex.match?(~r/^[1-9][0-9]*$/, value), do: value, else: nil
+  end
+
+  defp partner_id(_), do: nil
 
   defp optional_text(value, limit) when is_binary(value) do
     case String.trim(value) do

@@ -187,3 +187,132 @@ potvrzení. Výpočet tohoto otisku je kompatibilní se staršími potvrzeními
 bez popisů; změna firmy nebo popisu sama nevyžaduje znovu potvrdit částky.
 Změny účetních částek, účtů, salda a ostatních finančních podkladů jeho
 platnost nadále ruší.
+
+## Nákladovost: fixní a variabilní náklady
+
+Záložka **Nákladovost** (`/admin/economics/costs`) používá stejný admin PIN
+jako ostatní Economics. Čte pouze místní snapshoty. Součet fixní složky,
+variabilní složky, smíšených bez rozdělení a nezařazených odpovídá nákladům
+MD − Dal; mimořádné jsou samostatně označená podmnožina těchto částek.
+Dobropisy zachovávají znaménko. Odpisy na nákladových účtech `551*` jsou
+viditelně nepeněžní. Nejde o platby ani o očekávaný smluvní měsíční základ.
+
+Přehled obsahuje měsíční součty, kategorie, firmy a rozbalovací podklady
+se všemi zahrnutými zápisy a použitými pravidly. Podklady lze filtrovat
+na mimořádné, nevyřešené, konfliktní a odhadované; seznam má stránky po 50.
+Firmy bez stabilního ID se neslučují podle názvu. Podíl pokrytí vychází
+z absolutních hodnot podkladů, nikoli z čistého výsledku po dobropisech.
+Nulový absolutní objem nemá vypočtené procento. Účetní úplnost se zobrazuje
+samostatně a mapování ji nemění.
+
+### Práce s mapováním
+
+1. Vyberte aktuální snapshot požadovaného období a aktivní verzi mapování.
+   V záložce Mapování vytvořte pravidlo, případně v detailu podkladu zvolte
+   **Jen tento podklad** nebo **Pravidlo pro další doklady**.
+2. Pravidlo používá přesný nákladový účet, volitelně firmu a text
+   „popis obsahuje“ bez rozlišení velikosti písmen. Firmu lze vybrat podle
+   interního ID, nebo výslovně podle přesného názvu pro podklady bez ID.
+   Všechny podmínky se musí splnit. Uveďte celé měsíce platnosti od/do včetně;
+   konec může být prázdný. Důvod jednotlivého pravidla i výjimky je volitelný,
+   povinný zůstává pouze podklad ručního procentního odhadu smíšeného nákladu. Nové snapshoty uchovávají nákladové účty z rozvrhu; starší nabízejí
+   nákladové účty doložené pohyby. Účty a firmy se vybírají vyhledáváním.
+3. Zvolte chování, samostatný příznak mimořádné a případný ruční odhad
+   fixního podílu 0–100 % (nejvýše šest desetinných míst). Pro smíšené
+   bez podílu se částka nerozděluje. S podílem je variabilní složka přesný
+   zbytek; zobrazení dorovnává haléřové zaokrouhlení.
+4. **Uložit položku do návrhu** zatím nemění aktivní přehled. Návrh žije
+   pouze v otevřené stránce; obnovení nebo změna období jej zahodí. Přepnutí
+   Přehled nákladů / Mapování jej zachovává. Lze upravovat a odebírat pravidla
+   i výjimky a hromadně přidat pracovní návrhy pro dosud nemapované účty.
+   Žádný návrh se nepřijímá automaticky.
+5. Vyplňte důvod publikace a přepočítejte náhled. Náhled ukáže dopad na
+   všechna načtená aktivní období, měsíční složky před/po, změněné podklady
+   a konflikty. Publikace tak výslovně může změnit výklad minulých měsíců.
+6. Tlačítko **Publikovat tuto verzi mapování** atomicky zveřejní celou sadu.
+   Změna snapshotů nebo aktivní verze od náhledu publikaci odmítne; náhled
+   také vyprší po hodině. Obnovte data a připravte jej znovu.
+
+Přímo v Mapování je vedle formuláře seznam nevyřešených podkladů pro
+vybrané období a měsíce (na mobilu nad formulářem). Lze hledat podle firmy,
+čísla dokladu, účtu nebo popisu a listovat po 20 podkladech. Z podkladu
+zvolte pravidlo nebo výjimku; vedle formuláře zůstane jeho identifikace.
+Po uložení položky se seznam přepočítá podle celého rozpracovaného návrhu,
+takže zmizí i další doklady pokryté stejným pravidlem. Další podklad si
+uživatel vybírá ručně. Konflikty a pozastavené výjimky zůstávají k řešení;
+po úpravě nebo odebrání pravidla se může podklad znovu objevit.
+Pravidla a výjimky jsou pod formulářem ve sbalené sekci se dvěma tabulkami.
+Pravidla ukazují účet s názvem, firmu, textovou podmínku, platnost, chování,
+rozdělení a mimořádnost. Výjimky ukazují číslo dokladu a firmu, účet, měsíc,
+zařazení a stav (platná, pozastavená kvůli změně či přesunu, chybějící podklad).
+U smíšených je výslovně Nerozděleno nebo ruční odhad obou procentních složek.
+Důvod a technické reference jsou v rozbalovacím detailu příslušného řádku.
+Společné hledání prochází obě tabulky včetně důvodů. Pravidla se řadí podle
+účtu a firmy, výjimky podle měsíce a dokladu. Na mobilu se řádky zobrazují
+pod sebou s popisky jednotlivých sloupců. Názvy pocházejí z načtených dat;
+chybějící údaje se nedohledávají po jednotlivých dokladech přes API.
+Více změn lze připravit a poté publikovat v jediné verzi. Průběžný seznam
+používá už načtené podklady bez dalších SQL nebo HTTP dotazů a nemění publikované součty.
+
+Přednost: výjimka, účet + firma + text, účet + firma, účet + text, účet.
+Rozdílné výsledky stejné přednosti vytvoří konflikt a částku nezařadí.
+Shodné výsledky zůstanou dohledatelné se všemi odpovídajícími pravidly.
+Textový filtr pracuje nad uloženým popisem; detail upozorní na zkrácení.
+
+Výjimka se vztahuje na celý podklad **zdroj + modul + idDokl + účet + měsíc**,
+nikoli na produktový řádek. Finanční otisk zahrnuje částky a složení zápisů;
+změna podkladu výjimku pozastaví bez přechodu na obecné pravidlo. Zaniklé
+nebo přesunuté podklady jsou dohledatelné v Mapování. Přejmenování firmy
+ani změna popisu tento otisk nemění. Novou kontrolu změněného podkladu
+zahajte opět z jeho detailu; pouhá editace důvodu výjimky otisk neobnoví.
+
+### Identita, historie a nasazení
+
+Import pohybů a salda nově žádá `use-internal-id=true` podle
+[dokumentace ABRA](https://podpora.flexibee.eu/cs/articles/4713911-sestavovani-url).
+Z `firma@internalId` (případně explicitní číselné reference `firma`) se
+ukládá interní `partner_id` v rámci zdroje. Kódy a jména se za interní ID
+nevydávají. Pokud ho server neposkytne nebo jde o starší snapshot, je v nabídce
+firma označená „podle názvu“. Takové pravidlo má samostatný `partner_name`,
+nikoli domnělé interní ID. Porovnává se celý uložený název bez rozlišení
+velikosti písmen a okolních mezer. Vnitřní mezery, diakritika a zbytek názvu
+se nemění; nejde o „obsahuje“ ani přibližné párování. Všechny zápisy podkladu
+musí mít shodný název a chybějící interní ID. Podklady se známým ID toto
+pravidlo nezasáhne. Změna názvu nebo doplnění ID může vyžadovat nové pravidlo;
+stejnojmenné firmy samotný název nerozliší. V tabulce i editoru je zřetelně
+uvedeno „Firma podle názvu“. Název má při vyhodnocení stejnou konkrétnost
+jako podmínka na firmu podle ID; různé výsledky stejné přednosti jsou konflikt.
+Ověření odpovědi konkrétního firemního serveru a několika pravidel s majitelem
+zůstává součástí nasazení.
+
+Nová přidávací migrace `20261029180000_create_economics_cost_mapping`
+vytvoří `economics_cost_mapping_versions`, `economics_cost_rules` a
+`economics_cost_overrides`, včetně UUID, cizích klíčů, omezení, unikátních
+indexů a ochrany publikovaných položek proti přepsání či smazání. Publikace
+zamyká zdroj stejně jako import. Odebrání pravidla vytvoří další úplnou
+verzi; předchozí řádky zůstávají v historii. Nepublikovaný návrh se do DB
+neukládá. Není potřeba nová konfigurace ani přepis starých snapshotů.
+
+V horním výběru lze kombinovat historický snapshot s publikovanou verzí
+mapování (nebo volbou Bez pravidel) a zopakovat tehdejší výklad. Historický
+pohled neumožňuje editaci. Historie obsahuje čas a důvod; sdílený PIN
+neidentifikuje konkrétní osobu. Pravidla a výjimky se načítají po dávkách,
+klasifikace neprovádí SQL ani HTTP pro jednotlivé podklady.
+
+Pro první použití aplikujte novou migraci, obnovte import vybraného období,
+zkontrolujte interní ID firem, výslovně přijměte návrhy a porovnejte náklady
+s původním přehledem. Živé ověření, měření odezvy na skutečném objemu a
+potvrzení smluv/podílů s majitelem nejsou nahrazeny syntetickými testy.
+Pravidelné smluvní závazky a provozní jednotkové ukazatele jsou další etapa.
+
+Rozšíření názvového mapování vyžaduje přidávací migraci
+`20261029200000_add_name_to_economics_cost_rules`, která přidá nullable
+`partner_name` a databázové omezení vzájemné výlučnosti názvu a ID. Existující
+publikované řádky zůstanou s `partner_name = NULL`. Pravidla podle ID se nemění,
+nová konfigurace ani nový import nejsou pro názvová pravidla potřeba, pokud
+snapshot už název obsahuje. Výběr používá načtené podklady, bez dotazů po firmách.
+
+Migrace `20261029210000_make_cost_mapping_reasons_optional` umožňuje chybějící
+`reason` u pravidel a výjimek a upravuje databázová omezení. Pro zadaný fixní
+podíl smíšeného nákladu (včetně 0 a 100 %) zůstává důvod povinný. Stávající
+poznámky se nepřepisují; důvod publikace celé verze je nadále povinný.
