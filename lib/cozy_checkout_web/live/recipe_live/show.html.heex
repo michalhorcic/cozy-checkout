@@ -15,6 +15,7 @@
         subtitle={"Základní dávka: #{Decimal.to_string(Decimal.normalize(@recipe.base_servings),:normal)} porcí · #{length(@recipe.lines)} surovin"}
       >
         <:actions>
+          <.recipe_pictogram pictogram={@recipe.pictogram} class="h-10 w-10" />
           <.link
             id="edit-recipe"
             navigate={

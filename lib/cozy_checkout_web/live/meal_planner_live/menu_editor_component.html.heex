@@ -139,6 +139,9 @@
             class="flex min-w-0 items-center gap-1 rounded-md border border-dashed border-secondary-200 px-2 py-0.5"
           >
             <span class="hidden text-[10px] uppercase text-primary-400 sm:inline">Hlavní</span>
+            <.recipe_pictogram pictogram={
+              @catalog[item["recipe_id"]] && @catalog[item["recipe_id"]].pictogram
+            } />
             <p
               class="min-w-0 flex-1 break-words text-sm font-semibold leading-5"
               title={recipe_name(@catalog, item["recipe_id"])}
@@ -219,6 +222,7 @@
               :for={{id, position} <- Enum.with_index(item["supplement_recipe_ids"])}
               class="flex min-w-0 items-center gap-1 text-sm"
             >
+              <.recipe_pictogram pictogram={@catalog[id] && @catalog[id].pictogram} />
               <span class="min-w-0 flex-1 break-words leading-5" title={recipe_name(@catalog, id)}><span class="text-xs text-primary-400">{position +
                 1}.</span> {recipe_name(@catalog, id)}{if @catalog[id] && @catalog[id].archived_at,
                 do: " (archivovaný)"}</span>
@@ -417,6 +421,7 @@
         data-recipe-id={recipe.id}
         class="flex min-w-0 items-center gap-1 rounded-md border border-secondary-200 px-2 py-1"
       >
+        <.recipe_pictogram pictogram={recipe.pictogram} />
         <h3 class="min-w-0 flex-1 break-words text-sm font-medium leading-5" title={recipe.name}>
           {recipe.name}
         </h3>

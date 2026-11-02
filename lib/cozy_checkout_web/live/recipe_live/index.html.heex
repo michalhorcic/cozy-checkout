@@ -74,7 +74,12 @@
             class="group rounded-lg border border-secondary-200 bg-white p-6 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-tertiary-300 hover:shadow-sm"
           >
             <div class="mb-5 flex items-center justify-between">
-              <span class="rounded-lg bg-secondary-50 p-3 text-tertiary-600"><.icon
+              <span class="rounded-lg bg-secondary-50 p-3 text-tertiary-600"><.recipe_pictogram
+                :if={recipe.pictogram}
+                pictogram={recipe.pictogram}
+                class="h-6 w-6"
+              /><.icon
+                :if={is_nil(recipe.pictogram)}
                 name="hero-book-open"
                 class="h-6 w-6"
               /></span><span class="rounded-full bg-secondary-50 px-3 py-1 text-xs font-medium text-primary-400">{Decimal.to_string(
@@ -163,6 +168,41 @@
             />
           </div>
         </section>
+        <fieldset
+          id="recipe-pictogram-picker"
+          class="rounded-lg border border-secondary-200 bg-white p-4 shadow-sm"
+        >
+          <legend class="px-2 text-sm font-semibold">Piktogram (volitelný)</legend>
+          <p class="mb-3 text-sm text-primary-400">
+            Vyberte ručně. Bez výběru zůstane recept bez piktogramu.
+          </p>
+          <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+            <label
+              :for={
+                {key, label} <- [
+                  {"", "Bez piktogramu"} | CozyCheckout.Recipes.Pictograms.options()
+                ]
+              }
+              class="cursor-pointer"
+            >
+              <input
+                type="radio"
+                name={@form[:pictogram].name}
+                value={key}
+                checked={(@form[:pictogram].value || "") == key}
+                class="peer sr-only"
+              />
+              <span class="flex h-full flex-col items-center gap-1 rounded-lg border border-secondary-200 p-2 text-center text-xs text-primary-500 peer-checked:border-tertiary-500 peer-checked:bg-tertiary-50 peer-focus-visible:ring-2 peer-focus-visible:ring-tertiary-500">
+                <.icon :if={key == ""} name="hero-no-symbol" class="h-8 w-8 text-primary-300" />
+                <.recipe_pictogram :if={key != ""} pictogram={key} class="h-8 w-8" />
+                {label}
+              </span>
+            </label>
+          </div>
+          <p :for={{message, _} <- @form[:pictogram].errors} class="mt-2 text-sm text-red-700">
+            {message}
+          </p>
+        </fieldset>
         <section class="rounded-lg border border-secondary-200 bg-white p-6 shadow-sm">
           <div class="mb-5">
             <h2 class="text-lg font-bold text-primary-500">Suroviny na celou dávku</h2><p class="mt-1 text-sm text-primary-400">
