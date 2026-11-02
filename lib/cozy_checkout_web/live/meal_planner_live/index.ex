@@ -209,12 +209,12 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
 
     ~H"""
     <div id={@id}>
-    <p :if={@uncovered > 0} class="mb-2 text-xs font-semibold text-warning">
-      Chybí menu pro {@uncovered} porcí
-    </p>
-    <p :if={@day.portions[@meal_type].total == 0} class="text-sm text-primary-400">
-      Bez plánované stravy
-    </p>
+      <p :if={@uncovered > 0} class="mb-2 text-xs font-semibold text-warning">
+        Chybí menu pro {@uncovered} porcí
+      </p>
+      <p :if={@day.portions[@meal_type].total == 0} class="text-sm text-primary-400">
+        Bez plánované stravy
+      </p>
     </div>
     """
   end
