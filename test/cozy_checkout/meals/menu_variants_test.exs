@@ -17,15 +17,14 @@ defmodule CozyCheckout.Meals.MenuVariantsTest do
     refute Enum.any?(half.items, &(&1.meal_type == "lunch"))
   end
 
-  test "requires an exact, complete schedule, with no duplicate or extra service" do
+  test "requires an exact schedule, with no duplicate or extra service" do
     attrs = variant_attrs()
     [first | rest] = attrs.items
 
     for items <- [
           rest,
           attrs.items ++ [first],
-          attrs.items ++ [%{first | day_number: 99}],
-          [%{first | menu_text: ""} | rest]
+          attrs.items ++ [%{first | day_number: 99}]
         ] do
       assert {:error, cs} = MenuPlanning.create_variant(%{attrs | items: items})
       refute cs.valid?

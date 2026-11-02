@@ -23,19 +23,70 @@ implementované nejsou.
 
 ## Varianty menu a jídelníčky skupin
 
-V **Meal Planner → Varianty menu** vytvořte rozpis podle dnů pobytu. Počet dnů
-zahrnuje příjezd i odjezd (3 dny = 2 noci). Nastavte penzi, první a poslední
-jídlo, aktualizujte rozpis a doplňte hlavní jídlo nebo bufet pro každé podání.
-Polévky, přílohy a dezerty patří do doplňků daného jídla; počet podání nezvyšují.
-Editor podporuje pobyty na 1–366 dnů. Starší jednodenní textové šablony zůstávají dostupné samostatně.
+V **Meal Planner → Varianty menu** jsou menu pro celý pobyt. Přehled umožňuje
+hledat podle názvu menu i připojených receptů a filtrovat délku, penzi a stav.
+**Připravené** menu má hlavní recept v každém podání, žádné archivované recepty
+ani původní položky čekající na kontrolu. Koncepty ukazují počet chybějících
+podání; nevyřešené nebo archivované odkazy mají stav **K dořešení**.
+Obsah po dnech otevřete najetím, zaměřením klávesnicí nebo kliknutím na
+**Obsah menu**. Kliknutí náhled ponechá rozbalený. **Duplikovat** vytvoří vlastní
+sestavu; **Archivovat** je v nabídce Další. **Přiřadit pobytu** zachová kontext
+aktuální rezervace, případně nabídne vyhledávání vhodného pobytu.
 
-Tlačítko **Přidat varianty z podkladové tabulky** výslovně načte devět variant
-z uloženého podkladu Drive ze dne 21. 10. 2026. Data jsou v
-`priv/menu_variants/drive_reference.json` včetně odkazu na zdroj. Snídaně jsou
-zastoupené textem „Snídaňový bufet“. Existující názvy včetně archivovaných se
-přeskočí; import je opakovatelný a žádné dosavadní menu nepřepisuje. Tabulka na
-Drive se nemění a aplikace na ní při běžném provozu není závislá. Receptury,
-suroviny, množství a hosté se tímto tlačítkem neimportují.
+V **Nové menu / Upravit** nastavte název, počet dnů včetně příjezdu a odjezdu
+(3 dny = 2 noci), penzi a první/poslední jídlo. Podporovaný rozsah je 1–366 dnů.
+**Aktualizovat rozpis podle nastavení** zachová odkazy na shodném dni a podání.
+Před odstraněním vyplněných podání ukáže jejich původní i výslednou podobu
+k potvrzení. Po změně nastavení je potřeba rozpis aktualizovat.
+
+Snídaně jsou v editoru, náhledech menu i menu pobytu ve výchozím stavu skryté.
+Přepínač **Zobrazit a upravit snídaně** je zpřístupní pro kontrolu a změny
+(v přehledu **Zobrazit snídaně v náhledech**). Nové snídaně dostanou automaticky
+aktivní recept **Snídaňový bufet**; existující vlastní výběr se zachová.
+Skrytí nic nemaže, nemění poznámky ani výpočet surovin. Kopírování dne při
+skrytých snídaních mění jen ostatní podání. Plánovač a tisk dál obsahují celý rozpis.
+
+Názvy jídel se nepíšou. Aktivujte oblast hlavního receptu/bufetu nebo doplňků
+a vyberte recept z knihovny. Na desktopu lze recept také přetáhnout na označený
+cíl; knihovna zůstává beze změny. Vyhledávání ignoruje velikost písmen a
+diakritiku, vrací stránky po 30 receptech a nabízí **Další recepty**.
+**Suroviny** zobrazí základní dávku. Na mobilu otevřou knihovnu tlačítka
+**Přidat / Vyměnit recept**; jde ji zavřít i klávesou Escape.
+
+Hlavní recept může zahrnovat přílohu; samostatná příloha není povinná. Doplňky
+jsou v explicitním pořadí a počítají se pro stejné porce jako hlavní jídlo.
+Jeden recept nesmí být v jednom podání dvakrát. Šipky mění pořadí doplňků.
+Editor používá kompaktní řádky a ikonové akce. Jejich význam ukáže najetí
+kurzorem; tlačítka mají i popisky pro čtečky obrazovky. Tužka mění hlavní
+recept, křížek ho odebere, ikona doplňků přidá další recept a šipky mění pořadí.
+Poznámka je ve výchozím stavu sbalená za ikonou bubliny; u vyplněné poznámky
+je ikona zvýrazněná. Zavření poznámky zachová i rozepsaný text. Poznámka podání
+je samostatná, neodpojuje recepty a neovlivňuje spotřebu.
+Aktivní podání lze kopírovat nebo přesunout na vybraný den/jídlo. Kopie celého
+dne respektuje podání dostupná v cílovém dni. Hlavní recept aktivní snídaně lze
+použít pro všechny snídaně. Přepsání vyplněných podání vyžaduje potvrzení dopadu.
+**Vrátit poslední změnu** vrací neuložené úpravy (nejvýše posledních 20 kroků).
+
+**Uložit menu** uloží nastavení i všechny vazby v jedné transakci s kontrolou
+souběžných změn. Lze uložit i rozpracované menu bez hlavních receptů; nelze ho
+nově přiřadit. **Zrušit** nic neukládá. Při odchodu s neuloženými změnami se
+prohlížeč zeptá na jejich zahození. Starší jednodenní textové šablony zůstávají
+samostatné a nevyplňují receptové menu.
+
+**Import výchozích podkladů → Přidat varianty z podkladové tabulky** načte devět
+variant z `priv/menu_variants/drive_reference.json`. Existující názvy včetně
+archivovaných se přeskočí. Přesné názvy se propojí s aktivními recepty;
+neshody vyžadují kontrolu v editoru. Opakování nic nepřepisuje, včetně již
+zkontrolovaných položek. Drive se nemění a při běžném provozu není potřeba.
+
+Migrace `20261102110000_add_recipe_menu_review` doplňuje poznámky a kontrolu
+původních položek do šablon i menu pobytů. Zachová všechny existující vazby
+a původní texty. Doplní jen přesné shody do chybějících vazeb; rozporné nebo
+neúplné položky zůstanou nevyřešené. Editor ukáže původní text vedle současných
+receptů. Zkontrolujte i přílohy: „s rýží“ v názvu není důkaz rýže v receptu.
+Potvrzení **Výběr jsem zkontroloval/a** výslovně odstraní nevybrané původní
+položky z dalšího zobrazení a výpočtů. Původní text se nemění na poznámku.
+Bez kontroly je nákup označen jako částečný a uvádí původní text k opravě.
 
 V detailu rezervace otevřete **Menu rezervace**, vyberte variantu a zobrazte
 náhled konkrétních dat, jídel a porcí. Varianta musí přesně odpovídat délce,
@@ -44,7 +95,7 @@ souběžná menu jiných skupin. Použití mění pouze jídelníček dané reze
 společný denní plán a ostatní skupiny zachová. Pokud se od náhledu změní
 podklady, aplikace vyžádá nový náhled.
 
-Přiřazený jídelníček je samostatná kopie. Pozdější úprava nebo archivace
+Přiřazený jídelníček je samostatná sestava odkazů na recepty, nikoli kopie receptur. Pozdější úprava nebo archivace
 varianty ho nepřepíše. Jídla lze ručně upravit; tato úprava je při dalším použití
 varianty chráněná. Pro její nahrazení použijte **Povolit přepsání při použití
 varianty** a znovu zkontrolujte náhled. Ručně upravené jídlo mimo nový rozpis
@@ -60,7 +111,10 @@ je znovu. Rezervace bez přiřazené varianty nebo se změněným rozpisem mají
 ## Receptury a suroviny
 
 V **Meal Planner → Recepty a suroviny** je knihovna receptů s hledáním bez diakritiky,
-katalog surovin a přepočet pro dospělé a děti. U receptu se zadává počet porcí z jedné
+katalog surovin a přepočet pro dospělé a děti. Přímo v seznamu otevřete
+**Náhled surovin** najetím, zaměřením klávesnicí nebo kliknutím; kliknutí ho
+ponechá rozbalený. Ukáže názvy, množství a poznámky surovin pro základní dávku
+bez přechodu na detail a bez dalšího dotazu do databáze. U receptu se zadává počet porcí z jedné
 dávky a množství všech surovin na tuto dávku. Formulář umožňuje přidávat a odebírat
 suroviny přímo v receptu, upravit zdroj či odkaz a uchovat poznámky k pracovním odhadům.
 
@@ -72,15 +126,19 @@ Vzorce jsou převzaté jako vypočtené hodnoty ke dni snímku; například odvo
 suroviny lasagní se později nepřepočítávají podle jiné receptury automaticky.
 Import proběhne při nasazení a spuštění migrací, žádné ruční kopírování v UI není nutné.
 
-U uloženého jídla varianty nebo rezervace klikněte na **Recepty a suroviny**.
-Vyberte jeden hlavní recept a případné doplňky (například polévku). Každý doplněk
-se počítá pro stejnou skupinu a nezvyšuje počet vydávaných porcí. Shodné názvy
-z tabulky se propojí automaticky; ostatní texty a snídaňové bufety bez receptu
-zobrazují upozornění na neúplný výpočet. Text menu se při výběru receptu nemění. Pozdější změna textu hlavního jídla
-nebo doplňků odpojí příslušné recepty, aby nezůstalo množství pro jiné jídlo.
-Při použití varianty se vazby zkopírují do menu rezervace; ruční změna vazeb
-rezervace je chráněná stejně jako ruční úprava jejího menu. Různé skupiny mohou
-mít různé recepty a vlastní přepočet surovin.
+Recepty vybírejte přímo v editoru menu nebo přes **Upravit jídlo** v menu
+rezervace. Oba používají stejný výběr a atomické uložení. Staré odkazy na
+editor vazeb šablony přesměrují do editoru menu. U pobytu odkaz na recepty
+otevírá detail spotřeby s přechodem k editaci daného podání.
+
+Změna sestavy šablony se do již přiřazených pobytů automaticky nepřenáší.
+**Změna samotného názvu nebo surovin receptu se projeví při dalším načtení
+všude, také u minulých dat.** Neoznačí podání za ručně upravené. Archivované
+recepty zůstávají použitelné ve stávajících vazbách a nákupu, nelze je však
+nově vybrat. Menu s archivovaným receptem se musí před novým přiřazením
+opravit; jeho duplikace zůstane konceptem s upozorněním. Přejmenování receptu
+nevyvolává falešné hlášení chybějícího doplňku u zkontrolovaných podání.
+Neukládají se verze receptur k menu ani evidence vydaných jídel.
 
 **Porce dětí** nastavují samostatně koeficient pro teplá jídla a snídaně, obojí
 výchozí **70 %** podle tabulky. Počet porcí pro výdej je stále dospělí + děti.
@@ -92,7 +150,7 @@ Nákupní seznam a balení popisuje následující část; rezervy a sklad se zd
 
 Testy pokrývají úplnost importu, receptury a suroviny, přepočty, ochranu při
 souběžných úpravách, vazby variant a rezervací i ovládání knihovny přes LiveView.
-Spusťte `PGUSER=elixir PGPASSWORD='' mix precommit`.
+Testy standardně spouští GitHub CI podle `AGENTS.md`.
 
 
 ## Nákup pro kuchyň

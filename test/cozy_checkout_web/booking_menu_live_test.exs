@@ -49,20 +49,23 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     item = hd(menu.items)
     assert has_element?(view, "#assigned-portions-#{item.id}", "15 porcí")
     view |> element("#edit-menu-item-#{item.id}") |> render_click()
+    view |> element("#menu-slot-0 button[phx-click='toggle_note']") |> render_click()
 
     view
-    |> form("#booking-menu-item-form",
-      booking_menu_item: %{menu_text: "Dietní ruční večeře", supplements: "Bezlepková příloha"}
+    |> form("#booking-menu-editor-#{item.id}-form",
+      editor: %{items: %{"0" => %{note: "Dietní ruční večeře"}}}
     )
-    |> render_submit()
+    |> render_change()
+
+    view |> form("#booking-menu-editor-#{item.id}-form") |> render_submit()
 
     assert has_element?(view, "#manual-menu-item-#{item.id}")
-    assert has_element?(view, "#flash-success .bg-emerald-50", "Ruční úprava uložena")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Podání uloženo")
     preview(view, variant)
     assert has_element?(view, "#booking-menu-preview", "Ruční úprava bude zachována")
     assert has_element?(view, "#booking-menu-preview", "Dietní ruční večeře")
     view |> element("#apply-booking-menu") |> render_click()
-    assert hd(MenuPlanning.get_booking_menu(booking.id).items).menu_text == "Dietní ruční večeře"
+    assert hd(MenuPlanning.get_booking_menu(booking.id).items).note == "Dietní ruční večeře"
     assert Meals.get_meal_by_date_and_type(~D[2027-01-09], "lunch").menu_text == "Společný oběd"
   end
 
@@ -104,7 +107,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
       MenuPlanning.update_booking_item(
         booking.id,
         item.id,
-        %{menu_text: "Chráněné jídlo"},
+        %{note: "Chráněné jídlo"},
         MenuPlanning.item_version(item)
       )
 
@@ -193,7 +196,26 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     {:ok, _} = MenuPlanning.delete_variant(variant)
     preview(view, variant)
     assert has_element?(view, "#flash-error", "Vyberte dostupnou variantu")
-    refute has_element?(view, "#booking-menu-variant option[value='#{variant.id}']")
+    refute has_element?(view, "#selection_variant_id option[value='#{variant.id}']")
     refute has_element?(view, "#booking-menu-preview")
+  end
+
+  test "booking and assignment preview keep breakfast rows behind the visibility switch", %{
+    conn: conn
+  } do
+    booking = menu_booking_fixture()
+    variant = variant_fixture()
+    menu = assign_variant(booking, variant)
+    breakfast = Enum.find(menu.items, &(&1.meal_type == "breakfast"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/menu")
+    refute has_element?(view, "#edit-menu-item-#{breakfast.id}")
+    preview(view, variant)
+    refute has_element?(view, "#preview-portions-#{breakfast.date}-breakfast")
+    view |> element("#booking-menu-toggle-breakfasts") |> render_click()
+    assert has_element?(view, "#edit-menu-item-#{breakfast.id}")
+    assert has_element?(view, "#preview-portions-#{breakfast.date}-breakfast")
+
+    assert Enum.find(MenuPlanning.get_booking_menu(booking.id).items, &(&1.id == breakfast.id)).recipe_id ==
+             breakfast.recipe_id
   end
 end

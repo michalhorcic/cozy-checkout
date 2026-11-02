@@ -20,6 +20,19 @@
         CozyCheckoutWeb.FoodNavigation.back_label(@request_context, "Zpět na detail rezervace")
       }
     />
+    <div class="space-y-2">
+      <button
+        id="booking-menu-toggle-breakfasts"
+        type="button"
+        phx-click="toggle_breakfasts"
+        role="switch"
+        aria-checked={to_string(@show_breakfasts)}
+        class="text-sm text-tertiary-600 underline"
+      >{if @show_breakfasts, do: "Skrýt snídaně", else: "Zobrazit a upravit snídaně"}</button>
+      <p :if={not @show_breakfasts} class="text-sm text-primary-400">
+        Skryté snídaně zůstávají součástí menu i výpočtu surovin.
+      </p>
+    </div>
     <section class="rounded-lg bg-white p-6 shadow">
       <h2 class="text-xl font-semibold text-primary-500">Přiřadit variantu</h2>
       <p class="my-3 text-sm text-primary-400">
@@ -28,21 +41,28 @@
       <.form
         for={@selection_form}
         id="booking-menu-selection"
-        phx-change="select_variant"
         phx-submit="preview"
       >
-        <.input
-          name="selection[variant_id]"
-          id="booking-menu-variant"
-          type="select"
-          label="Varianta menu"
-          value={@selected_variant}
-          prompt="Vyberte variantu"
-          options={Enum.map(@variants, &{&1.name, &1.id})}
+        <.searchable_picker
+          field={@selection_form[:variant_id]}
+          options={@variant_options}
+          query={@variant_query}
+          open={@variant_open}
+          required={false}
+          label="Menu pobytu"
+          placeholder="Hledat menu…"
+          search_name="variant_search"
+          search_event="search_variants"
+          open_event="open_variant_search"
+          close_event="close_variant_search"
+          select_event="select_variant"
         />
         <div class="mt-4 flex flex-wrap items-center gap-4">
           <.button id="preview-booking-menu" type="submit">Zobrazit náhled</.button>
-          <.link navigate={~p"/admin/meal-planner/variants"} class="text-tertiary-600 underline">Spravovat varianty</.link>
+          <.link
+            navigate={CozyCheckoutWeb.FoodNavigation.path(:variants, @food_context)}
+            class="text-tertiary-600 underline"
+          >Spravovat varianty</.link>
           <.link
             navigate={~p"/admin/bookings/#{@booking.id}/edit"}
             class="text-tertiary-600 underline"
@@ -85,6 +105,10 @@
             <p :if={row.supplements} class="mt-1 whitespace-pre-line text-sm text-primary-400">
               {row.supplements}
             </p>
+            <p :if={row.note} class="my-2 text-sm text-primary-400">Poznámka: {row.note}</p>
+            <p :if={row.legacy?} class="text-sm text-amber-800">
+              Původní položky čekají na kontrolu.
+            </p>
             <p :if={row.preserve} class="mt-2 font-semibold text-tertiary-600">
               Ruční úprava bude zachována
             </p>
@@ -117,6 +141,15 @@
     />
     <section id="assigned-booking-menu" class="rounded-lg bg-white p-6 shadow">
       <h2 class="text-xl font-semibold text-primary-500">Uložené menu rezervace</h2>
+      <.link
+        :if={@booking.check_out_date}
+        id="booking-menu-shopping"
+        navigate={CozyCheckoutWeb.FoodNavigation.path(:shopping, @food_context)}
+        class="my-3 inline-block text-tertiary-600 underline"
+      >Zobrazit nákup pro tento pobyt</.link>
+      <p class="my-2 text-sm text-primary-400">
+        Spotřeba a odhady používají aktuální receptury i pro minulá data.
+      </p>
       <p :if={is_nil(@menu)} id="booking-menu-unassigned" class="mt-3 text-primary-400">
         Menu ještě není přiřazené. Vyberte variantu a zkontrolujte náhled.
       </p>
@@ -144,9 +177,24 @@
             {Calendar.strftime(item.date, "%d.%m.%Y")}<br />{meal_label(item.meal_type)}
           </div>
           <div>
-            <p class="whitespace-pre-line text-primary-500">{item.menu_text}</p>
-            <p :if={item.supplements} class="mt-1 whitespace-pre-line text-sm text-primary-400">
-              {item.supplements}
+            <p class="whitespace-pre-line text-primary-500">
+              {CozyCheckout.Meals.MenuRecipes.display(item).main || "Chybí hlavní recept"}
+            </p>
+            <p
+              :if={CozyCheckout.Meals.MenuRecipes.display(item).supplements}
+              class="mt-1 whitespace-pre-line text-sm text-primary-400"
+            >
+              {CozyCheckout.Meals.MenuRecipes.display(item).supplements}
+            </p>
+            <p :if={item.note} class="my-2 text-sm text-primary-400">Poznámka: {item.note}</p>
+            <p
+              :if={CozyCheckout.Meals.MenuRecipes.legacy?(item)}
+              class="my-2 text-sm text-amber-800"
+            >
+              Původní text čeká na kontrolu: {CozyCheckout.Meals.MenuPlanning.menu_text(
+                item.menu_text,
+                item.supplements
+              )}
             </p>
             <p
               :if={item.manually_edited}
@@ -194,22 +242,20 @@
   </div>
   <.modal :if={@edit_item} id="booking-menu-item-modal" show on_cancel={JS.push("close_item")}>
     <h2 class="mb-4 text-xl font-semibold text-primary-500">Upravit jídlo rezervace</h2>
-    <.form for={@edit_form} id="booking-menu-item-form" phx-submit="save_item">
-      <.input
-        field={@edit_form[:menu_text]}
-        type="textarea"
-        label="Hlavní jídlo / snídaňový bufet"
-        rows="3"
-        required
-      />
-      <.input field={@edit_form[:supplements]} type="textarea" label="Doplňky" rows="3" />
-      <p class="mt-3 text-sm text-primary-400">
-        Změna textu odpojí recepty příslušného chodu nebo doplňků. Po uložení je znovu připojte u daného jídla.
-      </p>
-      <p class="my-4 text-sm text-primary-400">
-        Ruční úprava bude chráněná před dalším použitím varianty.
-      </p>
-      <.button type="submit" phx-disable-with="Ukládám…">Uložit ruční úpravu</.button>
-    </.form>
+    <.live_component
+      module={CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent}
+      id={"booking-menu-editor-#{@edit_item.id}"}
+      mode={:booking}
+      breakfasts_visible={@show_breakfasts}
+      record={@edit_item}
+      booking_id={@booking_id}
+      version={@edit_version}
+      return_to={
+        CozyCheckoutWeb.FoodNavigation.with_context(
+          ~p"/admin/bookings/#{@booking_id}/menu",
+          @food_context
+        )
+      }
+    />
   </.modal>
 </Layouts.app>

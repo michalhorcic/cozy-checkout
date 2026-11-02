@@ -37,6 +37,26 @@ defmodule CozyCheckout.MenuFixtures do
   end
 
   def variant_fixture(overrides \\ %{}) do
+    attrs = variant_attrs(overrides)
+    ingredient = CozyCheckout.RecipeFixtures.ingredient_fixture()
+
+    names =
+      Enum.flat_map(attrs.items, fn item ->
+        [item.menu_text | String.split(item.supplements || "", "\n", trim: true)]
+      end)
+      |> Enum.reject(&(&1 in [nil, ""]))
+      |> Enum.uniq()
+
+    Enum.each(names, fn name ->
+      unless CozyCheckout.Repo.get_by(CozyCheckout.Recipes.Recipe, name: name),
+        do: CozyCheckout.RecipeFixtures.recipe_fixture(ingredient, %{name: name})
+    end)
+
+    {:ok, variant} = MenuPlanning.create_variant(attrs)
+    variant
+  end
+
+  def legacy_variant_fixture(overrides \\ %{}) do
     {:ok, variant} = MenuPlanning.create_variant(variant_attrs(overrides))
     variant
   end

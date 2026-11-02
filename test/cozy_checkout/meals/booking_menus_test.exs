@@ -97,7 +97,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
              MenuPlanning.update_booking_item(
                booking.id,
                item.id,
-               %{menu_text: "Dietní večeře", supplements: "Bezlepková příloha"},
+               %{note: "Dietní večeře · Bezlepková příloha"},
                MenuPlanning.item_version(item)
              )
 
@@ -105,8 +105,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
     {:ok, preview} = MenuPlanning.preview(booking.id, other.id)
     row = hd(preview.rows)
     assert row.preserve
-    assert row.menu_text == "Dietní večeře"
-    assert row.supplements == "Bezlepková příloha"
+    assert row.note == "Dietní večeře · Bezlepková příloha"
     {:ok, applied} = MenuPlanning.apply_variant(booking.id, other.id, preview.token)
     assert hd(applied.items).id == edited.id
     assert hd(applied.items).manually_edited
@@ -126,7 +125,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
       MenuPlanning.update_booking_item(
         booking.id,
         item.id,
-        %{menu_text: "Ruční menu"},
+        %{note: "Ruční menu"},
         MenuPlanning.item_version(item)
       )
 
@@ -147,7 +146,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
     assert {:error, {:invalid_menu, _}} =
              MenuPlanning.apply_variant(booking.id, variant.id, preview.token)
 
-    assert Repo.get!(BookingMenuItem, edited.id).menu_text == "Ruční menu"
+    assert Repo.get!(BookingMenuItem, edited.id).note == "Ruční menu"
 
     {:ok, _} =
       MenuPlanning.allow_item_replacement(
@@ -199,14 +198,14 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
       MenuPlanning.update_booking_item(
         booking.id,
         item.id,
-        %{menu_text: "Pozdní úprava"},
+        %{note: "Pozdní úprava"},
         MenuPlanning.item_version(item)
       )
 
     assert {:error, :stale_preview} =
              MenuPlanning.apply_variant(booking.id, variant.id, preview.token)
 
-    assert hd(MenuPlanning.get_booking_menu(booking.id).items).menu_text == "Pozdní úprava"
+    assert hd(MenuPlanning.get_booking_menu(booking.id).items).note == "Pozdní úprava"
   end
 
   test "counts remain live while later variant edits do not mutate assigned text" do
@@ -269,7 +268,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
              MenuPlanning.update_booking_item(
                booking.id,
                item.id,
-               %{menu_text: "První editor"},
+               %{note: "První editor"},
                version
              )
 
@@ -277,14 +276,14 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
              MenuPlanning.update_booking_item(
                booking.id,
                item.id,
-               %{menu_text: "Druhý editor"},
+               %{note: "Druhý editor"},
                version
              )
 
     assert {:error, :stale_item} =
              MenuPlanning.allow_item_replacement(booking.id, item.id, version)
 
-    assert Repo.get!(BookingMenuItem, edited.id).menu_text == "První editor"
+    assert Repo.get!(BookingMenuItem, edited.id).note == "První editor"
   end
 
   test "overlapping manual meals keep their text and acquire the new relative day" do
@@ -297,7 +296,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
       MenuPlanning.update_booking_item(
         booking.id,
         item.id,
-        %{menu_text: "Zachovaná večeře"},
+        %{note: "Zachovaná večeře"},
         MenuPlanning.item_version(item)
       )
 
@@ -312,7 +311,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
     {:ok, updated} = MenuPlanning.apply_variant(booking.id, variant.id, preview.token)
     kept = Enum.find(updated.items, &(&1.id == item.id))
     assert kept.day_number == 1
-    assert kept.menu_text == "Zachovaná večeře"
+    assert kept.note == "Zachovaná večeře"
   end
 
   test "an item removed by another application reports a stale edit rather than crashing" do
@@ -333,7 +332,7 @@ defmodule CozyCheckout.Meals.BookingMenusTest do
              MenuPlanning.update_booking_item(
                booking.id,
                item.id,
-               %{menu_text: "Starý editor"},
+               %{note: "Starý editor"},
                MenuPlanning.item_version(item)
              )
   end

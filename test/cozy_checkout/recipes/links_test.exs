@@ -52,7 +52,7 @@ defmodule CozyCheckout.Recipes.LinksTest do
                "booking",
                item.id,
                recipe.id,
-               [extra.id, extra.id, recipe.id],
+               [extra.id],
                Links.version(item)
              )
 
@@ -100,11 +100,13 @@ defmodule CozyCheckout.Recipes.LinksTest do
              MenuPlanning.apply_variant(booking.id, variant.id, preview.token)
   end
 
-  test "archived recipes remain usable in existing menus but cannot be newly selected" do
+  test "archived recipes remain usable on assigned stays but block new assignments" do
     variant = variant_fixture()
     item = hd(variant.items)
     recipe = recipe_fixture()
     {:ok, saved} = Links.save("variant", item.id, recipe.id, [], Links.version(item))
+    booking = menu_booking_fixture()
+    menu = assign_variant(booking, MenuPlanning.get_variant!(variant.id))
     assert {:ok, _} = Recipes.archive_recipe(recipe)
     assert {:ok, _} = Links.save("variant", item.id, recipe.id, [], Links.version(saved))
     other = Enum.at(variant.items, 1)
@@ -112,8 +114,9 @@ defmodule CozyCheckout.Recipes.LinksTest do
     assert {:error, :unavailable_recipe} =
              Links.save("variant", other.id, recipe.id, [], Links.version(other))
 
-    booking = menu_booking_fixture()
-    menu = assign_variant(booking, MenuPlanning.get_variant!(variant.id))
+    assert {:error, {:invalid_menu, _}} =
+             MenuPlanning.assign_variant(menu_booking_fixture().id, variant.id)
+
     linked = Enum.find(menu.items, &(&1.recipe_id == recipe.id))
     assert {:ok, %{recipes: [_]}} = CozyCheckout.Recipes.Consumption.for_booking_item(linked.id)
   end
@@ -129,7 +132,7 @@ defmodule CozyCheckout.Recipes.LinksTest do
     assert Links.load!("variant", item.id).recipe_id == recipe.id
   end
 
-  test "changing dish text clears obsolete quantities while leaving other courses linked" do
+  test "legacy wording and notes cannot disconnect reviewed recipe links" do
     variant = variant_fixture()
     item = hd(variant.items)
     main = recipe_fixture()
@@ -147,7 +150,7 @@ defmodule CozyCheckout.Recipes.LinksTest do
       )
 
     changed = Links.load!("booking", booking_item.id)
-    assert is_nil(changed.recipe_id)
+    assert changed.recipe_id == main.id
     assert Links.supplement_ids(changed) == [soup.id]
 
     current = MenuPlanning.get_variant!(variant.id)
@@ -161,7 +164,7 @@ defmodule CozyCheckout.Recipes.LinksTest do
     {:ok, _} = MenuPlanning.update_variant(current, %{items: items})
     changed = Links.load!("variant", item.id)
     assert changed.recipe_id == main.id
-    assert Links.supplement_ids(changed) == []
+    assert Links.supplement_ids(changed) == [soup.id]
   end
 
   test "preloaded variants order services by day and meal even when input is shuffled" do

@@ -26,12 +26,15 @@ import {hooks as colocatedHooks} from "phoenix-colocated/cozy_checkout"
 import topbar from "../vendor/topbar"
 import {BillingPopover} from "./hooks/billing_popover"
 import {CalculationEditor} from "./hooks/calculation_editor"
+import {MenuEditor, MenuPreview} from "./hooks/menu_editor"
 import {ShoppingChecklist} from "./hooks/shopping_checklist"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 // Custom hooks
 const Hooks = {
+  MenuEditor,
+  MenuPreview,
   CalculationEditor,
   BillingPopover,
   ShoppingChecklist,

@@ -102,6 +102,12 @@ defmodule CozyCheckoutWeb.MealComponents do
         <p :if={group.supplements} class="mt-1 whitespace-pre-line text-xs text-primary-400">
           {group.supplements}
         </p>
+        <p :if={Map.get(group, :note)} class="mt-1 text-xs text-primary-400">
+          Poznámka: {group.note}
+        </p>
+        <p :if={Map.get(group, :legacy?)} class="mt-1 text-xs text-amber-800">
+          Původní text čeká na kontrolu; nákup může být neúplný: {Map.get(group, :legacy_text)}
+        </p>
         <.link
           navigate={
             CozyCheckoutWeb.FoodNavigation.with_context(

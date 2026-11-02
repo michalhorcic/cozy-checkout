@@ -41,8 +41,7 @@ defmodule CozyCheckoutWeb.FoodNavigationLiveTest do
           {"/admin/meal-planner/templates", :templates},
           {"/admin/meal-planner/portion-settings", :settings},
           {"/admin/bookings/#{booking.id}/menu", :planner},
-          {"/admin/recipes/menu/booking/#{item.id}", :planner},
-          {"/admin/recipes/menu/variant/#{hd(variant.items).id}", :variants}
+          {"/admin/recipes/menu/booking/#{item.id}", :planner}
         ] do
       {:ok, view, _} = live(conn, path)
       assert has_element?(view, "#food-layout")

@@ -1,5 +1,5 @@
 defmodule CozyCheckout.Recipes.Links do
-  @moduledoc "Structured main/dish links. Text remains editable and booking snapshots keep their own links."
+  @moduledoc "Structured recipe links with parent locks and optimistic revisions."
   import Ecto.Query
   alias Ecto.Changeset
   alias CozyCheckout.Repo
@@ -38,8 +38,16 @@ defmodule CozyCheckout.Recipes.Links do
     :crypto.hash(
       :sha256,
       :erlang.term_to_binary(
-        {Map.take(item, [:id, :updated_at, :menu_text, :supplements, :manually_edited, :recipe_id]),
-         supplement_ids(item)}
+        {Map.take(item, [
+           :id,
+           :updated_at,
+           :menu_text,
+           :supplements,
+           :manually_edited,
+           :recipe_id,
+           :note,
+           :recipe_links_reviewed_at
+         ]), supplement_ids(item)}
       )
     )
     |> Base.url_encode64(padding: false)
@@ -49,36 +57,66 @@ defmodule CozyCheckout.Recipes.Links do
     do: text |> String.replace(~r/^Polévka k (obědu|večeři):\s*/u, "") |> String.trim()
 
   def infer_variant(variant) do
+    variant = preload_variant(variant)
+
     recipes =
       Repo.all(from r in Recipe, where: is_nil(r.archived_at), select: {r.name, r.id})
       |> Map.new()
 
     Enum.each(variant.items, fn item ->
-      main = recipes[item.menu_text]
-      if main, do: item |> Changeset.change(recipe_id: main) |> Repo.update!()
+      main = item.recipe_id || recipes[item.menu_text]
+
+      if main && is_nil(item.recipe_id) && is_nil(item.recipe_links_reviewed_at),
+        do: item |> Changeset.change(recipe_id: main) |> Repo.update!()
+
       names = String.split(item.supplements || "", "\n", trim: true)
 
       for {name, index} <- Enum.with_index(names),
           id = recipes[label_name(name)],
           not is_nil(id),
-          id != main do
+          id != main,
+          is_nil(item.recipe_links_reviewed_at),
+          item.recipe_supplements == [] do
         %VariantSupplement{menu_variant_item_id: item.id, recipe_id: id, position: index}
         |> Repo.insert!(on_conflict: :nothing)
       end
     end)
 
-    Repo.preload(variant, [items: [:recipe, recipe_supplements: :recipe]], force: true)
-    |> order_variant()
+    loaded = Repo.preload(variant, [items: [:recipe, recipe_supplements: :recipe]], force: true)
+
+    items =
+      Enum.map(loaded.items, fn item ->
+        names = String.split(item.supplements || "", "\n", trim: true) |> Enum.map(&label_name/1)
+
+        linked =
+          Enum.sort_by(item.recipe_supplements, & &1.position) |> Enum.map(& &1.recipe.name)
+
+        if ((is_nil(item.recipe_links_reviewed_at) and item.recipe) &&
+              item.menu_text == item.recipe.name) and names == linked do
+          saved =
+            item
+            |> Changeset.change(
+              recipe_links_reviewed_at: DateTime.truncate(DateTime.utc_now(), :second)
+            )
+            |> Repo.update!()
+
+          %{item | recipe_links_reviewed_at: saved.recipe_links_reviewed_at}
+        else
+          item
+        end
+      end)
+
+    %{loaded | items: items} |> order_variant()
   end
 
   # Changed menu wording must never silently keep quantities for a different dish.
   def clear_text_changes(before, saved, kind) do
     saved =
-      if before.menu_text != saved.menu_text,
+      if is_nil(before.recipe_links_reviewed_at) and before.menu_text != saved.menu_text,
         do: saved |> Changeset.change(recipe_id: nil) |> Repo.update!(),
         else: saved
 
-    if before.supplements != saved.supplements do
+    if is_nil(before.recipe_links_reviewed_at) and before.supplements != saved.supplements do
       if kind == "variant",
         do:
           Repo.delete_all(from l in VariantSupplement, where: l.menu_variant_item_id == ^saved.id),
@@ -91,7 +129,15 @@ defmodule CozyCheckout.Recipes.Links do
 
   def copy(source, target) do
     source = preload(source)
-    target |> Changeset.change(recipe_id: source.recipe_id) |> Repo.update!()
+
+    target
+    |> Changeset.change(
+      recipe_id: source.recipe_id,
+      note: source.note,
+      recipe_links_reviewed_at: source.recipe_links_reviewed_at
+    )
+    |> Repo.update!()
+
     Repo.delete_all(from l in BookingSupplement, where: l.booking_menu_item_id == ^target.id)
 
     for link <- source.recipe_supplements do
@@ -126,7 +172,7 @@ defmodule CozyCheckout.Recipes.Links do
 
   def save(kind, id, main_id, extras, expected) when kind in ["variant", "booking"] do
     main_id = if main_id in [nil, ""], do: nil, else: main_id
-    extras = Enum.uniq(extras) |> Enum.reject(&(&1 in [nil, "", main_id]))
+    extras = Enum.reject(extras, &(&1 in [nil, ""]))
 
     Repo.transaction(fn ->
       original = load!(kind, id)
@@ -153,6 +199,10 @@ defmodule CozyCheckout.Recipes.Links do
       end
 
       ids = Enum.reject([main_id | extras], &is_nil/1)
+      if length(ids) != length(Enum.uniq(ids)), do: Repo.rollback(:duplicate_recipe)
+
+      if Enum.any?(ids, &(not match?({:ok, _}, Ecto.UUID.cast(&1)))),
+        do: Repo.rollback(:unavailable_recipe)
 
       retained = Enum.reject([item.recipe_id | supplement_ids(item)], &is_nil/1)
 
@@ -160,6 +210,7 @@ defmodule CozyCheckout.Recipes.Links do
         Repo.all(
           from r in Recipe,
             where: r.id in ^ids and (is_nil(r.archived_at) or r.id in ^retained),
+            lock: "FOR SHARE",
             select: r.id
         )
 
@@ -169,6 +220,13 @@ defmodule CozyCheckout.Recipes.Links do
         if kind == "booking",
           do: %{recipe_id: main_id, manually_edited: true},
           else: %{recipe_id: main_id}
+
+      changes =
+        Map.put(
+          changes,
+          :recipe_links_reviewed_at,
+          DateTime.truncate(DateTime.utc_now(), :second)
+        )
 
       item |> Changeset.change(changes) |> Repo.update!()
 

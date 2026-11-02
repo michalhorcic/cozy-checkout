@@ -99,6 +99,7 @@ defmodule CozyCheckout.Recipes.ConsumptionTest do
   test "unlinked menu warns, stale and cancelled bookings cannot be calculated or linked" do
     booking = menu_booking_fixture()
     [item | _] = assign_variant(booking, variant_fixture()).items
+    {:ok, item} = Links.save("booking", item.id, nil, [], Links.version(item))
     assert {:ok, result} = Consumption.for_booking_item(item.id)
     assert result.issues != []
     recipe = recipe_fixture()
@@ -118,5 +119,36 @@ defmodule CozyCheckout.Recipes.ConsumptionTest do
              })
 
     assert {:error, :cancelled_booking} = Consumption.for_booking_item(item.id)
+  end
+
+  test "booking consumption batches ingredients for all selected recipes, including archived ones" do
+    ingredient = ingredient_fixture()
+    recipes = for _ <- 1..8, do: recipe_fixture(ingredient)
+    [main | extras] = recipes
+    variant = variant_fixture()
+    source = hd(variant.items)
+
+    assert {:ok, _} =
+             Links.save(
+               "variant",
+               source.id,
+               main.id,
+               Enum.map(extras, & &1.id),
+               Links.version(source)
+             )
+
+    booking = menu_booking_fixture()
+    menu = assign_variant(booking, MenuPlanning.get_variant!(variant.id))
+    item = Enum.find(menu.items, &(&1.recipe_id == main.id))
+    assert {:ok, _} = Recipes.archive_recipe(main)
+
+    {{:ok, result}, queries} =
+      CozyCheckout.QueryRecorder.record(fn -> Consumption.for_booking_item(item.id) end)
+
+    assert Enum.map(result.recipes, & &1.id) == Enum.map(recipes, & &1.id)
+    assert [%{quantity: quantity}] = result.quantities
+    assert Decimal.equal?(quantity, "21.6")
+    assert Enum.count(queries, &String.contains?(&1, ~s(FROM "recipe_lines"))) == 1
+    assert Enum.count(queries, &String.contains?(&1, ~s(FROM "ingredients"))) == 1
   end
 end
