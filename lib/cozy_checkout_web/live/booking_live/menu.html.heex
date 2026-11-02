@@ -36,7 +36,7 @@
     <section class="rounded-lg bg-white p-6 shadow">
       <h2 class="text-xl font-semibold text-primary-500">Přiřadit variantu</h2>
       <p class="my-3 text-sm text-primary-400">
-        Náhled nic neukládá. Použití mění pouze menu této rezervace. Společné menu a jídelníčky ostatních skupin zůstávají zachované.
+        Náhled nic neukládá. Použití mění pouze menu této rezervace. Jídelníčky ostatních skupin zůstávají zachované.
       </p>
       <.form
         for={@selection_form}
@@ -112,12 +112,6 @@
             <p :if={row.preserve} class="mt-2 font-semibold text-tertiary-600">
               Ruční úprava bude zachována
             </p>
-            <div
-              :if={row.shared_conflict}
-              class="mt-2 rounded bg-warning-light p-2 text-sm text-primary-500"
-            >
-              <strong>Společné menu se liší a zůstane zachováno:</strong> {row.shared_text}
-            </div>
             <p :if={row.other_groups != []} class="mt-2 text-sm text-warning">
               Odlišné menu souběžných skupin: {Enum.join(row.other_groups, ", ")}
             </p>

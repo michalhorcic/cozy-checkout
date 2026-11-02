@@ -9,7 +9,6 @@ defmodule CozyCheckoutWeb.FoodNavigation do
     variants: "/admin/meal-planner/variants",
     recipes: "/admin/recipes",
     ingredients: "/admin/ingredients",
-    templates: "/admin/meal-planner/templates",
     settings: "/admin/meal-planner/portion-settings"
   }
 
