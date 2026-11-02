@@ -11,7 +11,67 @@ defmodule CozyCheckout.Recipes do
   def list_recipes(search \\ "", archived \\ false) do
     query = from r in Recipe, order_by: r.name, preload: [lines: :ingredient]
     query = if archived, do: query, else: where(query, [r], is_nil(r.archived_at))
-    Repo.all(query) |> Enum.filter(&String.contains?(normalize(&1.name), normalize(search)))
+    query |> matching_recipe_names(search) |> Repo.all()
+  end
+
+  @recipe_page_size 30
+
+  @doc "A bounded catalogue page without ingredients; case and accent insensitive."
+  def search_recipes(search, offset \\ 0)
+      when is_binary(search) and is_integer(offset) and offset >= 0 do
+    query =
+      from r in Recipe,
+        where: is_nil(r.archived_at),
+        order_by: [asc: r.name, asc: r.id],
+        offset: ^offset,
+        limit: ^(@recipe_page_size + 1),
+        select: struct(r, [:id, :name, :base_servings, :archived_at])
+
+    rows = query |> matching_recipe_names(search) |> Repo.all()
+
+    %{
+      recipes: Enum.take(rows, @recipe_page_size),
+      more?: length(rows) > @recipe_page_size,
+      next_offset: offset + @recipe_page_size
+    }
+  end
+
+  defp matching_recipe_names(query, search) do
+    term = normalize(String.trim(search))
+
+    if term == "" do
+      query
+    else
+      where(
+        query,
+        [r],
+        fragment(
+          "strpos(regexp_replace(normalize(lower(?), NFD), '[\u0300-\u036f]', '', 'g'), ?) > 0",
+          r.name,
+          ^term
+        )
+      )
+    end
+  end
+
+  @doc "Load selected recipes, including archived ones, in selection order with a fixed query count."
+  def get_recipes([]), do: []
+
+  def get_recipes(ids) do
+    ids =
+      ids
+      |> Enum.filter(&match?({:ok, _}, Ecto.UUID.cast(&1)))
+      |> Enum.uniq()
+
+    recipes =
+      Repo.all(
+        from r in Recipe,
+          where: r.id in ^ids,
+          preload: [lines: ^from(l in RecipeLine, order_by: l.position, preload: :ingredient)]
+      )
+      |> Map.new(&{&1.id, &1})
+
+    Enum.flat_map(ids, fn id -> if recipes[id], do: [recipes[id]], else: [] end)
   end
 
   def get_recipe!(id),

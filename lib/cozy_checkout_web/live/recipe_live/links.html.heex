@@ -71,7 +71,7 @@
               class={field_class()}
             />
           </.form><p class="my-4 text-xs text-primary-400">
-            {@result_count} receptů · každý doplněk se počítá pro stejnou skupinu
+            Zobrazeno {@result_count} receptů · každý doplněk se počítá pro stejnou skupinu
           </p><div
             id="recipe-choices"
             phx-update="stream"
@@ -135,6 +135,14 @@
               </div>
             </article>
           </div>
+          <button
+            :if={@more_recipes?}
+            id="more-link-recipes"
+            type="button"
+            phx-click="more_recipes"
+            phx-disable-with="Načítám…"
+            class="mt-4 rounded-lg border border-secondary-200 px-4 py-2 text-sm text-tertiary-600"
+          >Další recepty</button>
         </section>
         <aside class="space-y-5 xl:sticky xl:top-5">
           <section class="rounded-lg border border-secondary-200 bg-white p-5 shadow-sm">

@@ -219,4 +219,70 @@ defmodule CozyCheckout.Recipes.CatalogTest do
                ]
              })
   end
+
+  test "recipe picker searches in SQL without loading ingredients or treating wildcards specially" do
+    recipe = recipe_fixture(ingredient_fixture(), %{name: "Picker Čočková À la crème 100%_"})
+    archived = recipe_fixture(ingredient_fixture(), %{name: "Picker archivovaný"})
+    assert {:ok, _} = Recipes.archive_recipe(archived)
+
+    {page, queries} =
+      CozyCheckout.QueryRecorder.record(fn ->
+        Recipes.search_recipes("PICKER COCKOVA a la creme")
+      end)
+
+    assert [found] = page.recipes
+    assert found.id == recipe.id
+    refute Ecto.assoc_loaded?(found.lines)
+    assert length(queries) == 1
+    refute page.more?
+    assert [%{id: id}] = Recipes.search_recipes("100%_").recipes
+    assert id == recipe.id
+    assert Recipes.search_recipes("Picker archivovany").recipes == []
+    assert Recipes.search_recipes("100%_missing").recipes == []
+  end
+
+  test "recipe picker pages are bounded, stable and contain no overlaps" do
+    ingredient = ingredient_fixture()
+    prefix = "Picker page #{System.unique_integer([:positive])}"
+
+    expected =
+      for n <- 1..32 do
+        recipe_fixture(ingredient, %{
+          name: "#{prefix} #{String.pad_leading(to_string(n), 2, "0")}"
+        })
+      end
+
+    first = Recipes.search_recipes(prefix)
+    second = Recipes.search_recipes(prefix, first.next_offset)
+    assert length(first.recipes) == 30
+    assert first.more?
+    assert length(second.recipes) == 2
+    refute second.more?
+    assert Enum.map(first.recipes ++ second.recipes, & &1.id) == Enum.map(expected, & &1.id)
+    assert Recipes.search_recipes(prefix, second.next_offset).recipes == []
+  end
+
+  test "batch recipe loading preserves selection and line order, including archived recipes" do
+    ingredient = ingredient_fixture()
+    recipes = for _ <- 1..8, do: recipe_fixture(ingredient)
+    [first | _] = recipes
+    assert {:ok, _} = Recipes.archive_recipe(first)
+    ids = recipes |> Enum.reverse() |> Enum.map(& &1.id)
+
+    {single, single_queries} =
+      CozyCheckout.QueryRecorder.record(fn -> Recipes.get_recipes([first.id]) end)
+
+    {batch, batch_queries} =
+      CozyCheckout.QueryRecorder.record(fn ->
+        Recipes.get_recipes(ids ++ [first.id, nil, "invalid", Ecto.UUID.generate()])
+      end)
+
+    assert length(single) == 1
+    assert Enum.map(batch, & &1.id) == ids
+    assert length(single_queries) == length(batch_queries)
+    assert length(batch_queries) == 3
+    assert Enum.all?(batch, fn r -> Enum.all?(r.lines, &Ecto.assoc_loaded?(&1.ingredient)) end)
+    assert List.last(batch).archived_at
+    assert Recipes.get_recipes([]) == []
+  end
 end

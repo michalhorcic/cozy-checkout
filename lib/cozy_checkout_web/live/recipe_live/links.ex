@@ -53,6 +53,7 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
      |> assign(:extra_ids, Links.supplement_ids(item))
      |> assign(:back, CozyCheckoutWeb.FoodNavigation.back_path(params, back))
      |> assign(:search, "")
+     |> load_choices()
      |> assign(:blocked, blocked)
      |> assign(:factor, factor)
      |> assign(:adults, adults)
@@ -69,7 +70,15 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
 
   @impl true
   def handle_event("search", %{"search" => search}, socket),
-    do: {:noreply, socket |> assign(:search, search) |> load_results()}
+    do: {:noreply, socket |> assign(:search, search) |> load_choices() |> load_results()}
+
+  def handle_event("more_recipes", _, socket) do
+    if socket.assigns.more_recipes? do
+      {:noreply, socket |> load_choices(socket.assigns.search_offset) |> load_results()}
+    else
+      {:noreply, socket}
+    end
+  end
 
   def handle_event("select_main", %{"id" => id}, socket) do
     {:noreply,
@@ -137,10 +146,22 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
     end
   end
 
+  defp load_choices(socket, offset \\ 0) do
+    page = Recipes.search_recipes(socket.assigns.search, offset)
+    rows = if offset == 0, do: page.recipes, else: socket.assigns.choice_rows ++ page.recipes
+    rows = Enum.uniq_by(rows, & &1.id)
+
+    socket
+    |> assign(:choice_rows, rows)
+    |> assign(:result_count, length(rows))
+    |> assign(:more_recipes?, page.more?)
+    |> assign(:search_offset, page.next_offset)
+  end
+
   defp load_results(socket) do
     selected =
       Enum.reject([socket.assigns.main_id | socket.assigns.extra_ids], &is_nil/1)
-      |> Enum.map(&Recipes.get_recipe!/1)
+      |> Recipes.get_recipes()
 
     main = Enum.find(selected, &(&1.id == socket.assigns.main_id))
     extras = Enum.reject(selected, &(&1.id == socket.assigns.main_id))
@@ -165,8 +186,6 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
       | issues: result.issues ++ issues ++ Enum.map(missing, &("Doplněk bez receptu: " <> &1))
     }
 
-    rows = Recipes.list_recipes(socket.assigns.search)
-
     socket
     |> assign(:main, main)
     |> assign(:extras, extras)
@@ -176,7 +195,6 @@ defmodule CozyCheckoutWeb.RecipeLive.Links do
       socket.assigns.main_id != socket.assigns.item.recipe_id ||
         socket.assigns.extra_ids != Links.supplement_ids(socket.assigns.item)
     )
-    |> assign(:result_count, length(rows))
-    |> stream(:choices, rows, reset: true)
+    |> stream(:choices, socket.assigns.choice_rows, reset: true)
   end
 end

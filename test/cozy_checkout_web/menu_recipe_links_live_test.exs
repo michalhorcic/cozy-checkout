@@ -34,6 +34,7 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
     assert has_element?(editor, "#variant-item-recipes-#{item.id} a", "Připojit recepty")
 
     {:ok, picker, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
+    picker |> form("#link-search-form", search: "Recept ") |> render_change()
     picker |> element("#choose-main-#{main.id}") |> render_click()
     picker |> element("#choose-extra-#{extra.id}") |> render_click()
     result = picker |> element("#save-recipe-links") |> render_click()
@@ -91,6 +92,7 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
     variant = variant_fixture()
     item = hd(variant.items)
     {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
+    view |> form("#link-search-form", search: "Recept ") |> render_change()
     refute has_element?(view, "#recipe-links-unsaved")
     assert has_element?(view, "#recipe-links-status", "zatím nejsou připojené")
     view |> element("#choose-main-#{main.id}") |> render_click()
@@ -118,13 +120,14 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
     item = hd(variant.items)
     {:ok, _} = Links.save("variant", item.id, main.id, [extra.id], Links.version(item))
     {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
+    view |> form("#link-search-form", search: "Recept ") |> render_change()
     assert has_element?(view, "#recipe-links-status", "přiřazení je uložené")
     assert has_element?(view, "#recipe-role-#{main.id}", "Hlavní recept")
     assert has_element?(view, "#recipe-role-#{extra.id}", "Doplněk")
     view |> form("#link-search-form", search: main.name) |> render_change()
     assert has_element?(view, "#recipe-role-#{main.id}")
     refute has_element?(view, "#recipe-role-#{extra.id}")
-    view |> form("#link-search-form", search: "") |> render_change()
+    view |> form("#link-search-form", search: "Recept ") |> render_change()
     assert has_element?(view, "#recipe-role-#{extra.id}")
 
     view
@@ -169,5 +172,50 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
     refute has_element?(view, "#variant-item-recipes-#{item.id} [data-text-changed]")
     assert has_element?(view, "#variant-item-recipes-#{item.id} [data-linked-main]", main.name)
     assert has_element?(view, "#variant-item-recipes-#{item.id} a", "Upravit připojené recepty")
+  end
+
+  test "recipe picker pages keep selected recipes visible and searches reset pagination", %{
+    conn: conn
+  } do
+    ingredient = ingredient_fixture()
+    prefix = "Picker pagination #{System.unique_integer([:positive])}"
+
+    recipes =
+      for n <- 1..32 do
+        recipe_fixture(ingredient, %{
+          name: "#{prefix} #{String.pad_leading(to_string(n), 2, "0")}"
+        })
+      end
+
+    item = hd(variant_fixture().items)
+    {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
+    view |> form("#link-search-form", search: prefix) |> render_change()
+
+    assert length(
+             view
+             |> element("#recipe-choices")
+             |> render()
+             |> Floki.parse_fragment!()
+             |> Floki.find("article")
+           ) == 30
+
+    last = List.last(recipes)
+    refute has_element?(view, "#choose-main-#{last.id}")
+    view |> element("#more-link-recipes") |> render_click()
+    assert has_element?(view, "#choose-main-#{last.id}")
+    refute has_element?(view, "#more-link-recipes")
+    view |> element("#choose-main-#{last.id}") |> render_click()
+    assert has_element?(view, "#selected-main-recipe", last.name)
+    assert has_element?(view, "#choose-main-#{last.id}[disabled]")
+
+    view |> form("#link-search-form", search: "no such recipe") |> render_change()
+    refute has_element?(view, "#choose-main-#{last.id}")
+    assert has_element?(view, "#selected-main-recipe", last.name)
+    assert has_element?(view, "#recipe-links-unsaved")
+    view |> form("#link-search-form", search: prefix) |> render_change()
+    assert has_element?(view, "#more-link-recipes")
+    refute has_element?(view, "#choose-main-#{last.id}")
+    view |> element("#save-recipe-links") |> render_click()
+    assert Links.load!("variant", item.id).recipe_id == last.id
   end
 end

@@ -147,6 +147,7 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     variant = variant_fixture()
     item = hd(variant.items)
     {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
+    view |> form("#link-search-form", search: "Recept ") |> render_change()
     view |> element("#choose-main-#{recipe.id}") |> render_click()
     view |> element("#choose-extra-#{extra.id}") |> render_click()
     assert has_element?(view, "#selected-main-recipe", recipe.name)

@@ -1,6 +1,6 @@
 # Tvorba a úprava menu přímo z receptů
 
-- Stav: **připraveno**; implementace začne v jiném vlákně.
+- Stav: **rozpracováno**; implementace pokračuje v jedné větvi a jednom draft PR.
 - Vytvořeno: 2026-11-02
 - Aktualizováno: 2026-11-02
 - Podklad: analýza aktuálního `origin/main` (`314d7e8`) a rozhodnutí uživatele v tomto chatu.
@@ -207,6 +207,22 @@ Již vybrané recepty zůstávají v editoru viditelné i mimo aktuální výsle
 - [ ] **6. Ověření a dokumentace:** regresní testy, ruční průchod desktop/tablet,
   dokumentace skutečné funkce a aktualizace stavu tohoto plánu.
 
+### Průběh implementace
+
+2026-11-02 — první implementační část (výkonový základ):
+
+- Přidáno databázové vyhledávání receptů bez ohledu na velikost písmen a
+  diakritiku; výběr vrací nejvýše 30 lehkých záznamů a nabízí další stránku.
+  Nevyžaduje novou databázovou extenzi. Základní katalog filtruje stejným SQL
+  výrazem před načítáním surovin. Jde o průchod názvy, nikoli indexové hledání.
+- Vybrané recepty se surovinami se načítají dávkově v pořadí výběru, včetně
+  archivovaných receptů. Detail spotřeby už nenačítá každý recept zvlášť.
+- Stávající výběr používá nové hledání; změna výběru ani kalkulátoru neresetuje
+  načtené stránky. Vybrané recepty jsou viditelné i mimo výsledky hledání.
+- Doplněny regresní testy stránkování, diakritiky, archivace a počtu dotazů.
+- Tato část zatím nemění datový model ani pravidla ukládání/přiřazení menu.
+  Kroky 1–6 výše zůstávají otevřené; další změny patří do stejného PR.
+
 ## Ověření a podmínky dokončení
 
 - Nové menu vznikne pouze výběrem receptů, bez psaní jejich názvů a bez
@@ -253,10 +269,9 @@ dotazování a případná drag&drop knihovna jsou technická rozhodnutí podle
 aktuálního repozitáře; přednost mají existující závislosti a jednoduché řešení.
 
 - Hotovo: analýza kódu, migrací a testů; inspirace; vyjasnění rozsahu a tento plán.
-- Zbývá: celá implementace a její ověření. Tento commit mění pouze dokumentaci.
-- Blokuje: nic; nezačínat implementaci v plánovacím vlákně.
-- Nejbližší krok: v novém chatu načíst tento plán, fetchovat `origin/main`,
-  ověřit změny od podkladového commitu a začít krokem 1.
+- Zbývá: datový model, atomický editor menu, převod legacy dat, přehled, návaznosti a jejich ověření. Výkonový základ je implementovaný; lokální testy nebyly spuštěny.
+- Blokuje: žádná obchodní otázka.
+- Nejbližší krok: pokračovat ve stejné implementační větvi a draft PR; dokončit audit čtenářů legacy textů a datový základ podle kroků 1–2.
 - Validace plánu: lokální testy se nespouštějí; výsledky CI ověří uživatel.
 
 Předávací zadání: „Implementuj plán `docs/plans/2026-11-02-menu-z-receptu.md`.

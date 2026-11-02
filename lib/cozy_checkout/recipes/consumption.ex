@@ -75,7 +75,7 @@ defmodule CozyCheckout.Recipes.Consumption do
           PortionCounts.for_range([booking], item.date, item.date)[item.date][item.meal_type]
 
         ids = Enum.reject([item.recipe_id | Links.supplement_ids(item)], &is_nil/1)
-        recipes = Enum.map(ids, &Recipes.get_recipe!/1)
+        recipes = Recipes.get_recipes(ids)
         result = calculate(recipes, counts.adults, counts.children, factor)
         selected_names = Enum.map(recipes, & &1.name)
 
