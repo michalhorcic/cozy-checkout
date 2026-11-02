@@ -244,6 +244,10 @@ defmodule CozyCheckoutWeb.FlopComponents do
         field_or_page \\ nil,
         raw_params \\ %{}
       ) do
+    # Queries may use limit/offset by default, while these controls navigate by page.
+    # Convert before calling the page-only helpers and retain the current position.
+    flop = Flop.set_page(flop, meta.current_page || 1)
+
     new_flop =
       case action do
         :order -> Flop.push_order(flop, field_or_page)
@@ -257,7 +261,9 @@ defmodule CozyCheckoutWeb.FlopComponents do
         # When raw_params are provided (contains all filters including custom ones),
         # only update the navigation-relevant keys (page, page_size, order_by, order_directions)
         # so custom filters (dates, guest_name, payment_method) are preserved.
-        Map.merge(raw_params, flop_nav_params(new_flop))
+        raw_params
+        |> Map.drop(["limit", "offset", "first", "last", "after", "before"])
+        |> Map.merge(flop_nav_params(new_flop))
       else
         # Fallback: build full params from Flop (used by pages with only Flop-native filters)
         flop_to_params(new_flop)
