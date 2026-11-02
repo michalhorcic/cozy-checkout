@@ -95,16 +95,28 @@
                   >{recipe.name}</.link>
                 </h2>
               </div>
-              <.link
-                navigate={
-                  CozyCheckoutWeb.FoodNavigation.with_context(
-                    ~p"/admin/recipes/#{recipe.id}",
-                    @food_context
-                  )
-                }
-                class="inline-flex min-h-8 shrink-0 items-center gap-1 text-sm font-semibold text-tertiary-600"
-                aria-label={"Otevřít a přepočítat: #{recipe.name}"}
-              >Otevřít <.icon name="hero-arrow-right" class="h-4 w-4" /></.link>
+              <div class="flex shrink-0 items-center gap-4">
+                <.link
+                  navigate={
+                    CozyCheckoutWeb.FoodNavigation.with_context(
+                      ~p"/admin/recipes/#{recipe.id}",
+                      @food_context
+                    )
+                  }
+                  class="inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-tertiary-600"
+                  aria-label={"Otevřít a přepočítat: #{recipe.name}"}
+                >Otevřít <.icon name="hero-arrow-right" class="h-4 w-4" /></.link>
+                <.link
+                  navigate={
+                    CozyCheckoutWeb.FoodNavigation.with_context(
+                      ~p"/admin/recipes/#{recipe.id}/edit",
+                      @food_context
+                    )
+                  }
+                  class="inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-tertiary-600"
+                  aria-label={"Upravit recept: #{recipe.name}"}
+                ><.icon name="hero-pencil-square" class="h-4 w-4" />Upravit</.link>
+              </div>
             </div>
             <details
               id={"recipe-ingredients-#{recipe.id}"}
