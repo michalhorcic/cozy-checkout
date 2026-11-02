@@ -38,7 +38,7 @@
       focus_item={@focus_item}
       return_to={CozyCheckoutWeb.FoodNavigation.path(:variants, @food_context)}
     />
-    <section :if={is_nil(@variant)} class="space-y-5 rounded-lg bg-white p-5 shadow">
+    <section :if={is_nil(@variant)} class="space-y-3 rounded-lg bg-white p-4 shadow">
       <.form
         for={to_form(@filters, as: :filters)}
         id="menu-filters"
@@ -92,28 +92,15 @@
         <p :if={@variants == []} id="menu-variants-empty" class="py-5 text-primary-400">
           Žádné menu neodpovídá výběru.
         </p>
-        <article :for={variant <- @variants} id={"menu-variant-#{variant.id}"} class="py-4">
-          <div class="flex flex-wrap items-start justify-between gap-4">
-            <div class="min-w-0 flex-1">
-              <h2 class="font-semibold">{variant.name}</h2>
-              <p class="text-sm text-primary-400">
-                {variant.days} dnů · {meal_plan_label(variant.meal_plan)} · {meal_label(
-                  variant.first_meal
-                )} → {meal_label(variant.last_meal)}
-              </p>
-              <p class="my-2 text-sm">{MenuRecipes.readiness(variant).label}</p>
-              <p class="line-clamp-2 text-sm text-primary-400">
-                {variant
-                |> sorted_items()
-                |> Enum.reject(&(&1.meal_type == "breakfast" and not @show_breakfasts))
-                |> Enum.map(&MenuRecipes.display(&1).main)
-                |> Enum.reject(&is_nil/1)
-                |> Enum.uniq()
-                |> Enum.take(4)
-                |> Enum.join(" · ")}
-              </p>
+        <article :for={variant <- @variants} id={"menu-variant-#{variant.id}"} class="py-2.5">
+          <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+            <div class="min-w-0 basis-full sm:flex-1 sm:basis-0">
+              <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <h2 class="min-w-0 break-words text-sm font-semibold">{variant.name}</h2>
+                <span class="text-xs text-primary-400">{MenuRecipes.readiness(variant).label}</span>
+              </div>
             </div>
-            <div class="flex flex-wrap gap-4 text-sm text-tertiary-600">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-tertiary-600">
               <.link
                 patch={
                   CozyCheckoutWeb.FoodNavigation.with_context(
@@ -121,23 +108,24 @@
                     @food_context
                   )
                 }
-                class="underline"
+                class="inline-flex min-h-8 items-center underline"
               >Upravit</.link>
-              <button
-                type="button"
-                phx-click="duplicate"
-                phx-value-id={variant.id}
-                class="underline"
-              >Duplikovat</button>
               <button
                 type="button"
                 phx-click="assign"
                 phx-value-id={variant.id}
                 disabled={not MenuRecipes.readiness(variant).ready?}
-                class="underline disabled:opacity-40"
+                class="min-h-8 underline disabled:opacity-40"
               >Přiřadit pobytu</button>
               <details>
-                <summary class="cursor-pointer text-primary-400">Další</summary><button
+                <summary class="cursor-pointer py-1.5 text-primary-400">Další</summary>
+                <button
+                  type="button"
+                  phx-click="duplicate"
+                  phx-value-id={variant.id}
+                  class="block p-2 underline"
+                >Duplikovat</button>
+                <button
                   type="button"
                   phx-click="delete"
                   phx-value-id={variant.id}
@@ -147,11 +135,16 @@
               </details>
             </div>
           </div>
-          <details id={"menu-preview-#{variant.id}"} phx-hook="MenuPreview" class="mt-3">
-            <summary class="cursor-pointer text-sm text-tertiary-600 underline">
-              Obsah menu · kliknutím ponechat otevřený
+          <details id={"menu-preview-#{variant.id}"} phx-hook="MenuPreview">
+            <summary class="w-fit cursor-pointer py-1 text-xs text-tertiary-600 underline">
+              Obsah menu
             </summary>
             <div class="mt-2 max-h-80 space-y-3 overflow-y-auto rounded-lg border border-secondary-200 bg-secondary-50 p-4">
+              <p class="text-sm text-primary-400">
+                {variant.days} dnů · {meal_plan_label(variant.meal_plan)} · {meal_label(
+                  variant.first_meal
+                )} → {meal_label(variant.last_meal)}
+              </p>
               <div
                 :for={item <- sorted_items(variant)}
                 :if={@show_breakfasts or item.meal_type != "breakfast"}
