@@ -74,6 +74,14 @@ defmodule CozyCheckout.Recipes do
     Enum.flat_map(ids, fn id -> if recipes[id], do: [recipes[id]], else: [] end)
   end
 
+  def breakfast_buffet_id do
+    Repo.one(
+      from r in Recipe,
+        where: r.source_key == "kitchen:breakfast-buffet:v1" and is_nil(r.archived_at),
+        select: r.id
+    )
+  end
+
   def get_recipe!(id),
     do:
       Recipe

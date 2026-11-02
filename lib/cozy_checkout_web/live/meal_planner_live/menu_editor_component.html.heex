@@ -21,6 +21,24 @@
       class="text-tertiary-600 underline disabled:opacity-40"
     >Vrátit poslední změnu</button>
   </div>
+  <button
+    id={"#{@id}-toggle-breakfasts"}
+    type="button"
+    phx-click="toggle_breakfasts"
+    phx-target={@myself}
+    role="switch"
+    aria-checked={to_string(@show_breakfasts)}
+    class="text-sm text-tertiary-600 underline"
+  >{if @show_breakfasts, do: "Skrýt snídaně", else: "Zobrazit a upravit snídaně"}</button>
+  <p :if={not @show_breakfasts} class="text-sm text-primary-400">
+    Snídaně jsou skryté, ale zůstávají v menu i ve výpočtu surovin. Nové snídaně se vyplňují snídaňovým bufetem.
+  </p>
+  <p
+    :if={not @show_breakfasts and breakfast_attention?(@draft["items"], @catalog)}
+    class="text-sm text-amber-800"
+  >
+    Některé snídaně vyžadují kontrolu. Zapněte jejich zobrazení a zkontrolujte vybrané recepty.
+  </p>
   <div class="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
     <.form
       for={to_form(@draft, as: :editor)}
@@ -91,6 +109,7 @@
       <div class="space-y-4">
         <fieldset
           :for={{item, index} <- Enum.with_index(@draft["items"])}
+          :if={@show_breakfasts or item["meal_type"] != "breakfast"}
           id={"menu-slot-#{index}"}
           class={[
             "rounded-lg border bg-white p-4",
@@ -226,7 +245,10 @@
         </fieldset>
       </div>
       <div
-        :if={@mode == :variant}
+        :if={
+          @mode == :variant and
+            (@show_breakfasts or Enum.any?(@draft["items"], &(&1["meal_type"] != "breakfast")))
+        }
         class="space-y-3 rounded-lg border border-secondary-200 bg-white p-4"
       >
         <p class="font-semibold">Kopie a přesun aktivního podání (zvýrazněné výše)</p>
@@ -246,14 +268,24 @@
             value={@transfer_type}
             type="select"
             label="Cílové podání"
-            options={meal_options()}
+            options={
+              Enum.reject(meal_options(), fn {_, type} ->
+                not @show_breakfasts and type == "breakfast"
+              end)
+            }
           />
         </div>
         <div class="flex flex-wrap gap-3 text-sm text-tertiary-600">
           <button type="button" phx-click="copy_service" phx-target={@myself} class="underline">Kopírovat podání</button>
           <button type="button" phx-click="move_service" phx-target={@myself} class="underline">Přesunout podání</button>
           <button type="button" phx-click="copy_day" phx-target={@myself} class="underline">Kopírovat celý den do cílového dne</button>
-          <button type="button" phx-click="breakfasts" phx-target={@myself} class="underline">Bufet aktivní snídaně na všechny snídaně</button>
+          <button
+            :if={@show_breakfasts}
+            type="button"
+            phx-click="breakfasts"
+            phx-target={@myself}
+            class="underline"
+          >Bufet aktivní snídaně na všechny snídaně</button>
         </div>
       </div>
       <div class="flex flex-wrap items-center justify-end gap-4">
@@ -262,6 +294,7 @@
       </div>
     </.form>
     <aside
+      :if={@show_breakfasts or Enum.any?(@draft["items"], &(&1["meal_type"] != "breakfast"))}
       data-menu-library
       id={"#{@id}-library"}
       class={[

@@ -39,6 +39,13 @@ V **Nové menu / Upravit** nastavte název, počet dnů včetně příjezdu a od
 Před odstraněním vyplněných podání ukáže jejich původní i výslednou podobu
 k potvrzení. Po změně nastavení je potřeba rozpis aktualizovat.
 
+Snídaně jsou v editoru, náhledech menu i menu pobytu ve výchozím stavu skryté.
+Přepínač **Zobrazit a upravit snídaně** je zpřístupní pro kontrolu a změny
+(v přehledu **Zobrazit snídaně v náhledech**). Nové snídaně dostanou automaticky
+aktivní recept **Snídaňový bufet**; existující vlastní výběr se zachová.
+Skrytí nic nemaže, nemění poznámky ani výpočet surovin. Kopírování dne při
+skrytých snídaních mění jen ostatní podání. Plánovač a tisk dál obsahují celý rozpis.
+
 Názvy jídel se nepíšou. Aktivujte oblast hlavního receptu/bufetu nebo doplňků
 a vyberte recept z knihovny. Na desktopu lze recept také přetáhnout na označený
 cíl; knihovna zůstává beze změny. Vyhledávání ignoruje velikost písmen a
@@ -99,7 +106,10 @@ je znovu. Rezervace bez přiřazené varianty nebo se změněným rozpisem mají
 ## Receptury a suroviny
 
 V **Meal Planner → Recepty a suroviny** je knihovna receptů s hledáním bez diakritiky,
-katalog surovin a přepočet pro dospělé a děti. U receptu se zadává počet porcí z jedné
+katalog surovin a přepočet pro dospělé a děti. Přímo v seznamu otevřete
+**Náhled surovin** najetím, zaměřením klávesnicí nebo kliknutím; kliknutí ho
+ponechá rozbalený. Ukáže názvy, množství a poznámky surovin pro základní dávku
+bez přechodu na detail a bez dalšího dotazu do databáze. U receptu se zadává počet porcí z jedné
 dávky a množství všech surovin na tuto dávku. Formulář umožňuje přidávat a odebírat
 suroviny přímo v receptu, upravit zdroj či odkaz a uchovat poznámky k pracovním odhadům.
 

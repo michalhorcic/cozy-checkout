@@ -107,6 +107,7 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
   test "copying a day shows impact and respects destination meal boundaries", %{conn: conn} do
     variant = variant_fixture()
     {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    view |> element("#menu-editor-#{variant.id}-toggle-breakfasts") |> render_click()
     # Day 2 breakfast is the active source; only dinner exists on destination day 1.
     view
     |> element("#menu-slot-1 button[phx-click='activate'][phx-value-role='main']")
@@ -171,6 +172,7 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
     first_extra = recipe_fixture()
     second_extra = recipe_fixture()
     {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    view |> element("#menu-editor-#{variant.id}-toggle-breakfasts") |> render_click()
 
     view
     |> element("#menu-slot-1 button[phx-click='activate'][phx-value-role='main']")
@@ -206,5 +208,53 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
              second_extra.id,
              first_extra.id
            ]
+  end
+
+  test "new menus retain hidden buffet breakfasts in saved links and consumption", %{conn: conn} do
+    main = recipe_fixture()
+    buffet_id = CozyCheckout.Recipes.breakfast_buffet_id()
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/new")
+    refute has_element?(view, "#menu-slot-1")
+    refute has_element?(view, "#menu-slot-4")
+    assert has_element?(view, "#menu-editor-new-toggle-breakfasts[aria-checked='false']")
+
+    for index <- [0, 2, 3] do
+      view
+      |> element("#menu-editor-new")
+      |> render_hook("drop_recipe", %{index: to_string(index), role: "main", id: main.id})
+    end
+
+    view |> form("#menu-editor-new-form", editor: %{name: "Skryté snídaně"}) |> render_submit()
+    [variant] = MenuPlanning.list_variants()
+    breakfasts = Enum.filter(variant.items, &(&1.meal_type == "breakfast"))
+    assert length(breakfasts) == 2
+    assert Enum.all?(breakfasts, &(&1.recipe_id == buffet_id))
+    booking = menu_booking_fixture()
+    menu = assign_variant(booking, variant)
+    breakfast = Enum.find(menu.items, &(&1.meal_type == "breakfast"))
+    assert {:ok, result} = CozyCheckout.Recipes.Consumption.for_booking_item(breakfast.id)
+    assert Enum.map(result.recipes, & &1.id) == [buffet_id]
+    assert result.quantities != []
+  end
+
+  test "breakfast visibility preserves saved choices and unsaved breakfast notes", %{conn: conn} do
+    variant = variant_fixture()
+    breakfast = Enum.at(variant.items, 1)
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    refute has_element?(view, "#menu-slot-1")
+    view |> element("#menu-editor-#{variant.id}-toggle-breakfasts") |> render_click()
+    assert has_element?(view, "#menu-slot-1", breakfast.recipe.name)
+    assert has_element?(view, "#menu-editor-#{variant.id}[data-dirty='false']")
+
+    view
+    |> form("#menu-editor-#{variant.id}-form", editor: %{items: %{"1" => %{note: "Bez medu"}}})
+    |> render_change()
+
+    view |> element("#menu-editor-#{variant.id}-toggle-breakfasts") |> render_click()
+    refute has_element?(view, "#menu-slot-1")
+    view |> form("#menu-editor-#{variant.id}-form") |> render_submit()
+    saved = Enum.find(MenuPlanning.get_variant!(variant.id).items, &(&1.id == breakfast.id))
+    assert saved.recipe_id == breakfast.recipe_id
+    assert saved.note == "Bez medu"
   end
 end

@@ -198,4 +198,23 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     refute has_element?(view, "#selection_variant_id option[value='#{variant.id}']")
     refute has_element?(view, "#booking-menu-preview")
   end
+
+  test "booking and assignment preview keep breakfast rows behind the visibility switch", %{
+    conn: conn
+  } do
+    booking = menu_booking_fixture()
+    variant = variant_fixture()
+    menu = assign_variant(booking, variant)
+    breakfast = Enum.find(menu.items, &(&1.meal_type == "breakfast"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/menu")
+    refute has_element?(view, "#edit-menu-item-#{breakfast.id}")
+    preview(view, variant)
+    refute has_element?(view, "#preview-portions-#{breakfast.date}-breakfast")
+    view |> element("#booking-menu-toggle-breakfasts") |> render_click()
+    assert has_element?(view, "#edit-menu-item-#{breakfast.id}")
+    assert has_element?(view, "#preview-portions-#{breakfast.date}-breakfast")
+
+    assert Enum.find(MenuPlanning.get_booking_menu(booking.id).items, &(&1.id == breakfast.id)).recipe_id ==
+             breakfast.recipe_id
+  end
 end

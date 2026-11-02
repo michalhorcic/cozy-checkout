@@ -19,6 +19,17 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
   end
 
   @impl true
+  def handle_event("toggle_breakfasts", _, socket) do
+    show = not socket.assigns.show_breakfasts
+    preview_rows = if socket.assigns.preview, do: socket.assigns.preview.rows, else: []
+
+    {:noreply,
+     socket
+     |> assign(:show_breakfasts, show)
+     |> stream(:menu_items, visible_rows(socket.assigns.menu_rows, show), reset: true)
+     |> stream(:preview_rows, visible_rows(preview_rows, show), reset: true)}
+  end
+
   def handle_event("select_variant", %{"id" => id}, socket) do
     if Enum.any?(socket.assigns.variants, &(&1.id == id)) do
       {:noreply,
@@ -53,7 +64,9 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
          socket
          |> assign(:selected_variant, id)
          |> assign(:preview, preview)
-         |> stream(:preview_rows, preview.rows, reset: true)}
+         |> stream(:preview_rows, visible_rows(preview.rows, socket.assigns.show_breakfasts),
+           reset: true
+         )}
 
       _ ->
         {:noreply,
@@ -162,7 +175,11 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
       else: socket
   end
 
+  defp visible_rows(rows, show?),
+    do: Enum.reject(rows, &(&1.meal_type == "breakfast" and not show?))
+
   defp load_state(socket) do
+    socket = assign_new(socket, :show_breakfasts, fn -> false end)
     booking = Bookings.get_booking!(socket.assigns.booking_id)
     menu = MenuPlanning.get_booking_menu(booking.id)
     variants = MenuPlanning.list_variants()
@@ -222,7 +239,8 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
     |> assign(:preview, nil)
     |> assign(:edit_item, nil)
     |> assign(:selection_form, to_form(%{"variant_id" => selected}, as: :selection))
-    |> stream(:menu_items, rows, reset: true)
+    |> assign(:menu_rows, rows)
+    |> stream(:menu_items, visible_rows(rows, socket.assigns.show_breakfasts), reset: true)
     |> stream(:preview_rows, [], reset: true)
   end
 end

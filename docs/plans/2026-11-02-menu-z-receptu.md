@@ -237,6 +237,12 @@ Již vybrané recepty zůstávají v editoru viditelné i mimo aktuální výsle
   Kompilace s varováními jako chybami a celoprojektové formátování byly ověřeny
   na Elixiru 1.20.4 / OTP 29.1. CI a ruční desktop/tablet průchod ověří uživatel.
 
+Doplnění podle uživatelského ověření: snídaně jsou ve výchozím stavu skryté
+v editoru, přehledu a menu pobytu; přepínač umožní jejich zobrazení i změnu.
+Nová snídaňová podání dostávají aktivní bufet, existující volby se nepřepisují.
+Ve výpočtech zůstává celý rozpis. Seznam receptů má náhled názvů, množství
+a poznámek surovin přes hover/focus/kliknutí z již dávkově načtených dat.
+
 ## Ověření a podmínky dokončení
 
 - Nové menu vznikne pouze výběrem receptů, bez psaní jejich názvů a bez

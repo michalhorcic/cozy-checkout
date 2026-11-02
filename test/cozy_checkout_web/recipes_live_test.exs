@@ -466,4 +466,31 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     assert line.unit == "l"
     assert Decimal.equal?(line.quantity, "2.5")
   end
+
+  test "recipe index previews ingredient names, amounts and line notes without opening a detail",
+       %{conn: conn} do
+    ingredient = ingredient_fixture(%{name: "Čočka do náhledu"})
+
+    recipe =
+      recipe_fixture(ingredient, %{
+        name: "Náhled receptu",
+        lines: [
+          %{ingredient_id: ingredient.id, quantity: "0.125", unit: "kg", notes: "Propláchnout"}
+        ]
+      })
+
+    {:ok, view, _} = live(conn, "/admin/recipes")
+
+    assert has_element?(
+             view,
+             "#recipe-ingredients-#{recipe.id}[phx-hook='MenuPreview'] summary",
+             "Náhled surovin"
+           )
+
+    assert has_element?(view, "#recipe-ingredients-#{recipe.id}", "Čočka do náhledu")
+    assert has_element?(view, "#recipe-ingredients-#{recipe.id}", "125 g")
+    assert has_element?(view, "#recipe-ingredients-#{recipe.id}", "Propláchnout")
+    view |> form("#recipe-search-form", search: recipe.name) |> render_change()
+    assert has_element?(view, "#recipe-ingredients-#{recipe.id}", "Čočka do náhledu")
+  end
 end

@@ -80,6 +80,14 @@
           ]}
         />
       </.form>
+      <button
+        id="menu-overview-toggle-breakfasts"
+        type="button"
+        phx-click="toggle_breakfasts"
+        role="switch"
+        aria-checked={to_string(@show_breakfasts)}
+        class="text-sm text-tertiary-600 underline"
+      >{if @show_breakfasts, do: "Skrýt snídaně v náhledech", else: "Zobrazit snídaně v náhledech"}</button>
       <div id="menu-variants" class="divide-y divide-secondary-200">
         <p :if={@variants == []} id="menu-variants-empty" class="py-5 text-primary-400">
           Žádné menu neodpovídá výběru.
@@ -97,6 +105,7 @@
               <p class="line-clamp-2 text-sm text-primary-400">
                 {variant
                 |> sorted_items()
+                |> Enum.reject(&(&1.meal_type == "breakfast" and not @show_breakfasts))
                 |> Enum.map(&MenuRecipes.display(&1).main)
                 |> Enum.reject(&is_nil/1)
                 |> Enum.uniq()
@@ -143,7 +152,10 @@
               Obsah menu · kliknutím ponechat otevřený
             </summary>
             <div class="mt-2 max-h-80 space-y-3 overflow-y-auto rounded-lg border border-secondary-200 bg-secondary-50 p-4">
-              <div :for={item <- sorted_items(variant)}>
+              <div
+                :for={item <- sorted_items(variant)}
+                :if={@show_breakfasts or item.meal_type != "breakfast"}
+              >
                 <p class="font-semibold">Den {item.day_number} · {meal_label(item.meal_type)}</p><p>
                   {MenuRecipes.display(item).main || "Chybí hlavní recept"}
                 </p><p class="whitespace-pre-line text-sm">

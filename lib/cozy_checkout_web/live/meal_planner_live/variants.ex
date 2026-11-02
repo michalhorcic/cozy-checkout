@@ -25,6 +25,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Variants do
        focus_item: params["slot"],
        filters: %{"search" => "", "days" => "", "plan" => "", "state" => ""},
        assignment: nil,
+       show_breakfasts: false,
        assignment_search: ""
      )
      |> load_variants()}
@@ -33,6 +34,9 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Variants do
   @impl true
   def handle_event("filter", %{"filters" => filters}, socket),
     do: {:noreply, socket |> assign(:filters, filters) |> filter_variants()}
+
+  def handle_event("toggle_breakfasts", _, socket),
+    do: {:noreply, assign(socket, :show_breakfasts, not socket.assigns.show_breakfasts)}
 
   def handle_event("delete", %{"id" => id}, socket) do
     case MenuPlanning.get_variant!(id) |> MenuPlanning.delete_variant() do

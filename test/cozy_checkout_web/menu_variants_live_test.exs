@@ -44,7 +44,7 @@ defmodule CozyCheckoutWeb.MenuVariantsLiveTest do
     [variant] = MenuPlanning.list_variants()
     assert variant.name == "Rozpracovaný víkend"
     refute CozyCheckout.Meals.MenuRecipes.readiness(variant).ready?
-    assert has_element?(view, "#menu-variant-#{variant.id}", "Chybí 5 podání")
+    assert has_element?(view, "#menu-variant-#{variant.id}", "Chybí 3 podání")
     view |> element("#menu-variant-#{variant.id} a", "Upravit") |> render_click()
     assert has_element?(view, "input[name='editor[name]'][value='Rozpracovaný víkend']")
   end
@@ -55,6 +55,7 @@ defmodule CozyCheckoutWeb.MenuVariantsLiveTest do
     variant = variant_fixture()
     first = hd(variant.items)
     {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    view |> element("#menu-editor-#{variant.id}-toggle-breakfasts") |> render_click()
     form_id = "#menu-editor-#{variant.id}-form"
     view |> form(form_id, editor: %{days: "2"}) |> render_change()
     view |> element("#build-menu-variant") |> render_click()
@@ -110,5 +111,15 @@ defmodule CozyCheckoutWeb.MenuVariantsLiveTest do
 
     assert {:error, {:redirect, %{to: "/admin/login"}}} =
              live(conn, "/admin/bookings/#{booking.id}/menu")
+  end
+
+  test "menu previews hide breakfasts until requested", %{conn: conn} do
+    variant = variant_fixture()
+    breakfast = Enum.find(variant.items, &(&1.meal_type == "breakfast"))
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants")
+    refute has_element?(view, "#menu-preview-#{variant.id}", breakfast.recipe.name)
+    view |> element("#menu-overview-toggle-breakfasts") |> render_click()
+    assert has_element?(view, "#menu-preview-#{variant.id}", breakfast.recipe.name)
+    assert MenuPlanning.get_variant!(variant.id).lock_version == variant.lock_version
   end
 end

@@ -13,6 +13,8 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
       {:ok, assign(socket, assigns)}
     else
       record = assigns.record
+      buffet_id = if assigns.mode == :variant, do: Recipes.breakfast_buffet_id()
+      show_breakfasts = Map.get(assigns, :breakfasts_visible, false)
 
       draft =
         if assigns.mode == :variant,
@@ -20,17 +22,27 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
           else: %{"items" => [MenuRecipes.item_params(record)]}
 
       draft =
-        if assigns.mode == :variant and draft["items"] == [], do: rebuild(draft), else: draft
+        if assigns.mode == :variant and draft["items"] == [],
+          do: rebuild(draft, buffet_id),
+          else: draft
 
-      ids = Enum.flat_map(draft["items"], &selected_ids/1)
+      ids = Enum.reject([buffet_id | Enum.flat_map(draft["items"], &selected_ids/1)], &is_nil/1)
       catalog = Recipes.get_recipes(ids) |> Map.new(&{&1.id, &1})
-      active = Enum.find_index(draft["items"], &(&1["id"] == assigns[:focus_item])) || 0
+
+      active =
+        Enum.find_index(
+          draft["items"],
+          &(&1["id"] == assigns[:focus_item] and
+              (show_breakfasts or &1["meal_type"] != "breakfast"))
+        ) || Enum.find_index(draft["items"], &(&1["meal_type"] != "breakfast")) || 0
 
       {:ok,
        socket
        |> assign(assigns)
        |> assign(
          identity: identity,
+         buffet_id: buffet_id,
+         show_breakfasts: show_breakfasts,
          draft: draft,
          initial: draft,
          history: [],
@@ -52,6 +64,30 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
   @impl true
   def handle_event("validate", %{"editor" => params}, socket) do
     {:noreply, apply_inputs(socket, params)}
+  end
+
+  def handle_event("toggle_breakfasts", _, socket) do
+    show = not socket.assigns.show_breakfasts
+
+    active =
+      if not show and
+           Enum.at(socket.assigns.draft["items"], socket.assigns.active)["meal_type"] ==
+             "breakfast",
+         do:
+           Enum.find_index(socket.assigns.draft["items"], &(&1["meal_type"] != "breakfast")) || 0,
+         else: socket.assigns.active
+
+    {:noreply,
+     assign(socket,
+       show_breakfasts: show,
+       active: active,
+       library_open: false,
+       transfer_type:
+         if(not show and socket.assigns.transfer_type == "breakfast",
+           do: "dinner",
+           else: socket.assigns.transfer_type
+         )
+     )}
   end
 
   def handle_event("activate", %{"index" => index, "role" => role}, socket)
@@ -128,7 +164,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
       )
 
     if settings.valid? do
-      draft = rebuild(socket.assigns.draft)
+      draft = rebuild(socket.assigns.draft, socket.assigns.buffet_id)
       kept = MapSet.new(draft["items"], &coordinate/1)
 
       removed =
@@ -184,7 +220,8 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
         sources =
           Enum.filter(
             originals,
-            &(to_string(&1["day_number"]) == to_string(source["day_number"]))
+            &(to_string(&1["day_number"]) == to_string(source["day_number"]) and
+                (socket.assigns.show_breakfasts or &1["meal_type"] != "breakfast"))
           )
 
         if event == "copy_day" and Enum.any?(sources, &(not truthy?(&1["reviewed"]))) do
@@ -206,7 +243,8 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
                     "reviewed" => true
                   })
 
-                event == "copy_day" and to_string(target["day_number"]) == to_string(day) ->
+                event == "copy_day" and to_string(target["day_number"]) == to_string(day) and
+                    (socket.assigns.show_breakfasts or target["meal_type"] != "breakfast") ->
                   case Enum.find(sources, &(&1["meal_type"] == target["meal_type"])) do
                     nil -> target
                     from -> copy_content(from, target)
@@ -251,7 +289,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
            history: rest,
            pending: nil,
            error: nil,
-           active: min(socket.assigns.active, length(previous["items"]) - 1)
+           active: visible_active(previous, socket.assigns.active, socket.assigns.show_breakfasts)
          )}
 
       [] ->
@@ -400,7 +438,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
         assign(socket,
           draft: draft,
           history: Enum.take([socket.assigns.draft | socket.assigns.history], 20),
-          active: min(socket.assigns.active, max(length(draft["items"]) - 1, 0)),
+          active: visible_active(draft, socket.assigns.active, socket.assigns.show_breakfasts),
           error: nil
         )
   end
@@ -421,7 +459,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
     )
   end
 
-  defp rebuild(draft) do
+  defp rebuild(draft, buffet_id) do
     settings =
       MenuVariant.settings_changeset(%MenuVariant{}, draft) |> Ecto.Changeset.apply_changes()
 
@@ -431,7 +469,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
           %{
             "day_number" => day,
             "meal_type" => type,
-            "recipe_id" => nil,
+            "recipe_id" => if(type == "breakfast", do: buffet_id),
             "supplement_recipe_ids" => [],
             "note" => "",
             "reviewed" => true
@@ -439,6 +477,22 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
       end)
 
     Map.put(draft, "items", items)
+  end
+
+  defp breakfast_attention?(items, catalog) do
+    Enum.any?(items, fn item ->
+      item["meal_type"] == "breakfast" and
+        (is_nil(item["recipe_id"]) or not truthy?(item["reviewed"]) or
+           Enum.any?(selected_ids(item), &(catalog[&1] && catalog[&1].archived_at)))
+    end)
+  end
+
+  defp visible_active(draft, active, show?) do
+    index = min(active, max(length(draft["items"]) - 1, 0))
+
+    if not show? and Enum.at(draft["items"], index, %{})["meal_type"] == "breakfast",
+      do: Enum.find_index(draft["items"], &(&1["meal_type"] != "breakfast")) || 0,
+      else: index
   end
 
   defp copy_content(source, target),
