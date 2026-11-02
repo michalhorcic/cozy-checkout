@@ -107,5 +107,6 @@ defmodule CozyCheckoutWeb.FlopComponentsTest do
     }
   end
 
-  defp query_params(path), do: path |> URI.parse() |> Map.fetch!(:query) |> Plug.Conn.Query.decode()
+  defp query_params(path),
+    do: path |> URI.parse() |> Map.fetch!(:query) |> Plug.Conn.Query.decode()
 end
