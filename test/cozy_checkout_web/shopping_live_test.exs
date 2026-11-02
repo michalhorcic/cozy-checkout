@@ -222,7 +222,7 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
            )
 
     {:ok, library, _} = live(conn, "/admin/recipes")
-    assert has_element?(library, "#recipes-#{buffet.id}", "pracovní norma bufetu")
+    assert has_element?(library, "#recipe-ingredients-#{buffet.id}", "Pracovní norma bufetu")
   end
 
   test "planner and booking expose shopping and all shopping routes require login", %{conn: conn} do

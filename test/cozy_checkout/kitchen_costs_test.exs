@@ -318,7 +318,7 @@ defmodule CozyCheckout.KitchenCostsTest do
     price = KitchenCosts.price_for(ingredient.id, ~D[2026-10-27])
     assert price.source == "manual_estimate"
     assert price.manual_price_id == manual.id
-    assert price.warnings != []
+    assert price.warnings == ["Ruční odhad ceny: #{ingredient.name}"]
     assert Decimal.equal?(price.unit_price, "120.123456789")
     assert KitchenCosts.price_for(ingredient.id, ~D[2026-10-26]).unit_price == nil
 

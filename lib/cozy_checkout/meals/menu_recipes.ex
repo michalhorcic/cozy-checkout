@@ -277,6 +277,9 @@ defmodule CozyCheckout.Meals.MenuRecipes do
       |> Enum.reject(&is_nil/1)
       |> Enum.uniq()
 
+    if Enum.any?(ids, &(not match?({:ok, _}, Ecto.UUID.cast(&1)))),
+      do: Repo.rollback(:invalid_recipe)
+
     recipes =
       Repo.all(from r in Recipe, where: r.id in ^ids, lock: "FOR SHARE") |> Map.new(&{&1.id, &1})
 

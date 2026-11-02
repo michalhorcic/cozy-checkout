@@ -19,6 +19,7 @@ defmodule CozyCheckout.Recipes.LinksTest do
 
     {:ok, variant} = MenuPlanning.create_variant(%{attrs | items: items})
     assert Enum.all?(variant.items, &(&1.recipe_id == main.id))
+    assert Enum.all?(variant.items, &(not is_nil(&1.recipe_links_reviewed_at)))
     assert Links.supplement_ids(hd(variant.items)) == [soup.id]
     booking = menu_booking_fixture()
     menu = assign_variant(booking, variant)
@@ -38,6 +39,42 @@ defmodule CozyCheckout.Recipes.LinksTest do
     unchanged = Links.load!("booking", item.id)
     assert unchanged.recipe_id == main.id
     assert Links.supplement_ids(unchanged) == [soup.id]
+  end
+
+  test "unmatched legacy wording stays unreviewed without a main recipe" do
+    variant = legacy_variant_fixture()
+
+    assert Enum.all?(variant.items, &is_nil(&1.recipe_id))
+    assert Enum.all?(variant.items, &is_nil(&1.recipe_links_reviewed_at))
+    assert Enum.all?(variant.items, &(&1.recipe_supplements == []))
+  end
+
+  test "inferred review returns the persisted timestamp and a usable editor version" do
+    variant = variant_fixture()
+    item = hd(variant.items)
+
+    item
+    |> Ecto.Changeset.change(
+      recipe_links_reviewed_at: nil,
+      updated_at: ~U[2000-01-01 00:00:00Z]
+    )
+    |> Repo.update!()
+
+    inferred = Links.infer_variant(MenuPlanning.get_variant!(variant.id))
+    reviewed = Enum.find(inferred.items, &(&1.id == item.id))
+    persisted = Links.load!("variant", item.id)
+    assert reviewed.updated_at != ~U[2000-01-01 00:00:00Z]
+    assert reviewed.updated_at == persisted.updated_at
+    assert Links.version(reviewed) == Links.version(persisted)
+
+    assert {:ok, _} =
+             Links.save(
+               "variant",
+               reviewed.id,
+               reviewed.recipe_id,
+               Links.supplement_ids(reviewed),
+               Links.version(reviewed)
+             )
   end
 
   test "manual booking recipe choice survives another variant application and stale editors fail" do

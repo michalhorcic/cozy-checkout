@@ -501,12 +501,12 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     {:ok, editor, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
     assert has_element?(editor, "#recipe-pictogram-picker input[value=''][checked]")
 
-    assert length(
+    assert Enum.count(
              editor
              |> element("#recipe-pictogram-picker")
              |> render()
-             |> Floki.parse_fragment!()
-             |> Floki.find("input[type=radio]")
+             |> LazyHTML.from_fragment()
+             |> LazyHTML.query("input[type=radio]")
            ) == 16
 
     editor |> form("#recipe-form", recipe: %{pictogram: "soup"}) |> render_submit()
