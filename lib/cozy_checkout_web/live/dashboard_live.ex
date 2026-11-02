@@ -85,8 +85,6 @@ defmodule CozyCheckoutWeb.DashboardLive do
           </ul>
         </section>
 
-        <HomeComponents.cards :if={@economic_overview} result={@economic_overview} />
-
         <div class="mb-7 grid gap-3 sm:grid-cols-3">
           <.summary
             label="Dnešní příjezdy"
@@ -108,7 +106,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
           />
         </div>
 
-        <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="mb-7 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <section
             aria-labelledby="stays-heading"
             class="overflow-hidden rounded-2xl border border-secondary-200 bg-white shadow-sm"
@@ -265,6 +263,8 @@ defmodule CozyCheckoutWeb.DashboardLive do
             </div>
           </div>
         </div>
+
+        <HomeComponents.cards :if={@economic_overview} result={@economic_overview} />
       </div>
     </Layouts.app>
     """
