@@ -349,15 +349,15 @@ defmodule CozyCheckoutWeb.Layouts do
           Další agenda
         </summary>
         <div :for={{label, entries} <- @groups} class="mt-4">
-          <p class="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-primary-400">
+          <h3 class="mx-3 mb-2 cursor-default border-b border-secondary-200 pb-2 text-xs font-bold uppercase tracking-wider text-primary-500">
             {label}
-          </p>
+          </h3>
           <.link
             :for={{title, path} <- entries}
             navigate={path}
             aria-current={@secondary_path == path && "page"}
             class={[
-              "block rounded-lg px-3 py-2 text-sm hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500",
+              "ml-3 block rounded-lg px-3 py-2 text-sm hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500",
               @secondary_path == path && "font-semibold text-tertiary-700",
               @secondary_path != path && "text-primary-400"
             ]}
