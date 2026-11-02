@@ -493,4 +493,33 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     view |> form("#recipe-search-form", search: recipe.name) |> render_change()
     assert has_element?(view, "#recipe-ingredients-#{recipe.id}", "Čočka do náhledu")
   end
+
+  test "recipe form selects and removes a pictogram without assigning one by default", %{
+    conn: conn
+  } do
+    recipe = recipe_fixture()
+    {:ok, editor, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+    assert has_element?(editor, "#recipe-pictogram-picker input[value=''][checked]")
+
+    assert length(
+             editor
+             |> element("#recipe-pictogram-picker")
+             |> render()
+             |> Floki.parse_fragment!()
+             |> Floki.find("input[type=radio]")
+           ) == 16
+
+    editor |> form("#recipe-form", recipe: %{pictogram: "soup"}) |> render_submit()
+    assert Recipes.get_recipe!(recipe.id).pictogram == "soup"
+    {:ok, index, _} = live(conn, "/admin/recipes")
+
+    assert has_element?(
+             index,
+             "#recipes-#{recipe.id} img[alt='Polévka'][src='/images/recipes/pictograms/soup.svg']"
+           )
+
+    {:ok, editor, _} = live(conn, "/admin/recipes/#{recipe.id}/edit")
+    editor |> form("#recipe-form", recipe: %{pictogram: ""}) |> render_submit()
+    assert is_nil(Recipes.get_recipe!(recipe.id).pictogram)
+  end
 end

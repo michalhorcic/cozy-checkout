@@ -118,6 +118,15 @@ bez přechodu na detail a bez dalšího dotazu do databáze. U receptu se zadáv
 dávky a množství všech surovin na tuto dávku. Formulář umožňuje přidávat a odebírat
 suroviny přímo v receptu, upravit zdroj či odkaz a uchovat poznámky k pracovním odhadům.
 
+U receptu lze ručně vybrat jeden z 15 piktogramů nebo **Bez piktogramu**.
+Výběr je v úpravě receptu; žádný symbol se neodvozuje z názvu ani ze surovin.
+Existující i nové recepty začínají bez něj. Symbol se ukáže v seznamu a detailu
+receptu i při výběru hlavního receptu v menu. Sadu tvoří lokální SVG pro
+běžná jídla v katalogu: drůbež, hovězí, vepřové, mleté maso, polévka, luštěniny,
+zelenina, těstoviny, rýže, brambory, knedlíky, sladká jídla, omáčky, wok a bufet.
+Migrace `20261102120000_add_recipe_pictograms` přidává volitelné pole;
+není potřeba generovací služba ani nová konfigurace.
+
 Migrace `20261021210000` automaticky načte verzovaný snímek tabulky z
 `priv/recipes/drive_reference.json`: **56 receptur, 172 surovin a 600 řádků receptur**.
 Zachovává dávky, množství, jednotky, kategorie, zdroje, poznámky i údaje o nákupním

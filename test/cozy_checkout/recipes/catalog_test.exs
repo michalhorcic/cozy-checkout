@@ -285,4 +285,19 @@ defmodule CozyCheckout.Recipes.CatalogTest do
     assert List.last(batch).archived_at
     assert Recipes.get_recipes([]) == []
   end
+
+  test "pictograms are optional, manually selected and restricted to the fixed catalogue" do
+    recipe = recipe_fixture(ingredient_fixture(), %{name: "Kuře bez automatického piktogramu"})
+    assert is_nil(recipe.pictogram)
+    assert length(CozyCheckout.Recipes.Pictograms.options()) == 15
+    assert {:ok, selected} = Recipes.update_recipe(recipe, %{pictogram: "poultry"})
+    assert Recipes.get_recipe!(recipe.id).pictogram == "poultry"
+    assert [%{pictogram: "poultry"}] = Recipes.search_recipes(recipe.name).recipes
+    assert {:error, cs} = Recipes.update_recipe(selected, %{pictogram: "not-a-pictogram"})
+    assert errors_on(cs).pictogram != []
+    assert {:ok, renamed} = Recipes.update_recipe(selected, %{name: "Jiný název receptu"})
+    assert renamed.pictogram == "poultry"
+    assert {:ok, cleared} = Recipes.update_recipe(renamed, %{pictogram: ""})
+    assert is_nil(cleared.pictogram)
+  end
 end

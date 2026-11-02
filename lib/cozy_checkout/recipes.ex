@@ -25,7 +25,7 @@ defmodule CozyCheckout.Recipes do
         order_by: [asc: r.name, asc: r.id],
         offset: ^offset,
         limit: ^(@recipe_page_size + 1),
-        select: struct(r, [:id, :name, :base_servings, :archived_at])
+        select: struct(r, [:id, :name, :base_servings, :archived_at, :pictogram])
 
     rows = query |> matching_recipe_names(search) |> Repo.all()
 

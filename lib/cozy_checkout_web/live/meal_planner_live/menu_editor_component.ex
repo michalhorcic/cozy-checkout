@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
   use CozyCheckoutWeb, :live_component
   alias CozyCheckout.{Recipes, Meals.MenuRecipes}
   alias CozyCheckout.Meals.MenuVariant
+  import CozyCheckoutWeb.KitchenComponents, only: [recipe_pictogram: 1]
   import CozyCheckoutWeb.MealComponents
 
   @impl true

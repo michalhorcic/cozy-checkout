@@ -5,6 +5,7 @@ defmodule CozyCheckout.Recipes.Recipe do
   @foreign_key_type :binary_id
   schema "recipes" do
     field :name, :string
+    field :pictogram, :string
     field :base_servings, :decimal, default: Decimal.new("4")
     field :source_reference, :string
     field :notes, :string
@@ -17,9 +18,11 @@ defmodule CozyCheckout.Recipes.Recipe do
 
   def changeset(recipe, attrs, validate_line \\ fn line -> line end) do
     recipe
-    |> cast(attrs, [:name, :base_servings, :source_reference, :notes])
+    |> cast(attrs, [:name, :base_servings, :source_reference, :notes, :pictogram])
     |> validate_required([:name, :base_servings])
     |> validate_length(:name, max: 250)
+    |> validate_inclusion(:pictogram, CozyCheckout.Recipes.Pictograms.keys())
+    |> check_constraint(:pictogram, name: :recipes_pictogram_allowed)
     |> validate_number(:base_servings, greater_than: 0)
     |> validate_length(:source_reference, max: 4000)
     |> cast_assoc(:lines,

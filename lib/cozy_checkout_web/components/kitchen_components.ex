@@ -1,6 +1,25 @@
 defmodule CozyCheckoutWeb.KitchenComponents do
   use CozyCheckoutWeb, :html
 
+  attr :pictogram, :string, default: nil
+  attr :class, :string, default: "h-5 w-5 shrink-0"
+
+  def recipe_pictogram(assigns) do
+    assigns = assign(assigns, :label, CozyCheckout.Recipes.Pictograms.label(assigns.pictogram))
+
+    ~H"""
+    <img
+      :if={@label}
+      src={~p"/images/recipes/pictograms/#{@pictogram <> ".svg"}"}
+      alt={@label}
+      title={@label}
+      width="48"
+      height="48"
+      class={@class}
+    />
+    """
+  end
+
   def field_class,
     do:
       "block w-full rounded-lg border border-secondary-300 bg-white px-3 py-2.5 text-sm text-primary-500 shadow-sm outline-none transition focus:border-tertiary-400 focus:ring-4 focus:ring-tertiary-50"
