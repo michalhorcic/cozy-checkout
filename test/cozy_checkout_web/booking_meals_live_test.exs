@@ -149,10 +149,11 @@ defmodule CozyCheckoutWeb.BookingMealsLiveTest do
     refute has_element?(view, "#booking-meals-incomplete")
   end
 
-  test "planner shows per-meal departure counts on desktop, mobile and in the editor", %{
-    conn: conn,
-    week: week
-  } do
+  test "planner shows per-meal departure counts on desktop and mobile without the shared editor",
+       %{
+         conn: conn,
+         week: week
+       } do
     stay(week)
 
     stay(week, %{
@@ -175,9 +176,12 @@ defmodule CozyCheckoutWeb.BookingMealsLiveTest do
     assert has_element?(view, "#portions-#{week}-breakfast", "Neúplný součet")
     refute has_element?(view, "#portions-#{Date.add(week, 1)}-breakfast", "Neúplný součet")
 
-    view |> element("td[phx-value-date='#{week}'][phx-value-type='breakfast']") |> render_click()
-    assert has_element?(view, "#edit-meal-portions", "17 porcí")
-    assert has_element?(view, "#edit-meal-portions", "Neúplný součet")
+    assert has_element?(view, "#mobile-portions-#{week}-breakfast", "12 dospělí · 5 děti")
+    assert has_element?(view, "#mobile-portions-#{week}-breakfast", "Neúplný součet")
+    assert has_element?(view, "#mobile-portions-#{week}-lunch", "0 porcí")
+    assert has_element?(view, "#mobile-portions-#{week}-dinner", "2 porcí")
+    refute has_element?(view, "[phx-click='open_edit_modal']")
+    refute has_element?(view, "#meal-form")
   end
 
   test "print includes portions even without menu text and preserves historical completed bookings",
