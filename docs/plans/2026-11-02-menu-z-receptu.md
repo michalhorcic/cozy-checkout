@@ -1,6 +1,6 @@
 # Tvorba a úprava menu přímo z receptů
 
-- Stav: **rozpracováno**; implementace pokračuje v jedné větvi a jednom draft PR.
+- Stav: **implementováno, čeká na ověření**; celá změna je v PR #70.
 - Vytvořeno: 2026-11-02
 - Aktualizováno: 2026-11-02
 - Podklad: analýza aktuálního `origin/main` (`314d7e8`) a rozhodnutí uživatele v tomto chatu.
@@ -191,37 +191,51 @@ Již vybrané recepty zůstávají v editoru viditelné i mimo aktuální výsle
 
 ## Postup realizace
 
-- [ ] **1. Ověřit aktuální main a dopady:** projít uvedené moduly, všechny čtenáře
+- [x] **1. Ověřit aktuální main a dopady:** projít uvedené moduly, všechny čtenáře
   `menu_text`/`supplements`, plánovač, tisk, freezer souhrny a nákladové reporty.
   Potvrdit strategii legacy kontroly a rozpracovaných podání vůči DB constraints.
-- [ ] **2. Datový základ a kontexty:** přidávací migrace, atomické uložení vazeb,
+- [x] **2. Datový základ a kontexty:** přidávací migrace, atomické uložení vazeb,
   odvozená připravenost, společné zobrazení názvů, bezpečný převod a import.
-- [ ] **3. Editor:** knihovna receptů, přidání/výměna/odebrání kliknutím, koncepty,
+- [x] **3. Editor:** knihovna receptů, přidání/výměna/odebrání kliknutím, koncepty,
   kopie dne/menu, bufet pro snídaně a bezpečná změna rozpisu; následně drag&drop,
   pořadí doplňků, undo a mobilní/klávesnicové ovládání.
-- [ ] **4. Přehled:** hledání podle menu i receptů, filtry, obsahové náhledy,
+- [x] **4. Přehled:** hledání podle menu i receptů, filtry, obsahové náhledy,
   stavy, duplikace a přechod k přiřazení pobytu.
-- [ ] **5. Návaznosti:** společný výběr v pobytu, kontrola přiřazení, názvy
+- [x] **5. Návaznosti:** společný výběr v pobytu, kontrola přiřazení, názvy
   v plánovači/tisku/nákupu, odstranění textového porovnávání u dořešených položek,
   hromadné načítání a zachování přímé cesty k nákupu.
-- [ ] **6. Ověření a dokumentace:** regresní testy, ruční průchod desktop/tablet,
+- [x] **6. Ověření a dokumentace:** regresní testy, ruční průchod desktop/tablet,
   dokumentace skutečné funkce a aktualizace stavu tohoto plánu.
 
 ### Průběh implementace
 
-2026-11-02 — první implementační část (výkonový základ):
+2026-11-02 — implementace v jedné větvi `codex/recipe-editing`, PR #70:
 
-- Přidáno databázové vyhledávání receptů bez ohledu na velikost písmen a
-  diakritiku; výběr vrací nejvýše 30 lehkých záznamů a nabízí další stránku.
-  Nevyžaduje novou databázovou extenzi. Základní katalog filtruje stejným SQL
-  výrazem před načítáním surovin. Jde o průchod názvy, nikoli indexové hledání.
-- Vybrané recepty se surovinami se načítají dávkově v pořadí výběru, včetně
-  archivovaných receptů. Detail spotřeby už nenačítá každý recept zvlášť.
-- Stávající výběr používá nové hledání; změna výběru ani kalkulátoru neresetuje
-  načtené stránky. Vybrané recepty jsou viditelné i mimo výsledky hledání.
-- Doplněny regresní testy stránkování, diakritiky, archivace a počtu dotazů.
-- Tato část zatím nemění datový model ani pravidla ukládání/přiřazení menu.
-  Kroky 1–6 výše zůstávají otevřené; další změny patří do stejného PR.
+- Přidávací migrace poznámek a kontroly legacy textů pro šablony i pobyty.
+  Přesné shody doplní chybějící vazby; existující odkazy a texty zachová.
+- Kontext `MenuRecipes` ukládá nastavení a všechny receptové vazby atomicky,
+  kontroluje revizi, vlastnictví podání, ID, duplicity a archivaci. Odvozuje
+  připravenost a poskytuje společné zobrazení názvů a upozornění.
+- Sdílený editor šablony i podání pobytu: knihovna, hledání, suroviny,
+  klikání a drag&drop, pořadí doplňků, poznámky, koncepty, undo, kopie/přesun
+  podání, kopie dne a bufet na všechny snídaně. Přepis a odstranění vyplněných
+  podání ukazuje dopad a čeká na potvrzení. Odchod upozorňuje na neuložené změny.
+- Přehled: hledání podle menu/receptů, délka/penze/stav, hover/focus/klikací
+  obsah, duplikace, archivace a přiřazení s navigačním kontextem i hledáním pobytu.
+- Server blokuje nové přiřazení konceptu, nezkontrolovaných textů i archivovaných
+  receptů. Stávající pobyty a jejich ruční úpravy zachovává. Starý editor vazeb
+  šablony přesměrovává, detail spotřeby pobytu vede do společného editoru.
+- Plánovač, tisk, detail a nákup používají aktuální názvy a receptury i pro
+  minulost. Poznámky jsou oddělené; legacy podání mají konkrétní upozornění
+  na neúplný nákup. Z menu vede přímý nákup pro daný pobyt.
+- Databázové hledání vrací stránky po 30 lehkých receptech. Jde o průchod
+  názvy bez nové extenze, nikoli indexové hledání. Vybrané recepty a jejich
+  suroviny se načítají dávkově, včetně opravy N+1 ve spotřebě. Přehled načítá
+  názvy pro všechna menu hromadně; otevření náhledu neposílá SQL dotaz.
+- Rozšířeny kontextové a LiveView regresní testy; dokumentace je v
+  `docs/features/CATERING.md`. Lokální testy nebyly spuštěny podle `AGENTS.md`.
+  Kompilace s varováními jako chybami a celoprojektové formátování byly ověřeny
+  na Elixiru 1.20.4 / OTP 29.1. CI a ruční desktop/tablet průchod ověří uživatel.
 
 ## Ověření a podmínky dokončení
 
@@ -268,11 +282,11 @@ kontrole dat, nikoli odhadem v implementaci. Přesné migrační sloupce, způso
 dotazování a případná drag&drop knihovna jsou technická rozhodnutí podle
 aktuálního repozitáře; přednost mají existující závislosti a jednoduché řešení.
 
-- Hotovo: analýza kódu, migrací a testů; inspirace; vyjasnění rozsahu a tento plán.
-- Zbývá: datový model, atomický editor menu, převod legacy dat, přehled, návaznosti a jejich ověření. Výkonový základ je implementovaný; lokální testy nebyly spuštěny.
+- Hotovo: implementace kroků 1–6, migrace, regresní testy a dokumentace v PR #70.
+- Zbývá ověřit: výsledky GitHub CI a ruční průchod desktop/tablet/mobil,
+  zejména přetahování, hover/focus, návrat prohlížečem a konkrétní legacy data.
 - Blokuje: žádná obchodní otázka.
-- Nejbližší krok: pokračovat ve stejné implementační větvi a draft PR; dokončit audit čtenářů legacy textů a datový základ podle kroků 1–2.
-- Validace plánu: lokální testy se nespouštějí; výsledky CI ověří uživatel.
+- Lokální testy nebyly spuštěny; CI se nepolluje. Případné opravy patří do stejného PR.
 
 Předávací zadání: „Implementuj plán `docs/plans/2026-11-02-menu-z-receptu.md`.
 Menu a pobyty mají pouze odkazy na recepty; změny receptů platí i do minulosti.

@@ -99,6 +99,7 @@ defmodule CozyCheckout.Recipes.ConsumptionTest do
   test "unlinked menu warns, stale and cancelled bookings cannot be calculated or linked" do
     booking = menu_booking_fixture()
     [item | _] = assign_variant(booking, variant_fixture()).items
+    {:ok, item} = Links.save("booking", item.id, nil, [], Links.version(item))
     assert {:ok, result} = Consumption.for_booking_item(item.id)
     assert result.issues != []
     recipe = recipe_fixture()

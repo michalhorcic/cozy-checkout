@@ -22,200 +22,189 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
        Plug.Test.init_test_session(conn, %{AdminAuth.session_key() => System.system_time(:second)})}
   end
 
-  test "saved names and state-dependent actions are visible in both variant and booking menus", %{
+  defp search(view, id, query),
+    do: view |> form("#menu-editor-#{id}-search", recipe_search: query) |> render_change()
+
+  test "main and ordered extras are edited in the same form and cancel writes nothing", %{
     conn: conn
   } do
     main = recipe_fixture()
     extra = recipe_fixture()
     variant = variant_fixture()
-    item = hd(variant.items)
-    {:ok, editor, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
-    assert has_element?(editor, "#variant-item-recipes-#{item.id} [data-missing-main]")
-    assert has_element?(editor, "#variant-item-recipes-#{item.id} a", "Připojit recepty")
-
-    {:ok, picker, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
-    picker |> form("#link-search-form", search: "Recept ") |> render_change()
-    picker |> element("#choose-main-#{main.id}") |> render_click()
-    picker |> element("#choose-extra-#{extra.id}") |> render_click()
-    result = picker |> element("#save-recipe-links") |> render_click()
-
-    {:ok, editor, _} =
-      follow_redirect(result, conn, "/admin/meal-planner/variants/#{variant.id}/edit")
-
-    assert has_element?(editor, "#variant-item-recipes-#{item.id} [data-linked-main]", main.name)
-
-    assert has_element?(
-             editor,
-             "#variant-item-recipes-#{item.id} [data-linked-extras]",
-             extra.name
-           )
-
-    assert has_element?(editor, "#variant-item-recipes-#{item.id} a", "Upravit připojené recepty")
-
-    booking = menu_booking_fixture()
-    menu = assign_variant(booking, MenuPlanning.get_variant!(variant.id))
-    copied = Enum.find(menu.items, &(&1.recipe_id == main.id))
-    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/menu")
-    assert has_element?(view, "#item-recipes-#{copied.id} [data-linked-main]", main.name)
-    assert has_element?(view, "#item-recipes-#{copied.id} [data-linked-extras]", extra.name)
-    assert has_element?(view, "#item-recipes-#{copied.id} a", "Upravit připojené recepty")
-    missing = Enum.find(menu.items, &is_nil(&1.recipe_id))
-    assert has_element?(view, "#item-recipes-#{missing.id} [data-missing-main]")
-    assert has_element?(view, "#item-recipes-#{missing.id} a", "Připojit recepty")
-
-    view |> element("#edit-menu-item-#{copied.id}") |> render_click()
+    first = hd(variant.items)
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    search(view, variant.id, main.name)
 
     view
-    |> form("#booking-menu-item-form", booking_menu_item: %{menu_text: "Změněný hlavní chod"})
+    |> element("#editor-recipe-#{main.id} button[phx-click='select_recipe']")
+    |> render_click()
+
+    assert has_element?(view, "#menu-slot-0", main.name)
+
+    assert MenuPlanning.get_variant!(variant.id).items |> hd() |> Map.get(:recipe_id) ==
+             first.recipe_id
+
+    view
+    |> element("#menu-slot-0 button[phx-click='activate'][phx-value-role='extra']")
+    |> render_click()
+
+    search(view, variant.id, extra.name)
+
+    view
+    |> element("#editor-recipe-#{extra.id} button[phx-click='select_recipe']")
+    |> render_click()
+
+    assert has_element?(view, "#menu-slot-0", extra.name)
+    view |> form("#menu-editor-#{variant.id}-form") |> render_submit()
+    updated = hd(MenuPlanning.get_variant!(variant.id).items)
+    assert updated.recipe_id == main.id
+    assert Links.supplement_ids(updated) == [extra.id]
+  end
+
+  test "drag payload uses the same server validation and undo restores the selection", %{
+    conn: conn
+  } do
+    main = recipe_fixture()
+    variant = variant_fixture()
+    old = hd(variant.items).recipe.name
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+
+    view
+    |> element("#menu-editor-#{variant.id}")
+    |> render_hook("drop_recipe", %{index: "0", role: "main", id: main.id})
+
+    assert has_element?(view, "#menu-slot-0", main.name)
+    view |> element("button[phx-click='undo']") |> render_click()
+    assert has_element?(view, "#menu-slot-0", old)
+
+    view
+    |> element("#menu-editor-#{variant.id}")
+    |> render_hook("drop_recipe", %{index: "0", role: "main", id: "invalid"})
+
+    assert has_element?(view, "[role='alert']", "Neplatný výběr")
+    assert MenuPlanning.get_variant!(variant.id).lock_version == variant.lock_version
+  end
+
+  test "legacy evidence is visible and explicit review is saved without becoming a note", %{
+    conn: conn
+  } do
+    variant = legacy_variant_fixture()
+    original = hd(variant.items)
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    assert has_element?(view, "#menu-slot-0", original.menu_text)
+
+    view
+    |> form("#menu-editor-#{variant.id}-form", editor: %{items: %{"0" => %{reviewed: "true"}}})
     |> render_submit()
 
-    assert has_element?(view, "#item-recipes-#{copied.id} [data-missing-main]")
-    refute has_element?(view, "#item-recipes-#{copied.id} [data-linked-main]")
-    assert has_element?(view, "#item-recipes-#{copied.id} [data-linked-extras]", extra.name)
+    saved = hd(MenuPlanning.get_variant!(variant.id).items)
+    assert saved.recipe_links_reviewed_at
+    assert saved.note == nil
+    assert saved.menu_text == original.menu_text
+    assert saved.recipe_id == nil
   end
 
-  test "an extra-only assignment never looks like a connected main recipe", %{conn: conn} do
-    extra = recipe_fixture()
+  test "copying a day shows impact and respects destination meal boundaries", %{conn: conn} do
     variant = variant_fixture()
-    item = hd(variant.items)
-    {:ok, _} = Links.save("variant", item.id, nil, [extra.id], Links.version(item))
     {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
-    assert has_element?(view, "#variant-item-recipes-#{item.id} [data-missing-main]")
-    refute has_element?(view, "#variant-item-recipes-#{item.id} [data-linked-main]")
-    assert has_element?(view, "#variant-item-recipes-#{item.id} [data-linked-extras]", extra.name)
-    assert has_element?(view, "#variant-item-recipes-#{item.id} a", "Upravit připojené recepty")
-  end
-
-  test "cards reflect selection and dirty state resets when changes are undone", %{conn: conn} do
-    main = recipe_fixture()
-    extra = recipe_fixture()
-    variant = variant_fixture()
-    item = hd(variant.items)
-    {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
-    view |> form("#link-search-form", search: "Recept ") |> render_change()
-    refute has_element?(view, "#recipe-links-unsaved")
-    assert has_element?(view, "#recipe-links-status", "zatím nejsou připojené")
-    view |> element("#choose-main-#{main.id}") |> render_click()
-    assert has_element?(view, "#recipe-role-#{main.id}", "Hlavní recept")
-    assert has_element?(view, "#recipe-choices article[data-selection='main'] .bg-emerald-100")
-    assert has_element?(view, "#choose-main-#{main.id}[aria-pressed='true'][disabled]")
-    assert has_element?(view, "#recipe-links-unsaved", "Neuložené změny")
-    assert Links.load!("variant", item.id).recipe_id == nil
-
-    view |> element("#selected-main-recipe button") |> render_click()
-    refute has_element?(view, "#recipe-role-#{main.id}")
-    refute has_element?(view, "#recipe-links-unsaved")
-    view |> element("#choose-extra-#{extra.id}") |> render_click()
-    assert has_element?(view, "#recipe-role-#{extra.id}", "Doplněk")
-    assert has_element?(view, "#choose-extra-#{extra.id}[aria-pressed='true'][disabled]")
-    view |> element("#selected-extra-#{extra.id} button") |> render_click()
-    refute has_element?(view, "#recipe-links-unsaved")
-  end
-
-  test "persisted selections stay marked across searches and calculations without becoming dirty",
-       %{conn: conn} do
-    main = recipe_fixture()
-    extra = recipe_fixture()
-    variant = variant_fixture()
-    item = hd(variant.items)
-    {:ok, _} = Links.save("variant", item.id, main.id, [extra.id], Links.version(item))
-    {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
-    view |> form("#link-search-form", search: "Recept ") |> render_change()
-    assert has_element?(view, "#recipe-links-status", "přiřazení je uložené")
-    assert has_element?(view, "#recipe-role-#{main.id}", "Hlavní recept")
-    assert has_element?(view, "#recipe-role-#{extra.id}", "Doplněk")
-    view |> form("#link-search-form", search: main.name) |> render_change()
-    assert has_element?(view, "#recipe-role-#{main.id}")
-    refute has_element?(view, "#recipe-role-#{extra.id}")
-    view |> form("#link-search-form", search: "Recept ") |> render_change()
-    assert has_element?(view, "#recipe-role-#{extra.id}")
+    # Day 2 breakfast is the active source; only dinner exists on destination day 1.
+    view
+    |> element("#menu-slot-1 button[phx-click='activate'][phx-value-role='main']")
+    |> render_click()
 
     view
-    |> form("#variant-consumption-calculator", calculator: %{adults: "12", children: "3"})
+    |> form("#menu-editor-#{variant.id}-form", editor: %{transfer_day: "1"})
     |> render_change()
 
-    refute has_element?(view, "#recipe-links-unsaved")
-    view |> element("#choose-main-#{extra.id}") |> render_click()
-    assert has_element?(view, "#recipe-role-#{extra.id}", "Hlavní recept")
-    refute has_element?(view, "#recipe-role-#{main.id}")
-    assert has_element?(view, "#recipe-links-unsaved")
-    view |> element("#choose-main-#{main.id}") |> render_click()
-    view |> element("#choose-extra-#{extra.id}") |> render_click()
-    refute has_element?(view, "#recipe-links-unsaved")
+    view |> element("button[phx-click='copy_day']") |> render_click()
+    assert has_element?(view, "#menu-impact")
+    view |> element("#menu-impact button[phx-click='confirm']") |> render_click()
+    source_dinner = Enum.find(variant.items, &(&1.day_number == 2 && &1.meal_type == "dinner"))
+    assert has_element?(view, "#menu-slot-0", source_dinner.recipe.name)
+    view |> form("#menu-editor-#{variant.id}-form") |> render_submit()
+    saved = MenuPlanning.get_variant!(variant.id)
+    assert length(saved.items) == 5
+    assert hd(saved.items).recipe_id == source_dinner.recipe_id
   end
 
-  test "variant text changes expose pending disconnection and restoring text restores the saved summary",
-       %{conn: conn} do
-    main = recipe_fixture()
-    extra = recipe_fixture()
-    variant = variant_fixture()
-    item = hd(variant.items)
-    {:ok, _} = Links.save("variant", item.id, main.id, [extra.id], Links.version(item))
-    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
-
-    view
-    |> form("#menu-variant-form",
-      menu_variant: %{items: %{"0" => %{menu_text: "Jiný hlavní chod"}}}
-    )
-    |> render_change()
-
-    assert has_element?(view, "#variant-item-recipes-#{item.id} [data-text-changed]")
-    refute has_element?(view, "#variant-item-recipes-#{item.id} [data-linked-main]")
-    assert has_element?(view, "#variant-item-recipes-#{item.id} [data-linked-extras]", extra.name)
-    refute has_element?(view, "#variant-item-recipes-#{item.id} a")
-    assert Links.load!("variant", item.id).recipe_id == main.id
-
-    view
-    |> form("#menu-variant-form", menu_variant: %{items: %{"0" => %{menu_text: item.menu_text}}})
-    |> render_change()
-
-    refute has_element?(view, "#variant-item-recipes-#{item.id} [data-text-changed]")
-    assert has_element?(view, "#variant-item-recipes-#{item.id} [data-linked-main]", main.name)
-    assert has_element?(view, "#variant-item-recipes-#{item.id} a", "Upravit připojené recepty")
-  end
-
-  test "recipe picker pages keep selected recipes visible and searches reset pagination", %{
-    conn: conn
-  } do
+  test "paged searches preserve selected recipes outside results", %{conn: conn} do
     ingredient = ingredient_fixture()
     prefix = "Picker pagination #{System.unique_integer([:positive])}"
 
     recipes =
-      for n <- 1..32 do
-        recipe_fixture(ingredient, %{
-          name: "#{prefix} #{String.pad_leading(to_string(n), 2, "0")}"
-        })
-      end
+      for n <- 1..32,
+          do:
+            recipe_fixture(ingredient, %{
+              name: "#{prefix} #{String.pad_leading(to_string(n), 2, "0")}"
+            })
 
-    item = hd(variant_fixture().items)
-    {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
-    view |> form("#link-search-form", search: prefix) |> render_change()
-
-    assert length(
-             view
-             |> element("#recipe-choices")
-             |> render()
-             |> Floki.parse_fragment!()
-             |> Floki.find("article")
-           ) == 30
-
+    variant = variant_fixture()
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    search(view, variant.id, prefix)
     last = List.last(recipes)
-    refute has_element?(view, "#choose-main-#{last.id}")
-    view |> element("#more-link-recipes") |> render_click()
-    assert has_element?(view, "#choose-main-#{last.id}")
-    refute has_element?(view, "#more-link-recipes")
-    view |> element("#choose-main-#{last.id}") |> render_click()
-    assert has_element?(view, "#selected-main-recipe", last.name)
-    assert has_element?(view, "#choose-main-#{last.id}[disabled]")
+    refute has_element?(view, "#editor-recipe-#{last.id}")
+    view |> element("button[phx-click='more']") |> render_click()
+    assert has_element?(view, "#editor-recipe-#{last.id}")
 
-    view |> form("#link-search-form", search: "no such recipe") |> render_change()
-    refute has_element?(view, "#choose-main-#{last.id}")
-    assert has_element?(view, "#selected-main-recipe", last.name)
-    assert has_element?(view, "#recipe-links-unsaved")
-    view |> form("#link-search-form", search: prefix) |> render_change()
-    assert has_element?(view, "#more-link-recipes")
-    refute has_element?(view, "#choose-main-#{last.id}")
-    view |> element("#save-recipe-links") |> render_click()
-    assert Links.load!("variant", item.id).recipe_id == last.id
+    view
+    |> element("#editor-recipe-#{last.id} button[phx-click='select_recipe']")
+    |> render_click()
+
+    search(view, variant.id, "no matching recipe")
+    assert has_element?(view, "#menu-slot-0", last.name)
+    refute has_element?(view, "#editor-recipe-#{last.id}")
+  end
+
+  test "old variant link editor redirects to the integrated editor", %{conn: conn} do
+    variant = variant_fixture()
+    item = hd(variant.items)
+
+    assert {:error, {:live_redirect, %{to: path}}} =
+             live(conn, "/admin/recipes/menu/variant/#{item.id}")
+
+    assert path =~ "/admin/meal-planner/variants/#{variant.id}/edit"
+    assert path =~ "slot=#{item.id}"
+  end
+
+  test "breakfast propagation can be undone and supplement order is explicit", %{conn: conn} do
+    variant = variant_fixture()
+    first_extra = recipe_fixture()
+    second_extra = recipe_fixture()
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+
+    view
+    |> element("#menu-slot-1 button[phx-click='activate'][phx-value-role='main']")
+    |> render_click()
+
+    view |> element("button[phx-click='breakfasts']") |> render_click()
+    view |> element("#menu-impact button[phx-click='confirm']") |> render_click()
+    assert has_element?(view, "#menu-slot-4", Enum.at(variant.items, 1).recipe.name)
+    view |> element("button[phx-click='undo']") |> render_click()
+    assert has_element?(view, "#menu-slot-4", Enum.at(variant.items, 4).recipe.name)
+
+    view
+    |> element("#menu-slot-0 button[phx-click='activate'][phx-value-role='extra']")
+    |> render_click()
+
+    for recipe <- [first_extra, second_extra] do
+      search(view, variant.id, recipe.name)
+
+      view
+      |> element("#editor-recipe-#{recipe.id} button[phx-click='select_recipe']")
+      |> render_click()
+    end
+
+    view
+    |> element(
+      "#menu-slot-0 button[phx-click='reorder'][phx-value-id='#{second_extra.id}'][phx-value-direction='up']"
+    )
+    |> render_click()
+
+    view |> form("#menu-editor-#{variant.id}-form") |> render_submit()
+
+    assert Links.supplement_ids(hd(MenuPlanning.get_variant!(variant.id).items)) == [
+             second_extra.id,
+             first_extra.id
+           ]
   end
 end

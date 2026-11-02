@@ -138,41 +138,22 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     assert Decimal.equal?(Recipes.settings().breakfast_child_factor, "0.8")
   end
 
-  test "variant selects main plus supplement and booking calculates for its own group", %{
-    conn: conn
-  } do
+  test "booking consumption detail includes main and supplement and links to the shared editor",
+       %{conn: conn} do
     ingredient = ingredient_fixture()
     recipe = recipe_fixture(ingredient)
     extra = recipe_fixture(ingredient)
     variant = variant_fixture()
     item = hd(variant.items)
-    {:ok, view, _} = live(conn, "/admin/recipes/menu/variant/#{item.id}")
-    view |> form("#link-search-form", search: "Recept ") |> render_change()
-    view |> element("#choose-main-#{recipe.id}") |> render_click()
-    view |> element("#choose-extra-#{extra.id}") |> render_click()
-    assert has_element?(view, "#selected-main-recipe", recipe.name)
-    assert has_element?(view, "#selected-extra-#{extra.id}")
-
-    view
-    |> form("#variant-consumption-calculator", calculator: %{adults: "10", children: "5"})
-    |> render_change()
-
-    assert has_element?(view, "#menu-consumption-#{ingredient.id}", "5,4 kg")
-    view |> element("#save-recipe-links") |> render_click()
-    assert_redirect(view, "/admin/meal-planner/variants/#{variant.id}/edit")
-    assert Links.load!("variant", item.id).recipe_id == recipe.id
-
+    {:ok, _} = Links.save("variant", item.id, recipe.id, [extra.id], Links.version(item))
     booking = menu_booking_fixture()
     menu = assign_variant(booking, CozyCheckout.Meals.MenuPlanning.get_variant!(variant.id))
-    saved = Enum.find(menu.items, &(&1.recipe_id == recipe.id))
+    saved = hd(menu.items)
     {:ok, group, _} = live(conn, "/admin/recipes/menu/booking/#{saved.id}")
     assert has_element?(group, "#menu-consumption", "15 porcí pro výdej")
     assert has_element?(group, "#menu-consumption-#{ingredient.id}", "5,4 kg")
-    refute has_element?(group, "#variant-consumption-calculator")
-    group |> element("#selected-extra-#{extra.id} button") |> render_click()
-    group |> element("#save-recipe-links") |> render_click()
-    assert Links.load!("booking", saved.id).manually_edited
-    assert Links.supplement_ids(Links.load!("booking", saved.id)) == []
+    assert has_element?(group, "#edit-menu-recipes[href*='edit_item=']")
+    refute has_element?(group, "#save-recipe-links")
   end
 
   test "stale booking blocks ingredient calculation and saving", %{conn: conn} do
@@ -181,7 +162,7 @@ defmodule CozyCheckoutWeb.RecipesLiveTest do
     {:ok, _} = CozyCheckout.Bookings.update_booking(booking, %{last_meal: "lunch"})
     {:ok, view, _} = live(conn, "/admin/recipes/menu/booking/#{item.id}")
     assert has_element?(view, "#recipe-link-blocked")
-    assert has_element?(view, "#save-recipe-links[disabled]")
+    refute has_element?(view, "#save-recipe-links")
     refute has_element?(view, "#menu-consumption")
   end
 

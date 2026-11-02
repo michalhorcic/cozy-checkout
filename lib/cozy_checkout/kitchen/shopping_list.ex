@@ -4,7 +4,7 @@ defmodule CozyCheckout.Kitchen.ShoppingList do
   alias CozyCheckout.{Repo, Recipes}
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Meals.{BookingMenu, MenuPlanning, PortionCounts, SlotSchedule}
-  alias CozyCheckout.Recipes.{Consumption, Links}
+  alias CozyCheckout.Recipes.Consumption
 
   def generate(start_date, end_date, booking_id \\ nil) do
     with :ok <- validate_range(start_date, end_date),
@@ -182,16 +182,7 @@ defmodule CozyCheckout.Kitchen.ShoppingList do
       Enum.reject([item.recipe | Enum.map(item.recipe_supplements, & &1.recipe)], &is_nil/1)
       |> Enum.uniq_by(& &1.id)
 
-    names = Enum.map(recipes, & &1.name)
-
-    missing =
-      String.split(item.supplements || "", "\n", trim: true)
-      |> Enum.map(&Links.label_name/1)
-      |> Enum.reject(&(&1 in names))
-
-    issues =
-      if(is_nil(item.recipe), do: ["Chybí hlavní recept nebo norma bufetu"], else: []) ++
-        Enum.map(missing, &("Doplněk bez receptu: " <> &1))
+    issues = CozyCheckout.Meals.MenuRecipes.issues(item)
 
     factor =
       if service.type == "breakfast",

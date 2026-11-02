@@ -1,11 +1,11 @@
 defmodule CozyCheckoutWeb.BookingLive.Menu do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Bookings
-  alias CozyCheckout.Meals.{MenuPlanning, BookingMenuItem, PortionCounts}
+  alias CozyCheckout.Meals.{MenuPlanning, PortionCounts}
   import CozyCheckoutWeb.MealComponents
 
   import CozyCheckoutWeb.KitchenComponents,
-    only: [menu_recipe_links: 1, kitchen_header: 1, freezer_notice: 1]
+    only: [menu_recipe_links: 1, kitchen_header: 1, freezer_notice: 1, searchable_picker: 1]
 
   @impl true
   def mount(%{"booking_id" => id} = params, _, socket) do
@@ -14,17 +14,36 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
      |> assign(:request_context, CozyCheckoutWeb.FoodNavigation.context(params))
      |> assign(:booking_id, id)
      |> assign(:page_title, "Menu rezervace")
-     |> load_state()}
+     |> load_state()
+     |> open_requested_item(params)}
   end
 
   @impl true
-  def handle_event("select_variant", %{"selection" => %{"variant_id" => id}}, socket) do
-    {:noreply,
-     socket
-     |> assign(:selected_variant, id)
-     |> assign(:preview, nil)
-     |> stream(:preview_rows, [], reset: true)}
+  def handle_event("select_variant", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.variants, &(&1.id == id)) do
+      {:noreply,
+       socket
+       |> assign(
+         selected_variant: id,
+         variant_query: nil,
+         variant_open: false,
+         preview: nil,
+         selection_form: to_form(%{"variant_id" => id}, as: :selection)
+       )
+       |> stream(:preview_rows, [], reset: true)}
+    else
+      {:noreply, socket}
+    end
   end
+
+  def handle_event("search_variants", %{"variant_search" => %{"0" => query}}, socket),
+    do: {:noreply, assign(socket, variant_query: query, variant_open: true)}
+
+  def handle_event("open_variant_search", _, socket),
+    do: {:noreply, assign(socket, :variant_open, true)}
+
+  def handle_event("close_variant_search", _, socket),
+    do: {:noreply, assign(socket, :variant_open, false)}
 
   def handle_event("preview", %{"selection" => %{"variant_id" => id}}, socket) do
     case Enum.any?(socket.assigns.variants, &(&1.id == id)) &&
@@ -77,14 +96,13 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
   end
 
   def handle_event("edit_item", %{"id" => id}, socket) do
-    item = Enum.find(socket.assigns.menu.items, &(&1.id == id))
+    item = find_item(socket, id)
 
     if item do
       {:noreply,
        socket
        |> assign(:edit_item, item)
-       |> assign(:edit_version, MenuPlanning.item_version(item))
-       |> assign(:edit_form, to_form(BookingMenuItem.changeset(item, %{})))}
+       |> assign(:edit_version, MenuPlanning.item_version(item))}
     else
       {:noreply, socket}
     end
@@ -92,45 +110,27 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
 
   def handle_event("close_item", _, socket), do: {:noreply, assign(socket, :edit_item, nil)}
 
-  def handle_event("save_item", %{"booking_menu_item" => attrs}, socket) do
-    case MenuPlanning.update_booking_item(
-           socket.assigns.booking_id,
-           socket.assigns.edit_item.id,
-           attrs,
-           socket.assigns.edit_version
-         ) do
-      {:ok, _} ->
-        {:noreply,
-         socket
-         |> load_state()
-         |> put_flash(:success, "Ruční úprava uložena a chráněna před přepsáním variantou.")}
-
-      {:error, %Ecto.Changeset{} = cs} ->
-        {:noreply, assign(socket, :edit_form, to_form(cs))}
-
-      {:error, _} ->
-        {:noreply,
-         socket
-         |> load_state()
-         |> put_flash(:error, "Jídlo mezitím změnil někdo jiný. Otevřete ho znovu.")}
-    end
-  end
-
   def handle_event("allow_replacement", %{"id" => id}, socket) do
-    item = Enum.find(socket.assigns.menu.items, &(&1.id == id))
+    item = find_item(socket, id)
 
-    case MenuPlanning.allow_item_replacement(
-           socket.assigns.booking_id,
-           id,
-           MenuPlanning.item_version(item)
-         ) do
+    result =
+      if item,
+        do:
+          MenuPlanning.allow_item_replacement(
+            socket.assigns.booking_id,
+            id,
+            MenuPlanning.item_version(item)
+          ),
+        else: {:error, :stale_item}
+
+    case result do
       {:ok, _} ->
         {:noreply,
          socket
          |> load_state()
          |> put_flash(
            :success,
-           "Přepsání povoleno. Text se změní až po náhledu a použití varianty."
+           "Přepsání povoleno. Sestava se změní až po náhledu a použití varianty."
          )}
 
       {:error, _} ->
@@ -139,6 +139,27 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
          |> load_state()
          |> put_flash(:error, "Jídlo se mezitím změnilo. Zkontrolujte aktuální stav.")}
     end
+  end
+
+  @impl true
+  def handle_info({:menu_saved, _}, socket),
+    do:
+      {:noreply,
+       socket
+       |> load_state()
+       |> put_flash(:success, "Podání uloženo a chráněno před přepsáním šablonou.")}
+
+  defp find_item(socket, id) do
+    if socket.assigns.menu, do: Enum.find(socket.assigns.menu.items, &(&1.id == id))
+  end
+
+  defp open_requested_item(socket, params) do
+    requested = params["edit_item"]
+    item = if socket.assigns.menu, do: Enum.find(socket.assigns.menu.items, &(&1.id == requested))
+
+    if item,
+      do: assign(socket, edit_item: item, edit_version: MenuPlanning.item_version(item)),
+      else: socket
   end
 
   defp load_state(socket) do
@@ -156,10 +177,16 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
         []
       end
 
+    requested = socket.assigns.request_context["variant"]
+
     selected =
-      if menu && Enum.any?(variants, &(&1.id == menu.menu_variant_id)),
-        do: menu.menu_variant_id,
-        else: ""
+      if requested && Enum.any?(variants, &(&1.id == requested)),
+        do: requested,
+        else:
+          if(menu && Enum.any?(variants, &(&1.id == menu.menu_variant_id)),
+            do: menu.menu_variant_id,
+            else: ""
+          )
 
     socket
     |> assign(
@@ -180,6 +207,18 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
     |> assign(:variants, variants)
     |> assign(:stale_menu, MenuPlanning.stale?(menu, booking))
     |> assign(:selected_variant, selected)
+    |> assign(:variant_query, nil)
+    |> assign(:variant_open, false)
+    |> assign(
+      :variant_options,
+      Enum.map(variants, fn v ->
+        %{
+          id: v.id,
+          name: v.name,
+          hint: "#{v.days} dnů · #{CozyCheckout.Meals.MenuRecipes.readiness(v).label}"
+        }
+      end)
+    )
     |> assign(:preview, nil)
     |> assign(:edit_item, nil)
     |> assign(:selection_form, to_form(%{"variant_id" => selected}, as: :selection))

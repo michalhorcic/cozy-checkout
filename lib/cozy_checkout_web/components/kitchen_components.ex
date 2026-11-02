@@ -10,33 +10,29 @@ defmodule CozyCheckoutWeb.KitchenComponents do
   attr :href, :string, default: nil
 
   def menu_recipe_links(assigns) do
-    {item, main_changed?, extras_changed?} =
+    item =
       case assigns.item do
-        %Ecto.Changeset{} = cs ->
-          {Ecto.Changeset.apply_changes(cs),
-           not is_nil(cs.data.id) &&
-             Ecto.Changeset.get_field(cs, :menu_text) != cs.data.menu_text,
-           not is_nil(cs.data.id) &&
-             Ecto.Changeset.get_field(cs, :supplements) != cs.data.supplements}
-
-        item ->
-          {item, false, false}
+        %Ecto.Changeset{} = cs -> Ecto.Changeset.apply_changes(cs)
+        item -> item
       end
 
-    main = if item.recipe_id && not main_changed?, do: item.recipe
+    main = if Ecto.assoc_loaded?(item.recipe), do: item.recipe
 
     extras =
-      if Ecto.assoc_loaded?(item.recipe_supplements) && not extras_changed?,
+      if Ecto.assoc_loaded?(item.recipe_supplements),
         do: item.recipe_supplements |> Enum.sort_by(& &1.position) |> Enum.map(& &1.recipe),
         else: []
 
     assigns =
       assigns
-      |> assign(:main, main)
-      |> assign(:extras, extras)
-      |> assign(:has_links?, not is_nil(main) || extras != [])
-      |> assign(:text_changed?, main_changed? || extras_changed?)
-      |> assign(:has_supplements?, String.trim(item.supplements || "") != "")
+      |> assign(
+        main: main,
+        extras: extras,
+        has_links?: not is_nil(main) or extras != [],
+        text_changed?: false,
+        has_supplements?:
+          CozyCheckout.Meals.MenuRecipes.legacy?(item) and item.supplements not in [nil, ""]
+      )
 
     ~H"""
     <div
@@ -61,7 +57,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
         Doplňky zatím nemají připojené recepty.
       </p>
       <p :if={@text_changed?} class="text-amber-800" data-text-changed>
-        Nejdřív uložte změny textu. Recepty změněného chodu nebo doplňků se odpojí.
+        Původní text čeká na kontrolu.
       </p>
       <.link
         :if={@href && not @text_changed?}
@@ -72,7 +68,7 @@ defmodule CozyCheckoutWeb.KitchenComponents do
         {if @has_links?, do: "Upravit připojené recepty", else: "Připojit recepty"}
       </.link>
       <p :if={is_nil(@href)} class="text-xs text-primary-400">
-        Recepty připojíte po uložení varianty.
+        Recepty vyberte v editoru menu.
       </p>
     </div>
     """

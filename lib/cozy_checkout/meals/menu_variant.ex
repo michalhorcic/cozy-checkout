@@ -31,10 +31,10 @@ defmodule CozyCheckout.Meals.MenuVariant do
     |> unique_constraint(:name, name: :menu_variants_name_index)
   end
 
-  def changeset(variant, attrs) do
+  def changeset(variant, attrs, item_changeset \\ &CozyCheckout.Meals.MenuVariantItem.changeset/2) do
     variant
     |> settings_changeset(attrs)
-    |> cast_assoc(:items, with: &CozyCheckout.Meals.MenuVariantItem.changeset/2)
+    |> cast_assoc(:items, with: item_changeset)
     |> validate_slots()
   end
 

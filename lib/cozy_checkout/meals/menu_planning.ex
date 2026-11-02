@@ -10,11 +10,17 @@ defmodule CozyCheckout.Meals.MenuPlanning do
     BookingMenu,
     BookingMenuItem,
     PortionCounts,
-    SlotSchedule
+    SlotSchedule,
+    MenuRecipes
   }
 
   def list_variants do
-    Repo.all(from v in MenuVariant, where: is_nil(v.deleted_at), order_by: v.name)
+    Repo.all(
+      from v in MenuVariant,
+        where: is_nil(v.deleted_at),
+        order_by: v.name,
+        preload: [items: [:recipe, recipe_supplements: :recipe]]
+    )
   end
 
   @doc "Menu choices matching the actual inclusive stay and service boundaries."
@@ -24,11 +30,36 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         is_nil(variant.deleted_at) and
           variant.days == Date.diff(booking.check_out_date, booking.check_in_date) + 1 and
           variant.meal_plan == booking.meal_plan and
-          variant.first_meal == booking.first_meal and variant.last_meal == booking.last_meal
+          variant.first_meal == booking.first_meal and variant.last_meal == booking.last_meal and
+          MenuRecipes.readiness(variant).ready?
       end)
     else
       []
     end
+  end
+
+  def assignment_bookings(variant) do
+    Repo.all(
+      from b in Booking,
+        join: g in assoc(b, :guest),
+        where: is_nil(b.deleted_at) and b.status != "cancelled",
+        where: not is_nil(b.check_out_date),
+        where: fragment("? - ? + 1", b.check_out_date, b.check_in_date) == ^variant.days,
+        where:
+          b.meal_plan == ^variant.meal_plan and b.first_meal == ^variant.first_meal and
+            b.last_meal == ^variant.last_meal,
+        order_by: [desc: b.check_in_date],
+        select: %{
+          id: b.id,
+          name:
+            fragment(
+              "? || ' · ' || to_char(?, 'DD.MM.YYYY') || ' – ' || to_char(?, 'DD.MM.YYYY')",
+              g.name,
+              b.check_in_date,
+              b.check_out_date
+            )
+        }
+    )
   end
 
   def booking_menu_summaries(booking_ids) do
@@ -195,6 +226,19 @@ defmodule CozyCheckout.Meals.MenuPlanning do
 
       if is_nil(variant), do: Repo.rollback(:variant_unavailable)
       variant = CozyCheckout.Recipes.Links.preload_variant(variant)
+
+      ids =
+        Enum.flat_map(variant.items, fn i ->
+          [i.recipe_id | Enum.map(i.recipe_supplements, & &1.recipe_id)]
+        end)
+        |> Enum.reject(&is_nil/1)
+        |> Enum.uniq()
+
+      Repo.all(from r in CozyCheckout.Recipes.Recipe, where: r.id in ^ids, lock: "FOR SHARE")
+
+      variant =
+        Repo.preload(variant, [items: [:recipe, recipe_supplements: :recipe]], force: true)
+
       preview = build_preview(booking, variant)
 
       cond do
@@ -235,8 +279,9 @@ defmodule CozyCheckout.Meals.MenuPlanning do
           date = Date.add(booking.check_in_date, source.day_number - 1)
           old = existing[{date, source.meal_type}]
           preserve = old && old.manually_edited
-          text = if preserve, do: old.menu_text, else: source.menu_text
-          supplements = if preserve, do: old.supplements, else: source.supplements
+          displayed = MenuRecipes.display(if(preserve, do: old, else: source))
+          text = displayed.main
+          supplements = displayed.supplements
           common = shared[{date, source.meal_type}]
 
           other =
@@ -253,6 +298,8 @@ defmodule CozyCheckout.Meals.MenuPlanning do
             meal_type: source.meal_type,
             menu_text: text,
             supplements: supplements,
+            note: displayed.note,
+            legacy?: displayed.legacy?,
             source_text: source.menu_text,
             source_supplements: source.supplements,
             source_item: source,
@@ -330,10 +377,20 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         {booking.meal_plan == variant.meal_plan, "Nesouhlasí režim stravování."},
         {booking.first_meal == variant.first_meal, "Nesouhlasí první jídlo."},
         {booking.last_meal == variant.last_meal, "Nesouhlasí poslední jídlo."},
-        {MenuVariant.changeset(variant, %{}).valid?, "Varianta nemá úplný rozpis jídel."}
+        {MenuVariant.changeset(variant, %{}).valid?, "Varianta nemá úplný rozpis jídel."},
+        {MenuRecipes.readiness(variant).ready?,
+         "Menu není připravené: doplňte hlavní recepty, zkontrolujte původní texty a nahraďte archivované recepty."}
       ]
 
-      errors ++ for {false, message} <- checks, do: message
+      readiness_errors =
+        Enum.flat_map(variant.items, fn item ->
+          label =
+            %{"breakfast" => "Snídaně", "lunch" => "Oběd", "dinner" => "Večeře"}[item.meal_type]
+
+          Enum.map(MenuRecipes.issues(item, true), &"Den #{item.day_number} · #{label}: #{&1}")
+        end)
+
+      errors ++ for({false, message} <- checks, do: message) ++ readiness_errors
     else
       errors
     end
@@ -489,7 +546,7 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         join: b in assoc(m, :booking),
         where: i.date >= ^start_date and i.date <= ^end_date,
         where: is_nil(b.deleted_at) and b.status != "cancelled",
-        preload: [booking_menu: {m, booking: {b, :guest}}]
+        preload: [:recipe, recipe_supplements: :recipe, booking_menu: {m, booking: {b, :guest}}]
     )
     |> Enum.filter(fn item ->
       booking = item.booking_menu.booking
@@ -500,8 +557,11 @@ defmodule CozyCheckout.Meals.MenuPlanning do
         id: item.id,
         date: item.date,
         meal_type: item.meal_type,
-        menu_text: item.menu_text,
-        supplements: item.supplements,
+        menu_text: MenuRecipes.display(item).main,
+        supplements: MenuRecipes.display(item).supplements,
+        note: item.note,
+        legacy?: MenuRecipes.legacy?(item),
+        legacy_text: MenuRecipes.display(item).original,
         manually_edited: item.manually_edited,
         booking: item.booking_menu.booking,
         variant_name: item.booking_menu.variant_name

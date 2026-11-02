@@ -51,18 +51,20 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     view |> element("#edit-menu-item-#{item.id}") |> render_click()
 
     view
-    |> form("#booking-menu-item-form",
-      booking_menu_item: %{menu_text: "Dietní ruční večeře", supplements: "Bezlepková příloha"}
+    |> form("#booking-menu-editor-#{item.id}-form",
+      editor: %{items: %{"0" => %{note: "Dietní ruční večeře"}}}
     )
-    |> render_submit()
+    |> render_change()
+
+    view |> form("#booking-menu-editor-#{item.id}-form") |> render_submit()
 
     assert has_element?(view, "#manual-menu-item-#{item.id}")
-    assert has_element?(view, "#flash-success .bg-emerald-50", "Ruční úprava uložena")
+    assert has_element?(view, "#flash-success .bg-emerald-50", "Podání uloženo")
     preview(view, variant)
     assert has_element?(view, "#booking-menu-preview", "Ruční úprava bude zachována")
     assert has_element?(view, "#booking-menu-preview", "Dietní ruční večeře")
     view |> element("#apply-booking-menu") |> render_click()
-    assert hd(MenuPlanning.get_booking_menu(booking.id).items).menu_text == "Dietní ruční večeře"
+    assert hd(MenuPlanning.get_booking_menu(booking.id).items).note == "Dietní ruční večeře"
     assert Meals.get_meal_by_date_and_type(~D[2027-01-09], "lunch").menu_text == "Společný oběd"
   end
 
@@ -104,7 +106,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
       MenuPlanning.update_booking_item(
         booking.id,
         item.id,
-        %{menu_text: "Chráněné jídlo"},
+        %{note: "Chráněné jídlo"},
         MenuPlanning.item_version(item)
       )
 
@@ -193,7 +195,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     {:ok, _} = MenuPlanning.delete_variant(variant)
     preview(view, variant)
     assert has_element?(view, "#flash-error", "Vyberte dostupnou variantu")
-    refute has_element?(view, "#booking-menu-variant option[value='#{variant.id}']")
+    refute has_element?(view, "#selection_variant_id option[value='#{variant.id}']")
     refute has_element?(view, "#booking-menu-preview")
   end
 end
