@@ -149,6 +149,6 @@ defmodule CozyCheckout.Recipes.ConsumptionTest do
     assert [%{quantity: quantity}] = result.quantities
     assert Decimal.equal?(quantity, "21.6")
     assert Enum.count(queries, &String.contains?(&1, ~s(FROM "recipe_lines"))) == 1
-    assert Enum.count(queries, &String.contains?(&1, ~s(FROM "ingredients"))) == 1
+    assert Enum.count(queries, &String.contains?(&1, ~s(FROM "kitchen_ingredients"))) == 1
   end
 end

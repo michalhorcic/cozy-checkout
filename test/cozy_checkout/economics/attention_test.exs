@@ -31,7 +31,7 @@ defmodule CozyCheckout.Economics.AttentionTest do
     month
   end
 
-  defp snapshot(months, current \\ nil, code \\ "FY-TEST") do
+  defp snapshot(months, current, code \\ "FY-TEST") do
     %{
       period_code: code,
       checked_at: ~U[2026-10-29 04:00:00Z],

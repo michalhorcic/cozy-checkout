@@ -82,6 +82,8 @@ defmodule CozyCheckout.Meals.MenuRecipesTest do
           {"recipe_id", Ecto.UUID.generate()},
           {"recipe_id", "bad-id"},
           {"id", hd(other.items).id},
+          {"supplement_recipe_ids", ["bad-id"]},
+          {"supplement_recipe_ids", [Ecto.UUID.generate()]},
           {"supplement_recipe_ids", [main.id]},
           {"supplement_recipe_ids", [main.id, main.id]}
         ] do
@@ -93,6 +95,31 @@ defmodule CozyCheckout.Meals.MenuRecipesTest do
       assert {:error, _} = MenuRecipes.save_variant(menu, params)
       assert MenuPlanning.get_variant!(menu.id).name == menu.name
       assert hd(MenuPlanning.get_variant!(menu.id).items).recipe_id == main.id
+    end
+  end
+
+  test "invalid recipe IDs roll back booking edits without changing notes or links" do
+    booking = menu_booking_fixture()
+    item = hd(assign_variant(booking, variant_fixture()).items)
+    version = Links.version(item)
+
+    for {field, value} <- [
+          {"recipe_id", "bad-id"},
+          {"recipe_id", Ecto.UUID.generate()},
+          {"supplement_recipe_ids", ["bad-id"]},
+          {"supplement_recipe_ids", [Ecto.UUID.generate()]}
+        ] do
+      params =
+        MenuRecipes.item_params(item)
+        |> Map.put("note", "Must not save")
+        |> Map.put(field, value)
+
+      assert {:error, _} = MenuRecipes.save_booking_item(booking.id, item.id, params, version)
+      saved = Links.load!("booking", item.id)
+      assert saved.note == item.note
+      assert saved.recipe_id == item.recipe_id
+      assert Links.supplement_ids(saved) == Links.supplement_ids(item)
+      assert Links.version(saved) == version
     end
   end
 

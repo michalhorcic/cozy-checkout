@@ -199,6 +199,7 @@ defmodule CozyCheckout.BillingPdfEmailTest do
     assert reason =~ "časový limit"
   end
 
+  @tag capture_log: true
   test "a missing Chrome binary is reported through the real ChromicPDF startup", %{
     booking: booking
   } do

@@ -91,16 +91,13 @@ defmodule CozyCheckout.Recipes.Links do
         linked =
           Enum.sort_by(item.recipe_supplements, & &1.position) |> Enum.map(& &1.recipe.name)
 
-        if ((is_nil(item.recipe_links_reviewed_at) and item.recipe) &&
-              item.menu_text == item.recipe.name) and names == linked do
-          saved =
-            item
-            |> Changeset.change(
-              recipe_links_reviewed_at: DateTime.truncate(DateTime.utc_now(), :second)
-            )
-            |> Repo.update!()
-
-          %{item | recipe_links_reviewed_at: saved.recipe_links_reviewed_at}
+        if is_nil(item.recipe_links_reviewed_at) and not is_nil(item.recipe) and
+             item.menu_text == item.recipe.name and names == linked do
+          item
+          |> Changeset.change(
+            recipe_links_reviewed_at: DateTime.truncate(DateTime.utc_now(), :second)
+          )
+          |> Repo.update!()
         else
           item
         end
