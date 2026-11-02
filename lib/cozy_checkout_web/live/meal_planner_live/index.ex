@@ -15,11 +15,6 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     socket =
       socket
       |> assign(:week_start, week_start)
-      |> assign(:edit_modal_open, false)
-      |> assign(:edit_date, nil)
-      |> assign(:edit_meal_type, nil)
-      |> assign(:edit_menu_text, "")
-      |> assign(:edit_dietary_notes, "")
       |> assign(:dietary_panel_open, true)
       |> assign(:modal_date, nil)
       |> assign(:modal_bookings, [])
@@ -102,126 +97,6 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
   end
 
   @impl true
-  def handle_event("open_edit_modal", %{"date" => date_string, "type" => meal_type}, socket) do
-    date = Date.from_iso8601!(date_string)
-    meal = Meals.get_meal_by_date_and_type(date, meal_type)
-
-    socket =
-      socket
-      |> assign(:edit_modal_open, true)
-      |> assign(:edit_date, date)
-      |> assign(:edit_meal_type, meal_type)
-      |> assign(:edit_menu_text, (meal && meal.menu_text) || "")
-      |> assign(:edit_dietary_notes, (meal && meal.dietary_notes) || "")
-
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("noop", _params, socket) do
-    # Do nothing - this just prevents clicks from bubbling to the backdrop
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("close_edit_modal", _params, socket) do
-    {:noreply, assign(socket, :edit_modal_open, false)}
-  end
-
-  @impl true
-  def handle_event("validate_meal", params, socket) do
-    # Just update the form values, preserving existing values if not in params
-    meal_params = Map.get(params, "meal", %{})
-
-    socket =
-      socket
-      |> assign(:edit_menu_text, Map.get(meal_params, "menu_text", socket.assigns.edit_menu_text))
-      |> assign(
-        :edit_dietary_notes,
-        Map.get(meal_params, "dietary_notes", socket.assigns.edit_dietary_notes)
-      )
-
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("save_meal", params, socket) do
-    meal_params = Map.get(params, "meal", %{})
-
-    attrs = %{
-      menu_text: Map.get(meal_params, "menu_text"),
-      dietary_notes: Map.get(meal_params, "dietary_notes")
-    }
-
-    case Meals.upsert_meal(socket.assigns.edit_date, socket.assigns.edit_meal_type, attrs) do
-      {:ok, _meal} ->
-        socket =
-          socket
-          |> assign(:edit_modal_open, false)
-          |> put_flash(:success, "Jídlo uloženo")
-          |> load_week_data()
-
-        {:noreply, socket}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Jídlo se nepodařilo uložit")}
-    end
-  end
-
-  @impl true
-  def handle_event("copy_from_yesterday", _params, socket) do
-    yesterday = Date.add(socket.assigns.edit_date, -1)
-    meal = Meals.get_meal_by_date_and_type(yesterday, socket.assigns.edit_meal_type)
-
-    socket =
-      if meal do
-        socket
-        |> assign(:edit_menu_text, meal.menu_text || "")
-        |> assign(:edit_dietary_notes, meal.dietary_notes || "")
-      else
-        put_flash(socket, :info, "Na včerejšek není vyplněné jídlo")
-      end
-
-    {:noreply, socket}
-  end
-
-  @impl true
-  def handle_event("copy_to_week", _params, socket) do
-    # Copy current meal to all remaining days of the week
-    week_end = Date.add(socket.assigns.week_start, 6)
-    current_date = socket.assigns.edit_date
-    meal_type = socket.assigns.edit_meal_type
-
-    # Get all dates from current date to end of week
-    target_dates =
-      Date.range(Date.add(current_date, 1), week_end)
-      |> Enum.to_list()
-
-    if target_dates == [] do
-      {:noreply, put_flash(socket, :info, "Jste na konci týdne")}
-    else
-      meal = Meals.get_meal_by_date_and_type(current_date, meal_type)
-
-      if meal && meal.menu_text do
-        case Meals.copy_meal_to_dates(meal, target_dates) do
-          {:ok, count} ->
-            socket =
-              socket
-              |> put_flash(:success, "Jídlo zkopírováno do #{count} dnů")
-              |> load_week_data()
-
-            {:noreply, socket}
-
-          {:error, _} ->
-            {:noreply, put_flash(socket, :error, "Jídlo se nepodařilo zkopírovat")}
-        end
-      else
-        {:noreply, put_flash(socket, :info, "Nejdřív jídlo uložte")}
-      end
-    end
-  end
-
-  @impl true
   def handle_event("show_guest_bookings", %{"date" => date_string}, socket) do
     date = Date.from_iso8601!(date_string)
     bookings = bookings_for_date(socket.assigns.bookings, date)
@@ -237,9 +112,6 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
   defp load_week_data(socket) do
     week_start = socket.assigns.week_start
     week_end = Date.add(week_start, 6)
-
-    # Load meals for the week
-    meals_by_date = Meals.get_meals_for_week(week_start)
 
     portion_counts = Meals.get_portion_counts_for_range(week_start, week_end)
     kitchen = MenuPlanning.kitchen_for_range(week_start, week_end)
@@ -271,8 +143,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
                  Map.get(kitchen.groups, {date, type}, []),
                  &Map.put(&1, :freezer_items, Map.get(freezer.by_item, &1.id, []))
                )}
-            end),
-          meals: Map.get(meals_by_date, date, []) |> meals_to_map()
+            end)
         }
       end)
 
@@ -290,12 +161,6 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     |> assign(:dietary_restrictions, dietary_restrictions)
     |> assign(:bookings, bookings)
     |> assign(:page_title, "Plán jídel · týden od #{Calendar.strftime(week_start, "%d.%m.%Y")}")
-  end
-
-  defp meals_to_map(meals) do
-    Enum.reduce(meals, %{}, fn meal, acc ->
-      Map.put(acc, meal.meal_type, meal)
-    end)
   end
 
   defp day_name(date) do
@@ -335,17 +200,28 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Index do
     end
   end
 
-  defp has_dietary_notes?(meal) do
-    meal && meal.dietary_notes && meal.dietary_notes != ""
+  attr :id, :string, required: true
+  attr :day, :map, required: true
+  attr :meal_type, :string, required: true
+
+  defp menu_coverage(assigns) do
+    assigns = assign(assigns, :uncovered, uncovered_count(assigns.day, assigns.meal_type))
+
+    ~H"""
+    <div id={@id}>
+    <p :if={@uncovered > 0} class="mb-2 text-xs font-semibold text-warning">
+      Chybí menu pro {@uncovered} porcí
+    </p>
+    <p :if={@day.portions[@meal_type].total == 0} class="text-sm text-primary-400">
+      Bez plánované stravy
+    </p>
+    </div>
+    """
   end
 
   defp uncovered_count(day, type) do
     assigned = day.group_menus[type] |> Enum.map(& &1.counts.total) |> Enum.sum()
     max(day.portions[type].total - assigned, 0)
-  end
-
-  defp needs_planning?(guest_count, meal) do
-    guest_count > 20 && (!meal || !meal.menu_text || meal.menu_text == "")
   end
 
   defp bookings_for_date(bookings, date) do

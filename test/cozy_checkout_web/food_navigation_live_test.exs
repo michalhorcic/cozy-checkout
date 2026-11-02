@@ -38,7 +38,6 @@ defmodule CozyCheckoutWeb.FoodNavigationLiveTest do
           {"/admin/recipes/#{recipe.id}/edit", :recipes},
           {"/admin/ingredients", :ingredients},
           {"/admin/meal-planner/variants/#{variant.id}/edit", :variants},
-          {"/admin/meal-planner/templates", :templates},
           {"/admin/meal-planner/portion-settings", :settings},
           {"/admin/bookings/#{booking.id}/menu", :planner},
           {"/admin/recipes/menu/booking/#{item.id}", :planner}
@@ -56,7 +55,6 @@ defmodule CozyCheckoutWeb.FoodNavigationLiveTest do
             :variants,
             :recipes,
             :ingredients,
-            :templates,
             :settings
           ] do
         assert has_element?(view, "#food-desktop-#{entry}")
@@ -65,26 +63,18 @@ defmodule CozyCheckoutWeb.FoodNavigationLiveTest do
     end
   end
 
-  test "template tools remain usable after navigating from the sidebar", %{conn: conn} do
-    {:ok, view, _} = live(conn, "/admin/recipes")
-    result = view |> element("#food-desktop-templates") |> render_click()
-    {:ok, templates, _} = follow_redirect(result, conn, "/admin/meal-planner/templates")
-    assert has_element?(templates, "#food-main h1", "Šablony textů jídel")
-    templates |> element("a[href='/admin/meal-planner/templates/new']") |> render_click()
+  test "retired shared-menu templates have no navigation or routes", %{conn: conn} do
+    {:ok, view, _} = live(conn, "/admin/meal-planner")
+    refute has_element?(view, "#food-desktop-templates")
+    refute has_element?(view, "#food-mobile-templates")
 
-    templates
-    |> form("#template-form",
-      meal_template: %{
-        name: "Navigační šablona",
-        category: "dinner",
-        default_menu_text: "Ukázková večeře"
-      }
-    )
-    |> render_submit()
-
-    assert_patch(templates, "/admin/meal-planner/templates")
-    assert has_element?(templates, "#meal_templates", "Navigační šablona")
-    assert has_element?(templates, "#food-desktop-templates[aria-current='page']")
+    for path <- [
+          "/admin/meal-planner/templates",
+          "/admin/meal-planner/templates/new",
+          "/admin/meal-planner/templates/#{Ecto.UUID.generate()}/edit"
+        ] do
+      assert Phoenix.Router.route_info(CozyCheckoutWeb.Router, "GET", path, "localhost") == :error
+    end
   end
 
   test "changing weeks keeps the selected week in the URL and the shopping link", %{conn: conn} do

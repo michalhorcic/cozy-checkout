@@ -27,26 +27,16 @@
 
           <div class="space-y-2 ml-4">
             <%= for meal_type <- ["breakfast", "lunch", "dinner"] do %>
-              <% meal = Map.get(day.meals, meal_type) %>
               <div class="mb-2">
+                <h4 class="font-semibold text-gray-800">{meal_type_label(meal_type)}</h4>
                 <.portion_count
                   id={"print-portions-#{day.date}-#{meal_type}"}
                   counts={Map.fetch!(day.portions, meal_type)}
                   incomplete={day.portions.incomplete_bookings != []}
                 />
-                <span class="font-semibold text-gray-800">{meal_type_label(meal_type)} · společné menu:</span>
-                <span class="text-gray-700 ml-2">{if meal,
-                  do: meal.menu_text,
-                  else: "Menu nevyplněno"}</span>
-                <%= if meal && meal.dietary_notes && meal.dietary_notes != "" do %>
-                  <div class="ml-6 text-sm text-red-700 mt-1">
-                    ⚠️ {meal.dietary_notes}
-                  </div>
-                <% end %>
                 <.group_menus
                   id={"print-group-menus-#{day.date}-#{meal_type}"}
                   groups={day.group_menus[meal_type]}
-                  shared_text={if meal, do: meal.menu_text}
                 />
               </div>
             <% end %>

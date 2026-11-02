@@ -90,10 +90,9 @@ Bez kontroly je nákup označen jako částečný a uvádí původní text k opr
 
 V detailu rezervace otevřete **Menu rezervace**, vyberte variantu a zobrazte
 náhled konkrétních dat, jídel a porcí. Varianta musí přesně odpovídat délce,
-penzi i prvnímu a poslednímu jídlu. Náhled upozorní na odlišné společné menu i
-souběžná menu jiných skupin. Použití mění pouze jídelníček dané rezervace;
-společný denní plán a ostatní skupiny zachová. Pokud se od náhledu změní
-podklady, aplikace vyžádá nový náhled.
+penzi i prvnímu a poslednímu jídlu. Náhled upozorní na odlišná souběžná menu
+jiných skupin. Použití mění pouze jídelníček dané rezervace; ostatní skupiny
+zachová. Pokud se od náhledu změní podklady, aplikace vyžádá nový náhled.
 
 Přiřazený jídelníček je samostatná sestava odkazů na recepty, nikoli kopie receptur. Pozdější úprava nebo archivace
 varianty ho nepřepíše. Jídla lze ručně upravit; tato úprava je při dalším použití
@@ -107,6 +106,13 @@ náhled a použití odpovídající varianty. Samotná změna počtů dospělýc
 přepočítá rovnou. Plánovač i tisk zobrazují každou skupinu zvlášť, včetně
 odjezdové snídaně. Celkové porce nahoře již zahrnují jednotlivé skupiny; nesčítejte
 je znovu. Rezervace bez přiřazené varianty nebo se změněným rozpisem mají upozornění.
+U jednotlivých jídel plánovač ukazuje také počet porcí bez přiřazeného menu.
+Přehled diet a alergií je dostupný i na mobilu.
+
+Původní **Společné menu**, jeho editor a **Šablony textů jídel** jsou vyřazené
+z rozhraní i tisku. Plánuje se výhradně přes menu jednotlivých rezervací a
+varianty menu z receptů. Historické záznamy původního plánu a textových šablon
+zůstávají v databázi beze změny; do přehledu se nezobrazují.
 
 ## Receptury a suroviny
 

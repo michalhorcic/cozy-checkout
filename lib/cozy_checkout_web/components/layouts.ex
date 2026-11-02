@@ -122,7 +122,6 @@ defmodule CozyCheckoutWeb.Layouts do
          ]},
         {"Nástroje",
          [
-           {:templates, "Šablony textů jídel", "hero-document-duplicate"},
            {:settings, "Nastavení porcí", "hero-adjustments-horizontal"}
          ]}
       ])
@@ -185,7 +184,6 @@ defmodule CozyCheckoutWeb.Layouts do
         variants: "Varianty menu",
         recipes: "Recepty",
         ingredients: "Suroviny",
-        templates: "Šablony textů jídel",
         settings: "Nastavení porcí"
       }[section]
 

@@ -36,15 +36,9 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
     {:noreply, socket}
   end
 
-  @impl true
-  def handle_event("noop", _, socket), do: {:noreply, socket}
-
   defp load_week_data(socket) do
     week_start = socket.assigns.week_start
     week_end = Date.add(week_start, 6)
-
-    # Load meals for the week
-    meals_by_date = Meals.get_meals_for_week(week_start)
 
     portion_counts = Meals.get_portion_counts_for_range(week_start, week_end)
     kitchen = MenuPlanning.kitchen_for_range(week_start, week_end)
@@ -66,8 +60,7 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
           group_menus:
             Map.new(["breakfast", "lunch", "dinner"], fn type ->
               {type, Map.get(kitchen.groups, {date, type}, [])}
-            end),
-          meals: Map.get(meals_by_date, date, []) |> meals_to_map()
+            end)
         }
       end)
 
@@ -85,12 +78,6 @@ defmodule CozyCheckoutWeb.MealPlannerLive.Print do
     |> assign(:dietary_restrictions, dietary_restrictions)
     |> assign(:generated_date, Date.utc_today())
     |> assign(:page_title, "Týdenní jídelníček · #{Calendar.strftime(week_start, "%d.%m.%Y")}")
-  end
-
-  defp meals_to_map(meals) do
-    Enum.reduce(meals, %{}, fn meal, acc ->
-      Map.put(acc, meal.meal_type, meal)
-    end)
   end
 
   defp day_name(date) do

@@ -86,7 +86,7 @@ defmodule CozyCheckoutWeb.BookingLive.Menu do
         {:noreply,
          socket
          |> load_state()
-         |> put_flash(:success, "Menu přiřazeno. Ruční úpravy i společné menu byly zachovány.")}
+         |> put_flash(:success, "Menu přiřazeno. Ruční úpravy byly zachovány.")}
 
       {:error, :stale_preview} ->
         {:noreply,

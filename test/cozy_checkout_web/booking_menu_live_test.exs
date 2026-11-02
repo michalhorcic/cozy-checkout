@@ -40,7 +40,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     preview(view, variant)
     assert has_element?(view, "#booking-menu-preview")
     assert has_element?(view, "#preview-portions-2027-01-09-lunch", "15 porcí")
-    assert has_element?(view, "#booking-menu-preview", "Společné menu se liší")
+    refute has_element?(view, "#booking-menu-preview", "Společné menu")
     assert MenuPlanning.get_booking_menu(booking.id) == nil
     view |> element("#apply-booking-menu") |> render_click()
     refute has_element?(view, "#booking-menu-unassigned")
@@ -150,14 +150,30 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     menu_b = assign_variant(second, b)
     item_a = List.last(menu_a.items)
     item_b = List.last(menu_b.items)
+    {:ok, _} = Meals.upsert_meal(week, "breakfast", %{menu_text: "Staré společné menu"})
     {:ok, view, _} = live(conn, "/admin/meal-planner")
     assert has_element?(view, "#food-desktop-variants")
+    refute render(view) =~ "Staré společné menu"
+    refute has_element?(view, "[phx-click='open_edit_modal']")
+    refute has_element?(view, "#meal-form")
+    refute has_element?(view, "#group-menus-#{week}-breakfast", "Odlišné od společného menu")
+
     assert has_element?(view, "#portions-#{week}-breakfast", "17 porcí")
     assert has_element?(view, "#group-menus-#{week}-breakfast-portions-#{item_a.id}", "15 porcí")
     assert has_element?(view, "#group-menus-#{week}-breakfast-portions-#{item_b.id}", "2 porcí")
     assert has_element?(view, "#mobile-group-menus-#{week}-breakfast", "Menu druhé skupiny")
     refute has_element?(view, "#booking-menu-issues")
+    refute has_element?(view, "#menu-coverage-#{week}-breakfast", "Chybí menu")
+
+    assert has_element?(
+             view,
+             "#menu-coverage-#{Date.add(week, 1)}-breakfast",
+             "Bez plánované stravy"
+           )
+
     {:ok, printed, _} = live(conn, "/admin/meal-planner/print?week=#{week}")
+    refute render(printed) =~ "Staré společné menu"
+    assert Meals.get_meal_by_date_and_type(week, "breakfast").menu_text == "Staré společné menu"
     assert has_element?(printed, "#print-group-menus-#{week}-breakfast", "Menu první skupiny")
     assert has_element?(printed, "#print-group-menus-#{week}-breakfast", "Menu druhé skupiny")
 
@@ -166,6 +182,14 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
              "#print-group-menus-#{week}-breakfast-portions-#{item_a.id}",
              "15 porcí"
            )
+
+    result =
+      view
+      |> element("#group-menus-#{week}-breakfast-#{item_a.id} a[href*='/admin/bookings/']")
+      |> render_click()
+
+    {:ok, booking_menu, _} = follow_redirect(result, conn)
+    assert has_element?(booking_menu, "#booking-menu-toggle-breakfasts")
   end
 
   test "planner warns about a stale group menu while retaining its known portion count", %{
@@ -185,6 +209,36 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
 
     assert has_element?(view, "#portions-#{week}-dinner", "15 porcí")
     refute has_element?(view, "#group-menus-#{week}-dinner")
+  end
+
+  test "planner highlights missing group menus and retains the dietary panel and guest overview",
+       %{
+         conn: conn
+       } do
+    week = Meals.start_of_week(Date.utc_today())
+
+    menu_booking_fixture(%{
+      check_in_date: week,
+      check_out_date: Date.add(week, 2),
+      dietary_restrictions: "Bez lepku"
+    })
+
+    {:ok, view, _} = live(conn, "/admin/meal-planner")
+    assert has_element?(view, "#portions-#{week}-dinner", "15 porcí")
+    assert has_element?(view, "#menu-coverage-#{week}-dinner", "Chybí menu pro 15 porcí")
+    assert has_element?(view, "#mobile-menu-coverage-#{week}-dinner", "Chybí menu pro 15 porcí")
+    assert has_element?(view, "#planner-dietary-content", "Bez lepku")
+    view |> element("button[phx-click='toggle_dietary_panel']") |> render_click()
+    refute has_element?(view, "#planner-dietary-content")
+    assert has_element?(view, "button[aria-expanded='false'][phx-click='toggle_dietary_panel']")
+    view |> element("button[phx-click='toggle_dietary_panel']") |> render_click()
+    assert has_element?(view, "#planner-dietary-content", "Bez lepku")
+
+    view
+    |> element("table button[phx-click='show_guest_bookings'][phx-value-date='#{week}']")
+    |> render_click()
+
+    assert has_element?(view, "#day-bookings-modal")
   end
 
   test "a variant archived after opening the page refreshes the selection without crashing", %{
