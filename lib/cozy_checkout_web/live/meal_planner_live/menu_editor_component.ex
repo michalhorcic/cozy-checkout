@@ -3,7 +3,6 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
   alias CozyCheckout.{Recipes, Meals.MenuRecipes}
   alias CozyCheckout.Meals.MenuVariant
   import CozyCheckoutWeb.MealComponents
-  import CozyCheckoutWeb.KitchenComponents, only: [field_class: 0]
 
   @impl true
   def update(assigns, socket) do
@@ -55,7 +54,8 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
          details: nil,
          transfer_day: "1",
          transfer_type: "dinner",
-         library_open: false
+         library_open: false,
+         open_notes: MapSet.new()
        )
        |> load_choices()}
     end
@@ -64,6 +64,22 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
   @impl true
   def handle_event("validate", %{"editor" => params}, socket) do
     {:noreply, apply_inputs(socket, params)}
+  end
+
+  def handle_event("toggle_note", %{"index" => index}, socket) do
+    case index_of(socket, index) do
+      nil ->
+        {:noreply, socket}
+
+      index ->
+        key = coordinate(Enum.at(socket.assigns.draft["items"], index))
+        open = socket.assigns.open_notes
+
+        open =
+          if MapSet.member?(open, key), do: MapSet.delete(open, key), else: MapSet.put(open, key)
+
+        {:noreply, assign(socket, :open_notes, open)}
+    end
   end
 
   def handle_event("toggle_breakfasts", _, socket) do
@@ -334,6 +350,32 @@ defmodule CozyCheckoutWeb.MealPlannerLive.MenuEditorComponent do
 
   def handle_event(_, _, socket),
     do: {:noreply, assign(socket, :error, "Neplatná operace v editoru menu.")}
+
+  attr :icon, :string, required: true
+  attr :label, :string, required: true
+  attr :class, :string, default: ""
+  attr :rest, :global, include: ~w(disabled)
+
+  defp icon_action(assigns) do
+    ~H"""
+    <button
+      type="button"
+      title={@label}
+      aria-label={@label}
+      class={[
+        "inline-flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-md p-2 text-tertiary-600 transition hover:bg-tertiary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tertiary-500 disabled:cursor-default disabled:opacity-30 sm:min-h-8 sm:min-w-8 sm:p-1.5",
+        @class
+      ]}
+      {@rest}
+    >
+      <.icon name={@icon} class="h-4 w-4" />
+    </button>
+    """
+  end
+
+  defp compact_field_class,
+    do:
+      "block w-full rounded-md border border-secondary-300 bg-white px-2 py-1.5 text-sm text-primary-500 outline-none focus:border-tertiary-400 focus:ring-2 focus:ring-tertiary-50"
 
   defp impact_result(pending, item, catalog) do
     case Enum.find(pending.draft["items"], &(coordinate(&1) == coordinate(item))) do

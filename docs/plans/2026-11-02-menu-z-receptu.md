@@ -243,6 +243,10 @@ Nová snídaňová podání dostávají aktivní bufet, existující volby se ne
 Ve výpočtech zůstává celý rozpis. Seznam receptů má náhled názvů, množství
 a poznámek surovin přes hover/focus/kliknutí z již dávkově načtených dat.
 
+Další úprava ovládání: kompaktní řádky podání a knihovny, menší mezery,
+ikonové akce s tooltipy a přístupnými názvy. Poznámky se zobrazují až po
+rozbalení ikonou a zachovávají obsah i při opětovném sbalení.
+
 ## Ověření a podmínky dokončení
 
 - Nové menu vznikne pouze výběrem receptů, bez psaní jejich názvů a bez

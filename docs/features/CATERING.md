@@ -56,7 +56,12 @@ diakritiku, vrací stránky po 30 receptech a nabízí **Další recepty**.
 Hlavní recept může zahrnovat přílohu; samostatná příloha není povinná. Doplňky
 jsou v explicitním pořadí a počítají se pro stejné porce jako hlavní jídlo.
 Jeden recept nesmí být v jednom podání dvakrát. Šipky mění pořadí doplňků.
-Poznámka podání je samostatná, neodpojuje recepty a neovlivňuje spotřebu.
+Editor používá kompaktní řádky a ikonové akce. Jejich význam ukáže najetí
+kurzorem; tlačítka mají i popisky pro čtečky obrazovky. Tužka mění hlavní
+recept, křížek ho odebere, ikona doplňků přidá další recept a šipky mění pořadí.
+Poznámka je ve výchozím stavu sbalená za ikonou bubliny; u vyplněné poznámky
+je ikona zvýrazněná. Zavření poznámky zachová i rozepsaný text. Poznámka podání
+je samostatná, neodpojuje recepty a neovlivňuje spotřebu.
 Aktivní podání lze kopírovat nebo přesunout na vybraný den/jídlo. Kopie celého
 dne respektuje podání dostupná v cílovém dni. Hlavní recept aktivní snídaně lze
 použít pro všechny snídaně. Přepsání vyplněných podání vyžaduje potvrzení dopadu.

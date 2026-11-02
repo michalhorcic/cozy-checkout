@@ -49,6 +49,7 @@ defmodule CozyCheckoutWeb.BookingMenuLiveTest do
     item = hd(menu.items)
     assert has_element?(view, "#assigned-portions-#{item.id}", "15 porcí")
     view |> element("#edit-menu-item-#{item.id}") |> render_click()
+    view |> element("#menu-slot-0 button[phx-click='toggle_note']") |> render_click()
 
     view
     |> form("#booking-menu-editor-#{item.id}-form",

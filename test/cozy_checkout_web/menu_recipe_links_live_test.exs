@@ -247,6 +247,10 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
     assert has_element?(view, "#menu-editor-#{variant.id}[data-dirty='false']")
 
     view
+    |> element("#menu-slot-1 button[phx-click='toggle_note']")
+    |> render_click()
+
+    view
     |> form("#menu-editor-#{variant.id}-form", editor: %{items: %{"1" => %{note: "Bez medu"}}})
     |> render_change()
 
@@ -256,5 +260,46 @@ defmodule CozyCheckoutWeb.MenuRecipeLinksLiveTest do
     saved = Enum.find(MenuPlanning.get_variant!(variant.id).items, &(&1.id == breakfast.id))
     assert saved.recipe_id == breakfast.recipe_id
     assert saved.note == "Bez medu"
+  end
+
+  test "compact icon actions expose labels and collapsed notes retain saved and unsaved content",
+       %{conn: conn} do
+    variant = variant_fixture()
+
+    params =
+      CozyCheckout.Meals.MenuRecipes.variant_params(variant)
+      |> put_in(["items", Access.at(0), "note"], "Uložená poznámka")
+
+    {:ok, variant} = CozyCheckout.Meals.MenuRecipes.save_variant(variant, params)
+    {:ok, view, _} = live(conn, "/admin/meal-planner/variants/#{variant.id}/edit")
+    refute has_element?(view, "#editor-note-0")
+
+    assert has_element?(
+             view,
+             "#menu-slot-0 button[phx-click='toggle_note'][aria-label='Zobrazit poznámku'][aria-expanded='false']"
+           )
+
+    assert has_element?(
+             view,
+             "#menu-slot-0 button[phx-click='activate'][phx-value-role='main'][title='Vyměnit recept'][aria-label='Vyměnit recept']"
+           )
+
+    view |> element("#menu-slot-0 button[phx-click='toggle_note']") |> render_click()
+    assert has_element?(view, "#editor-note-0", "Uložená poznámka")
+    assert has_element?(view, "#menu-editor-#{variant.id}[data-dirty='false']")
+
+    view
+    |> form("#menu-editor-#{variant.id}-form",
+      editor: %{items: %{"0" => %{note: "Rozepsaná poznámka"}}}
+    )
+    |> render_change()
+
+    view |> element("#menu-slot-0 button[phx-click='toggle_note']") |> render_click()
+    refute has_element?(view, "#editor-note-0")
+    view |> element("#menu-slot-0 button[phx-click='toggle_note']") |> render_click()
+    assert has_element?(view, "#editor-note-0", "Rozepsaná poznámka")
+    view |> element("#menu-slot-0 button[phx-click='toggle_note']") |> render_click()
+    view |> form("#menu-editor-#{variant.id}-form") |> render_submit()
+    assert hd(MenuPlanning.get_variant!(variant.id).items).note == "Rozepsaná poznámka"
   end
 end
