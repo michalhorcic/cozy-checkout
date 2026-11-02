@@ -5,6 +5,10 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 
 ## Přehled plánů
 
+- [Tvorba a úprava menu přímo z receptů](2026-11-02-menu-z-receptu.md)
+  — připraveno; přehled s náhledy, editor s vyhledáváním a drag&drop,
+  přiřazení pobytům a nákup. Pouze odkazy na recepty, změny platí i do minulosti.
+  Implementace začne v novém vlákně.
 - [Integrace fakturace ubytování s ABRA Flexi](2026-10-23-abra-ubytovani.md)
   — návrh; čeká na vzory od účetní a ověření API v testovací firmě.
 - [Nákupy surovin a nákladovost kuchyně](2026-10-27-nakupy-a-nakladovost-kuchyne.md)
