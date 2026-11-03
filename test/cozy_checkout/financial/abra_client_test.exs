@@ -28,6 +28,46 @@ defmodule CozyCheckout.AbraClientTest do
     :ok
   end
 
+  test "online statement download calls the configured company with authentication" do
+    Req.Test.expect(Client, fn conn ->
+      assert conn.method == "PUT"
+      assert conn.request_path == "/c/test/banka/nacteni-vypisu-online"
+
+      assert Plug.Conn.get_req_header(conn, "authorization") == [
+               "Basic " <> Base.encode64("test-user:test-password")
+             ]
+
+      Plug.Conn.send_resp(conn, 200, "")
+    end)
+
+    assert :ok = Client.download_bank_statements(Application.fetch_env!(:cozy_checkout, :abra))
+  end
+
+  test "online statement download reports bank errors even with HTTP 200" do
+    Req.Test.expect(Client, fn conn ->
+      Req.Test.json(conn, %{
+        "winstrom" => %{
+          "success" => false,
+          "results" => [%{"errors" => [%{"message" => "Invalid bank token"}]}]
+        }
+      })
+    end)
+
+    assert {:error, "Invalid bank token"} =
+             Client.download_bank_statements(Application.fetch_env!(:cozy_checkout, :abra))
+  end
+
+  test "online statement download reports HTTP and transport failures without retries" do
+    cfg = Application.fetch_env!(:cozy_checkout, :abra)
+
+    Req.Test.expect(Client, fn conn -> Plug.Conn.send_resp(conn, 403, "Forbidden") end)
+    assert {:error, "ABRA HTTP 403: Forbidden"} = Client.download_bank_statements(cfg)
+
+    Req.Test.expect(Client, fn conn -> Req.Test.transport_error(conn, :timeout) end)
+    assert {:error, reason} = Client.download_bank_statements(cfg)
+    assert reason =~ "časový limit"
+  end
+
   test "POST sends JSON, authentication and parses the returned document ID" do
     payload = %{"winstrom" => %{"faktura-vydana" => [%{"id" => "ext:cozy-checkout:order"}]}}
 

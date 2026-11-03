@@ -1,5 +1,5 @@
 defmodule CozyCheckout.Abra.Bank do
-  @moduledoc "Read-only bank mirror and provisional VS suggestions. Never records payments."
+  @moduledoc "Bank mirror, online statement download and provisional VS suggestions. Never records payments."
   import Ecto.Query
   alias CozyCheckout.{Billing, Repo}
   alias CozyCheckout.Abra.{Accommodation, BankConfirmation, BankImport, BankMovement, Client}
@@ -9,6 +9,14 @@ defmodule CozyCheckout.Abra.Bank do
 
   @page_size 100
   def enabled?, do: Accommodation.enabled?()
+
+  def download_statements do
+    if configured?() do
+      Client.download_bank_statements(Accommodation.config())
+    else
+      {:error, "Načítání banky není zapnuté nebo chybí konfigurace"}
+    end
+  end
 
   def enqueue do
     if configured?() do

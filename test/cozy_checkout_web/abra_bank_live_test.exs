@@ -29,6 +29,53 @@ defmodule CozyCheckoutWeb.AbraBankLiveTest do
     refute has_element?(view, "[phx-click=confirm]")
   end
 
+  for status <- [200, 403] do
+    test "bank download button reports HTTP #{status}", %{conn: conn} do
+      previous = Application.get_env(:cozy_checkout, :abra_accommodation)
+      options = Req.default_options()
+      client = CozyCheckout.Abra.Client
+
+      Application.put_env(:cozy_checkout, :abra_accommodation,
+        enabled: true,
+        base_url: "https://accounting.test",
+        company_id: "download-test",
+        username: "test-user",
+        password: "test-password",
+        bank_account_code: "TEST"
+      )
+
+      Req.default_options(plug: {Req.Test, client})
+
+      on_exit(fn ->
+        Application.put_env(:cozy_checkout, :abra_accommodation, previous)
+        Req.default_options(options)
+      end)
+
+      Req.Test.verify_on_exit!()
+
+      Req.Test.expect(client, fn conn ->
+        assert conn.method == "PUT"
+        assert conn.request_path == "/c/download-test/banka/nacteni-vypisu-online"
+        Plug.Conn.send_resp(conn, unquote(status), "")
+      end)
+
+      conn =
+        Plug.Test.init_test_session(conn, %{
+          AdminAuth.session_key() => System.system_time(:second)
+        })
+
+      {:ok, view, _} = live(conn, "/admin/billing/bank")
+      Req.Test.allow(client, self(), view.pid)
+      html = view |> element("#bank-download-statements") |> render_click()
+
+      if unquote(status) == 200 do
+        assert html =~ "ABRA přijala požadavek"
+      else
+        assert html =~ "ABRA HTTP 403"
+      end
+    end
+  end
+
   test "booking list opens bank suggestions in a dialog without marking an invoice paid", %{
     conn: conn
   } do

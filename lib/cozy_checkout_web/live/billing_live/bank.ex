@@ -25,6 +25,21 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
 
   def handle_event("refresh", _, socket), do: {:noreply, refresh(socket)}
 
+  def handle_event("download-statements", _, socket) do
+    case Bank.download_statements() do
+      :ok ->
+        {:noreply,
+         put_flash(
+           socket,
+           :info,
+           "ABRA přijala požadavek na stažení výpisů. Pohyby do Cozy načtete tlačítkem Načíst banku."
+         )}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reason)}
+    end
+  end
+
   def handle_event(
         "check-payment",
         %{"movement" => movement_id, "document" => document_id},
@@ -101,6 +116,13 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
         <p :if={!@enabled?} id="bank-disabled">Načítání banky je vypnuté.</p>
         <div class="flex flex-wrap gap-3">
           <button id="bank-import" class="btn btn-primary" phx-click="import" disabled={!@enabled?}>Načíst banku</button>
+          <button
+            id="bank-download-statements"
+            class="btn"
+            phx-click="download-statements"
+            phx-disable-with="Stahuji výpisy v ABRA…"
+            disabled={!@enabled?}
+          >Stáhnout výpisy v ABRA</button>
           <button class="btn" phx-click="refresh">Obnovit přehled</button>
         </div>
         <div id="bank-status" class="space-y-2">

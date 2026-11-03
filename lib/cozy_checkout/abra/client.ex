@@ -68,6 +68,37 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  @doc "Asks ABRA to download online bank statements using its configured bank connection."
+  def download_bank_statements(cfg) do
+    company = URI.encode(cfg[:company_id], &URI.char_unreserved?/1)
+    url = "#{String.trim_trailing(cfg[:base_url], "/")}/c/#{company}/banka/nacteni-vypisu-online"
+
+    case Req.put(url,
+           auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
+           headers: [{"Accept", "application/json"}],
+           redirect: false,
+           retry: false,
+           receive_timeout: 30_000,
+           connect_options: [timeout: 10_000]
+         ) do
+      {:ok, %{status: 200, body: %{"winstrom" => %{"success" => success}} = body}}
+      when success in [false, "false"] ->
+        {:error, extract_error(body, 200)}
+
+      {:ok, %{status: 200}} ->
+        :ok
+
+      {:ok, %{status: status, body: body}} ->
+        reason =
+          if is_binary(body), do: String.slice(body, 0, 500), else: extract_error(body, status)
+
+        {:error, "ABRA HTTP #{status}: #{reason}"}
+
+      {:error, _exception} ->
+        {:error, "Volání ABRA selhalo nebo vypršel časový limit. Výsledek ověřte v ABRA."}
+    end
+  end
+
   @doc "Reads one bank page; no date filter, so late imports are included."
   def bank_page(offset, limit, cfg) do
     url = "#{cfg[:base_url]}/c/#{cfg[:company_id]}/banka.json"
