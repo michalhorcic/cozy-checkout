@@ -46,6 +46,23 @@ defmodule CozyCheckout.AbraBankTest do
     )
   end
 
+  test "disabled bank download never calls ABRA" do
+    Application.put_env(:cozy_checkout, :abra_accommodation, enabled: false)
+    assert {:error, _} = Bank.download_statements()
+  end
+
+  test "bank download uses the accommodation company without importing movements" do
+    Req.Test.expect(Client, fn conn ->
+      assert conn.method == "PUT"
+      assert conn.request_path == "/c/bank-test/banka/nacteni-vypisu-online"
+      Plug.Conn.send_resp(conn, 200, "")
+    end)
+
+    assert :ok = Bank.download_statements()
+    assert Repo.aggregate(BankMovement, :count) == 0
+    assert Repo.aggregate(Payment, :count) == 0
+  end
+
   test "repeated reads update one identity and suggest a final invoice for the old advance VS without financial writes",
        %{booking: booking, document: doc} do
     movement = movement(1, doc.variable_symbol)
