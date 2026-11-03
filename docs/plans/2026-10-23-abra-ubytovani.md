@@ -1,15 +1,16 @@
 # Integrace fakturace ubytování s ABRA Flexi
 
-- Stav: implementace první části — ruční export zálohové výzvy připraven k ověření.
-  Finální mapování a celý cyklus čekají na další vzory a testovací firmu.
+- Stav k 3. 11. 2026: v `main` jsou výzvy, import banky, potvrzování záloh a ZDD,
+  konečné faktury s odpočty, bankovní doplatky a automatické přenosy.
+  Účetní schválení mapování a ověření testovací firmy zůstávají samostatné.
 - Vytvořeno: 2026-10-23
-- Aktualizováno: 2026-10-26
+- Aktualizováno: 2026-11-03
 - Související dokumentace / implementace: [Fakturace pobytů](../features/BILLING.md),
   [Integrace ABRA](../integrations/ABRA_INTEGRATION.md),
   [Billing](../../lib/cozy_checkout/billing.ex), [Abra](../../lib/cozy_checkout/abra.ex).
-- Na pokyn uživatele zahájena první samostatná část: ruční export zálohové
-  výzvy. Další části až po jeho ověření a schválení PR.
-  [Nastavení a testovací postup](../integrations/ABRA_ACCOMMODATION.md).
+- Aktuální obsluhu a omezení popisuje [provozní návod](../integrations/ABRA_INTEGRATION.md).
+  Následující návrh a časové záznamy zachovávají historii jednotlivých etap;
+  původní čekání na první PR již nepopisuje současný stav implementace.
 
 ## Problém a očekávaný výsledek
 

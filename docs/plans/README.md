@@ -6,14 +6,17 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 ## Přehled plánů
 
 - [Tvorba a úprava menu přímo z receptů](2026-11-02-menu-z-receptu.md)
-  — připraveno; přehled s náhledy, editor s vyhledáváním a drag&drop,
-  přiřazení pobytům a nákup. Pouze odkazy na recepty, změny platí i do minulosti.
-  Implementace začne v novém vlákně.
+  — implementováno v `main`; menu, přiřazení pobytům a nákup používají odkazy
+  na recepty, změny platí i do minulosti. [Současný návod](../features/CATERING.md).
+  Ruční ověření konkrétních dat a zařízení zůstává samostatným krokem.
 - [Integrace fakturace ubytování s ABRA Flexi](2026-10-23-abra-ubytovani.md)
-  — návrh; čeká na vzory od účetní a ověření API v testovací firmě.
+  — implementované výzvy, banka, ZDD, konečné faktury a doplatky;
+  [současný postup a omezení](../integrations/ABRA_INTEGRATION.md).
+  Účetní schválení mapování a ověření testovací firmy zůstávají samostatné.
 - [Nákupy surovin a nákladovost kuchyně](2026-10-27-nakupy-a-nakladovost-kuchyne.md)
-  — připraveno; JSON import nákupů, přiřazení ke stávajícím surovinám,
-  historie cen a nákladové reporty. Implementace začne v novém vlákně.
+  — implementováno v `main` od PR #55; JSON import, přiřazení surovin,
+  historie cen a nákladové reporty. [Návod](../features/CATERING.md#nákupy-a-kalkulované-náklady-surovin).
+  Ověření skutečných účtenek a víkendového menu zůstává provozním krokem.
 - [Jednoduchá evidence mrazáku](2026-10-28-evidence-mrazaku.md)
   — implementováno; ruční evidence a informace u menu, plánovače a nákupu.
   Nákupní množství zůstávají beze změny; bez rezervací a externích notifikací.
@@ -23,8 +26,13 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
   denní saldo a grafy. Účetní odsouhlasení podkladů zůstává samostatným krokem.
 
 - [Fixní a variabilní náklady v Ekonomice firmy](2026-10-29-fixni-a-variabilni-naklady.md)
-  — návrh; samostatná záložka Nákladovost, editovatelné a verzované mapování,
-  fixní/variabilní/smíšené náklady a oddělené označení mimořádných položek.
+  — první verze implementována v `main` od PR #68; záložka Nákladovost,
+  verzované mapování a fixní/variabilní/smíšené náklady.
+  [Současný návod](../features/ECONOMICS.md#nákladovost-fixní-a-variabilní-náklady).
+  Smluvní závazky a provozní jednotkové ukazatele zůstávají další etapou.
+
+Přehled odpovídá `main` k 3. 11. 2026. Historické návrhy a záznamy ověření
+v jednotlivých plánech nejsou návodem k současné obsluze ani výsledkem nové kontroly CI.
 
 ## Jak plán uložit a znovu otevřít
 

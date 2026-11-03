@@ -1,79 +1,53 @@
-# CozyCheckout
+# Cozy Checkout
 
-## Elixir and Erlang versions
+Samoobslužný bar a správa penzionu Jindřichův dům. Aplikace propojuje rezervace,
+obsazenost, stravování a kuchyň, barové účty a sklady, pobytovou fakturaci
+a účetní integrace. Barové a pobytové finance mají oddělenou evidenci.
 
-Use the versions pinned in `.tool-versions` (Elixir 1.20.4 / Erlang/OTP 29.1).
-CI reads this file; keep the `ELIXIR_VERSION` and `OTP_VERSION` arguments in
-`Dockerfile` aligned with it. The application supports the Elixir 1.20 patch line.
+Základ tvoří **Elixir, Phoenix 1.8 / LiveView, PostgreSQL a Oban**; rozhraní
+používá Tailwind CSS v4 a daisyUI. Produkce běží jako Docker release přes Coolify.
 
-On macOS, Homebrew can manage mise while mise manages the project's runtimes:
+## Rychlé lokální spuštění
 
-```sh
-brew install mise
-echo 'eval "$(mise activate zsh)"' >> ~/.zshrc
-exec zsh
-cd /path/to/cozy-checkout
-mise install
-elixir --version
-```
+1. Nainstalujte Elixir a Erlang podle [.tool-versions](.tool-versions), spusťte
+   PostgreSQL a připravte roli `elixir` podle [návodu pro vývoj](docs/development/SETUP.md).
+2. Z kořene repozitáře spusťte:
 
-Activate mise once in your shell. It reads `.tool-versions` automatically; asdf
-can use the same file. `brew upgrade` can then update Homebrew packages without
-selecting a different runtime for this project. Check `which elixir` if the
-Homebrew installation still takes precedence.
+   ```sh
+   mix setup
+   mix phx.server
+   ```
 
-Review dependencies every 2–4 weeks with `mix hex.outdated` and `mix hex.audit`.
-Prioritize security fixes and read release notes before selecting updates with
-`mix deps.update PACKAGE ...`. Commit both `mix.exs` and `mix.lock` when they
-change. Review Elixir/OTP support and larger dependency upgrades quarterly;
-update runtime pins, Docker and CI together in a dedicated PR when practical.
-Validate with `mix precommit`, `mix hex.audit`, `MIX_ENV=prod mix assets.deploy`
-and `MIX_ENV=prod mix release`, including real Chromium PDF tests. Test a release
-on staging before production and retain the previous image for rollback; database
-migrations need their own compatibility and backup review.
+3. Otevřete [POS](http://localhost:4000/) nebo [administraci](http://localhost:4000/admin).
+   Přístup do administrace nastavte podle [návodu k přihlášení](docs/features/ADMINISTRATION.md#admin-pin).
 
-To start your Phoenix server:
-
-* Run `mix setup` to install and setup dependencies
-* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
-
-## Admin PIN
-
-The root URL opens the POS. All `/admin` pages require a PIN; the POS remains public. Generate a salted PBKDF2 hash with `mix admin.pin.hash` (the PIN is entered without echo) and configure the printed `ADMIN_PIN_HASH` value as an environment secret before starting the server. Do not commit the hash to the repository.
-
-The PIN must contain 6 to 8 digits. Five incorrect attempts from the same client address trigger a one-minute lockout. An authenticated admin session expires after 12 hours and locks after 15 minutes without activity in an admin LiveView. Use **Zamknout** in the admin header (or food navigation) to end the session immediately.
-
-## Dokumentace
-
-Dokumentaci lze procházet také jako [HTML web s menu a vyhledáváním](docs/development/DOCUMENTATION_WEB.md).
-
-[Rozcestník dokumentace](docs/README.md) obsahuje provozní návody, technické
-podklady a [plány nových funkcí](docs/plans/README.md).
-
-- [Administrace a provozní přehled](docs/features/ADMINISTRATION.md)
-- [Grafické postupy práce s aplikací](docs/features/WORKFLOWS.md)
-- [Samoobslužný bar / POS](docs/features/POS_SYSTEM.md) a [platby](docs/features/PAYMENT_FUNCTIONALITY.md)
-- [Fakturace pobytů](docs/features/BILLING.md)
-- [Ekonomika firmy z ABRY](docs/features/ECONOMICS.md)
-- [Stravování, receptury a nákup](docs/features/CATERING.md)
-- [Emaily hostům](docs/features/GUEST_EMAILS.md)
-- [Kalendář rezervací](docs/features/CALENDAR_VIEW.md)
-- [Import iCal](docs/integrations/ICAL_IMPORT.md) a [export POHODA](docs/integrations/POHODA_EXPORT.md)
-- [Integrace s ABRA Flexi](docs/integrations/ABRA_INTEGRATION.md)
-- [Finanční regresní testy](docs/development/FINANCIAL_TESTS.md)
-
-## Ověření změn
-
-Lokální testy používají PostgreSQL roli `elixir`:
-
-```sh
-PGUSER=elixir PGPASSWORD='' mix precommit
-```
-
-Pro testy skutečných PDF je potřeba Chrome nebo Chromium; nastavení popisuje
-[návod k fakturaci](docs/features/BILLING.md#lokální-spuštění-pdf-a-mailboxu).
-
-Aplikace běží na [localhost:4000](http://localhost:4000), lokální emaily jsou
+`mix setup` stáhne závislosti, vytvoří databázi, provede migrace a seed a připraví
+assets. Pro PDF je potřeba Chrome nebo Chromium; lokální poštu najdete
 v [development mailboxu](http://localhost:4000/dev/mailbox).
+[Podrobná instalace, PDF a ověření změn](docs/development/SETUP.md).
 
-Repozitářové instrukce pro agenty zůstávají v [AGENTS.md](AGENTS.md).
+## Dokumentace a provoz
+
+[Rozcestník dokumentace](docs/README.md) obsahuje všechny návody, technické
+podklady a [plány funkcí](docs/plans/README.md). Dokumentaci lze procházet také
+jako [HTML web s menu a vyhledáváním](docs/development/DOCUMENTATION_WEB.md).
+
+| Potřebuji | Návod |
+| --- | --- |
+| Zorientovat se v aplikaci | [Administrace](docs/features/ADMINISTRATION.md) · [Grafické postupy](docs/features/WORKFLOWS.md) |
+| Spravovat rezervace a komunikaci | [Kalendář a iCal odběr](docs/features/CALENDAR_VIEW.md) · [Import iCal](docs/integrations/ICAL_IMPORT.md) · [Emaily hostům](docs/features/GUEST_EMAILS.md) |
+| Obsluhovat bar | [POS](docs/features/POS_SYSTEM.md) · [Platby](docs/features/PAYMENT_FUNCTIONALITY.md) · [Servisní účty](docs/features/SERVICE_ORDERS.md) |
+| Připravit jídla a nákup | [Menu z receptů, porce, nákup, náklady a mrazák](docs/features/CATERING.md) |
+| Vystavovat pobytové doklady | [Fakturace, PDF a platby](docs/features/BILLING.md) |
+| Nastavit účetní integrace | [ABRA: bar, ubytování a banka](docs/integrations/ABRA_INTEGRATION.md) · [PDF přílohy v ABRA](docs/integrations/ABRA_PDF_ATTACHMENTS.md) · [POHODA](docs/integrations/POHODA_EXPORT.md) |
+| Sledovat ekonomiku firmy | [Ekonomika a mapování nákladů](docs/features/ECONOMICS.md) |
+| Nasadit a spravovat aplikaci | [Docker, konfigurace, migrace a zálohy](docs/development/DEPLOYMENT.md) |
+
+## Vývoj a ověření
+
+- [Vývojové prostředí, testy a údržba závislostí](docs/development/SETUP.md)
+- [Finanční regresní pokrytí](docs/development/FINANCIAL_TESTS.md)
+- [Konfigurace aplikace](config/config.exs), [developmentu](config/dev.exs),
+  [testů](config/test.exs) a [runtime / prostředí nasazení](config/runtime.exs)
+- [CI aplikace](.github/workflows/tests.yml) a [CI dokumentace](.github/workflows/documentation.yml)
+- [Instrukce pro agenty](AGENTS.md)

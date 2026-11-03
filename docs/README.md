@@ -1,41 +1,53 @@
 # Dokumentace Cozy Checkout
 
-Základní spuštění, runtime a přihlášení jsou v [hlavním README](../README.md).
-Podrobnosti jsou rozdělené podle účelu:
+Základní přehled a rychlé spuštění jsou v [hlavním README](../README.md).
+Pro vývoj pokračujte [nastavením prostředí](development/SETUP.md), pro správu
+[nasazením a provozem](development/DEPLOYMENT.md) a
+[nastavením Admin PINu](features/ADMINISTRATION.md#admin-pin).
+Dokumentaci lze také sestavit jako [HTML web s vyhledáváním](development/DOCUMENTATION_WEB.md).
 
 | Adresář | Obsah |
 | --- | --- |
 | [features](#funkce-a-provoz) | Současné chování aplikace a návody obsluhy |
-| [integrations](#integrace) | Importy, exporty a jejich omezení |
-| [development](#vývoj-a-ověření) | Technické podklady a regresní testy |
-| [plans](plans/README.md) | Uložené návrhy budoucích funkcí, rozhodnutí a postup realizace |
+| [integrations](#integrace) | Importy, exporty, konfigurace a jejich omezení |
+| [development](#vývoj-a-ověření) | Vývojové prostředí, nasazení a technické podklady |
+| [plans](plans/README.md) | Návrhy, přijatá rozhodnutí a historie realizace funkcí |
 
 ## Funkce a provoz
 
 - [Grafické postupy práce — pobyty, kuchyň, doklady, ABRA, bar a sklady](features/WORKFLOWS.md)
-- [Administrace a provozní přehled](features/ADMINISTRATION.md)
+- [Administrace, přihlášení PINem a provozní přehled](features/ADMINISTRATION.md)
 - [POS / samoobslužný bar](features/POS_SYSTEM.md)
 - [Barové platby](features/PAYMENT_FUNCTIONALITY.md)
 - [Servisní účty](features/SERVICE_ORDERS.md)
 - [Vizuální seskupování položek](features/VISUAL_GROUPING.md)
 - [Výběr produktu v ceníku](features/AUTOCOMPLETE_FEATURE.md)
 - [Kalendář a odběr iCal](features/CALENDAR_VIEW.md)
-- [Fakturace pobytů](features/BILLING.md)
+- [Fakturace pobytů, PDF a platby](features/BILLING.md)
 - [Emaily hostům](features/GUEST_EMAILS.md)
-- [Stravování, menu, receptury a nákup](features/CATERING.md)
+- [Stravování, menu z receptů, nákup, náklady a mrazák](features/CATERING.md)
+- [Ekonomika firmy a mapování fixních / variabilních nákladů](features/ECONOMICS.md)
 
 ## Integrace
 
 - [Import rezervací z iCal](integrations/ICAL_IMPORT.md)
-- [Integrace s ABRA Flexi](integrations/ABRA_INTEGRATION.md)
+- [ABRA Flexi — bar, pobytové doklady, bankovní platby a přehled přenosů](integrations/ABRA_INTEGRATION.md)
+- [Ruční export zálohové výzvy a konfigurace pobytové integrace](integrations/ABRA_ACCOMMODATION.md)
+- [Konečné faktury — podklad pro účetní, mapování a omezení](integrations/ABRA_ACCOUNTANT_REVIEW.md)
+- [PDF přílohy pobytových faktur v ABRA](integrations/ABRA_PDF_ATTACHMENTS.md)
+- [Čtecí kontrakt ekonomiky firmy s ABRA](integrations/ECONOMICS_ABRA_CONTRACT.md)
 - [Export barových účtů do POHODA](integrations/POHODA_EXPORT.md)
 
-Export pobytových dokladů do ABRA zůstává další etapou. Současnou barovou
-integraci a podklady pro její rozšíření popisuje [návod ABRA](integrations/ABRA_INTEGRATION.md);
-uživatelský postup je ve [fakturaci](features/BILLING.md#ověření-a-další-etapa).
+Barová a pobytová integrace mají odlišné mapování. Pobytová integrace podporuje
+výzvy, konečné faktury s odpočty a potvrzované bankovní platby; její zapnutí
+neznamená automatické potvrzení příjmu peněz. Economics čte účetnictví
+samostatně. Podmínky zapojení a dosud nepodporované situace jsou v návodech výše.
 
 ## Vývoj a ověření
 
+- [Vývojové prostředí, lokální spuštění a údržba závislostí](development/SETUP.md)
+- [Nasazení, proměnné prostředí, migrace a zálohy](development/DEPLOYMENT.md)
+- [HTML dokumentace a její sestavení](development/DOCUMENTATION_WEB.md)
 - [Finanční regresní testy](development/FINANCIAL_TESTS.md)
 - [Barvy a téma](development/COLOR_SYSTEM_GUIDE.md)
 - [Formátování peněz a čísel](development/CURRENCY_CONFIG.md)
@@ -45,32 +57,14 @@ uživatelský postup je ve [fakturaci](features/BILLING.md#ověření-a-další-
 Cesty ke zdrojům uvedené jako kód jsou relativní ke kořeni repozitáře.
 Instrukce pro agenty zůstávají v [AGENTS.md](../AGENTS.md).
 
-## Kontrola a přesun dokumentace (23. 10. 2026)
+## Aktuálnost podkladů
 
-Původní názvy souborů zůstaly zachované kvůli snadnému dohledání v historii.
-Kontrola vycházela ze zdrojového kódu, konfigurace a existujících testů; neověřuje
-produkční prostředí, reálné odesílání pošty ani import do účetního systému.
+Kontrola k 3. 11. 2026 vychází z kódu, konfigurace, migrací a existujících testů
+na `main` po PR #80. Opravené jsou zejména odkazy na přihlášení, stav pobytové
+integrace ABRA, nákupů kuchyně a přehled plánů. Čtení testů neznamená jejich
+spuštění ani ověření produkce, skutečné pošty nebo účetních přenosů.
 
-| Původní podklad | Výsledek kontroly |
-| --- | --- |
-| `POS_SYSTEM.md`, `PAYMENT_FUNCTIONALITY.md` | Aktualizované cesty, rezervace místo starého výběru hostů, PIN, rozdělení plateb a potvrzení QR |
-| `SERVICE_ORDERS.md`, `VISUAL_GROUPING.md` | Upřesněné filtry režimu a seskupení podle historické ceny |
-| `AUTOCOMPLETE_FEATURE.md` | Zachovaná funkce, doplněné limity a skutečný způsob hledání |
-| `CALENDAR_VIEW.md` | Doplněná obsazenost, detail dne, časová osa a existující výstup iCal |
-| `BILLING.md` | Zachovaný podrobný aktuální návod fakturace |
-| `ICAL_IMPORT.md` | Upřesněné párování, omezení parseru a chybějící samostatné testy importu |
-| `POHODA_EXPORT.md` | Opravená cesta, používaná konfigurace, slevy, spropitné a omezení smíšených úhrad |
-| `CURRENCY_CONFIG.md` | Upřesněné formátování; změna symbolu nepřevádí měnu |
-| `COMMON_LIVEVIEW_ERRORS.md` | Odstraněný plošný catch-all a zákaz jednotlivých `phx-change`; diagnostika podle konkrétních parametrů |
-| `COLOR_SYSTEM_GUIDE.md`, `COLOR_UPDATE_SUMMARY.md` | Sloučené do průvodce; odstraněný duplicitní souhrn a zastaralé seznamy dokončených úprav |
-| `test/FINANCIAL_TESTS.md` | Přesunuté sem, doplněné pobytové sady, odstraněný zastaralý počet testů |
-| Podrobné provozní sekce `README.md` | Přesunuté do administrace, emailů a stravování; README obsahuje odkazy |
-
-Neúplný obecný návod na zpřístupnění PostgreSQL do lokální sítě byl z README
-odstraněn: neobsahoval avizované pravidlo `pg_hba.conf` a nebyl postupem nutným
-pro lokální spuštění této aplikace. Lokální konfigurace zůstává v `config/dev.exs`
-a `config/test.exs`; produkční připojení v `config/runtime.exs`.
-
-Původní seznamy „Future Enhancements“ nebyly schválenými plány a obsahovaly i již
-hotové funkce (například rozdělení platby a iCal feed). Nejsou proto vedené jako
-aktuální backlog. Nové konkrétní záměry mají místo v [plans](plans/README.md).
+Grafy workflow zachycují stav k 27. 10. 2026, viz datum a hranice ověření
+v [jejich návodu](features/WORKFLOWS.md). Podrobné návody funkcí zahrnují i pozdější
+rozšíření. Plány uchovávají původní návrhy a historii; aktuální obsluhu popisují
+`features` a `integrations`. Historie přesunů a dřívějších kontrol je v Gitu.

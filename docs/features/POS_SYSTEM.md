@@ -1,7 +1,7 @@
 # Samoobslužný bar (POS)
 
 POS je veřejné rozhraní na `/` a `/pos`. Administrace na `/admin` vyžaduje
-[PIN](../../README.md#admin-pin). Rozhraní POS je přizpůsobené dotykovému ovládání.
+[PIN](ADMINISTRATION.md#admin-pin). Rozhraní POS je přizpůsobené dotykovému ovládání.
 
 ## Běžný postup
 

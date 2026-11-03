@@ -1,14 +1,16 @@
 # Nákupy surovin a nákladovost kuchyně
 
-- Stav: **implementováno k ověření celku**; doplněný import, administrace,
-  ceny a reporty. CI a provozní ověření na skutečných dokladech ještě zbývají.
-- Pracovní větev: `codex/kitchen-costs-foundation`, [PR #55](https://github.com/michalhorcic/cozy-checkout/pull/55).
-  Podle pokynu uživatele pokračuje celá funkcionalita ve stejném PR, odděleně
-  od `main`; sloučení se v této etapě neprovádí.
+- Stav k 3. 11. 2026: **implementováno v `main`** od
+  [PR #55](https://github.com/michalhorcic/cozy-checkout/pull/55); import,
+  administrace, ceny a reporty. Provozní ověření skutečných účtenek a menu
+  zůstává samostatné; tato kontrola dokumentace neověřovala výsledky CI.
 - Vytvořeno: 2026-10-27
-- Aktualizováno: 2026-10-28
+- Aktualizováno: 2026-11-03
 - Podklad: plán a rozhodnutí potvrzená uživatelem v chatu.
 - Související dokumentace: [Stravování, receptury a nákup](../features/CATERING.md).
+
+Následující plán a záznamy zachovávají historii realizace. Tehdejší pokyny
+ponechat změny ve větvi a neslučovat PR již nepopisují aktuální stav.
 
 ## Cíl a rozsah
 

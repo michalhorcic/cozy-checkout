@@ -7,7 +7,7 @@ Tento návod popisuje platby barových účtů. Pobytové doklady a jejich úhra
 
 Otevřete účet v POS a zvolte platbu celého účtu nebo rozdělení podle položek.
 Platební akce vyžadují autorizaci PINem; nastavení `ADMIN_PIN_HASH` popisuje
-[README](../../README.md#admin-pin).
+[návod k administraci](ADMINISTRATION.md#admin-pin).
 
 - **Hotovost** zapíše platbu a přepočítá stav účtu.
 - **QR platba** nejprve zobrazí náhled pro bankovní aplikaci. V této fázi nevzniká
