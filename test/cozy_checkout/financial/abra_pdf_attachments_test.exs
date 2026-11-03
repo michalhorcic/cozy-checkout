@@ -141,23 +141,16 @@ defmodule CozyCheckout.AbraPdfAttachmentsTest do
     assert PdfAttachments.status(ctx.doc.id) == nil
   end
 
-  test "automatic scan is opt in, bounded by sync time and creates one job per intent", ctx do
+  test "automatic scan only requires the enabled switch and includes historical exports", ctx do
+    ctx.export
+    |> Ecto.Changeset.change(synced_at: ~U[2020-01-01 00:00:00Z])
+    |> Repo.update!()
+
+    Application.put_env(:cozy_checkout, :abra_pdf, enabled: false)
     assert :ok = PdfAttachments.scan()
     assert PdfAttachments.status(ctx.doc.id) == nil
 
-    Application.put_env(:cozy_checkout, :abra_pdf,
-      enabled: true,
-      automatic_from: DateTime.add(ctx.export.synced_at, 1)
-    )
-
-    assert :ok = PdfAttachments.scan()
-    assert PdfAttachments.status(ctx.doc.id) == nil
-
-    Application.put_env(:cozy_checkout, :abra_pdf,
-      enabled: true,
-      automatic_from: ctx.export.synced_at
-    )
-
+    Application.put_env(:cozy_checkout, :abra_pdf, enabled: true)
     assert :ok = PdfAttachments.scan()
     assert :ok = PdfAttachments.scan()
     transfer = PdfAttachments.status(ctx.doc.id)

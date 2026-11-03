@@ -48,11 +48,9 @@ defmodule CozyCheckout.Abra.PdfAttachments do
     end
   end
 
-  @doc "Bounded scan; never includes history unless its sync time is explicitly selected."
+  @doc "Queue a bounded batch of missing attachments whenever PDF delivery is enabled."
   def scan do
-    from_time = Application.get_env(:cozy_checkout, :abra_pdf, [])[:automatic_from]
-
-    if enabled?() && match?(%DateTime{}, from_time) do
+    if enabled?() do
       ids =
         Repo.all(
           from e in AccommodationExport,
@@ -61,7 +59,7 @@ defmodule CozyCheckout.Abra.PdfAttachments do
             left_join: t in PdfTransfer,
             on: t.export_id == e.id,
             where:
-              e.state == "synced" and e.synced_at >= ^from_time and
+              e.state == "synced" and
                 d.kind in ["advance", "final"] and is_nil(t.id),
             order_by: [asc: e.synced_at, asc: e.id],
             limit: 50,

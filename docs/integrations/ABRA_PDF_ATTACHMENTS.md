@@ -4,11 +4,11 @@ Samostatný doplněk pro zálohové výzvy (`advance`) a konečné faktury (`fin
 Nemění účetní payloady, platby, odpočty ani stavy účetní synchronizace.
 Chyba PDF nevyvolá nové vytvoření faktury. Ve výchozím nastavení je vypnutý.
 
-## Lokální zkouška jednoho dokladu
+## Lokální ověření
 
 1. Spusť `mix ecto.migrate`.
 2. Ponech dosavadní připojení do ABRA a nastav `ABRA_PDF_ENABLED=true`.
-   `ABRA_PDF_AUTOMATIC_FROM` zatím nenastavuj: automatické zařazování neběží.
+   Zapnutí spustí automatické zařazování příloh včetně starších faktur.
 3. Spusť aplikaci přes `iex -S mix phx.server`.
 4. Vyber UUID místního dokladu, který už je úspěšně synchronizovaný do ABRA:
 
@@ -30,13 +30,13 @@ aktuální adresa či firma nesouhlasí s uloženým cílem účetního exportu,
 PDF se neodešle. Pro testovací firmu potřebuješ doklad již synchronizovaný
 do této firmy; změna konfigurace nepřesměruje starý doklad jinam.
 
-## Volitelné automatické odesílání
+## Zapnutí a vypnutí
 
-Po ruční zkoušce nastav také `ABRA_PDF_AUTOMATIC_FROM` na ISO 8601 čas
-s časovou zónou, např. `2026-11-03T12:00:00Z`, a restartuj aplikaci.
-Každou minutu se zařadí nejvýše 50 dosud nezařazených příloh faktur, jejichž
-**účetní synchronizace skončila v tento čas nebo později**. Starší datum
-může zahrnout historii. Výběr a vkládání záměrů i jobů jsou dávkové.
+Jediné nastavení je `ABRA_PDF_ENABLED=true` nebo `false`; po změně restartuj
+aplikaci. Při zapnutí se každou minutu zařadí nejvýše 50 dosud nezařazených
+příloh úspěšně synchronizovaných zálohových a konečných faktur, včetně
+historických dokladů. Datum vystavení ani synchronizace odeslání neomezuje.
+Výběr a vkládání záměrů i jobů jsou dávkové.
 
 Přenos má vlastní tabulku `abra_pdf_transfers`, frontu a pět pokusů.
 Po vyčerpání pokusů oprav příčinu a zopakuj `enqueue/1`. Vypnutí
@@ -66,7 +66,7 @@ Podklad: [klient ABRA Flexi](https://github.com/Spoje-NET/php-abraflexi/blob/f79
 
 Testy používají `Req.Test`, bez skutečných účetních dokladů a uploadů.
 Pokrývají původní PDF, ověření obsahu, timeout a opakování, chyby oprávnění,
-změnu cíle, vypnutí, stránkování, časový filtr a zachování účetního exportu.
+změnu cíle, vypnutí, stránkování, zahrnutí historických dokladů a zachování účetního exportu.
 
 ```sh
 mix test test/cozy_checkout/financial/abra_pdf_attachments_test.exs
