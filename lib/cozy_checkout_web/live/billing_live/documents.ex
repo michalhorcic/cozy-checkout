@@ -1,7 +1,7 @@
 defmodule CozyCheckoutWeb.BillingLive.Documents do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Billing
-  alias CozyCheckout.Abra.{Accommodation, Transfers}
+  alias CozyCheckout.Abra.{Accommodation, PdfAttachments, Transfers}
   alias CozyCheckout.Billing.Presentation
   alias CozyCheckoutWeb.BillingLive.Helpers
 
@@ -14,8 +14,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     Process.send_after(self(), :abra_tick, 10_000)
 
     if socket.assigns.document do
-      {:noreply,
-       assign(socket, :abra_export, Accommodation.get_export(socket.assigns.document.id))}
+      {:noreply, refresh_abra(socket)}
     else
       {:noreply,
        assign(socket, :abra_transfers, Transfers.for_documents(socket.assigns.documents))}
@@ -29,6 +28,8 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
      assign(socket,
        document: doc,
        abra_export: Accommodation.get_export(id),
+       abra_pdf: PdfAttachments.status(id),
+       abra_pdf_enabled?: PdfAttachments.enabled?(),
        abra_enabled?:
          Accommodation.enabled?() and
            (doc.kind == "advance" or
@@ -74,7 +75,18 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
   end
 
   def handle_event("abra-refresh", _, socket) do
-    {:noreply, assign(socket, :abra_export, Accommodation.get_export(socket.assigns.document.id))}
+    {:noreply, refresh_abra(socket)}
+  end
+
+  def handle_event("abra-pdf-send", _, socket) do
+    case PdfAttachments.enqueue(socket.assigns.document.id) do
+      {:ok, _transfer} ->
+        {:noreply,
+         socket |> refresh_abra() |> put_flash(:info, "PDF zařazeno k odeslání do ABRA")}
+
+      {:error, reason} ->
+        {:noreply, socket |> refresh_abra() |> put_flash(:error, Helpers.error(reason))}
+    end
   end
 
   def handle_event("email", %{"email" => attrs}, socket) do
@@ -244,6 +256,50 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             >{if @abra_export, do: "Opakovat export do ABRA", else: "Exportovat do ABRA"}</button>
             <button phx-click="abra-refresh" class="btn">Obnovit stav exportu</button>
           </section>
+          <section
+            :if={@document.kind in ["advance", "final"]}
+            id="accommodation-abra-pdf"
+            class="bg-white p-6 rounded-xl space-y-4"
+          >
+            <h2 class="text-xl font-bold">PDF v ABRA</h2>
+            <p id="accommodation-abra-pdf-state">
+              {pdf_state(@abra_pdf)}
+            </p>
+            <p :if={!@abra_pdf_enabled?} id="accommodation-abra-pdf-disabled" class="text-primary-500">
+              Odesílání PDF do ABRA je vypnuté. Pro odeslání je potřeba funkci zapnout v konfiguraci aplikace.
+            </p>
+            <p
+              :if={!@abra_export || @abra_export.state != "synced"}
+              id="accommodation-abra-pdf-waiting"
+            >
+              PDF lze odeslat po úspěšném exportu této faktury do ABRA.
+            </p>
+            <p :if={
+              @abra_pdf_enabled? && @abra_export && @abra_export.state == "synced" && !@abra_pdf
+            }>
+              Automatické zařazení probíhá jednou za minutu. PDF můžete odeslat i tlačítkem níže.
+            </p>
+            <p
+              :if={@abra_pdf && @abra_pdf.error}
+              id="accommodation-abra-pdf-error"
+              class="text-red-700"
+            >
+              {@abra_pdf.error}
+            </p>
+            <button
+              :if={
+                @abra_pdf_enabled? && @abra_export && @abra_export.state == "synced" &&
+                  (!@abra_pdf || @abra_pdf.state == "failed")
+              }
+              id="accommodation-abra-pdf-send"
+              phx-click="abra-pdf-send"
+              phx-disable-with="Zařazuji PDF…"
+              class="btn btn-primary"
+            >{if @abra_pdf, do: "Znovu odeslat PDF do ABRA", else: "Odeslat PDF do ABRA"}</button>
+            <button id="accommodation-abra-pdf-refresh" phx-click="abra-refresh" class="btn">
+              Obnovit stav PDF
+            </button>
+          </section>
           <section class="bg-white p-6 rounded-xl space-y-4">
             <h2 class="text-xl font-bold">Odeslat e-mailem</h2>
             <CozyCheckoutWeb.BillingComponents.email_form id="billing-email" form={@email_form} />
@@ -306,11 +362,26 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     """
   end
 
+  defp refresh_abra(socket) do
+    id = socket.assigns.document.id
+
+    assign(socket,
+      abra_export: Accommodation.get_export(id),
+      abra_pdf: PdfAttachments.status(id),
+      abra_pdf_enabled?: PdfAttachments.enabled?()
+    )
+  end
+
   defp abra_state("waiting"), do: "Čeká na podmínky"
   defp abra_state("queued"), do: "Čeká na export"
   defp abra_state("retrying"), do: "Čeká na opakování"
   defp abra_state("failed"), do: "Chyba exportu"
   defp abra_state("synced"), do: "Exportováno"
+
+  defp pdf_state(nil), do: "PDF zatím nebylo zařazeno k odeslání."
+  defp pdf_state(%{state: "queued"}), do: "PDF čeká na odeslání."
+  defp pdf_state(%{state: "failed"}), do: "Přenos PDF se nezdařil."
+  defp pdf_state(%{state: "uploaded"}), do: "PDF přeneseno a ověřeno v ABRA."
 
   defp delivery_label("accepted"), do: "Odesláno"
   defp delivery_label("queued"), do: "Ve frontě"

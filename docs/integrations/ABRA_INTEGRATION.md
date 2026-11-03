@@ -1,5 +1,7 @@
 # Integrace s ABRA Flexi
 
+Volitelné odesílání PDF pobytových faktur má [samostatný postup a konfiguraci](ABRA_PDF_ATTACHMENTS.md).
+
 Aplikace jednosměrně odesílá zaplacené barové objednávky jako vydané faktury
 do REST API ABRA Flexi. Zálohové výzvy z modulu `Billing` mají samostatný,
 ve výchozím stavu vypnutý [ruční export](ABRA_ACCOMMODATION.md).
