@@ -248,6 +248,17 @@ Oban job; **Obnovit přehled** načte místní stav včetně posledního úspěc
 chyby a případného neúplného průchodu. Import má vlastní frontové úlohy,
 barový export se nemění.
 
+Každou hodinu úloha `AbraBankDownloadWorker` zavolá online stažení výpisů
+v ABRA přes `PUT /c/{firma}/banka/nacteni-vypisu-online`. Používá stejnou
+firmu a přihlášení jako import ubytování; Fio token zůstává nastavený v ABRA.
+Teprve po úspěšné odpovědi zařadí načtení pohybů do Cozy. Chyby opakuje
+nejvýše ve třech pokusech s odstupem 15 minut; při vypnuté integraci nic nevolá.
+Samostatné načítání pohybů běží nadále každých 15 minut i při výpadku
+stahování z banky. Souběžná zařazení importu slučuje stávající Oban unikátnost.
+Dokončené načtení aktualizuje podklady pro návrhy párování. Potvrzení platby
+a navazující účetní přenos zůstávají ruční; automatizace je sama nespouští.
+Tlačítko **Stáhnout výpisy v ABRA** zůstává pro samostatné ruční volání.
+
 Import pouze čte `banka.json`, řadí podle ID a stránkuje po 100 záznamech.
 V databázi uchovává pouze nakonfigurovaný účet, příjmy i výdaje, původní data
 pohybu a stav hlášeného párování. Účet bankovního pohybu čte z pole `banka`

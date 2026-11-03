@@ -1,5 +1,6 @@
 defmodule CozyCheckout.AbraBankTest do
   use CozyCheckout.DataCase, async: false
+  use Oban.Testing, repo: CozyCheckout.Repo
   @moduletag :financial
   import CozyCheckout.BillingFixtures
 
@@ -14,6 +15,7 @@ defmodule CozyCheckout.AbraBankTest do
   }
 
   alias CozyCheckout.Billing.{Document, Payment}
+  alias CozyCheckout.Workers.{AbraBankDownloadWorker, AbraBankWorker}
 
   setup do
     old = Application.get_env(:cozy_checkout, :abra_accommodation)
@@ -44,6 +46,44 @@ defmodule CozyCheckout.AbraBankTest do
       :document,
       issue_without_abra!(fixture.booking, "advance", %{"amount" => "1234.57"})
     )
+  end
+
+  test "hourly download queues the import only after success and refreshes suggestions without payments",
+       %{document: doc} do
+    Req.Test.expect(Client, fn conn ->
+      refute_enqueued(worker: AbraBankWorker)
+      assert conn.method == "PUT"
+      assert conn.request_path == "/c/bank-test/banka/nacteni-vypisu-online"
+      Plug.Conn.send_resp(conn, 200, "")
+    end)
+
+    assert :ok = perform_job(AbraBankDownloadWorker, %{})
+    assert_enqueued(worker: AbraBankWorker)
+
+    expect_page([movement(1, doc.variable_symbol)])
+    assert :ok = perform_job(AbraBankWorker, %{})
+    assert [suggestion] = Bank.list()
+    assert suggestion.document.id == doc.id
+    assert Repo.aggregate(Payment, :count) == 0
+    assert Repo.aggregate(BankConfirmation, :count) == 0
+  end
+
+  test "failed hourly download does not enqueue a follow-up import" do
+    Req.Test.expect(Client, fn conn -> Plug.Conn.send_resp(conn, 503, "Unavailable") end)
+
+    assert {:error, _} = perform_job(AbraBankDownloadWorker, %{})
+    refute_enqueued(worker: AbraBankWorker)
+    assert AbraBankDownloadWorker.backoff(%Oban.Job{attempt: 1}) == 900
+
+    # The separate quarter-hour import can still read movements already in ABRA.
+    expect_page([])
+    assert :ok = perform_job(AbraBankWorker, %{})
+  end
+
+  test "disabled hourly download never calls ABRA or queues an import" do
+    configure(enabled: false)
+    assert :ok = perform_job(AbraBankDownloadWorker, %{})
+    refute_enqueued(worker: AbraBankWorker)
   end
 
   test "disabled bank download never calls ABRA" do

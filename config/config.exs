@@ -80,6 +80,7 @@ config :cozy_checkout, Oban,
     {Oban.Plugins.Cron,
      crontab: [
        {"* * * * *", CozyCheckout.Workers.AbraPdfScanWorker},
+       {"0 * * * *", CozyCheckout.Workers.AbraBankDownloadWorker},
        {"*/15 * * * *", CozyCheckout.Workers.AbraBankWorker},
        {"0 4 * * *", CozyCheckout.Economics.SyncWorker}
      ]}
