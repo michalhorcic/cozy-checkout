@@ -2,7 +2,7 @@ defmodule CozyCheckoutWeb.BillingPdfLiveTest do
   use CozyCheckoutWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
   import CozyCheckout.BillingFixtures
-  import Oban.Testing, only: [assert_enqueued: 1]
+  use Oban.Testing, repo: CozyCheckout.Repo
   alias CozyCheckout.Repo
   alias CozyCheckout.Abra.{AccommodationExport, PdfAttachments, PdfTransfer}
   alias CozyCheckoutWeb.AdminAuth

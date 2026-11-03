@@ -2,7 +2,7 @@ defmodule CozyCheckout.AbraPdfAttachmentsTest do
   use CozyCheckout.DataCase, async: false
   @moduletag :financial
   import CozyCheckout.BillingFixtures
-  import Oban.Testing, only: [assert_enqueued: 1]
+  use Oban.Testing, repo: CozyCheckout.Repo
   alias CozyCheckout.Abra.{AccommodationExport, PdfAttachments, PdfClient, PdfTransfer}
   alias CozyCheckout.Workers.AbraPdfWorker
 
