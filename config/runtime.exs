@@ -195,6 +195,13 @@ config :cozy_checkout, :abra_accommodation,
   advance_type_code: System.get_env("ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE", "ZÁLOHA"),
   bank_account_code: System.get_env("ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
 
+config :cozy_checkout, :abra_pdf,
+  enabled: System.get_env("ABRA_PDF_ENABLED", "false") == "true",
+  automatic_from: case(DateTime.from_iso8601(System.get_env("ABRA_PDF_AUTOMATIC_FROM", ""))) do
+  {:ok, datetime, _} -> datetime
+  _ -> nil
+end
+
 if booking_ical_token = System.get_env("BOOKING_ICAL_TOKEN") do
   config :cozy_checkout, :booking_ical_token, booking_ical_token
 end
