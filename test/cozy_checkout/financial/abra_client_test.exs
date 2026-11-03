@@ -32,6 +32,7 @@ defmodule CozyCheckout.AbraClientTest do
     Req.Test.expect(Client, fn conn ->
       assert conn.method == "PUT"
       assert conn.request_path == "/c/test/banka/nacteni-vypisu-online"
+
       assert Plug.Conn.get_req_header(conn, "authorization") == [
                "Basic " <> Base.encode64("test-user:test-password")
              ]

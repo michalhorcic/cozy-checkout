@@ -60,7 +60,9 @@ defmodule CozyCheckoutWeb.AbraBankLiveTest do
       end)
 
       conn =
-        Plug.Test.init_test_session(conn, %{AdminAuth.session_key() => System.system_time(:second)})
+        Plug.Test.init_test_session(conn, %{
+          AdminAuth.session_key() => System.system_time(:second)
+        })
 
       {:ok, view, _} = live(conn, "/admin/billing/bank")
       Req.Test.allow(client, self(), view.pid)

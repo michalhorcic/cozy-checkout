@@ -89,7 +89,9 @@ defmodule CozyCheckout.Abra.Client do
         :ok
 
       {:ok, %{status: status, body: body}} ->
-        reason = if is_binary(body), do: String.slice(body, 0, 500), else: extract_error(body, status)
+        reason =
+          if is_binary(body), do: String.slice(body, 0, 500), else: extract_error(body, status)
+
         {:error, "ABRA HTTP #{status}: #{reason}"}
 
       {:error, _exception} ->
