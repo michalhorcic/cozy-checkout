@@ -1,6 +1,6 @@
 # Emaily hostům
 
-Rozesílání hostům je dostupné v administraci v sekci **Email Guests**. Zprávy se řadí do Oban fronty; stránka po zařazení zobrazuje stav aktuální rozesílky. Každý příjemce obdrží samostatný email.
+Rozesílání hostům je dostupné v administraci v sekci **Emaily hostům** (`/admin/emails`). Zprávy se řadí do Oban fronty; stránka po zařazení zobrazuje stav aktuální rozesílky. Každý příjemce obdrží samostatný email.
 
 Produkční nasazení potřebuje následující proměnné:
 

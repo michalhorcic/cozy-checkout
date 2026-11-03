@@ -1,7 +1,8 @@
-# Finanční regresní testy POS
+# Finanční regresní testy
 
-Sada ověřuje finanční pravidla pro objednávky, platby, cenotvorbu, účtenky a
-účetní exporty. Testuje výsledné částky a chování veřejných rozhraní aplikace.
+Sada ověřuje finanční pravidla pro barové objednávky, pobytové doklady, platby,
+cenotvorbu, PDF a účetní exporty. Testuje výsledné částky a chování veřejných
+rozhraní aplikace.
 
 Účetní pravidlo ověřované při slevách: sleva se rozděluje poměrně mezi původní
 sazby DPH a dobrovolné spropitné se vykazuje samostatně bez DPH.
@@ -69,6 +70,18 @@ Další regresní pokrytí pobytů:
 
 - `booking_summary_test.exs`: odvozené finanční stavy rezervací.
 - `advance_breakdown_test.exs`: rozpis zálohových výzev.
+- `abra_accommodation_test.exs`: export pobytových zálohových výzev.
+- `abra_bank_test.exs`, `abra_bank_payments_test.exs`: import banky a potvrzování záloh.
+- `abra_final_invoice_export_test.exs`, `abra_final_invoice_verification_test.exs`:
+  konečné faktury a ověřování odpočtů.
+- `abra_final_bank_payments_test.exs`: bankovní doplatky konečných faktur.
+- `abra_pdf_attachments_test.exs`: přenos původních PDF do ABRA a ověřování příloh.
+
+Pobytové LiveView scénáře v `test/cozy_checkout_web/` zahrnují také
+`abra_bank_live_test.exs`, přehled přenosů v `billing_live_test.exs`
+a `billing_pdf_live_test.exs`.
+Spuštění pouze adresářů `financial` výše tyto LiveView soubory nezahrnuje;
+celou sadu spouští `mix test` nebo `mix precommit`.
 
 Provozní postupy a nastavení PDF popisuje [fakturace](../features/BILLING.md).
 Počty testů se mění; aktuální výsledek ověření patří ke konkrétnímu commitu.

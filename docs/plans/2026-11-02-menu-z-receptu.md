@@ -1,9 +1,15 @@
 # Tvorba a úprava menu přímo z receptů
 
-- Stav: **implementováno, čeká na ověření**; celá změna je v PR #70.
+- Stav k 3. 11. 2026: **implementováno v `main`** od PR #70 s navazujícími
+  úpravami přehledů a odstraněním původního společného menu. Ruční ověření
+  zařízení a konkrétních dat zůstává samostatné.
 - Vytvořeno: 2026-11-02
-- Aktualizováno: 2026-11-02
+- Aktualizováno: 2026-11-03
 - Podklad: analýza aktuálního `origin/main` (`314d7e8`) a rozhodnutí uživatele v tomto chatu.
+
+Aktuální obsluhu popisuje [Stravování a kuchyň](../features/CATERING.md).
+Následující návrh a předání zachovávají historii implementace; nejsou pokynem
+začít funkci znovu ani pokračovat ve sloučeném PR.
 
 ## Problém a očekávaný výsledek
 

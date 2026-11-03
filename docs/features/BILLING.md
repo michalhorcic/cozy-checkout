@@ -196,7 +196,7 @@ uchování nejméně podle zákonné desetileté lhůty a pravidelně ověřujte
 souborů i kontrolních součtů. Neprovádějte automatické mazání těchto dat spolu
 s rezervací. Stažení PDF i všechny stránky fakturace vyžadují správní relaci.
 
-## Ověření a další etapa
+## Ověření a účetní integrace
 
 ```sh
 PGUSER=elixir PGPASSWORD='' mix test test/cozy_checkout/financial test/cozy_checkout_web/live/financial test/cozy_checkout_web/billing_live_test.exs
@@ -209,8 +209,11 @@ autorizaci i souběh oddělených databázových spojení. E-mailový test použ
 Swoosh test adapter; neodesílá zprávy hostům. Pro produkční kontrolu použijte
 vlastní testovací rezervaci a vlastní testovací e-mailovou adresu.
 
-Integrace pobytových dokladů do ABRA Flexi je druhá etapa; nynější export
-barových účtů zůstává zachovaný. Budoucí export má použít stabilní ID dokladů,
-odpočtů a plateb a přenášet vazby jednosměrně z aplikace do účetnictví.
-Současné barové mapování, provozní omezení a podklady pro tuto etapu popisuje
-[ABRA_INTEGRATION.md](../integrations/ABRA_INTEGRATION.md).
+Integrace do ABRA Flexi podporuje export zálohových výzev a konečných faktur
+s odpočty a výslovné potvrzování bankovních záloh i doplatků. Zapnutí, podmínky
+zapojení nových pobytů a obnovu chyb popisuje
+[provozní návod ABRA](../integrations/ABRA_INTEGRATION.md).
+Hotovostní ZDD, opravné doklady a vratky nemají automatickou účetní cestu;
+omezení a nutné účetní ověření shrnuje [podklad pro účetní](../integrations/ABRA_ACCOUNTANT_REVIEW.md).
+Volitelné [PDF přílohy v ABRA](../integrations/ABRA_PDF_ATTACHMENTS.md) mají
+vlastní přepínač a stav nezávislý na účetním exportu. Barový export je oddělený.

@@ -2,11 +2,23 @@
 
 Volitelné odesílání PDF pobytových faktur má [samostatný postup a konfiguraci](ABRA_PDF_ATTACHMENTS.md).
 
-Aplikace jednosměrně odesílá zaplacené barové objednávky jako vydané faktury
-do REST API ABRA Flexi. Zálohové výzvy z modulu `Billing` mají samostatný,
-ve výchozím stavu vypnutý [ruční export](ABRA_ACCOMMODATION.md).
-Tento dokument popisuje současný kód a podklady pro jeho rozšíření;
-uživatelský postup fakturace pobytů je v [BILLING.md](../features/BILLING.md).
+Aplikace odesílá zaplacené barové objednávky jako vydané faktury do ABRA Flexi.
+Samostatná pobytová integrace podporuje zálohové výzvy, konečné faktury
+s odpočty, čtení banky a výslovné potvrzování bankovních záloh i doplatků.
+Ve výchozím stavu je vypnutá; má vlastní mapování a evidenci přenosů.
+Uživatelský postup je ve [fakturaci pobytů](../features/BILLING.md).
+
+- [Bar: konfigurace](#konfigurace), mapování a řešení chyb v první části návodu.
+- [Ubytování: konfigurace a ruční export výzvy](ABRA_ACCOMMODATION.md).
+- [Automatický export a společný přehled přenosů](#automatický-export-a-společný-přehled-přenosů).
+- [Načítání banky](#načítání-banky-pro-ubytování-samostatný-čtecí-blok),
+  [potvrzení zálohy a ZDD](#ruční-potvrzení-bankovní-zálohy-a-zdd),
+  [konečná faktura](#konečná-faktura-s-odpočty) a
+  [bankovní doplatek](#bankovní-doplatek-konečné-faktury).
+- [Účetní mapování a hranice ověření](ABRA_ACCOUNTANT_REVIEW.md).
+
+Části níže rozlišují import banky, potvrzení platby a účetní přenos.
+Samotné načtení banky nikdy nezapíše místní platbu.
 
 ## Konfigurace
 
@@ -107,7 +119,8 @@ musí této částce odpovídat i součet aktivních plateb. Výpočty používa
 
 Ostatní metody nemají zvláštní mapování úhrady. Jednotlivá ID plateb, reference
 a skutečná data přijetí se nepřenášejí. Lokální `paid` u QR tedy neznamená
-automatické spárování v účetnictví. Zpětné čtení banky ani webhooky zde nejsou.
+automatické spárování v účetnictví. Barový export nemá zpětné čtení banky ani webhooky;
+čtení banky pro ubytování popisuje samostatná část níže.
 
 ## HTTP a chyby
 
@@ -176,48 +189,27 @@ Integrace neukládá payload ani samostatný audit exportů. Již synchronizovan
 doklad neaktualizuje a neposílá automatická storna, opravy či vratky po lokální
 změně dat. Retry s uloženým vzdáleným ID pouze vrátí ID, nevynutí aktualizaci.
 
-## Podklady pro fakturaci pobytů
+## Pobytové doklady a hranice podpory
 
-Tato část je návrh další etapy, nikoli hotová funkcionalita. Barový builder
-očekává `Sales.Order`, barové kódy, datum vytvoření účtu a ceny s DPH;
-pobytovou kalkulaci mu nelze přímo předat.
+Pobytová integrace používá vlastní buildery a trvalou evidenci exportů;
+barový builder nepřijímá pobytovou kalkulaci. Export vychází z neměnných
+snapshotů vystavených dokladů, historických základů/DPH a stabilních identit
+odlišných od barového prostoru `order`.
 
-Zdroje pro rozšíření: [Billing](../../lib/cozy_checkout/billing.ex),
-[Document](../../lib/cozy_checkout/billing/document.ex),
-[Payment](../../lib/cozy_checkout/billing/payment.ex),
-[Money](../../lib/cozy_checkout/billing/money.ex).
+- Výzva (`advance`) není daňový doklad ani přijatá platba. Lze ji exportovat
+  ručně nebo automaticky po vystavení u zapojeného nového pobytu.
+- Bankovní záloha se potvrzuje samostatně. Vytvoří místní platbu a ZDD
+  (`tax_receipt`); přenos do ABRA naváže existující bankovní pohyb.
+- Konečná faktura (`final`) exportuje položky a odpočty již přenesených ZDD.
+  Odpočet není další příjem. Doplatek se potvrzuje samostatným bankovním tokem.
+- Hotovostní ZDD, opravné doklady (`correction`), vratky a přeplatky nemají
+  tímto tokem automatické účetní řešení a mohou přenos vyúčtování blokovat.
 
-| Existující data | Význam pro budoucí export |
-| --- | --- |
-| `billing_documents.id`, `kind`, `number`, `variable_symbol` | Identita konkrétního vydaného dokladu a původní číslo/VS. Typy `advance`, `tax_receipt`, `final`, `correction`. |
-| `issued_on`, `tax_date`, `due_on` | Datum vystavení, DUZP a splatnost; nepoužívat datum rezervace/exportu. |
-| `snapshot`, `lines` | Uložený dodavatel, odběratel, měna, položky a daňové údaje; neexportovat aktuální profil nebo ceník. |
-| `snapshot["deductions"]` | Odpočty zdaněných záloh včetně `source_document_id`; zachovat původní základy, DPH a zdrojový doklad. |
-| `parent_id` | Vazba opravného dokladu na opravovaný doklad. |
-| `billing_payments` | Skutečné příjmy/vratky (`receipt`/`refund`), `paid_on`, metoda `bank`/`cash`/`card`, reference, vazby `document_id` a `tax_document_id`. |
-
-S účetní je potřeba určit cílové evidence, typy dokladů, číselné řady, operace,
-zachování lokálního čísla a daňové režimy. Pobytové položky rozlišují zdanitelnou
-sazbu 0 % a plnění mimo předmět DPH; nynější barové mapování obojí nepokrývá.
-
-- Zálohová výzva (`advance`) není daňový doklad ani přijatá platba.
-- Skutečná záloha a její daňový doklad (`tax_receipt`) jsou propojené záznamy;
-  několik plateb může mít několik daňových dokladů.
-- Konečná faktura (`final`) odpočítává již zdaněné zálohy. Odpočet není další
-  příjem peněz; neuhrazená výzva nic neodpočítává.
-- Oprava (`correction`) zachovává vazbu na původní doklad; vratka je samostatný
-  pohyb peněz. Nulový doplatek i přeplatek jsou platné stavy.
-
-Rozšíření má používat samostatné stabilní externí identity dokladů, odpočtů
-a plateb oddělené od barového prostoru `order`. Potřebuje trvalý stav a historii
-synchronizace, bezpečné zařazení jobu spolu s lokálním zápisem, ochranu souběhu
-a opakování i řešení částečně dokončeného přenosu. Navazující opravy a odpočty
-vyžadují nejprve vzdálené identity zdrojových dokladů. Vydané doklady a uložená
-PDF se při tom nesmějí měnit.
-
-HTTP klient a princip Oban retry lze využít; pobytová data potřebují vlastní
-mapování a stav. Budoucí směr zůstává z aplikace do účetnictví; automatické
-bankovní párování zpět současný kód neposkytuje.
+Podmínky zapojení, přepínač a obnova chyb jsou v části
+[automatického exportu](#automatický-export-a-společný-přehled-přenosů).
+[Podklad pro účetní](ABRA_ACCOUNTANT_REVIEW.md) rozlišuje implementované
+mapování a dosud neodsouhlasené předpoklady. Existence kódu a testů nenahrazuje
+ověření cyklu na konkrétní firmě s účetní.
 
 ## Kód a ověření
 
@@ -284,8 +276,8 @@ na možnou duplicitu. Výdaje, cizí měny, chybějící VS, chybějící pohyby
 nejednoznačnost a hlášené párování zůstávají bez návrhu k ruční kontrole.
 
 **Návrhy nepotvrzují dostupnost částky.** Ani `sparovano=false` nevylučuje
-částečné nebo konfliktní párování. Vazby a volnou částku bude muset budoucí
-potvrzovací blok ověřit novým čtením přímo v ABRA. Import nevolá
+částečné nebo konfliktní párování. Vazby a volnou částku ověřují potvrzovací
+bloky níže novým čtením přímo v ABRA. Samotný import nevolá
 `Billing.record_payment/2`, nevytváří ZDD ani neprovádí vzdálené zápisy.
 Stávající ruční evidence skutečných plateb zůstává samostatná.
 
@@ -297,11 +289,12 @@ výsledky CI ověří uživatel. Skutečné API testovací firmy nebylo ověřen
 
 ## Ruční potvrzení bankovní zálohy a ZDD
 
-Navazující blok dovoluje v přehledu banky výslovně potvrdit **celý bankovní
+Tento blok pro zálohy dovoluje v přehledu banky výslovně potvrdit **celý bankovní
 příjem k jedné zálohové výzvě**. Vyžaduje již úspěšný export výzvy do stejné
 firmy, nový pobyt, CZK a shodný VS. Potvrzení je samostatné od importu banky.
-Konečné faktury, příjmy bez výzvy, vratky, rozdělení pohybu a přeplatky nad
+Příjmy bez výzvy, vratky, rozdělení pohybu a přeplatky nad
 zbývající částku výzvy tato implementace nepotvrzuje.
+Konečné faktury mají [samostatný postup potvrzení doplatku](#bankovní-doplatek-konečné-faktury).
 
 Přidávací migrace `20261026160000_create_abra_bank_confirmations.exs` zavádí
 jedinečnou vazbu pohybu a místní platby i uložený požadavek na synchronizaci.

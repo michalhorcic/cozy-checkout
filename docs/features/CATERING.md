@@ -223,8 +223,8 @@ V **Stravování → Nákupy a ceny** otevřete **Nový nákup / import**. Stejn
 formulář slouží pro ruční nákup i kontrolu JSONu z ChatGPT. Nové tabulky přidávají
 migrace `20261027120000` a `20261027130000`; modul nevyžaduje novou konfiguraci,
 OpenAI API klíč ani změnu ABRA. S barovými nákupy a skladem není propojený.
-Implementace zůstává na větvi `codex/kitchen-costs-foundation` v PR #55, dokud
-neproběhne ověření celku. Do `main` se v této etapě neslučuje.
+Implementace je součástí `main` od [PR #55](https://github.com/michalhorcic/cozy-checkout/pull/55).
+Provozní ověření skutečných účtenek a nákladů zůstává samostatným krokem.
 
 ### Import účtenky a ruční nákup
 
