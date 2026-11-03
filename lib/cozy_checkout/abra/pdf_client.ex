@@ -12,14 +12,14 @@ defmodule CozyCheckout.Abra.PdfClient do
 
   # Read every page before deciding an attachment is absent. A lost PUT response
   # must be reconciled before another upload can be attempted.
-  def find(remote_id, filename, cfg), do: find(remote_id, filename, cfg, 0)
+  def find(remote_id, filenames, cfg), do: find(remote_id, List.wrap(filenames), cfg, 0)
 
-  defp find(remote_id, filename, cfg, offset) do
+  defp find(remote_id, filenames, cfg, offset) do
     case request(:get, invoice_path(remote_id) <> "/prilohy.json", cfg,
            params: [detail: "full", limit: 100, start: offset, order: "id"]
          ) do
       {:ok, %{status: 200, body: %{"winstrom" => %{"priloha" => rows}}}} when is_list(rows) ->
-        matches = Enum.filter(rows, &(is_map(&1) and &1["nazSoub"] == filename))
+        matches = Enum.filter(rows, &(is_map(&1) and &1["nazSoub"] in filenames))
 
         cond do
           not Enum.all?(rows, &(is_map(&1) and is_binary(&1["nazSoub"]) and not is_nil(&1["id"]))) ->
@@ -29,7 +29,7 @@ defmodule CozyCheckout.Abra.PdfClient do
             {:ok, matches}
 
           length(rows) == 100 ->
-            find(remote_id, filename, cfg, offset + 100)
+            find(remote_id, filenames, cfg, offset + 100)
 
           true ->
             :not_found

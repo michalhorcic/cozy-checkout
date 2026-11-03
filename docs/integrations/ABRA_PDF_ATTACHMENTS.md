@@ -42,11 +42,15 @@ pokračuje jako dosud; přílohy uložené v ABRA se nemažou.
 ## PDF a opakování
 
 Použije se `Billing.ensure_pdf/1`. Uložené PDF se nemění, chybějící se
-připraví běžným rendererem. Název přílohy je `cozy-{UUID}-{SHA256}.pdf`.
+připraví běžným rendererem. Název přílohy je číslo dokladu s příponou `.pdf`,
+například `COZY-ZF202600001.pdf`, stejně jako při stažení z aplikace.
 Před uploadem se načte seznam příloh včetně dalších stránek. Existující
 příloha se ověří stažením a porovnáním SHA256. Stejná kontrola následuje
 po uploadu. Při timeoutu další pokus nejprve ověří předchozí upload.
 Odlišný obsah pod stejným názvem se nepřepisuje.
+Při ověřování se rozpoznává také původní název `cozy-{UUID}-{SHA256}.pdf`,
+aby opakování dřívějšího přenosu nevytvořilo další přílohu. Již odeslané
+přílohy se automaticky nepřejmenovávají.
 
 API účet potřebuje čtení a zápis příloh. Použité API:
 

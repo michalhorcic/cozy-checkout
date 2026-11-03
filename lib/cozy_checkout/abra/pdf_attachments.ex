@@ -116,9 +116,17 @@ defmodule CozyCheckout.Abra.PdfAttachments do
       with :ok <- validate_target(export, cfg),
            {:ok, doc} <- Billing.ensure_pdf(export.document_id) do
         hash = digest(doc.pdf)
-        filename = "cozy-#{doc.id}-#{hash}.pdf"
+        filename = "#{doc.number}.pdf"
+        legacy_filename = "cozy-#{doc.id}-#{hash}.pdf"
 
-        with :ok <- ensure_attachment(export.remote_id, filename, doc.pdf, hash, cfg) do
+        with :ok <-
+               ensure_attachment(
+                 export.remote_id,
+                 [filename, legacy_filename],
+                 doc.pdf,
+                 hash,
+                 cfg
+               ) do
           transfer
           |> Ecto.Changeset.change(
             state: "uploaded",
@@ -158,8 +166,8 @@ defmodule CozyCheckout.Abra.PdfAttachments do
     end
   end
 
-  defp ensure_attachment(id, filename, bytes, hash, cfg) do
-    case PdfClient.find(id, filename, cfg) do
+  defp ensure_attachment(id, [filename | _] = filenames, bytes, hash, cfg) do
+    case PdfClient.find(id, filenames, cfg) do
       :not_found ->
         with :ok <- PdfClient.upload(id, filename, bytes, cfg),
              do: verify_attachment(id, filename, hash, cfg)

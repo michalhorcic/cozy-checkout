@@ -52,7 +52,7 @@ defmodule CozyCheckout.AbraPdfAttachmentsTest do
       export: export,
       bytes: bytes,
       cfg: cfg,
-      filename: "cozy-#{doc.id}-#{digest(bytes)}.pdf"
+      filename: "#{doc.number}.pdf"
     }
   end
 
@@ -81,6 +81,27 @@ defmodule CozyCheckout.AbraPdfAttachmentsTest do
     assert Repo.get!(AccommodationExport, ctx.export.id) == ctx.export
     assert :ok = PdfAttachments.deliver(transfer.id)
     assert {:ok, %{state: "uploaded"}} = PdfAttachments.enqueue(ctx.doc.id)
+  end
+
+  test "recognizes the old UUID and hash filename after a lost upload response", ctx do
+    {:ok, transfer} = PdfAttachments.enqueue(ctx.doc.id)
+    legacy_filename = "cozy-#{ctx.doc.id}-#{digest(ctx.bytes)}.pdf"
+    expect_list([%{"id" => 7, "nazSoub" => legacy_filename}])
+    expect_content(ctx.bytes)
+
+    assert :ok = PdfAttachments.deliver(transfer.id)
+    assert PdfAttachments.status(ctx.doc.id).state == "uploaded"
+    assert Repo.get!(AccommodationExport, ctx.export.id) == ctx.export
+  end
+
+  test "legacy filenames still require matching PDF content", ctx do
+    {:ok, transfer} = PdfAttachments.enqueue(ctx.doc.id)
+    legacy_filename = "cozy-#{ctx.doc.id}-#{digest(ctx.bytes)}.pdf"
+    expect_list([%{"id" => 7, "nazSoub" => legacy_filename}])
+    expect_content("different bytes")
+
+    assert {:error, "Obsah PDF přílohy v ABRA nesouhlasí"} = PdfAttachments.deliver(transfer.id)
+    assert PdfAttachments.status(ctx.doc.id).state == "failed"
   end
 
   test "reconciles a timed out upload before retrying; does not PUT a duplicate", ctx do
