@@ -76,13 +76,13 @@ defmodule CozyCheckout.Billing.Pdf do
       end
 
     """
-    <!doctype html><html lang="cs"><head><meta charset="utf-8"><title>#{escape(Billing.kind_label(document.kind))}</title>
+    <!doctype html><html lang="cs"><head><meta charset="utf-8"><title>#{escape(document_title(document.kind))}</title>
     <style>@page { size:A4; margin:16mm; } body{font:12px 'DejaVu Sans',sans-serif;color:#192c32} h1{font-size:23px;margin:0 0 8px}.header{display:flex;align-items:center;gap:20px;border-bottom:2px solid #b8826f;padding-bottom:16px;margin-bottom:22px}.brand-logo{width:64px;height:64px;flex-shrink:0}.brand-name{font-size:15px;font-weight:bold;margin:0 0 8px;color:#627078} td{font-variant-numeric:tabular-nums} th{font-size:11px} .subject{max-width:270px} h2{font-size:14px} .parties{display:flex;gap:24px;align-items:flex-start;break-inside:avoid}.parties>.party{flex:1;min-width:0;overflow-wrap:anywhere}.payment-qr{flex:0 0 110px;text-align:center}.payment-qr h2{color:#627078}.contacts{line-height:1.5} table{width:100%;border-collapse:collapse;margin:18px 0} th,td{padding:7px 4px;border-bottom:1px solid #ccd3d7;text-align:right} th:first-child,td:first-child{text-align:left} thead{display:table-header-group} tr,.party{break-inside:avoid} .total{font-size:18px;font-weight:bold;text-align:right}.qr{width:110px;height:110px} .muted{color:#627078} .preview{color:#b33;font-size:24px}</style></head><body>
     #{if preview?, do: "<p class=preview>NÁHLED – NEVYSTAVENÝ DOKLAD</p>", else: ""}
-    <div class="header"><img class="brand-logo" alt="Cozy Checkout" src="data:image/svg+xml;base64,#{@logo}"><div><p class="brand-name">Jindřichův dům</p><h1>#{escape(Billing.kind_label(document.kind))} #{escape(Map.get(document, :number, ""))}</h1></div></div>
+    <div class="header"><img class="brand-logo" alt="Cozy Checkout" src="data:image/svg+xml;base64,#{@logo}"><div><p class="brand-name">Jindřichův dům</p><h1>#{escape(document_title(document.kind))} #{escape(Map.get(document, :number, ""))}</h1></div></div>
     #{if document.kind == "advance", do: "<p>Výzva k úhradě zálohy – není daňovým dokladem.</p>", else: ""}
     <div class="parties">
-    <div class="party"><h2>Dodavatel</h2>#{party(supplier)}<p class="muted contacts">#{escape(supplier["email"])}<br>#{escape(supplier["phone"])}</p></div>
+    <div class="party"><h2>Dodavatel</h2>#{party(supplier)}<p class="muted contacts">#{escape(supplier["email"])}<br>Telefon: #{escape(supplier["phone"])}</p></div>
     <div class="party"><h2>Odběratel</h2>#{party(buyer)}</div>
     #{if qr, do: "<div class=\"payment-qr\"><h2>QR platba</h2><img class=qr alt=\"QR platba\" src=\"data:image/svg+xml;base64,#{qr}\"></div>", else: ""}
     </div>
@@ -93,12 +93,16 @@ defmodule CozyCheckout.Billing.Pdf do
     #{if Presentation.advance_breakdown(document), do: "", else: "<p class=total>Celkem: #{money(document.total)} CZK</p>"}
     #{if deductions != [], do: "<h2>Odpočty přijatých záloh</h2><table><thead><tr><th>Doklad</th><th>Základ CZK</th><th>Daň CZK</th><th>Celkem CZK</th></tr></thead><tbody>#{Enum.map_join(deductions, &deduction_row/1)}</tbody></table>#{vat_table(document.lines ++ deductions)}", else: ""}
     #{if document.kind in ["advance", "final"], do: "<p class=total>#{Presentation.balance_label(due)}: #{Presentation.balance_amount(due)}</p>", else: ""}
-    <p>Účet: #{escape(supplier["bank_account"])} · IBAN: #{escape(supplier["iban"])}</p>
+    #{if document.kind == "tax_receipt", do: "", else: "<p>Účet: #{escape(supplier["bank_account"])} · IBAN: #{escape(supplier["iban"])}</p>"}
     #{if preview?, do: "", else: "<p>Variabilní symbol: #{escape(document.variable_symbol)}</p>"}
     #{if payment_params && !qr, do: "<p>QR platba není k dispozici. Platební údaje ověřte s vystavovatelem.</p>", else: ""}
     </body></html>
     """
   end
+
+  defp document_title("tax_receipt"), do: "Daňový doklad"
+  defp document_title("final"), do: "Faktura (daňový doklad)"
+  defp document_title(kind), do: Billing.kind_label(kind)
 
   defp items_table(document) do
     if calculation = Presentation.advance_breakdown(document) do
