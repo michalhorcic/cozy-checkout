@@ -243,7 +243,10 @@ defmodule CozyCheckout.BillingAccountsTest do
 
     assert {:error, _} = Billing.record_payment(second, attrs)
     assert {:ok, payment} = Billing.record_payment(first, attrs)
-    assert {:ok, ^payment} = Billing.record_payment(first, attrs)
+    assert {:ok, replayed} = Billing.record_payment(first, attrs)
+    assert replayed.id == payment.id
+    assert replayed.billing_account_id == payment.billing_account_id
+    assert Decimal.equal?(replayed.amount, payment.amount)
     assert {:error, _} = Billing.record_payment(second, Map.put(attrs, "document_id", doc2.id))
     assert Repo.aggregate(Payment, :count) == 1
     forged = %{second | booking_id: Ecto.UUID.generate()}

@@ -192,7 +192,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
                 phx-value-date={date}
                 phx-target={@myself}
                 aria-label={Calendar.strftime(date, "%d. %m. %Y")}
-                aria-pressed={selected_date?(@form, date)}
+                aria-pressed={if selected_date?(@form, date), do: "true", else: "false"}
                 class={[
                   "min-h-11 rounded text-center",
                   if(selected_date?(@form, date),
