@@ -69,7 +69,7 @@ defmodule CozyCheckoutWeb.BillingComponents do
         </p>
         <p :if={status.error} class="text-sm">{status.error}</p>
         <.link
-          :if={status.state in ["failed", "conflict", "retrying", "waiting"]}
+          :if={status.state in ["failed", "conflict", "retrying", "waiting", "outdated"]}
           navigate={
             if status.state == "waiting",
               do: ~p"/admin/billing/transfers?mode=pending",

@@ -27,6 +27,9 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     {:noreply,
      assign(socket,
        document: doc,
+       advance_preview: nil,
+       advance_attrs: %{},
+       advance_form: to_form(advance_defaults(doc), as: :advance),
        abra_export: Accommodation.get_export(id),
        abra_pdf: PdfAttachments.status(id),
        abra_pdf_enabled?: PdfAttachments.enabled?(),
@@ -54,6 +57,49 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
        abra_transfers: Transfers.for_documents(documents),
        filter_form: to_form(Map.take(params, ["kind", "number"]), as: :filter)
      )}
+  end
+
+  def handle_event("advance-change", _, socket),
+    do: {:noreply, assign(socket, :advance_preview, nil)}
+
+  def handle_event("advance-preview", %{"advance" => attrs}, socket) do
+    case Billing.preview_advance_update(socket.assigns.document.id, attrs) do
+      {:ok, preview} ->
+        {:noreply,
+         assign(socket,
+           advance_preview: preview,
+           advance_attrs: attrs,
+           advance_form: to_form(attrs, as: :advance)
+         )}
+
+      {:error, error} ->
+        {:noreply,
+         socket |> assign(:advance_preview, nil) |> put_flash(:error, Helpers.error(error))}
+    end
+  end
+
+  def handle_event("advance-update", _, %{assigns: %{advance_preview: nil}} = socket),
+    do: {:noreply, put_flash(socket, :error, "Nejprve zobrazte náhled aktualizace")}
+
+  def handle_event("advance-update", _, socket) do
+    attrs =
+      Map.put(socket.assigns.advance_attrs, "preview_token", socket.assigns.advance_preview.token)
+
+    case Billing.update_advance(socket.assigns.document.id, attrs) do
+      {:ok, doc} ->
+        {:noreply,
+         socket
+         |> assign(document: doc, advance_preview: nil)
+         |> refresh_abra()
+         |> put_flash(
+           :info,
+           "Zálohovka aktualizována. Změnu do ABRA odešlete tlačítkem Aktualizovat v ABRA."
+         )}
+
+      {:error, error} ->
+        {:noreply,
+         socket |> assign(:advance_preview, nil) |> put_flash(:error, Helpers.error(error))}
+    end
   end
 
   def handle_event("filter", %{"filter" => attrs}, socket),
@@ -234,6 +280,56 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             </div>
           </section>
           <section
+            :if={@document.kind == "advance"}
+            id="advance-update"
+            class="bg-white p-6 rounded-xl space-y-4"
+          >
+            <h2 class="text-xl font-bold">Aktualizovat zálohovku podle kalkulace</h2>
+            <p>
+              Nejprve upravte kalkulaci pobytu. Tady převezmete její položky do stejné zálohovky a PDF se stejným číslem a VS. Aktualizace je dostupná před odesláním a přijetím platby.
+            </p>
+            <.form
+              for={@advance_form}
+              id="advance-update-form"
+              phx-submit="advance-preview"
+              phx-change="advance-change"
+              class="flex flex-wrap gap-3 items-end"
+            >
+              <.input
+                field={@advance_form[:percent]}
+                type="number"
+                label="Záloha v %"
+                step="0.01"
+                min="0.01"
+                max="100"
+              />
+              <.input
+                field={@advance_form[:amount]}
+                type="number"
+                label="Nebo částka zálohy (má přednost)"
+                step="0.01"
+                min="0.01"
+              />
+              <button class="btn" phx-disable-with="Připravuji…">Náhled aktualizace</button>
+            </.form>
+            <div :if={@advance_preview} id="advance-update-preview" class="space-y-3">
+              <CozyCheckoutWeb.BillingComponents.advance_breakdown
+                id="advance-update-breakdown"
+                document={@advance_preview}
+              />
+              <p>
+                Požadovaná záloha: {Presentation.amount(@document.total)} →
+                <strong>{Presentation.amount(@advance_preview.total)}</strong>
+              </p>
+              <button
+                id="advance-update-confirm"
+                phx-click="advance-update"
+                phx-disable-with="Aktualizuji…"
+                class="btn btn-primary"
+              >Aktualizovat v Cozy</button>
+            </div>
+          </section>
+          <section
             :if={@document.kind in ["advance", "final"] && (@abra_enabled? || @abra_export)}
             id="accommodation-abra"
             class="bg-white p-6 rounded-xl space-y-4"
@@ -249,13 +345,24 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             <button
               :if={
                 @abra_enabled? &&
-                  (!@abra_export || @abra_export.state in ["failed", "retrying", "waiting"])
+                  (!@abra_export ||
+                     @abra_export.state in ["failed", "retrying", "waiting", "outdated"])
               }
               id="accommodation-abra-export"
               phx-click="abra-export"
               phx-disable-with="Zařazuji…"
               class="btn btn-primary"
-            >{if @abra_export, do: "Opakovat export do ABRA", else: "Exportovat do ABRA"}</button>
+            >{cond do
+              @abra_export &&
+                  (@abra_export.state == "outdated" || @abra_export.verification["advance_update"]) ->
+                "Aktualizovat v ABRA"
+
+              @abra_export ->
+                "Opakovat export do ABRA"
+
+              true ->
+                "Exportovat do ABRA"
+            end}</button>
             <button phx-click="abra-refresh" class="btn">Obnovit stav exportu</button>
           </section>
           <section
@@ -374,6 +481,15 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     )
   end
 
+  defp advance_defaults(doc) do
+    calculation = doc.snapshot["advance_calculation"] || %{}
+
+    if calculation["method"] == "percent",
+      do: %{"percent" => calculation["percent"], "amount" => ""},
+      else: %{"percent" => "", "amount" => to_string(doc.total)}
+  end
+
+  defp abra_state("outdated"), do: "Zálohovka změněna v Cozy; čeká na aktualizaci v ABRA"
   defp abra_state("waiting"), do: "Čeká na podmínky"
   defp abra_state("queued"), do: "Čeká na export"
   defp abra_state("retrying"), do: "Čeká na opakování"

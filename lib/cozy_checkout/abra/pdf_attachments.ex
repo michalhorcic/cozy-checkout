@@ -118,14 +118,22 @@ defmodule CozyCheckout.Abra.PdfAttachments do
         hash = digest(doc.pdf)
         filename = "#{doc.number}.pdf"
         legacy_filename = "cozy-#{doc.id}-#{hash}.pdf"
+        previous_hash = if export.verification["advance_update"], do: transfer.sha256
+        filenames = [filename, legacy_filename]
+
+        filenames =
+          if is_binary(previous_hash),
+            do: Enum.uniq(filenames ++ ["cozy-#{doc.id}-#{previous_hash}.pdf"]),
+            else: filenames
 
         with :ok <-
                ensure_attachment(
                  export.remote_id,
-                 [filename, legacy_filename],
+                 filenames,
                  doc.pdf,
                  hash,
-                 cfg
+                 cfg,
+                 previous_hash
                ) do
           transfer
           |> Ecto.Changeset.change(
@@ -166,11 +174,27 @@ defmodule CozyCheckout.Abra.PdfAttachments do
     end
   end
 
-  defp ensure_attachment(id, [filename | _] = filenames, bytes, hash, cfg) do
+  defp ensure_attachment(id, [filename | _] = filenames, bytes, hash, cfg, previous_hash) do
     case PdfClient.find(id, filenames, cfg) do
       :not_found ->
         with :ok <- PdfClient.upload(id, filename, bytes, cfg),
              do: verify_attachment(id, filename, hash, cfg)
+
+      {:ok, [%{"id" => attachment_id}]} when is_binary(previous_hash) ->
+        with {:ok, current} <- PdfClient.content(id, attachment_id, cfg) do
+          cond do
+            digest(current) == hash ->
+              :ok
+
+            digest(current) == previous_hash ->
+              with :ok <- PdfClient.delete(id, attachment_id, cfg),
+                   :ok <- PdfClient.upload(id, filename, bytes, cfg),
+                   do: verify_attachment(id, filename, hash, cfg)
+
+            true ->
+              {:error, "Obsah PDF přílohy v ABRA nesouhlasí"}
+          end
+        end
 
       {:ok, rows} ->
         verify_content(id, rows, hash, cfg)

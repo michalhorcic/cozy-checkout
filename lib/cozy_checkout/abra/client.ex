@@ -150,6 +150,15 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  def advance_invoice_snapshot(id, cfg) do
+    path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
+
+    with {:ok, invoice} <- read_invoice(id, cfg),
+         {:ok, items} <- invoice_relation(path, "polozkyDokladu", "faktura-vydana-polozka", cfg) do
+      {:ok, %{invoice: invoice, items: items}}
+    end
+  end
+
   def deductible_amounts(id, cfg) do
     path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}/castky-k-odpoctu"
 

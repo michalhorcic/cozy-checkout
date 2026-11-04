@@ -89,13 +89,13 @@ defmodule CozyCheckoutWeb.BillingLive.Transfers do
           <div class="flex flex-wrap gap-3">
             <.link navigate={~p"/admin/bookings/#{row.booking_id}/billing"} class="link">Pobyt</.link>
             <button
-              :if={row.state in ["failed", "retrying", "conflict", "waiting"]}
+              :if={row.state in ["failed", "retrying", "conflict", "waiting", "outdated"]}
               class="btn btn-sm"
               phx-click="retry"
               phx-value-id={row.id}
               phx-value-category={row.category}
               phx-disable-with="Ověřuji…"
-            >Ověřit a obnovit přenos</button>
+            >{if row.state == "outdated", do: "Aktualizovat v ABRA", else: "Ověřit a obnovit přenos"}</button>
           </div>
         </section>
         <nav class="flex gap-4">

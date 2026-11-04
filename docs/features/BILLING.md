@@ -182,6 +182,25 @@ umožní vybrat další návrh. Zavření zachová filtry a stránku seznamu.
 Pravidla párování a účetní synchronizace se nemění; podrobnosti popisuje
 [bankovní integrace ABRA](../integrations/ABRA_INTEGRATION.md).
 
+## Aktualizace zálohové výzvy před odesláním
+
+Pokud na zálohovce chybí například rekreační poplatek, doplňte ho v kalkulaci
+jako službu **Mimo předmět DPH**. Otevřete **Detail a historie** zálohové výzvy,
+v části **Aktualizovat zálohovku podle kalkulace** zobrazte náhled a potvrďte
+**Aktualizovat v Cozy**. Číslo, VS, datum vystavení, splatnost a odběratel zůstávají
+stejné. Rozpis a PDF se obnoví. Procentní záloha se přepočítá z nové ceny pobytu;
+u částkové zálohy zůstává částka zachovaná, případně ji změňte ve formuláři.
+
+Změnu do ABRA odešlete výslovně tlačítkem **Aktualizovat v ABRA**. Přepisuje se
+stejný doklad, včetně nahrazení jeho položek; nevzniká opravný ani další doklad.
+Do té doby přehled uvádí **Čeká na aktualizaci zálohovky**. Při chybě lze přenos
+opakovat. Pokud jsou zapnuté PDF přílohy, aktualizuje se také dříve ověřené PDF.
+
+Tato akce je určená před odesláním a přijetím platby: nelze ji použít po zařazení
+e-mailu, po zaznamenání platby ani po konečném vyúčtování. Rozpracovaný přenos
+dokladu nebo PDF nejprve dokončete. Aktualizace v ABRA odmítne uhrazený,
+stornovaný nebo jiný doklad. Konečné faktury a ZDD nadále používají opravy níže.
+
 ## Opravy a vratky
 
 V detailu faktury nebo daňového dokladu k platbě lze vystavit snížení či zvýšení
@@ -191,7 +210,8 @@ opravuje konečná faktura, nikoli již odpočtený daňový doklad zálohy.
 
 Změna dodavatele v nastavení nemění kopie na dokladech. Odběratele po prvním
 vystavení nelze přepsat; změnu identifikace musí řešit účetní opravou. Vystavené
-doklady se v administraci neupravují, nemažou ani nevracejí do konceptu.
+daňové doklady se v administraci neupravují, nemažou ani nevracejí do konceptu.
+Zálohové výzvy lze před odesláním aktualizovat postupem výše.
 
 Vratku evidujte až po skutečném odeslání peněz a po potřebné opravě dokladu.
 Nezdaněný přeplatek konečného vyúčtování lze vrátit přímo. Aplikace neprovádí
