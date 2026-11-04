@@ -173,8 +173,8 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     conn: conn,
     booking: booking
   } do
-    {:ok, view, html} = live(conn, "/admin/bookings/#{booking.id}/billing")
-    assert html =~ "Kalkulace a počty hostů"
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    assert has_element?(view, "#billing-calculation h2", "Kalkulace a doklady:")
 
     view
     |> form("#billing-issue", issue: %{kind: "advance", percent: "50", amount: ""})
@@ -875,7 +875,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     view |> element("button[phx-click='refresh']") |> render_click()
     assert has_element?(view, "#{tab}[data-billing-state='paid'].bg-emerald-50", "Zaplaceno")
 
-    receipt!(booking, "100", %{"document_id" => final.id})
+    receipt!(booking, "100", %{"document_id" => final.id, "paid_on" => to_string(final.tax_date)})
     view |> element("button[phx-click='refresh']") |> render_click()
 
     assert has_element?(
@@ -895,11 +895,12 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     tab = "#payer-tab-#{payer.id}"
     assert has_element?(view, "#{tab}[data-billing-state='final'].bg-blue-50", "Konečná faktura")
 
-    receipt!(booking, "100", %{"document_id" => final.id})
+    receipt!(booking, "100", %{"document_id" => final.id, "paid_on" => to_string(final.tax_date)})
     view |> element("button[phx-click='refresh']") |> render_click()
     assert has_element?(view, "#{tab}[data-billing-state='final'].bg-blue-50", "Konečná faktura")
 
-    receipt!(booking, "5600", %{"document_id" => final.id})
+    receipt!(booking, "5600", %{"document_id" => final.id, "paid_on" => to_string(final.tax_date)})
+
     view |> element("button[phx-click='refresh']") |> render_click()
     assert has_element?(view, "#{tab}[data-billing-state='paid'].bg-emerald-50", "Zaplaceno")
   end
