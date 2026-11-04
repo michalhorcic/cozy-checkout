@@ -15,10 +15,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
   defp load_overview(socket) do
     if connected?(socket), do: Process.send_after(self(), :refresh_overview, 60_000)
     economic_overview = if Economics.enabled?(), do: Economics.home_summary()
+    overview = Dashboard.overview()
 
     assign(socket,
       page_title: "Přehled",
-      overview: Dashboard.overview(),
+      overview: overview,
       economic_overview: economic_overview,
       economic_issues: HomeComponents.issues(economic_overview)
     )
@@ -47,43 +48,46 @@ defmodule CozyCheckoutWeb.DashboardLive do
           </.link>
         </header>
 
-        <section
+        <details
           :if={@overview.issues != [] || @economic_issues != []}
           id="dashboard-attention"
           aria-labelledby="attention-heading"
           class="mb-7 overflow-hidden rounded-2xl border border-warning bg-white shadow-sm"
         >
-          <div class="flex items-center gap-3 border-b border-secondary-100 px-6 py-4">
+          <summary class="flex min-h-11 cursor-pointer items-center gap-3 px-6 py-4">
             <.icon name="hero-exclamation-triangle" class="h-5 w-5 text-warning" />
             <h2 id="attention-heading" class="font-semibold text-primary-500">
               Vyžaduje pozornost
               <span class="ml-2 text-sm font-normal text-primary-400">{length(@overview.issues) +
                 length(@economic_issues)}</span>
             </h2>
+            <span class="ml-auto text-xs text-primary-400">Rozbalit / sbalit</span>
+          </summary>
+          <div class="max-h-96 overflow-y-auto border-t border-secondary-100">
+            <p class="px-6 pt-3 text-xs text-primary-400">
+              Provozní a ekonomické úkoly s odkazy na podklady
+            </p>
+            <ul class="divide-y divide-secondary-100">
+              <HomeComponents.attention_item :for={issue <- @economic_issues} issue={issue} />
+              <li :for={issue <- @overview.issues}>
+                <.link
+                  id={"dashboard-issue-#{issue.kind}-#{issue.booking.id}"}
+                  navigate={issue_path(issue)}
+                  class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm hover:bg-secondary-50"
+                >
+                  <div>
+                    <span class="font-semibold text-primary-500">{issue.booking.guest.name}</span><span class="ml-2 text-xs text-primary-400">{date(
+                      issue.booking.check_in_date
+                    )}</span><p class="mt-1 text-primary-400">{issue.reason}</p>
+                  </div>
+                  <span class="font-medium text-tertiary-600">{if issue.kind == :details,
+                    do: "Doplnit údaje",
+                    else: "Zkontrolovat menu"} →</span>
+                </.link>
+              </li>
+            </ul>
           </div>
-          <p class="px-6 pt-3 text-xs text-primary-400">
-            Provozní a ekonomické úkoly s odkazy na podklady
-          </p>
-          <ul class="divide-y divide-secondary-100">
-            <HomeComponents.attention_item :for={issue <- @economic_issues} issue={issue} />
-            <li :for={issue <- @overview.issues}>
-              <.link
-                id={"dashboard-issue-#{issue.kind}-#{issue.booking.id}"}
-                navigate={issue_path(issue)}
-                class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm hover:bg-secondary-50"
-              >
-                <div>
-                  <span class="font-semibold text-primary-500">{issue.booking.guest.name}</span><span class="ml-2 text-xs text-primary-400">{date(
-                    issue.booking.check_in_date
-                  )}</span><p class="mt-1 text-primary-400">{issue.reason}</p>
-                </div>
-                <span class="font-medium text-tertiary-600">{if issue.kind == :details,
-                  do: "Doplnit údaje",
-                  else: "Zkontrolovat menu"} →</span>
-              </.link>
-            </li>
-          </ul>
-        </section>
+        </details>
 
         <div class="mb-7 grid gap-3 sm:grid-cols-3">
           <.summary
@@ -107,75 +111,11 @@ defmodule CozyCheckoutWeb.DashboardLive do
         </div>
 
         <div class="mb-7 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-          <section
-            aria-labelledby="stays-heading"
-            class="overflow-hidden rounded-2xl border border-secondary-200 bg-white shadow-sm"
-          >
-            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-secondary-100 p-5 sm:p-6">
-              <div>
-                <h2 id="stays-heading" class="text-lg font-semibold text-primary-500">
-                  Probíhající a nejbližší pobyty
-                </h2>
-                <p class="mt-1 text-sm text-primary-400">
-                  Příjezdy do {date(@overview.last_date)} · následující měsíc
-                </p>
-              </div>
-              <.link
-                id="open-calendar"
-                navigate={~p"/admin/bookings/calendar"}
-                class="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-tertiary-600 hover:underline"
-              >
-                <.icon name="hero-calendar-days" class="h-4 w-4" />Kalendář
-              </.link>
-            </div>
-            <div :if={@overview.bookings == []} id="stays-empty" class="px-6 py-12 text-center">
-              <.icon name="hero-calendar-days" class="mb-3 h-9 w-9 text-secondary-400" />
-              <p class="font-medium text-primary-500">Na následující měsíc tu nejsou žádné pobyty.</p>
-              <p class="mt-1 text-sm text-primary-400">Novou rezervaci přidáte tlačítkem nahoře.</p>
-            </div>
-            <div id="dashboard-stays" class="divide-y divide-secondary-100">
-              <.link
-                :for={booking <- @overview.bookings}
-                id={"dashboard-booking-#{booking.id}"}
-                navigate={~p"/admin/bookings/#{booking.id}"}
-                class="group flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500 sm:px-6"
-              >
-                <div class="min-w-0 flex-1 basis-48">
-                  <p class="font-semibold text-primary-500 group-hover:text-tertiary-700">
-                    {booking.guest.name}
-                  </p>
-                  <p class="mt-1 text-sm text-primary-400">
-                    {date(booking.check_in_date)} – {date(booking.check_out_date)}
-                  </p>
-                  <p class="mt-1 text-xs text-primary-400">{rooms(booking)}</p>
-                  <p :if={booking.short_note} class="mt-1 text-xs text-primary-400">
-                    {booking.short_note}
-                  </p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <span
-                    :if={booking.check_in_date == @overview.today}
-                    class="rounded-full bg-success-light px-2.5 py-1 text-xs font-semibold text-success-dark"
-                  >Dnes příjezd</span>
-                  <span
-                    :if={booking.check_out_date == @overview.today}
-                    class="rounded-full bg-tertiary-100 px-2.5 py-1 text-xs font-semibold text-tertiary-800"
-                  >Dnes odjezd</span>
-                  <span class="rounded-full bg-secondary-100 px-2.5 py-1 text-xs font-medium text-primary-500">{stay_label(
-                    booking,
-                    @overview.today
-                  )}</span>
-                  <.icon name="hero-chevron-right" class="h-4 w-4 text-primary-300" />
-                </div>
-              </.link>
-            </div>
-            <div class="border-t border-secondary-100 px-6 py-4">
-              <.link
-                navigate={~p"/admin/bookings"}
-                class="text-sm font-medium text-tertiary-600 hover:underline"
-              >Všechny rezervace →</.link>
-            </div>
-          </section>
+          <.live_component
+            module={CozyCheckoutWeb.BookingLive.TimelineComponent}
+            id="dashboard-stays"
+            initial_data={@overview.timeline}
+          />
 
           <div class="space-y-5">
             <section
@@ -311,24 +251,6 @@ defmodule CozyCheckoutWeb.DashboardLive do
 
   defp date(nil), do: "bez data odjezdu"
   defp date(date), do: Calendar.strftime(date, "%d. %m. %Y")
-
-  defp rooms(booking) do
-    numbers = booking.rooms |> Enum.map(& &1.room_number) |> Enum.sort()
-
-    case numbers do
-      [] ->
-        if booking.room_number in [nil, ""],
-          do: "Pokoje zatím nepřiřazeny",
-          else: "Pokoje: #{booking.room_number}"
-
-      numbers ->
-        "Pokoje: #{Enum.join(numbers, ", ")}"
-    end
-  end
-
-  defp stay_label(booking, today) do
-    if Date.compare(booking.check_in_date, today) == :gt, do: "Nadcházející", else: "Probíhající"
-  end
 
   defp issue_path(%{kind: :details, booking: booking}), do: ~p"/admin/bookings/#{booking.id}/edit"
   defp issue_path(%{booking: booking}), do: ~p"/admin/bookings/#{booking.id}/menu"

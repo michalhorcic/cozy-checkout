@@ -40,6 +40,10 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
     assert has_element?(view, "#dashboard-booking-#{arriving.id}", "Dnes příjezd")
     assert has_element?(view, "#dashboard-booking-#{arriving.id}", "101")
     assert has_element?(view, "#dashboard-dinner", "15")
+    assert has_element?(view, "#stays-heading", "Časová osa skupin")
+    assert has_element?(view, "#dashboard-booking-#{booking.id}", "Stravování: doplnit údaje")
+    assert has_element?(view, "#dashboard-booking-#{arriving.id} td a", "Příj.")
+    assert has_element?(view, "#dashboard-booking-#{arriving.id} td a", "Odj.")
 
     assert has_element?(
              view,
@@ -55,8 +59,95 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
 
     assert has_element?(
              editor,
-             "#admin-desktop a[href='/admin/bookings/calendar'][aria-current='page']"
+             "#admin-desktop a[href='/admin/bookings'][aria-current='page']"
            )
+  end
+
+  test "ongoing open-ended stays and menu readiness appear in group rows", %{conn: conn} do
+    today = Date.utc_today()
+
+    uncatered =
+      menu_booking_fixture(%{
+        check_in_date: Date.add(today, -2),
+        check_out_date: nil,
+        meal_plan: "none"
+      })
+
+    ready =
+      menu_booking_fixture(%{check_in_date: today, check_out_date: Date.add(today, 6)})
+
+    assign_variant(ready, variant_fixture(%{days: 7}))
+    {:ok, view, _} = live(conn, "/admin")
+
+    assert has_element?(view, "#dashboard-booking-#{uncatered.id}", "Bez stravování")
+    assert has_element?(view, "#dashboard-booking-#{uncatered.id}", "Pokoje zatím nepřiřazeny")
+    assert has_element?(view, "#dashboard-booking-#{uncatered.id} td a", "●")
+    assert has_element?(view, "#dashboard-booking-#{ready.id}", "Menu připravené")
+
+    assert has_element?(
+             view,
+             "#dashboard-booking-#{ready.id} a[href='/admin/bookings/#{ready.id}/menu']"
+           )
+  end
+
+  test "attention is collapsed by default and keeps a scrollable list", %{conn: conn} do
+    menu_booking_fixture(%{
+      check_in_date: Date.utc_today(),
+      check_out_date: Date.add(Date.utc_today(), 2),
+      meal_plan: nil
+    })
+
+    {:ok, view, _} = live(conn, "/admin")
+
+    assert has_element?(view, "details#dashboard-attention summary", "Vyžaduje pozornost")
+    refute has_element?(view, "#dashboard-attention[open]")
+    assert has_element?(view, "#dashboard-attention .overflow-y-auto.max-h-96")
+  end
+
+  test "dashboard and standalone timeline share monthly navigation and group information", %{
+    conn: conn
+  } do
+    today = Date.utc_today()
+    current = menu_booking_fixture(%{check_in_date: today, check_out_date: Date.add(today, 2)})
+    next_start = Date.add(Dashboard.month_ahead(today), 1)
+
+    future =
+      menu_booking_fixture(%{check_in_date: next_start, check_out_date: Date.add(next_start, 2)})
+
+    for {path, component_id} <- [
+          {"/admin", "dashboard-stays"},
+          {"/admin/bookings/timeline", "booking-timeline"}
+        ] do
+      {:ok, view, _} = live(conn, path)
+
+      assert has_element?(
+               view,
+               "##{component_id} #dashboard-booking-#{current.id}",
+               "Pokoje zatím nepřiřazeny"
+             )
+
+      assert has_element?(
+               view,
+               "##{component_id} #dashboard-booking-#{current.id}",
+               "Menu: vyžaduje pozornost"
+             )
+
+      assert has_element?(view, "##{component_id} thead", "/")
+      refute has_element?(view, "#dashboard-booking-#{future.id}")
+
+      view |> element("##{component_id} button[phx-click='next_month']") |> render_click()
+      assert has_element?(view, "#dashboard-booking-#{future.id}")
+      refute has_element?(view, "#dashboard-booking-#{current.id}")
+
+      if path == "/admin" do
+        send(view.pid, :refresh_overview)
+        assert has_element?(view, "#dashboard-booking-#{future.id}")
+      end
+
+      view |> element("##{component_id} button[phx-click='today']") |> render_click()
+      assert has_element?(view, "#dashboard-booking-#{current.id}")
+      refute has_element?(view, "#dashboard-booking-#{future.id}")
+    end
   end
 
   test "empty overview omits attention and refreshes when bookings change", %{conn: conn} do

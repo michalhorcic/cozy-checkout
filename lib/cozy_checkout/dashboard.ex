@@ -9,6 +9,26 @@ defmodule CozyCheckout.Dashboard do
   def overview(today \\ Date.utc_today()) do
     last_date = month_ahead(today)
 
+    timeline = timeline(today, last_date)
+    bookings = timeline.bookings
+    portions = Meals.get_portion_counts_for_range(today, today) |> Map.fetch!(today)
+
+    %{
+      today: today,
+      timeline: timeline,
+      last_date: last_date,
+      bookings: bookings,
+      arrivals: Enum.count(bookings, &(&1.check_in_date == today)),
+      departures: Enum.count(bookings, &(&1.check_out_date == today)),
+      occupancy: Map.fetch!(timeline.occupancy, today),
+      capacity: timeline.capacity,
+      portions: portions,
+      issues: timeline.issues
+    }
+  end
+
+  @doc "Active group stays and catering issues for a shared timeline window."
+  def timeline(today, last_date) do
     bookings =
       Booking
       |> where([b], is_nil(b.deleted_at) and b.status in ["upcoming", "active"])
@@ -18,7 +38,6 @@ defmodule CozyCheckout.Dashboard do
       |> preload([:guest, :rooms])
       |> Repo.all()
 
-    portions = Meals.get_portion_counts_for_range(today, today) |> Map.fetch!(today)
     incomplete = PortionCounts.for_range(bookings, today, last_date)
 
     missing_details =
@@ -36,15 +55,10 @@ defmodule CozyCheckout.Dashboard do
       |> Enum.map(&Map.put(&1, :kind, :menu))
 
     %{
-      today: today,
-      last_date: last_date,
       bookings: bookings,
-      arrivals: Enum.count(bookings, &(&1.check_in_date == today)),
-      departures: Enum.count(bookings, &(&1.check_out_date == today)),
-      occupancy: Map.fetch!(Bookings.get_occupancy_for_range(today, today), today),
-      capacity: Bookings.cottage_capacity(),
-      portions: portions,
-      issues: Enum.sort_by(missing_details ++ menu_issues, & &1.booking.check_in_date, Date)
+      issues: Enum.sort_by(missing_details ++ menu_issues, & &1.booking.check_in_date, Date),
+      occupancy: Bookings.get_occupancy_for_range(today, last_date),
+      capacity: Bookings.cottage_capacity()
     }
   end
 
