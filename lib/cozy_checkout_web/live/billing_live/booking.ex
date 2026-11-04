@@ -1,7 +1,7 @@
 defmodule CozyCheckoutWeb.BillingLive.Booking do
   use CozyCheckoutWeb, :live_view
-  alias CozyCheckout.{Billing, Bookings}
-  alias CozyCheckout.Billing.Presentation
+  alias CozyCheckout.{Billing, Bookings, Guests}
+  alias CozyCheckout.Billing.{BookingSummary, Presentation}
   alias CozyCheckout.Bookings.BookingInvoiceItem
   alias CozyCheckoutWeb.BillingLive.Helpers
 
@@ -42,6 +42,8 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
        account_form: nil,
        editing_account_id: nil,
        payer_search: "",
+       payer_guest_search: "",
+       payer_guest_suggestions: [],
        page_title: "Fakturace pobytu",
        buyer_fields: @buyer_fields,
        buyer_form: to_form(buyer, as: :buyer),
@@ -315,7 +317,9 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
      assign(socket,
        account_form:
          to_form(%{"adults" => "0", "infants" => "0", "children" => "0"}, as: :account),
-       editing_account_id: nil
+       editing_account_id: nil,
+       payer_guest_search: "",
+       payer_guest_suggestions: []
      )}
   end
 
@@ -329,8 +333,46 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
       )
 
     attrs = Map.merge(Billing.customer(payer).data, attrs)
-    {:noreply, assign(socket, account_form: to_form(attrs, as: :account), editing_account_id: id)}
+
+    {:noreply,
+     assign(socket,
+       account_form: to_form(attrs, as: :account),
+       editing_account_id: id,
+       payer_guest_search: "",
+       payer_guest_suggestions: []
+     )}
   end
+
+  def handle_event("search_payer_guest", %{"value" => query}, socket) do
+    {:noreply,
+     assign(socket,
+       payer_guest_search: query,
+       payer_guest_suggestions: Guests.search_guests(query)
+     )}
+  end
+
+  def handle_event("dismiss_payer_guests", _, socket),
+    do: {:noreply, assign(socket, payer_guest_search: "", payer_guest_suggestions: [])}
+
+  def handle_event("select_payer_guest", %{"id" => id}, socket) do
+    guest = Guests.get_guest!(id)
+
+    attrs =
+      Map.merge(socket.assigns.account_form.params, %{
+        "name" => guest.name,
+        "email" => guest.email || ""
+      })
+
+    {:noreply,
+     assign(socket,
+       account_form: to_form(attrs, as: :account),
+       payer_guest_search: "",
+       payer_guest_suggestions: []
+     )}
+  end
+
+  def handle_event("validate_account", %{"account" => attrs}, socket),
+    do: {:noreply, assign(socket, account_form: to_form(attrs, as: :account))}
 
   def handle_event("cancel_account", _, socket), do: {:noreply, assign(socket, account_form: nil)}
 
@@ -349,6 +391,8 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             preview: nil,
             pricing: nil,
             editing_account_id: nil,
+            payer_guest_search: "",
+            payer_guest_suggestions: [],
             account_form:
               if(next?,
                 do: to_form(%{"adults" => "0", "infants" => "0", "children" => "0"}, as: :account)
@@ -401,6 +445,32 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
 
   def handle_event("search_payers", %{"search" => search}, socket),
     do: {:noreply, assign(socket, :payer_search, search)}
+
+  attr :icon, :string, required: true
+  attr :label, :string, required: true
+  attr :value, :integer, default: nil
+
+  defp payer_indicator(assigns) do
+    ~H"""
+    <span class="inline-flex items-center gap-1" role="img" title={@label} aria-label={@label}>
+      <span aria-hidden="true"><.icon name={@icon} class="size-4" /></span>
+      <span :if={!is_nil(@value)} aria-hidden="true">{@value}</span>
+    </span>
+    """
+  end
+
+  defp document_icon("personal"), do: "hero-home"
+  defp document_icon("no_document"), do: "hero-document"
+  defp document_icon("advance_issued"), do: "hero-document-arrow-up"
+  defp document_icon("advance_received"), do: "hero-document-check"
+  defp document_icon("advance_returned"), do: "hero-arrow-uturn-left"
+  defp document_icon("final"), do: "hero-document-text"
+
+  defp payment_icon(nil), do: "hero-minus-circle"
+  defp payment_icon("unpaid"), do: "hero-clock"
+  defp payment_icon("partial"), do: "hero-ellipsis-horizontal-circle"
+  defp payment_icon("paid"), do: "hero-check-circle"
+  defp payment_icon("overpaid"), do: "hero-arrow-up-circle"
 
   defp allocation(accounts, field), do: Enum.sum(Enum.map(accounts, &Map.fetch!(&1, field)))
 
@@ -612,17 +682,16 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               else: "Přidat plátce"}</button>
             <button type="button" class="btn" phx-click="complete_allocation">{if @booking.allocation_completed_at,
               do: "Znovu otevřít rozdělení",
-              else: "Rozdělení dokončeno"}</button>
+              else: "Potvrdit rozdělení"}</button>
           </div>
           <form :if={length(@accounts) > 30} phx-change="search_payers">
             <.input name="search" value={@payer_search} label="Vyhledat plátce" type="search" />
           </form>
-          <div class="space-y-2">
-            <div
-              :for={payer <- visible_accounts(@accounts, @payer_search)}
-              class="flex flex-wrap items-center gap-2 rounded border p-2"
-            >
+          <nav aria-label="Plátci rezervace" class="overflow-x-auto">
+            <div class="flex min-w-max items-stretch border-b border-base-300">
               <button
+                :for={payer <- visible_accounts(@accounts, @payer_search)}
+                id={"payer-tab-#{payer.id}"}
                 type="button"
                 phx-click="select_account"
                 phx-value-id={payer.id}
@@ -631,39 +700,123 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                     do: "Přepnutím plátce zahodíte neuložené změny kalkulace. Pokračovat?"
                 }
                 aria-pressed={payer.id == @billing_scope.id}
-                class={["btn", payer.id == @billing_scope.id && "btn-primary"]}
-              >{payer.name}</button>
-              <span>{payer.adults + payer.infants + payer.children} osob · {CozyCheckout.Billing.BookingSummary.label(
-                @account_summaries[payer.id].state
-              )} · {CozyCheckout.Billing.BookingSummary.label(
-                @account_summaries[payer.id].payment_state
-              )}</span>
-              <button
-                type="button"
-                phx-click="edit_account"
-                phx-value-id={payer.id}
-                class="btn btn-sm"
-              >Upravit</button>
-              <button
-                :if={!payer.default && is_nil(@account_summaries[payer.id].final_id)}
-                type="button"
-                phx-click="delete_account"
-                phx-value-id={payer.id}
-                class="btn btn-sm"
-                data-confirm="Odstranit rozpracovaného plátce?"
-              >Odstranit</button>
+                class={[
+                  "flex min-w-40 shrink-0 flex-col gap-2 border-b-2 px-4 py-3 text-left hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[-2px]",
+                  if(payer.id == @billing_scope.id,
+                    do: "border-primary bg-primary/10 text-primary",
+                    else: "border-transparent"
+                  )
+                ]}
+              >
+                <span class="font-semibold">{payer.name}</span>
+                <span class="flex items-center gap-3 text-sm">
+                  <.payer_indicator
+                    icon="hero-user-group"
+                    label={"Celkem osob: #{payer.adults + payer.children + payer.infants}"}
+                    value={payer.adults + payer.children + payer.infants}
+                  />
+                  <.payer_indicator
+                    icon="hero-user"
+                    label={"Dospělí: #{payer.adults}"}
+                    value={payer.adults}
+                  />
+                  <.payer_indicator
+                    icon="hero-users"
+                    label={"Děti do 12 let: #{payer.children}"}
+                    value={payer.children}
+                  />
+                  <.payer_indicator
+                    icon="hero-face-smile"
+                    label={"Děti do 2 let: #{payer.infants}"}
+                    value={payer.infants}
+                  />
+                </span>
+                <span class="flex items-center gap-3">
+                  <.payer_indicator
+                    icon={document_icon(@account_summaries[payer.id].state)}
+                    label={BookingSummary.label(@account_summaries[payer.id].state)}
+                  />
+                  <.payer_indicator
+                    icon={payment_icon(@account_summaries[payer.id].payment_state)}
+                    label={BookingSummary.label(@account_summaries[payer.id].payment_state)}
+                  />
+                  <.payer_indicator
+                    :if={@account_summaries[payer.id].overdue}
+                    icon="hero-exclamation-circle"
+                    label="Po splatnosti"
+                  />
+                </span>
+              </button>
             </div>
+          </nav>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm font-semibold">{@billing_scope.name}</span>
+            <button
+              type="button"
+              phx-click="edit_account"
+              phx-value-id={@billing_scope.id}
+              class="btn btn-sm"
+            >Upravit</button>
+            <button
+              :if={!@billing_scope.default && is_nil(@account_summaries[@billing_scope.id].final_id)}
+              type="button"
+              phx-click="delete_account"
+              phx-value-id={@billing_scope.id}
+              class="btn btn-sm"
+              data-confirm="Odstranit rozpracovaného plátce?"
+            >Odstranit</button>
           </div>
           <.form
             :if={@account_form}
             for={@account_form}
             id="payer-form"
             phx-submit="save_account"
+            phx-change="validate_account"
             class="rounded border p-4 space-y-3"
           >
             <h3 class="font-bold">
               {if @editing_account_id, do: "Upravit plátce", else: "Přidat plátce"}
             </h3>
+            <div class="relative" phx-click-away="dismiss_payer_guests">
+              <.input
+                id="payer-guest-search"
+                name="payer_guest_search"
+                value={@payer_guest_search}
+                label="Vyhledat hosta (volitelné)"
+                placeholder="Zadejte alespoň 3 znaky jména nebo e-mailu"
+                phx-keyup="search_payer_guest"
+                phx-debounce="300"
+                autocomplete="off"
+                aria-controls="payer-guest-suggestions"
+              />
+              <div
+                :if={
+                  String.length(String.trim(@payer_guest_search)) >= 3 &&
+                    @payer_guest_suggestions != []
+                }
+                id="payer-guest-suggestions"
+                class="absolute z-10 max-h-60 w-full overflow-y-auto rounded-lg border border-base-300 bg-base-100 shadow-lg"
+              >
+                <button
+                  :for={guest <- @payer_guest_suggestions}
+                  type="button"
+                  phx-click="select_payer_guest"
+                  phx-value-id={guest.id}
+                  class="flex w-full flex-col px-4 py-3 text-left hover:bg-base-200 focus-visible:bg-base-200"
+                >
+                  <span class="font-medium">{guest.name}</span>
+                  <span :if={guest.email} class="text-sm opacity-70">{guest.email}</span>
+                </button>
+              </div>
+            </div>
+            <p
+              :if={
+                String.length(String.trim(@payer_guest_search)) >= 3 && @payer_guest_suggestions == []
+              }
+              class="text-sm"
+            >
+              Žádný host nenalezen. Údaje plátce můžete vyplnit ručně.
+            </p>
             <.input field={@account_form[:name]} label="Jméno / název" required />
             <div class="grid grid-cols-3 gap-3">
               <.input field={@account_form[:adults]} label="Dospělí" type="number" min="0" required />
