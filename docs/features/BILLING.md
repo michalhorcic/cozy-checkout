@@ -60,16 +60,20 @@ fakturaci a před prvním vystavením zvolte **Rozdělit mezi více plátců**:
 1. Výchozího plátce upravte na první rodinu a její vlastní počty. Výchozí plátce
    zůstává součástí přehledu a nelze ho odstranit; nemusí představovat vedoucího.
 2. Přidejte ostatní plátce jménem a počty osob; e-mail a další údaje jsou volitelné.
+   Hosty lze vyhledat podle jména nebo e-mailu od tří znaků; výběr předvyplní
+   jméno a e-mail, ostatní údaje doplňte ručně.
    **Uložit a přidat dalšího** vyčistí identifikaci a připraví další formulář.
 3. Při prvním rozdělení se uloží společné předvolby cen z dosavadní kalkulace.
    Další plátci je převezmou i po změně katalogu nebo individuální cenové výjimce
    výchozího plátce. Společný termín určí noci. Individuální termín lze doplnit
    ve formuláři plátce, ceny upravit v jeho kalkulaci. Služby a místní poplatky
    se dalším rodinám nekopírují; doplňte jejich množství jednotlivě.
-4. Přepnutím plátce otevřete jeho odběratele, kalkulaci, náhledy, doklady a platby.
+4. Plátce přepínejte záložkami s celkovým počtem osob, rozpadem dospělých a obou
+   kategorií dětí a ikonami stavu dokladů a úhrady s textovými popisky.
+   Přepnutím plátce otevřete jeho odběratele, kalkulaci, náhledy, doklady a platby.
    Vystavení je stále jednotlivé a výslovné. Každý plátce může mít vlastní zálohy,
    ZDD, jednu konečnou fakturu, doplatky a případné opravy/vratky.
-5. Zkontrolujte rozdělení osob po kategoriích a použijte **Rozdělení dokončeno**,
+5. Zkontrolujte rozdělení osob po kategoriích a použijte **Potvrdit rozdělení**,
    jakmile již nečekáte další plátce. Rozdíl proti společným počtům pouze upozorní.
    Přidání/odebrání plátce nebo změna přiřazených osob potvrzení zruší; samotná
    platba je neruší. Rozdělení lze znovu otevřít ručně.

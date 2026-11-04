@@ -651,6 +651,126 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert has_element?(view, "#billing-customer input[value='Základní škola']")
   end
 
+  test "payer guest lookup fills identity while preserving manual billing fields", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, guest} =
+      CozyCheckout.Guests.create_guest(%{
+        name: "Rodina Jelínkova",
+        email: "jelinkovi@example.com"
+      })
+
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    view |> element("button[phx-click='new_account']") |> render_click()
+
+    view
+    |> form("#payer-form",
+      account: %{name: "Rozpracováno", adults: "2", infants: "1", children: "3", city: "Brno"}
+    )
+    |> render_change()
+
+    view |> element("#payer-guest-search") |> render_keyup(%{"value" => "je"})
+    refute has_element?(view, "#payer-guest-suggestions")
+    view |> element("#payer-guest-search") |> render_keyup(%{"value" => "jelinkovi@"})
+    assert has_element?(view, "#payer-guest-suggestions", guest.name)
+    assert has_element?(view, "#payer-guest-suggestions", guest.email)
+
+    view
+    |> element("#payer-guest-suggestions button[phx-value-id='#{guest.id}']")
+    |> render_click()
+
+    refute has_element?(view, "#payer-guest-suggestions")
+    assert has_element?(view, "#payer-form input[name='account[name]'][value='#{guest.name}']")
+    assert has_element?(view, "#payer-form input[name='account[email]'][value='#{guest.email}']")
+    assert has_element?(view, "#payer-form input[name='account[city]'][value='Brno']")
+    assert has_element?(view, "#payer-form input[name='account[adults]'][value='2']")
+    assert has_element?(view, "#payer-form input[name='account[infants]'][value='1']")
+    assert has_element?(view, "#payer-form input[name='account[children]'][value='3']")
+
+    view |> form("#payer-form", account: %{name: "Jelínkovi upraveno"}) |> render_submit()
+    payer = Enum.find(Billing.list_accounts(booking.id), &(&1.name == "Jelínkovi upraveno"))
+    assert payer.adults == 2
+    assert Billing.customer(payer).data["email"] == guest.email
+    assert Billing.customer(payer).data["city"] == "Brno"
+    assert CozyCheckout.Guests.get_guest!(guest.id).name == guest.name
+  end
+
+  test "editing a payer supports guests without email and an empty lookup result", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, guest} = CozyCheckout.Guests.create_guest(%{name: "Host bez emailu"})
+    payer = Billing.account(booking.id)
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+
+    view
+    |> element("button[phx-click='edit_account'][phx-value-id='#{payer.id}']")
+    |> render_click()
+
+    view |> element("#payer-guest-search") |> render_keyup(%{"value" => "nenalezeny-host"})
+    assert render(view) =~ "Žádný host nenalezen"
+    view |> element("#payer-guest-search") |> render_keyup(%{"value" => "Host bez"})
+
+    view
+    |> element("#payer-guest-suggestions button[phx-value-id='#{guest.id}']")
+    |> render_click()
+
+    assert has_element?(view, "#payer-form input[name='account[email]'][value='']")
+    view |> form("#payer-form") |> render_submit()
+    assert Billing.account(booking.id).id == payer.id
+    assert Billing.account(booking.id).name == guest.name
+    assert Billing.customer(payer).data["email"] in [nil, ""]
+  end
+
+  test "payer tabs show category counts and document states and switch the active editor", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, payer} =
+      Billing.save_account(booking.id, %{
+        "name" => "Rodina se třemi dětmi",
+        "adults" => "2",
+        "infants" => "1",
+        "children" => "2"
+      })
+
+    default = Billing.account(booking.id)
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    tab = "#payer-tab-#{payer.id}"
+    assert has_element?(view, "#payer-tab-#{default.id}[aria-pressed='true']")
+    assert has_element?(view, "#{tab}[aria-pressed='false']", payer.name)
+
+    for label <- [
+          "Celkem osob: 5",
+          "Dospělí: 2",
+          "Děti do 12 let: 2",
+          "Děti do 2 let: 1",
+          "Bez dokladu",
+          "Bez konečné faktury"
+        ] do
+      assert has_element?(view, "#{tab} [aria-label='#{label}'][title='#{label}']")
+    end
+
+    refute has_element?(view, "button[phx-click='edit_account'][phx-value-id='#{payer.id}']")
+    view |> element(tab) |> render_click()
+    assert has_element?(view, "#{tab}[aria-pressed='true']")
+    assert has_element?(view, "#payer-tab-#{default.id}[aria-pressed='false']")
+    assert has_element?(view, "button[phx-click='edit_account'][phx-value-id='#{payer.id}']")
+    assert has_element?(view, "h2", "Kalkulace a doklady: #{payer.name}")
+    assert has_element?(view, "button[phx-click='complete_allocation']", "Potvrdit rozdělení")
+
+    view |> element("button[phx-click='complete_allocation']") |> render_click()
+    assert Bookings.get_booking!(booking.id).allocation_completed_at
+    assert Billing.list_documents(%{"booking_id" => booking.id}) == []
+
+    assert has_element?(
+             view,
+             "button[phx-click='complete_allocation']",
+             "Znovu otevřít rozdělení"
+           )
+  end
+
   test "payer query links open the intended family's documents", %{conn: conn, booking: booking} do
     {:ok, payer} =
       Billing.save_account(booking.id, %{
