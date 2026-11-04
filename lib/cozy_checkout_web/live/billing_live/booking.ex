@@ -699,7 +699,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                   if @items_dirty?,
                     do: "Přepnutím plátce zahodíte neuložené změny kalkulace. Pokračovat?"
                 }
-                aria-pressed={payer.id == @billing_scope.id}
+                aria-pressed={to_string(payer.id == @billing_scope.id)}
                 class={[
                   "flex min-w-40 shrink-0 flex-col gap-2 border-b-2 px-4 py-3 text-left hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[-2px]",
                   if(payer.id == @billing_scope.id,
