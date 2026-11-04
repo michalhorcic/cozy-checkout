@@ -8,7 +8,7 @@ defmodule CozyCheckout.AdvanceBreakdownTest do
   setup do
     %{booking: booking} = fixture = billing_fixture()
 
-    for item <- Billing.calculation(booking.id).items do
+    for item <- Billing.calculation(booking.id).items, item.item_type == "person" do
       quantity =
         case item.name do
           "Děti do 2 let" -> "1"
