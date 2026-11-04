@@ -1042,8 +1042,8 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                         value={
                           if recreation_fee?(row.changeset) and
                                form[:quantity].value in [0, "0"],
-                            do: "",
-                            else: form[:quantity].value
+                             do: "",
+                             else: form[:quantity].value
                         }
                         type="number"
                         label={if recreation_fee?(row.changeset), do: "Počet osob", else: "Počet"}

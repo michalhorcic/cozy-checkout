@@ -249,7 +249,11 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     adult = Enum.find(invoice.items, &(&1.name == "Dospělí"))
     {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
 
-    assert has_element?(view, "#item-#{fee.id}_quantity[value=''][placeholder='Doplňte počet osob']")
+    assert has_element?(
+             view,
+             "#item-#{fee.id}_quantity[value=''][placeholder='Doplňte počet osob']"
+           )
+
     refute has_element?(view, "#item-#{fee.id}_quantity[required]")
     assert has_element?(view, "#billing-save-items[disabled]")
 
