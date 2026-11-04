@@ -64,9 +64,17 @@ RUN apk add --no-cache libstdc++ openssl ncurses-libs chromium font-dejavu
 WORKDIR "/app"
 RUN chown nobody /app
 
+# Crashpad uses the XDG directories even when Chrome has a separate user-data-dir.
+# The nobody account does not have a writable home in the Alpine image.
+RUN mkdir -p /app/.chromium/config /app/.chromium/cache && \
+    chown -R nobody:root /app/.chromium && \
+    chmod -R 700 /app/.chromium
+
 # set runner ENV
 ENV MIX_ENV="prod"
 ENV CHROME_EXECUTABLE="/usr/bin/chromium"
+ENV XDG_CONFIG_HOME="/app/.chromium/config"
+ENV XDG_CACHE_HOME="/app/.chromium/cache"
 
 # Only copy the final release from the build stage
 COPY --from=build --chown=nobody:root /app/_build/prod/rel/cozy_checkout ./

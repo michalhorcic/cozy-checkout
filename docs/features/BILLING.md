@@ -173,6 +173,20 @@ zůstává viditelný i v produkčních kontejnerových logách, takže lze rozl
 problém se spuštěním od nedostatku paměti nebo jiného pádu. Hotové PDF se uloží
 pod krátkým zámkem; souběžné požadavky vždy dostanou původní uložené bajty.
 
+Chromium při startu potřebuje také zapisovatelné XDG adresáře pro konfiguraci,
+cache a Crashpad; samotný `--user-data-dir` je nenahrazuje. Docker image vytváří
+`/app/.chromium/config` a `/app/.chromium/cache`, vlastníkem je uživatel `nobody`,
+a nastavuje `XDG_CONFIG_HOME` a `XDG_CACHE_HOME`. Pokud Coolify tyto proměnné
+přepisuje, musí rovněž odkazovat na adresáře zapisovatelné uživatelem aplikace.
+Viz [dokumentace Chromia v kontejnerech](https://pptr.dev/troubleshooting#running-in-read-only-containers).
+
+`ChromicPDF.Connection.ConnectionLostError` pouze oznamuje ukončení prohlížeče;
+nepotvrzuje příčinu. V logu hledejte výstup Chromia před touto výjimkou. Například
+`chrome_crashpad_handler: --database is required` může ukazovat na nezapisovatelné
+XDG adresáře. Samotný text výjimky doporučuje `discard_stderr: false` i tehdy,
+když už je tato volba zapnutá. Při pokračujícím pádu ověřte verzi Chromia a
+případné OOM ukončení na hostiteli.
+
 Chyba generování PDF neruší vystavený doklad ani jeho číslo. U existujícího
 dokladu po odstranění příčiny znovu klikněte na **Stáhnout PDF**; není potřeba
 vystavovat nový doklad. Platí to i po vyčerpání automatických pokusů PDF úkolu.
