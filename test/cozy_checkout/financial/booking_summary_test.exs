@@ -15,6 +15,42 @@ defmodule CozyCheckout.BookingSummaryTest do
     assert meta.total_count == 1
   end
 
+  test "advance coverage counts reservations once across pages and respects every filter", %{
+    booking: booking
+  } do
+    issue!(booking, "advance")
+    issue!(booking, "advance")
+
+    {:ok, other} =
+      Bookings.create_booking(%{
+        guest_id: booking.guest_id,
+        check_in_date: Billing.today(),
+        status: "active"
+      })
+
+    assert %{total: 2, issued: 1, percent: percent} =
+             Bookings.advance_coverage(%{"page_size" => "1", "page" => "2"})
+
+    assert Decimal.equal?(percent, 50)
+
+    assert %{total: 1, issued: 1} =
+             Bookings.advance_coverage(%{"invoice_state" => "advance_issued"})
+
+    assert %{total: 1, issued: 0} =
+             Bookings.advance_coverage(%{
+               "filters" => [%{"field" => "status", "op" => "==", "value" => "active"}]
+             })
+
+    assert %{total: 1, issued: 0} =
+             Bookings.advance_coverage(%{"show_current_and_future" => "true"})
+
+    assert %{total: 0, issued: 0, percent: nil} =
+             Bookings.advance_coverage(%{"guest_search" => "no-such-guest"})
+
+    {:ok, _} = Bookings.delete_booking(other)
+    assert %{total: 1, issued: 1} = Bookings.advance_coverage(%{})
+  end
+
   test "legacy calculation states never imply issued documents or money", %{booking: booking} do
     for state <- ~w(draft generated sent advance_paid paid) do
       {:ok, _} = Bookings.update_invoice_state(Billing.calculation(booking.id), state)
