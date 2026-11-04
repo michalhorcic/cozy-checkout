@@ -265,7 +265,7 @@ defmodule CozyCheckout.Abra.Accommodation do
           )
           |> Repo.update!()
 
-          if export.verification["advance_update"] and PdfAttachments.enabled?() do
+          if export.verification["advance_update"] == true and PdfAttachments.enabled?() do
             PdfAttachments.enqueue(export.document_id)
           end
 

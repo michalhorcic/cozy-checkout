@@ -248,6 +248,27 @@ defmodule CozyCheckout.AbraAccommodationTest do
     assert %{state: "synced", remote_id: "42", attempts: 1} = Accommodation.get_export(doc.id)
   end
 
+  for {label, verification} <- [{"missing", %{}}, {"false", %{"advance_update" => false}}] do
+    @tag advance_verification: verification
+    test "an ordinary export with a #{label} update flag skips PDF replacement", %{
+      document: doc,
+      advance_verification: verification
+    } do
+      old_pdf = Application.get_env(:cozy_checkout, :abra_pdf)
+      Application.put_env(:cozy_checkout, :abra_pdf, enabled: true)
+      on_exit(fn -> Application.put_env(:cozy_checkout, :abra_pdf, old_pdf) end)
+
+      {:ok, export} = Accommodation.enqueue(doc.id)
+      export |> Ecto.Changeset.change(verification: verification) |> Repo.update!()
+      expect_remote(remote_invoice(doc))
+
+      assert :ok = Accommodation.sync(export.id)
+      assert %{state: "synced", remote_id: "42"} = Accommodation.get_export(doc.id)
+      assert CozyCheckout.Abra.PdfAttachments.status(doc.id) == nil
+      assert CozyCheckout.Billing.get_document!(doc.id) == doc
+    end
+  end
+
   test "lost import response recovers by external identity without a second POST", %{
     document: doc
   } do

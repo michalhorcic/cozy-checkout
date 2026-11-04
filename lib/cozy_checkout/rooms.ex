@@ -102,6 +102,19 @@ defmodule CozyCheckout.Rooms do
   @doc """
   Gets rooms that are booked for a specific booking.
   """
+  def rooms_for_bookings([]), do: %{}
+
+  def rooms_for_bookings(ids) do
+    from(r in Room,
+      join: br in assoc(r, :booking_rooms),
+      where: br.booking_id in ^ids and is_nil(r.deleted_at),
+      order_by: r.room_number,
+      select: {br.booking_id, r}
+    )
+    |> Repo.all()
+    |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+  end
+
   def get_booking_rooms(booking_id) do
     from(r in Room,
       join: br in assoc(r, :booking_rooms),

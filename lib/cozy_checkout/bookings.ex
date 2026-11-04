@@ -146,20 +146,51 @@ defmodule CozyCheckout.Bookings do
   Supports custom filters for invoice state and guest name/email.
   """
   def list_bookings_with_flop(params \\ %{}) do
-    base_query =
-      Booking
-      |> where([b], is_nil(b.deleted_at))
-      |> join(:left, [b], g in assoc(b, :guest), as: :guest)
-      |> join(:inner, [b], s in subquery(BookingSummary.query()),
-        on: s.booking_id == b.id,
-        as: :billing
-      )
-      |> preload([guest: g], guest: g)
+    base_query = booking_list_query()
 
-    # Apply custom filters
     query = apply_custom_filters(base_query, params)
-
     Flop.validate_and_run(query, params, for: Booking)
+  end
+
+  defp booking_list_query do
+    Booking
+    |> where([b], is_nil(b.deleted_at))
+    |> join(:left, [b], g in assoc(b, :guest), as: :guest)
+    |> join(:inner, [b], s in subquery(BookingSummary.query()),
+      on: s.booking_id == b.id,
+      as: :billing
+    )
+    |> preload([guest: g], guest: g)
+  end
+
+  @doc "Counts issued advance coverage across the filtered list, before pagination."
+  def advance_coverage(params) do
+    advances =
+      from(d in CozyCheckout.Billing.Document,
+        join: a in CozyCheckout.Billing.Account,
+        on: a.id == d.billing_account_id,
+        where: d.kind == "advance" and is_nil(a.deleted_at),
+        distinct: true,
+        select: %{booking_id: d.booking_id}
+      )
+
+    flop = Flop.validate!(params, for: Booking)
+
+    counts =
+      booking_list_query()
+      |> apply_custom_filters(params)
+      |> Flop.filter(flop, for: Booking)
+      |> exclude(:preload)
+      |> join(:left, [b], a in subquery(advances), on: a.booking_id == b.id, as: :advance)
+      |> select([b, advance: a], %{total: count(b.id), issued: count(a.booking_id)})
+      |> Repo.one!()
+
+    percent =
+      if counts.total == 0,
+        do: nil,
+        else: Decimal.div(Decimal.mult(Decimal.new(counts.issued), 100), counts.total)
+
+    Map.put(counts, :percent, percent)
   end
 
   # Apply custom filters that aren't supported by Flop directly

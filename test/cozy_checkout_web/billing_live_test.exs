@@ -63,6 +63,53 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert Billing.get_document!(doc.id) == doc
   end
 
+  test "booking list displays filtered coverage and separate invoice and welcome states", %{
+    conn: conn,
+    booking: booking
+  } do
+    document = issue!(booking, "advance")
+
+    {:ok, _} =
+      Bookings.create_booking(%{guest_id: booking.guest_id, check_in_date: Billing.today()})
+
+    {:ok, view, _} = live(conn, "/admin/bookings?show_all=true&page_size=1")
+    assert has_element?(view, "#booking-advance-coverage", ~r/50(?:,0+)? %/)
+    assert has_element?(view, "#booking-advance-coverage", "1/2 rezervací")
+    assert has_element?(view, "#booking-invoice-email-#{booking.id}", "odesláno 0/1")
+    assert has_element?(view, "#booking-welcome-email-#{booking.id}", "neodesláno")
+
+    Repo.insert!(%CozyCheckout.Billing.Delivery{
+      document_id: document.id,
+      request_id: Ecto.UUID.generate(),
+      recipient: "guest@example.com",
+      subject: "Faktura",
+      body: "V příloze",
+      consented_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      state: "accepted"
+    })
+
+    Repo.insert!(%CozyCheckout.GuestEmails.Delivery{
+      booking_id: booking.id,
+      batch_id: Ecto.UUID.generate(),
+      recipient_email: "guest@example.com",
+      booking_name: "Host",
+      subject: "Uvítání",
+      content_mode: "template",
+      template_id: "cs_summer",
+      state: "queued"
+    })
+
+    {:ok, refreshed, _} = live(conn, "/admin/bookings?show_all=true&page_size=1")
+    assert has_element?(refreshed, "#booking-invoice-email-#{booking.id}", "odesláno 1/1")
+    assert has_element?(refreshed, "#booking-welcome-email-#{booking.id}", "čeká na odeslání")
+
+    {:ok, filtered, _} = live(conn, "/admin/bookings?invoice_state=advance_issued")
+    assert has_element?(filtered, "#booking-advance-coverage", ~r/100(?:,0+)? %/)
+    {:ok, empty, _} = live(conn, "/admin/bookings?guest_search=no-such-guest")
+    assert has_element?(empty, "#booking-advance-coverage", "0/0 rezervací")
+    assert has_element?(empty, "#booking-advance-coverage", "—")
+  end
+
   test "billing screens share desktop and mobile navigation", %{conn: conn, booking: booking} do
     document = issue!(booking, "advance", %{"percent" => "50"})
 
@@ -164,8 +211,8 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     conn: conn,
     booking: booking
   } do
-    {:ok, view, html} = live(conn, "/admin/bookings/#{booking.id}/billing")
-    assert html =~ "Kalkulace a počty hostů"
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    assert has_element?(view, "#billing-calculation h2", "Kalkulace a doklady:")
 
     view
     |> form("#billing-issue", issue: %{kind: "advance", percent: "50", amount: ""})
@@ -629,7 +676,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert has_element?(view, "#advance-preview-breakdown th", "Jedn. cena s DPH")
     assert has_element?(view, "#advance-preview-breakdown td", "950,00 CZK")
     assert has_element?(view, "#advance-preview-breakdown", "Záloha zadaná částkou: 2 000,00 CZK")
-    refute has_element?(view, "#advance-preview-breakdown", "50,00 %")
+    refute has_element?(view, "#advance-preview-breakdown", ~r/50(?:,0+)? %/)
     view |> element("button[phx-click=issue]") |> render_click()
     [document] = Billing.list_documents(%{"booking_id" => booking.id})
     {:ok, detail, _} = live(conn, "/admin/billing/documents/#{document.id}")
@@ -866,7 +913,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     view |> element("button[phx-click='refresh']") |> render_click()
     assert has_element?(view, "#{tab}[data-billing-state='paid'].bg-emerald-50", "Zaplaceno")
 
-    receipt!(booking, "100", %{"document_id" => final.id})
+    receipt!(booking, "100", %{"document_id" => final.id, "paid_on" => to_string(final.tax_date)})
     view |> element("button[phx-click='refresh']") |> render_click()
 
     assert has_element?(
@@ -886,11 +933,12 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     tab = "#payer-tab-#{payer.id}"
     assert has_element?(view, "#{tab}[data-billing-state='final'].bg-blue-50", "Konečná faktura")
 
-    receipt!(booking, "100", %{"document_id" => final.id})
+    receipt!(booking, "100", %{"document_id" => final.id, "paid_on" => to_string(final.tax_date)})
     view |> element("button[phx-click='refresh']") |> render_click()
     assert has_element?(view, "#{tab}[data-billing-state='final'].bg-blue-50", "Konečná faktura")
 
-    receipt!(booking, "5600", %{"document_id" => final.id})
+    receipt!(booking, "5600", %{"document_id" => final.id, "paid_on" => to_string(final.tax_date)})
+
     view |> element("button[phx-click='refresh']") |> render_click()
     assert has_element?(view, "#{tab}[data-billing-state='paid'].bg-emerald-50", "Zaplaceno")
   end

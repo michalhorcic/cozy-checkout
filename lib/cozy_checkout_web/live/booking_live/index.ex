@@ -4,6 +4,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   alias CozyCheckout.Bookings
   alias CozyCheckout.Abra.Bank
   alias CozyCheckout.Billing.BookingSummary
+  alias CozyCheckout.Bookings.CommunicationSummary
+  alias CozyCheckout.Billing.Presentation
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Meals.MenuPlanning
 
@@ -46,17 +48,21 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         {:ok, {bookings, meta}} ->
           summaries = BookingSummary.for_bookings(Enum.map(bookings, & &1.id))
 
+          booking_ids = Enum.map(bookings, & &1.id)
+          communications = CommunicationSummary.for_bookings(booking_ids)
+          rooms = CozyCheckout.Rooms.rooms_for_bookings(booking_ids)
+
           # Add rooms and the financial summary to each booking
           bookings_with_rooms =
             Enum.map(bookings, fn booking ->
-              rooms = Bookings.list_booking_rooms(booking.id)
-
               booking
-              |> Map.put(:rooms_list, rooms)
+              |> Map.put(:communications, Map.fetch!(communications, booking.id))
+              |> Map.put(:rooms_list, Map.get(rooms, booking.id, []))
               |> Map.put(:billing_summary, Map.fetch!(summaries, booking.id))
             end)
 
           socket
+          |> assign(:advance_coverage, Bookings.advance_coverage(normalized_params))
           |> assign(:bookings, bookings_with_rooms)
           |> assign(:pending_bank_bookings, Bank.pending_booking_ids(Enum.map(bookings, & &1.id)))
           |> assign(:menu_variants, MenuPlanning.list_variants())
@@ -69,6 +75,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
         {:error, meta} ->
           socket
+          |> assign(:advance_coverage, %{total: 0, issued: 0, percent: nil})
           |> assign(:bookings, [])
           |> assign(:pending_bank_bookings, MapSet.new())
           |> assign(:menu_variants, [])
@@ -397,6 +404,18 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             </div>
           </div>
 
+          <div
+            id="booking-advance-coverage"
+            class="border-t border-secondary-200 px-4 py-3 text-sm text-primary-500"
+            title="Podíl rezervací s alespoň jednou vydanou zálohovou fakturou. Všechny výsledky aktuálních filtrů, včetně dalších stránek."
+          >
+            Zálohovka vydána:
+            <strong>{if @advance_coverage.percent,
+              do: Presentation.number(@advance_coverage.percent) <> " %",
+              else: "—"}</strong>
+            · {@advance_coverage.issued}/{@advance_coverage.total} rezervací
+          </div>
+
           <!-- Fixed desktop columns and stacked cards on narrow screens. -->
           <div id="bookings-table-container" class="px-3 pb-2 2xl:px-0">
             <table
@@ -644,6 +663,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                         </div>
 
                         <.billing_summary booking={booking} summary={booking.billing_summary} />
+                        <.communication_summary booking={booking} summary={booking.communications} />
                         <button
                           :if={MapSet.member?(@pending_bank_bookings, booking.id)}
                           id={"booking-bank-pending-#{booking.id}"}
@@ -741,6 +761,42 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     </Layouts.app>
     """
   end
+
+  attr :booking, :map, required: true
+  attr :summary, :map, required: true
+
+  defp communication_summary(assigns) do
+    ~H"""
+    <.link
+      id={"booking-emails-#{@booking.id}"}
+      navigate={~p"/admin/bookings/#{@booking.id}"}
+      class="block space-y-0.5 rounded text-xs text-primary-500 hover:text-tertiary-700 focus-visible:outline-2"
+      title="Odesláno = přijato poskytovatelem k odeslání. Podrobnosti v historii e-mailů rezervace a u dokladů ve fakturaci."
+    >
+      <p id={"booking-invoice-email-#{@booking.id}"}>
+        Faktury:
+        <%= if @summary.invoice_count == 0 do %>
+          bez dokladu
+        <% else %>
+          odesláno {@summary.invoice_sent}/{@summary.invoice_count}
+        <% end %>
+        <span :if={@summary.invoice_pending > 0}> · čeká {@summary.invoice_pending}</span>
+        <span :if={@summary.invoice_failed > 0} class="text-error"> · chyba {@summary.invoice_failed}</span>
+      </p>
+      <p
+        id={"booking-welcome-email-#{@booking.id}"}
+        class={@summary.welcome == :failed && "text-error"}
+      >
+        Uvítání: {welcome_label(@summary.welcome)}
+      </p>
+    </.link>
+    """
+  end
+
+  defp welcome_label(:sent), do: "odesláno"
+  defp welcome_label(:pending), do: "čeká na odeslání"
+  defp welcome_label(:failed), do: "chyba odeslání"
+  defp welcome_label(:unsent), do: "neodesláno"
 
   defp status_badge_class("upcoming"), do: "bg-tertiary-100 text-tertiary-800"
   defp status_badge_class("active"), do: "bg-success-light text-success-dark"

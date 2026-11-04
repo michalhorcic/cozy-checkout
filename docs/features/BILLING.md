@@ -170,6 +170,19 @@ V řádku je pouze kompaktní štítek stavu úhrady (před vyúčtováním stav
 Číslo dokladu, částky a podrobnosti jsou v plovoucí kartě po najetí myší,
 při zaměření klávesnicí nebo po klepnutí na štítek. Odtud lze otevřít evidenci
 pobytu. Kartu zavře Escape nebo kliknutí mimo ni. Finanční stav nelze ručně přepsat.
+Nad seznamem je **Zálohovka vydána: X % · A/B rezervací**. Počítá všechny
+rezervace odpovídající aktuálním filtrům, včetně dalších stránek; každou rezervaci
+s alespoň jednou vydanou zálohovou výzvou započítá jednou. Soukromé i zrušené
+rezervace se řídí stejnými filtry jako seznam. Při prázdném výsledku je procento **—**.
+
+V řádku je také **Faktury: odesláno X/Y**, kde Y zahrnuje vydané zálohové výzvy
+a konečné faktury všech aktivních plátců. Opakované odeslání stejného dokladu
+nezvyšuje počet; daňové doklady k přijatým zálohám ani opravy se nezapočítávají.
+**Uvítání** sleduje pouze zprávy z katalogu uvítacích šablon, nikoli vlastní text.
+Zobrazuje se i čekání nebo chyba odeslání. Dřívější úspěšné odeslání má přednost
+před dalším čekajícím či neúspěšným pokusem. **Odesláno** znamená přijetí
+poskytovatelem k odeslání, nikoli doručení nebo přečtení; webhook není potřeba.
+Starší e-maily bez uložené historie se jako odeslané nepotvrzují.
 Přehled se aktualizuje při otevření seznamu nebo změně filtru.
 
 U rezervace s nalezeným návrhem podle VS se zobrazuje **Platba z banky k ověření**.
