@@ -70,27 +70,42 @@ defmodule CozyCheckout.AdvanceUpdateTest do
     assert {:error, _} = Billing.preview_advance_update(ctx.document.id)
   end
 
-  test "rejects an advance already queued for email or a payer with a recorded payment", ctx do
-    doc = ctx.document
+  for state <- ["queued", "accepted", "retrying", "failed"] do
+    @tag delivery_state: state
+    test "updates an advance with a #{state} email and preserves its delivery history", ctx do
+      doc = ctx.document
 
-    {:ok, _} =
-      Billing.enqueue_email(
-        doc.id,
-        %{
-          "consent" => "true",
-          "recipient" => "guest@example.com",
-          "subject" => "Záloha",
-          "body" => "V příloze."
-        },
-        Ecto.UUID.generate()
-      )
+      {:ok, delivery} =
+        Billing.enqueue_email(
+          doc.id,
+          %{
+            "consent" => "true",
+            "recipient" => "guest@example.com",
+            "subject" => "Záloha",
+            "body" => "V příloze."
+          },
+          Ecto.UUID.generate()
+        )
 
-    assert {:error, message} = Billing.preview_advance_update(doc.id)
-    assert message =~ "odeslání"
+      delivery =
+        delivery
+        |> Ecto.Changeset.change(state: ctx.delivery_state)
+        |> Repo.update!()
 
-    other = issue_without_abra!(ctx.booking, "advance")
+      add_fee(ctx.booking)
+      updated = update!(doc)
+      assert updated.id == doc.id
+      assert updated.number == doc.number
+      assert updated.variable_symbol == doc.variable_symbol
+      assert Decimal.equal?(updated.total, "3000")
+      assert Billing.list_deliveries(doc.id) == [delivery]
+      assert Repo.aggregate(Billing.Document, :count) == 1
+    end
+  end
+
+  test "rejects a payer with a recorded payment", ctx do
     receipt!(ctx.booking, "100")
-    assert {:error, message} = Billing.preview_advance_update(other.id)
+    assert {:error, message} = Billing.preview_advance_update(ctx.document.id)
     assert message =~ "platbu"
   end
 

@@ -825,7 +825,7 @@ defmodule CozyCheckout.Billing do
     end)
   end
 
-  @doc "Refresh an unsent, unpaid advance request from its payer's current calculation."
+  @doc "Refresh an unpaid advance request from its payer's current calculation."
   def preview_advance_update(document_id, attrs \\ %{}) do
     transaction(fn ->
       original = get_document!(document_id)
@@ -867,9 +867,6 @@ defmodule CozyCheckout.Billing do
 
   defp advance_update_preview!(original, attrs) do
     if original.kind != "advance", do: fail("Aktualizovat lze pouze zálohovou výzvu")
-
-    if Repo.exists?(from d in Delivery, where: d.document_id == ^original.id),
-      do: fail("Zálohová výzva již byla zařazena k odeslání; nelze ji změnit")
 
     if Repo.exists?(
          from p in Payment, where: p.billing_account_id == ^original.billing_account_id

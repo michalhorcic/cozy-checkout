@@ -286,7 +286,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
           >
             <h2 class="text-xl font-bold">Aktualizovat zálohovku podle kalkulace</h2>
             <p>
-              Nejprve upravte kalkulaci pobytu. Tady převezmete její položky do stejné zálohovky a PDF se stejným číslem a VS. Aktualizace je dostupná před odesláním a přijetím platby.
+              Nejprve upravte kalkulaci pobytu. Tady převezmete její položky do stejné zálohovky a PDF se stejným číslem a VS. Aktualizace je dostupná před přijetím platby.
             </p>
             <.form
               for={@advance_form}
