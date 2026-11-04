@@ -33,7 +33,6 @@ defmodule CozyCheckoutWeb.AdminNavigation do
     [
       {"Pobyty a hosté",
        [
-         {"Seznam rezervací", "/admin/bookings"},
          {"Časová osa", "/admin/bookings/timeline"},
          {"Hosté", "/admin/guests"},
          {"Pokoje", "/admin/rooms"},

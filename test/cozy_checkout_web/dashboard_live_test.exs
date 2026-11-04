@@ -40,6 +40,10 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
     assert has_element?(view, "#dashboard-booking-#{arriving.id}", "Dnes příjezd")
     assert has_element?(view, "#dashboard-booking-#{arriving.id}", "101")
     assert has_element?(view, "#dashboard-dinner", "15")
+    assert has_element?(view, "#stays-heading", "Časová osa skupin")
+    assert has_element?(view, "#dashboard-booking-#{booking.id}", "Stravování: doplnit údaje")
+    assert has_element?(view, "#dashboard-booking-#{arriving.id} td a", "Příj.")
+    assert has_element?(view, "#dashboard-booking-#{arriving.id} td a", "Odj.")
 
     assert has_element?(
              view,
@@ -55,8 +59,30 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
 
     assert has_element?(
              editor,
-             "#admin-desktop a[href='/admin/bookings/calendar'][aria-current='page']"
+             "#admin-desktop a[href='/admin/bookings'][aria-current='page']"
            )
+  end
+
+  test "ongoing open-ended stays and menu readiness appear in group rows", %{conn: conn} do
+    today = Date.utc_today()
+    uncatered =
+      menu_booking_fixture(%{
+        check_in_date: Date.add(today, -2),
+        check_out_date: nil,
+        meal_plan: "none"
+      })
+
+    ready =
+      menu_booking_fixture(%{check_in_date: today, check_out_date: Date.add(today, 6)})
+
+    assign_variant(ready, variant_fixture(%{days: 7}))
+    {:ok, view, _} = live(conn, "/admin")
+
+    assert has_element?(view, "#dashboard-booking-#{uncatered.id}", "Bez stravování")
+    assert has_element?(view, "#dashboard-booking-#{uncatered.id}", "Pokoje zatím nepřiřazeny")
+    assert has_element?(view, "#dashboard-booking-#{uncatered.id} td a", "●")
+    assert has_element?(view, "#dashboard-booking-#{ready.id}", "Menu připravené")
+    assert has_element?(view, "#dashboard-booking-#{ready.id} a[href='/admin/bookings/#{ready.id}/menu']")
   end
 
   test "empty overview omits attention and refreshes when bookings change", %{conn: conn} do
