@@ -5,6 +5,10 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 
 ## Přehled plánů
 
+- [Skupinové rezervace, více plátců a jednodušší zakládání pobytů](2026-11-04-skupinove-rezervace-a-vice-platcu.md)
+  — **připraveno**, rozsah odsouhlasen; jedna rezervace, společná kapacita
+  a stravování, samostatné faktury a platby plátců, pohodlnější termín,
+  sbalené pokoje a hromadné načítání přehledů. Implementace zatím nezahájena.
 - [Tvorba a úprava menu přímo z receptů](2026-11-02-menu-z-receptu.md)
   — implementováno v `main`; menu, přiřazení pobytům a nákup používají odkazy
   na recepty, změny platí i do minulosti. [Současný návod](../features/CATERING.md).
@@ -31,7 +35,8 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
   [Současný návod](../features/ECONOMICS.md#nákladovost-fixní-a-variabilní-náklady).
   Smluvní závazky a provozní jednotkové ukazatele zůstávají další etapou.
 
-Přehled odpovídá `main` k 3. 11. 2026. Historické návrhy a záznamy ověření
+Přehled implementovaných funkcí odpovídá `main` k 3. 11. 2026; návrh skupinových
+rezervací byl doplněn 4. 11. 2026. Historické návrhy a záznamy ověření
 v jednotlivých plánech nejsou návodem k současné obsluze ani výsledkem nové kontroly CI.
 
 ## Jak plán uložit a znovu otevřít
