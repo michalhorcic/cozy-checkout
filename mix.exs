@@ -42,6 +42,7 @@ defmodule CozyCheckout.MixProject do
     [
       {:phoenix, "~> 1.8.16"},
       {:phoenix_ecto, "~> 4.7"},
+      {:ecto, "~> 3.14.3"},
       {:ecto_sql, "~> 3.14"},
       {:postgrex, "~> 0.22.4"},
       {:phoenix_html, "~> 4.4"},
