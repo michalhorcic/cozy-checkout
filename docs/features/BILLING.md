@@ -68,8 +68,16 @@ fakturaci a před prvním vystavením zvolte **Rozdělit mezi více plátců**:
    výchozího plátce. Společný termín určí noci. Individuální termín lze doplnit
    ve formuláři plátce, ceny upravit v jeho kalkulaci. Služby a místní poplatky
    se dalším rodinám nekopírují; doplňte jejich množství jednotlivě.
-4. Plátce přepínejte záložkami s celkovým počtem osob, rozpadem dospělých a obou
-   kategorií dětí a ikonami stavu dokladů a úhrady s textovými popisky.
+4. Plátce přepínejte záložkami přímo nad kalkulací. Pod nimi se ihned zobrazí
+   počty aktivního plátce a editovatelné řádky; souhrn rozdělení a nápověda jsou
+   v rozbalovacím přehledu. Záložky obsahují celkový počet osob, rozpad dospělých
+   a obou kategorií dětí a ikony dokladů a úhrady s textovými popisky.
+   Šedá znamená bez dokladu, oranžová vystavenou zálohu, modrá konečnou fakturu
+   a zelená plně uhrazenou konečnou fakturu (přeplatek je navíc označen).
+   U záloh se sčítají uložená procenta všech zálohových výzev; u částkových záloh
+   se procento odvodí z ceny uložené při vystavení. ZDD se znovu nepřičítají.
+   Pozdější změna kalkulace procenta nemění. Pokud u historické výzvy chybí
+   podklad, součet procent se označí jako neznámý.
    Přepnutím plátce otevřete jeho odběratele, kalkulaci, náhledy, doklady a platby.
    Vystavení je stále jednotlivé a výslovné. Každý plátce může mít vlastní zálohy,
    ZDD, jednu konečnou fakturu, doplatky a případné opravy/vratky.

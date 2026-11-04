@@ -459,6 +459,31 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     """
   end
 
+  defp payer_tab_state(%{payment_state: state}) when state in ["paid", "overpaid"], do: "paid"
+  defp payer_tab_state(%{state: "final"}), do: "final"
+  defp payer_tab_state(%{advance_count: count}) when count > 0, do: "advance"
+  defp payer_tab_state(_), do: "no_document"
+
+  defp payer_tab_class(summary) do
+    case payer_tab_state(summary) do
+      "paid" -> "bg-emerald-50 text-emerald-800"
+      "final" -> "bg-blue-50 text-blue-800"
+      "advance" -> "bg-amber-50 text-amber-800"
+      "no_document" -> "bg-slate-100 text-slate-700"
+    end
+  end
+
+  defp payer_tab_label(%{payment_state: "overpaid"}), do: "Zaplaceno · přeplatek"
+  defp payer_tab_label(%{payment_state: "paid"}), do: "Zaplaceno"
+  defp payer_tab_label(%{state: "final"}), do: "Konečná faktura"
+  defp payer_tab_label(%{state: "personal"}), do: "Soukromý pobyt"
+
+  defp payer_tab_label(%{advance_count: count, advance_percent: percent}) when count > 0 do
+    if percent, do: "Záloha #{Presentation.number(percent)} %", else: "Záloha · % neznámé"
+  end
+
+  defp payer_tab_label(_), do: "Bez dokladu"
+
   defp document_icon("personal"), do: "hero-home"
   defp document_icon("no_document"), do: "hero-document"
   defp document_icon("advance_issued"), do: "hero-document-arrow-up"
@@ -623,67 +648,83 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     ~H"""
     <Layouts.app
       flash={@flash}
-      content_class="mx-auto w-full max-w-7xl space-y-6"
+      content_class="mx-auto w-full max-w-7xl space-y-3"
       main_class="px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
     >
-      <div id="billing-workspace" class="min-w-0 space-y-6">
+      <div id="billing-workspace" class="min-w-0 space-y-3">
         <div class="flex justify-between flex-wrap gap-3">
           <h1 class="text-3xl font-bold">Fakturace pobytu – {@booking.guest.name}</h1><.link
             navigate={~p"/admin/bookings/#{@booking.id}"}
             class="btn"
           >Zpět na rezervaci</.link>
         </div>
-        <p class="text-primary-400">
-          {Presentation.date(@booking.check_in_date)} – {if @booking.check_out_date,
-            do: Presentation.date(@booking.check_out_date),
-            else: "Odjezd není vyplněný"}
-        </p>
-        <nav class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-          <button class="link" phx-click="refresh">Obnovit přehled</button>
-        </nav>
-        <section id="billing-accounts" class="rounded-xl border p-4 space-y-3">
-          <h2 class="text-xl font-bold">Plátci rezervace</h2>
-          <p id="allocation-summary" aria-live="polite">
-            Rozděleno {allocated_count(@accounts)}/{Bookings.people_count(@booking)} osob · {@group_summary.account_count -
-              @group_summary.final_count} plátci čekají na fakturu · {@group_summary.paid_count}/{@group_summary.final_count} faktur uhrazeno
+        <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <p class="text-primary-400">
+            {Presentation.date(@booking.check_in_date)} – {if @booking.check_out_date,
+              do: Presentation.date(@booking.check_out_date),
+              else: "Odjezd není vyplněný"}
           </p>
-          <div class="text-sm">
-            <p
-              :for={
-                {label, field} <- [
-                  {"Dospělí", :adults},
-                  {"Děti do 2 let", :infants},
-                  {"Děti do 12 let", :children}
-                ]
-              }
-              class={
-                if allocation(@accounts, field) != Map.fetch!(@booking, field),
-                  do: "text-warning font-semibold"
-              }
-            >
-              {label}: {allocation(@accounts, field)}/{Map.fetch!(@booking, field)}
-            </p>
-            <p :if={@booking.unclassified_guests > 0} class="text-warning">
-              {@booking.unclassified_guests} historických osob čeká na zařazení.
-            </p>
-            <p>Rozdíl v osobách neblokuje vystavení. Přeplatek jednoho plátce nehradí dluh jiného.</p>
-          </div>
-          <p class="text-sm">
-            Při rozdělení upravte výchozího plátce na první rodinu a její počty. Ostatní rodiny přidejte samostatně.
-          </p>
-          <div class="flex flex-wrap gap-2">
-            <button
-              :if={length(@accounts) > 1 || @documents == []}
-              type="button"
-              class="btn btn-primary"
-              phx-click="new_account"
-            >{if length(@accounts) == 1,
-              do: "Rozdělit mezi více plátců",
-              else: "Přidat plátce"}</button>
-            <button type="button" class="btn" phx-click="complete_allocation">{if @booking.allocation_completed_at,
-              do: "Znovu otevřít rozdělení",
-              else: "Potvrdit rozdělení"}</button>
-          </div>
+          <nav class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+            <button class="link" phx-click="refresh">Obnovit přehled</button>
+          </nav>
+        </div>
+        <section
+          id="billing-calculation"
+          class="min-w-0 rounded-xl border border-secondary-200 bg-white p-3 space-y-3 sm:p-4"
+        >
+          <details
+            id="billing-accounts"
+            class="rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2"
+          >
+            <summary class="cursor-pointer text-sm">
+              <span class="font-semibold">Rozdělení rezervace · </span>
+              <span id="allocation-summary" class="text-sm font-normal" aria-live="polite">
+                Rozděleno {allocated_count(@accounts)}/{Bookings.people_count(@booking)} osob · {@group_summary.account_count -
+                  @group_summary.final_count} plátci čekají na fakturu · {@group_summary.paid_count}/{@group_summary.final_count} faktur uhrazeno
+              </span>
+            </summary>
+            <div class="mt-3 space-y-2">
+              <div class="text-sm">
+                <p
+                  :for={
+                    {label, field} <- [
+                      {"Dospělí", :adults},
+                      {"Děti do 2 let", :infants},
+                      {"Děti do 12 let", :children}
+                    ]
+                  }
+                  class={
+                    if allocation(@accounts, field) != Map.fetch!(@booking, field),
+                      do: "text-warning font-semibold"
+                  }
+                >
+                  {label}: {allocation(@accounts, field)}/{Map.fetch!(@booking, field)}
+                </p>
+                <p :if={@booking.unclassified_guests > 0} class="text-warning">
+                  {@booking.unclassified_guests} historických osob čeká na zařazení.
+                </p>
+                <p>
+                  Rozdíl v osobách neblokuje vystavení. Přeplatek jednoho plátce nehradí dluh jiného.
+                </p>
+              </div>
+              <p class="text-sm">
+                Při rozdělení upravte výchozího plátce na první rodinu a její počty. Ostatní rodiny přidejte samostatně.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <button
+                  :if={length(@accounts) > 1 || @documents == []}
+                  type="button"
+                  class="btn btn-primary"
+                  phx-click="new_account"
+                >{if length(@accounts) == 1,
+                  do: "Rozdělit mezi více plátců",
+                  else: "Přidat plátce"}</button>
+                <button type="button" class="btn" phx-click="complete_allocation">{if @booking.allocation_completed_at,
+                  do: "Znovu otevřít rozdělení",
+                  else: "Potvrdit rozdělení"}</button>
+              </div>
+            </div>
+          </details>
           <form :if={length(@accounts) > 30} phx-change="search_payers">
             <.input name="search" value={@payer_search} label="Vyhledat plátce" type="search" />
           </form>
@@ -700,16 +741,18 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                     do: "Přepnutím plátce zahodíte neuložené změny kalkulace. Pokračovat?"
                 }
                 aria-pressed={to_string(payer.id == @billing_scope.id)}
+                data-billing-state={payer_tab_state(@account_summaries[payer.id])}
                 class={[
-                  "flex min-w-40 shrink-0 flex-col gap-2 border-b-2 px-4 py-3 text-left hover:bg-base-200 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[-2px]",
+                  "flex min-w-40 shrink-0 flex-col gap-1 rounded-t-lg border-b-2 px-3 py-2 text-left focus-visible:outline-2 focus-visible:outline-offset-[-2px]",
+                  payer_tab_class(@account_summaries[payer.id]),
                   if(payer.id == @billing_scope.id,
-                    do: "border-primary bg-primary/10 text-primary",
-                    else: "border-transparent"
+                    do: "border-current ring-2 ring-inset ring-current",
+                    else: "border-transparent hover:brightness-95"
                   )
                 ]}
               >
                 <span class="font-semibold">{payer.name}</span>
-                <span class="flex items-center gap-3 text-sm">
+                <span class="flex items-center gap-2 text-xs">
                   <.payer_indicator
                     icon="hero-user-group"
                     label={"Celkem osob: #{payer.adults + payer.children + payer.infants}"}
@@ -731,11 +774,12 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                     value={payer.infants}
                   />
                 </span>
-                <span class="flex items-center gap-3">
+                <span class="flex items-center gap-2 text-xs font-semibold">
                   <.payer_indicator
                     icon={document_icon(@account_summaries[payer.id].state)}
                     label={BookingSummary.label(@account_summaries[payer.id].state)}
                   />
+                  <span>{payer_tab_label(@account_summaries[payer.id])}</span>
                   <.payer_indicator
                     icon={payment_icon(@account_summaries[payer.id].payment_state)}
                     label={BookingSummary.label(@account_summaries[payer.id].payment_state)}
@@ -749,22 +793,37 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               </button>
             </div>
           </nav>
-          <div class="flex flex-wrap items-center gap-2">
-            <span class="text-sm font-semibold">{@billing_scope.name}</span>
-            <button
-              type="button"
-              phx-click="edit_account"
-              phx-value-id={@billing_scope.id}
-              class="btn btn-sm"
-            >Upravit</button>
-            <button
-              :if={!@billing_scope.default && is_nil(@account_summaries[@billing_scope.id].final_id)}
-              type="button"
-              phx-click="delete_account"
-              phx-value-id={@billing_scope.id}
-              class="btn btn-sm"
-              data-confirm="Odstranit rozpracovaného plátce?"
-            >Odstranit</button>
+          <div id="active-payer" class="flex flex-wrap items-center justify-between gap-2">
+            <div class="space-y-1">
+              <h2 class="text-lg font-bold">Kalkulace a doklady: {@billing_scope.name}</h2>
+              <p id="active-payer-counts" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+                <span class="inline-flex items-center gap-1 font-semibold">
+                  <.icon name="hero-user-group" class="size-4" />
+                  {@billing_scope.adults + @billing_scope.children + @billing_scope.infants} osob
+                </span>
+                <span>Dospělí: {@billing_scope.adults}</span>
+                <span>Děti do 12 let: {@billing_scope.children}</span>
+                <span>Děti do 2 let: {@billing_scope.infants}</span>
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                phx-click="edit_account"
+                phx-value-id={@billing_scope.id}
+                class="btn btn-sm"
+              >Upravit</button>
+              <button
+                :if={
+                  !@billing_scope.default && is_nil(@account_summaries[@billing_scope.id].final_id)
+                }
+                type="button"
+                phx-click="delete_account"
+                phx-value-id={@billing_scope.id}
+                class="btn btn-sm"
+                data-confirm="Odstranit rozpracovaného plátce?"
+              >Odstranit</button>
+            </div>
           </div>
           <.form
             :if={@account_form}
@@ -857,56 +916,33 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <button type="submit" name="next" value="true" class="btn">Uložit a přidat dalšího</button>
             <button type="button" phx-click="cancel_account" class="btn">Zrušit</button>
           </.form>
-        </section>
-        <h2 class="text-xl font-bold">Kalkulace a doklady: {@billing_scope.name}</h2>
-        <p
-          :if={
-            (@billing_scope.check_in_date && @billing_scope.check_in_date != @booking.check_in_date) ||
-              (@billing_scope.check_out_date &&
-                 @billing_scope.check_out_date != @booking.check_out_date)
-          }
-          class="alert alert-warning"
-        >
-          Plátce má vlastní termín: {Presentation.date(
-            @billing_scope.check_in_date || @booking.check_in_date
-          )} – {Presentation.date(@billing_scope.check_out_date || @booking.check_out_date)}. Zkontrolujte počet nocí v kalkulaci.
-        </p>
-        <p
-          :if={@personal?}
-          id="billing-personal"
-          class={["rounded-xl bg-secondary-50 p-5 font-semibold"]}
-        >
-          Soukromý pobyt · bez finanční evidence
-        </p>
-        <div
-          :if={not @personal?}
-          class="grid gap-4 rounded-xl border border-secondary-200 bg-secondary-50 p-5 sm:grid-cols-2 xl:grid-cols-4"
-        >
-          <p><b>{Billing.payment_state(@balance)}</b></p>
-          <p>
-            Cena:
-            <b>{if @balance.total, do: Presentation.amount(@balance.total), else: "Chybí ceny"}</b>
-          </p><p>Přijato po vratkách: <b>{Presentation.amount(@balance.received)}</b></p><p :if={
-            @balance.outstanding
-          }>
-            {Presentation.balance_label(@balance.outstanding)}:
-            <b>{Presentation.balance_amount(@balance.outstanding)}</b>
+          <p
+            :if={
+              (@billing_scope.check_in_date && @billing_scope.check_in_date != @booking.check_in_date) ||
+                (@billing_scope.check_out_date &&
+                   @billing_scope.check_out_date != @booking.check_out_date)
+            }
+            class="alert alert-warning"
+          >
+            Plátce má vlastní termín: {Presentation.date(
+              @billing_scope.check_in_date || @booking.check_in_date
+            )} – {Presentation.date(@billing_scope.check_out_date || @booking.check_out_date)}. Zkontrolujte počet nocí v kalkulaci.
           </p>
-        </div>
-        <section
-          id="billing-calculation"
-          class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 space-y-5 sm:p-6"
-        >
-          <h2 class="text-xl font-bold">Kalkulace a počty hostů</h2>
-          <p>Upravitelný podklad pobytu. Změny neovlivňují již vystavené doklady.</p>
+          <p
+            :if={@personal?}
+            id="billing-personal"
+            class={["rounded-xl bg-secondary-50 px-3 py-2 font-semibold"]}
+          >
+            Soukromý pobyt · bez finanční evidence
+          </p>
           <button :if={!@calculation} class="btn btn-primary" phx-click="create">Založit kalkulaci</button>
-          <div :if={@calculation} class="space-y-4">
+          <div :if={@calculation} class="space-y-2">
             <p :if={@calculation.pricing_basis == "legacy_net"} class="alert alert-warning">
               Původní interní podklad: ceny jsou bez DPH. Číslo {@calculation.invoice_number ||
                 "nepřiděleno"}, stav {@calculation.state}. Nejde o nově vystavený doklad ani potvrzení platby.
             </p>
-            <p :if={@calculation.pricing_basis == "gross"}>
-              Ceny včetně DPH. Naceněno pro příjezd {Presentation.date(@calculation.priced_on)}.
+            <p :if={@calculation.pricing_basis == "gross"} class="text-xs text-primary-400">
+              Ceny včetně DPH · Naceněno pro příjezd {Presentation.date(@calculation.priced_on)} · Změny neovlivňují již vystavené doklady.
             </p>
             <p :if={@pricing_hint.changed_date} class="alert alert-warning">
               Datum příjezdu se změnilo. Zkontrolujte ceník a počet nocí; ceny nebyly automaticky změněny.
@@ -917,16 +953,21 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <p :if={!@pricing_hint.season} class="alert alert-warning">
               Pro datum příjezdu chybí sezonní ceník. Ceny můžete doplnit ručně.
             </p>
-            <div class="flex flex-wrap gap-2">
-              <button class="btn" phx-click="pricing" disabled={@items_dirty?}>Použít aktuální ceník – náhled</button><button
-                :if={@documents == []}
-                class="btn"
-                phx-click="personal"
-                disabled={@items_dirty?}
-              >{if @calculation.state == "personal",
-                do: "Zrušit soukromý pobyt",
-                else: "Označit soukromý pobyt"}</button>
-            </div>
+            <details id="calculation-options" class="text-sm">
+              <summary class="cursor-pointer text-primary-400">
+                Možnosti kalkulace a přecenění
+              </summary>
+              <div class="flex flex-wrap gap-2">
+                <button class="btn btn-sm" phx-click="pricing" disabled={@items_dirty?}>Použít aktuální ceník – náhled</button><button
+                  :if={@documents == []}
+                  class="btn btn-sm"
+                  phx-click="personal"
+                  disabled={@items_dirty?}
+                >{if @calculation.state == "personal",
+                  do: "Zrušit soukromý pobyt",
+                  else: "Označit soukromý pobyt"}</button>
+              </div>
+            </details>
             <p :if={@calculation.state == "personal"} class="alert">
               Soukromý pobyt počítá hosty do obsazenosti; doklady ani platby se neevidují.
             </p>
@@ -937,11 +978,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               phx-submit="save-items"
               phx-hook="CalculationEditor"
               data-dirty={to_string(@items_dirty?)}
-              class="space-y-3"
+              class="space-y-2"
             >
-              <div id="billing-items" class="space-y-3">
+              <div id="billing-items" class="space-y-2">
                 <div
-                  class="hidden gap-3 px-4 text-sm font-semibold text-primary-400 md:grid md:grid-cols-[minmax(140px,2fr)_80px_100px_130px_110px]"
+                  class="hidden gap-3 px-3 text-sm font-semibold text-primary-400 md:grid md:grid-cols-[minmax(140px,2fr)_80px_100px_130px_110px]"
                   aria-hidden="true"
                 >
                   <span>Položka</span><span class="text-right">Počet</span><span class="text-right">Nocí / jednotek</span><span class="text-right">Cena</span><span class="text-right">Celkem</span>
@@ -950,7 +991,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                   :for={row <- @item_rows}
                   id={"billing-item-#{row.key}"}
                   class={[
-                    "rounded-lg border p-4",
+                    "rounded-lg border p-2 sm:p-3",
                     cond do
                       row.deleted? ->
                         "border-secondary-200 bg-secondary-50"
@@ -1126,6 +1167,23 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <button :if={@pricing.season} class="btn btn-primary" phx-click="apply-pricing">Potvrdit nové ceny a počet nocí</button>
           </div>
         </section>
+        <div
+          :if={not @personal?}
+          id="payer-financial-summary"
+          class="grid gap-2 rounded-xl border border-secondary-200 bg-secondary-50 p-3 sm:grid-cols-2 xl:grid-cols-4"
+        >
+          <p><b>{Billing.payment_state(@balance)}</b></p>
+          <p>
+            Cena:
+            <b>{if @balance.total, do: Presentation.amount(@balance.total), else: "Chybí ceny"}</b>
+          </p><p>Přijato po vratkách: <b>{Presentation.amount(@balance.received)}</b></p><p :if={
+            @balance.outstanding
+          }>
+            {Presentation.balance_label(@balance.outstanding)}:
+            <b>{Presentation.balance_amount(@balance.outstanding)}</b>
+          </p>
+        </div>
+
         <div :if={not @personal?} class="grid items-start gap-6 xl:grid-cols-2">
           <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 sm:p-6">
             <h2 class="text-xl font-bold mb-4">Odběratel</h2>

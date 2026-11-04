@@ -40,6 +40,71 @@ defmodule CozyCheckout.BookingSummaryTest do
     assert_filter(booking, "paid")
   end
 
+  test "payer advance percentages sum immutable issuance values without counting receipts", %{
+    booking: booking
+  } do
+    payer = Billing.account(booking.id)
+    {:ok, other} = Billing.save_account(booking.id, %{"name" => "Jiný plátce", "adults" => "1"})
+    issue!(booking, "advance", %{"percent" => "30"})
+    issue!(booking, "advance", %{"percent" => "20"})
+    issue!(booking, "advance", %{"amount" => "570"})
+
+    attrs = %{"percent" => "80"}
+    {:ok, preview} = Billing.preview(other, "advance", attrs)
+
+    assert {:ok, _} =
+             Billing.issue(
+               other,
+               "advance",
+               Map.put(attrs, "preview_token", preview.token),
+               Ecto.UUID.generate()
+             )
+
+    receipt!(booking, "570")
+
+    summaries = BookingSummary.for_accounts(booking.id)
+    assert summaries[payer.id].advance_count == 3
+    assert Decimal.equal?(summaries[payer.id].advance_percent, "60")
+    assert Decimal.equal?(summaries[other.id].advance_percent, "80")
+
+    item = Enum.find(Billing.calculation(payer).items, &(&1.name == "Dospělí"))
+    assert {:ok, _} = Billing.save_item(payer, %{"price_per_night" => "1900"}, item.id)
+    assert Decimal.equal?(BookingSummary.for_accounts(booking.id)[payer.id].advance_percent, "60")
+  end
+
+  test "legacy advance without issuance basis leaves total percentage unknown", %{
+    booking: booking
+  } do
+    document = issue!(booking, "advance", %{"percent" => "30"})
+
+    attrs =
+      document
+      |> Map.take([
+        :billing_account_id,
+        :booking_id,
+        :kind,
+        :issued_on,
+        :tax_date,
+        :due_on,
+        :lines,
+        :total,
+        :pdf,
+        :pdf_sha256
+      ])
+      |> Map.merge(%{
+        number: "LEGACY-#{Ecto.UUID.generate()}",
+        variable_symbol: "legacy-#{Ecto.UUID.generate()}",
+        request_id: Ecto.UUID.generate(),
+        snapshot: %{}
+      })
+
+    Repo.insert!(struct(CozyCheckout.Billing.Document, attrs))
+    payer = Billing.account(booking.id)
+    summary = BookingSummary.for_accounts(booking.id)[payer.id]
+    assert summary.advance_count == 2
+    assert is_nil(summary.advance_percent)
+  end
+
   test "final balance, partial payments, due dates and overpayment match the billing ledger", %{
     booking: booking
   } do
