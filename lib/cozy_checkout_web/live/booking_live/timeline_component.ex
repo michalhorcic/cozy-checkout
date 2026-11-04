@@ -65,34 +65,71 @@ defmodule CozyCheckoutWeb.BookingLive.TimelineComponent do
         </.link>
       </div>
       <div class="flex flex-wrap items-center gap-2 border-b border-secondary-100 px-5 py-3">
-        <button type="button" phx-click="prev_month" phx-target={@myself} aria-label="Předchozí měsíc" class="min-h-11 rounded-lg px-3 text-sm text-tertiary-700 hover:bg-secondary-50">← Předchozí</button>
-        <button type="button" phx-click="today" phx-target={@myself} class="min-h-11 rounded-lg px-3 text-sm text-tertiary-700 hover:bg-secondary-50">Dnes</button>
-        <button type="button" phx-click="next_month" phx-target={@myself} aria-label="Následující měsíc" class="min-h-11 rounded-lg px-3 text-sm text-tertiary-700 hover:bg-secondary-50">Následující →</button>
+        <button
+          type="button"
+          phx-click="prev_month"
+          phx-target={@myself}
+          aria-label="Předchozí měsíc"
+          class="min-h-11 rounded-lg px-3 text-sm text-tertiary-700 hover:bg-secondary-50"
+        >← Předchozí</button>
+        <button
+          type="button"
+          phx-click="today"
+          phx-target={@myself}
+          class="min-h-11 rounded-lg px-3 text-sm text-tertiary-700 hover:bg-secondary-50"
+        >Dnes</button>
+        <button
+          type="button"
+          phx-click="next_month"
+          phx-target={@myself}
+          aria-label="Následující měsíc"
+          class="min-h-11 rounded-lg px-3 text-sm text-tertiary-700 hover:bg-secondary-50"
+        >Následující →</button>
       </div>
       <div :if={@bookings == []} id="stays-empty" class="px-6 py-12 text-center">
         <.icon name="hero-calendar-days" class="mb-3 h-9 w-9 text-secondary-400" />
         <p class="font-medium text-primary-500">Ve zvoleném období tu nejsou žádné pobyty.</p>
-        <.link navigate={~p"/admin/bookings/new"} class="mt-2 inline-block text-sm text-tertiary-700 hover:underline">Přidat rezervaci →</.link>
+        <.link
+          navigate={~p"/admin/bookings/new"}
+          class="mt-2 inline-block text-sm text-tertiary-700 hover:underline"
+        >Přidat rezervaci →</.link>
       </div>
       <div
         id={"#{@id}-scroll"}
         class="overflow-x-auto"
         tabindex="0"
-        aria-label="Časová osa skupin, vodorovně posuvná">
+        aria-label="Časová osa skupin, vodorovně posuvná"
+      >
         <table :if={@bookings != []} class="w-full border-collapse text-sm">
-          <caption class="sr-only">Pobyty podle skupin. Příj. značí příjezd, Odj. odjezd, bod pobyt.</caption>
+          <caption class="sr-only">
+            Pobyty podle skupin. Příj. značí příjezd, Odj. odjezd, bod pobyt.
+          </caption>
           <thead>
             <tr>
               <th
                 scope="col"
-                class="sticky left-0 z-20 min-w-56 bg-white p-4 text-left text-primary-500">Skupina a příprava</th>
+                class="sticky left-0 z-20 min-w-56 bg-white p-4 text-left text-primary-500"
+              >
+                Skupina a příprava
+              </th>
               <th
                 :for={day <- @dates}
                 scope="col"
-                class={["min-w-12 border-l border-secondary-100 p-2 text-center text-xs", if(day == @today, do: "bg-tertiary-100 text-tertiary-800", else: "bg-secondary-50 text-primary-400")]}>
+                class={[
+                  "min-w-12 border-l border-secondary-100 p-2 text-center text-xs",
+                  if(day == @today,
+                    do: "bg-tertiary-100 text-tertiary-800",
+                    else: "bg-secondary-50 text-primary-400"
+                  )
+                ]}
+              >
                 <span class="block">{Calendar.strftime(day, "%d.%m.")}</span>
                 <span :if={day == @today} class="block">Dnes</span>
-                <span class="mt-1 block font-normal" title="Obsazenost / kapacita">{Map.get(@occupancy, day, 0)}/{@capacity}</span>
+                <span class="mt-1 block font-normal" title="Obsazenost / kapacita">{Map.get(
+                  @occupancy,
+                  day,
+                  0
+                )}/{@capacity}</span>
               </th>
             </tr>
           </thead>
@@ -100,35 +137,65 @@ defmodule CozyCheckoutWeb.BookingLive.TimelineComponent do
             <tr
               :for={booking <- @bookings}
               id={"dashboard-booking-#{booking.id}"}
-              class="border-t border-secondary-200">
+              class="border-t border-secondary-200"
+            >
               <th scope="row" class="sticky left-0 z-10 bg-white p-4 text-left font-normal">
                 <.link
                   navigate={~p"/admin/bookings/#{booking.id}"}
-                  class="font-semibold text-primary-500 hover:text-tertiary-700 hover:underline">{booking.guest.name}</.link>
-                <p class="mt-1 text-xs text-primary-400">{date(booking.check_in_date)} – {date(booking.check_out_date)}</p>
-                <p class="mt-1 text-xs text-primary-400">{stay_label(booking, @today)} · {CozyCheckout.Bookings.people_count(booking)} osob</p>
+                  class="font-semibold text-primary-500 hover:text-tertiary-700 hover:underline"
+                >{booking.guest.name}</.link>
+                <p class="mt-1 text-xs text-primary-400">
+                  {date(booking.check_in_date)} – {date(booking.check_out_date)}
+                </p>
+                <p class="mt-1 text-xs text-primary-400">
+                  {stay_label(booking, @today)} · {CozyCheckout.Bookings.people_count(booking)} osob
+                </p>
                 <p
                   :if={booking.check_in_date == @today}
-                  class="mt-1 text-xs font-semibold text-success-dark">Dnes příjezd</p>
+                  class="mt-1 text-xs font-semibold text-success-dark"
+                >
+                  Dnes příjezd
+                </p>
                 <p
                   :if={booking.check_out_date == @today}
-                  class="mt-1 text-xs font-semibold text-tertiary-800">Dnes odjezd</p>
+                  class="mt-1 text-xs font-semibold text-tertiary-800"
+                >
+                  Dnes odjezd
+                </p>
                 <.link
                   navigate={~p"/admin/bookings/#{booking.id}"}
-                  class="mt-2 block text-xs text-tertiary-700 hover:underline">{rooms(booking)}</.link>
+                  class="mt-2 block text-xs text-tertiary-700 hover:underline"
+                >{rooms(booking)}</.link>
                 <.link
                   navigate={~p"/admin/bookings/#{booking.id}/menu"}
-                  class={["mt-2 block text-xs hover:underline", if(menu_ready?(booking, Map.get(@booking_issues, booking.id, [])), do: "text-success-dark", else: "text-error")]}>{menu_label(booking, Map.get(@booking_issues, booking.id, []))}</.link>
-                <p :if={booking.short_note} class="mt-2 text-xs text-primary-400">{booking.short_note}</p>
+                  class={[
+                    "mt-2 block text-xs hover:underline",
+                    if(menu_ready?(booking, Map.get(@booking_issues, booking.id, [])),
+                      do: "text-success-dark",
+                      else: "text-error"
+                    )
+                  ]}
+                >{menu_label(booking, Map.get(@booking_issues, booking.id, []))}</.link>
+                <p :if={booking.short_note} class="mt-2 text-xs text-primary-400">
+                  {booking.short_note}
+                </p>
               </th>
               <td
                 :for={day <- @dates}
-                class={["border-l border-secondary-100 p-0 text-center text-xs", if(day == @today, do: "bg-tertiary-50")]}>
+                class={[
+                  "border-l border-secondary-100 p-0 text-center text-xs",
+                  if(day == @today, do: "bg-tertiary-50")
+                ]}
+              >
                 <.link
                   :if={spans_date?(booking, day)}
                   navigate={~p"/admin/bookings/#{booking.id}"}
                   aria-label={"#{booking.guest.name} · #{date(day)} · #{timeline_label(booking, day)}"}
-                  class={["flex min-h-11 items-center justify-center font-medium hover:brightness-95", timeline_color(booking, day)]}>
+                  class={[
+                    "flex min-h-11 items-center justify-center font-medium hover:brightness-95",
+                    timeline_color(booking, day)
+                  ]}
+                >
                   {timeline_label(booking, day)}
                 </.link>
               </td>
@@ -209,5 +276,4 @@ defmodule CozyCheckoutWeb.BookingLive.TimelineComponent do
   defp stay_label(booking, today) do
     if Date.compare(booking.check_in_date, today) == :gt, do: "Nadcházející", else: "Probíhající"
   end
-
 end

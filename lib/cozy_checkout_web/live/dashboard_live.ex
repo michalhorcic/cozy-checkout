@@ -76,9 +76,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
                   class="flex flex-wrap items-center justify-between gap-2 px-6 py-4 text-sm hover:bg-secondary-50"
                 >
                   <div>
-                    <span
-                      class="font-semibold text-primary-500">{issue.booking.guest.name}</span><span
-                      class="ml-2 text-xs text-primary-400">{date(
+                    <span class="font-semibold text-primary-500">{issue.booking.guest.name}</span><span class="ml-2 text-xs text-primary-400">{date(
                       issue.booking.check_in_date
                     )}</span><p class="mt-1 text-primary-400">{issue.reason}</p>
                   </div>
@@ -225,9 +223,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
         class="h-5 w-5 text-primary-400"
       /></span>
       <div>
-        <p
-          class="text-sm text-primary-400">{@label}</p><p
-          class="mt-1 text-3xl font-semibold tracking-tight text-primary-500">
+        <p class="text-sm text-primary-400">{@label}</p><p class="mt-1 text-3xl font-semibold tracking-tight text-primary-500">
           {@value}
         </p><p class="mt-1 text-xs text-primary-400">{@detail}</p>
       </div>

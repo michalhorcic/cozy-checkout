@@ -65,6 +65,7 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
 
   test "ongoing open-ended stays and menu readiness appear in group rows", %{conn: conn} do
     today = Date.utc_today()
+
     uncatered =
       menu_booking_fixture(%{
         check_in_date: Date.add(today, -2),
@@ -82,11 +83,20 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
     assert has_element?(view, "#dashboard-booking-#{uncatered.id}", "Pokoje zatím nepřiřazeny")
     assert has_element?(view, "#dashboard-booking-#{uncatered.id} td a", "●")
     assert has_element?(view, "#dashboard-booking-#{ready.id}", "Menu připravené")
-    assert has_element?(view, "#dashboard-booking-#{ready.id} a[href='/admin/bookings/#{ready.id}/menu']")
+
+    assert has_element?(
+             view,
+             "#dashboard-booking-#{ready.id} a[href='/admin/bookings/#{ready.id}/menu']"
+           )
   end
 
   test "attention is collapsed by default and keeps a scrollable list", %{conn: conn} do
-    menu_booking_fixture(%{check_in_date: Date.utc_today(), check_out_date: Date.add(Date.utc_today(), 2), meal_plan: nil})
+    menu_booking_fixture(%{
+      check_in_date: Date.utc_today(),
+      check_out_date: Date.add(Date.utc_today(), 2),
+      meal_plan: nil
+    })
+
     {:ok, view, _} = live(conn, "/admin")
 
     assert has_element?(view, "details#dashboard-attention summary", "Vyžaduje pozornost")
@@ -94,16 +104,34 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
     assert has_element?(view, "#dashboard-attention .overflow-y-auto.max-h-96")
   end
 
-  test "dashboard and standalone timeline share monthly navigation and group information", %{conn: conn} do
+  test "dashboard and standalone timeline share monthly navigation and group information", %{
+    conn: conn
+  } do
     today = Date.utc_today()
     current = menu_booking_fixture(%{check_in_date: today, check_out_date: Date.add(today, 2)})
     next_start = Date.add(Dashboard.month_ahead(today), 1)
-    future = menu_booking_fixture(%{check_in_date: next_start, check_out_date: Date.add(next_start, 2)})
 
-    for {path, component_id} <- [{"/admin", "dashboard-stays"}, {"/admin/bookings/timeline", "booking-timeline"}] do
+    future =
+      menu_booking_fixture(%{check_in_date: next_start, check_out_date: Date.add(next_start, 2)})
+
+    for {path, component_id} <- [
+          {"/admin", "dashboard-stays"},
+          {"/admin/bookings/timeline", "booking-timeline"}
+        ] do
       {:ok, view, _} = live(conn, path)
-      assert has_element?(view, "##{component_id} #dashboard-booking-#{current.id}", "Pokoje zatím nepřiřazeny")
-      assert has_element?(view, "##{component_id} #dashboard-booking-#{current.id}", "Menu: vyžaduje pozornost")
+
+      assert has_element?(
+               view,
+               "##{component_id} #dashboard-booking-#{current.id}",
+               "Pokoje zatím nepřiřazeny"
+             )
+
+      assert has_element?(
+               view,
+               "##{component_id} #dashboard-booking-#{current.id}",
+               "Menu: vyžaduje pozornost"
+             )
+
       assert has_element?(view, "##{component_id} thead", "/")
       refute has_element?(view, "#dashboard-booking-#{future.id}")
 
