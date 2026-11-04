@@ -15,7 +15,8 @@ defmodule CozyCheckoutWeb.AdminNavigation do
   def primary do
     [
       {"Přehled", "/admin", "hero-squares-2x2"},
-      {"Rezervace", "/admin/bookings/calendar", "hero-calendar-days"},
+      {"Seznam rezervací", "/admin/bookings", "hero-clipboard-document-list"},
+      {"Kalendář", "/admin/bookings/calendar", "hero-calendar-days"},
       {"Stravování", "/admin/meal-planner", "hero-clipboard-document-list"},
       {"Doklady", "/admin/billing", "hero-document-text"},
       if(CozyCheckout.Economics.enabled?(),
@@ -67,8 +68,12 @@ defmodule CozyCheckoutWeb.AdminNavigation do
 
   def active?(path, "/admin"), do: path in ["/admin", "/admin/"]
 
-  def active?(path, "/admin/bookings/calendar") do
+  def active?(path, "/admin/bookings/calendar"),
+    do: path in ["/admin/bookings/calendar", "/admin/bookings/timeline"]
+
+  def active?(path, "/admin/bookings") do
     String.starts_with?(path, "/admin/bookings") and
+      path not in ["/admin/bookings/calendar", "/admin/bookings/timeline"] and
       not String.ends_with?(path, "/menu") and not String.ends_with?(path, "/billing")
   end
 
