@@ -17,7 +17,8 @@ defmodule CozyCheckout.Billing.PdfBrowser do
     File.chmod!(profile, 0o700)
     # Chrome 136+ requires a non-default profile for remote-debugging-pipe.
     # A single browser owns this profile; requests are serialized through this server.
-    args = "--user-data-dir=" <> shell_quote(profile)
+    # Docker defaults to a small /dev/shm; use /tmp to avoid renderer crashes.
+    args = "--disable-dev-shm-usage --user-data-dir=" <> shell_quote(profile)
 
     config =
       opts

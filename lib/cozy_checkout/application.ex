@@ -10,7 +10,7 @@ defmodule CozyCheckout.Application do
     pdf_options = [
       on_demand: true,
       no_sandbox: true,
-      discard_stderr: Application.get_env(:cozy_checkout, :pdf_discard_stderr, true)
+      discard_stderr: Application.get_env(:cozy_checkout, :pdf_discard_stderr, false)
     ]
 
     pdf_options =

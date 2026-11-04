@@ -66,6 +66,7 @@ RUN chown nobody /app
 
 # set runner ENV
 ENV MIX_ENV="prod"
+ENV CHROME_EXECUTABLE="/usr/bin/chromium"
 
 # Only copy the final release from the build stage
 COPY --from=build --chown=nobody:root /app/_build/prod/rel/cozy_checkout ./

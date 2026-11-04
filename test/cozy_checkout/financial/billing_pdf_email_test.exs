@@ -9,6 +9,16 @@ defmodule CozyCheckout.BillingPdfEmailTest do
   setup :set_swoosh_global
   setup do: billing_fixture()
 
+  test "billing Chrome uses disk-backed shared memory and retains crash diagnostics" do
+    state = :sys.get_state(CozyCheckout.Billing.PdfBrowser)
+
+    command = ChromicPDF.ChromeRunner.shell_command(state.config)
+    assert command =~ "--disable-dev-shm-usage"
+    assert command =~ "--user-data-dir="
+    assert command =~ "--no-sandbox"
+    refute command =~ "2>/dev/null"
+  end
+
   test "a name-only customer renders without blank address lines in a real invoice PDF", %{
     booking: booking
   } do
@@ -221,6 +231,16 @@ defmodule CozyCheckout.BillingPdfEmailTest do
 
     assert reason =~ "Chrome"
     refute Billing.get_document!(doc.id).pdf
+
+    # Retrying issuance returns the same document; only the missing PDF is rendered.
+    assert {:ok, same} = Billing.issue(booking.id, "advance", %{}, doc.request_id)
+    assert same.id == doc.id
+    assert same.number == doc.number
+    assert {:ok, stored} = Billing.ensure_pdf(doc.id)
+    assert stored.pdf =~ "%PDF-"
+    assert stored.number == doc.number
+    assert {:ok, repeated} = Billing.ensure_pdf(doc.id)
+    assert repeated.pdf == stored.pdf
   end
 
   test "an asynchronous worker delivers an advance PDF to the dev mailbox storage", %{
