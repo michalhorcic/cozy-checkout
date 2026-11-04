@@ -5,6 +5,7 @@ defmodule CozyCheckout.Abra.Transfers do
   alias CozyCheckout.Abra.{Accommodation, AccommodationExport, BankConfirmation, BankPayments}
   alias CozyCheckout.Billing.{Document, Payment}
 
+  def label("outdated"), do: "Čeká na aktualizaci zálohovky"
   def label("queued"), do: "Čeká na přenos"
   def label("waiting"), do: "Čeká na podmínky"
   def label("retrying"), do: "Opakuje se přenos"
@@ -68,7 +69,9 @@ defmodule CozyCheckout.Abra.Transfers do
 
   defp filter(query, "all"), do: query
   defp filter(query, "pending"), do: where(query, [row], row.state in ["queued", "waiting"])
-  defp filter(query, _), do: where(query, [row], row.state in ["failed", "retrying", "conflict"])
+
+  defp filter(query, _),
+    do: where(query, [row], row.state in ["failed", "retrying", "conflict", "outdated"])
 
   defp exports do
     from e in AccommodationExport,

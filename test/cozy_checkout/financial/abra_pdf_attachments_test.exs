@@ -56,6 +56,49 @@ defmodule CozyCheckout.AbraPdfAttachmentsTest do
     }
   end
 
+  test "an explicit advance update replaces only the previously verified PDF attachment", ctx do
+    ctx.export
+    |> Ecto.Changeset.change(verification: %{"advance_update" => true})
+    |> Repo.update!()
+
+    {:ok, transfer} = PdfAttachments.enqueue(ctx.doc.id)
+    old_bytes = "%PDF previous advance"
+    transfer |> Ecto.Changeset.change(sha256: digest(old_bytes)) |> Repo.update!()
+    expect_list([%{"id" => 7, "nazSoub" => ctx.filename}])
+    expect_content(old_bytes)
+
+    Req.Test.expect(PdfClient, fn conn ->
+      assert conn.method == "DELETE"
+      assert conn.request_path == "/c/test/faktura-vydana/42/prilohy/7.json"
+      Plug.Conn.send_resp(conn, 200, "")
+    end)
+
+    Req.Test.expect(PdfClient, fn conn ->
+      assert conn.method == "PUT"
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      assert body == ctx.bytes
+      Plug.Conn.send_resp(conn, 201, "")
+    end)
+
+    expect_list([%{"id" => 7, "nazSoub" => ctx.filename}])
+    expect_content(ctx.bytes)
+    assert :ok = PdfAttachments.deliver(transfer.id)
+    assert PdfAttachments.status(ctx.doc.id).sha256 == digest(ctx.bytes)
+  end
+
+  test "an advance update cannot replace an attachment whose previous checksum does not match",
+       ctx do
+    ctx.export
+    |> Ecto.Changeset.change(verification: %{"advance_update" => true})
+    |> Repo.update!()
+
+    {:ok, transfer} = PdfAttachments.enqueue(ctx.doc.id)
+    transfer |> Ecto.Changeset.change(sha256: digest("previous")) |> Repo.update!()
+    expect_list([%{"id" => 7, "nazSoub" => ctx.filename}])
+    expect_content("unrelated PDF")
+    assert {:error, "Obsah PDF přílohy v ABRA nesouhlasí"} = PdfAttachments.deliver(transfer.id)
+  end
+
   test "uploads original bytes, verifies content and never changes the accounting export", ctx do
     {:ok, transfer} = PdfAttachments.enqueue(ctx.doc.id)
     expect_list([])

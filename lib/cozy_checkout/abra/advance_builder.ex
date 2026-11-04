@@ -67,6 +67,28 @@ defmodule CozyCheckout.Abra.AdvanceBuilder do
 
   def build(_, _), do: {:error, "Tato etapa podporuje pouze zálohové výzvy"}
 
+  @doc "Replace all advance lines on the same external document identity."
+  def build_update(doc, previous, cfg) do
+    with {:ok, payload} <- build(doc, cfg) do
+      [invoice] = payload["winstrom"]["faktura-vydana"]
+
+      invoice =
+        invoice
+        |> Map.merge(Map.take(previous, ["typDokl", "bankovniUcet"]))
+        |> Map.put("@create", "fail")
+        |> Map.put("@update", "ok")
+        |> Map.put("polozkyFaktury@removeAll", "true")
+        |> Map.update!("polozkyFaktury", fn items ->
+          Enum.with_index(items, 1)
+          |> Enum.map(fn {item, index} ->
+            Map.put(item, "id", "ext:cozy-checkout:advance-item:#{doc.id}:#{index}")
+          end)
+        end)
+
+      {:ok, put_in(payload, ["winstrom", "faktura-vydana"], [invoice])}
+    end
+  end
+
   defp breakdown_note(doc) do
     stay =
       "Pobyt: #{Presentation.date(doc.snapshot["check_in"])} – #{Presentation.date(doc.snapshot["check_out"])}"

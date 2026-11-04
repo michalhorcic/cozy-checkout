@@ -825,6 +825,84 @@ defmodule CozyCheckout.Billing do
     end)
   end
 
+  @doc "Refresh an unsent, unpaid advance request from its payer's current calculation."
+  def preview_advance_update(document_id, attrs \\ %{}) do
+    transaction(fn ->
+      original = get_document!(document_id)
+      lock_booking!(original.booking_id)
+      original = get_document!(document_id)
+      advance_update_preview!(original, attrs)
+    end)
+  end
+
+  def update_advance(document_id, attrs) do
+    transaction(fn ->
+      original = get_document!(document_id)
+      lock_booking!(original.booking_id)
+      original = Repo.one!(from d in Document, where: d.id == ^document_id, lock: "FOR UPDATE")
+      preview = advance_update_preview!(original, attrs)
+
+      if attrs["preview_token"] != preview.token,
+        do: fail("Podklady se změnily. Zobrazte znovu náhled")
+
+      doc =
+        original
+        |> Ecto.Changeset.change(
+          lines: preview.lines,
+          total: preview.total,
+          snapshot: preview.snapshot,
+          pdf: nil,
+          pdf_sha256: nil
+        )
+        |> Repo.update!()
+
+      CozyCheckout.Abra.Accommodation.invalidate_advance!(doc)
+
+      {:ok, _} =
+        %{document_id: doc.id} |> CozyCheckout.Workers.BillingPdfWorker.new() |> Oban.insert()
+
+      doc
+    end)
+  end
+
+  defp advance_update_preview!(original, attrs) do
+    if original.kind != "advance", do: fail("Aktualizovat lze pouze zálohovou výzvu")
+
+    if Repo.exists?(from d in Delivery, where: d.document_id == ^original.id),
+      do: fail("Zálohová výzva již byla zařazena k odeslání; nelze ji změnit")
+
+    if Repo.exists?(
+         from p in Payment, where: p.billing_account_id == ^original.billing_account_id
+       ),
+       do: fail("Pobyt již má zaznamenanou platbu; zálohovou výzvu nelze změnit")
+
+    CozyCheckout.Abra.Accommodation.check_advance_update!(original)
+    calculation = original.snapshot["advance_calculation"] || %{}
+
+    defaults =
+      if calculation["method"] == "percent",
+        do: %{"percent" => calculation["percent"]},
+        else: %{"amount" => to_string(original.total)}
+
+    inputs =
+      if Map.has_key?(attrs, "percent") or Map.has_key?(attrs, "amount"),
+        do: attrs,
+        else: defaults
+
+    data =
+      build_preview!(scope(original), "advance", inputs)
+      |> Map.put(:issued_on, original.issued_on)
+      |> Map.put(:due_on, original.due_on)
+      |> Map.put(:tax_date, original.tax_date)
+
+    snapshot =
+      original.snapshot
+      |> Map.merge(Map.take(data.snapshot, ["check_in", "check_out", "advance_calculation"]))
+
+    data = Map.put(data, :snapshot, snapshot) |> Map.delete(:token)
+    Map.put(data, :token, digest({Map.take(original, [:id, :snapshot, :lines, :total]), data}))
+  end
+
   @doc "Preview the ZDD that an explicitly confirmed bank advance will issue."
   def preview_advance_payment(booking_id, amount, paid_on) do
     transaction(fn ->
@@ -1178,6 +1256,10 @@ defmodule CozyCheckout.Billing do
           transaction(fn ->
             current =
               Repo.one!(from d in Document, where: d.id == ^document_id, lock: "FOR UPDATE")
+
+            if {current.snapshot, current.lines, current.total} !=
+                 {doc.snapshot, doc.lines, doc.total},
+               do: fail("Doklad se během přípravy PDF změnil; opakujte stažení")
 
             if current.pdf do
               current

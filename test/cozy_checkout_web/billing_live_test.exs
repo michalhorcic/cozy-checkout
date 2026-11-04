@@ -25,6 +25,44 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     )
   end
 
+  test "updates an advance from the current calculation with a preview and preserves its number",
+       %{conn: conn, booking: booking} do
+    doc = issue_without_abra!(booking, "advance", %{"percent" => "50"})
+
+    {:ok, _} =
+      Billing.save_item(booking.id, %{
+        "name" => "Rekreační poplatek",
+        "quantity" => "2",
+        "nights" => "3",
+        "price_per_night" => "50",
+        "vat_rate" => "0",
+        "tax_mode" => "outside",
+        "item_type" => "extra"
+      })
+
+    {:ok, view, _} = live(conn, "/admin/billing/documents/#{doc.id}")
+    view |> form("#advance-update-form", advance: %{percent: "50", amount: ""}) |> render_submit()
+    assert has_element?(view, "#advance-update-preview", "Rekreační poplatek")
+    assert Billing.get_document!(doc.id).total == doc.total
+    view |> element("#advance-update-confirm") |> render_click()
+    updated = Billing.get_document!(doc.id)
+    assert updated.number == doc.number
+    assert updated.variable_symbol == doc.variable_symbol
+    assert Decimal.equal?(updated.total, "3000")
+    refute has_element?(view, "#advance-update-preview")
+    assert has_element?(view, "#advance-document-breakdown", "Rekreační poplatek")
+    assert Repo.aggregate(Billing.Document, :count) == 1
+  end
+
+  test "advance update controls are absent from final invoices", %{conn: conn, booking: booking} do
+    doc = issue_without_abra!(booking, "final")
+    {:ok, view, _} = live(conn, "/admin/billing/documents/#{doc.id}")
+    refute has_element?(view, "#advance-update-form")
+    render_click(view, "advance-preview", %{"advance" => %{}})
+    refute has_element?(view, "#advance-update-preview")
+    assert Billing.get_document!(doc.id) == doc
+  end
+
   test "booking list displays filtered coverage and separate invoice and welcome states", %{
     conn: conn,
     booking: booking

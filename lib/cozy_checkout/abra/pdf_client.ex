@@ -10,6 +10,15 @@ defmodule CozyCheckout.Abra.PdfClient do
     end
   end
 
+  def delete(remote_id, attachment_id, cfg) do
+    path = invoice_path(remote_id) <> "/prilohy/" <> segment(attachment_id) <> ".json"
+
+    case request(:delete, path, cfg, []) do
+      {:ok, %{status: status}} when status in [200, 204, 404] -> :ok
+      other -> error(other)
+    end
+  end
+
   # Read every page before deciding an attachment is absent. A lost PUT response
   # must be reconciled before another upload can be attempted.
   def find(remote_id, filenames, cfg), do: find(remote_id, List.wrap(filenames), cfg, 0)

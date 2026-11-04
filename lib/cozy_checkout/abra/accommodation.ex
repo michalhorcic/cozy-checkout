@@ -2,7 +2,15 @@ defmodule CozyCheckout.Abra.Accommodation do
   @moduledoc "Persistent, retryable export of issued accommodation documents."
   import Ecto.Query
   alias CozyCheckout.{Billing, Repo}
-  alias CozyCheckout.Abra.{AccommodationExport, AdvanceBuilder, Client, FinalInvoiceExport}
+
+  alias CozyCheckout.Abra.{
+    AccommodationExport,
+    AdvanceBuilder,
+    Client,
+    FinalInvoiceExport,
+    PdfAttachments
+  }
+
   alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Workers.AbraAccommodationWorker
 
@@ -38,11 +46,37 @@ defmodule CozyCheckout.Abra.Accommodation do
     :ok
   end
 
+  def check_advance_update!(doc) do
+    export =
+      Repo.one(from e in AccommodationExport, where: e.document_id == ^doc.id, lock: "FOR UPDATE")
+
+    if export && export.state not in ["synced", "failed", "outdated"],
+      do: Repo.rollback("Probíhá přenos do ABRA; vyčkejte na jeho dokončení")
+
+    if export &&
+         Repo.exists?(
+           from t in CozyCheckout.Abra.PdfTransfer,
+             where: t.export_id == ^export.id and t.state != "uploaded"
+         ),
+       do: Repo.rollback("Nejprve dokončete přenos PDF do ABRA")
+
+    :ok
+  end
+
+  def invalidate_advance!(doc) do
+    if export = get_export(doc.id) do
+      export
+      |> Ecto.Changeset.change(state: "outdated", error: nil)
+      |> Repo.update!()
+    end
+  end
+
   def enqueue(document_id) do
     Repo.transaction(fn ->
       cfg = checked_config!()
       doc = Billing.get_document!(document_id)
       booking = Repo.one!(from b in Booking, where: b.id == ^doc.booking_id, lock: "FOR UPDATE")
+      doc = Billing.get_document!(document_id)
 
       if doc.kind not in ["advance", "final"],
         do: Repo.rollback("Tento export podporuje pouze výzvu a vyúčtování")
@@ -85,6 +119,36 @@ defmodule CozyCheckout.Abra.Accommodation do
             )
             |> Repo.insert!()
 
+          %{state: "outdated"} = existing ->
+            check_target!(existing, cfg)
+
+            previous =
+              List.first(get_in(existing.payload, ["winstrom", "faktura-vydana"]) || []) || %{}
+
+            result =
+              if previous == %{},
+                do: AdvanceBuilder.build(doc, cfg),
+                else: AdvanceBuilder.build_update(doc, previous, cfg)
+
+            payload =
+              case result do
+                {:ok, payload} -> payload
+                {:error, reason} -> Repo.rollback(reason)
+              end
+
+            payload =
+              if previous != %{} and is_nil(existing.remote_id),
+                do:
+                  put_in(payload, ["winstrom", "faktura-vydana", Access.at(0), "@create"], "ok"),
+                else: payload
+
+            existing
+            |> Ecto.Changeset.change(
+              payload: payload,
+              verification: Map.put(existing.verification, "advance_update", previous != %{})
+            )
+            |> Repo.update!()
+
           existing ->
             check_target!(existing, cfg)
             existing
@@ -107,7 +171,7 @@ defmodule CozyCheckout.Abra.Accommodation do
       not enabled?() ->
         {:snooze, 60}
 
-      export.state == "synced" ->
+      export.state in ["synced", "outdated"] ->
         :ok
 
       export.verification["kind"] == "final" and not FinalInvoiceExport.enabled?(cfg) ->
@@ -180,6 +244,18 @@ defmodule CozyCheckout.Abra.Accommodation do
 
       case deliver(export, cfg) do
         {:ok, id} ->
+          if export.verification["advance_update"] do
+            Repo.update_all(
+              from(t in CozyCheckout.Abra.PdfTransfer, where: t.export_id == ^export.id),
+              set: [
+                state: "queued",
+                error: nil,
+                uploaded_at: nil,
+                updated_at: DateTime.utc_now(:second)
+              ]
+            )
+          end
+
           export
           |> Ecto.Changeset.change(
             state: "synced",
@@ -188,6 +264,10 @@ defmodule CozyCheckout.Abra.Accommodation do
             synced_at: DateTime.utc_now(:second)
           )
           |> Repo.update!()
+
+          if export.verification["advance_update"] == true and PdfAttachments.enabled?() do
+            PdfAttachments.enqueue(export.document_id)
+          end
 
           :ok
 
@@ -211,6 +291,9 @@ defmodule CozyCheckout.Abra.Accommodation do
 
   defp deliver(%{verification: %{"kind" => "final"}} = export, cfg),
     do: FinalInvoiceExport.deliver(export, cfg)
+
+  defp deliver(%{verification: %{"advance_update" => true}} = export, cfg),
+    do: CozyCheckout.Abra.AdvanceUpdate.deliver(export, cfg)
 
   defp deliver(export, cfg) do
     case Client.find_invoice(export.external_id, cfg) do

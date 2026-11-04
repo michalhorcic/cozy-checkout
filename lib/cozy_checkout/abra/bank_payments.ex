@@ -171,8 +171,10 @@ defmodule CozyCheckout.Abra.BankPayments do
       if doc.kind == "final" and not is_nil(booking.deleted_at),
         do: Repo.rollback("Pobyt byl mezitím odstraněn")
 
-      if doc.kind == "final" and Accommodation.get_export(doc.id) != prepared.export,
-        do: Repo.rollback("Stav exportu konečné faktury se mezitím změnil")
+      if Accommodation.get_export(doc.id) != prepared.export or
+           Map.take(Billing.get_document!(doc.id), [:snapshot, :lines, :total]) !=
+             Map.take(doc, [:snapshot, :lines, :total]),
+         do: Repo.rollback("Doklad nebo stav exportu se mezitím změnily; načtěte nový náhled")
 
       movement =
         Repo.one!(
