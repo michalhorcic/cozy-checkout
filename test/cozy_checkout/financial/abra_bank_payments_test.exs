@@ -50,6 +50,15 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     end)
 
     fixture = billing_fixture()
+
+    {:ok, second_payer} =
+      Billing.save_account(fixture.booking.id, %{
+        "name" => "Druhá rodina",
+        "adults" => "1",
+        "infants" => "0",
+        "children" => "0"
+      })
+
     doc = issue_without_abra!(fixture.booking, "advance", %{"amount" => "1234.57"})
     {:ok, export} = Accommodation.enqueue(doc.id)
     export = export |> Ecto.Changeset.change(state: "synced", remote_id: "42") |> Repo.update!()
@@ -101,6 +110,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
 
     %{
       booking: fixture.booking,
+      second_payer: second_payer,
       document: doc,
       export: export,
       movement: movement,
@@ -392,6 +402,43 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert :ok = BankPaymentSync.sync(confirmation.id)
     assert Repo.aggregate(Payment, :count) == 1
     assert Repo.aggregate(Document, :count) == 2
+  end
+
+  test "same-day equal bank receipts of different payers are not manual duplicates", ctx do
+    {:ok, other} =
+      Billing.record_payment(ctx.second_payer, %{
+        "request_id" => Ecto.UUID.generate(),
+        "amount" => "600.00",
+        "paid_on" => to_string(ctx.movement.paid_on),
+        "method" => "bank"
+      })
+
+    {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    assert {:ok, confirmation} = BankPayments.confirm(preview.token)
+    payment = Repo.get!(Payment, confirmation.payment_id)
+    assert payment.billing_account_id == ctx.document.billing_account_id
+    assert other.billing_account_id != payment.billing_account_id
+    assert Repo.aggregate(Payment, :count) == 2
+    assert {:ok, _} = BankPayments.confirm(preview.token)
+    assert Repo.aggregate(Payment, :count) == 2
+  end
+
+  test "another payer's final does not close this advance confirmation", ctx do
+    {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    old = Accommodation.config()
+    Application.put_env(:cozy_checkout, :abra_accommodation, Keyword.put(old, :enabled, false))
+    {:ok, final_preview} = Billing.preview(ctx.second_payer, "final")
+
+    {:ok, _} =
+      Billing.issue(
+        ctx.second_payer,
+        "final",
+        %{"preview_token" => final_preview.token},
+        Ecto.UUID.generate()
+      )
+
+    Application.put_env(:cozy_checkout, :abra_accommodation, old)
+    assert {:ok, _} = BankPayments.confirm(preview.token)
   end
 
   defp respond(conn, remote, bank, export) do

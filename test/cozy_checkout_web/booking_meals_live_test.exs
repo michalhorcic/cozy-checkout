@@ -195,4 +195,58 @@ defmodule CozyCheckoutWeb.BookingMealsLiveTest do
     assert has_element?(view, "#print-portions-#{week}-lunch", "0 porcí")
     assert has_element?(view, "#incomplete-catering-#{unknown.id}")
   end
+
+  test "manual arrival changes preserve nights and rooms start collapsed", %{
+    conn: conn,
+    week: week
+  } do
+    booking =
+      stay(week, %{
+        meal_plan: "none",
+        check_in_date: ~D[2026-12-30],
+        check_out_date: ~D[2027-01-03],
+        adults: 3
+      })
+
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/edit")
+    refute has_element?(view, "#booking-room-picker[open]")
+    assert has_element?(view, "#booking-room-picker summary", "Pokoje nepřiřazeny")
+
+    view
+    |> form("#booking-form", booking: %{check_in_date: "2027-01-30"})
+    |> render_change(%{"_target" => ["booking", "check_in_date"]})
+
+    assert has_element?(view, "#booking_check_out_date[value='2027-02-03']")
+    assert has_element?(view, "#booking-dates", "Počet nocí: 4")
+    assert has_element?(view, "#booking_adults[value='3']")
+  end
+
+  test "calendar range crosses leap day and explicit range controls the number of nights", %{
+    conn: conn,
+    week: week
+  } do
+    booking = stay(week, %{meal_plan: "none", check_in_date: ~D[2028-02-27], check_out_date: nil})
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/edit")
+
+    view
+    |> element("button[phx-click='calendar_day'][phx-value-date='2028-02-28']")
+    |> render_click()
+
+    view
+    |> element("button[phx-click='calendar_day'][phx-value-date='2028-02-29']")
+    |> render_click()
+
+    assert has_element?(view, "#booking_check_in_date[value='2028-02-28']")
+    assert has_element?(view, "#booking_check_out_date[value='2028-02-29']")
+    assert has_element?(view, "#booking-dates", "Počet nocí: 1")
+    assert has_element?(view, "button[phx-value-date='2028-02-28'][aria-pressed='true']")
+    view |> element("button[phx-click='calendar_month'][phx-value-offset='1']") |> render_click()
+
+    view
+    |> element("button[phx-click='calendar_day'][phx-value-date='2028-03-01']")
+    |> render_click()
+
+    assert has_element?(view, "#booking_check_out_date[value='']")
+    assert has_element?(view, "#booking-dates", "Odjezd lze doplnit později")
+  end
 end

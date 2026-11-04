@@ -18,6 +18,13 @@ defmodule CozyCheckout.Bookings.Booking do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "bookings" do
+    field :adults, :integer, default: 0
+    field :infants, :integer, default: 0
+    field :children, :integer, default: 0
+    field :unclassified_guests, :integer, default: 0
+    field :allocation_completed_at, :utc_datetime
+    field :billing_pricing_template, :map
+    has_many :billing_accounts, CozyCheckout.Billing.Account
     field :room_number, :string
     field :check_in_date, :date
     field :check_out_date, :date
@@ -39,7 +46,8 @@ defmodule CozyCheckout.Bookings.Booking do
     has_many :booking_rooms, CozyCheckout.Bookings.BookingRoom
     has_many :rooms, through: [:booking_rooms, :room]
     has_many :email_deliveries, CozyCheckout.GuestEmails.Delivery
-    has_one :invoice, CozyCheckout.Bookings.BookingInvoice
+    has_one :default_billing_account, CozyCheckout.Billing.Account, where: [default: true]
+    has_one :invoice, through: [:default_billing_account, :calculation]
 
     timestamps(type: :utc_datetime)
   end
@@ -49,6 +57,10 @@ defmodule CozyCheckout.Bookings.Booking do
     booking
     |> cast(attrs, [
       :guest_id,
+      :adults,
+      :infants,
+      :children,
+      :unclassified_guests,
       :room_number,
       :check_in_date,
       :check_out_date,
@@ -63,6 +75,11 @@ defmodule CozyCheckout.Bookings.Booking do
       :last_meal
     ])
     |> validate_required([:guest_id, :check_in_date])
+    |> validate_number(:adults, greater_than_or_equal_to: 0)
+    |> validate_number(:infants, greater_than_or_equal_to: 0)
+    |> validate_number(:children, greater_than_or_equal_to: 0)
+    |> validate_number(:unclassified_guests, greater_than_or_equal_to: 0)
+    |> validate_required([:adults, :infants, :children, :unclassified_guests])
     |> validate_length(:short_note, max: 30)
     |> validate_inclusion(:status, ["upcoming", "active", "completed", "cancelled"])
     |> validate_date_range()

@@ -3,6 +3,7 @@ defmodule CozyCheckout.Billing.Document do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "billing_documents" do
+    belongs_to :billing_account, CozyCheckout.Billing.Account
     belongs_to :booking, CozyCheckout.Bookings.Booking
     belongs_to :parent, __MODULE__
     field :kind, :string

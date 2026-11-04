@@ -3,6 +3,7 @@ defmodule CozyCheckout.Billing.Customer do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "billing_customers" do
+    belongs_to :billing_account, CozyCheckout.Billing.Account
     belongs_to :booking, CozyCheckout.Bookings.Booking
     field :data, :map, default: %{}
     timestamps(type: :utc_datetime)

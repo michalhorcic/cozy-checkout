@@ -32,12 +32,14 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
         {:error, "Vyúčtování potřebuje vlastní typ faktury, nikoli typ zálohy nebo ZDD"}
 
       Repo.exists?(
-        from p in Payment, where: p.booking_id == ^doc.booking_id and p.kind == "refund"
+        from p in Payment,
+          where: p.billing_account_id == ^doc.billing_account_id and p.kind == "refund"
       ) ->
         {:error, "Pobyt s vratkou vyžaduje účetní vzor; export je pozastaven"}
 
       Repo.exists?(
-        from d in Document, where: d.booking_id == ^doc.booking_id and d.kind == "correction"
+        from d in Document,
+          where: d.billing_account_id == ^doc.billing_account_id and d.kind == "correction"
       ) ->
         {:error, "Pobyt s opravou vyžaduje účetní vzor; export je pozastaven"}
 
@@ -67,7 +69,8 @@ defmodule CozyCheckout.Abra.FinalInvoiceExport do
         )
 
       cond do
-        is_nil(zdd) or zdd.kind != "tax_receipt" or zdd.booking_id != doc.booking_id ->
+        is_nil(zdd) or zdd.kind != "tax_receipt" or
+            zdd.billing_account_id != doc.billing_account_id ->
           {:halt, {:error, "Odpočet neodkazuje na ZDD stejného pobytu"}}
 
         not is_nil(confirmation) and confirmation.state in ["queued", "retrying"] and

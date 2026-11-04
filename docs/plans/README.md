@@ -6,9 +6,10 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 ## Přehled plánů
 
 - [Skupinové rezervace, více plátců a jednodušší zakládání pobytů](2026-11-04-skupinove-rezervace-a-vice-platcu.md)
-  — **připraveno**, rozsah odsouhlasen; jedna rezervace, společná kapacita
-  a stravování, samostatné faktury a platby plátců, pohodlnější termín,
-  sbalené pokoje a hromadné načítání přehledů. Implementace zatím nezahájena.
+  — **implementováno v PR**, čeká na CI a lokální kontrolu; jedna rezervace,
+  společná kapacita a stravování, samostatné faktury a platby plátců,
+  pohodlnější termín, sbalené pokoje a hromadné načítání přehledů.
+  [Návod](../features/BILLING.md#rezervace-a-skupiny-s-více-plátci).
 - [Tvorba a úprava menu přímo z receptů](2026-11-02-menu-z-receptu.md)
   — implementováno v `main`; menu, přiřazení pobytům a nákup používají odkazy
   na recepty, změny platí i do minulosti. [Současný návod](../features/CATERING.md).

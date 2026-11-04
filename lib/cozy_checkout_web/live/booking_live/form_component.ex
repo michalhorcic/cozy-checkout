@@ -112,40 +112,118 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
         </div>
 
         <div class="mb-4">
-          <label class="block text-sm font-semibold leading-6 text-zinc-800 mb-2">
-            Rooms
-          </label>
-          <div class="grid grid-cols-2 gap-2">
-            <%= for room <- @rooms do %>
-              <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-secondary-50 transition-colors">
-                <input
-                  type="checkbox"
-                  name="room_ids[]"
-                  value={room.id}
-                  checked={room.id in @selected_room_ids}
-                  phx-target={@myself}
-                  phx-click="toggle_room"
-                  phx-value-room-id={room.id}
-                  class="rounded border-secondary-300 text-tertiary-600 focus:ring-indigo-500"
-                />
-                <span class="ml-2 text-sm text-primary-500">
-                  {room.room_number}
-                  <%= if room.name do %>
-                    <span class="text-primary-400">- {room.name}</span>
-                  <% end %>
-                  <span class="text-primary-300 text-xs block">Capacity: {room.capacity}</span>
-                </span>
-              </label>
-            <% end %>
-          </div>
+          <details id="booking-room-picker">
+            <summary class="cursor-pointer py-3 text-sm font-semibold">
+              {if @selected_room_ids == [],
+                do: "Pokoje nepřiřazeny · Vybrat",
+                else:
+                  "Pokoje: " <>
+                    Enum.map_join(
+                      Enum.filter(@rooms, &(&1.id in @selected_room_ids)),
+                      ", ",
+                      & &1.room_number
+                    ) <> " · Upravit"}
+            </summary>
+            <div class="grid grid-cols-2 gap-2">
+              <%= for room <- @rooms do %>
+                <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-secondary-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    name="room_ids[]"
+                    value={room.id}
+                    checked={room.id in @selected_room_ids}
+                    phx-target={@myself}
+                    phx-click="toggle_room"
+                    phx-value-room-id={room.id}
+                    class="rounded border-secondary-300 text-tertiary-600 focus:ring-indigo-500"
+                  />
+                  <span class="ml-2 text-sm text-primary-500">
+                    {room.room_number}
+                    <%= if room.name do %>
+                      <span class="text-primary-400">- {room.name}</span>
+                    <% end %>
+                    <span class="text-primary-300 text-xs block">Capacity: {room.capacity}</span>
+                  </span>
+                </label>
+              <% end %>
+            </div>
+          </details>
           <%= if @room_error do %>
             <p class="mt-2 text-sm text-rose-600">{@room_error}</p>
           <% end %>
         </div>
 
-        <.input field={@form[:check_in_date]} type="date" label="Check-in Date" required />
-
-        <.input field={@form[:check_out_date]} type="date" label="Check-out Date" />
+        <fieldset id="booking-dates" class="my-4 rounded-lg border p-4">
+          <legend>Termín pobytu</legend>
+          <div class="grid grid-cols-2 gap-3">
+            <.input field={@form[:check_in_date]} type="date" label="Příjezd" required />
+            <.input field={@form[:check_out_date]} type="date" label="Odjezd" />
+          </div>
+          <p aria-live="polite">{nights_label(@form)}</p>
+          <details>
+            <summary class="cursor-pointer py-3">Vybrat rozsah v kalendáři</summary>
+            <p class="text-sm">První kliknutí: příjezd, druhé: odjezd.</p>
+            <div class="flex items-center justify-between my-2">
+              <button
+                type="button"
+                phx-click="calendar_month"
+                phx-value-offset="-1"
+                phx-target={@myself}
+                aria-label="Předchozí měsíc"
+                class="btn"
+              >‹</button>
+              <span>{month_label(@calendar_month)}</span>
+              <button
+                type="button"
+                phx-click="calendar_month"
+                phx-value-offset="1"
+                phx-target={@myself}
+                aria-label="Další měsíc"
+                class="btn"
+              >›</button>
+            </div>
+            <div class="grid grid-cols-7 gap-1" role="group" aria-label="Kalendář termínu">
+              <span :for={day <- ~w(Po Út St Čt Pá So Ne)} class="text-center text-xs">{day}</span>
+              <span :for={_ <- calendar_padding(@calendar_month)}></span>
+              <button
+                :for={date <- Date.range(@calendar_month, Date.end_of_month(@calendar_month))}
+                type="button"
+                phx-click="calendar_day"
+                phx-value-date={date}
+                phx-target={@myself}
+                aria-label={Calendar.strftime(date, "%d. %m. %Y")}
+                aria-pressed={selected_date?(@form, date)}
+                class={[
+                  "min-h-11 rounded text-center",
+                  if(selected_date?(@form, date),
+                    do: "bg-primary text-primary-content",
+                    else: "bg-base-200"
+                  )
+                ]}
+              >{date.day}</button>
+            </div>
+          </details>
+        </fieldset>
+        <fieldset class="my-4 rounded-lg border p-4">
+          <legend>Ubytovaní · společné počty rezervace</legend>
+          <div class="grid grid-cols-3 gap-3">
+            <.input field={@form[:adults]} type="number" label="Dospělí" min="0" required />
+            <.input field={@form[:infants]} type="number" label="Děti do 2 let" min="0" required />
+            <.input field={@form[:children]} type="number" label="Děti do 12 let" min="0" required />
+          </div>
+          <div
+            :if={@form[:unclassified_guests].value not in [nil, 0, "0"]}
+            class="alert alert-warning"
+          >
+            Historické osoby bez známé kategorie: doplňte rozpad, věk nebyl odhadnut.
+            <.input
+              field={@form[:unclassified_guests]}
+              type="number"
+              label="Nezařazené osoby"
+              min="0"
+            />
+          </div>
+        </fieldset>
 
         <.input
           field={@form[:status]}
@@ -278,6 +356,11 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
      |> assign(:rooms, rooms)
      |> assign(:selected_room_ids, selected_room_ids)
      |> assign(:room_error, nil)
+     |> assign(
+       :calendar_month,
+       Date.beginning_of_month(booking.check_in_date || Date.utc_today())
+     )
+     |> assign(:range_start, nil)
      |> assign(:guest_search_text, guest_search_text)
      |> assign(:guest_suggestions, [])
      |> assign(:show_suggestions, false)
@@ -364,7 +447,7 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
     # Auto-update check-out date when check-in date changes
     booking_params =
       if params["_target"] == ["booking", "check_in_date"] do
-        maybe_update_checkout_date(booking_params, socket.assigns.booking)
+        maybe_update_checkout_date(booking_params, socket.assigns.form)
       else
         booking_params
       end
@@ -377,80 +460,109 @@ defmodule CozyCheckoutWeb.BookingLive.FormComponent do
     save_booking(socket, socket.assigns.action, booking_params)
   end
 
-  defp maybe_update_checkout_date(booking_params, booking) do
-    with %{"check_in_date" => check_in_str} when is_binary(check_in_str) <- booking_params,
-         {:ok, check_in_date} <- Date.from_iso8601(check_in_str) do
-      # Only update if check-in date actually changed
-      current_check_in = booking.check_in_date
+  def handle_event("calendar_month", %{"offset" => offset}, socket) do
+    {:noreply,
+     assign(
+       socket,
+       :calendar_month,
+       Date.shift(socket.assigns.calendar_month, month: String.to_integer(offset))
+     )}
+  end
 
-      if current_check_in != check_in_date do
-        # Set check-out to one day after check-in
-        next_day = Date.add(check_in_date, 1)
-        Map.put(booking_params, "check_out_date", Date.to_iso8601(next_day))
+  def handle_event("calendar_day", %{"date" => value}, socket) do
+    {:ok, date} = Date.from_iso8601(value)
+    start = socket.assigns.range_start
+    attrs = socket.assigns.form.params || %{}
+
+    {attrs, next} =
+      if start && Date.compare(date, start) == :gt do
+        {Map.merge(attrs, %{"check_in_date" => to_string(start), "check_out_date" => value}), nil}
       else
-        booking_params
+        {Map.merge(attrs, %{"check_in_date" => value, "check_out_date" => ""}), date}
       end
+
+    {:noreply,
+     socket
+     |> assign(:range_start, next)
+     |> assign(
+       :form,
+       to_form(Bookings.change_booking(socket.assigns.booking, attrs), action: :validate)
+     )}
+  end
+
+  defp date_value(value) when is_struct(value, Date), do: value
+
+  defp date_value(value) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, date} -> date
+      _ -> nil
+    end
+  end
+
+  defp date_value(_), do: nil
+
+  defp nights_label(form) do
+    first = date_value(form[:check_in_date].value)
+    last = date_value(form[:check_out_date].value)
+
+    if first && last && Date.compare(last, first) == :gt,
+      do: "Počet nocí: #{Date.diff(last, first)}",
+      else: "Odjezd lze doplnit později"
+  end
+
+  defp selected_date?(form, date) do
+    first = date_value(form[:check_in_date].value)
+    last = date_value(form[:check_out_date].value)
+
+    first && Date.compare(date, first) != :lt &&
+      ((is_nil(last) && date == first) || (last && Date.compare(date, last) != :gt))
+  end
+
+  defp calendar_padding(date) do
+    count = Date.day_of_week(date) - 1
+    if count == 0, do: [], else: 1..count
+  end
+
+  defp month_label(date) do
+    months = ~w(leden únor březen duben květen červen červenec srpen září říjen listopad prosinec)
+    "#{Enum.at(months, date.month - 1)} #{date.year}"
+  end
+
+  defp maybe_update_checkout_date(params, form) do
+    previous = date_value(form[:check_in_date].value)
+    last = date_value(form[:check_out_date].value)
+    next = date_value(params["check_in_date"])
+
+    if previous && last && next && Date.compare(last, previous) == :gt do
+      Map.put(params, "check_out_date", to_string(Date.add(next, Date.diff(last, previous))))
     else
-      _ -> booking_params
+      params
     end
   end
 
-  defp save_booking(socket, :edit, booking_params) do
-    # Ensure guest_id is set from the autocomplete selection
+  defp save_booking(socket, action, booking_params) do
     booking_params = Map.put(booking_params, "guest_id", socket.assigns.selected_guest_id)
 
-    case Bookings.update_booking(socket.assigns.booking, booking_params) do
+    case Bookings.save_booking_with_rooms(
+           socket.assigns.booking,
+           booking_params,
+           socket.assigns.selected_room_ids
+         ) do
       {:ok, booking} ->
-        # Update room associations
-        case Bookings.set_booking_rooms(booking.id, socket.assigns.selected_room_ids) do
-          {:ok, _} ->
-            notify_parent({:saved, booking})
+        notify_parent({:saved, booking})
+        socket = put_flash(socket, :success, "Rezervace uložena")
 
-            {:noreply,
-             socket
-             |> put_flash(:success, "Booking updated successfully")
-             |> push_patch(to: socket.assigns.patch)}
+        {:noreply,
+         if(action == :edit,
+           do: push_patch(socket, to: socket.assigns.patch),
+           else: push_navigate(socket, to: ~p"/admin/bookings/#{booking}")
+         )}
 
-          {:error, {:rooms_not_available, _unavailable_rooms}} ->
-            {:noreply,
-             assign(socket,
-               room_error: "One or more selected rooms are not available for these dates"
-             )}
-        end
+      {:error, {:rooms_not_available, _}} ->
+        {:noreply, assign(socket, :room_error, "Vybrané pokoje nejsou v tomto termínu dostupné")}
 
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
-    end
-  end
-
-  defp save_booking(socket, :new, booking_params) do
-    # Ensure guest_id is set from the autocomplete selection
-    booking_params = Map.put(booking_params, "guest_id", socket.assigns.selected_guest_id)
-
-    case Bookings.create_booking(booking_params) do
-      {:ok, booking} ->
-        # Add room associations
-        case Bookings.set_booking_rooms(booking.id, socket.assigns.selected_room_ids) do
-          {:ok, _} ->
-            notify_parent({:saved, booking})
-
-            {:noreply,
-             socket
-             |> put_flash(:success, "Booking created successfully")
-             |> push_navigate(to: ~p"/admin/bookings/#{booking}")}
-
-          {:error, {:rooms_not_available, _unavailable_rooms}} ->
-            # Rollback the booking creation
-            Bookings.delete_booking(booking)
-
-            {:noreply,
-             assign(socket,
-               room_error: "One or more selected rooms are not available for these dates"
-             )}
-        end
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:noreply, assign(socket, form: to_form(changeset))}
+      {:error, %Ecto.Changeset{} = cs} ->
+        {:noreply, assign(socket, :form, to_form(cs))}
     end
   end
 

@@ -140,7 +140,11 @@ defmodule CozyCheckout.Abra.BankPayments do
              {:ok, links} <- BankVerification.check(snapshot, movement.raw, export.remote_id),
              :ok <- verify_source(export, remote, movement.amount, links.source_paired?),
              {:ok, tax_preview} <-
-               Billing.preview_advance_payment(doc.booking_id, movement.amount, movement.paid_on),
+               Billing.preview_advance_payment(
+                 Billing.scope(doc),
+                 movement.amount,
+                 movement.paid_on
+               ),
              true <- TaxReceiptBuilder.supported_lines?(tax_preview.lines, cfg) do
           {:ok,
            %{
@@ -220,7 +224,8 @@ defmodule CozyCheckout.Abra.BankPayments do
                 left_join: c in BankConfirmation,
                 on: c.payment_id == p.id,
                 where:
-                  p.booking_id == ^doc.booking_id and p.method == "bank" and p.kind == "receipt",
+                  p.billing_account_id == ^doc.billing_account_id and p.method == "bank" and
+                    p.kind == "receipt",
                 where:
                   p.amount == ^movement.amount and p.paid_on == ^movement.paid_on and is_nil(c.id)
               )
@@ -244,7 +249,7 @@ defmodule CozyCheckout.Abra.BankPayments do
           }
 
           payment =
-            case Billing.record_payment(doc.booking_id, attrs) do
+            case Billing.record_payment(Billing.scope(doc), attrs) do
               {:ok, payment} -> payment
               {:error, reason} -> Repo.rollback(reason)
             end
@@ -277,7 +282,7 @@ defmodule CozyCheckout.Abra.BankPayments do
     do: CozyCheckout.Abra.FinalBankPayments.local_preview(doc, movement)
 
   defp local_preview(doc, movement),
-    do: Billing.preview_advance_payment(doc.booking_id, movement.amount, movement.paid_on)
+    do: Billing.preview_advance_payment(Billing.scope(doc), movement.amount, movement.paid_on)
 
   defp receipt_payload(_payment, _cfg, "final"), do: %{}
 

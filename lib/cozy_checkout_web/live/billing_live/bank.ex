@@ -169,7 +169,12 @@ defmodule CozyCheckoutWeb.BillingLive.Bank do
             >Znovu ověřit a obnovit přenos</button>
           </div>
           <div :if={row.document}>
-            <.link navigate={~p"/admin/bookings/#{row.booking_id}/billing"} class="link">Pobyt · {row.document.number}</.link>
+            <.link
+              navigate={
+                ~p"/admin/bookings/#{row.booking_id}/billing?#{%{payer: row.document.billing_account_id}}"
+              }
+              class="link"
+            >Plátce {row.document.snapshot["customer"]["name"]} · {row.document.number}</.link>
             <p>
               Rozdíl proti {if row.document.kind == "final",
                 do: "zbývající úhradě faktury",

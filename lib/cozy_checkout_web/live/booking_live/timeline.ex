@@ -70,24 +70,11 @@ defmodule CozyCheckoutWeb.BookingLive.Timeline do
     bookings =
       Bookings.list_bookings_for_date_range(start_date, end_date)
       |> Enum.sort_by(& &1.check_in_date)
+      |> CozyCheckout.Repo.preload([:rooms, invoice: :items], in_parallel: false)
       |> Enum.map(fn booking ->
-        # Load invoice and calculate people count
-        invoice = Bookings.get_invoice_by_booking_id(booking.id)
-
-        people_count =
-          if invoice do
-            Bookings.get_invoice_people_count(invoice.id)
-          else
-            0
-          end
-
-        # Load rooms
-        rooms = Bookings.list_booking_rooms(booking.id)
-
         booking
-        |> Map.put(:invoice, invoice)
-        |> Map.put(:people_count, people_count)
-        |> Map.put(:rooms_list, rooms)
+        |> Map.put(:people_count, Bookings.people_count(booking))
+        |> Map.put(:rooms_list, booking.rooms)
       end)
 
     dates = Date.range(start_date, end_date) |> Enum.to_list()

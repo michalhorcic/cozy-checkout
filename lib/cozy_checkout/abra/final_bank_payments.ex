@@ -20,14 +20,16 @@ defmodule CozyCheckout.Abra.FinalBankPayments do
   def payable(doc), do: Decimal.add(doc.total, Money.total(doc.snapshot["deductions"] || []))
 
   def local_preview(doc, movement) do
-    payments = Billing.list_payments(doc.booking_id) |> Enum.sort_by(& &1.id)
+    payments = Billing.list_payments(Billing.scope(doc)) |> Enum.sort_by(& &1.id)
 
     received =
       payments |> Enum.filter(&(&1.document_id == doc.id)) |> Enum.map(& &1.amount) |> Money.sum()
 
     cond do
       Repo.exists?(
-        from(d in Document, where: d.booking_id == ^doc.booking_id and d.kind == "correction")
+        from(d in Document,
+          where: d.billing_account_id == ^doc.billing_account_id and d.kind == "correction"
+        )
       ) or
           Enum.any?(payments, &(&1.kind == "refund")) ->
         {:error, "Doplatek pobytu s opravou nebo vratkou vyžaduje ruční účetní řešení"}
@@ -348,10 +350,14 @@ defmodule CozyCheckout.Abra.FinalBankPayments do
         {:error, "Export konečné faktury není dokončený"}
 
       Repo.exists?(
-        from(d in Document, where: d.booking_id == ^doc.booking_id and d.kind == "correction")
+        from(d in Document,
+          where: d.billing_account_id == ^doc.billing_account_id and d.kind == "correction"
+        )
       ) or
           Repo.exists?(
-            from(p in Payment, where: p.booking_id == ^doc.booking_id and p.kind == "refund")
+            from(p in Payment,
+              where: p.billing_account_id == ^doc.billing_account_id and p.kind == "refund"
+            )
           ) ->
         {:conflict, "Opravy a vratky vyžadují ruční účetní řešení"}
 

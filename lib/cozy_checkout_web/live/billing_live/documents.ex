@@ -226,7 +226,9 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
                 class="btn btn-primary"
                 target="_blank"
               >Stáhnout uložené PDF</.link><.link
-                navigate={~p"/admin/bookings/#{@document.booking_id}/billing"}
+                navigate={
+                  ~p"/admin/bookings/#{@document.booking_id}/billing?#{%{payer: @document.billing_account_id}}"
+                }
                 class="btn"
               >Doklady a platby pobytu</.link>
             </div>

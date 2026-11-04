@@ -41,10 +41,63 @@ vystavené doklady a jejich VS se nemění ani při opakování požadavku.
 Výchozí splatnost je 14 dnů, měna CZK, jazyk čeština. API přístupy nikdy nepatří
 přímo do databáze profilů ani do Git repozitáře.
 
+## Rezervace a skupiny s více plátci
+
+Při založení rezervace vyplňte společné počty dospělých, dětí do 2 let a dětí
+do 12 let. Obsazenost funguje již bez kalkulace. Strávníci zůstávají samostatní:
+změna fakturovaných osob nepřidá porce ani neobsadí další lůžka.
+
+Termín lze zadat ručně nebo přes **Vybrat rozsah v kalendáři**. První kliknutí
+zvolí příjezd, druhé pozdější datum odjezdu. Samostatný posun příjezdu v ručním
+vstupu zachová již zvolený počet nocí. Otevřený pobyt může zůstat bez odjezdu;
+před vystavením musí mít platný konec. Pokoje jsou ve sbaleném výběru,
+přiřazení zůstává zachované i po sbalení. Uložení rezervace a pokojů je atomické;
+konflikt dostupnosti neuloží část změn.
+
+Každý běžný pobyt má automaticky jednoho výchozího plátce. Pro skupinu otevřete
+fakturaci a před prvním vystavením zvolte **Rozdělit mezi více plátců**:
+
+1. Výchozího plátce upravte na první rodinu a její vlastní počty. Výchozí plátce
+   zůstává součástí přehledu a nelze ho odstranit; nemusí představovat vedoucího.
+2. Přidejte ostatní plátce jménem a počty osob; e-mail a další údaje jsou volitelné.
+   **Uložit a přidat dalšího** vyčistí identifikaci a připraví další formulář.
+3. Při prvním rozdělení se uloží společné předvolby cen z dosavadní kalkulace.
+   Další plátci je převezmou i po změně katalogu nebo individuální cenové výjimce
+   výchozího plátce. Společný termín určí noci. Individuální termín lze doplnit
+   ve formuláři plátce, ceny upravit v jeho kalkulaci. Služby a místní poplatky
+   se dalším rodinám nekopírují; doplňte jejich množství jednotlivě.
+4. Přepnutím plátce otevřete jeho odběratele, kalkulaci, náhledy, doklady a platby.
+   Vystavení je stále jednotlivé a výslovné. Každý plátce může mít vlastní zálohy,
+   ZDD, jednu konečnou fakturu, doplatky a případné opravy/vratky.
+5. Zkontrolujte rozdělení osob po kategoriích a použijte **Rozdělení dokončeno**,
+   jakmile již nečekáte další plátce. Rozdíl proti společným počtům pouze upozorní.
+   Přidání/odebrání plátce nebo změna přiřazených osob potvrzení zruší; samotná
+   platba je neruší. Rozdělení lze znovu otevřít ručně.
+
+Přehled uvádí počet čekajících plátců a uhrazených konečných faktur. Skupina je
+uhrazená až při dokončeném rozdělení a vypořádání konečných faktur všech aktivních
+plátců. Přeplatek jedné rodiny nevyrovná dluh jiné; prodlení kteréhokoli plátce
+se promítne do filtru **Po splatnosti**. Výzvy, ZDD a opravy nejsou další konečné
+faktury. Nulový doplatek po vlastní záloze nevyžaduje další bankovní příjem.
+
+Již vystavený běžný pobyt nelze dodatečně rozdělit na nové odběratele. U skupiny
+připravené před prvním vystavením lze přidávat další plátce postupně. Plátce
+s doklady nelze odstranit. Rozdělování společné zálohy nebo bankovního pohybu
+mezi více rodin není podporované.
+
+Migrace přiřadí staré kalkulace, odběratele, doklady i platby výchozímu plátci,
+aniž změní jejich ID, čísla, částky, PDF nebo účetní identity. Počty převezme
+z historických položek osob; neznámé kategorie zachová jako nezařazené osoby
+k ručnímu doplnění. Dosavadní pobyty s jedním plátcem mají rozdělení dokončené.
+Po vzniku více plátců není bezpečný návrat ke staré aplikaci očekávající jedinou
+fakturu na rezervaci; migrace proto nemá destruktivní automatický rollback.
+Nové nastavení prostředí ani účetní mapování nejsou potřeba.
+
 ## Běžný postup
 
-V rezervaci otevřete **Kalkulace, doklady a platby**. Kalkulace eviduje kategorie
-hostů a počty nocí; pouze položky typu Osoby určují obsazenost. Odběratelem může
+V rezervaci otevřete **Kalkulace, doklady a platby**. Kalkulace eviduje fakturované
+kategorie hostů a počty nocí. Obsazenost určují společné počty ubytovaných
+v rezervaci, nezávisle na kalkulacích, dokladech a počtech strávníků. Odběratelem může
 být host, firma nebo škola. Povinné je pouze jméno nebo název odběratele.
 Adresu, zemi, IČO, DIČ a fakturační e-mail lze volitelně doplnit pod **Další údaje**;
 prázdné údaje se na dokladu nezobrazují. Pro odeslání e-mailem vyplňte příjemce

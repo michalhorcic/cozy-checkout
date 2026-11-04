@@ -805,6 +805,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
           </p>
         </div>
         <div class={["space-y-3 px-4 py-3 text-sm"]}>
+          <p>
+            {@summary.account_count - @summary.final_count} plátci čekají na fakturu · {@summary.paid_count}/{@summary.final_count} faktur uhrazeno
+          </p>
           <p :if={@summary.payment_state} class={["flex items-center justify-between gap-4"]}>
             <span class={["text-primary-400"]}>Stav úhrady</span>
             <span class={[

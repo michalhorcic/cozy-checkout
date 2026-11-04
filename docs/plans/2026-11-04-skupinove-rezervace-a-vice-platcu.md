@@ -1,6 +1,6 @@
 # Skupinové rezervace, více plátců a jednodušší zakládání pobytů
 
-- Stav: **připraveno — rozsah odsouhlasen, implementace nezahájena**
+- Stav: **implementováno v PR — čeká na CI a lokální kontrolu uživatele**
 - Vytvořeno: 2026-11-04
 - Aktualizováno: 2026-11-04
 - Podklad: kontrola kódu na `origin/main` (`dea396c`) a rozhodnutí uživatele
@@ -10,8 +10,9 @@
   [Integrace ABRA](../integrations/ABRA_INTEGRATION.md),
   [Finanční regresní testy](../development/FINANCIAL_TESTS.md).
 
-Uložení tohoto plánu je nynější zadání. Zahájení implementace vyžaduje další
-pokyn uživatele. Plán popisuje budoucí chování, nikoli současnou obsluhu.
+Implementace byla zadána uživatelem 4. 11. 2026 s požadavkem na jednu PR.
+Nasazení provede uživatel po lokální kontrole. Současná obsluha je popsána
+v [návodu fakturace](../features/BILLING.md#rezervace-a-skupiny-s-více-plátci).
 
 ## Problém a očekávaný výsledek
 
@@ -283,22 +284,22 @@ dokladů vyžadují samostatné projednání.
 
 - [x] **0. Analýza a dohoda:** prozkoumán současný model, formulář, kuchyň,
   doklady a účetní integrace; schválen rozsah a uložen tento plán.
-- [ ] **1. Ověřit aktuální main a všechny čtenáře:** doplnit inventuru použití
+- [x] **1. Ověřit aktuální main a všechny čtenáře:** doplnit inventuru použití
   `booking_id`, jediné kalkulace/konečné faktury a obsazenosti, včetně kalendáře,
   časové osy, dashboardu, statistik a finančních filtrů. Zvolit migrační tvar.
-- [ ] **2. Data a kompatibilita:** přidávací migrace plátců, počty rezervace,
+- [x] **2. Data a kompatibilita:** přidávací migrace plátců, počty rezervace,
   dokončení rozdělení, nové vazby a jedinečnosti; bezpečný převod na jednoho
   výchozího plátce a zachování účetní historie.
-- [ ] **3. Fakturační kontext:** kalkulace a uložené předvolby, odběratelé,
+- [x] **3. Fakturační kontext:** kalkulace a uložené předvolby, odběratelé,
   náhledy, doklady, zálohy, odpočty, platby, opravy a vratky po plátcích;
   izolace vlastnictví, souběhu a idempotence.
-- [ ] **4. ABRA:** zúžit místní návrhy a ověření na plátce bez změny účetního
+- [x] **4. ABRA:** zúžit místní návrhy a ověření na plátce bez změny účetního
   kontraktu; regresní pokrytí záloh, konečných faktur a bankovních doplatků.
-- [ ] **5. Formulář rezervace:** počty osob, český výběr rozsahu, délka pobytu,
+- [x] **5. Formulář rezervace:** počty osob, český výběr rozsahu, délka pobytu,
   sbalené pokoje, zachované stravování a atomické uložení rezervace s pokoji.
-- [ ] **6. Plátci v UI:** rychlé přidávání, společné předvyplnění, výjimky,
+- [x] **6. Plátci v UI:** rychlé přidávání, společné předvyplnění, výjimky,
   kalkulace a doklady plátce, náhledy a bankovní dialog se zřetelným cílem.
-- [ ] **7. Souhrny a výkon:** stav rozdělení, vystavení a úhrad, filtry, přehled
+- [x] **7. Souhrny a výkon:** stav rozdělení, vystavení a úhrad, filtry, přehled
   rezervace a hromadné načítání dotčených seznamů včetně časové osy.
 - [ ] **8. Ověření a provozní dokumentace:** kontextové a LiveView regrese,
   měření dotazů, ruční desktop/mobil průchod, popis skutečně dodaného chování
@@ -358,26 +359,31 @@ Po vzniku více faktur pod jednou rezervací není bezpečný návrat ke staré 
 která očekává jedinou konečnou fakturu. Návrat musí respektovat nově uložená
 data; destruktivní mazání plátců a účetních vazeb není způsob rollbacku.
 
-## Průběh a předání dalšímu chatu
+## Realizace a předání
 
-- Hotovo: analýza kódu a dohoda s uživatelem, schválené upozornění na rozdíly
-  a ruční dokončení rozdělení, schválené hromadné načítání, uložen tento plán.
-- Zbývá: implementace kroků 1–8 včetně migrací, regresí a provozní dokumentace.
-- Blokuje: nic obchodního; implementace nyní nebyla zadána.
-- Ověření při plánování: čtení kódu a testů, nikoli spuštění aplikace/testů,
-  produkční audit nebo ověření živé ABRA.
-- Při uložení plánu prošlo striktní sestavení dokumentace přes
-  `mkdocs build --strict`, kontrola lokálních odkazů obou změněných dokumentů
-  a `git diff --check`. Aplikační testy nebyly spuštěny; výsledky CI ověří
-  uživatel. Mix formátování nebylo možné spustit, protože v tomto prostředí
-  není dostupný Elixir/Mix. Změněny byly pouze soubory Markdown.
-- Nejbližší další krok po zadání implementace: načíst aktuální `AGENTS.md`,
-  porovnat čerstvý `origin/main` s podklady plánu a provést krok 1.
-
-Předávací zadání: „Implementuj plán
-`docs/plans/2026-11-04-skupinove-rezervace-a-vice-platcu.md`. Zachovej jednu
-rezervaci a společné počty pro kapacitu/kuchyň, přidej plátce s vlastními
-kalkulacemi, zálohami a fakturami. Zachovej účetní kontrakt ABRA a zúž místní
-kontroly na plátce. Rozdíly osob pouze upozorňují, rozdělení se potvrzuje ručně.
-Přidej pohodlnější termín, sbalené pokoje a schválené hromadné načítání přehledů.
-Nejdřív ověř aktuální kód a pokračuj nedokončenými kroky podle AGENTS.md.“
+- Základ: čerstvé `origin/main` (`ade1058`), větev
+  `feat/group-reservations-multiple-payers`; výsledek v jedné PR.
+- Hotovo: kroky 1–7, provozní dokumentace a rozšíření regresních sad.
+  Samostatný `billing_accounts` nese přiřazené osoby a výjimku termínu.
+  `billing_pricing_template` u rezervace uloží ceny při prvním rozdělení.
+  Výchozí plátce slouží první skutečné rodině a zůstává aktivní.
+- Inventura čtenářů: `Billing`, `BookingSummary`, čtyři místní bankovní/exportní
+  moduly ABRA, kalkulace/odběratel/doklady/platby v LiveView, rezervovací formulář,
+  souhrn rezervace, filtry a stránkování, iCalendar, časová osa, obsazenost,
+  dashboard a počty rezervací ve statistikách. Kuchyň nadále čte jen rezervaci.
+  Exporty a úlohy nadále používají původní identity dokladů.
+- Migrace `20261104120000_add_billing_accounts.exs` přidává společné počty,
+  plátce a cenové předvolby; zachovává historické identity a snapshoty.
+  Kompozitní FK kontrolují rezervaci, plátce, rodiče a platební doklady;
+  databázový trigger kontroluje vlastnictví zdrojových odpočtů.
+  Migrace odmítá automatický destruktivní rollback.
+- Ověřeno na Elixiru 1.20.4 / OTP 29.1: formátování změněných souborů,
+  celoprojektové `MIX_ENV=test mix format --check-formatted`,
+  `MIX_ENV=test mix compile --warnings-as-errors` a kompilace změněných
+  testovacích modulů bez jejich spuštění. Na místním PostgreSQL proběhla migrace
+  a kontrola SQL souhrnů, kalendáře a časové osy. `git diff --check` bez chyb.
+- Zbývá v kroku 8: uživatel ověří CI a lokální desktop/mobil průchod včetně
+  klávesnice. Lokální testy nebyly spuštěny; na CI se nečekalo a jeho stav nebyl
+  dotazován. Živá ABRA, skutečné bankovní potvrzení ani e-maily hostům nebyly
+  použity. Nasazení, audit historických produkčních dat a provozní záloha
+  zůstávají uživateli.
