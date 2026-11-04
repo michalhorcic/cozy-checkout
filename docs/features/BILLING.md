@@ -67,7 +67,8 @@ fakturaci a před prvním vystavením zvolte **Rozdělit mezi více plátců**:
    Další plátci je převezmou i po změně katalogu nebo individuální cenové výjimce
    výchozího plátce. Společný termín určí noci. Individuální termín lze doplnit
    ve formuláři plátce, ceny upravit v jeho kalkulaci. Služby a místní poplatky
-   se dalším rodinám nekopírují; doplňte jejich množství jednotlivě.
+   se dalším rodinám nekopírují. Každá nová kalkulace má vlastní řádek rekreačního
+   poplatku; počet zpoplatněných osob doplňte jednotlivě.
 4. Plátce přepínejte záložkami přímo nad kalkulací. Pod nimi se ihned zobrazí
    počty aktivního plátce a editovatelné řádky; souhrn rozdělení a nápověda jsou
    v rozbalovacím přehledu. Záložky obsahují celkový počet osob, rozpad dospělých
@@ -117,8 +118,12 @@ v odesílacím formuláři.
 
 Nová kalkulace používá koncové ceny včetně DPH podle dne příjezdu pro celý pobyt,
 ve výchozí sazbě 12 %. Polopenze je zahrnuta v jedné ceně; nápoje se účtují na
-baru. Další služby mají vlastní sazbu. Místní poplatek přidávejte ručně jako
-službu s režimem **Mimo předmět DPH**, odpovídající cenou a počtem osobonocí.
+baru. Další služby mají vlastní sazbu. Každá nová kalkulace obsahuje řádek
+**Rekreační poplatek** za **35 Kč za osobu a noc**, v režimu **Mimo předmět DPH**.
+Počet nocí se předvyplní podle pobytu. Počet zpoplatněných osob zůstává prázdný
+pro ruční doplnění a do té doby se poplatek do ceny nezapočítává. Sazba je zatím
+nastavena v kódu; v konkrétní kalkulaci ji lze upravit. Existující kalkulace se
+automaticky nedoplňují.
 Zdanitelná sazba 0 % a plnění mimo předmět DPH jsou odlišné režimy.
 
 Není-li ceník, cena zůstane nevyplněná. Lze ji doplnit ručně. Změna sezony nebo

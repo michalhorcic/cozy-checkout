@@ -569,6 +569,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             row
 
           attrs ->
+            attrs =
+              if recreation_fee?(row.changeset) and attrs["quantity"] == "",
+                do: Map.put(attrs, "quantity", "0"),
+                else: attrs
+
             %{
               row
               | changeset: %{
@@ -597,6 +602,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   end
 
   defp row_form(row), do: to_form(row.changeset, as: "items[#{row.key}]", id: "item-#{row.key}")
+
+  defp recreation_fee?(changeset) do
+    Ecto.Changeset.get_field(changeset, :name) == "Rekreační poplatek" and
+      Ecto.Changeset.get_field(changeset, :item_type) == "extra"
+  end
 
   defp row_total(row, basis) do
     item = Ecto.Changeset.apply_changes(row.changeset)
@@ -1029,11 +1039,18 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                       </div>
                       <.input
                         field={form[:quantity]}
+                        value={
+                          if recreation_fee?(row.changeset) and
+                               form[:quantity].value in [0, "0"],
+                            do: "",
+                            else: form[:quantity].value
+                        }
                         type="number"
-                        label="Počet"
+                        label={if recreation_fee?(row.changeset), do: "Počet osob", else: "Počet"}
+                        placeholder={if recreation_fee?(row.changeset), do: "Doplňte počet osob"}
                         aria-label={"Počet – #{row.changeset.data.name || "nová položka"}"}
                         min="0"
-                        required
+                        required={!recreation_fee?(row.changeset)}
                         class="input w-full text-right tabular-nums"
                       />
                       <.input
