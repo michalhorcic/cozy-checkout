@@ -118,7 +118,12 @@ defmodule CozyCheckout.BillingAccountsTest do
              Billing.customer(booking.id).data["company_id"]
 
     invoice = Billing.calculation(payer)
-    assert length(invoice.items) == 3
+    assert length(invoice.items) == 4
+    fee = Enum.find(invoice.items, &(&1.name == "Rekreační poplatek"))
+    assert fee.quantity == 0
+    assert fee.nights == 3
+    assert Decimal.equal?(fee.price_per_night, "35")
+    refute Enum.any?(invoice.items, &(&1.name == "Služba skupině"))
     assert Decimal.equal?(hd(invoice.items).price_per_night, "950")
     assert Decimal.equal?(invoice.total_price, "2850")
     assert Billing.list_payments(payer) == []

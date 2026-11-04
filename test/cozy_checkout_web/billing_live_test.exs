@@ -287,13 +287,57 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert has_element?(view, "#billing-save-items[disabled]")
   end
 
+  test "recreation fee starts blank and supports entering and clearing a manual person count", %{
+    conn: conn,
+    booking: booking
+  } do
+    invoice = Billing.calculation(booking.id)
+    fee = Enum.find(invoice.items, &(&1.name == "Rekreační poplatek"))
+    adult = Enum.find(invoice.items, &(&1.name == "Dospělí"))
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+
+    assert has_element?(
+             view,
+             "#item-#{fee.id}_quantity[value=''][placeholder='Doplňte počet osob']"
+           )
+
+    refute has_element?(view, "#item-#{fee.id}_quantity[required]")
+    assert has_element?(view, "#billing-save-items[disabled]")
+
+    view
+    |> form("#billing-items-form", items: %{adult.id => %{quantity: "3"}})
+    |> render_submit()
+
+    assert Decimal.equal?(Billing.calculation(booking.id).total_price, "8550")
+    assert has_element?(view, "#item-#{fee.id}_quantity[value='']")
+
+    view
+    |> form("#billing-items-form", items: %{fee.id => %{quantity: "2"}})
+    |> render_submit()
+
+    assert Decimal.equal?(Billing.calculation(booking.id).total_price, "8760")
+    assert has_element?(view, "#item-#{fee.id}_quantity[value='2']")
+
+    render_change(view, "change-items", %{"items" => %{fee.id => %{"quantity" => "-1"}}})
+    assert has_element?(view, "#item-#{fee.id}_quantity[value='-1']")
+    assert has_element?(view, "#billing-item-#{fee.id} .text-error")
+
+    view
+    |> form("#billing-items-form", items: %{fee.id => %{quantity: ""}})
+    |> render_submit()
+
+    assert Decimal.equal?(Billing.calculation(booking.id).total_price, "8550")
+    assert has_element?(view, "#item-#{fee.id}_quantity[value='']")
+    assert has_element?(view, "#billing-save-items[disabled]")
+  end
+
   test "new items and removals are drafts until the common save", %{conn: conn, booking: booking} do
     invoice = Billing.calculation(booking.id)
     adult = Enum.find(invoice.items, &(&1.name == "Dospělí"))
     {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
     render_click(view, "remove-item", %{"id" => adult.id})
     assert has_element?(view, "#billing-item-#{adult.id}", "Bude odstraněno")
-    assert length(Billing.calculation(booking.id).items) == 3
+    assert length(Billing.calculation(booking.id).items) == 4
     render_click(view, "restore-item", %{"id" => adult.id})
     assert has_element?(view, "#billing-save-items[disabled]")
     view |> element("#billing-add-item") |> render_click()
@@ -311,7 +355,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     }
 
     view |> form("#billing-items-form", items: attrs) |> render_change()
-    assert length(Billing.calculation(booking.id).items) == 3
+    assert length(Billing.calculation(booking.id).items) == 4
     view |> form("#billing-items-form", items: attrs) |> render_submit()
     fee = Enum.find(Billing.calculation(booking.id).items, &(&1.name == "Poplatek z pobytu"))
     assert fee.item_type == "extra"
@@ -320,7 +364,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 2
     render_click(view, "remove-item", %{"id" => fee.id})
     view |> form("#billing-items-form") |> render_submit()
-    assert length(Billing.calculation(booking.id).items) == 3
+    assert length(Billing.calculation(booking.id).items) == 4
   end
 
   test "concurrent edits are rejected without losing draft input", %{conn: conn, booking: booking} do

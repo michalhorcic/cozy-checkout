@@ -9,6 +9,45 @@ defmodule CozyCheckout.BookingBillingTest do
     billing_fixture()
   end
 
+  test "default recreation fee awaits a manual person count and is outside VAT", %{
+    booking: booking,
+    invoice: invoice
+  } do
+    fee = Enum.find(invoice.items, &(&1.name == "Rekreační poplatek"))
+    assert fee.quantity == 0
+    assert fee.nights == 3
+    assert fee.item_type == "extra"
+    assert fee.tax_mode == "outside"
+    assert_amount(fee.price_per_night, "35")
+    assert_amount(fee.vat_rate, "0")
+    assert_amount(fee.total, "0")
+    assert_amount(invoice.total_price, "5700")
+
+    assert {:ok, unchanged} = Billing.create_calculation(booking.id)
+    assert Enum.count(unchanged.items, &(&1.name == fee.name)) == 1
+
+    assert {:ok, _} = Billing.save_item(booking.id, %{"quantity" => "2"}, fee.id)
+    assert {:ok, repriced} = Billing.apply_pricing(booking.id)
+    assert_amount(repriced.total_price, "5910")
+
+    final = issue!(booking, "final")
+    line = Enum.find(final.lines, &(&1["name"] == fee.name))
+    assert line["tax_mode"] == "outside"
+    assert_amount(Money.value(line, "gross"), "210")
+    assert_amount(Money.value(line, "vat"), "0")
+    assert Bookings.get_occupancy_for_date(booking.check_in_date) == 2
+  end
+
+  test "reopening an existing calculation does not restore a removed recreation fee", %{
+    booking: booking,
+    invoice: invoice
+  } do
+    fee = Enum.find(invoice.items, &(&1.name == "Rekreační poplatek"))
+    assert {:ok, _} = Billing.delete_item(booking.id, fee.id)
+    assert {:ok, existing} = Billing.create_calculation(booking.id)
+    refute Enum.any?(existing.items, &(&1.name == fee.name))
+  end
+
   test "variable symbols derive from kind, year and document ordinal without cross-kind collisions",
        %{booking: booking} do
     advance = issue!(booking, "advance")
@@ -231,7 +270,12 @@ defmodule CozyCheckout.BookingBillingTest do
       })
 
     assert {:ok, invoice} = Billing.create_calculation(booking.id)
-    assert Enum.all?(invoice.items, &is_nil(&1.price_per_night))
+    accommodation = Enum.filter(invoice.items, &(&1.item_type == "person"))
+    assert Enum.all?(accommodation, &is_nil(&1.price_per_night))
+
+    fee = Enum.find(invoice.items, &(&1.name == "Rekreační poplatek"))
+    assert_amount(fee.price_per_night, "35")
+    assert fee.quantity == 0
     assert invoice.total_price == nil
     assert {:error, _} = Billing.apply_pricing(booking.id)
   end

@@ -240,7 +240,23 @@ defmodule CozyCheckout.Billing do
       |> Repo.insert!()
     end)
 
+    create_recreation_fee!(invoice, booking)
     recalculate!(invoice.id)
+  end
+
+  defp create_recreation_fee!(invoice, booking) do
+    %BookingInvoiceItem{booking_invoice_id: invoice.id}
+    |> BookingInvoiceItem.changeset(%{
+      name: "Rekreační poplatek",
+      quantity: 0,
+      nights: max(BookingInvoice.calculate_nights(booking), 1),
+      price_per_night: Decimal.new(35),
+      vat_rate: Decimal.new(0),
+      tax_mode: "outside",
+      item_type: "extra",
+      position: length(@categories) + 1
+    })
+    |> Repo.insert!()
   end
 
   def recalculate_calculation(booking_id) do
@@ -1365,6 +1381,7 @@ defmodule CozyCheckout.Billing do
       |> Repo.insert!()
     end
 
+    create_recreation_fee!(invoice, booking)
     recalculate!(invoice.id)
   end
 
