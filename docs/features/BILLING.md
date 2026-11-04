@@ -143,7 +143,8 @@ opuštění kalkulace. **Detail a historie** nadále zpřístupňuje historii po
 a opravy dokladu.
 
 PDF vytváří ChromicPDF s lokálním Chromium, bez externích fontů či vzdálených
-podkladů. Docker runtime obsahuje Chromium a fonty DejaVu. Dokumenty A4 se ukládají
+podkladů. Docker runtime obsahuje Chromium a fonty DejaVu a nastavuje
+`CHROME_EXECUTABLE=/usr/bin/chromium`. Dokumenty A4 se ukládají
 jako binární data v PostgreSQL spolu s SHA-256. Opakované stažení a e-mail vždy
 použijí původní soubor, nikoli aktualizovanou kalkulaci nebo aktuální firemní profil.
 
@@ -166,8 +167,15 @@ Profil se při řádném zastavení aplikace odstraní.
 
 Vytváření PDF běží mimo databázovou transakci. Pád nebo timeout Chromia vrátí
 zachycenou chybu, kterou zobrazí stažení i podrobnosti e-mailového pokusu.
-V developmentu zůstává stderr Chromia v terminálu viditelný. Hotové PDF se uloží
+Chromium používá `--disable-dev-shm-usage`, aby v Dockeru nebylo omezené malým
+`/dev/shm`; pro pracovní paměť potřebuje dostatek místa v `/tmp`. Stderr Chromia
+zůstává viditelný i v produkčních kontejnerových logách, takže lze rozlišit
+problém se spuštěním od nedostatku paměti nebo jiného pádu. Hotové PDF se uloží
 pod krátkým zámkem; souběžné požadavky vždy dostanou původní uložené bajty.
+
+Chyba generování PDF neruší vystavený doklad ani jeho číslo. U existujícího
+dokladu po odstranění příčiny znovu klikněte na **Stáhnout PDF**; není potřeba
+vystavovat nový doklad. Platí to i po vyčerpání automatických pokusů PDF úkolu.
 
 Development používá `Swoosh.Adapters.Local`: zpráva se zobrazí v `/dev/mailbox`
 až po úspěšné přípravě přílohy. Nepotřebuje Resend API klíč. Pokud původní úkol
