@@ -482,7 +482,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   <th class="px-2 py-3 text-right">Akce</th>
                 </tr>
               </thead>
-              <tbody class="grid gap-3 bg-white 2xl:table-row-group 2xl:divide-y 2xl:divide-secondary-200">
+              <tbody class="grid gap-3 bg-white 2xl:table-row-group 2xl:divide-y 2xl:divide-primary-200/60">
                 <%= if @bookings == [] do %>
                   <tr>
                     <td colspan="6" class="px-6 py-12 text-center text-primary-400">
@@ -493,9 +493,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   <tr
                     :for={booking <- @bookings}
                     id={"booking-row-#{booking.id}"}
-                    class="grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-secondary-200 p-3 hover:bg-secondary-50 2xl:table-row 2xl:rounded-none 2xl:border-0 2xl:p-0"
+                    class="grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-primary-200/60 p-3 hover:bg-secondary-50 2xl:table-row 2xl:rounded-none 2xl:border-0 2xl:p-0"
                   >
-                    <td class="col-span-2 min-w-0 px-0 py-2 align-top text-sm text-primary-500 2xl:px-3 2xl:py-3">
+                    <td class="col-span-2 min-w-0 px-0 py-2 align-top text-sm text-primary-500 2xl:px-3 2xl:py-3.5">
                       <.link
                         navigate={
                           build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
@@ -558,7 +558,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                       menu={@booking_menus[booking.id]}
                       error={@catering_errors[booking.id]}
                     />
-                    <td class="min-w-0 py-2 align-top 2xl:px-2 2xl:py-3">
+                    <td class="min-w-0 py-2 align-top 2xl:px-2 2xl:py-3.5">
                       <div class="mb-1 text-xs font-medium text-primary-400 2xl:hidden">
                         Stav / faktura
                       </div>
@@ -680,7 +680,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                         </button>
                       </div>
                     </td>
-                    <td class="col-span-2 min-w-0 py-2 text-right align-top 2xl:px-2 2xl:py-3">
+                    <td class="col-span-2 min-w-0 py-2 text-right align-top 2xl:px-2 2xl:py-3.5">
                       <div class="flex justify-end gap-1">
                         <.link
                           id={"booking-view-#{booking.id}"}
@@ -1012,7 +1012,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
       |> assign(:menu_form, to_form(%{"variant_id" => selected}, as: :selection))
 
     ~H"""
-    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3">
+    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3.5">
       <div class="mb-1 text-xs font-medium text-primary-400 2xl:hidden">Stravování</div>
       <div class="flex min-w-0 items-center gap-1">
         <.form
@@ -1048,7 +1048,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         {@error}
       </p>
     </td>
-    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3">
+    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3.5">
       <div class="mb-1 text-xs font-medium text-primary-400 2xl:hidden">Menu</div>
       <div class="flex min-w-0 items-center gap-1">
         <.form
@@ -1089,7 +1089,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         <.icon name="hero-exclamation-triangle" class="size-3.5 shrink-0" /> Vybrat znovu
       </p>
     </td>
-    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3">
+    <td class="min-w-0 py-2 align-top text-sm 2xl:px-2 2xl:py-3.5">
       <.form
         :if={@catered}
         for={@catering_form}
