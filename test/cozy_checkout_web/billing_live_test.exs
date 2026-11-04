@@ -738,6 +738,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     default = Billing.account(booking.id)
     {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
     tab = "#payer-tab-#{payer.id}"
+    assert has_element?(view, "#billing-calculation #{tab}")
     assert has_element?(view, "#payer-tab-#{default.id}[aria-pressed='true']")
     assert has_element?(view, "#{tab}[aria-pressed='false']", payer.name)
 
@@ -755,9 +756,28 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     refute has_element?(view, "button[phx-click='edit_account'][phx-value-id='#{payer.id}']")
     view |> element(tab) |> render_click()
     assert has_element?(view, "#{tab}[aria-pressed='true']")
+    assert has_element?(view, "#active-payer-counts", "5 osob")
+    assert has_element?(view, "#active-payer-counts", "Dospělí: 2")
+    assert has_element?(view, "#active-payer-counts", "Děti do 12 let: 2")
+    assert has_element?(view, "#active-payer-counts", "Děti do 2 let: 1")
     assert has_element?(view, "#payer-tab-#{default.id}[aria-pressed='false']")
     assert has_element?(view, "button[phx-click='edit_account'][phx-value-id='#{payer.id}']")
     assert has_element?(view, "h2", "Kalkulace a doklady: #{payer.name}")
+
+    assert has_element?(
+             view,
+             "#billing-items-form input[aria-label='Počet – Dospělí'][value='2']"
+           )
+
+    adult_item = Enum.find(Billing.calculation(payer).items, &(&1.name == "Dospělí"))
+
+    view
+    |> form("#billing-items-form", %{"items" => %{adult_item.id => %{"quantity" => "3"}}})
+    |> render_submit()
+
+    assert has_element?(view, "#active-payer-counts", "6 osob")
+    assert has_element?(view, "#active-payer-counts", "Dospělí: 3")
+    assert Billing.account(booking.id).adults == default.adults
     assert has_element?(view, "button[phx-click='complete_allocation']", "Potvrdit rozdělení")
 
     view |> element("button[phx-click='complete_allocation']") |> render_click()
@@ -769,6 +789,72 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
              "button[phx-click='complete_allocation']",
              "Znovu otevřít rozdělení"
            )
+  end
+
+  test "payer tab colours follow issued documents and final settlement", %{
+    conn: conn,
+    booking: booking
+  } do
+    payer = Billing.account(booking.id)
+    tab = "#payer-tab-#{payer.id}"
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+
+    assert has_element?(
+             view,
+             "#{tab}[data-billing-state='no_document'].bg-slate-100",
+             "Bez dokladu"
+           )
+
+    issue!(booking, "advance", %{"percent" => "30"})
+    issue!(booking, "advance", %{"percent" => "20"})
+    view |> element("button[phx-click='refresh']") |> render_click()
+
+    assert has_element?(
+             view,
+             "#{tab}[data-billing-state='advance'].bg-amber-50",
+             "Záloha 50,00 %"
+           )
+
+    receipt!(booking, "5700")
+    view |> element("button[phx-click='refresh']") |> render_click()
+
+    assert has_element?(
+             view,
+             "#{tab}[data-billing-state='advance'].bg-amber-50",
+             "Záloha 50,00 %"
+           )
+
+    final = issue!(booking, "final")
+    view |> element("button[phx-click='refresh']") |> render_click()
+    assert has_element?(view, "#{tab}[data-billing-state='paid'].bg-emerald-50", "Zaplaceno")
+
+    receipt!(booking, "100", %{"document_id" => final.id})
+    view |> element("button[phx-click='refresh']") |> render_click()
+
+    assert has_element?(
+             view,
+             "#{tab}[data-billing-state='paid'].bg-emerald-50",
+             "Zaplaceno · přeplatek"
+           )
+  end
+
+  test "final invoice tab stays blue until the full final balance is paid", %{
+    conn: conn,
+    booking: booking
+  } do
+    payer = Billing.account(booking.id)
+    final = issue!(booking, "final")
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    tab = "#payer-tab-#{payer.id}"
+    assert has_element?(view, "#{tab}[data-billing-state='final'].bg-blue-50", "Konečná faktura")
+
+    receipt!(booking, "100", %{"document_id" => final.id})
+    view |> element("button[phx-click='refresh']") |> render_click()
+    assert has_element?(view, "#{tab}[data-billing-state='final'].bg-blue-50", "Konečná faktura")
+
+    receipt!(booking, "5600", %{"document_id" => final.id})
+    view |> element("button[phx-click='refresh']") |> render_click()
+    assert has_element?(view, "#{tab}[data-billing-state='paid'].bg-emerald-50", "Zaplaceno")
   end
 
   test "payer query links open the intended family's documents", %{conn: conn, booking: booking} do

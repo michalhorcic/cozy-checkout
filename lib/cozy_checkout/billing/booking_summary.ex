@@ -73,11 +73,33 @@ defmodule CozyCheckout.Billing.BookingSummary do
           receipts: filter(count(p.id), p.kind == "receipt")
         }
 
-    advances =
+    advance_values =
       from d in Document,
         where: d.kind == "advance",
-        group_by: d.billing_account_id,
-        select: %{billing_account_id: d.billing_account_id, count: count(d.id)}
+        select: %{
+          billing_account_id: d.billing_account_id,
+          percent:
+            fragment(
+              "COALESCE(NULLIF(?->'advance_calculation'->>'percent', '')::numeric, ? / NULLIF(NULLIF(?->'advance_calculation'->>'stay_total', '')::numeric, 0) * 100)",
+              d.snapshot,
+              d.total,
+              d.snapshot
+            )
+        }
+
+    advances =
+      from a in subquery(advance_values),
+        group_by: a.billing_account_id,
+        select: %{
+          billing_account_id: a.billing_account_id,
+          count: count(a.billing_account_id),
+          percent:
+            fragment(
+              "CASE WHEN COUNT(?) = COUNT(*) THEN SUM(?) END",
+              a.percent,
+              a.percent
+            )
+        }
 
     corrections =
       from d in Document,
@@ -108,7 +130,8 @@ defmodule CozyCheckout.Billing.BookingSummary do
           outstanding: f.total + coalesce(c.total, 0) - coalesce(p.received, 0),
           received: coalesce(p.received, 0),
           receipts: coalesce(p.receipts, 0),
-          advances: coalesce(a.count, 0)
+          advances: coalesce(a.count, 0),
+          advance_percent: a.percent
         }
 
     today = Billing.today()
@@ -119,6 +142,8 @@ defmodule CozyCheckout.Billing.BookingSummary do
         account_id: s.account_id,
         personal: s.personal,
         received: s.received,
+        advance_count: s.advances,
+        advance_percent: s.advance_percent,
         final_id: s.final_id,
         final_number: s.final_number,
         outstanding: s.outstanding,
