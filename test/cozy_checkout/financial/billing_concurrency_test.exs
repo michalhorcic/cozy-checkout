@@ -43,6 +43,7 @@ defmodule CozyCheckout.BillingConcurrencyTest do
         )
 
         Repo.delete_all(from i in CozyCheckout.Bookings.BookingInvoice, where: i.id in ^invoices)
+        Repo.delete_all(from a in CozyCheckout.Billing.Account, where: a.booking_id in ^bookings)
         Repo.delete_all(from b in CozyCheckout.Bookings.Booking, where: b.id in ^bookings)
         Repo.delete_all(from g in CozyCheckout.Guests.Guest, where: g.id in ^guests)
       end)
@@ -95,6 +96,52 @@ defmodule CozyCheckout.BillingConcurrencyTest do
     Sandbox.unboxed_run(Repo, fn ->
       assert Repo.aggregate(Payment, :count) == 1
       assert Repo.aggregate(Document, :count) == 1
+    end)
+  end
+
+  test "different payers can issue one final each under the shared booking lock", %{
+    booking: booking
+  } do
+    {first, second, previews} =
+      Sandbox.unboxed_run(Repo, fn ->
+        first = Billing.account(booking.id)
+
+        {:ok, second} =
+          Billing.save_account(booking.id, %{
+            "name" => "Rodina",
+            "adults" => "1",
+            "infants" => "0",
+            "children" => "0"
+          })
+
+        previews =
+          Map.new([first, second], fn payer ->
+            {:ok, preview} = Billing.preview(payer, "final")
+            {payer.id, preview}
+          end)
+
+        {first, second, previews}
+      end)
+
+    results =
+      race([first, first, second, second], fn payer ->
+        Billing.issue(
+          payer,
+          "final",
+          %{"preview_token" => previews[payer.id].token},
+          Ecto.UUID.generate()
+        )
+      end)
+
+    assert Enum.count(results, &match?({:ok, _}, &1)) == 2
+
+    Sandbox.unboxed_run(Repo, fn ->
+      docs = Repo.all(from d in Document, where: d.kind == "final")
+
+      assert Enum.sort(Enum.map(docs, & &1.billing_account_id)) ==
+               Enum.sort([first.id, second.id])
+
+      assert Repo.get_by!(Series, kind: "final", year: Billing.today().year).next_number == 3
     end)
   end
 

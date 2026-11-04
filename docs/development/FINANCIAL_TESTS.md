@@ -85,3 +85,15 @@ celou sadu spouští `mix test` nebo `mix precommit`.
 
 Provozní postupy a nastavení PDF popisuje [fakturace](../features/BILLING.md).
 Počty testů se mění; aktuální výsledek ověření patří ke konkrétnímu commitu.
+
+## Skupinové rezervace
+
+`billing_accounts_test.exs` pokrývá samostatné kalkulace, uložené skupinové ceny,
+výjimky termínu, vlastní zálohy a odpočty, nepřevoditelné přeplatky, dokončení
+a znovuotevření rozdělení, vlastnictví a idempotenci. Ověřuje také oddělení
+obsazenosti a porcí, atomické uložení pokojů a počet dotazů přes `QueryRecorder`.
+`billing_concurrency_test.exs` rozšiřuje souběh na dva plátce téže rezervace.
+Regrese banky ověřují starý VS, zůstatek konkrétní rodiny a shodné částky ve stejný
+den u různých plátců. LiveView sady pokrývají rychlé přidání, odkaz na plátce,
+zachování nocí, přestupný den a sbalené pokoje. Změna fakturovaných osob již
+v původních sadách nesmí změnit společnou obsazenost.

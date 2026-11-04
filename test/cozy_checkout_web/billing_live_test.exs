@@ -5,7 +5,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
   import Swoosh.TestAssertions
 
   setup :set_swoosh_global
-  alias CozyCheckout.{Billing, Repo}
+  alias CozyCheckout.{Billing, Bookings, Repo}
   alias CozyCheckoutWeb.AdminAuth
 
   setup %{conn: conn} do
@@ -193,7 +193,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert Decimal.equal?(saved.total_price, "8640")
     assert has_element?(view, "#billing-items-status", "Všechny změny jsou uloženy")
     assert has_element?(view, "#billing-save-items[disabled]")
-    assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 4
+    assert CozyCheckout.Bookings.get_occupancy_for_date(booking.check_in_date) == 2
   end
 
   test "invalid rows remain editable and discard restores persisted values", %{
@@ -603,5 +603,65 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
              "#advance-document-breakdown",
              "Záloha zadaná částkou: 2 000,00 CZK"
            )
+  end
+
+  test "rapid payer entry resets identity, keeps common quantities and scopes the editor", %{
+    conn: conn,
+    booking: booking
+  } do
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    view |> element("button[phx-click='new_account']") |> render_click()
+
+    view
+    |> form("#payer-form",
+      account: %{
+        name: "Novákovi",
+        adults: "1",
+        infants: "0",
+        children: "1",
+        email: "family@example.com"
+      }
+    )
+    |> render_submit(%{"next" => "true"})
+
+    assert has_element?(view, "#payer-form input[name='account[name]']")
+    refute has_element?(view, "#payer-form input[name='account[name]'][value='Novákovi']")
+    assert has_element?(view, "#allocation-summary", "Rozděleno 4/2 osob")
+    [_, payer] = Billing.list_accounts(booking.id)
+    assert Billing.customer(payer).data["email"] == "family@example.com"
+    assert Bookings.get_booking!(booking.id).adults == 2
+    assert Billing.list_documents(%{"booking_id" => booking.id}) == []
+    view |> element("button[phx-click='cancel_account']") |> render_click()
+    assert has_element?(view, "h2", "Kalkulace a doklady: Novákovi")
+    view |> element("button[phx-click='complete_allocation']") |> render_click()
+    assert Bookings.get_booking!(booking.id).allocation_completed_at
+
+    assert has_element?(
+             view,
+             "button[phx-click='complete_allocation']",
+             "Znovu otevřít rozdělení"
+           )
+
+    view
+    |> element(
+      "button[phx-click='select_account'][phx-value-id='#{Billing.account(booking.id).id}']"
+    )
+    |> render_click()
+
+    assert has_element?(view, "#billing-customer input[value='Základní škola']")
+  end
+
+  test "payer query links open the intended family's documents", %{conn: conn, booking: booking} do
+    {:ok, payer} =
+      Billing.save_account(booking.id, %{
+        "name" => "Novákovi",
+        "adults" => "1",
+        "infants" => "0",
+        "children" => "0"
+      })
+
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing?payer=#{payer.id}")
+    assert has_element?(view, "h2", "Kalkulace a doklady: Novákovi")
+    assert has_element?(view, "#billing-customer input[name='buyer[name]'][value='Novákovi']")
   end
 end

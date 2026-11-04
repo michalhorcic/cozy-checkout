@@ -42,7 +42,7 @@ defmodule CozyCheckout.AdvanceBreakdownTest do
 
     assert Enum.all?(calculation["lines"], &(&1["nights"] == 3))
     assert Decimal.equal?(Money.total(preview.lines), preview.total)
-    assert Bookings.get_occupancy_for_date(booking.check_in_date) == 6
+    assert Bookings.get_occupancy_for_date(booking.check_in_date) == 2
   end
 
   test "an explicit amount takes precedence and does not claim to be percentage-based", %{
@@ -179,7 +179,7 @@ defmodule CozyCheckout.AdvanceBreakdownTest do
     assert Decimal.equal?(Money.decimal(calculation["stay_total"]), "14450")
     assert Decimal.equal?(preview.total, "7225")
     assert Decimal.equal?(Money.total(preview.lines), "7225")
-    assert Bookings.get_occupancy_for_date(booking.check_in_date) == 6
+    assert Bookings.get_occupancy_for_date(booking.check_in_date) == 2
   end
 
   test "changing from a percentage to an equal explicit amount requires a new preview", %{

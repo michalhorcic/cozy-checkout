@@ -13,10 +13,16 @@ defmodule CozyCheckout.DashboardTest do
     today = ~D[2027-01-15]
 
     current =
-      menu_booking_fixture(%{check_in_date: ~D[2027-01-10], check_out_date: ~D[2027-01-20]})
+      menu_booking_fixture(%{
+        adults: 2,
+        check_in_date: ~D[2027-01-10],
+        check_out_date: ~D[2027-01-20]
+      })
 
     leaving = menu_booking_fixture(%{check_in_date: ~D[2027-01-11], check_out_date: today})
-    arriving = menu_booking_fixture(%{check_in_date: today, check_out_date: ~D[2027-01-22]})
+
+    arriving =
+      menu_booking_fixture(%{adults: 2, check_in_date: today, check_out_date: ~D[2027-01-22]})
 
     boundary =
       menu_booking_fixture(%{check_in_date: ~D[2027-02-15], check_out_date: ~D[2027-02-20]})

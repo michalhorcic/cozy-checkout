@@ -5,6 +5,7 @@ defmodule CozyCheckout.Billing do
   alias CozyCheckout.Bookings.{Booking, BookingInvoice, BookingInvoiceItem}
 
   alias CozyCheckout.Billing.{
+    Account,
     Season,
     Profile,
     Customer,
@@ -89,8 +90,12 @@ defmodule CozyCheckout.Billing do
 
   def customer(booking_id),
     do:
-      Repo.get_by(Customer, booking_id: booking_id) ||
-        %Customer{booking_id: booking_id, data: %{}}
+      Repo.get_by(Customer, billing_account_id: account_id(booking_id)) ||
+        %Customer{
+          booking_id: owner_id(booking_id),
+          billing_account_id: account_id(booking_id),
+          data: %{}
+        }
 
   def save_profile(attrs) do
     transaction(fn ->
@@ -123,9 +128,11 @@ defmodule CozyCheckout.Billing do
 
       validate_party!(updated, false)
 
-      if Repo.exists?(from d in Document, where: d.booking_id == ^booking_id) and
+      if Repo.exists?(from d in Document, where: d.billing_account_id == ^account_id(booking_id)) and
            customer(booking_id).data != updated,
          do: fail("Odběratel má vystavené doklady; změnu údajů řešte opravou")
+
+      account(booking_id) |> Ecto.Changeset.change(name: updated["name"]) |> Repo.update!()
 
       customer(booking_id)
       |> Ecto.Changeset.change(data: updated)
@@ -205,12 +212,13 @@ defmodule CozyCheckout.Billing do
   end
 
   defp create_calculation!(booking_id) do
-    booking = Bookings.get_booking!(booking_id)
+    booking = booking_for(booking_id)
     season = season_on(booking.check_in_date)
 
     invoice =
       %BookingInvoice{
-        booking_id: booking_id,
+        booking_id: owner_id(booking_id),
+        billing_account_id: account_id(booking_id),
         pricing_basis: "gross",
         priced_on: booking.check_in_date
       }
@@ -221,7 +229,8 @@ defmodule CozyCheckout.Billing do
       %BookingInvoiceItem{booking_invoice_id: invoice.id}
       |> BookingInvoiceItem.changeset(%{
         name: name,
-        quantity: if(position == 1, do: 2, else: 0),
+        quantity:
+          Map.fetch!(account(booking_id), Enum.at([:adults, :infants, :children], position - 1)),
         nights: max(BookingInvoice.calculate_nights(booking), 1),
         price_per_night: season && Map.fetch!(season, field),
         vat_rate: if(season, do: season.vat_rate, else: Decimal.new(12)),
@@ -242,10 +251,18 @@ defmodule CozyCheckout.Billing do
     end)
   end
 
-  def calculation(booking_id), do: Bookings.get_invoice_by_booking_id(booking_id)
+  def calculation(booking_id) do
+    id = account_id(booking_id)
+
+    Repo.one(
+      from i in BookingInvoice,
+        where: i.billing_account_id == ^id,
+        preload: [items: ^from(x in BookingInvoiceItem, order_by: x.position)]
+    )
+  end
 
   def pricing_preview(booking_id) do
-    booking = Bookings.get_booking!(booking_id)
+    booking = booking_for(booking_id)
     invoice = calculation(booking_id)
     season = season_on(booking.check_in_date)
 
@@ -288,7 +305,7 @@ defmodule CozyCheckout.Billing do
 
       if is_nil(preview.season), do: fail("Pro příjezd chybí ceník")
       if preview.nights <= 0, do: fail("Doplňte odjezd po dni příjezdu")
-      invoice = calculation(booking_id) || create_calculation!(booking.id)
+      invoice = calculation(booking_id) || create_calculation!(booking_id)
       # Extras on a legacy net calculation retain their gross monetary value on conversion.
       if invoice.pricing_basis == "legacy_net" do
         Enum.each(invoice.items, fn item ->
@@ -406,7 +423,7 @@ defmodule CozyCheckout.Billing do
     transaction(fn ->
       lock_booking!(booking_id)
 
-      if Repo.exists?(from d in Document, where: d.booking_id == ^booking_id),
+      if Repo.exists?(from d in Document, where: d.billing_account_id == ^account_id(booking_id)),
         do: fail("Pobyt má vystavené doklady")
 
       invoice = calculation(booking_id) || fail("Chybí kalkulace")
@@ -475,7 +492,28 @@ defmodule CozyCheckout.Billing do
     )
     |> Repo.update!()
 
-    calculation(invoice.booking_id)
+    payer = scope(invoice)
+
+    counts =
+      Map.new(
+        [{"Dospělí", :adults}, {"Děti do 2 let", :infants}, {"Děti do 12 let", :children}],
+        fn {name, field} ->
+          {field,
+           invoice.items
+           |> Enum.filter(&(&1.item_type == "person" and &1.name == name))
+           |> Enum.map(& &1.quantity)
+           |> Enum.sum()}
+        end
+      )
+
+    cs = Ecto.Changeset.change(payer, counts)
+
+    if map_size(cs.changes) > 0 do
+      Repo.update!(cs)
+      reopen_allocation!(invoice.booking_id)
+    end
+
+    calculation(payer)
   end
 
   def list_documents(filters \\ %{}) do
@@ -487,6 +525,11 @@ defmodule CozyCheckout.Billing do
     query =
       if filters["booking_id"] not in [nil, ""],
         do: where(query, [d], d.booking_id == ^filters["booking_id"]),
+        else: query
+
+    query =
+      if filters["billing_account_id"] not in [nil, ""],
+        do: where(query, [d], d.billing_account_id == ^filters["billing_account_id"]),
         else: query
 
     query =
@@ -502,10 +545,12 @@ defmodule CozyCheckout.Billing do
     Repo.all(query)
   end
 
-  defp document_fields,
+  @doc false
+  def document_fields,
     do: [
       :id,
       :booking_id,
+      :billing_account_id,
       :kind,
       :number,
       :variable_symbol,
@@ -526,7 +571,7 @@ defmodule CozyCheckout.Billing do
     do:
       Repo.all(
         from p in Payment,
-          where: p.booking_id == ^booking_id,
+          where: p.billing_account_id == ^account_id(booking_id),
           order_by: [asc: p.paid_on, asc: p.inserted_at]
       )
 
@@ -534,7 +579,12 @@ defmodule CozyCheckout.Billing do
     do: Repo.all(from d in Delivery, where: d.document_id == ^id, order_by: [desc: d.inserted_at])
 
   def final_document(booking_id),
-    do: Repo.one(from d in Document, where: d.booking_id == ^booking_id and d.kind == "final")
+    do:
+      Repo.one(
+        from d in Document,
+          where: d.billing_account_id == ^account_id(booking_id) and d.kind == "final",
+          select: struct(d, ^document_fields())
+      )
 
   def balance(booking_id) do
     payments = list_payments(booking_id)
@@ -583,7 +633,7 @@ defmodule CozyCheckout.Billing do
   end
 
   defp build_preview!(booking_id, kind, attrs) do
-    booking = Bookings.get_booking!(booking_id)
+    booking = booking_for(booking_id)
 
     if booking.deleted_at || booking.status == "cancelled",
       do: fail("Rezervace je zrušená nebo odstraněná")
@@ -687,7 +737,7 @@ defmodule CozyCheckout.Billing do
           if Repo.exists?(
                from d in Document,
                  where:
-                   d.booking_id == ^booking_id and d.kind == "tax_receipt" and
+                   d.billing_account_id == ^account_id(booking_id) and d.kind == "tax_receipt" and
                      d.tax_date > ^tax_date
              ),
              do: fail("DUZP nesmí předcházet přijatým zálohám")
@@ -696,7 +746,8 @@ defmodule CozyCheckout.Billing do
           receipts =
             Repo.all(
               from d in Document,
-                where: d.booking_id == ^booking_id and d.kind == "tax_receipt",
+                where:
+                  d.billing_account_id == ^account_id(booking_id) and d.kind == "tax_receipt",
                 order_by: d.inserted_at
             )
 
@@ -718,7 +769,8 @@ defmodule CozyCheckout.Billing do
       end
 
     result = %{
-      booking_id: booking_id,
+      booking_id: owner_id(booking_id),
+      billing_account_id: account_id(booking_id),
       kind: kind,
       issued_on: today(),
       tax_date: tax_date,
@@ -737,8 +789,10 @@ defmodule CozyCheckout.Billing do
       validate_request!(request_id)
       if kind not in ["advance", "final"], do: fail("Nepodporovaný druh dokladu")
 
+      scope_id = account_id(booking_id)
+
       case Repo.get_by(Document, request_id: request_id) do
-        %Document{booking_id: ^booking_id, kind: ^kind} = existing ->
+        %Document{billing_account_id: ^scope_id, kind: ^kind} = existing ->
           existing
 
         nil ->
@@ -759,12 +813,12 @@ defmodule CozyCheckout.Billing do
   def preview_advance_payment(booking_id, amount, paid_on) do
     transaction(fn ->
       booking = lock_booking!(booking_id)
-      advance_payment_preview!(booking, Money.decimal(amount), paid_on)
+      advance_payment_preview!(booking_id, booking, Money.decimal(amount), paid_on)
     end)
   end
 
-  defp advance_payment_preview!(booking, amount, paid_on) do
-    if final_document(booking.id),
+  defp advance_payment_preview!(booking_id, booking, amount, paid_on) do
+    if final_document(booking_id),
       do: fail("Vyúčtování již existuje; příjem nelze potvrdit jako zálohu")
 
     if Date.compare(paid_on, today()) == :gt, do: fail("Platba nemůže být v budoucnu")
@@ -773,7 +827,7 @@ defmodule CozyCheckout.Billing do
       do: fail("Pro platbu při dokončení pobytu nejprve vystavte konečnou fakturu")
 
     data =
-      build_preview!(booking.id, "tax_receipt", %{"amount" => to_string(amount)})
+      build_preview!(booking_id, "tax_receipt", %{"amount" => to_string(amount)})
       |> Map.put(:tax_date, paid_on)
       |> Map.put(:due_on, paid_on)
       |> Map.delete(:token)
@@ -786,12 +840,19 @@ defmodule CozyCheckout.Billing do
       booking = lock_booking!(booking_id)
       validate_request!(attrs["request_id"])
 
+      scope_id = account_id(booking_id)
+
       case Repo.get_by(Payment, request_id: attrs["request_id"]) do
-        %Payment{booking_id: ^booking_id} = existing ->
+        %Payment{billing_account_id: ^scope_id} = existing ->
           existing
 
         nil ->
-          cs = Payment.changeset(%Payment{booking_id: booking_id}, attrs)
+          cs =
+            Payment.changeset(
+              %Payment{booking_id: owner_id(booking_id), billing_account_id: scope_id},
+              attrs
+            )
+
           if not cs.valid?, do: fail(cs)
           payment = Ecto.Changeset.apply_changes(cs)
 
@@ -804,7 +865,7 @@ defmodule CozyCheckout.Billing do
           linked =
             if payment.document_id,
               do:
-                Repo.get_by(Document, id: payment.document_id, booking_id: booking_id) ||
+                Repo.get_by(Document, id: payment.document_id, billing_account_id: scope_id) ||
                   fail("Doklad nepatří této rezervaci")
 
           if linked && linked.kind not in ["advance", "final", "correction"],
@@ -842,7 +903,7 @@ defmodule CozyCheckout.Billing do
               payment
             else
               preview =
-                advance_payment_preview!(booking, payment.amount, payment.paid_on)
+                advance_payment_preview!(booking_id, booking, payment.amount, payment.paid_on)
 
               # Overpayments are accepted and taxed too, even above the expected stay price.
               tax_doc =
@@ -877,7 +938,8 @@ defmodule CozyCheckout.Billing do
       else
         taxed =
           Repo.all(
-            from d in Document, where: d.booking_id == ^booking_id and d.kind == "tax_receipt"
+            from d in Document,
+              where: d.billing_account_id == ^account_id(booking_id) and d.kind == "tax_receipt"
           )
           |> Enum.map(&adjusted_total/1)
           |> Money.sum()
@@ -903,7 +965,7 @@ defmodule CozyCheckout.Billing do
           if original.kind not in ["final", "tax_receipt"],
             do: fail("Opravit lze fakturu nebo doklad k přijaté platbě")
 
-          if original.kind == "tax_receipt" && final_document(original.booking_id),
+          if original.kind == "tax_receipt" && final_document(scope(original)),
             do: fail("Po vyúčtování opravujte konečnou fakturu")
 
           reason = String.trim(attrs["reason"] || "")
@@ -928,6 +990,7 @@ defmodule CozyCheckout.Billing do
 
           data = %{
             booking_id: original.booking_id,
+            billing_account_id: original.billing_account_id,
             kind: "correction",
             parent_id: original.id,
             issued_on: today(),
@@ -1030,7 +1093,7 @@ defmodule CozyCheckout.Billing do
       |> Ecto.Changeset.unique_constraint(:number)
       |> Ecto.Changeset.unique_constraint(:variable_symbol)
       |> Ecto.Changeset.unique_constraint(:request_id)
-      |> Ecto.Changeset.unique_constraint(:booking_id, name: :billing_one_final)
+      |> Ecto.Changeset.unique_constraint(:billing_account_id, name: :billing_one_final)
       |> Repo.insert()
       |> case do
         {:ok, doc} -> doc
@@ -1120,7 +1183,226 @@ defmodule CozyCheckout.Billing do
     end
   end
 
-  defp lock_booking!(id), do: Repo.one!(from b in Booking, where: b.id == ^id, lock: "FOR UPDATE")
+  defp lock_booking!(scope) do
+    id = owner_id(scope)
+    booking = Repo.one!(from b in Booking, where: b.id == ^id, lock: "FOR UPDATE")
+    apply_dates(booking, account(scope))
+  end
+
+  @doc "Explicit, persisted payer scope for documents, payments and calculations."
+  def scope(%{billing_account_id: id, booking_id: booking_id}), do: get_account!(booking_id, id)
+
+  def list_accounts(booking_id) do
+    Repo.all(
+      from a in Account,
+        where: a.booking_id == ^booking_id and is_nil(a.deleted_at),
+        order_by: [desc: a.default, asc: a.inserted_at, asc: a.id]
+    )
+  end
+
+  def get_account!(booking_id, id),
+    do:
+      Repo.one!(
+        from a in Account,
+          where: a.id == ^id and a.booking_id == ^booking_id and is_nil(a.deleted_at)
+      )
+
+  def account(%Account{id: id, booking_id: booking_id}), do: get_account!(booking_id, id)
+
+  def account(booking_id) when is_binary(booking_id),
+    do:
+      Repo.one!(
+        from a in Account,
+          where: a.booking_id == ^booking_id and a.default and is_nil(a.deleted_at)
+      )
+
+  defp account_id(scope), do: account(scope).id
+  defp owner_id(%Account{booking_id: id}), do: id
+  defp owner_id(id) when is_binary(id), do: id
+  defp booking_for(scope), do: apply_dates(Bookings.get_booking!(owner_id(scope)), account(scope))
+
+  defp apply_dates(booking, payer),
+    do: %{
+      booking
+      | check_in_date: payer.check_in_date || booking.check_in_date,
+        check_out_date: payer.check_out_date || booking.check_out_date
+    }
+
+  def save_account(booking_id, attrs, id \\ nil) do
+    transaction(fn ->
+      lock_booking!(booking_id)
+      payer = if id, do: get_account!(booking_id, id), else: %Account{booking_id: booking_id}
+
+      if is_nil(id) and length(list_accounts(booking_id)) == 1 and
+           Repo.exists?(from d in Document, where: d.booking_id == ^booking_id),
+         do: fail("Již vystavený pobyt nelze dodatečně rozdělit mezi odběratele")
+
+      calculation(booking_id) || create_calculation!(booking_id)
+      template = if is_nil(id), do: shared_template!(booking_id)
+      cs = Account.changeset(payer, attrs)
+      if not cs.valid?, do: fail(cs)
+
+      changed_dates =
+        Enum.any?([:check_in_date, :check_out_date], &Ecto.Changeset.changed?(cs, &1))
+
+      changed_counts = Enum.any?([:adults, :infants, :children], &Ecto.Changeset.changed?(cs, &1))
+
+      payer =
+        case Repo.insert_or_update(cs) do
+          {:ok, payer} -> payer
+          {:error, cs} -> fail(cs)
+        end
+
+      buyer =
+        customer(payer).data
+        |> Map.merge(Map.take(attrs, @party_fields))
+        |> Map.put("name", payer.name)
+
+      case save_customer(payer, buyer) do
+        {:ok, _} -> :ok
+        {:error, reason} -> fail(reason)
+      end
+
+      invoice = calculation(payer)
+
+      if is_nil(invoice) do
+        copy_calculation!(payer, template)
+      else
+        if changed_counts or changed_dates do
+          effective = booking_for(payer)
+
+          for {name, field} <- [
+                {"Dospělí", :adults},
+                {"Děti do 2 let", :infants},
+                {"Děti do 12 let", :children}
+              ] do
+            item = Enum.find(invoice.items, &(&1.item_type == "person" and &1.name == name))
+
+            if item do
+              attrs = %{quantity: Map.fetch!(payer, field)}
+
+              attrs =
+                if changed_dates,
+                  do: Map.put(attrs, :nights, max(BookingInvoice.calculate_nights(effective), 1)),
+                  else: attrs
+
+              item |> Ecto.Changeset.change(attrs) |> Repo.update!()
+            end
+          end
+
+          recalculate!(invoice.id)
+        end
+      end
+
+      if is_nil(id) or changed_counts, do: reopen_allocation!(booking_id)
+      account(payer)
+    end)
+  end
+
+  defp shared_template!(booking_id) do
+    booking = Repo.get!(Booking, booking_id)
+
+    if booking.billing_pricing_template do
+      booking.billing_pricing_template
+    else
+      invoice = calculation(booking_id)
+
+      template = %{
+        "pricing_basis" => invoice.pricing_basis,
+        "priced_on" => if(invoice.priced_on, do: to_string(invoice.priced_on)),
+        "items" =>
+          invoice.items
+          |> Enum.filter(&(&1.item_type == "person"))
+          |> Enum.map(fn item ->
+            Map.new(@calculation_item_fields, fn field ->
+              value = Map.fetch!(item, field)
+              {to_string(field), if(is_struct(value, Decimal), do: to_string(value), else: value)}
+            end)
+          end)
+      }
+
+      booking |> Ecto.Changeset.change(billing_pricing_template: template) |> Repo.update!()
+      template
+    end
+  end
+
+  defp copy_calculation!(payer, template) do
+    invoice =
+      Repo.insert!(%BookingInvoice{
+        booking_id: payer.booking_id,
+        billing_account_id: payer.id,
+        pricing_basis: template["pricing_basis"],
+        priced_on: if(template["priced_on"], do: Date.from_iso8601!(template["priced_on"]))
+      })
+
+    booking = booking_for(payer)
+
+    for {name, field} <- [
+          {"Dospělí", :adults},
+          {"Děti do 2 let", :infants},
+          {"Děti do 12 let", :children}
+        ] do
+      source = Enum.find(template["items"], &(&1["item_type"] == "person" and &1["name"] == name))
+
+      source =
+        source ||
+          %{
+            "name" => name,
+            "item_type" => "person",
+            "vat_rate" => "12",
+            "tax_mode" => "taxable",
+            "price_per_night" => nil
+          }
+
+      attrs =
+        Map.merge(source, %{
+          "quantity" => Map.fetch!(payer, field),
+          "nights" => max(BookingInvoice.calculate_nights(booking), 1)
+        })
+
+      %BookingInvoiceItem{booking_invoice_id: invoice.id}
+      |> BookingInvoiceItem.changeset(attrs)
+      |> Repo.insert!()
+    end
+
+    recalculate!(invoice.id)
+  end
+
+  def delete_account(booking_id, id) do
+    transaction(fn ->
+      lock_booking!(booking_id)
+      payer = get_account!(booking_id, id)
+      if payer.default, do: fail("Výchozího plátce nelze odstranit")
+
+      if Repo.exists?(from d in Document, where: d.billing_account_id == ^id),
+        do: fail("Plátce má vystavené doklady")
+
+      payer
+      |> Ecto.Changeset.change(deleted_at: DateTime.utc_now() |> DateTime.truncate(:second))
+      |> Repo.update!()
+
+      reopen_allocation!(booking_id)
+    end)
+  end
+
+  def complete_allocation(booking_id, completed? \\ true) do
+    transaction(fn ->
+      lock_booking!(booking_id)
+
+      Repo.get!(Booking, booking_id)
+      |> Ecto.Changeset.change(
+        allocation_completed_at:
+          if(completed?, do: DateTime.utc_now() |> DateTime.truncate(:second))
+      )
+      |> Repo.update!()
+    end)
+  end
+
+  defp reopen_allocation!(booking_id) do
+    Repo.get!(Booking, booking_id)
+    |> Ecto.Changeset.change(allocation_completed_at: nil)
+    |> Repo.update!()
+  end
 
   defp digest(data),
     do: :crypto.hash(:sha256, :erlang.term_to_binary(data)) |> Base.encode16(case: :lower)

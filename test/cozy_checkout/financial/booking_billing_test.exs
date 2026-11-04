@@ -222,9 +222,10 @@ defmodule CozyCheckout.BookingBillingTest do
     Billing.delete_season(season.id)
     guest = Repo.insert!(%CozyCheckout.Guests.Guest{name: "Bez ceníku"})
 
-    booking =
-      Repo.insert!(%CozyCheckout.Bookings.Booking{
+    {:ok, booking} =
+      Bookings.create_booking(%{
         guest_id: guest.id,
+        adults: 2,
         check_in_date: Billing.today(),
         check_out_date: Date.add(Billing.today(), 3)
       })

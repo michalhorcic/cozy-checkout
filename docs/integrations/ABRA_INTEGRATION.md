@@ -20,6 +20,17 @@ Uživatelský postup je ve [fakturaci pobytů](../features/BILLING.md).
 Části níže rozlišují import banky, potvrzení platby a účetní přenos.
 Samotné načtení banky nikdy nezapíše místní platbu.
 
+## Rozsah plátce ve skupinové rezervaci
+
+VS určuje doklad konkrétního plátce. Návrh doplatku podle starého VS zálohy
+vybírá konečnou fakturu a zůstatek stejného plátce. Bankovní přehled a dialog
+ukazují jméno cílového odběratele i doklad; odkaz otevře jeho fakturaci.
+Kontroly ručních duplicit porovnávají částku a den v rámci plátce, takže stejné
+platby různých rodin nekolidují. Identita bankovního pohybu a potvrzení zůstává
+globální. Náhled ZDD, odpočty, kontroly oprav/vratek i export konečné faktury
+zahrnují pouze daného plátce. Doklad jiné rodiny neuzavírá jeho zálohy.
+Účetní formáty, kódy mapování, pracovní úlohy a identity exportu se nemění.
+
 ## Konfigurace
 
 [config/runtime.exs](../../config/runtime.exs) načítá ve všech prostředích nastavení

@@ -77,17 +77,14 @@ defmodule CozyCheckout.Bookings do
     Booking
     |> where([b], is_nil(b.deleted_at))
     |> join(:inner, [b], g in assoc(b, :guest))
-    |> join(:left, [b], i in assoc(b, :invoice))
-    |> join(:left, [b, _g, i], item in assoc(i, :items), on: item.item_type == "person")
-    |> group_by([b, g], [b.id, g.name])
     |> order_by([b], asc: b.check_in_date)
-    |> select([b, g, _i, item], %{
+    |> select([b, g], %{
       id: b.id,
       guest_name: g.name,
       check_in_date: b.check_in_date,
       check_out_date: b.check_out_date,
       status: b.status,
-      person_count: coalesce(sum(item.quantity), 0),
+      person_count: b.adults + b.infants + b.children + b.unclassified_guests,
       updated_at: b.updated_at
     })
     |> Repo.all()
@@ -250,6 +247,10 @@ defmodule CozyCheckout.Bookings do
     Repo.transaction(fn ->
       case %Booking{}
            |> Booking.changeset(attrs)
+           |> Ecto.Changeset.put_change(
+             :allocation_completed_at,
+             DateTime.utc_now() |> DateTime.truncate(:second)
+           )
            |> Repo.insert() do
         {:ok, booking} ->
           # Create primary booking_guest record
@@ -260,6 +261,15 @@ defmodule CozyCheckout.Bookings do
             is_primary: true
           })
           |> Repo.insert!()
+
+          Repo.insert!(%CozyCheckout.Billing.Account{
+            booking_id: booking.id,
+            default: true,
+            name: Repo.get!(CozyCheckout.Guests.Guest, booking.guest_id).name,
+            adults: booking.adults,
+            infants: booking.infants,
+            children: booking.children
+          })
 
           booking
 
@@ -491,6 +501,35 @@ defmodule CozyCheckout.Bookings do
     end
   end
 
+  def save_booking_with_rooms(booking, attrs, room_ids) do
+    Repo.transaction(fn ->
+      # Serialise assignment and date edits for selected rooms in a stable order.
+      selected_rooms =
+        Repo.all(
+          from r in CozyCheckout.Rooms.Room,
+            where: r.id in ^room_ids and is_nil(r.deleted_at),
+            order_by: r.id,
+            lock: "FOR UPDATE"
+        )
+
+      if length(selected_rooms) != length(Enum.uniq(room_ids)),
+        do: Repo.rollback({:rooms_not_available, room_ids})
+
+      result = if booking.id, do: update_booking(booking, attrs), else: create_booking(attrs)
+
+      saved =
+        case result do
+          {:ok, saved} -> saved
+          {:error, reason} -> Repo.rollback(reason)
+        end
+
+      case set_booking_rooms(saved.id, Enum.uniq(room_ids)) do
+        {:ok, _} -> saved
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
+  end
+
   # Booking Invoice Management
 
   @doc """
@@ -500,7 +539,8 @@ defmodule CozyCheckout.Bookings do
     items_query = from(i in BookingInvoiceItem, order_by: i.position)
 
     BookingInvoice
-    |> where([i], i.booking_id == ^booking_id)
+    |> join(:inner, [i], a in CozyCheckout.Billing.Account, on: a.id == i.billing_account_id)
+    |> where([i, a], a.booking_id == ^booking_id and a.default and is_nil(a.deleted_at))
     |> preload(items: ^items_query)
     |> Repo.one()
   end
@@ -603,7 +643,7 @@ defmodule CozyCheckout.Bookings do
   Recalculates and updates the cached totals for all invoice items and the invoice header.
   """
   def recalculate_invoice_totals(%BookingInvoice{} = invoice) do
-    CozyCheckout.Billing.recalculate_calculation(invoice.booking_id)
+    CozyCheckout.Billing.recalculate_calculation(CozyCheckout.Billing.scope(invoice))
   end
 
   @doc """
@@ -764,135 +804,48 @@ defmodule CozyCheckout.Bookings do
   Returns the total number of people booked for a specific date.
   Only counts invoice items with item_type == "person".
   """
-  def get_occupancy_for_date(date) do
-    from(b in Booking,
-      join: bi in BookingInvoice,
-      on: bi.booking_id == b.id,
-      join: bii in BookingInvoiceItem,
-      on: bii.booking_invoice_id == bi.id,
-      where: b.status in ["upcoming", "active"],
-      where: b.check_in_date <= ^date,
-      where: is_nil(b.check_out_date) or b.check_out_date > ^date,
-      where: bii.item_type == "person",
-      select: sum(bii.quantity)
+  def people_count(booking),
+    do: booking.adults + booking.infants + booking.children + booking.unclassified_guests
+
+  def get_occupancy_for_date(date), do: get_occupancy_for_range(date, date)[date]
+
+  defp occupancy_bookings(start_date, end_date) do
+    Repo.all(
+      from b in Booking,
+        where: is_nil(b.deleted_at) and b.status in ["upcoming", "active"],
+        where: b.check_in_date <= ^end_date,
+        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date
     )
-    |> Repo.one()
-    |> case do
-      nil -> 0
-      count -> count
-    end
   end
 
-  @doc """
-  Returns daily occupancy for a date range (for calendar view).
-  Returns a map: %{~D[2025-10-22] => 12, ~D[2025-10-23] => 15, ...}
-  Only counts invoice items with item_type == "person".
-  """
+  defp occupies?(booking, date),
+    do:
+      Date.compare(booking.check_in_date, date) != :gt and
+        (is_nil(booking.check_out_date) or Date.compare(booking.check_out_date, date) == :gt)
+
   def get_occupancy_for_range(start_date, end_date) do
-    # Get all bookings that overlap with the date range
-    bookings =
-      from(b in Booking,
-        join: bi in BookingInvoice,
-        on: bi.booking_id == b.id,
-        join: bii in BookingInvoiceItem,
-        on: bii.booking_invoice_id == bi.id,
-        where: is_nil(b.deleted_at),
-        where: b.status in ["upcoming", "active"],
-        where: b.check_in_date <= ^end_date,
-        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,
-        where: bii.item_type == "person",
-        select: %{
-          check_in: b.check_in_date,
-          check_out: b.check_out_date,
-          quantity: bii.quantity
-        }
-      )
-      |> Repo.all()
+    bookings = occupancy_bookings(start_date, end_date)
 
-    # Calculate occupancy for each day
-    Date.range(start_date, end_date)
-    |> Enum.map(fn date ->
-      count =
-        bookings
-        |> Enum.filter(fn b ->
-          Date.compare(b.check_in, date) != :gt and
-            (is_nil(b.check_out) or Date.compare(b.check_out, date) == :gt)
-        end)
-        |> Enum.map(& &1.quantity)
-        |> Enum.sum()
-
-      {date, count}
+    Map.new(Date.range(start_date, end_date), fn date ->
+      {date,
+       bookings |> Enum.filter(&occupies?(&1, date)) |> Enum.map(&people_count/1) |> Enum.sum()}
     end)
-    |> Map.new()
   end
 
-  # Names used to identify person sub-types in invoice items (exact match).
-  @adults_item_name "Dospělí"
-  @kids_under_2_item_name "Děti do 2 let"
-  @kids_under_12_item_name "Děti do 12 let"
-
-  @doc """
-  Returns a breakdown of person types per day for a date range.
-  Returns a map: %{~D[2025-10-22] => %{adults: 8, kids_under_2: 2, kids_under_12: 3}, ...}
-  Matches invoice item names exactly: "#{@adults_item_name}", "#{@kids_under_2_item_name}", "#{@kids_under_12_item_name}".
-  Days with no data are omitted from the map.
-  """
   def get_occupancy_breakdown_for_range(start_date, end_date) do
-    bookings =
-      from(b in Booking,
-        join: bi in BookingInvoice,
-        on: bi.booking_id == b.id,
-        join: bii in BookingInvoiceItem,
-        on: bii.booking_invoice_id == bi.id,
-        where: is_nil(b.deleted_at),
-        where: b.status in ["upcoming", "active"],
-        where: b.check_in_date <= ^end_date,
-        where: is_nil(b.check_out_date) or b.check_out_date > ^start_date,
-        where: bii.item_type == "person",
-        select: %{
-          check_in: b.check_in_date,
-          check_out: b.check_out_date,
-          quantity: bii.quantity,
-          name: bii.name
-        }
-      )
-      |> Repo.all()
+    bookings = occupancy_bookings(start_date, end_date)
 
-    Date.range(start_date, end_date)
-    |> Enum.reduce(%{}, fn date, acc ->
-      relevant =
-        Enum.filter(bookings, fn b ->
-          Date.compare(b.check_in, date) != :gt and
-            (is_nil(b.check_out) or Date.compare(b.check_out, date) == :gt)
-        end)
+    Enum.reduce(Date.range(start_date, end_date), %{}, fn date, acc ->
+      relevant = Enum.filter(bookings, &occupies?(&1, date))
 
-      adults =
-        relevant
-        |> Enum.filter(&(&1.name == @adults_item_name))
-        |> Enum.map(& &1.quantity)
-        |> Enum.sum()
-
-      kids_under_2 =
-        relevant
-        |> Enum.filter(&(&1.name == @kids_under_2_item_name))
-        |> Enum.map(& &1.quantity)
-        |> Enum.sum()
-
-      kids_under_12 =
-        relevant
-        |> Enum.filter(&(&1.name == @kids_under_12_item_name))
-        |> Enum.map(& &1.quantity)
-        |> Enum.sum()
-
-      if adults > 0 or kids_under_2 > 0 or kids_under_12 > 0 do
-        Map.put(acc, date, %{
-          adults: adults,
-          kids_under_2: kids_under_2,
-          kids_under_12: kids_under_12
-        })
-      else
-        acc
-      end
+      if relevant == [],
+        do: acc,
+        else:
+          Map.put(acc, date, %{
+            adults: Enum.sum(Enum.map(relevant, & &1.adults)),
+            kids_under_2: Enum.sum(Enum.map(relevant, & &1.infants)),
+            kids_under_12: Enum.sum(Enum.map(relevant, & &1.children))
+          })
     end)
   end
 
@@ -977,7 +930,7 @@ defmodule CozyCheckout.Bookings do
       |> Enum.reject(&is_nil/1)
       |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-    booking_count = length(invoices)
+    booking_count = invoices |> Enum.map(& &1.booking_id) |> Enum.uniq() |> length()
 
     # Group by state
     state_breakdown =
@@ -990,7 +943,11 @@ defmodule CozyCheckout.Bookings do
           |> Enum.reject(&is_nil/1)
           |> Enum.reduce(Decimal.new(0), &Decimal.add/2)
 
-        {state, %{count: length(state_invoices), total: state_total}}
+        {state,
+         %{
+           count: state_invoices |> Enum.map(& &1.booking_id) |> Enum.uniq() |> length(),
+           total: state_total
+         }}
       end)
       |> Map.new()
 
@@ -1026,6 +983,7 @@ defmodule CozyCheckout.Bookings do
       Repo.all(
         query
         |> select([b, bi], %{
+          booking_id: b.id,
           check_in_date: b.check_in_date,
           total_price: bi.total_price,
           state: bi.state
@@ -1049,7 +1007,7 @@ defmodule CozyCheckout.Bookings do
         month: month,
         month_name: month_name(month),
         revenue: month_revenue,
-        booking_count: length(month_invoices)
+        booking_count: month_invoices |> Enum.map(& &1.booking_id) |> Enum.uniq() |> length()
       }
     end)
     |> Enum.sort_by(&{&1.year, &1.month})

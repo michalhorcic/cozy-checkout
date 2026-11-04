@@ -14,10 +14,14 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     {"vat_id", "DIČ"},
     {"email", "Fakturační e-mail"}
   ]
-  def mount(%{"booking_id" => id}, _, socket) do
+  def mount(%{"booking_id" => id} = params, _, socket) do
     if connected?(socket), do: Process.send_after(self(), :abra_tick, 10_000)
     booking = Bookings.get_booking!(id)
-    buyer = Billing.customer(id).data
+
+    payer =
+      if params["payer"], do: Billing.get_account!(id, params["payer"]), else: Billing.account(id)
+
+    buyer = Billing.customer(payer).data
 
     buyer =
       if buyer == %{},
@@ -34,6 +38,10 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
      socket
      |> assign(
        booking: booking,
+       billing_scope: payer,
+       account_form: nil,
+       editing_account_id: nil,
+       payer_search: "",
        page_title: "Fakturace pobytu",
        buyer_fields: @buyer_fields,
        buyer_form: to_form(buyer, as: :buyer),
@@ -118,12 +126,12 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   def handle_event("customer", %{"buyer" => attrs}, socket),
     do:
       result(
-        Billing.save_customer(socket.assigns.booking.id, attrs),
+        Billing.save_customer(socket.assigns.billing_scope, attrs),
         assign(socket, :buyer_form, to_form(attrs, as: :buyer))
       )
 
   def handle_event("create", _, socket),
-    do: result(Billing.create_calculation(socket.assigns.booking.id), socket)
+    do: result(Billing.create_calculation(socket.assigns.billing_scope), socket)
 
   def handle_event(event, _, %{assigns: %{items_dirty?: true}} = socket)
       when event in ["preview", "issue", "pricing", "apply-pricing", "personal", "payment"] do
@@ -131,11 +139,12 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   end
 
   def handle_event("pricing", _, socket),
-    do: {:noreply, assign(socket, :pricing, Billing.pricing_preview(socket.assigns.booking.id))}
+    do:
+      {:noreply, assign(socket, :pricing, Billing.pricing_preview(socket.assigns.billing_scope))}
 
   def handle_event("apply-pricing", _, socket) do
     result(
-      Billing.apply_pricing(socket.assigns.booking.id, socket.assigns.pricing.token),
+      Billing.apply_pricing(socket.assigns.billing_scope, socket.assigns.pricing.token),
       assign(socket, pricing: nil, preview: nil)
     )
   end
@@ -144,7 +153,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     do:
       result(
         Billing.set_personal(
-          socket.assigns.booking.id,
+          socket.assigns.billing_scope,
           socket.assigns.calculation.state != "personal"
         ),
         socket
@@ -205,7 +214,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         end)
 
       case Billing.save_calculation_items(
-             socket.assigns.booking.id,
+             socket.assigns.billing_scope,
              batch,
              socket.assigns.items_version
            ) do
@@ -228,7 +237,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     attrs = if attrs["due_on"] == "", do: Map.delete(attrs, "due_on"), else: attrs
     socket = assign(socket, :issue_form, to_form(attrs, as: :issue))
 
-    case Billing.preview(socket.assigns.booking.id, attrs["kind"], attrs) do
+    case Billing.preview(socket.assigns.billing_scope, attrs["kind"], attrs) do
       {:ok, preview} ->
         {:noreply,
          assign(socket,
@@ -246,7 +255,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
 
   def handle_event("issue", _, socket) do
     case Billing.issue(
-           socket.assigns.booking.id,
+           socket.assigns.billing_scope,
            socket.assigns.preview.kind,
            socket.assigns.preview_attrs,
            socket.assigns.issue_request
@@ -266,7 +275,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
   def handle_event("payment", %{"payment" => attrs}, socket) do
     attrs = if attrs["document_id"] == "", do: Map.delete(attrs, "document_id"), else: attrs
 
-    case Billing.record_payment(socket.assigns.booking.id, attrs) do
+    case Billing.record_payment(socket.assigns.billing_scope, attrs) do
       {:ok, _} ->
         {:noreply,
          socket
@@ -282,6 +291,126 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     end
   end
 
+  def handle_event("select_account", %{"id" => id}, socket) do
+    payer = Billing.get_account!(socket.assigns.booking.id, id)
+    buyer = Billing.customer(payer).data
+
+    {:noreply,
+     socket
+     |> assign(
+       billing_scope: payer,
+       buyer_form: to_form(buyer, as: :buyer),
+       item_rows: nil,
+       items_dirty?: false,
+       preview: nil,
+       pricing: nil,
+       payment_form: payment_form(),
+       account_form: nil
+     )
+     |> refresh()}
+  end
+
+  def handle_event("new_account", _, socket) do
+    {:noreply,
+     assign(socket,
+       account_form:
+         to_form(%{"adults" => "0", "infants" => "0", "children" => "0"}, as: :account),
+       editing_account_id: nil
+     )}
+  end
+
+  def handle_event("edit_account", %{"id" => id}, socket) do
+    payer = Billing.get_account!(socket.assigns.booking.id, id)
+
+    attrs =
+      Map.new(
+        [:name, :adults, :infants, :children, :check_in_date, :check_out_date],
+        &{to_string(&1), Map.fetch!(payer, &1)}
+      )
+
+    attrs = Map.merge(Billing.customer(payer).data, attrs)
+    {:noreply, assign(socket, account_form: to_form(attrs, as: :account), editing_account_id: id)}
+  end
+
+  def handle_event("cancel_account", _, socket), do: {:noreply, assign(socket, account_form: nil)}
+
+  def handle_event("save_account", %{"account" => attrs} = params, socket) do
+    case Billing.save_account(socket.assigns.booking.id, attrs, socket.assigns.editing_account_id) do
+      {:ok, payer} ->
+        next? = params["next"] == "true"
+
+        socket =
+          socket
+          |> assign(
+            billing_scope: payer,
+            buyer_form: to_form(Billing.customer(payer).data, as: :buyer),
+            item_rows: nil,
+            items_dirty?: false,
+            preview: nil,
+            pricing: nil,
+            editing_account_id: nil,
+            account_form:
+              if(next?,
+                do: to_form(%{"adults" => "0", "infants" => "0", "children" => "0"}, as: :account)
+              )
+          )
+          |> refresh()
+
+        {:noreply,
+         put_flash(socket, :info, "Plátce uložen. Doklady vystavte po kontrole náhledu.")}
+
+      {:error, error} ->
+        {:noreply,
+         socket
+         |> assign(account_form: to_form(attrs, as: :account))
+         |> put_flash(:error, Helpers.error(error))}
+    end
+  end
+
+  def handle_event("delete_account", %{"id" => id}, socket) do
+    case Billing.delete_account(socket.assigns.booking.id, id) do
+      {:ok, _} ->
+        payer = Billing.account(socket.assigns.booking.id)
+
+        {:noreply,
+         socket
+         |> assign(
+           billing_scope: payer,
+           buyer_form: to_form(Billing.customer(payer).data, as: :buyer),
+           item_rows: nil,
+           items_dirty?: false,
+           preview: nil,
+           pricing: nil
+         )
+         |> refresh()}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, Helpers.error(error))}
+    end
+  end
+
+  def handle_event("complete_allocation", _, socket),
+    do:
+      result(
+        Billing.complete_allocation(
+          socket.assigns.booking.id,
+          is_nil(socket.assigns.booking.allocation_completed_at)
+        ),
+        socket
+      )
+
+  def handle_event("search_payers", %{"search" => search}, socket),
+    do: {:noreply, assign(socket, :payer_search, search)}
+
+  defp allocation(accounts, field), do: Enum.sum(Enum.map(accounts, &Map.fetch!(&1, field)))
+
+  defp allocated_count(accounts),
+    do: Enum.sum(Enum.map([:adults, :infants, :children], &allocation(accounts, &1)))
+
+  defp visible_accounts(accounts, search),
+    do:
+      Enum.filter(accounts, &String.contains?(String.downcase(&1.name), String.downcase(search)))
+
   defp result({:ok, _}, socket),
     do: {:noreply, socket |> refresh() |> put_flash(:info, "Uloženo")}
 
@@ -289,20 +418,28 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     do: {:noreply, put_flash(socket, :error, Helpers.error(error))}
 
   defp refresh(socket) do
-    id = socket.assigns.booking.id
+    id = socket.assigns.billing_scope
 
     calculation = Billing.calculation(id)
-    documents = Billing.list_documents(%{"booking_id" => id})
+    documents = Billing.list_documents(%{"billing_account_id" => id.id})
 
     socket =
       assign(socket,
+        booking: Bookings.get_booking!(id.booking_id),
+        billing_scope: Billing.account(id),
+        accounts: Billing.list_accounts(id.booking_id),
+        account_summaries: CozyCheckout.Billing.BookingSummary.for_accounts(id.booking_id),
+        group_summary:
+          CozyCheckout.Billing.BookingSummary.for_bookings([id.booking_id])[id.booking_id],
         personal?: match?(%{state: "personal"}, calculation),
         calculation: calculation,
         pricing_hint: Billing.pricing_preview(id),
         documents: documents,
         abra_transfers: CozyCheckout.Abra.Transfers.for_documents(documents),
         payments: Billing.list_payments(id),
-        bank_suggestions: CozyCheckout.Abra.Bank.for_booking(id),
+        bank_suggestions:
+          CozyCheckout.Abra.Bank.for_booking(id.booking_id)
+          |> Enum.filter(&(&1.document && &1.document.billing_account_id == id.id)),
         bank_import: CozyCheckout.Abra.Bank.status(),
         balance: Billing.balance(id)
       )
@@ -434,6 +571,153 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         <nav class="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
           <button class="link" phx-click="refresh">Obnovit přehled</button>
         </nav>
+        <section id="billing-accounts" class="rounded-xl border p-4 space-y-3">
+          <h2 class="text-xl font-bold">Plátci rezervace</h2>
+          <p id="allocation-summary" aria-live="polite">
+            Rozděleno {allocated_count(@accounts)}/{Bookings.people_count(@booking)} osob · {@group_summary.account_count -
+              @group_summary.final_count} plátci čekají na fakturu · {@group_summary.paid_count}/{@group_summary.final_count} faktur uhrazeno
+          </p>
+          <div class="text-sm">
+            <p
+              :for={
+                {label, field} <- [
+                  {"Dospělí", :adults},
+                  {"Děti do 2 let", :infants},
+                  {"Děti do 12 let", :children}
+                ]
+              }
+              class={
+                if allocation(@accounts, field) != Map.fetch!(@booking, field),
+                  do: "text-warning font-semibold"
+              }
+            >
+              {label}: {allocation(@accounts, field)}/{Map.fetch!(@booking, field)}
+            </p>
+            <p :if={@booking.unclassified_guests > 0} class="text-warning">
+              {@booking.unclassified_guests} historických osob čeká na zařazení.
+            </p>
+            <p>Rozdíl v osobách neblokuje vystavení. Přeplatek jednoho plátce nehradí dluh jiného.</p>
+          </div>
+          <p class="text-sm">
+            Při rozdělení upravte výchozího plátce na první rodinu a její počty. Ostatní rodiny přidejte samostatně.
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <button
+              :if={length(@accounts) > 1 || @documents == []}
+              type="button"
+              class="btn btn-primary"
+              phx-click="new_account"
+            >{if length(@accounts) == 1,
+              do: "Rozdělit mezi více plátců",
+              else: "Přidat plátce"}</button>
+            <button type="button" class="btn" phx-click="complete_allocation">{if @booking.allocation_completed_at,
+              do: "Znovu otevřít rozdělení",
+              else: "Rozdělení dokončeno"}</button>
+          </div>
+          <form :if={length(@accounts) > 30} phx-change="search_payers">
+            <.input name="search" value={@payer_search} label="Vyhledat plátce" type="search" />
+          </form>
+          <div class="space-y-2">
+            <div
+              :for={payer <- visible_accounts(@accounts, @payer_search)}
+              class="flex flex-wrap items-center gap-2 rounded border p-2"
+            >
+              <button
+                type="button"
+                phx-click="select_account"
+                phx-value-id={payer.id}
+                data-confirm={
+                  if @items_dirty?,
+                    do: "Přepnutím plátce zahodíte neuložené změny kalkulace. Pokračovat?"
+                }
+                aria-pressed={payer.id == @billing_scope.id}
+                class={["btn", payer.id == @billing_scope.id && "btn-primary"]}
+              >{payer.name}</button>
+              <span>{payer.adults + payer.infants + payer.children} osob · {CozyCheckout.Billing.BookingSummary.label(
+                @account_summaries[payer.id].state
+              )} · {CozyCheckout.Billing.BookingSummary.label(
+                @account_summaries[payer.id].payment_state
+              )}</span>
+              <button
+                type="button"
+                phx-click="edit_account"
+                phx-value-id={payer.id}
+                class="btn btn-sm"
+              >Upravit</button>
+              <button
+                :if={!payer.default && is_nil(@account_summaries[payer.id].final_id)}
+                type="button"
+                phx-click="delete_account"
+                phx-value-id={payer.id}
+                class="btn btn-sm"
+                data-confirm="Odstranit rozpracovaného plátce?"
+              >Odstranit</button>
+            </div>
+          </div>
+          <.form
+            :if={@account_form}
+            for={@account_form}
+            id="payer-form"
+            phx-submit="save_account"
+            class="rounded border p-4 space-y-3"
+          >
+            <h3 class="font-bold">
+              {if @editing_account_id, do: "Upravit plátce", else: "Přidat plátce"}
+            </h3>
+            <.input field={@account_form[:name]} label="Jméno / název" required />
+            <div class="grid grid-cols-3 gap-3">
+              <.input field={@account_form[:adults]} label="Dospělí" type="number" min="0" required />
+              <.input
+                field={@account_form[:infants]}
+                label="Děti do 2 let"
+                type="number"
+                min="0"
+                required
+              />
+              <.input
+                field={@account_form[:children]}
+                label="Děti do 12 let"
+                type="number"
+                min="0"
+                required
+              />
+            </div>
+            <.input field={@account_form[:email]} label="E-mail (volitelný)" type="email" />
+            <details>
+              <summary class="cursor-pointer py-2">Fakturační údaje a výjimka termínu</summary>
+              <.input
+                :for={{field, label} <- @buyer_fields -- [{"email", "Fakturační e-mail"}]}
+                field={@account_form[field]}
+                label={label}
+              />
+              <.input
+                field={@account_form[:check_in_date]}
+                label="Vlastní příjezd (jinak termín rezervace)"
+                type="date"
+              />
+              <.input field={@account_form[:check_out_date]} label="Vlastní odjezd" type="date" />
+              <p>
+                Ceny se převezmou z uložených předvoleb skupiny. Služby a poplatky doplňte v kalkulaci konkrétního plátce.
+              </p>
+            </details>
+            <button type="submit" class="btn btn-primary">Uložit</button>
+            <button type="submit" name="next" value="true" class="btn">Uložit a přidat dalšího</button>
+            <button type="button" phx-click="cancel_account" class="btn">Zrušit</button>
+          </.form>
+        </section>
+        <h2 class="text-xl font-bold">Kalkulace a doklady: {@billing_scope.name}</h2>
+        <p
+          :if={
+            (@billing_scope.check_in_date && @billing_scope.check_in_date != @booking.check_in_date) ||
+              (@billing_scope.check_out_date &&
+                 @billing_scope.check_out_date != @booking.check_out_date)
+          }
+          class="alert alert-warning"
+        >
+          Plátce má vlastní termín: {Presentation.date(
+            @billing_scope.check_in_date || @booking.check_in_date
+          )} – {Presentation.date(@billing_scope.check_out_date || @booking.check_out_date)}. Zkontrolujte počet nocí v kalkulaci.
+        </p>
         <p
           :if={@personal?}
           id="billing-personal"
@@ -888,7 +1172,9 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 {Presentation.amount(row.movement.amount)} · {Presentation.date(row.movement.paid_on)} · {row.movement.counterparty} · VS {row.movement.variable_symbol}
               </p>
               <p>
-                Cílový doklad: {row.document.number} · rozdíl {Presentation.amount(row.difference)}
+                Plátce: {row.document.snapshot["customer"]["name"]} · Cílový doklad: {row.document.number} · rozdíl {Presentation.amount(
+                  row.difference
+                )}
               </p>
               <p>{row.reason}</p>
             </div>

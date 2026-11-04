@@ -41,6 +41,16 @@ defmodule CozyCheckout.AbraBankTest do
 
     fixture = billing_fixture()
 
+    {:ok, second_payer} =
+      CozyCheckout.Billing.save_account(fixture.booking.id, %{
+        "name" => "Druhá rodina",
+        "adults" => "1",
+        "infants" => "0",
+        "children" => "0"
+      })
+
+    fixture = Map.put(fixture, :second_payer, second_payer)
+
     Map.put(
       fixture,
       :document,
@@ -276,6 +286,38 @@ defmodule CozyCheckout.AbraBankTest do
     assert Bank.list() == []
     assert Bank.status() == nil
     assert Repo.aggregate(BankImport, :count) == 1
+  end
+
+  test "an old advance VS selects only its payer's final and outstanding amount", %{
+    booking: booking,
+    document: advance,
+    second_payer: second
+  } do
+    final = issue_without_abra!(booking, "final")
+    configure(enabled: false)
+    {:ok, preview} = CozyCheckout.Billing.preview(second, "final")
+
+    {:ok, other_final} =
+      CozyCheckout.Billing.issue(
+        second,
+        "final",
+        %{"preview_token" => preview.token},
+        Ecto.UUID.generate()
+      )
+
+    configure(enabled: true)
+    expect_page([movement(1, advance.variable_symbol), movement(2, other_final.variable_symbol)])
+    assert :ok = Bank.sync()
+    rows = Bank.for_booking(booking.id)
+    assert length(rows) == 2
+    first_row = Enum.find(rows, &(&1.movement.variable_symbol == advance.variable_symbol))
+    other_row = Enum.find(rows, &(&1.movement.variable_symbol == other_final.variable_symbol))
+    assert first_row.document.id == final.id
+    assert first_row.document.billing_account_id == final.billing_account_id
+    assert other_row.document.id == other_final.id
+    assert Decimal.equal?(first_row.difference, Decimal.sub("1234.57", "5700"))
+    assert Decimal.equal?(other_row.difference, Decimal.sub("1234.57", "2850"))
+    assert is_nil(first_row.document.pdf)
   end
 
   defp movement(id, symbol) do

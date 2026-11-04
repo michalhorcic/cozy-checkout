@@ -1,6 +1,5 @@
 defmodule CozyCheckout.BillingFixtures do
   alias CozyCheckout.{Billing, Repo}
-  alias CozyCheckout.Bookings.Booking
   alias CozyCheckout.Guests.Guest
 
   def billing_fixture do
@@ -11,14 +10,13 @@ defmodule CozyCheckout.BillingFixtures do
       |> Guest.changeset(%{name: "Host fakturace", email: "#{Ecto.UUID.generate()}@example.com"})
       |> Repo.insert!()
 
-    booking =
-      %Booking{}
-      |> Booking.changeset(%{
+    {:ok, booking} =
+      CozyCheckout.Bookings.create_booking(%{
         guest_id: guest.id,
+        adults: 2,
         check_in_date: Date.add(today, -10),
         check_out_date: Date.add(today, -7)
       })
-      |> Repo.insert!()
 
     {:ok, _} = Billing.save_profile(supplier_attrs())
 

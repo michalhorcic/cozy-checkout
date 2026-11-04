@@ -105,7 +105,9 @@ defmodule CozyCheckoutWeb.BillingLive.BankPaymentDialog do
             {Presentation.amount(row.movement.amount)} · {Presentation.date(row.movement.paid_on)}
           </p>
           <p>{row.movement.counterparty} · VS {row.movement.variable_symbol}</p>
-          <p>Cílový doklad: {row.document.number}</p>
+          <p>
+            Plátce: {row.document.snapshot["customer"]["name"]} · Cílový doklad: {row.document.number}
+          </p>
           <p>
             Rozdíl proti {if row.document.kind == "final",
               do: "zbývající úhradě faktury",

@@ -16,6 +16,7 @@ defmodule CozyCheckout.Bookings.BookingInvoice do
     field :pricing_basis, :string, default: "legacy_net"
     field :priced_on, :date
 
+    belongs_to :billing_account, CozyCheckout.Billing.Account
     belongs_to :booking, CozyCheckout.Bookings.Booking
     has_many :items, CozyCheckout.Bookings.BookingInvoiceItem, foreign_key: :booking_invoice_id
 
@@ -29,6 +30,7 @@ defmodule CozyCheckout.Bookings.BookingInvoice do
     booking_invoice
     |> cast(attrs, [
       :booking_id,
+      :billing_account_id,
       :subtotal,
       :vat_amount,
       :total_price,
@@ -38,7 +40,7 @@ defmodule CozyCheckout.Bookings.BookingInvoice do
     ])
     |> validate_required([:booking_id])
     |> validate_inclusion(:state, @valid_states)
-    |> unique_constraint(:booking_id)
+    |> unique_constraint(:billing_account_id)
     |> unique_constraint(:invoice_number)
   end
 

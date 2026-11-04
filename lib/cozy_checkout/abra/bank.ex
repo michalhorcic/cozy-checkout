@@ -335,14 +335,19 @@ defmodule CozyCheckout.Abra.Bank do
           on: b.id == d.booking_id,
           where: d.variable_symbol == ^base.movement.variable_symbol,
           where: d.kind in ["advance", "final"] and b.inserted_at >= ^cfg[:enabled_from],
-          where: is_nil(b.deleted_at)
+          where: is_nil(b.deleted_at),
+          select: struct(d, ^Billing.document_fields())
       )
 
-    case Enum.group_by(docs, & &1.booking_id) |> Map.to_list() do
-      [{booking_id, matches}] ->
+    case Enum.group_by(docs, & &1.billing_account_id) |> Map.to_list() do
+      [{account_id, matches}] ->
         # A late balance payment with the old advance VS belongs to the final invoice.
         target =
-          Repo.one(from d in Document, where: d.booking_id == ^booking_id and d.kind == "final")
+          Repo.one(
+            from d in Document,
+              where: d.billing_account_id == ^account_id and d.kind == "final",
+              select: struct(d, ^Billing.document_fields())
+          )
 
         target =
           if base.confirmation do
@@ -353,7 +358,7 @@ defmodule CozyCheckout.Abra.Bank do
           end
 
         if target do
-          received = Billing.list_payments(booking_id)
+          received = Billing.list_payments(Billing.scope(target))
 
           reason =
             if received == [],
@@ -362,11 +367,12 @@ defmodule CozyCheckout.Abra.Bank do
 
           expected =
             if target.kind == "final",
-              do: Billing.balance(booking_id).outstanding,
+              do: Billing.balance(Billing.scope(target)).outstanding,
               else: target.total
 
           Map.merge(base, %{
-            booking_id: booking_id,
+            booking_id: target.booking_id,
+            billing_account_id: account_id,
             document: target,
             difference: Decimal.sub(base.movement.amount, expected),
             reason: reason
