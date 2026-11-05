@@ -201,4 +201,73 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert has_element?(view, "input[name='document[datSplat]'][value='2026-12-01']")
     assert IncomingDocuments.get!(doc.id).current_xml == nil
   end
+
+  test "extraction completion fills VAT and dates even after recovery of the empty form", %{
+    conn: conn
+  } do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "pending.pdf", "zavazek", "header_form")
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+
+    render_change(view, "change", %{
+      "document" => CozyCheckout.IncomingDocuments.HeaderForm.defaults()
+    })
+
+    source = File.read!("test/fixtures/incoming_documents/o2_incomplete.json") |> Jason.decode!()
+    doc |> Ecto.Changeset.change(state: "review", extracted_data: source) |> Repo.update!()
+    send(view.pid, :refresh)
+    render(view)
+    assert has_element?(view, "input[name='document[sumZklZakl]'][value='1490.36']")
+    assert has_element?(view, "input[name='document[sumDphZakl]'][value='312.98']")
+    assert has_element?(view, "input[name='document[datVyst]'][value='2026-10-31']")
+    assert has_element?(view, "input[name='document[duzpUcto]'][value='2026-10-31']")
+    assert has_element?(view, "input[name='document[datSplat]'][value='2026-11-23']")
+  end
+
+  test "source update preserves individual edits while filling the other fields", %{conn: conn} do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "pending.pdf", "zavazek", "header_form")
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+
+    render_change(view, "change", %{
+      "document" =>
+        Map.put(
+          CozyCheckout.IncomingDocuments.HeaderForm.defaults(),
+          "nazFirmy",
+          "Ruční dodavatel"
+        )
+    })
+
+    source = File.read!("test/fixtures/incoming_documents/o2_incomplete.json") |> Jason.decode!()
+    doc |> Ecto.Changeset.change(state: "review", extracted_data: source) |> Repo.update!()
+    send(view.pid, :refresh)
+    render(view)
+    assert has_element?(view, "input[name='document[nazFirmy]'][value='Ruční dodavatel']")
+    assert has_element?(view, "input[name='document[sumDphZakl]'][value='312.98']")
+  end
+
+  test "date button uses the original when all dates in a saved draft are empty", %{conn: conn} do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "old.pdf", "zavazek", "header_form")
+
+    source = File.read!("test/fixtures/incoming_documents/o2_incomplete.json") |> Jason.decode!()
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "review",
+      extracted_data: source,
+      current_xml: doc.template_xml
+    )
+    |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    view |> element("button[phx-click=prefill-dates]") |> render_click()
+    assert has_element?(view, "input[name='document[datVyst]'][value='2026-10-31']")
+    assert has_element?(view, "input[name='document[datSplat]'][value='2026-11-23']")
+    view |> element("button[phx-click=prefill-vat]") |> render_click()
+    assert has_element?(view, "input[name='document[sumZklZakl]'][value='1490.36']")
+    assert IncomingDocuments.get!(doc.id).current_xml == doc.template_xml
+  end
 end

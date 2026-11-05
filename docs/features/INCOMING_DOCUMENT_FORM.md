@@ -79,6 +79,10 @@ rozdílem zbývajících dvou; daň se nepřepočítává procentem sazby. U 0 %
 pouze částku celkem. Neúplná, rozporná nebo nepodporovaná sazba se označí k ručnímu
 doplnění. Částky mimo DPH se neodhadují jako rozdíl celého dokladu.
 
+Při dokončení vytěžování se nová data promítnou i tehdy, když prohlížeč mezitím
+obnovil prázdný formulář a označil jej jako změněný. Případné jednotlivé ruční
+opravy se porovnají s naposledy načtenými hodnotami a zachovají nad novými návrhy.
+
 Tlačítko „Převzít rekapitulaci do polí DPH“ umožňuje stejná data znovu použít v
 otevřeném návrhu bez OpenAI a bez zápisu do databáze. Přepíše pouze pole sazeb,
 pro které má rekapitulace použitelné hodnoty; dodavatele, poznámku a datumová pole
@@ -96,7 +100,9 @@ Pro první návrh se použijí tato pravidla:
 
 Formulář výslovně uvádí, že jde o návrhy ke kontrole proti skutečnému přijetí,
 splatnosti a účetnímu období. Tlačítko „Doplnit prázdná data“ používá aktuální
-data ve formuláři a vyplňuje jen prázdná pole, ručně upravená data zachová.
+data ve formuláři a chybějící zdrojová data převezme z vytěženého originálu.
+Vyplňuje jen prázdná pole, ručně upravená data zachová; funguje tedy i u staršího
+uloženého návrhu, který má všechna data prázdná.
 Každé použití předvyplnění označí návrh jako změněný a zruší zaškrtnutou kontrolu.
 Před dry-runem či přenosem je potřeba změny potvrdit a uložit.
 

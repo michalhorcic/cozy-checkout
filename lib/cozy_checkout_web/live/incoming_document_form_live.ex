@@ -21,6 +21,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
        doc: nil,
        agenda: "faktura-prijata",
        values: HeaderForm.defaults(),
+       loaded_values: HeaderForm.defaults(),
        reviewed: false,
        suggestion_messages: [],
        dirty: false,
@@ -52,6 +53,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           assign(socket,
             doc: nil,
             values: HeaderForm.defaults(),
+            loaded_values: HeaderForm.defaults(),
             agenda: "faktura-prijata",
             dirty: false,
             reviewed: false
@@ -73,11 +75,32 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     doc = IncomingDocuments.get!(socket.assigns.doc.id)
     if busy?(doc), do: Process.send_after(self(), :refresh, 2000)
 
-    {:noreply,
-     if(socket.assigns.dirty or socket.assigns.accounting_dirty,
-       do: assign(socket, doc: doc),
-       else: assign_document(socket, doc)
-     )}
+    socket =
+      cond do
+        socket.assigns.doc.state in ~w(uploaded processing) and
+            doc.state not in ~w(uploaded processing) ->
+          # Browser form recovery may mark a blank form dirty before extraction finishes.
+          # Merge real edits over the new source instead of suppressing the whole update.
+          overrides =
+            Map.reject(socket.assigns.values, fn {key, value} ->
+              value == Map.get(socket.assigns.loaded_values, key, "")
+            end)
+
+          socket = assign_document(socket, doc)
+
+          assign(socket,
+            values: Map.merge(socket.assigns.values, overrides),
+            dirty: map_size(overrides) > 0
+          )
+
+        socket.assigns.dirty or socket.assigns.accounting_dirty ->
+          assign(socket, doc: doc)
+
+        true ->
+          assign_document(socket, doc)
+      end
+
+    {:noreply, socket}
   end
 
   defp busy?(nil), do: false
@@ -117,7 +140,13 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
 
   def handle_event("prefill-dates", _, socket) do
     if editable?(socket.assigns.doc) do
-      dates = FormSuggestions.dates(socket.assigns.values)
+      source =
+        if socket.assigns.doc,
+          do: FormSuggestions.from(socket.assigns.doc.extracted_data).dates,
+          else: %{}
+
+      current = Map.reject(socket.assigns.values, fn {_, value} -> value in [nil, ""] end)
+      dates = FormSuggestions.dates(Map.merge(source, current))
 
       values =
         Enum.reduce(dates, socket.assigns.values, fn {key, value}, acc ->
@@ -367,6 +396,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       doc: doc,
       agenda: doc.agenda,
       values: HeaderForm.values(doc),
+      loaded_values: HeaderForm.values(doc),
       suggestion_messages: FormSuggestions.from(doc.extracted_data).messages,
       hash: IncomingDocuments.transcription_hash(doc),
       reviewed: false,
