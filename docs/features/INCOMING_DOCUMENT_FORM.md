@@ -25,7 +25,8 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
    PDF/JPEG/PNG. U nahrávání se zachovává kontrola duplicity a limit 10 MB.
 3. Nová strategie `header_form` vrací návrhy hlavičky a rekapitulace DPH. I při
    `complete=false`, neúplných položkách nebo chybějící celkové částce se zpřístupní
-   formulář. Vytěžování má jeden pokus, nedoplňuje chybějící položky opakováním.
+   formulář. Nový běh nejprve jednou určí dodavatele a pak jednou vytěží obsah
+   se snapshotem jeho instrukcí. Chybějící položky nedoplňuje opakováním.
    Chybu API lze vyřešit ručním vyplněním stejného formuláře.
 4. Zkontrolovat a opravit návrhy proti zobrazenému originálu. Původní vytěžená data
    zůstávají uložená, ruční formulář je uložen zvlášť. Nejasnosti, přečtená měna a
@@ -195,3 +196,80 @@ opakování zápisu. Routové testy ověřují skrytí starého rozhraní a pře
 návrhů. Změna sjednocení rozhraní nevyžaduje další migraci ani konfiguraci. Lokální testy podle
 AGENTS.md nebyly spuštěny; výsledky GitHub CI ověří uživatel. Kompilace a kontrola
 formátování byly provedeny s Elixir 1.20.4 / OTP 29.1.
+
+## Instrukce podle dodavatele a historie běhů
+
+V sekci **Instrukce pro vytěžování dodavatele** je rozpoznaná identita, důvod
+přiřazení, revize použitá v posledním běhu a samostatný editor aktuálního profilu.
+Profily jsou izolované podle URL a cílové firmy ABRA. Koncové lomítko URL se při
+párování profilů ignoruje. Automaticky se přiřadí pouze jednoznačně přečtená země
+CZ a české IČO s platným kontrolním součtem; počáteční nuly se zachovají. Rozpor
+DIČ profil vyloučí. Název ani DIČ samostatně nespouští automatické párování.
+Neznámá, zahraniční nebo nejednoznačná identita pokračuje společným zadáním.
+Chyba HTTP či neplatná JSON odpověď první fáze naopak běh ukončí.
+
+Existující profil lze vyhledat podle názvu, IČO i DIČ. Výběr sám nemění hlavičku
+ani nespouští AI. Pro nový profil obsluha samostatně potvrdí identitu, zemi a klíč
+(české IČO nebo ručně potvrzené DIČ včetně prefixu země). Nevznikají automatické
+prázdné profily. Instrukce mají limit 8 000 znaků a mohou být prázdné.
+
+- **Uložit instrukce pro příště** mění jen profil, bez AI a bez změny dokladu.
+  Funguje i na odeslaném nebo ručním dokladu. Každé uložení zvyšuje revizi;
+  druhé okno nesmí přepsat novější text bez jeho načtení a porovnání.
+- **Uložit instrukce a znovu vytěžit** atomicky uloží profil a založí nový běh
+  jen obsahové fáze nad stejným originálem a výslovně potvrzeným profilem.
+  Selhání zařazení vrátí zpět i změnu instrukcí.
+- **Zopakovat jen obsahové vytěžení** převezme identitu předchozího běhu stejného
+  originálu a poslední uloženou revizi. **Znovu určit dodavatele** spustí nový
+  úplný běh. Neuložené instrukce je nutné před těmito akcemi uložit či znovu načíst.
+- **Vytěžit bez určení dodavatele** výslovně založí obsahový běh bez profilu;
+  lze ho využít i po chybě první fáze.
+
+Při opakování se předchozí návrh včetně ručních hodnot a účetního nastavení
+archivuje. Aktuální XML i dry-run se zneplatní. Po neúspěchu lze z historie
+výslovně obnovit předchozí pracovní návrh; před přenosem se musí znovu zkontrolovat
+a uložit. Odeslané XML a stavy přenosu opakování i obnovu blokují. Bez originálu
+nejsou AI akce dostupné, ruční formulář a editor budoucích instrukcí zůstávají.
+Oprava IČO či názvu ve finanční hlavičce nikdy nepřepisuje profil.
+
+Obsahová fáze nesmí přepojit identitu na jiný profil. Při jiném IČO nebo DIČ se
+zobrazí rozpor a před uložením formuláře je potřeba zvlášť potvrdit jeho kontrolu
+proti originálu. Instrukce nevytvářejí účetní pravidla; společná pravidla,
+strukturovaný kontrakt, deterministická kontrola částek a ruční přenos zůstávají.
+
+Každý běh uchovává identitu, oba kontrakty, přesné společné i dodavatelské zadání,
+revizi a hash instrukcí, výsledek, oddělené rezervace a metadata obou volání.
+Historie se stránkuje po deseti bězích a nevybírá velké raw odpovědi.
+Usage obou fází je viditelná zvlášť; cenu bez ověřeného ceníku neodhadujeme.
+Originál se odesílá dvakrát, takže druhé volání zvyšuje i obrazové vstupní tokeny.
+Žádné tajné klíče či autorizační hlavičky se do snapshotů neukládají.
+
+Oban retry nevytváří nový běh a neopakuje rezervované placené volání. Po pádu
+mezi rezervací a uložením odpovědi není jisté, zda poskytovatel požadavek provedl:
+obnovený worker označí fázi jako přerušenou a další pokus musí vyvolat obsluha.
+Dokončená identifikace přežije restart, takže lze pokračovat dosud nerezervovaným
+obsahovým voláním. Pozdní výsledky starého běhu nesmí přepsat novou generaci,
+změněný originál ani odeslaný doklad.
+
+### Nasazení a ověření nového toku
+
+Aditivní migrace `20261106090000` přidává profily, běhy a aktivní vazbu dokladu.
+Kompozitní FK zajišťuje, že aktivní běh patří stejnému dokladu. Aktivní identita
+profilu, generace dokladu a jediný rozpracovaný běh mají unikátní indexy. Historie
+se automaticky nemaže. Dosavadní doklady mají vazbu prázdnou a nevolají zpětně AI.
+Starý job bez `run_id` se pod zámkem převede na jediný běh, pouze pokud ještě
+nerezervoval staré volání. Již rezervované staré volání vyžaduje ruční obnovu.
+Původní strategie `structured` a `simple_xml` zůstávají ve své větvi.
+
+Nový tok platí pro všechny nové `header_form` běhy, nemá další konfigurační
+přepínač ani nový klíč/model. Před návratem ke staršímu release je potřeba zastavit
+vkládání nových běhů a dokončit či ukončit jejich joby. Tabulky historie nemazat.
+
+Přidané testy přes Req.Test pokrývají dvě různá volání, snapshot revize, přesné
+párování a namespace, konflikt editorů, přerušenou rezervaci, obnovení pouze druhé
+fáze, pozdní odpověď, historii návrhu, změněný zdroj/cíl, odeslané doklady,
+kompozitní FK, konstantní počet dotazů a editor ve formuláři. Lokálně proběhla
+kompilace aplikace i změněných testovacích modulů bez spuštění testů a kontrola
+formátování s Elixir 1.20.4 / OTP 29.1. Výsledek CI ověří uživatel. Živá OpenAI
+ani ABRA se nevolaly. Pilot na několika dokladech O2 a jiného dodavatele zbývá;
+zlepšení přesnosti, času a ceny dosud není ověřené.

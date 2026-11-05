@@ -76,6 +76,9 @@ defmodule CozyCheckout.IncomingDocuments.HeaderForm do
             defaults()
         end
 
+      is_map(doc.edited_data) and is_map(doc.edited_data["header_form"]) ->
+        Map.merge(defaults(), doc.edited_data["header_form"])
+
       doc.extracted_data != %{} ->
         suggestions(doc.extracted_data)
 

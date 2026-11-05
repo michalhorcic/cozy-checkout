@@ -6,9 +6,9 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 ## Přehled plánů
 
 - [Dvoufázové vytěžování a instrukce podle dodavatele](2026-11-05-vytezovani-podle-dodavatele.md)
-  — **připraveno k implementaci v dalším chatu**; první dotaz identifikuje dodavatele,
-  druhý používá jeho uložené instrukce. Plán zahrnuje databázi, editor ve formuláři,
-  revize, obnovu běhů a ověření. Uložení plánu funkci neimplementuje.
+  — **implementováno ve větvi, čeká na CI a pilot**; identifikace dodavatele,
+  vytěžení se snapshotem instrukcí, editor profilů, revize a obnova běhů.
+  [Návod](../features/INCOMING_DOCUMENT_FORM.md#instrukce-podle-dodavatele-a-historie-běhů).
 
 - [Skupinové rezervace, více plátců a jednodušší zakládání pobytů](2026-11-04-skupinove-rezervace-a-vice-platcu.md)
   — **implementováno v PR**, čeká na CI a lokální kontrolu; jedna rezervace,

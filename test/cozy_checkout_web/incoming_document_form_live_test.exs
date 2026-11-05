@@ -270,4 +270,91 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert has_element?(view, "input[name='document[sumZklZakl]'][value='1490.36']")
     assert IncomingDocuments.get!(doc.id).current_xml == doc.template_xml
   end
+
+  test "supplier instructions can be saved on a sent manual document without changing it or invoking AI",
+       %{conn: conn} do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+    doc = doc |> Ecto.Changeset.change(state: "sent", sent_xml: doc.current_xml) |> Repo.update!()
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert has_element?(view, "#incoming-supplier")
+    refute has_element?(view, "button[phx-click=content-retry]")
+
+    params = %{
+      "supplier" => %{
+        "profile_id" => "",
+        "identity_kind" => "ic",
+        "name" => "PENNY MARKET",
+        "ic" => "64945880",
+        "dic" => "CZ64945880",
+        "country_code" => "CZ",
+        "instructions" => "<script>test</script>",
+        "confirmed" => "true"
+      }
+    }
+
+    html =
+      view |> form("#supplier-instructions-form", params) |> render_submit(%{"action" => "save"})
+
+    assert html =~ "Instrukce uloženy pro příště"
+    assert html =~ "&lt;script&gt;test&lt;/script&gt;"
+    assert IncomingDocuments.get!(doc.id) == doc
+    [profile] = IncomingDocuments.supplier_profiles(doc.id)
+    assert profile.revision == 1
+    assert IncomingDocuments.list_extraction_runs(doc.id) == []
+  end
+
+  test "supplier editor detects a stale revision and preserves unsaved header edits", %{
+    conn: conn
+  } do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    supplier = %{
+      "name" => "PENNY",
+      "ic" => "64945880",
+      "dic" => "CZ64945880",
+      "country_code" => "CZ",
+      "identity_kind" => "ic",
+      "instructions" => "První revize"
+    }
+
+    {:ok, profile} =
+      IncomingDocuments.save_supplier_instructions(doc.id, nil, supplier, nil, true)
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    view |> element("input[phx-focus=supplier-open]") |> render_focus()
+
+    view |> element("#supplier_profile_id-option-#{profile.id}") |> render_click()
+
+    view
+    |> form("#incoming-header-form", %{
+      "document" => Map.put(attrs(), "nazFirmy", "Neuložená změna")
+    })
+    |> render_change()
+
+    assert {:ok, _} =
+             IncomingDocuments.save_supplier_instructions(
+               doc.id,
+               profile.id,
+               Map.put(supplier, "instructions", "Druhé okno"),
+               1,
+               true
+             )
+
+    params =
+      Map.merge(supplier, %{
+        "profile_id" => profile.id,
+        "instructions" => "Moje změna",
+        "confirmed" => "true"
+      })
+
+    html =
+      view
+      |> form("#supplier-instructions-form", %{"supplier" => params})
+      |> render_submit(%{"action" => "save"})
+
+    assert html =~ "Instrukce mezitím někdo změnil"
+    assert has_element?(view, "input[name='document[nazFirmy]'][value='Neuložená změna']")
+    view |> element("button[phx-click=supplier-reload]") |> render_click()
+    assert render(view) =~ "Druhé okno"
+  end
 end

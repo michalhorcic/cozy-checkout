@@ -8,6 +8,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     FormSuggestions,
     HeaderForm,
     ResponseDiagnostics,
+    SupplierProfiles,
     XML
   }
 
@@ -23,6 +24,17 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
        values: HeaderForm.defaults(),
        loaded_values: HeaderForm.defaults(),
        reviewed: false,
+       identity_reviewed: false,
+       extraction_run: nil,
+       supplier_form: to_form(%{}, as: :supplier),
+       supplier_id: nil,
+       supplier_revision: nil,
+       supplier_dirty: false,
+       supplier_options: [],
+       supplier_open: false,
+       supplier_query: nil,
+       extraction_history: [],
+       history_page: 0,
        suggestion_messages: [],
        dirty: false,
        accounting_options: [],
@@ -94,7 +106,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           )
 
         socket.assigns.dirty or socket.assigns.accounting_dirty ->
-          assign(socket, doc: doc)
+          socket |> assign(doc: doc) |> assign_supplier(doc)
 
         true ->
           assign_document(socket, doc)
@@ -113,6 +125,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
      assign(socket,
        values: Map.take(attrs, HeaderForm.keys()),
        reviewed: params["reviewed"] == "true",
+       identity_reviewed: params["identity_reviewed"] == "true",
        agenda:
          if(socket.assigns.doc,
            do: socket.assigns.doc.agenda,
@@ -200,7 +213,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     else
       result =
         if socket.assigns.doc do
-          IncomingDocuments.save_header(socket.assigns.doc.id, attrs, socket.assigns.hash)
+          IncomingDocuments.save_header(
+            socket.assigns.doc.id,
+            attrs,
+            socket.assigns.hash,
+            params["identity_reviewed"] == "true"
+          )
         else
           IncomingDocuments.create_header(params["agenda"], attrs)
         end
@@ -339,12 +357,231 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     )
   end
 
+  def handle_event("retry", _, %{assigns: %{supplier_dirty: true}} = socket),
+    do:
+      {:noreply,
+       put_flash(socket, :error, "Nejdřív uložte nebo znovu načtěte instrukce dodavatele.")}
+
   def handle_event("retry", _, socket) do
     operation(
       socket,
       fn doc -> IncomingDocuments.retry_extraction(doc.id, "header_form") end,
       "Probíhá nové vytěžení."
     )
+  end
+
+  def handle_event("supplier-change", %{"supplier" => attrs}, socket),
+    do:
+      {:noreply,
+       assign(socket, supplier_form: to_form(attrs, as: :supplier), supplier_dirty: true)}
+
+  def handle_event("supplier-search", params, socket),
+    do:
+      {:noreply,
+       assign(socket,
+         supplier_query: get_in(params, ["supplier_search", "0"]) || "",
+         supplier_open: true
+       )}
+
+  def handle_event("supplier-open", _, socket),
+    do: {:noreply, assign(socket, supplier_open: true)}
+
+  def handle_event("supplier-close", _, socket),
+    do: {:noreply, assign(socket, supplier_open: false)}
+
+  def handle_event("supplier-select", %{"id" => id}, socket) do
+    profile = IncomingDocuments.supplier_profile(socket.assigns.doc, id)
+
+    if profile,
+      do: {:noreply, set_supplier(socket, profile, SupplierProfiles.identity(profile))},
+      else: {:noreply, socket}
+  end
+
+  def handle_event("supplier-reload", _, socket) do
+    profile =
+      IncomingDocuments.supplier_profile(socket.assigns.doc, socket.assigns.supplier_id)
+
+    if profile,
+      do: {:noreply, set_supplier(socket, profile, SupplierProfiles.identity(profile))},
+      else: {:noreply, socket}
+  end
+
+  def handle_event("supplier-new", _, socket) do
+    identity =
+      if socket.assigns.extraction_run, do: socket.assigns.extraction_run.identity, else: %{}
+
+    {:noreply, set_supplier(socket, nil, identity)}
+  end
+
+  def handle_event("supplier-save", %{"supplier" => attrs} = params, socket) do
+    doc = socket.assigns.doc
+    retry? = params["action"] == "retry"
+    confirmed = attrs["confirmed"] == "true"
+
+    if retry? && (socket.assigns.dirty || socket.assigns.accounting_dirty) do
+      {:noreply,
+       put_flash(socket, :error, "Nejprve uložte změny formuláře a účetního nastavení.")}
+    else
+      args = [
+        doc.id,
+        socket.assigns.supplier_id,
+        attrs,
+        socket.assigns.supplier_revision,
+        confirmed
+      ]
+
+      result =
+        if retry?,
+          do: apply(IncomingDocuments, :save_supplier_and_retry, args),
+          else: apply(IncomingDocuments, :save_supplier_instructions, args)
+
+      case result do
+        {:ok, saved} when retry? ->
+          Process.send_after(self(), :refresh, 2000)
+
+          {:noreply,
+           socket
+           |> assign(supplier_dirty: false)
+           |> assign_document(saved)
+           |> put_flash(:info, "Instrukce uloženy. Probíhá pouze obsahové vytěžení.")}
+
+        {:ok, profile} ->
+          {:noreply,
+           socket
+           |> set_supplier(profile, SupplierProfiles.identity(profile))
+           |> put_flash(:info, "Instrukce uloženy pro příště. Aktuální doklad se nezměnil.")}
+
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, reason)}
+      end
+    end
+  end
+
+  def handle_event("content-retry", _, socket) do
+    if socket.assigns.supplier_dirty do
+      {:noreply, put_flash(socket, :error, "Nejprve uložte nebo znovu načtěte instrukce.")}
+    else
+      operation(
+        socket,
+        fn doc -> IncomingDocuments.retry_content_extraction(doc.id) end,
+        "Probíhá nové obsahové vytěžení s poslední uloženou revizí."
+      )
+    end
+  end
+
+  def handle_event("generic-extract", _, socket),
+    do:
+      operation(
+        socket,
+        fn doc -> IncomingDocuments.retry_content_extraction(doc.id, without_supplier: true) end,
+        "Probíhá obecné vytěžení bez určení dodavatele."
+      )
+
+  def handle_event("restore-draft", %{"id" => id}, socket),
+    do:
+      operation(
+        socket,
+        fn doc -> IncomingDocuments.restore_draft_from_run(doc.id, id) end,
+        "Pracovní návrh obnoven. Zkontrolujte a znovu uložte formulář; původní dry-run neplatí."
+      )
+
+  def handle_event("history-page", %{"page" => page}, socket) do
+    page =
+      case Integer.parse(page) do
+        {n, ""} when n >= 0 -> n
+        _ -> 0
+      end
+
+    {:noreply,
+     assign(socket,
+       history_page: page,
+       extraction_history: IncomingDocuments.list_extraction_runs(socket.assigns.doc.id, page)
+     )}
+  end
+
+  defp set_supplier(socket, profile, identity) do
+    attrs =
+      Map.merge(
+        %{"name" => "", "ic" => "", "dic" => "", "country_code" => "CZ"},
+        Map.reject(identity, fn {_, value} -> is_nil(value) end)
+      )
+      |> Map.merge(%{
+        "profile_id" => if(profile, do: profile.id, else: ""),
+        "identity_kind" => if(profile, do: profile.identity_kind, else: "ic"),
+        "instructions" => if(profile, do: profile.instructions, else: ""),
+        "confirmed" => "false"
+      })
+
+    options =
+      if profile do
+        option = %{
+          id: profile.id,
+          name: "#{profile.name} — #{profile.ic || profile.dic}",
+          hint: profile.country_code,
+          search_text: "#{profile.name} #{profile.ic} #{profile.dic}"
+        }
+
+        [option | Enum.reject(socket.assigns.supplier_options, &(&1.id == profile.id))]
+      else
+        socket.assigns.supplier_options
+      end
+
+    assign(socket,
+      supplier_options: options,
+      supplier_form: to_form(attrs, as: :supplier),
+      supplier_id: profile && profile.id,
+      supplier_revision: profile && profile.revision,
+      supplier_dirty: false,
+      supplier_open: false,
+      supplier_query: nil
+    )
+  end
+
+  defp assign_supplier(socket, doc) do
+    old_doc = socket.assigns.doc
+    run = IncomingDocuments.extraction_status(doc)
+    old_run = socket.assigns.extraction_run
+
+    changed? =
+      is_nil(old_doc) || old_doc.id != doc.id ||
+        (old_run && old_run.id) != (run && run.id) ||
+        (old_run && old_run.state) != (run && run.state) ||
+        (old_run && old_run.profile_revision) != (run && run.profile_revision)
+
+    socket = assign(socket, extraction_run: run)
+
+    if changed? do
+      options =
+        IncomingDocuments.supplier_profiles(doc)
+        |> Enum.map(fn p ->
+          %{
+            id: p.id,
+            name: "#{p.name} — #{p.ic || p.dic}",
+            hint: p.country_code,
+            search_text: "#{p.name} #{p.ic} #{p.dic}"
+          }
+        end)
+
+      socket =
+        assign(socket,
+          supplier_options: options,
+          history_page: 0,
+          extraction_history: IncomingDocuments.list_extraction_runs(doc.id)
+        )
+
+      if socket.assigns.supplier_dirty && old_doc && old_doc.id == doc.id do
+        socket
+      else
+        profile =
+          if run,
+            do: IncomingDocuments.supplier_profile(doc, run.supplier_profile_id),
+            else: nil
+
+        set_supplier(socket, profile, if(run, do: run.identity, else: %{}))
+      end
+    else
+      socket
+    end
   end
 
   defp editable?(nil), do: true
@@ -373,6 +610,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   defp load(socket, id), do: assign_document(socket, IncomingDocuments.get!(id))
 
   defp assign_document(socket, doc) do
+    socket = assign_supplier(socket, doc)
     same? = socket.assigns.doc && socket.assigns.doc.id == doc.id
 
     socket =
@@ -400,6 +638,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       suggestion_messages: FormSuggestions.from(doc.extracted_data).messages,
       hash: IncomingDocuments.transcription_hash(doc),
       reviewed: false,
+      identity_reviewed: false,
       dirty: false,
       template_fields: template_fields,
       responses: [
@@ -513,6 +752,198 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             </tbody>
           </table>
         </details>
+        <p
+          :if={@doc && @doc.state in ~w(uploaded processing) && @extraction_run}
+          class="alert alert-info"
+          role="status"
+        >
+          {if @extraction_run.active_step == "identify",
+            do: "Určujeme dodavatele originálu…",
+            else: "Vytěžujeme obsah s uloženým zadáním…"}
+        </p>
+        <p :if={@doc && @doc.extraction_metadata["restored_from_run"]} class="alert alert-warning">
+          Zobrazený pracovní návrh byl obnoven z historie. Zkontrolujte jej proti originálu a znovu uložte.
+        </p>
+        <details :if={@doc} class="bg-base-200 rounded-xl p-4 space-y-4" id="incoming-supplier">
+          <summary class="font-bold">Instrukce pro vytěžování dodavatele</summary>
+          <p>
+            Cílová firma: {@doc.company_id}. Instrukce ovlivňují čtení originálu, účetní údaje vždy zkontrolujte.
+          </p>
+          <div :if={@extraction_run} class="space-y-2">
+            <p>
+              Rozpoznaná identita: {@extraction_run.identity["name"]} / IČO {@extraction_run.identity[
+                "ic"
+              ]} / DIČ {@extraction_run.identity["dic"]}
+            </p>
+            <p>{@extraction_run.selection_reason} Přiřazení: {@extraction_run.selection}.</p>
+            <p :for={message <- @extraction_run.identity_result["uncertainties"] || []}>{message}</p>
+            <p :if={@doc.state in ~w(uploaded processing)} role="status">
+              {if @extraction_run.active_step == "identify",
+                do: "Určujeme dodavatele…",
+                else: "Vytěžujeme obsah originálu…"}
+            </p>
+            <p :if={@extraction_run.profile_revision}>
+              Poslední běh použil revizi {@extraction_run.profile_revision}.
+              <span :if={@extraction_run.supplier_instructions == ""}>Známý dodavatel bez zvláštních instrukcí.</span>
+            </p>
+            <p
+              :if={
+                @supplier_id == @extraction_run.supplier_profile_id && @supplier_revision &&
+                  @supplier_revision != @extraction_run.profile_revision
+              }
+              class="text-warning"
+            >
+              Profil má novější revizi {@supplier_revision}; výsledek posledního běhu se nezměnil.
+            </p>
+            <details>
+              <summary>Přesné dodavatelské instrukce posledního běhu</summary>
+              <pre class="whitespace-pre-wrap">{@extraction_run.supplier_instructions}</pre>
+            </details>
+          </div>
+          <.form
+            for={@supplier_form}
+            id="supplier-instructions-form"
+            phx-change="supplier-change"
+            phx-submit="supplier-save"
+            class="space-y-3"
+          >
+            <.searchable_picker
+              field={@supplier_form[:profile_id]}
+              options={@supplier_options}
+              label="Vybrat uloženého dodavatele"
+              required={false}
+              prompt="Nový profil / neznámý dodavatel"
+              search_name="supplier_search"
+              search_event="supplier-search"
+              open_event="supplier-open"
+              close_event="supplier-close"
+              select_event="supplier-select"
+              query={@supplier_query}
+              open={@supplier_open}
+            />
+            <button
+              type="button"
+              class="btn btn-sm"
+              phx-click="supplier-new"
+              data-confirm="Zahodit neuložené instrukce a připravit nový profil?"
+            >Nový profil</button>
+            <button
+              :if={@supplier_id}
+              type="button"
+              class="btn btn-sm"
+              phx-click="supplier-reload"
+              data-confirm="Zahodit neuložené instrukce a načíst aktuální revizi profilu?"
+            >Načíst aktuální revizi</button>
+            <p>
+              Výběr profilu nemění dodavatele v hlavičce a nespouští AI. Uložením existujícího profilu se jeho identita nemění.
+            </p>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <.input field={@supplier_form[:name]} label="Název dodavatele" maxlength="255" />
+              <.input field={@supplier_form[:country_code]} label="Země (CZ apod.)" maxlength="2" />
+              <.input field={@supplier_form[:ic]} label="IČO dodavatele" maxlength="255" />
+              <.input field={@supplier_form[:dic]} label="DIČ dodavatele" maxlength="255" />
+            </div>
+            <.input
+              type="select"
+              field={@supplier_form[:identity_kind]}
+              label="Klíč profilu"
+              options={[{"České IČO", "ic"}, {"Ručně potvrzené DIČ", "dic"}]}
+            />
+            <.input
+              type="textarea"
+              field={@supplier_form[:instructions]}
+              label="Instrukce pro čtení originálu"
+              maxlength="8000"
+              rows="6"
+            />
+            <p>
+              {String.length(@supplier_form.params["instructions"] || "")} / 8 000 znaků. Aktuální revize: {@supplier_revision ||
+                "nový profil"}.
+            </p>
+            <p :if={@supplier_dirty} class="text-warning">
+              Instrukce mají neuložené změny. Uložení pro příště nevolá AI.
+            </p>
+            <.input
+              type="checkbox"
+              field={@supplier_form[:confirmed]}
+              label="Potvrzuji samostatně identitu a příslušnost tohoto profilu k dodavateli originálu."
+            />
+            <button class="btn" name="action" value="save">Uložit instrukce pro příště</button>
+            <button
+              :if={@doc.original && !@locked}
+              class="btn btn-primary"
+              name="action"
+              value="retry"
+              data-confirm="Uložit instrukce a nahradit ruční opravy novým vytěžením? Kontrola a dry-run se zruší."
+            >Uložit instrukce a znovu vytěžit</button>
+          </.form>
+          <div :if={@doc.original && !@locked} class="flex flex-wrap gap-2">
+            <button
+              class="btn"
+              phx-click="content-retry"
+              data-confirm="Nahradit ruční opravy obsahovým vytěžením s poslední uloženou revizí?"
+            >Zopakovat jen obsahové vytěžení</button>
+            <button
+              class="btn"
+              phx-click="generic-extract"
+              data-confirm="Nahradit ruční opravy vytěžením bez dodavatelských instrukcí?"
+            >Vytěžit bez určení dodavatele</button>
+            <button
+              class="btn"
+              phx-click="retry"
+              data-confirm="Znovu určit dodavatele a vytěžit obsah? Ruční opravy a kontrola se zruší."
+            >Znovu určit dodavatele</button>
+          </div>
+          <details id="extraction-history">
+            <summary>Historie vytěžování</summary>
+            <p class="text-sm">
+              Usage je uvedena pro každou fázi zvlášť. Bez ověřeného ceníku cenu neodhadujeme; originál se posílá v obou fázích.
+            </p>
+            <div :for={run <- @extraction_history} class="border-t py-3 space-y-2">
+              <p>
+                Běh {run.generation}: {run.mode}, {run.state}, fáze {run.active_step}; revize {run.profile_revision ||
+                  "bez profilu"}.
+              </p>
+              <p :if={run.identity_conflict} class="text-warning">{run.identity_conflict}</p>
+              <div :for={
+                {label, meta} <- [{"Identifikace", run.identification}, {"Obsah", run.content}]
+              }>
+                <p>
+                  {label}: {meta["state"] || "nevoláno"} · {meta["model"]} · HTTP {meta["http_status"]} · {meta[
+                    "error"
+                  ]}
+                </p>
+                <pre class="text-xs whitespace-pre-wrap">{Jason.encode!(meta["usage"] || %{})}</pre>
+              </div>
+              <details>
+                <summary>Použité instrukce a otisky</summary>
+                <pre class="text-xs whitespace-pre-wrap">{run.supplier_instructions}</pre>
+                <p class="text-xs break-all">
+                  Společné: {run.common_instructions_hash}; dodavatel: {run.supplier_instructions_hash}
+                </p>
+              </details>
+              <button
+                :if={!@locked && run.generation > 1}
+                class="btn btn-sm"
+                phx-click="restore-draft"
+                phx-value-id={run.id}
+                data-confirm="Obnovit návrh uložený před tímto během? Bude nutná nová kontrola a uložení."
+              >Obnovit předchozí pracovní návrh</button>
+            </div>
+            <button
+              :if={@history_page > 0}
+              class="btn btn-sm"
+              phx-click="history-page"
+              phx-value-page={@history_page - 1}
+            >Novější běhy</button>
+            <button
+              :if={length(@extraction_history) == 10}
+              class="btn btn-sm"
+              phx-click="history-page"
+              phx-value-page={@history_page + 1}
+            >Starší běhy</button>
+          </details>
+        </details>
         <div class="grid gap-6 lg:grid-cols-2">
           <.form
             for={to_form(@values, as: :document)}
@@ -561,6 +992,19 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               label="Zkontroloval/a jsem údaje, měnu CZK a souhrnný rozpis DPH."
               disabled={@locked}
             />
+            <div
+              :if={@doc && @doc.extraction_metadata["identity_conflict"]}
+              class="alert alert-warning"
+            >
+              <p>{@doc.extraction_metadata["identity_conflict"]}</p>
+              <.input
+                type="checkbox"
+                name="identity_reviewed"
+                checked={@identity_reviewed}
+                label="Zkontroloval/a jsem rozpor identity proti originálu a opravil/a dodavatele v tomto formuláři."
+                disabled={@locked}
+              />
+            </div>
             <button class="btn btn-primary" disabled={@locked} phx-disable-with="Ukládám…">Uložit formulář</button>
           </.form>
           <div class="space-y-4">
