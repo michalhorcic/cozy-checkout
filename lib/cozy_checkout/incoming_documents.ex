@@ -86,6 +86,70 @@ defmodule CozyCheckout.IncomingDocuments do
     end
   end
 
+  @doc "Creates a reviewed manual header without requiring a source file or OpenAI."
+  def create_header(agenda, attrs) do
+    cfg = config()
+
+    with :ok <- configured(cfg),
+         true <- agenda in XML.agendas() do
+      id = Ecto.UUID.generate()
+
+      doc = %Document{
+        id: id,
+        agenda: agenda,
+        filename: "Ruční doklad",
+        template_xml: XML.template(agenda),
+        external_id: "ext:cozy-incoming:#{id}",
+        base_url: cfg[:base_url],
+        company_id: cfg[:company_id],
+        extraction_metadata: %{"strategy" => "header_form"}
+      }
+
+      with {:ok, values, xml} <- CozyCheckout.IncomingDocuments.HeaderForm.build(attrs, doc) do
+        Repo.insert(
+          %{
+            doc
+            | state: "review",
+              edited_data: %{"header_form" => values},
+              current_xml: xml,
+              generated_xml: xml
+          },
+          log: false
+        )
+      end
+    else
+      false -> {:error, "Vyberte podporovanou agendu"}
+      error -> error
+    end
+  end
+
+  def save_header(id, attrs, expected_hash) do
+    locked(id, fn doc ->
+      unless Extractor.strategy(doc) == "header_form" and is_nil(doc.sent_xml) and
+               (doc.state == "review" or
+                  (doc.state == "failed" and doc.error_stage == "extraction")),
+             do: Repo.rollback("Formulář je uzamčen")
+
+      unless transcription_hash(doc) == expected_hash,
+        do: Repo.rollback("Doklad mezitím někdo upravil. Obnovte stránku.")
+
+      case CozyCheckout.IncomingDocuments.HeaderForm.build(attrs, doc) do
+        {:ok, values, xml} ->
+          update!(doc,
+            state: "review",
+            edited_data: %{"header_form" => values},
+            current_xml: xml,
+            dry_run: %{},
+            error: nil,
+            error_stage: nil
+          )
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
+  end
+
   defp content_type(bytes, filename)
        when is_binary(bytes) and byte_size(bytes) > 0 and byte_size(bytes) <= @max_size do
     case {String.downcase(Path.extname(filename)), bytes} do
@@ -145,6 +209,8 @@ defmodule CozyCheckout.IncomingDocuments do
       if not is_nil(doc.sent_xml) or (doc.state == "failed" and doc.error_stage != "extraction"),
         do: Repo.rollback("Vytěžení nelze opakovat po zahájení importu")
 
+      if is_nil(doc.original), do: Repo.rollback("Ruční doklad nemá originál k vytěžení")
+
       strategy = strategy || Extractor.strategy(doc)
       unless strategy in Extractor.strategies(), do: Repo.rollback("Neplatný způsob vytěžení")
       job!(id, "extract")
@@ -192,26 +258,34 @@ defmodule CozyCheckout.IncomingDocuments do
         changed = %{doc | accounting_settings: settings}
 
         built =
-          if is_nil(doc.current_xml) and transcription(doc) != %{} do
-            build_transcription(transcription(doc), changed)
-          else
-            with {:ok, raw} <-
-                   XML.restore_accounting(
-                     doc.current_xml || doc.generated_xml || "",
-                     doc.agenda,
-                     XML.template_for(changed),
-                     doc.external_id
-                   ) do
-              case XML.normalize(raw, doc.agenda, XML.template_for(changed), doc.external_id) do
-                {:ok, xml} -> {:ok, raw, xml}
-                {:error, reason} -> {:error, reason, raw}
+          cond do
+            Extractor.strategy(doc) == "header_form" and is_nil(doc.current_xml) ->
+              :header_pending
+
+            is_nil(doc.current_xml) and transcription(doc) != %{} ->
+              build_transcription(transcription(doc), changed)
+
+            true ->
+              with {:ok, raw} <-
+                     XML.restore_accounting(
+                       doc.current_xml || doc.generated_xml || "",
+                       doc.agenda,
+                       XML.template_for(changed),
+                       doc.external_id
+                     ) do
+                case XML.normalize(raw, doc.agenda, XML.template_for(changed), doc.external_id) do
+                  {:ok, xml} -> {:ok, raw, xml}
+                  {:error, reason} -> {:error, reason, raw}
+                end
+              else
+                {:error, reason} -> {:error, reason, nil}
               end
-            else
-              {:error, reason} -> {:error, reason, nil}
-            end
           end
 
         case built do
+          :header_pending ->
+            update!(doc, accounting_settings: settings, dry_run: %{})
+
           {:ok, _raw, xml} ->
             update!(doc,
               accounting_settings: settings,
@@ -500,6 +574,12 @@ defmodule CozyCheckout.IncomingDocuments do
 
     if doc.state == "processing" do
       case build_extraction(doc) do
+        :suggestions ->
+          locked(id, fn current ->
+            require_state!(current, ["processing"])
+            update!(current, state: "review", current_xml: nil, error: nil, error_stage: nil)
+          end)
+
         {:ok, raw, xml} ->
           locked(id, fn current ->
             require_state!(current, ["processing"])
@@ -597,7 +677,13 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
-  defp build_extraction(doc) do
+  defp build_extraction(%{extracted_data: data} = doc) when data != %{} do
+    if Extractor.strategy(doc) == "header_form", do: :suggestions, else: build_extraction_xml(doc)
+  end
+
+  defp build_extraction(doc), do: build_extraction_xml(doc)
+
+  defp build_extraction_xml(doc) do
     if Extractor.strategy(doc) == "simple_xml" do
       if is_binary(doc.generated_xml) do
         case XML.normalize(doc.generated_xml, doc.agenda, XML.template_for(doc), doc.external_id) do
@@ -659,6 +745,9 @@ defmodule CozyCheckout.IncomingDocuments do
 
   def save_transcription(id, data, expected_hash) do
     locked(id, fn doc ->
+      if Extractor.strategy(doc) == "header_form",
+        do: Repo.rollback("Použijte formulář hlavičky a DPH")
+
       require_state!(doc, ["failed", "review"])
 
       unless is_nil(doc.sent_xml) and (doc.state == "review" or doc.error_stage == "extraction"),
@@ -707,6 +796,9 @@ defmodule CozyCheckout.IncomingDocuments do
 
       is_binary(doc.current_xml) ->
         XML.import_xml(doc.current_xml, doc.agenda)
+
+      Extractor.strategy(doc) == "header_form" ->
+        {:error, "Nejprve zkontrolujte a uložte formulář hlavičky a DPH"}
 
       true ->
         draft =

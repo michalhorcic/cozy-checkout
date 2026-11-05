@@ -62,6 +62,8 @@ defmodule CozyCheckoutWeb.Router do
     live_session :admin,
       on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}, CozyCheckoutWeb.AdminNavigation],
       layout: {CozyCheckoutWeb.Layouts, :admin} do
+      live "/incoming-document-form", IncomingDocumentFormLive
+      live "/incoming-document-form/:id", IncomingDocumentFormLive
       live "/incoming-documents", IncomingDocumentsLive
       live "/incoming-documents/:id", IncomingDocumentsLive
       live "/", DashboardLive

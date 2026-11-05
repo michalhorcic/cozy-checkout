@@ -5,6 +5,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentController do
   def show(conn, %{"id" => id}) do
     doc = IncomingDocuments.get!(id)
 
+    if is_nil(doc.original),
+      do: raise(Ecto.NoResultsError, queryable: "incoming document original")
+
     conn
     |> put_resp_content_type(doc.content_type)
     |> put_resp_header("cache-control", "private, no-store")

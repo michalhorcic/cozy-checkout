@@ -2,7 +2,7 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   @moduledoc "Restricted XML dialect for reviewed document headers and non-stock receipt items."
 
   @agendas ["faktura-prijata", "pokladni-pohyb", "zavazek"]
-  @text ~w(cisDosle varSym datVyst duzpPuv duzpUcto datSplat datUcto popis nazFirmy ic dic ulice mesto psc buc iban)
+  @text ~w(cisDosle varSym datVyst duzpPuv duzpUcto datSplat datUcto popis poznam nazFirmy ic dic ulice mesto psc buc iban)
   @amounts ~w(sumOsv sumZklSniz sumZklSniz2 sumZklZakl sumDphSniz sumDphSniz2 sumDphZakl sumCelkem)
   @fixed ~w(kod typDokl mena stat statDph typUcOp primUcet protiUcet dphZaklUcet dphSnizUcet dphSniz2Ucet clenDph clenKonVykDph stredisko pokladna typPohybuK szbDphSniz szbDphSniz2 szbDphZakl bezPolozek ucetni)
   @item_fields ~w(nazev mnozMj cenaMj typCenyDphK typSzbDphK slevaPol sumZkl sumDph sumCelkem szbDph typPolozkyK)

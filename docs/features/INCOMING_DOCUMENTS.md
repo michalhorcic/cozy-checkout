@@ -396,3 +396,10 @@ API reference: [ABRA — import částek položek](https://podpora.flexibee.eu/c
 [OpenAI — File inputs](https://developers.openai.com/api/docs/guides/file-inputs),
 [ABRA — dry-run](https://podpora.flexibee.eu/en/articles/4720123-test-save-dry-run),
 [ABRA — create/update](https://podpora.flexibee.eu/en/articles/4725944-setup-change-mode).
+
+## Alternativa: ruční hlavička s návrhy z originálu
+
+Vedle podrobného režimu je dostupný [formulář bez položek](INCOMING_DOCUMENT_FORM.md)
+pro všechny tři agendy, včetně souhrnné DPH. Funguje i bez originálu a OpenAI;
+vytěžené položky ukládá pouze do poznámky. Odesílání používá stejný dry-run a
+schvalovací proces. Vstup: „Nový doklad přes formulář“ na seznamu přijatých dokladů.

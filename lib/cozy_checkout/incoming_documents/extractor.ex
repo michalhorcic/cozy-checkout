@@ -2,17 +2,20 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
   @moduledoc "Stateless extraction with selectable detailed JSON or short template-based XML prompts."
   alias CozyCheckout.IncomingDocuments.Transcription
 
-  def strategies, do: ["structured", "simple_xml"]
+  def strategies, do: ["structured", "simple_xml", "header_form"]
   def strategy(doc), do: Map.get(doc.extraction_metadata, "strategy", "structured")
-  def max_attempts(doc), do: if(strategy(doc) == "simple_xml", do: 1, else: 2)
+  def max_attempts(doc), do: if(strategy(doc) in ["simple_xml", "header_form"], do: 1, else: 2)
+  def strategy_label("header_form"), do: "Návrhy do formuláře bez položek"
   def strategy_label("simple_xml"), do: "Jednoduché zadání → XML"
   def strategy_label(_), do: "Podrobný přepis → JSON → XML"
 
   def instructions(strategy \\ "structured") do
     filename =
-      if strategy == "simple_xml",
-        do: "extraction_instructions_simple.md",
-        else: "extraction_instructions.md"
+      case strategy do
+        "simple_xml" -> "extraction_instructions_simple.md"
+        "header_form" -> "extraction_instructions_form.md"
+        _ -> "extraction_instructions.md"
+      end
 
     :cozy_checkout
     |> Application.app_dir("priv/incoming_documents/" <> filename)
@@ -42,7 +45,7 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
       model: cfg[:openai_model],
       store: false,
       max_output_tokens: 24000,
-      instructions: instructions(),
+      instructions: instructions(strategy(doc)),
       text: %{
         format: %{
           type: "json_schema",

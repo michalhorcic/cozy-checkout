@@ -391,7 +391,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         {"Kontrola ABRA (dry-run)", ResponseDiagnostics.for_display(doc.dry_run)},
         {"Přenos do ABRA", ResponseDiagnostics.for_display(doc.response)}
       ],
-      source_data: IncomingDocuments.transcription(doc),
+      source_data:
+        if(Extractor.strategy(doc) == "header_form",
+          do: %{},
+          else: IncomingDocuments.transcription(doc)
+        ),
       source_issues: Builder.source_issues(IncomingDocuments.transcription(doc)),
       source_dirty: false,
       source_locked:
@@ -472,6 +476,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           "datSplat" => "Splatnost",
           "datUcto" => "Datum zaúčtování",
           "popis" => "Popis",
+          "poznam" => "Poznámka",
           "nazFirmy" => "Dodavatel",
           "ic" => "IČO",
           "dic" => "DIČ",
@@ -529,6 +534,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         <h1 class="text-3xl font-bold">Přijaté doklady</h1>
         <.link :if={@doc} navigate={~p"/admin/incoming-documents"} class="btn">Seznam dokladů</.link>
       </div>
+      <.link navigate={~p"/admin/incoming-document-form"} class="btn btn-primary">Nový doklad přes formulář</.link>
+      <.link
+        :if={@doc && Extractor.strategy(@doc) == "header_form"}
+        navigate={~p"/admin/incoming-document-form/#{@doc.id}"}
+        class="btn"
+      >Upravit hlavičku a DPH ve formuláři</.link>
       <p :if={!@enabled} class="alert alert-warning">
         Modul je vypnutý. Pro pilot nastavte připojení a INCOMING_DOCUMENTS_ENABLED=true.
       </p>
@@ -668,8 +679,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         <button
           :for={strategy <- Extractor.strategies()}
           :if={
-            (@doc.state == "failed" && @doc.error_stage == "extraction") ||
-              (@doc.state == "review" && is_nil(@doc.sent_xml))
+            @doc.original != nil &&
+              ((@doc.state == "failed" && @doc.error_stage == "extraction") ||
+                 (@doc.state == "review" && is_nil(@doc.sent_xml)))
           }
           phx-click="retry"
           phx-value-strategy={strategy}
@@ -748,7 +760,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           </details>
         </details>
         <div class="grid lg:grid-cols-2 gap-6">
-          <div class="space-y-3 min-w-0">
+          <div :if={@doc.original != nil} class="space-y-3 min-w-0">
             <a
               href={~p"/admin/incoming-documents/#{@doc.id}/original"}
               target="_blank"
