@@ -89,7 +89,7 @@ defmodule CozyCheckout.IncomingDocuments.XML do
         check_attrs(attrs, [])
 
       ["polozkyDokladu", agenda, "winstrom"] when agenda == state.agenda ->
-        if key != agenda <> "-polozka" or length(state.items) >= 200, do: throw(:invalid_xml)
+        if key != agenda <> "-polozka" or length(state.items) >= 202, do: throw(:invalid_xml)
         check_attrs(attrs, [])
 
       [row, "polozkyDokladu", agenda, "winstrom"] when agenda == state.agenda ->
@@ -212,13 +212,22 @@ defmodule CozyCheckout.IncomingDocuments.XML do
 
   @doc "ABRA calculates an itemized header from items; never send its reference totals twice."
   def import_xml(xml, agenda) do
-    with {:ok, fields} <- parse(xml, agenda) do
+    with {:ok, fields} <- parse(xml, agenda),
+         {:ok, adjustments} <- CozyCheckout.IncomingDocuments.Items.adjustments(fields) do
       if items(fields) == [] do
         {:ok, xml}
       else
-        {:ok, render(Map.drop(fields, @amounts), agenda, fields["id"])}
+        fields =
+          fields |> Map.drop(@amounts) |> Map.put("polozkyDokladu", items(fields) ++ adjustments)
+
+        {:ok, render(fields, agenda, fields["id"])}
       end
     end
+  end
+
+  def rounding_adjustments(xml, agenda) do
+    with {:ok, fields} <- parse(xml, agenda),
+         do: CozyCheckout.IncomingDocuments.Items.adjustments(fields)
   end
 
   def extraction_template(template, agenda) do
@@ -258,7 +267,7 @@ defmodule CozyCheckout.IncomingDocuments.XML do
                   Map.has_key?(row, key),
                   do: "<#{key}>#{escape(row[key])}</#{key}>"
 
-            "<#{agenda}-polozka><typPolozkyK>typPolozky.obecny</typPolozkyK>#{Enum.join(values)}</#{agenda}-polozka>"
+            "<#{agenda}-polozka><typPolozkyK>#{if row["typPolozkyK"] == "typPolozky.ucetni", do: "typPolozky.ucetni", else: "typPolozky.obecny"}</typPolozkyK>#{Enum.join(values)}</#{agenda}-polozka>"
           end
 
         "<polozkyDokladu>#{Enum.join(content)}</polozkyDokladu>"

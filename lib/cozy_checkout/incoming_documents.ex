@@ -2,7 +2,7 @@ defmodule CozyCheckout.IncomingDocuments do
   @moduledoc "Admin-reviewed received documents with immutable create-only ABRA delivery."
   import Ecto.Query
   alias CozyCheckout.Repo
-  alias CozyCheckout.IncomingDocuments.{Client, Document, Extractor, XML}
+  alias CozyCheckout.IncomingDocuments.{Builder, Client, Document, Extractor, SourceImages, XML}
   alias CozyCheckout.Workers.IncomingDocumentWorker
 
   @max_size 10_000_000
@@ -141,6 +141,9 @@ defmodule CozyCheckout.IncomingDocuments do
         current_xml: nil,
         generated_xml: nil,
         dry_run: %{},
+        extracted_data: %{},
+        extraction_metadata: %{},
+        extraction_attempts: 0,
         error: nil,
         error_stage: nil
       )
@@ -157,7 +160,7 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
-  def approve(id, expected_hash, warnings_confirmed \\ false) do
+  def approve(id, expected_hash, warnings_confirmed \\ false, rounding_confirmed \\ false) do
     locked(id, fn doc ->
       require_state!(doc, ["review"])
       require_hash!(doc, expected_hash)
@@ -168,6 +171,13 @@ defmodule CozyCheckout.IncomingDocuments do
 
       if doc.dry_run["warnings"] != [] and not warnings_confirmed,
         do: Repo.rollback("Výslovně potvrďte, že jste zkontrolovali upozornění ABRA")
+
+      case XML.rounding_adjustments(doc.current_xml, doc.agenda) do
+        {:ok, []} -> :ok
+        {:ok, _} when rounding_confirmed -> :ok
+        {:ok, _} -> Repo.rollback("Potvrďte haléřovou korekci DPH podle rekapitulace originálu")
+        {:error, reason} -> Repo.rollback(reason)
+      end
 
       payload =
         case XML.import_xml(doc.current_xml, doc.agenda) do
@@ -196,47 +206,19 @@ defmodule CozyCheckout.IncomingDocuments do
     doc = get!(id)
 
     if doc.state in ["uploaded", "processing"] do
-      locked(id, fn current ->
-        require_state!(current, ["uploaded", "processing"])
-        update!(current, state: "processing")
-      end)
+      case locked(id, fn current ->
+             require_state!(current, ["uploaded", "processing"])
+             update!(current, state: "processing")
+           end) do
+        {:ok, _} ->
+          case SourceImages.prepare(doc, config()) do
+            {:ok, parts, image_metadata} -> transcribe(id, parts, image_metadata)
+            {:error, reason} -> extraction_failed(id, reason, nil)
+          end
 
-      result =
-        case Extractor.extract(doc, config()) do
-          {:ok, raw} ->
-            case XML.normalize(raw, doc.agenda, doc.template_xml, doc.external_id) do
-              {:ok, normalized} -> {:ok, raw, normalized}
-              {:error, reason} -> {:error, reason, raw}
-            end
-
-          {:error, reason} ->
-            {:error, reason, nil}
-        end
-
-      locked(id, fn current ->
-        require_state!(current, ["processing"])
-
-        case result do
-          {:ok, raw, xml} ->
-            update!(current,
-              state: "review",
-              generated_xml: raw,
-              current_xml: xml,
-              error: nil,
-              error_stage: nil
-            )
-
-          {:error, reason, raw} ->
-            update!(current,
-              state: "failed",
-              generated_xml: raw,
-              current_xml: nil,
-              dry_run: %{},
-              error_stage: "extraction",
-              error: reason
-            )
-        end
-      end)
+        _ ->
+          :ok
+      end
     end
 
     :ok
@@ -356,6 +338,159 @@ defmodule CozyCheckout.IncomingDocuments do
     end
 
     :ok
+  end
+
+  defp transcribe(id, parts, image_metadata) do
+    doc = get!(id)
+
+    if doc.state == "processing" do
+      case build_transcription(doc.extracted_data, doc) do
+        {:ok, raw, xml} ->
+          locked(id, fn current ->
+            require_state!(current, ["processing"])
+
+            update!(current,
+              state: "review",
+              generated_xml: raw,
+              current_xml: xml,
+              error: nil,
+              error_stage: nil
+            )
+          end)
+
+        {:error, reason, raw} when doc.extraction_attempts >= 2 ->
+          extraction_failed(id, reason, raw)
+
+        {:error, reason, raw} ->
+          reservation =
+            locked(id, fn current ->
+              require_state!(current, ["processing"])
+
+              if current.extraction_attempts != doc.extraction_attempts,
+                do: Repo.rollback("Vytěžení již rezervoval jiný worker")
+
+              if current.extraction_attempts >= 2,
+                do: Repo.rollback("Limit dvou volání vytěžení byl vyčerpán")
+
+              metadata =
+                current.extraction_metadata
+                |> Map.put("images", image_metadata)
+                |> Map.put("validation_error", reason)
+
+              update!(current,
+                extraction_attempts: current.extraction_attempts + 1,
+                extraction_metadata: metadata
+              )
+            end)
+
+          case reservation do
+            {:ok, reserved} ->
+              feedback =
+                if doc.extracted_data != %{}, do: %{data: doc.extracted_data, error: reason}
+
+              result = Extractor.extract(doc, config(), parts, feedback)
+
+              case persist_transcription_result(reserved, result, raw) do
+                {:ok, _} -> transcribe(id, parts, image_metadata)
+                _ -> :ok
+              end
+
+            _ ->
+              :ok
+          end
+      end
+    end
+  end
+
+  defp persist_transcription_result(reserved, result, previous_xml) do
+    locked(reserved.id, fn doc ->
+      require_state!(doc, ["processing"])
+
+      if doc.extraction_attempts != reserved.extraction_attempts,
+        do: Repo.rollback("Souběžný výsledek vytěžení byl odmítnut")
+
+      {metadata, attrs} =
+        case result do
+          {:ok, data, metadata} ->
+            {metadata, [extracted_data: data]}
+
+          {:error, reason, metadata} ->
+            {metadata,
+             [
+               state: "failed",
+               error_stage: "extraction",
+               error: reason,
+               generated_xml: previous_xml
+             ]}
+        end
+
+      call =
+        metadata
+        |> Map.put("attempt", doc.extraction_attempts)
+        |> Map.put("model", config()[:openai_model])
+        |> Map.put("prompt_version", Extractor.prompt_version())
+
+      metadata = Map.update(doc.extraction_metadata, "calls", [call], &(&1 ++ [call]))
+      update!(doc, Keyword.put(attrs, :extraction_metadata, metadata))
+    end)
+  end
+
+  defp build_transcription(data, _doc) when data == %{},
+    do: {:error, "Přepis originálu dosud nebyl vytvořen", nil}
+
+  defp build_transcription(data, doc) do
+    case Builder.build(data, doc) do
+      {:ok, raw} ->
+        case XML.normalize(raw, doc.agenda, doc.template_xml, doc.external_id) do
+          {:ok, xml} -> {:ok, raw, xml}
+          {:error, reason} -> {:error, reason, raw}
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp extraction_failed(id, reason, raw) do
+    locked(id, fn doc ->
+      require_state!(doc, ["processing"])
+
+      update!(doc,
+        state: "failed",
+        generated_xml: raw,
+        current_xml: nil,
+        dry_run: %{},
+        error_stage: "extraction",
+        error: reason
+      )
+    end)
+  end
+
+  def repair_transcription(id, json, expected_hash) do
+    locked(id, fn doc ->
+      require_state!(doc, ["failed"])
+
+      unless doc.error_stage == "extraction" and is_nil(doc.sent_xml),
+        do: Repo.rollback("Přepis nelze upravit po zahájení importu")
+
+      if digest(Jason.encode!(doc.extracted_data)) != expected_hash,
+        do: Repo.rollback("Přepis se mezitím změnil; obnovte stránku")
+
+      with true <- is_binary(json) and byte_size(json) <= 250_000,
+           {:ok, data} <- Jason.decode(json),
+           {:ok, _raw, xml} <- build_transcription(data, doc) do
+        update!(doc,
+          state: "review",
+          current_xml: xml,
+          dry_run: %{},
+          error: nil,
+          error_stage: nil
+        )
+      else
+        {:error, reason, _} -> Repo.rollback(reason)
+        _ -> Repo.rollback("Přepis nemá platnou JSON strukturu")
+      end
+    end)
   end
 
   defp finish_import(doc, result) do

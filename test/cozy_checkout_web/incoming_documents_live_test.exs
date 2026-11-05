@@ -139,6 +139,29 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     refute has_element?(view, "#incoming-repair")
   end
 
+  test "source JSON can be repaired and a rounding adjustment is clearly shown", %{conn: conn} do
+    data = "test/fixtures/incoming_documents/penny.json" |> File.read!() |> Jason.decode!()
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "penny.pdf", "zavazek")
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "failed",
+      error_stage: "extraction",
+      extracted_data: data,
+      extraction_attempts: 2,
+      error: "Zkontrolujte přepis"
+    )
+    |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "#incoming-transcription")
+    assert has_element?(view, "#incoming-repair-data")
+    view |> form("#incoming-repair-data", fields: %{data: Jason.encode!(data)}) |> render_submit()
+    assert IncomingDocuments.get!(doc.id).state == "review"
+    assert has_element?(view, "#incoming-rounding")
+    assert render(view) =~ "samostatnou účetní položku"
+  end
+
   test "legacy extraction failures explain the need for one new extraction", %{conn: conn} do
     {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "legacy.pdf", "zavazek")
 

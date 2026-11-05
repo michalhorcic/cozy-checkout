@@ -210,7 +210,7 @@ defmodule CozyCheckout.IncomingDocuments.ItemsTest do
                "zavazek"
              )
 
-    rows = List.duplicate(hd(XML.items(fields)), 201)
+    rows = List.duplicate(hd(XML.items(fields)), 203)
 
     assert {:error, _} =
              XML.parse(XML.render(Map.put(fields, "polozkyDokladu", rows), "zavazek"), "zavazek")

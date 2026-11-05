@@ -15,10 +15,10 @@ admin PIN. Veřejné POS se nemění.
 Vzory v `priv/incoming_documents/` vycházejí ze tří dodaných exportů ABRA.
 Základní soubory obsahují účetní nastavení původních bezpoložkových dokladů;
 identity, automaticky vytvořené účetní řádky, odkazy na původní firmu, dodavatele
-a úhrady byly odstraněny. Pro vytěžení aplikace vzor rozšíří o ukázku jedné obecné
-neskladové položky. Ta pouze popisuje strukturu a má být nahrazena skutečnými
-položkami originálu. Model dostává tento vzor a nový originál obrázku/PDF.
-Starší opravené doklady se automaticky neposílají jako příklady ani model netrénují.
+a úhrady byly odstraněny. Účetní vzor používá pouze aplikace při sestavení XML.
+Model dostává nový originál obrázku/PDF a stručné pokyny pro strukturovaný přepis
+JSON (Structured Outputs); účetní pole ani XML negeneruje. Starší opravené doklady
+se automaticky neposílají jako příklady ani model netrénují.
 Přijatá faktura a karta mají předpis nákupu potravin, pokladna ostatní spotřebu.
 Tyto pevné předpisy nejsou univerzální pro libovolný nákup. Pro pilot vybírejte
 odpovídající doklady; odlišné účtování zpracujte ručně nebo změňte příslušný vzor
@@ -26,7 +26,7 @@ pro další uploady. Každý doklad uchovává vlastní kopii vzoru.
 
 Podporovány jsou kladné doklady v CZK s rozpisem základů a DPH. Základní kontrola
 ověřuje součet osvobozené částky, základů a DPH proti celku pomocí Decimal.
-Nevymýšlí zaokrouhlení, neprovádí měnové přepočty, nezakládá adresářové firmy,
+Povoluje pouze níže popsanou doloženou haléřovou korekci DPH. Neprovádí měnové přepočty, nezakládá adresářové firmy,
 nespouští párování ani skladové vazby a nepřenáší přílohy do ABRA. Údaje dodavatele
 zůstávají v hlavičce dokladu. Správnost účtování a chování částek musí ověřit pilot.
 
@@ -40,7 +40,7 @@ OPENAI_API_KEY=...
 INCOMING_DOCUMENTS_OPENAI_MODEL=...
 ```
 
-Model musí podporovat obrázky a PDF přes Responses API. Model není natvrdo
+Model musí podporovat obrázky, PDF a Structured Outputs přes Responses API. Model není natvrdo
 vybraný; chybějící klíč nebo model se zobrazí jako chyba vytěžení.
 
 Připojení ABRA se přebírá **ze stejné konfigurace jako faktury za ubytování**:
@@ -52,6 +52,11 @@ ukazuje do testovací firmy (pro pilot `moruska_test_faktury`). UI vždy ukazuje
 cílovou firmu. Změna cíle blokuje přenos dříve nahraných dokladů.
 
 Migrace `20261105120000_create_incoming_documents` přidává jednu tabulku.
+Migrace `20261105180000_add_incoming_extraction_data` doplňuje přepis JSON,
+metadata a trvalý počet pokusů; po aktualizaci spusťte migrace. Runtime Dockeru
+a CI obsahují ImageMagick; při lokálním běhu jej nainstalujte pro výřezy fotografií.
+Bez něj se použije originál a detail zobrazí upozornění. Výřezy se vytvářejí
+v soukromém dočasném adresáři a po přípravě se odstraní, uložený originál se nemění.
 Originály jsou uloženy přímo v PostgreSQL (`bytea`), zahrnuty do zálohy databáze,
 a nejsou dostupné jako veřejné statické soubory. Databáze může růst přibližně
 o velikost originálů; ověřte kapacitu a obnovu záloh před pilotem. Seznam načítá
@@ -62,13 +67,19 @@ sloupcem nejsou fyzicky odstraňovány; UI zatím neposkytuje mazání.
 ## Kontrola a odeslání
 
 1. Nahrát soubor, zvolit jednu ze tří agend. Stejný SHA-256 upozorní na duplicitu.
-2. Oban pošle originál a očištěný vzor do OpenAI s `store=false`. Pokyny uvnitř
-   originálu jsou pouze nedůvěryhodná data. Model nemá nástroje pro zápis do ABRA.
-3. Aplikace přijme jen jeden doklad povolené agendy, povolená pole a účetní
-   nastavení vzoru. Parser SAX nevytváří atomy z názvů polí a odmítá DTD, externí
-   entity, vnořené operace, vazby a atributy polí. Povolenou vnořenou kolekcí
-   jsou pouze obecné neskladové položky `polozkyDokladu`. Cizí identity a stavy úhrad
-   odstraní; vlastní stabilní externí ID a `create="ok" update="fail"` doplní server.
+2. Oban pošle originál do OpenAI s `store=false`. Dlouhé fotografie doplní
+   překrývajícími se označenými výřezy v původním rozlišení; PDF zůstává souborem
+   se všemi stránkami. Pokyny uvnitř originálu jsou nedůvěryhodná data.
+   Model vrací pouze JSON se všemi řádky, legendou DPH a nezávisle přepsanou
+   rekapitulací. Účetní nastavení se mu neposílá.
+3. Aplikace ověří JSON, mapuje sazby podle legendy, doplní účetní nastavení
+   z uloženého vzoru a sestaví XML. Pomocí Decimal ověří řádky, rekapitulaci a celek.
+   Při věcné chybě připustí právě jeden opravný pokus se stejným originálem,
+   předchozím JSON a konkrétní chybou. Každé volání se rezervuje v databázi předem:
+   nejvýše dvě na jedno výslovné vytěžení, i při obnovení workeru. HTTP chyby,
+   neúplné odpovědi a porušení JSON struktury automatický opravný pokus nespouštějí.
+   Model nemá nástroje pro zápis do ABRA. XML kontroluje omezený SAX parser bez
+   DTD, externích entit, vazeb a cizích identit; externí ID přidává server.
 4. Porovnat originál a editovatelná pole. PDF používá prohlížeč se stránkováním
    a zvětšením, fotografie má posuvník zvětšení. Opravy mění XML bez nového
    volání modelu. Po uložení se předchozí dry-run zneplatní; zastaralé úpravy
@@ -114,14 +125,24 @@ Hlavičkové sazby nejsou částky DPH a z originálu se nepřepisují.
 
 Aplikace kontroluje pomocí Decimal množství, cenu, slevu, sazbu a částky řádků.
 Součty položek porovnává s rekapitulací DPH i celkem originálu pro každou sazbu.
-Při rozdílu ukáže konkrétní částky a import zablokuje. Haléřové rozdíly z odlišného
-zaokrouhlení automaticky nerozděluje: doklad je třeba ručně zkontrolovat a opravit
-nebo zpracovat mimo aplikaci. Skladové a adresářové vazby na položkách nepovoluje.
+Při rozdílu ukáže konkrétní částky a import zablokuje. Výjimkou je rozdíl
+nejvýše 0,01 Kč na sazbě mezi součtem řádků a souhrnným výpočtem DPH:
+celková cena i součet základu a DPH dané sazby musí zůstat přesně shodné a
+vytištěný základ musí odpovídat zaokrouhlenému výpočtu z celku sazby. Aplikace
+nevymýšlí cenu ani množství, původní položky nemění. Do skutečného payloadu
+přidá samostatnou položku `typPolozky.ucetni` bez množství a jednotkové ceny,
+s opačnými rozdíly základu a daně a nulovým celkem. Detail ji ukáže a schválení
+vyžaduje zvláštní potvrzení; totožná položka musí projít dry-runem ABRA.
+Například PENNY 1178,34 Kč / 12 %: 21 řádků dává základ 1052,08 a daň 126,26;
+vytištěnou rekapitulaci 1052,09 + 126,25 dorovná základ +0,01 / DPH −0,01.
+Větší rozdíl, chybějící řádek či jiný celkový součet se tímto neopraví.
+Skladové a adresářové vazby na položkách nejsou povoleny.
 
 V přehledu dokladu lze upravit názvy, množství, jednotkové ceny, typ ceny, sazbu
 a procentní slevu. Po uložení se částky přepočítají a znovu porovnají s rekapitulací.
 Uživatelská úprava rekapitulace musí odpovídat originálu. Doklady bez skutečných
-položek i dřívější bezpoložkové doklady lze nadále zpracovat souhrnem.
+položek i dřívější bezpoložkové doklady lze nadále ručně zpracovat souhrnem.
+Nový automatický přepis vyžaduje alespoň jednu doloženou položku.
 
 Položkový import používá `bezPolozek=false` a kolekci `polozkyDokladu` s elementem
 `faktura-prijata-polozka`, `pokladni-pohyb-polozka` nebo `zavazek-polozka` podle agendy.
@@ -133,7 +154,17 @@ Dříve vydané/odeslané dokumenty zůstávají beze změny.
 
 ### Oprava neúspěšného vytěžení
 
-Pokud výstup modelu neprojde kontrolou, uloží se původní XML i konkrétní chyba.
+Pokud přepis neprojde kontrolou ani po opravném pokusu, uloží se původní JSON,
+konkrétní chyba a sestavené XML, je-li dostupné. Detail nabízí opravu JSON bez
+nového volání modelu; opravený přepis musí projít stejnými kontrolami a účetní XML
+z něj znovu sestaví server. Původní přepis se zachová. Pro dohledání jsou uložené
+verze pokynů (SHA-256), model, počty obrazových vstupů a spotřeba tokenů jednotlivých
+volání. Pokyny se udržují v `priv/incoming_documents/extraction_instructions.md`;
+nové výjimky doplňujte stručným obecným pravidlem a regresním případem.
+Nevkládejte celou historii účtenek do promptu. JSON schéma ověřuje strukturu,
+nikoli pravdivost přečtených údajů; kontrola proti originálu zůstává nutná.
+
+U starších výstupů XML a ručních oprav zůstává kompatibilní editor.
 Při rozdílu účetního nastavení detail zobrazí tabulku: název pole, hodnota ze
 vzoru a hodnota v návrhu. Hlavičkové sazby DPH (`szbDphSniz`, `szbDphSniz2`, `szbDphZakl`) jsou pevné:
 server je vždy přebírá ze vzoru, i když model vrátí jiná čísla. Režim `bezPolozek`
@@ -189,7 +220,12 @@ Před odesíláním skutečných dokladů ověřte firemní podmínky zpracován
 
 Implementace obsahuje regresní testy XML, uploadu, autorizace, oprav, HTTP chyb,
 upozornění, změny cíle a nejistého zápisu. HTTP používá výhradně `Req.Test`.
-Při implementaci nebyly lokálně spuštěny testy ani proveden skutečný import;
+Při implementaci nebyly lokálně spuštěny testy ani proveden skutečný import.
+Samostatná kontrola nad ručním přepisem PENNY ověřila 21 řádků + jednu účetní
+korekci a přesné výsledné částky ve všech agendách. Tvorba výřezů byla ověřena
+na syntetickém dlouhém obrázku a změněné testovací moduly byly zkompilované bez
+spuštění. Skutečné vytěžení fotografie přes OpenAI ani akceptace korekce v ABRA
+nebyly v tomto kroku ověřeny;
 výsledky GitHub CI ověří uživatel. Kompilace a formátování byly ověřeny pomocí
 Elixiru 1.20.4 na lokálním OTP 29.1.2; přesná verze OTP 29.1 z `.tool-versions`
 nebyla dostupná, takže přesnou shodu toolchainu ověří CI.

@@ -8,14 +8,23 @@ defmodule CozyCheckout.IncomingDocuments.Items do
   }
   @totals ~w(sumOsv sumZklSniz sumZklSniz2 sumZklZakl sumDphSniz sumDphSniz2 sumDphZakl sumCelkem)
 
-  def validate(%{"polozkyDokladu" => [_ | _] = rows} = fields) do
+  def validate(%{"polozkyDokladu" => [_ | _] = rows} = fields) when length(rows) <= 200 do
     with {:ok, calculated} <- calculate_rows(rows, fields),
-         :ok <- compare_summary(calculated, fields) do
+         {:ok, _adjustments} <- compare_summary(calculated, fields) do
       {:ok, Map.put(fields, "polozkyDokladu", calculated)}
     end
   end
 
+  def validate(%{"polozkyDokladu" => rows}) when length(rows) > 200,
+    do: {:error, "Originál smí obsahovat nejvýše 200 položek"}
+
   def validate(fields), do: {:ok, fields}
+
+  def adjustments(%{"polozkyDokladu" => [_ | _] = rows} = fields) do
+    with {:ok, rows} <- calculate_rows(rows, fields), do: compare_summary(rows, fields)
+  end
+
+  def adjustments(_), do: {:ok, []}
 
   defp calculate_rows(rows, fields) do
     Enum.reduce_while(Enum.with_index(rows, 1), {:ok, []}, fn {row, index}, {:ok, acc} ->
@@ -159,11 +168,70 @@ defmodule CozyCheckout.IncomingDocuments.Items do
           not Decimal.equal?(totals[key], Decimal.new(fields[key])),
           do: "#{key}: na dokladu #{fields[key]}, z položek #{totals[key]}"
 
-    if differences == [],
-      do: :ok,
-      else:
-        {:error,
-         "Součet položek nesouhlasí s rekapitulací DPH — " <>
-           Enum.join(differences, "; ") <> ". Rozdíly zaokrouhlení automaticky nerozdělujeme."}
+    if differences == [] do
+      {:ok, []}
+    else
+      case rounding_rows(totals, fields) do
+        {:ok, rows} ->
+          {:ok, rows}
+
+        :error ->
+          {:error,
+           "Součet položek nesouhlasí s rekapitulací DPH — " <>
+             Enum.join(differences, "; ") <>
+             ". Povolena je pouze doložená haléřová korekce DPH při shodné ceně včetně DPH."}
+      end
+    end
+  end
+
+  defp rounding_rows(totals, fields) do
+    unchanged = ~w(sumOsv sumZklSniz2 sumDphSniz2 sumCelkem)
+
+    if Enum.all?(unchanged, &Decimal.equal?(totals[&1], Decimal.new(fields[&1]))) do
+      Enum.reduce_while(
+        [
+          {"typSzbDph.dphSniz", "szbDphSniz", "sumZklSniz", "sumDphSniz"},
+          {"typSzbDph.dphZakl", "szbDphZakl", "sumZklZakl", "sumDphZakl"}
+        ],
+        {:ok, []},
+        fn {type, rate_key, net_key, vat_key}, {:ok, rows} ->
+          net = Decimal.new(fields[net_key])
+          vat = Decimal.new(fields[vat_key])
+          delta_net = Decimal.sub(net, totals[net_key])
+          delta_vat = Decimal.sub(vat, totals[vat_key])
+          gross = Decimal.add(net, vat)
+
+          aggregate_net =
+            gross
+            |> Decimal.div(Decimal.add(1, Decimal.div(Decimal.new(fields[rate_key]), 100)))
+            |> Decimal.round(2)
+
+          cond do
+            Decimal.equal?(delta_net, 0) and Decimal.equal?(delta_vat, 0) ->
+              {:cont, {:ok, rows}}
+
+            Decimal.equal?(Decimal.add(delta_net, delta_vat), 0) and
+              Decimal.compare(Decimal.abs(delta_net), Decimal.new("0.01")) != :gt and
+                Decimal.equal?(aggregate_net, net) ->
+              row = %{
+                "nazev" => "Zaokrouhlení DPH dle rekapitulace originálu",
+                "typPolozkyK" => "typPolozky.ucetni",
+                "typSzbDphK" => type,
+                "szbDph" => fields[rate_key],
+                "sumZkl" => Decimal.to_string(delta_net),
+                "sumDph" => Decimal.to_string(delta_vat),
+                "sumCelkem" => "0.00"
+              }
+
+              {:cont, {:ok, rows ++ [row]}}
+
+            true ->
+              {:halt, :error}
+          end
+        end
+      )
+    else
+      :error
+    end
   end
 end

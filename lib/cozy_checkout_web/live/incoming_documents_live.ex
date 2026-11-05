@@ -81,6 +81,23 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     )
   end
 
+  def handle_event("repair-data-change", %{"fields" => %{"data" => json}}, socket),
+    do: {:noreply, assign(socket, :transcription_form, to_form(%{"data" => json}, as: :fields))}
+
+  def handle_event("repair-data", %{"fields" => %{"data" => json}}, socket) do
+    socket = assign(socket, :transcription_form, to_form(%{"data" => json}, as: :fields))
+
+    result(
+      socket,
+      IncomingDocuments.repair_transcription(
+        socket.assigns.doc.id,
+        json,
+        socket.assigns.transcription_hash
+      ),
+      "Přepis opraven. Zkontrolujte údaje a spusťte nový dry-run."
+    )
+  end
+
   def handle_event("repair-change", %{"fields" => %{"xml" => xml}}, socket),
     do: {:noreply, repair_draft(socket, xml)}
 
@@ -131,7 +148,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           IncomingDocuments.approve(
             socket.assigns.doc.id,
             socket.assigns.hash,
-            attrs["warnings"] == "true"
+            attrs["warnings"] == "true",
+            attrs["rounding"] == "true"
           ),
           "Doklad schválen. Probíhá přenos do ABRA."
         )
@@ -211,6 +229,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
       dirty: false,
       hash: if(doc.current_xml, do: IncomingDocuments.digest(doc.current_xml)),
       extraction_hash: IncomingDocuments.digest(doc.generated_xml || ""),
+      transcription_form:
+        to_form(%{"data" => Jason.encode!(doc.extracted_data, pretty: true)}, as: :fields),
+      transcription_hash: IncomingDocuments.digest(Jason.encode!(doc.extracted_data)),
+      rounding:
+        case XML.rounding_adjustments(doc.current_xml || "", doc.agenda) do
+          {:ok, adjustments} -> adjustments
+          _ -> []
+        end,
       enabled: IncomingDocuments.enabled?()
     )
   end
@@ -379,6 +405,36 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           · {state_label(@doc.state)} · Firma ABRA: <strong>{@doc.company_id}</strong>
         </p>
         <p :if={@doc.error} class="alert alert-error" id="incoming-error">{@doc.error}</p>
+        <details
+          :if={@doc.extracted_data != %{} || @doc.extraction_metadata != %{}}
+          class="bg-white rounded-xl p-4"
+          id="incoming-transcription"
+        >
+          <summary>Přepis originálu a informace o vytěžení</summary>
+          <p>
+            Počet rezervovaných pokusů: {@doc.extraction_attempts} / 2. Opravené starší doklady se modelu neposílají.
+          </p>
+          <p :if={get_in(@doc.extraction_metadata, ["images", "warning"])} class="text-warning">
+            {get_in(@doc.extraction_metadata, ["images", "warning"])}
+          </p>
+          <pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{Jason.encode!(@doc.extracted_data, pretty: true)}</pre>
+          <details class="mt-3">
+            <summary>Verze zadání, obrazové vstupy a spotřeba tokenů</summary><pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{Jason.encode!(Map.update(@doc.extraction_metadata, "calls", [], &Enum.map(&1, fn call -> Map.delete(call, "raw_output") end)), pretty: true)}</pre>
+          </details>
+        </details>
+        <div :if={@rounding != []} class="alert alert-warning" id="incoming-rounding">
+          <div>
+            <strong>Haléřová korekce DPH podle rekapitulace originálu</strong>
+            <p>
+              Celková cena i původní položky zůstávají stejné. Do ABRA přidáme samostatnou účetní položku pro rozdíl zaokrouhlení:
+            </p>
+            <p :for={row <- @rounding}>
+              Sazba {row["szbDph"]} %: základ {format_currency(Decimal.new(row["sumZkl"]))}, DPH {format_currency(
+                Decimal.new(row["sumDph"])
+              )}, celkem {format_currency(Decimal.new(row["sumCelkem"]))}.
+            </p>
+          </div>
+        </div>
         <p :if={@doc.state == "uncertain"} class="alert alert-warning">
           Výsledek zápisu není jistý. Ověřte doklad v ABRA. Opakované založení je blokováno.
         </p>
@@ -475,7 +531,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           <div class="min-w-0 space-y-4">
             <div :if={@doc.state == "failed" && @doc.error_stage == "extraction"} class="space-y-4">
               <p :if={!@doc.generated_xml} class="alert alert-info">
-                XML z tohoto pokusu není uložené. Pro podrobnou kontrolu a ruční opravu spusťte vytěžení znovu.
+                XML z tohoto pokusu není uložené. Je-li dostupný přepis originálu níže, opravte jej; jinak spusťte vytěžení znovu.
               </p>
               <div :if={@accounting_differences != []} class="bg-white rounded-xl p-4 overflow-x-auto">
                 <h2 class="text-lg font-bold">Rozdíly účetního nastavení</h2>
@@ -500,6 +556,28 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                   </tbody>
                 </table>
               </div>
+              <.form
+                :if={@doc.extracted_data != %{}}
+                for={@transcription_form}
+                id="incoming-repair-data"
+                phx-change="repair-data-change"
+                phx-submit="repair-data"
+                class="bg-white rounded-xl p-4 space-y-3"
+              >
+                <h2 class="text-lg font-bold">Opravit přepis originálu</h2>
+                <p>
+                  Opravte údaje v JSON podle originálu. Aplikace znovu sestaví a zkontroluje XML bez volání OpenAI. Položky a rekapitulace musí zůstat úplné; complete potvrzuje úplnost a uncertainties obsahuje jen skutečně nevyřešené problémy.
+                </p>
+                <.input
+                  field={@transcription_form[:data]}
+                  type="textarea"
+                  label="Přepis údajů z originálu"
+                  rows="20"
+                  spellcheck="false"
+                  class="textarea w-full font-mono text-xs"
+                />
+                <button class="btn btn-primary" phx-disable-with="Kontroluji…">Uložit opravený přepis</button>
+              </.form>
               <.form
                 :if={@doc.generated_xml}
                 for={@repair_form}
@@ -559,7 +637,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
               <section :if={@items != []} class="sm:col-span-2 space-y-4" id="incoming-items">
                 <h2 class="text-xl font-bold">Položky dokladu ({length(@items)})</h2>
                 <p>
-                  Částky hlavičky slouží ke kontrole proti rekapitulaci originálu. Do ABRA se odešlou položky a ABRA z nich spočítá součty. Změny položek musí odpovídat rekapitulaci; rozdíly zaokrouhlení automaticky nerozdělujeme.
+                  Částky hlavičky slouží ke kontrole proti rekapitulaci originálu. Do ABRA se odešlou položky a ABRA z nich spočítá součty. Změny položek musí odpovídat rekapitulaci. Případná doložená haléřová korekce je uvedena samostatně a vyžaduje potvrzení.
                 </p>
                 <fieldset
                   :for={{row, index} <- Enum.with_index(@items)}
@@ -655,6 +733,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                 required
                 class="checkbox"
               /> Zkontroloval/a jsem upozornění ABRA a výslovně potvrzuji odeslání.</label>
+              <label :if={@rounding != []} class="flex items-start gap-3"><input
+                type="checkbox"
+                name="rounding"
+                value="true"
+                required
+                class="checkbox"
+              />
+              Zkontroloval/a jsem rekapitulaci originálu a schvaluji uvedenou samostatnou haléřovou korekci DPH.</label>
               <button
                 class="btn btn-primary"
                 disabled={@dirty || !@enabled}

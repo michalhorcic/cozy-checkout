@@ -11,6 +11,9 @@ defmodule CozyCheckout.IncomingDocuments.Document do
     field :original, :binary
     field :sha256, :string
     field :template_xml, :string
+    field :extracted_data, :map, default: %{}
+    field :extraction_metadata, :map, default: %{}
+    field :extraction_attempts, :integer, default: 0
     field :generated_xml, :string
     field :current_xml, :string
     field :sent_xml, :string

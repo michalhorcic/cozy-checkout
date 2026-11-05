@@ -117,3 +117,16 @@ zatím zpracujeme ručně. Další funkce přidáme podle zkušeností z pilotu.
 Po kontrole GitHub CI nastavit model OpenAI, ověřit cílovou testovací firmu
 a projít celý tok se skutečným dokladem ve všech třech agendách. Porovnat částky,
 DPH a účtování v ABRA a podle výsledku upravit vzory. Pilot zatím nebyl proveden.
+
+## Doplnění po pilotním přepisu PENNY (5. 11. 2026)
+
+Aktuální implementace zpřesňuje původní krok generování XML: OpenAI nyní čte
+pouze údaje originálu do striktního JSON, XML sestavuje aplikace z uloženého
+účetního vzoru. Dlouhé fotografie mají překrývající se výřezy; přípustný je
+jeden opravný přepis při věcné chybě, s trvalým limitem dvou volání na vytěžení.
+Přepis a metadata jsou uloženy novou migrací. Haléřový rozdíl DPH se nerozděluje
+do původních řádků: při přesné shodě celku a doloženém rozdílu nejvýše 0,01 Kč
+na sazbu vznikne samostatná účetní položka s nulovým celkem, viditelná v detailu,
+vyžadující potvrzení a úspěšný dry-run. Podrobná pravidla a provozní požadavky
+jsou v `docs/features/INCOMING_DOCUMENTS.md`. Toto doplnění nahrazuje původní
+předpoklad přímého generování XML modelem a odmítání všech haléřových rozdílů.
