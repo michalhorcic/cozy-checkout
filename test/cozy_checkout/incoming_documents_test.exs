@@ -301,7 +301,7 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     Req.Test.expect(__MODULE__, fn conn ->
       assert conn.method == "POST"
       assert conn.request_path == "/c/pilot/faktura-prijata.json"
-      assert Plug.Conn.fetch_query_params(conn).query_params["dry-run"] == "false"
+      refute Map.has_key?(Plug.Conn.fetch_query_params(conn).query_params, "dry-run")
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       assert body == approved.sent_xml
       assert body =~ "CORRECTED"

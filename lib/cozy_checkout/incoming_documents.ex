@@ -125,7 +125,7 @@ defmodule CozyCheckout.IncomingDocuments do
 
   def save_header(id, attrs, expected_hash) do
     locked(id, fn doc ->
-      unless Extractor.strategy(doc) == "header_form" and is_nil(doc.sent_xml) and
+      unless is_nil(doc.sent_xml) and
                (doc.state == "review" or
                   (doc.state == "failed" and doc.error_stage == "extraction")),
              do: Repo.rollback("Formulář je uzamčen")
@@ -138,6 +138,7 @@ defmodule CozyCheckout.IncomingDocuments do
           update!(doc,
             state: "review",
             edited_data: %{"header_form" => values},
+            extraction_metadata: Map.put(doc.extraction_metadata, "strategy", "header_form"),
             current_xml: xml,
             dry_run: %{},
             error: nil,
@@ -395,6 +396,53 @@ defmodule CozyCheckout.IncomingDocuments do
 
       job!(id, "send")
       update!(doc, state: "sending", sent_xml: payload, error: nil, error_stage: nil)
+    end)
+  end
+
+  @doc "Explicit real import of a locally validated header, independent of ABRA dry-run availability."
+  def send_header(id, expected_hash, confirmed) do
+    locked(id, fn doc ->
+      require_state!(doc, ["review"])
+      require_hash!(doc, expected_hash)
+      require_target!(doc)
+
+      unless confirmed == true, do: Repo.rollback("Potvrďte skutečné vytvoření dokladu v ABRA")
+
+      unless Extractor.strategy(doc) == "header_form" and is_nil(doc.sent_xml),
+        do: Repo.rollback("Nejprve uložte nový formulář; již zahájený přenos nelze opakovat")
+
+      payload =
+        with {:ok, fields} <- XML.parse(doc.current_xml, doc.agenda),
+             true <- XML.items(fields) == [],
+             {:ok, _values, _xml} <-
+               CozyCheckout.IncomingDocuments.HeaderForm.build(
+                 Map.take(fields, CozyCheckout.IncomingDocuments.HeaderForm.keys()),
+                 doc
+               ),
+             {:ok, normalized} <-
+               XML.normalize(doc.current_xml, doc.agenda, XML.template_for(doc), doc.external_id) do
+          normalized
+        else
+          false -> Repo.rollback("Přímé odeslání je dostupné jen pro doklad bez položek")
+          {:error, reason} -> Repo.rollback(reason)
+        end
+
+      metadata =
+        Map.put(doc.extraction_metadata, "delivery", %{
+          "mode" => "direct_header",
+          "payload_hash" => digest(payload),
+          "confirmed_at" => DateTime.to_iso8601(DateTime.utc_now(:second))
+        })
+
+      job!(id, "send")
+
+      update!(doc,
+        state: "sending",
+        sent_xml: payload,
+        extraction_metadata: metadata,
+        error: nil,
+        error_stage: nil
+      )
     end)
   end
 

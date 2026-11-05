@@ -1,9 +1,13 @@
 # Ruční formulář přijatého dokladu s návrhy z OpenAI
 
-Nová alternativa na `/admin/incoming-document-form`, přístupná z Přijatých dokladů
-přes „Nový doklad přes formulář“. Zachovává původní podrobný přepis a XML editor.
-Používá stejné tři vzory, připojení ABRA, soukromé originály, OpenAI Responses API,
-Oban worker, účetní předpisy a bezpečný proces dry-run → schválení → přenos.
+Jediné uživatelské rozhraní přijatých dokladů: seznam na `/admin/incoming-documents`
+a formulář na `/admin/incoming-document-form`. Stejný formulář otevírají i staré
+adresy `/admin/incoming-documents/:id`. Původní `IncomingDocumentsLive` zůstává v
+kódu, ale nemá přístupnou routu. Jeho položkové kontroly a kontextové API zůstávají.
+
+Formulář používá stejné tři vzory, připojení ABRA, soukromé originály, OpenAI
+Responses API a Oban worker. Obsahuje účetní předpis, volitelný dry-run, stažení
+XML i potvrzené přímé odeslání; není potřeba přecházet na další obrazovku.
 
 ## Stav převzatého řešení
 
@@ -30,9 +34,31 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
 5. Potvrdit kontrolu CZK, údajů a souhrnné DPH. Teprve uložením formuláře vzniká
    validované XML. Součet základů, osvobozené částky a daní musí souhlasit s celkem;
    chybějící DPH se nepřevádí automaticky na osvobozenou částku.
-6. Ve stávajícím detailu zkontrolovat účetní nastavení ze vzoru, případně vybrat
-   předpis z ABRA, spustit dry-run a samostatně schválit přenos. Uložením dalších
-   změn se předchozí dry-run ruší. Po zahájení přenosu je formulář uzamčený.
+6. Uložením zůstanete ve formuláři. V sekci Účetní nastavení načíst a vyhledat
+   předpis z ABRA, případně změnit interní číslo a uložit. Rozpracované změny
+   hlavičky se při uložení předpisu neztratí. Před operacemi ABRA musí být obě
+   části uložené.
+7. Volitelně spustit „Ověřit v ABRA (dry-run)“. Výsledek, chyby, upozornění i
+   diagnostika HTML/FreeMarker odpovědí se zobrazují přímo zde. Neúspěšný dry-run
+   neznamená úspěšnou validaci, ale neblokuje explicitní přímé odeslání.
+8. Potvrdit skutečné vytvoření a kontrolu případného dřívějšího ručního importu,
+   poté stisknout „Nahrát do ABRA“. Lokálně se znovu zkontroluje struktura XML,
+   součty a povinná data; na ABRA se odešle stejný bezpoložkový payload jako při
+   stažení XML, s `Content-Type: application/xml` a JSON výsledkem přes `.json`.
+   Skutečný POST neobsahuje parametr `dry-run`; testovací požadavek má
+   `dry-run=true`. Neprovádí se automatické zkoušení dalších importních endpointů.
+
+Před skutečným POSTem se hledá stejné externí ID. Pokud už je v ABRA, například
+po ručním importu staženého souboru, nový doklad se nezakládá. Odeslané XML se
+zmrazí a uloží se způsob schválení a hash payloadu. HTML nebo nejasný výsledek
+skutečného importu vede do stavu „Nutno ověřit v ABRA“; další pokus už jen hledá
+externí ID, neopakuje POST. Ruční import bez původního externího ID tato ochrana
+nedokáže spárovat, proto je součástí potvrzení i kontrola dřívějšího importu.
+
+Po zahájení přenosu je formulář uzamčený. Změny uloženého návrhu ruší předchozí
+dry-run. Existující starší návrhy se načtou do nového formuláře a až jeho
+potvrzené uložení je převede na bezpoložkový režim; původní řádky se přenesou jako
+text do poznámky. Odeslané starší doklady se zobrazí zamčené.
 
 Položky OpenAI podle možností přepíše do `items`, ale použijí se pouze jako
 orientační text v `poznam`. Do ABRA neposíláme kolekci `polozkyDokladu`, skladové
@@ -86,7 +112,7 @@ stávajícím XML rendererem. Formulář nepřijímá účetní pole nebo polož
 
 Veřejné metadata `demo.flexibee.eu/c/demo/<agenda>/properties.json` při ověření
 vracely HTTP 401. Živý import do cílové ABRA ani volání OpenAI nebyly provedeny;
-platnost pro konkrétní firmu musí potvrdit její dry-run. Dokumentace popisuje
+platnost pro konkrétní firmu ověří dry-run nebo výsledek explicitního importu. Dokumentace popisuje
 podporovaný postup, nikoliv důkaz akceptace konkrétního payloadu v cílové instalaci.
 
 ## Migrace a ověření
@@ -97,6 +123,10 @@ Existující dokumenty se nemění. Není potřeba nová konfigurace ani závisl
 
 Přidané testy pokrývají XML všech tří agend, DPH a součty, text položek v poznámce,
 částečné vytěžení, ruční vytvoření, souběžné změny, zrušení dry-runu, neměnnost
-po schválení, kontrolovaný payload, admin PIN a formulář. Lokální testy podle
+po schválení, kontrolovaný payload, admin PIN a formulář. Další scénáře pokrývají
+přímý přenos bez úspěšného dry-runu, shodu XML se staženým souborem, převzetí
+ručně importovaného externího ID bez POSTu, nejistý výsledek po HTML a ověření bez
+opakování zápisu. Routové testy ověřují skrytí starého rozhraní a převod starších
+návrhů. Změna sjednocení rozhraní nevyžaduje další migraci ani konfiguraci. Lokální testy podle
 AGENTS.md nebyly spuštěny; výsledky GitHub CI ověří uživatel. Kompilace a kontrola
 formátování byly provedeny s Elixir 1.20.4 / OTP 29.1.

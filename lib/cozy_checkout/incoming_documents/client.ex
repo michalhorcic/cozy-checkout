@@ -7,7 +7,7 @@ defmodule CozyCheckout.IncomingDocuments.Client do
     case Req.post(url(doc) <> ".json",
            body: xml,
            headers: [{"content-type", "application/xml"}, {"accept", "application/json"}],
-           params: [{"dry-run", to_string(dry_run?)}],
+           params: if(dry_run?, do: [{"dry-run", "true"}], else: []),
            auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
            retry: false,
            redirect: false,

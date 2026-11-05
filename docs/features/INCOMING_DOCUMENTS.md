@@ -1,5 +1,12 @@
 # Přijaté doklady — pilot
 
+Aktuální uživatelský postup popisuje [sjednocený formulář](INCOMING_DOCUMENT_FORM.md).
+Seznam, hlavička, účetní předpis, volitelný dry-run i přímé odeslání jsou dostupné
+v novém rozhraní. Níže je zachovaná technická dokumentace původního podrobného
+postupu; jeho LiveView zůstává v kódu bez veřejné routy. Povinný dry-run se nadále
+týká starého kontextového schvalování, nikoliv potvrzeného přímého přenosu nového
+bezpoložkového formuláře.
+
 Administrace `/admin/incoming-documents` přijímá jeden doklad v PDF (i více
 stran), JPEG nebo PNG, nejvýše 10 MB. Přístup, včetně originálů, chrání stávající
 admin PIN. Veřejné POS se nemění.
@@ -399,7 +406,7 @@ API reference: [ABRA — import částek položek](https://podpora.flexibee.eu/c
 
 ## Alternativa: ruční hlavička s návrhy z originálu
 
-Vedle podrobného režimu je dostupný [formulář bez položek](INCOMING_DOCUMENT_FORM.md)
-pro všechny tři agendy, včetně souhrnné DPH. Funguje i bez originálu a OpenAI;
-vytěžené položky ukládá pouze do poznámky. Odesílání používá stejný dry-run a
-schvalovací proces. Vstup: „Nový doklad přes formulář“ na seznamu přijatých dokladů.
+[Formulář bez položek](INCOMING_DOCUMENT_FORM.md) pro všechny tři agendy je nyní
+jediným veřejným rozhraním. Funguje i bez originálu a OpenAI, vytěžené položky
+ukládá pouze do poznámky a obsahuje účetní předpis, volitelný dry-run a explicitní
+přímý přenos do ABRA. Vstup: „Nový doklad“ na seznamu přijatých dokladů.

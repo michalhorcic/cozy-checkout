@@ -62,10 +62,10 @@ defmodule CozyCheckoutWeb.Router do
     live_session :admin,
       on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}, CozyCheckoutWeb.AdminNavigation],
       layout: {CozyCheckoutWeb.Layouts, :admin} do
-      live "/incoming-document-form", IncomingDocumentFormLive
-      live "/incoming-document-form/:id", IncomingDocumentFormLive
-      live "/incoming-documents", IncomingDocumentsLive
-      live "/incoming-documents/:id", IncomingDocumentsLive
+      live "/incoming-document-form", IncomingDocumentFormLive, :new
+      live "/incoming-document-form/:id", IncomingDocumentFormLive, :edit
+      live "/incoming-documents", IncomingDocumentFormLive, :index
+      live "/incoming-documents/:id", IncomingDocumentFormLive, :edit
       live "/", DashboardLive
       live "/billing/settings", BillingLive.Settings
       live "/billing/transfers", BillingLive.Transfers

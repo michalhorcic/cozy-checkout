@@ -55,8 +55,25 @@ defmodule CozyCheckout.IncomingDocuments.HeaderForm do
     cond do
       is_binary(doc.current_xml) ->
         case XML.parse(doc.current_xml, doc.agenda) do
-          {:ok, fields} -> Map.merge(defaults(), Map.take(fields, keys()))
-          _ -> defaults()
+          {:ok, fields} ->
+            values = Map.merge(defaults(), Map.take(fields, keys()))
+
+            notes =
+              Enum.map_join(XML.items(fields), "\n", fn row ->
+                Enum.map_join(~w(nazev mnozMj cenaMj sumCelkem), " | ", &(row[&1] || ""))
+              end)
+
+            if notes == "",
+              do: values,
+              else:
+                Map.update!(
+                  values,
+                  "poznam",
+                  &(&1 <> "\nOrientační přepis původních položek (bez zaúčtování):\n" <> notes)
+                )
+
+          _ ->
+            defaults()
         end
 
       doc.extracted_data != %{} ->
