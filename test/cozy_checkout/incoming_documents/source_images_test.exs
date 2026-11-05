@@ -30,6 +30,17 @@ defmodule CozyCheckout.IncomingDocuments.SourceImagesTest do
     assert Enum.any?(parts, &(Map.get(&1, :text, "") =~ "Překryv"))
   end
 
+  test "simple comparison uses only the untouched original without ImageMagick" do
+    bytes = <<255, 216, 255, 0>>
+
+    assert {:ok, [part], %{"views" => 1, "kind" => "original_only"}} =
+             SourceImages.prepare(%{content_type: "image/jpeg", original: bytes},
+               original_only: true
+             )
+
+    assert part.image_url == "data:image/jpeg;base64," <> Base.encode64(bytes)
+  end
+
   test "corrupt images are rejected before a paid API call" do
     if System.find_executable("magick") || System.find_executable("convert") do
       assert {:error, _} =

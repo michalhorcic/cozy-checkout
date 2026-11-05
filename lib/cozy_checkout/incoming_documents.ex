@@ -38,11 +38,11 @@ defmodule CozyCheckout.IncomingDocuments do
   def duplicate?(sha),
     do: Repo.exists?(from d in Document, where: d.sha256 == ^sha and is_nil(d.deleted_at))
 
-  def upload(bytes, filename, agenda) do
+  def upload(bytes, filename, agenda, strategy \\ "structured") do
     cfg = config()
 
     with :ok <- configured(cfg),
-         true <- agenda in XML.agendas(),
+         true <- agenda in XML.agendas() and strategy in Extractor.strategies(),
          {:ok, mime} <- content_type(bytes, filename) do
       id = Ecto.UUID.generate()
       sha = digest(bytes)
@@ -59,6 +59,7 @@ defmodule CozyCheckout.IncomingDocuments do
               content_type: mime,
               sha256: sha,
               template_xml: XML.template(agenda),
+              extraction_metadata: %{"strategy" => strategy},
               base_url: cfg[:base_url],
               company_id: cfg[:company_id],
               external_id: "ext:cozy-incoming:#{id}"
@@ -70,7 +71,7 @@ defmodule CozyCheckout.IncomingDocuments do
         %{document: doc, duplicate?: duplicate}
       end)
     else
-      false -> {:error, "Vyberte podporovanou agendu"}
+      false -> {:error, "Vyberte podporovanou agendu a způsob vytěžení"}
       error -> error
     end
   end
@@ -127,13 +128,15 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
-  def retry_extraction(id) do
+  def retry_extraction(id, strategy \\ nil) do
     locked(id, fn doc ->
       require_state!(doc, ["failed", "review"])
 
       if not is_nil(doc.sent_xml) or (doc.state == "failed" and doc.error_stage != "extraction"),
         do: Repo.rollback("Vytěžení nelze opakovat po zahájení importu")
 
+      strategy = strategy || Extractor.strategy(doc)
+      unless strategy in Extractor.strategies(), do: Repo.rollback("Neplatný způsob vytěžení")
       job!(id, "extract")
 
       update!(doc,
@@ -142,7 +145,7 @@ defmodule CozyCheckout.IncomingDocuments do
         generated_xml: nil,
         dry_run: %{},
         extracted_data: %{},
-        extraction_metadata: %{},
+        extraction_metadata: %{"strategy" => strategy},
         extraction_attempts: 0,
         error: nil,
         error_stage: nil
@@ -211,7 +214,10 @@ defmodule CozyCheckout.IncomingDocuments do
              update!(current, state: "processing")
            end) do
         {:ok, _} ->
-          case SourceImages.prepare(doc, config()) do
+          case SourceImages.prepare(
+                 doc,
+                 Keyword.put(config(), :original_only, Extractor.strategy(doc) == "simple_xml")
+               ) do
             {:ok, parts, image_metadata} -> transcribe(id, parts, image_metadata)
             {:error, reason} -> extraction_failed(id, reason, nil)
           end
@@ -344,7 +350,7 @@ defmodule CozyCheckout.IncomingDocuments do
     doc = get!(id)
 
     if doc.state == "processing" do
-      case build_transcription(doc.extracted_data, doc) do
+      case build_extraction(doc) do
         {:ok, raw, xml} ->
           locked(id, fn current ->
             require_state!(current, ["processing"])
@@ -362,41 +368,45 @@ defmodule CozyCheckout.IncomingDocuments do
           extraction_failed(id, reason, raw)
 
         {:error, reason, raw} ->
-          reservation =
-            locked(id, fn current ->
-              require_state!(current, ["processing"])
+          if doc.extraction_attempts >= Extractor.max_attempts(doc) do
+            extraction_failed(id, reason, raw)
+          else
+            reservation =
+              locked(id, fn current ->
+                require_state!(current, ["processing"])
 
-              if current.extraction_attempts != doc.extraction_attempts,
-                do: Repo.rollback("Vytěžení již rezervoval jiný worker")
+                if current.extraction_attempts != doc.extraction_attempts,
+                  do: Repo.rollback("Vytěžení již rezervoval jiný worker")
 
-              if current.extraction_attempts >= 2,
-                do: Repo.rollback("Limit dvou volání vytěžení byl vyčerpán")
+                if current.extraction_attempts >= Extractor.max_attempts(current),
+                  do: Repo.rollback("Limit volání vytěžení byl vyčerpán")
 
-              metadata =
-                current.extraction_metadata
-                |> Map.put("images", image_metadata)
-                |> Map.put("validation_error", reason)
+                metadata =
+                  current.extraction_metadata
+                  |> Map.put("images", image_metadata)
+                  |> Map.put("validation_error", reason)
 
-              update!(current,
-                extraction_attempts: current.extraction_attempts + 1,
-                extraction_metadata: metadata
-              )
-            end)
+                update!(current,
+                  extraction_attempts: current.extraction_attempts + 1,
+                  extraction_metadata: metadata
+                )
+              end)
 
-          case reservation do
-            {:ok, reserved} ->
-              feedback =
-                if doc.extracted_data != %{}, do: %{data: doc.extracted_data, error: reason}
+            case reservation do
+              {:ok, reserved} ->
+                feedback =
+                  if doc.extracted_data != %{}, do: %{data: doc.extracted_data, error: reason}
 
-              result = Extractor.extract(doc, config(), parts, feedback)
+                result = Extractor.extract(doc, config(), parts, feedback)
 
-              case persist_transcription_result(reserved, result, raw) do
-                {:ok, _} -> transcribe(id, parts, image_metadata)
-                _ -> :ok
-              end
+                case persist_transcription_result(reserved, result, raw) do
+                  {:ok, _} -> transcribe(id, parts, image_metadata)
+                  _ -> :ok
+                end
 
-            _ ->
-              :ok
+              _ ->
+                :ok
+            end
           end
       end
     end
@@ -411,6 +421,9 @@ defmodule CozyCheckout.IncomingDocuments do
 
       {metadata, attrs} =
         case result do
+          {:ok_xml, raw, metadata} ->
+            {metadata, [generated_xml: raw]}
+
           {:ok, data, metadata} ->
             {metadata, [extracted_data: data]}
 
@@ -428,11 +441,26 @@ defmodule CozyCheckout.IncomingDocuments do
         metadata
         |> Map.put("attempt", doc.extraction_attempts)
         |> Map.put("model", config()[:openai_model])
-        |> Map.put("prompt_version", Extractor.prompt_version())
+        |> Map.put("prompt_version", Extractor.prompt_version(Extractor.strategy(doc)))
 
       metadata = Map.update(doc.extraction_metadata, "calls", [call], &(&1 ++ [call]))
       update!(doc, Keyword.put(attrs, :extraction_metadata, metadata))
     end)
+  end
+
+  defp build_extraction(doc) do
+    if Extractor.strategy(doc) == "simple_xml" do
+      if is_binary(doc.generated_xml) do
+        case XML.normalize(doc.generated_xml, doc.agenda, doc.template_xml, doc.external_id) do
+          {:ok, xml} -> {:ok, doc.generated_xml, xml}
+          {:error, reason} -> {:error, reason, doc.generated_xml}
+        end
+      else
+        {:error, "XML originálu dosud nebylo vytvořeno", nil}
+      end
+    else
+      build_transcription(doc.extracted_data, doc)
+    end
   end
 
   defp build_transcription(data, _doc) when data == %{},

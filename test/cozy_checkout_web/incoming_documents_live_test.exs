@@ -162,6 +162,17 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert render(view) =~ "samostatnou účetní položku"
   end
 
+  test "a second prompt can be explicitly selected without removing the original", %{conn: conn} do
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "receipt.pdf", "zavazek")
+    doc |> Ecto.Changeset.change(state: "failed", error_stage: "extraction") |> Repo.update!()
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "button[phx-value-strategy=structured]")
+    view |> element("button[phx-value-strategy=simple_xml]") |> render_click()
+    queued = IncomingDocuments.get!(doc.id)
+    assert queued.state == "uploaded"
+    assert queued.extraction_metadata["strategy"] == "simple_xml"
+  end
+
   test "legacy extraction failures explain the need for one new extraction", %{conn: conn} do
     {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "legacy.pdf", "zavazek")
 

@@ -1,14 +1,26 @@
 defmodule CozyCheckout.IncomingDocuments.Extractor do
-  @moduledoc "One stateless source transcription request. Persistent call limits live in the context."
+  @moduledoc "Stateless extraction with selectable detailed JSON or short template-based XML prompts."
   alias CozyCheckout.IncomingDocuments.Transcription
 
-  def instructions do
+  def strategies, do: ["structured", "simple_xml"]
+  def strategy(doc), do: Map.get(doc.extraction_metadata, "strategy", "structured")
+  def max_attempts(doc), do: if(strategy(doc) == "simple_xml", do: 1, else: 2)
+  def strategy_label("simple_xml"), do: "Jednoduché zadání → XML"
+  def strategy_label(_), do: "Podrobný přepis → JSON → XML"
+
+  def instructions(strategy \\ "structured") do
+    filename =
+      if strategy == "simple_xml",
+        do: "extraction_instructions_simple.md",
+        else: "extraction_instructions.md"
+
     :cozy_checkout
-    |> Application.app_dir("priv/incoming_documents/extraction_instructions.md")
+    |> Application.app_dir("priv/incoming_documents/" <> filename)
     |> File.read!()
   end
 
-  def prompt_version, do: Base.encode16(:crypto.hash(:sha256, instructions()), case: :lower)
+  def prompt_version(strategy \\ "structured"),
+    do: Base.encode16(:crypto.hash(:sha256, instructions(strategy)), case: :lower)
 
   def extract(doc, cfg, parts, feedback \\ nil) do
     if cfg[:openai_api_key] in [nil, ""] or cfg[:openai_model] in [nil, ""] do
@@ -18,7 +30,7 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
     end
   end
 
-  defp request(_doc, cfg, parts, feedback) do
+  defp request(doc, cfg, parts, feedback) do
     context =
       if feedback do
         "Opravný pokus nad stejným originálem. Znovu jej přečti. Chyba kontroly: #{feedback.error}\nPředchozí přepis (může být chybný):\n#{Jason.encode!(feedback.data)}"
@@ -41,6 +53,27 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
       },
       input: [%{role: "user", content: [%{type: "input_text", text: context} | parts]}]
     }
+
+    payload =
+      if strategy(doc) == "simple_xml" do
+        payload
+        |> Map.delete(:text)
+        |> Map.put(:instructions, instructions("simple_xml"))
+        |> Map.put(:input, [
+          %{
+            role: "user",
+            content: [
+              %{
+                type: "input_text",
+                text: "Selected agenda: #{doc.agenda}. XML template:\n" <> doc.template_xml
+              }
+              | parts
+            ]
+          }
+        ])
+      else
+        payload
+      end
 
     case Req.post("https://api.openai.com/v1/responses",
            auth: {:bearer, cfg[:openai_api_key]},
@@ -66,22 +99,32 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
           "raw_output" => String.slice(raw, 0, 250_000)
         }
 
-        with true <- byte_size(raw) <= 250_000,
-             {:ok, data} <- Jason.decode(raw),
-             :ok <- Transcription.validate(data) do
-          {:ok, data, metadata}
+        if strategy(doc) == "simple_xml" do
+          if raw != "" and byte_size(raw) <= 250_000,
+            do: {:ok_xml, raw, metadata},
+            else: {:error, "OpenAI nevrátilo XML v povolené velikosti", metadata}
         else
-          _ -> {:error, "OpenAI nevrátilo úplný přepis v očekávané JSON struktuře", metadata}
+          with true <- byte_size(raw) <= 250_000,
+               {:ok, data} <- Jason.decode(raw),
+               :ok <- Transcription.validate(data) do
+            {:ok, data, metadata}
+          else
+            _ -> {:error, "OpenAI nevrátilo úplný přepis v očekávané JSON struktuře", metadata}
+          end
         end
 
       {:ok, %{status: status, body: body}} ->
         kind = if is_map(body), do: body["status"] || "error", else: "error"
 
+        incomplete_reason = if is_map(body), do: get_in(body, ["incomplete_details", "reason"])
+        suffix = if incomplete_reason, do: ", důvod #{incomplete_reason}", else: ""
+
         {:error,
-         "Vytěžení OpenAI selhalo (HTTP #{status}, stav #{kind}). Opakujte je ručně; automatický opravný pokus se nespouští.",
+         "Vytěžení OpenAI selhalo (HTTP #{status}, stav #{kind}#{suffix}). Opakujte je ručně; automatický opravný pokus se nespouští.",
          %{
            "http_status" => status,
            "provider_status" => kind,
+           "incomplete_reason" => incomplete_reason,
            "usage" => if(is_map(body), do: body["usage"] || %{}, else: %{})
          }}
 

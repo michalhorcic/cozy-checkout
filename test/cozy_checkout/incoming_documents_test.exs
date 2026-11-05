@@ -144,6 +144,105 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert fields["cisDosle"] == "0007-20261105-A"
   end
 
+  test "simple XML strategy sends the original and exact saved template with a short prompt" do
+    assert {:ok, %{document: doc}} =
+             Incoming.upload("%PDF-simple", "simple.pdf", "zavazek", "simple_xml")
+
+    raw = extracted(doc).current_xml
+
+    doc
+    |> Ecto.Changeset.change(state: "uploaded", current_xml: nil, generated_xml: nil)
+    |> Repo.update!()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      payload = Jason.decode!(body)
+      assert payload["store"] == false
+      assert payload["max_output_tokens"] == 24000
+      assert payload["instructions"] == Extractor.instructions("simple_xml")
+      assert String.length(payload["instructions"]) < String.length(Extractor.instructions())
+      refute Map.has_key?(payload, "text")
+
+      assert [%{"content" => [%{"text" => template}, %{"type" => "input_file"}]}] =
+               payload["input"]
+
+      assert template =~ doc.template_xml
+
+      Req.Test.json(conn, %{
+        "status" => "completed",
+        "output" => [
+          %{"type" => "message", "content" => [%{"type" => "output_text", "text" => raw}]}
+        ]
+      })
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "extract")
+    result = Incoming.get!(doc.id)
+    assert result.state == "review"
+    assert result.generated_xml == raw
+    assert result.extracted_data == %{}
+    assert result.extraction_attempts == 1
+
+    assert hd(result.extraction_metadata["calls"])["prompt_version"] ==
+             Extractor.prompt_version("simple_xml")
+
+    assert result.dry_run == %{}
+    assert {:error, _} = Incoming.approve(doc.id, Incoming.digest(result.current_xml))
+  end
+
+  test "simple XML strategy retains invalid accounting XML and never makes a correction call" do
+    assert {:ok, %{document: doc}} =
+             Incoming.upload("%PDF-simple", "simple.pdf", "zavazek", "simple_xml")
+
+    raw = extracted(doc).current_xml |> String.replace("code:325000", "code:999999")
+
+    doc
+    |> Ecto.Changeset.change(state: "uploaded", current_xml: nil, generated_xml: nil)
+    |> Repo.update!()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "status" => "completed",
+        "output" => [
+          %{"type" => "message", "content" => [%{"type" => "output_text", "text" => raw}]}
+        ]
+      })
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "extract")
+    failed = Incoming.get!(doc.id)
+    assert failed.state == "failed"
+    assert failed.generated_xml == raw
+    assert failed.error =~ "primUcet"
+    assert failed.extraction_attempts == 1
+    assert failed.sent_xml == nil
+    assert :ok = Incoming.perform(doc.id, "extract")
+    assert {:error, _} = Incoming.retry_extraction(doc.id, "unknown")
+    assert {:ok, queued} = Incoming.retry_extraction(doc.id, "structured")
+    assert queued.extraction_metadata == %{"strategy" => "structured"}
+    assert queued.extraction_attempts == 0
+  end
+
+  test "token exhaustion reports the exact reason without retrying" do
+    doc = upload()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "status" => "incomplete",
+        "incomplete_details" => %{"reason" => "max_output_tokens"},
+        "output" => [],
+        "usage" => %{"output_tokens" => 24000}
+      })
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "extract")
+    failed = Incoming.get!(doc.id)
+    assert failed.state == "failed"
+    assert failed.error =~ "max_output_tokens"
+    assert failed.extraction_attempts == 1
+    assert hd(failed.extraction_metadata["calls"])["incomplete_reason"] == "max_output_tokens"
+  end
+
   test "invalid extraction fails and never queues a write" do
     doc = upload()
 

@@ -26,14 +26,19 @@ defmodule CozyCheckout.IncomingDocuments.SourceImages do
 
     executable = System.find_executable("magick") || System.find_executable("convert")
 
-    if executable do
-      crop(doc, original, detail, executable)
-    else
-      {:ok, [original],
-       %{
-         "views" => 1,
-         "warning" => "ImageMagick není dostupný; použil se pouze originál bez výřezů"
-       }}
+    cond do
+      cfg[:original_only] ->
+        {:ok, [original], %{"views" => 1, "kind" => "original_only"}}
+
+      executable ->
+        crop(doc, original, detail, executable)
+
+      true ->
+        {:ok, [original],
+         %{
+           "views" => 1,
+           "warning" => "ImageMagick není dostupný; použil se pouze originál bez výřezů"
+         }}
     end
   end
 

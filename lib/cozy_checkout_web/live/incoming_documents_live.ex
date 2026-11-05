@@ -1,7 +1,7 @@
 defmodule CozyCheckoutWeb.IncomingDocumentsLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
-  alias CozyCheckout.IncomingDocuments.{Client, XML}
+  alias CozyCheckout.IncomingDocuments.{Client, Extractor, XML}
 
   def mount(_, _, socket) do
     if connected?(socket), do: Process.send_after(self(), :refresh, 2000)
@@ -40,10 +40,16 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
 
   def handle_event("upload-change", _, socket), do: {:noreply, socket}
 
-  def handle_event("upload", %{"agenda" => agenda}, socket) do
+  def handle_event("upload", %{"agenda" => agenda} = params, socket) do
     results =
       consume_uploaded_entries(socket, :original, fn %{path: path}, entry ->
-        {:ok, IncomingDocuments.upload(File.read!(path), entry.client_name, agenda)}
+        {:ok,
+         IncomingDocuments.upload(
+           File.read!(path),
+           entry.client_name,
+           agenda,
+           params["strategy"] || "structured"
+         )}
       end)
 
     case results do
@@ -155,11 +161,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         )
   end
 
-  def handle_event("retry", _, socket),
+  def handle_event("retry", params, socket),
     do:
       result(
         socket,
-        IncomingDocuments.retry_extraction(socket.assigns.doc.id),
+        IncomingDocuments.retry_extraction(socket.assigns.doc.id, params["strategy"]),
         "Vytěžení zařazeno znovu"
       )
 
@@ -368,6 +374,13 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             label="Agenda"
             options={IncomingDocuments.agendas()}
           />
+          <.input
+            name="strategy"
+            value="structured"
+            type="select"
+            label="Způsob vytěžení"
+            options={Enum.map(Extractor.strategies(), &{Extractor.strategy_label(&1), &1})}
+          />
           <.live_file_input upload={@uploads.original} />
           <div :for={entry <- @uploads.original.entries}>
             <p>{entry.client_name} — {entry.progress} %</p>
@@ -412,7 +425,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         >
           <summary>Přepis originálu a informace o vytěžení</summary>
           <p>
-            Počet rezervovaných pokusů: {@doc.extraction_attempts} / 2. Opravené starší doklady se modelu neposílají.
+            Způsob: {Extractor.strategy_label(Extractor.strategy(@doc))}. Počet rezervovaných pokusů: {@doc.extraction_attempts} / {Extractor.max_attempts(
+              @doc
+            )}. Opravené starší doklady se modelu neposílají.
           </p>
           <p :if={get_in(@doc.extraction_metadata, ["images", "warning"])} class="text-warning">
             {get_in(@doc.extraction_metadata, ["images", "warning"])}
@@ -445,15 +460,17 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           phx-disable-with="Zařazuji…"
         >Ověřit v ABRA bez opakování zápisu</button>
         <button
+          :for={strategy <- Extractor.strategies()}
           :if={
             (@doc.state == "failed" && @doc.error_stage == "extraction") ||
               (@doc.state == "review" && is_nil(@doc.sent_xml))
           }
           phx-click="retry"
+          phx-value-strategy={strategy}
           data-confirm="Nové vytěžení nahradí dosavadní opravy a zruší kontrolu ABRA. Pokračovat?"
           class="btn"
           phx-disable-with="Zařazuji…"
-        >Znovu vytěžit</button>
+        >Znovu vytěžit: {Extractor.strategy_label(strategy)}</button>
         <p :if={@doc.state == "sent"} class="alert alert-success">
           Doklad byl nalezen v ABRA, ID {@doc.remote_id}.
           <a href={Client.document_url(@doc)} target="_blank" rel="noopener" class="link">Otevřít v ABRA</a>

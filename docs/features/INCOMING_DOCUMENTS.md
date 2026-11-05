@@ -15,7 +15,7 @@ admin PIN. Veřejné POS se nemění.
 Vzory v `priv/incoming_documents/` vycházejí ze tří dodaných exportů ABRA.
 Základní soubory obsahují účetní nastavení původních bezpoložkových dokladů;
 identity, automaticky vytvořené účetní řádky, odkazy na původní firmu, dodavatele
-a úhrady byly odstraněny. Účetní vzor používá pouze aplikace při sestavení XML.
+a úhrady byly odstraněny. Ve výchozí podrobné variantě účetní vzor používá pouze aplikace při sestavení XML.
 Model dostává nový originál obrázku/PDF a stručné pokyny pro strukturovaný přepis
 JSON (Structured Outputs); účetní pole ani XML negeneruje. Starší opravené doklady
 se automaticky neposílají jako příklady ani model netrénují.
@@ -29,6 +29,34 @@ ověřuje součet osvobozené částky, základů a DPH proti celku pomocí Deci
 Povoluje pouze níže popsanou doloženou haléřovou korekci DPH. Neprovádí měnové přepočty, nezakládá adresářové firmy,
 nespouští párování ani skladové vazby a nepřenáší přílohy do ABRA. Údaje dodavatele
 zůstávají v hlavičce dokladu. Správnost účtování a chování částek musí ověřit pilot.
+
+## Porovnání zadání
+
+Při uploadu lze vybrat „Podrobný přepis → JSON → XML“ (dosavadní výchozí způsob)
+nebo „Jednoduché zadání → XML“. U neodeslaného dokladu jsou samostatná tlačítka
+pro nové vytěžení oběma způsoby. Nový pokus nahrazuje dosavadní opravy a ruší
+dry-run; pro zachování obou výsledků nahrajte stejný originál jako druhý návrh
+s jinou variantou a žádný duplicitní doklad neodesílejte.
+
+Podrobné pokyny zůstávají v `priv/incoming_documents/extraction_instructions.md`.
+Krátké alternativní pokyny jsou v `priv/incoming_documents/extraction_instructions_simple.md`;
+požadavek sestavuje `lib/cozy_checkout/incoming_documents/extractor.ex`.
+Jednoduchá varianta pošle celý originál a přesný uložený účetní vzor vybrané agendy,
+bez JSON schématu a bez automatických výřezů. Používá jediný rezervovaný API
+pokus bez automatického opravného volání. Vrácené XML prochází stejným parserem,
+kontrolou účetního nastavení, řádků a rekapitulace; při chybě se zachová pro ruční
+opravu. Úspěšný přepis neopravňuje k importu bez dry-runu a schválení.
+
+Obě varianty mají limit `max_output_tokens=24000` a `store=false`. Zvolený způsob,
+verze pokynů a spotřeba se ukládají do stávajících metadat; bez nové migrace či
+proměnných prostředí. Při neúplné odpovědi se ukáže a uloží také
+`incomplete_details.reason`, zejména `max_output_tokens`. Tento důvod může vést
+k navýšení limitu; hotová odpověď s chybným množstvím sama vyčerpání limitu
+nedokazuje. Zdroj: [OpenAI — reasoning a limity výstupu](https://developers.openai.com/api/docs/guides/reasoning).
+
+Popis deterministického skládání XML a opravného přepisu níže platí pro
+podrobnou variantu; společné kontroly, opravy XML a schvalování platí pro obě.
+Přesnost obou variant je potřeba porovnat na stejných skutečných dokladech.
 
 ## Konfigurace
 
@@ -142,7 +170,7 @@ V přehledu dokladu lze upravit názvy, množství, jednotkové ceny, typ ceny, 
 a procentní slevu. Po uložení se částky přepočítají a znovu porovnají s rekapitulací.
 Uživatelská úprava rekapitulace musí odpovídat originálu. Doklady bez skutečných
 položek i dřívější bezpoložkové doklady lze nadále ručně zpracovat souhrnem.
-Nový automatický přepis vyžaduje alespoň jednu doloženou položku.
+Podrobný automatický přepis vyžaduje alespoň jednu doloženou položku.
 
 Položkový import používá `bezPolozek=false` a kolekci `polozkyDokladu` s elementem
 `faktura-prijata-polozka`, `pokladni-pohyb-polozka` nebo `zavazek-polozka` podle agendy.
