@@ -129,4 +129,31 @@ defmodule CozyCheckout.IncomingDocuments.ImportTransportTest do
   test "invalid XML never triggers an HTTP request" do
     assert {:rejected, _, _} = Client.import(doc(), "<html>not XML</html>", false, config())
   end
+
+  test "catalog HTTP errors retain status even when the json endpoint returns plain text or HTML" do
+    for {status, type, body} <- [
+          {403, "application/json", "forbidden"},
+          {401, "text/html", "<html>login</html>"},
+          {503, "text/plain", "unavailable"}
+        ] do
+      Req.Test.expect(__MODULE__, fn conn ->
+        conn |> Plug.Conn.put_resp_content_type(type) |> Plug.Conn.send_resp(status, body)
+      end)
+
+      assert {:error, reason} = Client.presets(doc(), config())
+      assert reason =~ "HTTP #{status}"
+    end
+  end
+
+  test "malformed successful catalog is rejected while transport failure remains distinct" do
+    Req.Test.expect(__MODULE__, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("application/json")
+      |> Plug.Conn.send_resp(200, "invalid-json")
+    end)
+
+    assert {:error, "ABRA vrátila neplatný číselník předpisů"} = Client.presets(doc(), config())
+    Req.Test.expect(__MODULE__, fn conn -> Req.Test.transport_error(conn, :timeout) end)
+    assert {:error, "Číselník předpisů ABRA není dostupný"} = Client.presets(doc(), config())
+  end
 end

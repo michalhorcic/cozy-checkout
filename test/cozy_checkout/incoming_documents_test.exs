@@ -148,7 +148,8 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert {:ok, %{document: doc}} =
              Incoming.upload("%PDF-simple", "simple.pdf", "zavazek", "simple_xml")
 
-    raw = extracted(doc).current_xml
+    doc = extracted(doc)
+    raw = doc.current_xml
 
     doc
     |> Ecto.Changeset.change(state: "uploaded", current_xml: nil, generated_xml: nil)
@@ -194,7 +195,8 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert {:ok, %{document: doc}} =
              Incoming.upload("%PDF-simple", "simple.pdf", "zavazek", "simple_xml")
 
-    raw = extracted(doc).current_xml |> String.replace("code:325000", "code:999999")
+    doc = extracted(doc)
+    raw = doc.current_xml |> String.replace("code:325000", "code:999999")
 
     doc
     |> Ecto.Changeset.change(state: "uploaded", current_xml: nil, generated_xml: nil)
@@ -218,6 +220,8 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert failed.sent_xml == nil
     assert :ok = Incoming.perform(doc.id, "extract")
     assert {:error, _} = Incoming.retry_extraction(doc.id, "unknown")
+    # Direct perform/2 calls do not complete the queued Oban job as a real worker would.
+    Repo.update_all(Oban.Job, set: [state: "completed"])
     assert {:ok, queued} = Incoming.retry_extraction(doc.id, "structured")
     assert queued.extraction_metadata == %{"strategy" => "structured"}
     assert queued.extraction_attempts == 0

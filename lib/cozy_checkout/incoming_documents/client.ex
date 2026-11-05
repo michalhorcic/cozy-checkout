@@ -77,17 +77,24 @@ defmodule CozyCheckout.IncomingDocuments.Client do
            auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
            retry: false,
            redirect: false,
+           decode_body: false,
            receive_timeout: 15_000,
            connect_options: [timeout: 10_000]
          ) do
-      {:ok, %{status: 200, body: %{"winstrom" => %{"predpis-zauctovani" => page}}}}
-      when is_list(page) and length(page) <= 200 ->
-        if Enum.all?(page, &is_map/1) do
-          if length(page) < 200,
-            do: {:ok, rows ++ page},
-            else: presets_page(doc, cfg, offset + 200, rows ++ page)
-        else
-          {:error, "ABRA vrátila neplatný číselník předpisů"}
+      {:ok, %{status: 200, body: body}} ->
+        case decode_catalog(body) do
+          %{"winstrom" => %{"predpis-zauctovani" => page}}
+          when is_list(page) and length(page) <= 200 ->
+            if Enum.all?(page, &is_map/1) do
+              if length(page) < 200,
+                do: {:ok, rows ++ page},
+                else: presets_page(doc, cfg, offset + 200, rows ++ page)
+            else
+              {:error, "ABRA vrátila neplatný číselník předpisů"}
+            end
+
+          _ ->
+            {:error, "ABRA vrátila neplatný číselník předpisů"}
         end
 
       {:ok, %{status: status}} ->
@@ -97,6 +104,15 @@ defmodule CozyCheckout.IncomingDocuments.Client do
         {:error, "Číselník předpisů ABRA není dostupný"}
     end
   end
+
+  defp decode_catalog(body) when is_binary(body) do
+    case Jason.decode(body) do
+      {:ok, data} -> data
+      _ -> nil
+    end
+  end
+
+  defp decode_catalog(body), do: body
 
   def find(doc, cfg) do
     id = URI.encode(doc.external_id, &URI.char_unreserved?/1)
