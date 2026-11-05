@@ -25,6 +25,19 @@ defmodule CozyCheckout.IncomingDocuments.XML do
 
   @doc "Parses without creating atoms from names; only one bounded item collection is allowed, without DTD or entities."
   def parse(xml, agenda) when is_binary(xml) and byte_size(xml) <= 250_000 do
+    if String.valid?(xml) and
+         (String.starts_with?(String.trim_leading(xml), "```") or
+            String.ends_with?(String.trim_trailing(xml), "```")) do
+      {:error,
+       "Výstup obsahuje ohraničení Markdownu (```xml nebo ```), které není součástí XML. Odstraňte tyto řádky; obsah musí začínat <?xml a končit </winstrom>."}
+    else
+      parse_document(xml, agenda)
+    end
+  end
+
+  def parse(_, _), do: invalid()
+
+  defp parse_document(xml, agenda) do
     if agenda in @agendas and String.valid?(xml) and not String.contains?(xml, <<0>>) and
          not Regex.match?(~r/<!|<\?/u, strip_declaration(xml)) do
       state = %{
@@ -51,8 +64,6 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   catch
     _, _ -> invalid()
   end
-
-  def parse(_, _), do: invalid()
 
   defp strip_declaration(xml),
     do: Regex.replace(~r/\A\s*<\?xml\s+[^?]*\?>/u, xml, "", global: false)

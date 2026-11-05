@@ -223,4 +223,17 @@ defmodule CozyCheckout.IncomingDocuments.ItemsTest do
     assert {:ok, normalized} = XML.normalize(flat, "zavazek", template, "ext:test")
     assert {:ok, ^normalized} = XML.import_xml(normalized, "zavazek")
   end
+
+  test "Markdown fences get an actionable error while their plain XML payload is accepted" do
+    {fields, _template} = document("zavazek")
+    xml = XML.render(fields, "zavazek")
+    assert {:ok, parsed} = XML.parse(xml, "zavazek")
+    assert length(XML.items(parsed)) == 3
+
+    for fenced <- ["```xml\n" <> xml <> "\n```", "  ```XML\n" <> xml <> "\n```\n", xml <> "\n```"] do
+      assert {:error, reason} = XML.parse(fenced, "zavazek")
+      assert reason =~ "Markdownu"
+      assert reason =~ "Odstraňte tyto řádky"
+    end
+  end
 end
