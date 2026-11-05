@@ -9,11 +9,16 @@ defmodule CozyCheckout.IncomingDocuments.Client do
            auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
            retry: false,
            redirect: false,
+           decode_body: false,
            receive_timeout: 30_000,
            connect_options: [timeout: 10_000]
          ) do
-      {:ok, %{status: status, body: body}} -> parse_response(status, body, dry_run?)
-      {:error, _} -> {:uncertain, "ABRA není dostupná nebo vypršel časový limit"}
+      {:ok, response} ->
+        content_type = response |> Req.Response.get_header("content-type") |> Enum.join(", ")
+        parse_response(response.status, response.body, dry_run?, content_type)
+
+      {:error, _} ->
+        {:uncertain, "ABRA není dostupná nebo vypršel časový limit"}
     end
   end
 
@@ -54,13 +59,59 @@ defmodule CozyCheckout.IncomingDocuments.Client do
   def document_url(doc), do: url(doc) <> "/#{encode(doc.remote_id)}"
   defp encode(value), do: URI.encode(value, &URI.char_unreserved?/1)
 
-  defp parse_response(status, %{"winstrom" => body}, dry?) when is_map(body) do
+  defp parse_response(status, raw, dry?, content_type) do
+    parsed =
+      if is_binary(raw) do
+        case Jason.decode(raw) do
+          {:ok, parsed} -> parsed
+          _ -> raw
+        end
+      else
+        raw
+      end
+
+    response = %{
+      "http_status" => status,
+      "content_type" => content_type,
+      "raw_body" => preview(raw),
+      "truncated" => is_binary(raw) and String.valid?(raw) and String.length(raw) > 100_000,
+      "warnings" => [],
+      "errors" => []
+    }
+
+    case parsed do
+      %{"winstrom" => body} when is_map(body) ->
+        parse_winstrom(status, body, dry?, response)
+
+      _ ->
+        format =
+          cond do
+            is_map(parsed) ->
+              "JSON neobsahuje očekávaný objekt winstrom; klíče: " <>
+                Enum.join(Map.keys(parsed), ", ")
+
+            is_binary(parsed) and String.trim(parsed) == "" ->
+              "prázdné tělo odpovědi"
+
+            is_binary(parsed) and String.starts_with?(String.trim(parsed), "<") ->
+              "server vrátil XML nebo HTML místo očekávaného JSON"
+
+            true ->
+              "tělo odpovědi není očekávané JSON"
+          end
+
+        {:uncertain, "ABRA HTTP #{status}: #{format}. Rozbalte podrobnosti odpovědi ABRA.",
+         response}
+    end
+  end
+
+  defp parse_winstrom(status, body, dry?, response) do
     results = body["results"]
     errors = messages(body, "errors")
     warnings = messages(body, "warnings")
     result = if is_list(results) and length(results) == 1, do: hd(results), else: %{}
     id = if is_map(result), do: result["id"]
-    response = %{"http_status" => status, "body" => body, "warnings" => warnings}
+    response = Map.merge(response, %{"body" => body, "warnings" => warnings, "errors" => errors})
 
     cond do
       status in [200, 201] and body["success"] in [true, "true"] and errors == [] and
@@ -71,12 +122,14 @@ defmodule CozyCheckout.IncomingDocuments.Client do
         {:rejected, Enum.join(errors, "; "), response}
 
       true ->
-        {:uncertain, "ABRA vrátila nejednoznačnou odpověď (HTTP #{status})"}
+        details =
+          "success=#{inspect(body["success"])}, počet výsledků=#{if is_list(results), do: length(results), else: "chybí"}, id=#{inspect(id)}"
+
+        {:uncertain,
+         "ABRA HTTP #{status}: nejednoznačný výsledek importu (#{details}). Rozbalte podrobnosti odpovědi ABRA.",
+         response}
     end
   end
-
-  defp parse_response(status, _, _),
-    do: {:uncertain, "ABRA vrátila neplatnou odpověď (HTTP #{status})"}
 
   defp messages(body, key) do
     entries =
@@ -87,11 +140,40 @@ defmodule CozyCheckout.IncomingDocuments.Client do
         end)
 
     Enum.map(entries, fn
-      %{"message" => message} when is_binary(message) -> message
-      message when is_binary(message) -> message
-      _ -> "ABRA: #{key}"
+      message when is_map(message) ->
+        text = message["message"] || message["$"] || "ABRA: #{key}"
+
+        details =
+          for {field, label} <- [
+                {"for", "pole"},
+                {"path", "cesta"},
+                {"code", "kód"},
+                {"messageCode", "typ chyby"},
+                {"value", "hodnota"}
+              ],
+              Map.has_key?(message, field),
+              do: "#{label}: #{display(message[field])}"
+
+        Enum.join([display(text) | details], " · ")
+
+      message when is_binary(message) ->
+        message
+
+      _ ->
+        "ABRA: #{key}"
     end)
   end
+
+  defp display(value) when is_binary(value), do: value
+  defp display(value), do: inspect(value)
+
+  defp preview(raw) when is_binary(raw) do
+    if String.valid?(raw),
+      do: String.slice(raw, 0, 100_000),
+      else: "Binární odpověď (#{byte_size(raw)} bytů)"
+  end
+
+  defp preview(raw), do: Jason.encode!(raw, pretty: true) |> String.slice(0, 100_000)
 
   defp valid_id?(id) when is_integer(id), do: id > 0
   defp valid_id?(id) when is_binary(id), do: Regex.match?(~r/^[1-9]\d*$/, id)

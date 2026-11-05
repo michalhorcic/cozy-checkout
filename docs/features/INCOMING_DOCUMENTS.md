@@ -13,9 +13,12 @@ admin PIN. Veřejné POS se nemění.
   účet DAL `325000`. Nezakládá úhradu ani párování s bankou.
 
 Vzory v `priv/incoming_documents/` vycházejí ze tří dodaných exportů ABRA.
-Jsou bezpoložkové (`bezPolozek=true`); automaticky vytvořené účetní řádky,
-identity, interní čísla, odkazy na původní firmu, dodavatele a úhrady byly
-odstraněny. Souhrny a dodavatel jsou prázdné, účetní nastavení zůstává ze vzoru.
+Základní soubory obsahují účetní nastavení původních bezpoložkových dokladů;
+identity, automaticky vytvořené účetní řádky, odkazy na původní firmu, dodavatele
+a úhrady byly odstraněny. Pro vytěžení aplikace vzor rozšíří o ukázku jedné obecné
+neskladové položky. Ta pouze popisuje strukturu a má být nahrazena skutečnými
+položkami originálu. Model dostává tento vzor a nový originál obrázku/PDF.
+Starší opravené doklady se automaticky neposílají jako příklady ani model netrénují.
 Přijatá faktura a karta mají předpis nákupu potravin, pokladna ostatní spotřebu.
 Tyto pevné předpisy nejsou univerzální pro libovolný nákup. Pro pilot vybírejte
 odpovídající doklady; odlišné účtování zpracujte ručně nebo změňte příslušný vzor
@@ -24,7 +27,7 @@ pro další uploady. Každý doklad uchovává vlastní kopii vzoru.
 Podporovány jsou kladné doklady v CZK s rozpisem základů a DPH. Základní kontrola
 ověřuje součet osvobozené částky, základů a DPH proti celku pomocí Decimal.
 Nevymýšlí zaokrouhlení, neprovádí měnové přepočty, nezakládá adresářové firmy,
-nespouští párování a nepřenáší položky či přílohy do ABRA. Údaje dodavatele
+nespouští párování ani skladové vazby a nepřenáší přílohy do ABRA. Údaje dodavatele
 zůstávají v hlavičce dokladu. Správnost účtování a chování částek musí ověřit pilot.
 
 ## Konfigurace
@@ -63,7 +66,8 @@ sloupcem nejsou fyzicky odstraňovány; UI zatím neposkytuje mazání.
    originálu jsou pouze nedůvěryhodná data. Model nemá nástroje pro zápis do ABRA.
 3. Aplikace přijme jen jeden doklad povolené agendy, povolená pole a účetní
    nastavení vzoru. Parser SAX nevytváří atomy z názvů polí a odmítá DTD, externí
-   entity, vnořené operace, vazby a atributy polí. Cizí identity a stavy úhrad
+   entity, vnořené operace, vazby a atributy polí. Povolenou vnořenou kolekcí
+   jsou pouze obecné neskladové položky `polozkyDokladu`. Cizí identity a stavy úhrad
    odstraní; vlastní stabilní externí ID a `create="ok" update="fail"` doplní server.
 4. Porovnat originál a editovatelná pole. PDF používá prohlížeč se stránkováním
    a zvětšením, fotografie má posuvník zvětšení. Opravy mění XML bez nového
@@ -74,12 +78,42 @@ sloupcem nejsou fyzicky odstraňovány; UI zatím neposkytuje mazání.
    a použít „Schválit a odeslat“. Přesně schválené XML se uloží a uzamkne.
 6. Po přenosu se uloží odpověď a ID s odkazem do ABRA. Odeslaný doklad se neupravuje.
 
+### Jednotlivé položky a rekapitulace
+
+Model má přepsat všechny položky účtenky nebo faktury v původním pořadí,
+nejvýše 200 položek / 250 kB XML. Zahrnuje také doložené slevy, obaly a zaokrouhlení.
+Množství může být vážené a jednotková cena má nejvýše šest desetinných míst.
+Sleva se zadává buď procentem `slevaPol`, nebo samostatnou zápornou položkou,
+nikoli oběma způsoby zároveň. Sazba každé položky vychází ze značení a legendy
+originálu (`typSzbDphK`); neznámou sazbu model nemá odhadovat podle názvu zboží.
+Hlavičkové sazby nejsou částky DPH a z originálu se nepřepisují.
+
+Aplikace kontroluje pomocí Decimal množství, cenu, slevu, sazbu a částky řádků.
+Součty položek porovnává s rekapitulací DPH i celkem originálu pro každou sazbu.
+Při rozdílu ukáže konkrétní částky a import zablokuje. Haléřové rozdíly z odlišného
+zaokrouhlení automaticky nerozděluje: doklad je třeba ručně zkontrolovat a opravit
+nebo zpracovat mimo aplikaci. Skladové a adresářové vazby na položkách nepovoluje.
+
+V přehledu dokladu lze upravit názvy, množství, jednotkové ceny, typ ceny, sazbu
+a procentní slevu. Po uložení se částky přepočítají a znovu porovnají s rekapitulací.
+Uživatelská úprava rekapitulace musí odpovídat originálu. Doklady bez skutečných
+položek i dřívější bezpoložkové doklady lze nadále zpracovat souhrnem.
+
+Položkový import používá `bezPolozek=false` a kolekci `polozkyDokladu` s elementem
+`faktura-prijata-polozka`, `pokladni-pohyb-polozka` nebo `zavazek-polozka` podle agendy.
+Kontrolní částky hlavičky zůstávají v aktuální verzi XML v databázi pro porovnání,
+ale do ABRA se neposílají: ABRA vypočítá hlavičku z položek. Sekce „XML k odeslání“
+ukazuje skutečný payload. Dry-run a schválený přenos používají shodné XML; jeho
+hash se před zamčením ověřuje a přesné odeslané XML je uložené v `sent_xml`.
+Dříve vydané/odeslané dokumenty zůstávají beze změny.
+
 ### Oprava neúspěšného vytěžení
 
 Pokud výstup modelu neprojde kontrolou, uloží se původní XML i konkrétní chyba.
 Při rozdílu účetního nastavení detail zobrazí tabulku: název pole, hodnota ze
-vzoru a hodnota v návrhu. Číselně stejné sazby DPH (např. `12` a `12.0`) se
-považují za shodné; skutečně odlišné nastavení zůstává blokované.
+vzoru a hodnota v návrhu. Hlavičkové sazby DPH (`szbDphSniz`, `szbDphSniz2`, `szbDphZakl`) jsou pevné:
+server je vždy přebírá ze vzoru, i když model vrátí jiná čísla. Režim `bezPolozek`
+určuje přítomnost položek. Ostatní odlišné účetní nastavení zůstává blokované.
 
 V editoru „Opravit výstup vytěžení“ lze upravit XML bez dalšího volání OpenAI.
 „Použít účetní nastavení ze vzoru“ přenese pevné hodnoty pouze do návrhu editoru;
@@ -93,6 +127,27 @@ Přenos vyžaduje nový dry-run a následné schválení. Již schválené nebo 
 přenosy tímto editorem upravit nelze. Návrh v editoru se do úspěšného uložení
 uchovává jen na otevřené stránce. Starší neúspěšné pokusy, jejichž XML aplikace
 ještě neukládala, vyžadují jednou „Znovu vytěžit“.
+
+### Odpovědi a chyby ABRA
+
+Detail dokladu nabízí samostatně podrobnosti posledního dry-runu a posledního
+přenosu: stav HTTP, typ obsahu, chyby a upozornění s polem, cestou, kódem chyby
+a hodnotou (pokud je ABRA uvede), a původní tělo odpovědi. Text se zobrazuje
+bezpečně jako text, nikoli jako HTML. Výpis těla je omezen na 100 000 znaků;
+obsah odpovědi je privátní a nepatří do běžných logů.
+
+HTTP 200 samo nestačí k potvrzení importu. Aplikace vyžaduje úspěch v těle,
+očekávaný výsledek a při zápisu platné ID. JSON se zpracuje i při nesprávném
+HTTP typu obsahu. XML/HTML, prázdné či nejednoznačné tělo se uloží k diagnostice;
+při zápisu zůstává výsledek nejistý a další pokus pouze dohledává externí ID.
+Starší neplatné odpovědi, jejichž tělo se ještě neukládalo, zpětně zobrazit nelze.
+Nový dry-run může bezpečně doplnit aktuální diagnostiku; nejistý zápis se neopakuje.
+
+Dosud neodeslaný doklad ve stavu „Ke kontrole“ lze výslovně vytěžit znovu,
+například pro doplnění položek novým zadáním. Potvrzení upozorní na nahrazení
+oprav a zrušení dry-runu. Po zahájení importu tato možnost není dostupná.
+Po aktualizaci musí také starší úspěšný dry-run bez hashe přesného payloadu
+proběhnout znovu před schválením.
 
 Před síťovým zápisem se trvale uloží stav nejistého výsledku. Timeout, pád workeru
 nebo nejednoznačná odpověď nikdy nezpůsobí slepé opakování POST. Další pokus
@@ -117,9 +172,12 @@ nebyla dostupná, takže přesnou shodu toolchainu ověří CI.
 
 Pilot ještě musí projít skutečnými doklady ve všech třech agendách, včetně
 vícestránkového PDF, fotografie a účtenky s doloženým zaokrouhlením.
-V ABRA je potřeba porovnat částky, DPH, účtování a chování bezpoložkového importu.
+V ABRA je potřeba porovnat částky, DPH, účtování a chování položkového i
+bezpoložkového importu.
 Za dokončený pilot nelze považovat samotné validní XML nebo úspěšné CI.
 
-API reference: [OpenAI — File inputs](https://developers.openai.com/api/docs/guides/file-inputs),
+API reference: [ABRA — import částek položek](https://podpora.flexibee.eu/cs/articles/4552353-import-castek-polozek-faktury),
+[ABRA — validace položek](https://podpora.flexibee.eu/cs/articles/11776385-validace-vypoctu-cen-na-polozkach-rest-api),
+[OpenAI — File inputs](https://developers.openai.com/api/docs/guides/file-inputs),
 [ABRA — dry-run](https://podpora.flexibee.eu/en/articles/4720123-test-save-dry-run),
 [ABRA — create/update](https://podpora.flexibee.eu/en/articles/4725944-setup-change-mode).

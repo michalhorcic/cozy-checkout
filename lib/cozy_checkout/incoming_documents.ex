@@ -129,10 +129,21 @@ defmodule CozyCheckout.IncomingDocuments do
 
   def retry_extraction(id) do
     locked(id, fn doc ->
-      require_state!(doc, ["failed"])
-      if doc.error_stage != "extraction", do: Repo.rollback("Vytěžení nelze opakovat")
+      require_state!(doc, ["failed", "review"])
+
+      if not is_nil(doc.sent_xml) or (doc.state == "failed" and doc.error_stage != "extraction"),
+        do: Repo.rollback("Vytěžení nelze opakovat po zahájení importu")
+
       job!(id, "extract")
-      update!(doc, state: "uploaded", error: nil, error_stage: nil)
+
+      update!(doc,
+        state: "uploaded",
+        current_xml: nil,
+        generated_xml: nil,
+        dry_run: %{},
+        error: nil,
+        error_stage: nil
+      )
     end)
   end
 
@@ -158,8 +169,17 @@ defmodule CozyCheckout.IncomingDocuments do
       if doc.dry_run["warnings"] != [] and not warnings_confirmed,
         do: Repo.rollback("Výslovně potvrďte, že jste zkontrolovali upozornění ABRA")
 
+      payload =
+        case XML.import_xml(doc.current_xml, doc.agenda) do
+          {:ok, payload} -> payload
+          {:error, reason} -> Repo.rollback(reason)
+        end
+
+      unless doc.dry_run["payload_hash"] == digest(payload),
+        do: Repo.rollback("XML k odeslání se změnilo. Zopakujte kontrolu ABRA.")
+
       job!(id, "send")
-      update!(doc, state: "sending", sent_xml: doc.current_xml, error: nil, error_stage: nil)
+      update!(doc, state: "sending", sent_xml: payload, error: nil, error_stage: nil)
     end)
   end
 
@@ -226,7 +246,11 @@ defmodule CozyCheckout.IncomingDocuments do
     doc = get!(id)
 
     if doc.state == "validating" do
-      result = with :ok <- target(doc), do: Client.import(doc, doc.current_xml, true, config())
+      result =
+        with :ok <- target(doc),
+             {:ok, payload} <- XML.import_xml(doc.current_xml, doc.agenda),
+             {:ok, response} <- Client.import(doc, payload, true, config()),
+             do: {:ok, Map.put(response, "payload_hash", digest(payload))}
 
       locked(id, fn current ->
         require_state!(current, ["validating"])
@@ -240,6 +264,14 @@ defmodule CozyCheckout.IncomingDocuments do
             )
 
           {:rejected, reason, response} ->
+            update!(current,
+              state: "review",
+              dry_run: response,
+              error_stage: "validation",
+              error: reason
+            )
+
+          {:uncertain, reason, response} ->
             update!(current,
               state: "review",
               dry_run: response,
@@ -345,7 +377,7 @@ defmodule CozyCheckout.IncomingDocuments do
           {:found, remote_id} ->
             update!(current,
               state: "sent",
-              response: %{"verified_by_external_id" => true},
+              response: Map.put(current.response, "verified_by_external_id", true),
               remote_id: remote_id,
               sent_at: DateTime.utc_now(:second),
               error: nil,
@@ -357,6 +389,14 @@ defmodule CozyCheckout.IncomingDocuments do
               state: "review",
               response: response,
               dry_run: %{},
+              error: reason,
+              error_stage: "import"
+            )
+
+          {:uncertain, reason, response} ->
+            update!(current,
+              state: "uncertain",
+              response: response,
               error: reason,
               error_stage: "import"
             )

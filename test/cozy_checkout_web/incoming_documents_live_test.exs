@@ -155,4 +155,71 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert has_element?(view, "button[phx-click=retry]")
     refute has_element?(view, "#incoming-repair")
   end
+
+  test "itemized review shows editable lines and the actual XML payload", %{conn: conn} do
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "items.pdf", "zavazek")
+    {:ok, fields} = XML.parse(doc.template_xml, doc.agenda)
+
+    row = %{
+      "nazev" => "Pečivo",
+      "mnozMj" => "2",
+      "cenaMj" => "28.00",
+      "typCenyDphK" => "typCeny.sDph",
+      "typSzbDphK" => "typSzbDph.dphSniz"
+    }
+
+    fields =
+      Map.merge(fields, %{
+        "nazFirmy" => "Obchod",
+        "cisDosle" => "U-1",
+        "datVyst" => "2026-11-05",
+        "sumZklSniz" => "50.00",
+        "sumDphSniz" => "6.00",
+        "sumCelkem" => "56.00",
+        "polozkyDokladu" => [row]
+      })
+
+    {:ok, xml} =
+      XML.normalize(XML.render(fields, doc.agenda), doc.agenda, doc.template_xml, doc.external_id)
+
+    doc |> Ecto.Changeset.change(state: "review", current_xml: xml) |> Repo.update!()
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "input[name='fields[items][0][nazev]'][value='Pečivo']")
+    assert has_element?(view, "#incoming-items", "Položky dokladu (1)")
+
+    view
+    |> form("#incoming-fields", %{
+      "fields" => %{"items" => %{"0" => %{"nazev" => "Opravené pečivo"}}}
+    })
+    |> render_submit()
+
+    {:ok, parsed} = XML.parse(IncomingDocuments.get!(doc.id).current_xml, doc.agenda)
+    assert hd(XML.items(parsed))["nazev"] == "Opravené pečivo"
+    assert IncomingDocuments.get!(doc.id).dry_run == %{}
+  end
+
+  test "ABRA response details show status and content safely as text", %{conn: conn} do
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "diagnostic.pdf", "zavazek")
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "review",
+      error: "ABRA HTTP 200: neplatný obsah",
+      dry_run: %{
+        "http_status" => 200,
+        "content_type" => "text/html",
+        "raw_body" => "<script>bad</script>",
+        "errors" => ["pole: sumZkl · cesta: zavazek[0]"],
+        "warnings" => []
+      }
+    )
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "details[data-abra-response]", "HTTP 200")
+    assert html =~ "text/html"
+    assert html =~ "sumZkl"
+    assert html =~ "&lt;script&gt;bad&lt;/script&gt;"
+    refute html =~ "<script>bad</script>"
+  end
 end

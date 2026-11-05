@@ -1,10 +1,12 @@
 defmodule CozyCheckout.IncomingDocuments.XML do
-  @moduledoc "Restricted flat XML dialect for the three supplied bezPolozek templates."
+  @moduledoc "Restricted XML dialect for reviewed document headers and non-stock receipt items."
 
   @agendas ["faktura-prijata", "pokladni-pohyb", "zavazek"]
   @text ~w(cisDosle varSym datVyst duzpPuv duzpUcto datSplat datUcto popis nazFirmy ic dic ulice mesto psc buc iban)
   @amounts ~w(sumOsv sumZklSniz sumZklSniz2 sumZklZakl sumDphSniz sumDphSniz2 sumDphZakl sumCelkem)
   @fixed ~w(typDokl mena stat statDph typUcOp primUcet protiUcet dphZaklUcet dphSnizUcet dphSniz2Ucet clenDph clenKonVykDph stredisko pokladna typPohybuK szbDphSniz szbDphSniz2 szbDphZakl bezPolozek ucetni)
+  @item_fields ~w(nazev mnozMj cenaMj typCenyDphK typSzbDphK slevaPol sumZkl sumDph sumCelkem szbDph typPolozkyK)
+  @item_editable ~w(nazev mnozMj cenaMj typCenyDphK typSzbDphK slevaPol)
   @rates ~w(szbDphSniz szbDphSniz2 szbDphZakl)
   @dates ~w(datVyst duzpPuv duzpUcto datSplat datUcto)
   @discard ~w(id kod lastUpdate createdDate createdBy updatedBy datUhr stavUhrK zuctovano)
@@ -12,6 +14,8 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   def agendas, do: @agendas
   def editable, do: @text ++ @amounts
   def fixed, do: @fixed
+  def item_editable, do: @item_editable
+  def items(fields), do: Map.get(fields, "polozkyDokladu", [])
   def amount?(key), do: key in @amounts
   def date?(key), do: key in @dates
 
@@ -19,11 +23,20 @@ defmodule CozyCheckout.IncomingDocuments.XML do
     :cozy_checkout |> Application.app_dir("priv/incoming_documents/#{agenda}.xml") |> File.read!()
   end
 
-  @doc "Parses without creating atoms from names; DTD, entities and nested records are forbidden."
-  def parse(xml, agenda) when is_binary(xml) and byte_size(xml) <= 100_000 do
-    if agenda in @agendas and String.valid?(xml) and
+  @doc "Parses without creating atoms from names; only one bounded item collection is allowed, without DTD or entities."
+  def parse(xml, agenda) when is_binary(xml) and byte_size(xml) <= 250_000 do
+    if agenda in @agendas and String.valid?(xml) and not String.contains?(xml, <<0>>) and
          not Regex.match?(~r/<!|<\?/u, strip_declaration(xml)) do
-      state = %{stack: [], fields: %{}, text: "", agenda: agenda, done: false}
+      state = %{
+        stack: [],
+        fields: %{},
+        text: "",
+        agenda: agenda,
+        done: false,
+        item: %{},
+        items: [],
+        collection: false
+      }
 
       case :xmerl_sax_parser.stream(xml, event_fun: &event/3, event_state: state) do
         {:ok, %{stack: [], fields: fields, done: true}, rest} ->
@@ -58,8 +71,19 @@ defmodule CozyCheckout.IncomingDocuments.XML do
         check_attrs(attrs, ~w(create update))
 
       [agenda, "winstrom"] when agenda == state.agenda ->
-        if key not in (@text ++ @amounts ++ @fixed ++ @discard) or
+        if key not in (@text ++ @amounts ++ @fixed ++ @discard ++ ["polozkyDokladu"]) or
              Map.has_key?(state.fields, key),
+           do: throw(:invalid_xml)
+
+        check_attrs(attrs, [])
+
+      ["polozkyDokladu", agenda, "winstrom"] when agenda == state.agenda ->
+        if key != agenda <> "-polozka" or length(state.items) >= 200, do: throw(:invalid_xml)
+        check_attrs(attrs, [])
+
+      [row, "polozkyDokladu", agenda, "winstrom"] when agenda == state.agenda ->
+        if row != agenda <> "-polozka" or key not in (@item_fields ++ @discard) or
+             Map.has_key?(state.item, key),
            do: throw(:invalid_xml)
 
         check_attrs(attrs, [])
@@ -68,26 +92,52 @@ defmodule CozyCheckout.IncomingDocuments.XML do
         throw(:invalid_xml)
     end
 
-    %{state | stack: [key | state.stack], text: ""}
+    if key == "polozkyDokladu" and state.collection, do: throw(:invalid_xml)
+
+    %{
+      state
+      | stack: [key | state.stack],
+        text: "",
+        collection: state.collection or key == "polozkyDokladu"
+    }
   end
 
   defp event({:endElement, _, name, _}, _, %{stack: [key | rest]} = state) do
     if to_string(name) != key, do: throw(:invalid_xml)
 
-    fields =
-      if length(rest) == 2,
-        do: Map.put(state.fields, key, String.trim(state.text)),
-        else: state.fields
+    state =
+      cond do
+        length(rest) == 4 ->
+          %{state | item: Map.put(state.item, key, String.trim(state.text))}
 
-    %{state | stack: rest, fields: fields, text: "", done: state.done or key == state.agenda}
+        length(rest) == 3 ->
+          %{state | items: [state.item | state.items], item: %{}}
+
+        length(rest) == 2 and key == "polozkyDokladu" ->
+          %{state | fields: Map.put(state.fields, key, Enum.reverse(state.items))}
+
+        length(rest) == 2 ->
+          %{state | fields: Map.put(state.fields, key, String.trim(state.text))}
+
+        true ->
+          state
+      end
+
+    %{state | stack: rest, text: "", done: state.done or key == state.agenda}
   end
 
   defp event({kind, chars}, _, state) when kind in [:characters, :ignorableWhitespace] do
     value = to_string(chars)
-    if length(state.stack) < 3 and String.trim(value) != "", do: throw(:invalid_xml)
+    if length(state.stack) not in [3, 5] and String.trim(value) != "", do: throw(:invalid_xml)
+
+    if length(state.stack) == 3 and hd(state.stack) == "polozkyDokladu" and
+         String.trim(value) != "",
+       do: throw(:invalid_xml)
+
     %{state | text: state.text <> value}
   end
 
+  defp event({:startDTD, _, _, _}, _, _), do: throw(:invalid_xml)
   defp event({:startPrefixMapping, _, _}, _, _), do: throw(:invalid_xml)
   defp event({:processingInstruction, _, _}, _, _), do: throw(:invalid_xml)
   defp event(_, _, state), do: state
@@ -106,16 +156,20 @@ defmodule CozyCheckout.IncomingDocuments.XML do
            defaults
            |> Map.take(editable())
            |> Map.merge(Map.take(fields, editable()))
-           |> Map.merge(Map.take(defaults, @fixed)),
-         :ok <- validate(fields) do
+           |> Map.merge(Map.take(defaults, @fixed))
+           |> Map.put("polozkyDokladu", items(fields))
+           |> Map.put("bezPolozek", if(items(fields) == [], do: "true", else: "false")),
+         :ok <- validate(fields),
+         {:ok, fields} <- CozyCheckout.IncomingDocuments.Items.validate(fields) do
       {:ok, render(fields, agenda, external_id)}
     end
   end
 
   def edit(xml, attrs, agenda, template, external_id) do
     with {:ok, fields} <- parse(xml, agenda),
-         true <- Enum.all?(Map.keys(attrs), &(&1 in editable())),
-         merged = Map.merge(fields, attrs) do
+         true <- Enum.all?(Map.keys(attrs), &(&1 in (editable() ++ ["items"]))),
+         {:ok, rows} <- edited_items(items(fields), attrs["items"]),
+         merged = Map.merge(fields, Map.drop(attrs, ["items"])) |> Map.put("polozkyDokladu", rows) do
       normalize(render(merged, agenda, external_id), agenda, template, external_id)
     else
       false -> {:error, "Neznámé pole dokladu"}
@@ -123,15 +177,83 @@ defmodule CozyCheckout.IncomingDocuments.XML do
     end
   end
 
+  defp edited_items(rows, nil), do: {:ok, rows}
+
+  defp edited_items(rows, attrs) when is_map(attrs) do
+    expected = rows |> Enum.with_index() |> Enum.map(fn {_, i} -> to_string(i) end) |> Enum.sort()
+
+    if Enum.sort(Map.keys(attrs)) == expected and
+         Enum.all?(attrs, fn {_, row} ->
+           is_map(row) and Enum.all?(Map.keys(row), &(&1 in @item_editable))
+         end) do
+      {:ok,
+       rows
+       |> Enum.with_index()
+       |> Enum.map(fn {row, i} ->
+         row |> Map.drop(~w(sumZkl sumDph sumCelkem szbDph)) |> Map.merge(attrs[to_string(i)])
+       end)}
+    else
+      {:error, "Neplatná úprava položek"}
+    end
+  end
+
+  defp edited_items(_, _), do: {:error, "Neplatná úprava položek"}
+
+  @doc "ABRA calculates an itemized header from items; never send its reference totals twice."
+  def import_xml(xml, agenda) do
+    with {:ok, fields} <- parse(xml, agenda) do
+      if items(fields) == [] do
+        {:ok, xml}
+      else
+        {:ok, render(Map.drop(fields, @amounts), agenda, fields["id"])}
+      end
+    end
+  end
+
+  def extraction_template(template, agenda) do
+    {:ok, fields} = parse(template, agenda)
+
+    row = %{
+      "nazev" => "NÁZEV Z ORIGINÁLU",
+      "mnozMj" => "1",
+      "cenaMj" => "0.00",
+      "typCenyDphK" => "typCeny.sDph",
+      "typSzbDphK" => "typSzbDph.dphZakl",
+      "slevaPol" => "0"
+    }
+
+    fields |> Map.put("polozkyDokladu", [row]) |> render(agenda)
+  end
+
   def render(fields, agenda, external_id \\ nil) do
     identity = if external_id, do: "<id>#{escape(external_id)}</id>", else: ""
+
+    fields = if items(fields) == [], do: fields, else: Map.put(fields, "bezPolozek", "false")
 
     body =
       for key <- @fixed ++ editable(),
           Map.has_key?(fields, key),
           do: "<#{key}>#{escape(fields[key])}</#{key}>"
 
-    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<winstrom version=\"1.0\"><#{agenda} create=\"ok\" update=\"fail\">#{identity}#{Enum.join(body)}</#{agenda}></winstrom>"
+    rows =
+      if items(fields) == [] do
+        ""
+      else
+        content =
+          for row <- items(fields) do
+            values =
+              for key <- @item_fields,
+                  key != "typPolozkyK",
+                  Map.has_key?(row, key),
+                  do: "<#{key}>#{escape(row[key])}</#{key}>"
+
+            "<#{agenda}-polozka><typPolozkyK>typPolozky.obecny</typPolozkyK>#{Enum.join(values)}</#{agenda}-polozka>"
+          end
+
+        "<polozkyDokladu>#{Enum.join(content)}</polozkyDokladu>"
+      end
+
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<winstrom version=\"1.0\"><#{agenda} create=\"ok\" update=\"fail\">#{identity}#{Enum.join(body)}#{rows}</#{agenda}></winstrom>"
   end
 
   @doc "Lists accounting differences without weakening the template's fixed settings."
@@ -146,25 +268,18 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   def restore_accounting(xml, agenda, template, external_id) do
     with {:ok, fields} <- parse(xml, agenda),
          {:ok, defaults} <- parse(template, agenda) do
-      fields = Map.merge(Map.take(fields, editable()), Map.take(defaults, @fixed))
+      fields =
+        Map.merge(Map.take(fields, editable() ++ ["polozkyDokladu"]), Map.take(defaults, @fixed))
+
       {:ok, render(fields, agenda, external_id) |> String.replace("><", ">\n<")}
     end
   end
 
   defp fixed_differences(fields, defaults) do
-    for key <- @fixed,
+    for key <- @fixed -- (@rates ++ ["bezPolozek"]),
         Map.has_key?(fields, key),
         not equivalent?(key, fields[key], defaults[key]),
         do: %{field: key, expected: defaults[key], actual: fields[key]}
-  end
-
-  defp equivalent?(key, actual, expected) when key in @rates do
-    valid_number = fn value ->
-      is_binary(value) and Regex.match?(~r/^\d{1,3}(\.\d{1,6})?$/, value)
-    end
-
-    valid_number.(actual) and valid_number.(expected) and
-      Decimal.equal?(Decimal.new(actual), Decimal.new(expected))
   end
 
   defp equivalent?(_, actual, expected), do: actual == expected
@@ -195,7 +310,7 @@ defmodule CozyCheckout.IncomingDocuments.XML do
 
     cond do
       missing != [] ->
-        {:error, "Chybí povinná pole: " <> Enum.join(missing, ", ")}
+        {:error, "Nevyplněná povinná pole: " <> Enum.map_join(missing, ", ", &required_label/1)}
 
       dates != [] ->
         {:error,
@@ -206,6 +321,10 @@ defmodule CozyCheckout.IncomingDocuments.XML do
         validate_amounts(fields)
     end
   end
+
+  defp required_label("cisDosle"), do: "cisDosle (číslo původního dokladu)"
+  defp required_label("nazFirmy"), do: "nazFirmy (dodavatel)"
+  defp required_label("datVyst"), do: "datVyst (datum vystavení)"
 
   defp validate_amounts(fields) do
     case decimals(fields) do
@@ -256,5 +375,5 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   defp invalid,
     do:
       {:error,
-       "Neplatné XML: očekáván jeden bezpoložkový doklad vybrané agendy bez vazeb a externích entit"}
+       "Neplatné XML: očekáván jeden doklad vybrané agendy a nejvýše 200 položek v polozkyDokladu, bez vazeb a externích entit"}
 end

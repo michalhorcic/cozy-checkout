@@ -159,8 +159,13 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
   defp result(socket, {:error, reason}, _),
     do: {:noreply, put_flash(socket, :error, error(reason))}
 
-  defp input_fields(attrs),
-    do: Map.reject(attrs, fn {key, _} -> String.starts_with?(key, "_unused_") end)
+  defp input_fields(attrs) when is_map(attrs) do
+    attrs
+    |> Map.reject(fn {key, _} -> String.starts_with?(key, "_unused_") end)
+    |> Map.new(fn {key, value} -> {key, input_fields(value)} end)
+  end
+
+  defp input_fields(value), do: value
 
   defp error(reason) when is_binary(reason), do: reason
   defp error(_), do: "Operaci se nepodařilo dokončit"
@@ -193,13 +198,31 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           {:ok, fields} -> fields
           _ -> %{}
         end,
-      edit_form: to_form(Map.take(fields, XML.editable()), as: :fields),
+      edit_form:
+        to_form(Map.take(fields, XML.editable()) |> Map.put("items", form_items(fields)),
+          as: :fields
+        ),
+      items: XML.items(fields),
+      import_xml:
+        case XML.import_xml(doc.current_xml || "", doc.agenda) do
+          {:ok, xml} -> xml
+          _ -> nil
+        end,
       dirty: false,
       hash: if(doc.current_xml, do: IncomingDocuments.digest(doc.current_xml)),
       extraction_hash: IncomingDocuments.digest(doc.generated_xml || ""),
       enabled: IncomingDocuments.enabled?()
     )
   end
+
+  defp form_items(fields),
+    do:
+      fields
+      |> XML.items()
+      |> Enum.with_index()
+      |> Map.new(fn {row, i} -> {to_string(i), Map.take(row, XML.item_editable())} end)
+
+  defp item_value(form, index, key), do: get_in(form.params, ["items", to_string(index), key])
 
   defp repair_draft(socket, xml) do
     doc = socket.assigns.doc
@@ -237,7 +260,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     do:
       Map.get(
         %{
-          "cisDosle" => "Číslo dokladu",
+          "cisDosle" => "Číslo původního dokladu",
           "varSym" => "Variabilní symbol",
           "datVyst" => "Datum vystavení",
           "duzpPuv" => "DUZP",
@@ -280,7 +303,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           "szbDphSniz" => "Snížená sazba DPH",
           "szbDphSniz2" => "2. snížená sazba DPH",
           "bezPolozek" => "Bezpoložkový doklad",
-          "ucetni" => "Účetní doklad"
+          "ucetni" => "Účetní doklad",
+          "nazev" => "Název položky",
+          "mnozMj" => "Množství",
+          "cenaMj" => "Jednotková cena před slevou",
+          "slevaPol" => "Sleva (%)"
         },
         key,
         key
@@ -362,8 +389,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           phx-disable-with="Zařazuji…"
         >Ověřit v ABRA bez opakování zápisu</button>
         <button
-          :if={@doc.state == "failed" && @doc.error_stage == "extraction"}
+          :if={
+            (@doc.state == "failed" && @doc.error_stage == "extraction") ||
+              (@doc.state == "review" && is_nil(@doc.sent_xml))
+          }
           phx-click="retry"
+          data-confirm="Nové vytěžení nahradí dosavadní opravy a zruší kontrolu ABRA. Pokračovat?"
           class="btn"
           phx-disable-with="Zařazuji…"
         >Znovu vytěžit</button>
@@ -377,6 +408,30 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         >
           <li :for={warning <- @doc.response["warnings"]}>Upozornění při zápisu: {warning}</li>
         </ul>
+        <details
+          :for={
+            {title, response} <- [
+              {"Kontrola ABRA (dry-run)", @doc.dry_run},
+              {"Přenos do ABRA", @doc.response}
+            ]
+          }
+          :if={response["http_status"]}
+          class="bg-white rounded-xl p-4"
+          data-abra-response
+        >
+          <summary>{title} — podrobnosti odpovědi (HTTP {response["http_status"]})</summary>
+          <p class="mt-3">
+            Typ obsahu: {if response["content_type"] in [nil, ""],
+              do: "neuveden",
+              else: response["content_type"]}
+          </p>
+          <ul class="space-y-2 my-3">
+            <li :for={message <- response["errors"] || []} class="text-error">{message}</li>
+            <li :for={message <- response["warnings"] || []} class="text-warning">{message}</li>
+          </ul>
+          <p :if={response["truncated"]}>Výpis těla je zkrácen na prvních 100 000 znaků.</p>
+          <pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{response["raw_body"] || Jason.encode!(response["body"] || %{}, pretty: true)}</pre>
+        </details>
         <div class="grid lg:grid-cols-2 gap-6">
           <div class="space-y-3 min-w-0">
             <a
@@ -500,6 +555,50 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                 type={if XML.date?(key), do: "date", else: "text"}
                 readonly={@doc.state != "review"}
               />
+              <section :if={@items != []} class="sm:col-span-2 space-y-4" id="incoming-items">
+                <h2 class="text-xl font-bold">Položky dokladu ({length(@items)})</h2>
+                <p>
+                  Částky hlavičky slouží ke kontrole proti rekapitulaci originálu. Do ABRA se odešlou položky a ABRA z nich spočítá součty. Změny položek musí odpovídat rekapitulaci; rozdíly zaokrouhlení automaticky nerozdělujeme.
+                </p>
+                <fieldset
+                  :for={{row, index} <- Enum.with_index(@items)}
+                  class="border rounded-lg p-3 grid sm:grid-cols-2 gap-3"
+                >
+                  <legend class="font-semibold">Položka {index + 1}</legend>
+                  <.input
+                    :for={key <- ~w(nazev mnozMj cenaMj slevaPol)}
+                    name={"fields[items][#{index}][#{key}]"}
+                    value={item_value(@edit_form, index, key)}
+                    label={label(key)}
+                    readonly={@doc.state != "review"}
+                  />
+                  <.input
+                    name={"fields[items][#{index}][typCenyDphK]"}
+                    value={item_value(@edit_form, index, "typCenyDphK")}
+                    type="select"
+                    label="Typ ceny"
+                    options={[{"Včetně DPH", "typCeny.sDph"}, {"Bez DPH", "typCeny.bezDph"}]}
+                    disabled={@doc.state != "review"}
+                  />
+                  <.input
+                    name={"fields[items][#{index}][typSzbDphK]"}
+                    value={item_value(@edit_form, index, "typSzbDphK")}
+                    type="select"
+                    label="Sazba DPH položky"
+                    options={[
+                      {"Osvobozeno / bez DPH", "typSzbDph.dphOsv"},
+                      {"Snížená sazba ze vzoru", "typSzbDph.dphSniz"},
+                      {"Základní sazba ze vzoru", "typSzbDph.dphZakl"}
+                    ]}
+                    disabled={@doc.state != "review"}
+                  />
+                  <p class="sm:col-span-2 text-sm">
+                    Uložené částky: základ {format_currency(Decimal.new(row["sumZkl"]))}, DPH {format_currency(
+                      Decimal.new(row["sumDph"])
+                    )}, celkem {format_currency(Decimal.new(row["sumCelkem"]))}.
+                  </p>
+                </fieldset>
+              </section>
               <button
                 :if={@doc.state == "review"}
                 class="btn btn-primary sm:col-span-2"
@@ -509,12 +608,16 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             <details :if={@doc.template_xml} class="bg-white rounded-xl p-4">
               <summary>Účetní nastavení ze vzoru</summary><dl class="space-y-1 mt-3">
                 <div :for={key <- XML.fixed()} :if={@template_fields[key]}>
-                  <dt class="font-semibold">{label(key)}</dt><dd>{@template_fields[key]}</dd>
+                  <dt class="font-semibold">{label(key)}</dt><dd>
+                    {if key == "bezPolozek" && @doc.current_xml,
+                      do: @fields[key],
+                      else: @template_fields[key]}
+                  </dd>
                 </div>
               </dl>
             </details>
             <details :if={@doc.current_xml} class="bg-white rounded-xl p-4">
-              <summary>XML k odeslání</summary><pre class="text-xs whitespace-pre-wrap break-all mt-3">{@doc.sent_xml && @doc.state != "review" && @doc.sent_xml || @doc.current_xml}</pre>
+              <summary>XML k odeslání</summary><pre class="text-xs whitespace-pre-wrap break-all mt-3">{@doc.sent_xml && @doc.state != "review" && @doc.sent_xml || @import_xml}</pre>
             </details>
             <button
               :if={@doc.state == "review"}

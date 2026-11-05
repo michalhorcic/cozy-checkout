@@ -127,7 +127,7 @@ defmodule CozyCheckout.IncomingDocuments.XMLTest do
     assert normalized =~ "<szbDphSniz>12.0</szbDphSniz>"
     assert normalized =~ "<szbDphZakl>21.0</szbDphZakl>"
 
-    assert {:error, reason} =
+    assert {:ok, normalized} =
              XML.normalize(
                String.replace(xml, ">21.000<", ">20.0<"),
                "zavazek",
@@ -135,9 +135,8 @@ defmodule CozyCheckout.IncomingDocuments.XMLTest do
                "ext:test"
              )
 
-    assert reason =~ "szbDphZakl"
-    assert reason =~ "21.0"
-    assert reason =~ "20.0"
+    assert normalized =~ "<szbDphZakl>21.0</szbDphZakl>"
+    refute normalized =~ "<szbDphZakl>20.0</szbDphZakl>"
   end
 
   test "shows each fixed difference and explicit restoration preserves extracted data" do

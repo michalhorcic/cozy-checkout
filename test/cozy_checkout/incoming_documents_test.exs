@@ -294,7 +294,7 @@ defmodule CozyCheckout.IncomingDocumentsTest do
       Req.Test.json(conn, %{"winstrom" => %{"success" => true}})
     end)
 
-    assert {:uncertain, _} = Client.import(doc, doc.current_xml, false, Incoming.config())
+    assert {:uncertain, _, _} = Client.import(doc, doc.current_xml, false, Incoming.config())
     doc = dry_run(doc)
     assert {:ok, _} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
     Req.Test.expect(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 503, "offline") end)
@@ -363,5 +363,163 @@ defmodule CozyCheckout.IncomingDocumentsTest do
              Incoming.repair_xml(doc.id, doc.current_xml, Incoming.digest(doc.generated_xml))
 
     assert Incoming.get!(doc.id).sent_xml == doc.current_xml
+  end
+
+  test "itemized dry run and create send identical item XML without duplicate header totals" do
+    doc = upload("pokladni-pohyb") |> extracted()
+    {:ok, fields} = XML.parse(doc.current_xml, doc.agenda)
+
+    row = %{
+      "nazev" => "Účtenka — položka",
+      "mnozMj" => "2",
+      "cenaMj" => "60.50",
+      "typCenyDphK" => "typCeny.sDph",
+      "typSzbDphK" => "typSzbDph.dphZakl"
+    }
+
+    raw = fields |> Map.put("polozkyDokladu", [row]) |> XML.render(doc.agenda, doc.external_id)
+    assert {:ok, reviewed} = XML.normalize(raw, doc.agenda, doc.template_xml, doc.external_id)
+    doc = doc |> Ecto.Changeset.change(current_xml: reviewed) |> Repo.update!()
+    {:ok, payload} = XML.import_xml(reviewed, doc.agenda)
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      assert Plug.Conn.fetch_query_params(conn).query_params["dry-run"] == "true"
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      assert body == payload
+      success(conn, "-1")
+    end)
+
+    hash = Incoming.digest(reviewed)
+    assert {:ok, _} = Incoming.validate(doc.id, hash)
+    assert :ok = Incoming.perform(doc.id, "validate")
+    assert {:ok, approved} = Incoming.approve(doc.id, hash)
+    assert approved.sent_xml == payload
+    refute approved.sent_xml == reviewed
+    {:ok, parsed} = XML.parse(approved.sent_xml, doc.agenda)
+    refute Map.has_key?(parsed, "sumCelkem")
+    assert length(XML.items(parsed)) == 1
+    Req.Test.expect(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 404, "") end)
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      assert body == payload
+      success(conn)
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "send")
+    assert Incoming.get!(doc.id).state == "sent"
+  end
+
+  test "ABRA HTTP 200 with non-JSON body retains diagnostic content and never approves import" do
+    doc = upload() |> extracted()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("text/html")
+      |> Plug.Conn.send_resp(200, "<html><body>Proxy login page</body></html>")
+    end)
+
+    assert {:ok, _} = Incoming.validate(doc.id, Incoming.digest(doc.current_xml))
+    assert :ok = Incoming.perform(doc.id, "validate")
+    failed = Incoming.get!(doc.id)
+    assert failed.state == "review"
+    assert failed.error =~ "HTTP 200"
+    assert failed.error =~ "XML nebo HTML"
+    assert failed.dry_run["raw_body"] =~ "Proxy login page"
+    assert failed.dry_run["content_type"] =~ "text/html"
+    assert failed.dry_run["http_status"] == 200
+    refute failed.dry_run["ok"]
+    assert {:error, _} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
+  end
+
+  test "ABRA errors include affected field, path, code and value" do
+    doc = upload() |> extracted()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "winstrom" => %{
+          "success" => false,
+          "results" => [
+            %{
+              "errors" => [
+                %{
+                  "message" => "Součet nesouhlasí",
+                  "for" => "sumZkl",
+                  "path" => "zavazek[0].polozkyDokladu[2].sumZkl",
+                  "code" => "PROP",
+                  "messageCode" => "inputDiffComputed",
+                  "value" => "12.34"
+                }
+              ]
+            }
+          ]
+        }
+      })
+    end)
+
+    assert {:rejected, reason, response} =
+             Client.import(doc, doc.current_xml, true, Incoming.config())
+
+    for expected <- [
+          "Součet nesouhlasí",
+          "sumZkl",
+          "polozkyDokladu[2]",
+          "PROP",
+          "inputDiffComputed",
+          "12.34"
+        ],
+        do: assert(reason =~ expected)
+
+    assert response["raw_body"] =~ "inputDiffComputed"
+  end
+
+  test "valid JSON is parsed even if ABRA sends a misleading content type" do
+    doc = upload() |> extracted()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("text/plain")
+      |> Plug.Conn.send_resp(
+        200,
+        Jason.encode!(%{"winstrom" => %{"success" => true, "results" => [%{"id" => "42"}]}})
+      )
+    end)
+
+    assert {:ok, response} = Client.import(doc, doc.current_xml, false, Incoming.config())
+    assert response["id"] == "42"
+    assert response["content_type"] =~ "text/plain"
+  end
+
+  test "unknown write response preserves diagnostics, freezes payload and only permits lookup" do
+    doc = upload() |> extracted() |> dry_run()
+    assert {:ok, approved} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
+    Req.Test.expect(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 404, "") end)
+    Req.Test.expect(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 200, "not-json") end)
+    assert :ok = Incoming.perform(doc.id, "send")
+    uncertain = Incoming.get!(doc.id)
+    assert uncertain.state == "uncertain"
+    assert uncertain.sent_xml == approved.sent_xml
+    assert uncertain.response["raw_body"] == "not-json"
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      assert conn.method == "GET"
+      Req.Test.json(conn, %{"winstrom" => %{doc.agenda => [%{"id" => 42}]}})
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "send")
+    assert Incoming.get!(doc.id).state == "sent"
+    assert Incoming.get!(doc.id).response["raw_body"] == "not-json"
+  end
+
+  test "reviewed documents can be explicitly extracted again, approved imports cannot" do
+    doc = upload() |> extracted() |> dry_run()
+    assert {:ok, queued} = Incoming.retry_extraction(doc.id)
+    assert queued.state == "uploaded"
+    assert queued.dry_run == %{}
+    assert queued.current_xml == nil
+    assert queued.generated_xml == nil
+    doc = upload() |> extracted() |> dry_run()
+    assert {:ok, _} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
+    assert {:error, _} = Incoming.retry_extraction(doc.id)
   end
 end
