@@ -1,6 +1,6 @@
 defmodule CozyCheckout.IncomingDocuments.HeaderForm do
   @moduledoc "Reviewed, item-free ABRA headers. Extraction supplies suggestions, never accounting choices."
-  alias CozyCheckout.IncomingDocuments.{Transcription, XML}
+  alias CozyCheckout.IncomingDocuments.{FormSuggestions, Transcription, XML}
 
   @header %{
     "document_number" => "cisDosle",
@@ -97,22 +97,13 @@ defmodule CozyCheckout.IncomingDocuments.HeaderForm do
         Map.put(acc, target, data["supplier"][source] || "")
       end)
 
+    suggestions = FormSuggestions.from(data)
+
     values =
-      Enum.reduce(data["vat_summary"], values, fn row, acc ->
-        case normalized_rate(row["rate"]) do
-          "0" ->
-            Map.put(acc, "sumOsv", row["net"] || row["gross"] || "")
-
-          "12" ->
-            Map.merge(acc, %{"sumZklSniz" => row["net"] || "", "sumDphSniz" => row["vat"] || ""})
-
-          "21" ->
-            Map.merge(acc, %{"sumZklZakl" => row["net"] || "", "sumDphZakl" => row["vat"] || ""})
-
-          _ ->
-            acc
-        end
-      end)
+      values
+      |> Map.merge(Map.new(~w(datVyst duzpPuv datSplat), &{&1, ""}))
+      |> Map.merge(suggestions.vat)
+      |> Map.merge(suggestions.dates)
 
     notes =
       Enum.map_join(data["items"], "\n", fn row ->
@@ -167,14 +158,6 @@ defmodule CozyCheckout.IncomingDocuments.HeaderForm do
 
     if compact == "", do: "0.00", else: String.replace(compact, ",", ".")
   end
-
-  defp normalized_rate(value) when is_binary(value) do
-    if Regex.match?(~r/^\d{1,2}(\.0+)?$/, value),
-      do: value |> Decimal.new() |> Decimal.normalize() |> Decimal.to_string(:normal),
-      else: value
-  end
-
-  defp normalized_rate(value), do: value
 
   defp required_dates(values, agenda) do
     vat? =

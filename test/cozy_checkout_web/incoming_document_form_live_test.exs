@@ -156,4 +156,49 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert IncomingDocuments.get!(doc.id).state == "sending"
     assert has_element?(view, "#incoming-header-form input[name='document[cisDosle]'][disabled]")
   end
+
+  test "VAT and all dates prefill from the origin and summary can be reapplied without losing other edits",
+       %{conn: conn} do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "summary.pdf", "zavazek", "header_form")
+
+    source = File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
+
+    source =
+      Map.merge(source, %{
+        "issue_date" => "5.11.2026",
+        "tax_date" => "31.10.2026",
+        "due_date" => nil,
+        "vat_summary" => [
+          %{"rate" => "21 %", "net" => "100.00", "vat" => "21.00", "gross" => "121.00"}
+        ]
+      })
+
+    doc |> Ecto.Changeset.change(state: "review", extracted_data: source) |> Repo.update!()
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert has_element?(view, "input[name='document[sumZklZakl]'][value='100.00']")
+    assert has_element?(view, "input[name='document[sumDphZakl]'][value='21.00']")
+    assert has_element?(view, "input[name='document[datUcto]'][value='2026-11-05']")
+    assert has_element?(view, "input[name='document[duzpUcto]'][value='2026-11-05']")
+    assert has_element?(view, "input[name='document[datSplat]'][value='2026-11-05']")
+
+    view
+    |> form("#incoming-header-form", %{
+      "document" => %{
+        "sumDphZakl" => "0",
+        "nazFirmy" => "Ruční dodavatel",
+        "datSplat" => "2026-12-01",
+        "datUcto" => ""
+      }
+    })
+    |> render_change()
+
+    view |> element("button[phx-click=prefill-vat]") |> render_click()
+    assert has_element?(view, "input[name='document[sumDphZakl]'][value='21.00']")
+    assert has_element?(view, "input[name='document[nazFirmy]'][value='Ruční dodavatel']")
+    view |> element("button[phx-click=prefill-dates]") |> render_click()
+    assert has_element?(view, "input[name='document[datUcto]'][value='2026-11-05']")
+    assert has_element?(view, "input[name='document[datSplat]'][value='2026-12-01']")
+    assert IncomingDocuments.get!(doc.id).current_xml == nil
+  end
 end

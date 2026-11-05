@@ -1,7 +1,16 @@
 defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
-  alias CozyCheckout.IncomingDocuments.{Client, Extractor, HeaderForm, ResponseDiagnostics, XML}
+
+  alias CozyCheckout.IncomingDocuments.{
+    Client,
+    Extractor,
+    FormSuggestions,
+    HeaderForm,
+    ResponseDiagnostics,
+    XML
+  }
+
   import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
 
   def mount(_, _, socket) do
@@ -13,6 +22,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
        agenda: "faktura-prijata",
        values: HeaderForm.defaults(),
        reviewed: false,
+       suggestion_messages: [],
        dirty: false,
        accounting_options: [],
        accounting_open: false,
@@ -87,6 +97,37 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
          ),
        dirty: true
      )}
+  end
+
+  def handle_event("prefill-vat", _, socket) do
+    if editable?(socket.assigns.doc) and socket.assigns.doc do
+      suggestions = FormSuggestions.from(socket.assigns.doc.extracted_data)
+
+      {:noreply,
+       assign(socket,
+         values: Map.merge(socket.assigns.values, suggestions.vat),
+         suggestion_messages: suggestions.messages,
+         reviewed: false,
+         dirty: true
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("prefill-dates", _, socket) do
+    if editable?(socket.assigns.doc) do
+      dates = FormSuggestions.dates(socket.assigns.values)
+
+      values =
+        Enum.reduce(dates, socket.assigns.values, fn {key, value}, acc ->
+          if acc[key] in [nil, ""], do: Map.put(acc, key, value), else: acc
+        end)
+
+      {:noreply, assign(socket, values: values, reviewed: false, dirty: true)}
+    else
+      {:noreply, socket}
+    end
   end
 
   def handle_event("upload", %{"agenda" => agenda}, socket) do
@@ -277,6 +318,13 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     )
   end
 
+  defp editable?(nil), do: true
+
+  defp editable?(doc),
+    do:
+      is_nil(doc.sent_xml) and
+        (doc.state == "review" or (doc.state == "failed" and doc.error_stage == "extraction"))
+
   defp operation(socket, action, message) do
     if socket.assigns.dirty or socket.assigns.accounting_dirty do
       {:noreply,
@@ -319,6 +367,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       doc: doc,
       agenda: doc.agenda,
       values: HeaderForm.values(doc),
+      suggestion_messages: FormSuggestions.from(doc.extracted_data).messages,
       hash: IncomingDocuments.transcription_hash(doc),
       reviewed: false,
       dirty: false,
@@ -413,8 +462,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           Návrhy z originálu vyžadují kontrolu. Měna v originálu: {@doc.extracted_data["currency"] ||
             "nezjištěna"}. {Enum.join(@doc.extracted_data["uncertainties"] || [], "; ")}
         </p>
+        <div :if={@doc && @suggestion_messages != []} class="alert alert-warning">
+          <p :for={message <- @suggestion_messages}>{message}</p>
+        </div>
         <details :if={@doc && @doc.extracted_data != %{}} class="bg-base-200 rounded-lg p-4">
           <summary>Rekapitulace DPH přečtená z originálu</summary>
+          <button type="button" phx-click="prefill-vat" class="btn btn-sm" disabled={@locked}>Převzít rekapitulaci do polí DPH</button>
           <table class="table">
             <thead>
               <tr>
@@ -447,6 +500,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               disabled={@doc != nil}
             />
             <input :if={@doc} type="hidden" name="agenda" value={@agenda} />
+            <div class="space-y-2">
+              <button type="button" phx-click="prefill-dates" class="btn btn-sm" disabled={@locked}>Doplnit prázdná data</button>
+              <p class="text-sm">
+                Data z originálu předvyplňujeme. Chybějící datum vystavení, DUZP a splatnost navrhujeme podle dostupného vystavení či DUZP. Datum zaúčtování vychází z vystavení, uplatnění DPH z pozdějšího vystavení a DUZP. Tyto návrhy ověřte podle skutečného přijetí a účetního období.
+              </p>
+            </div>
             <div class="grid gap-3 sm:grid-cols-2">
               <.input
                 :for={{key, label, type} <- HeaderForm.fields()}

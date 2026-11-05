@@ -12,3 +12,10 @@ orientační text do poznámky, není potřeba rekonstruovat jejich účetní v�
 Neúplnost položek neznamená neúplnost hlavičky. Nejasnosti hlavičky, měny a DPH
 uveď do uncertainties. complete znamená čitelnou hlavičku a rekapitulaci DPH.
 Nikdy nevybírej účetní účty, předpisy, agendu ani XML.
+
+U rekapitulace vyplň rate číselně (např. "21", nikoliv text "základní sazba").
+Pro každou sazbu přepiš dostupný základ (net), daň (vat) a součet (gross).
+Částku mimo DPH uveď samostatně jako rate "0", pokud je takto uvedena v originálu;
+nevytvářej ji pouhým odečtením od celkové částky. Řádky jedné sazby lze zachovat zvlášť.
+Datum vystavení, DUZP a splatnost zapisuj jako YYYY-MM-DD; pokud nejsou doložená,
+vrať null. Datum účtování a uplatnění DPH nevymýšlej, jejich návrh připraví aplikace.

@@ -69,6 +69,37 @@ orientační text v `poznam`. Do ABRA neposíláme kolekci `polozkyDokladu`, skl
 pohyby ani ceny jednotlivých položek. ABRA může interně vytvořit své automatické
 účetní řádky podle souhrnné DPH; to popisuje její dokumentace bezpoložkových dokladů.
 
+## Předvyplnění DPH a dat
+
+Po vytěžení se rekapitulace rovnou přiřadí do souhrnných polí formuláře.
+Sazby lze přečíst i jako `21 %`, `12,0 %` apod.; více řádků stejné sazby se
+sečte pomocí Decimal místo přepsání posledním řádkem. Základ a daň se přebírají
+z originálu. Pokud z trojice základ/daň/celkem chybí jediná hodnota, lze ji získat
+rozdílem zbývajících dvou; daň se nepřepočítává procentem sazby. U 0 % lze převzít
+pouze částku celkem. Neúplná, rozporná nebo nepodporovaná sazba se označí k ručnímu
+doplnění. Částky mimo DPH se neodhadují jako rozdíl celého dokladu.
+
+Tlačítko „Převzít rekapitulaci do polí DPH“ umožňuje stejná data znovu použít v
+otevřeném návrhu bez OpenAI a bez zápisu do databáze. Přepíše pouze pole sazeb,
+pro které má rekapitulace použitelné hodnoty; dodavatele, poznámku a datumová pole
+ponechá. Ruční opravy uloženého XML se při běžném znovuotevření nezmění.
+
+Data z originálu ve formátu `5. 11. 2026` se převedou na ISO formát HTML formuláře.
+Pro první návrh se použijí tato pravidla:
+
+- Vystavení, DUZP a splatnost se přednostně přebírají z originálu.
+- Pokud vystavení chybí, lze jej navrhnout podle doloženého DUZP; pokud chybí DUZP
+  nebo splatnost, navrhnou se podle dostupného vystavení.
+- Datum zaúčtování se navrhne podle vystavení.
+- Datum uplatnění DPH se navrhne podle pozdějšího vystavení a DUZP.
+- Bez platného vystavení nebo DUZP se chybějící data nevyplní dnešním datem.
+
+Formulář výslovně uvádí, že jde o návrhy ke kontrole proti skutečnému přijetí,
+splatnosti a účetnímu období. Tlačítko „Doplnit prázdná data“ používá aktuální
+data ve formuláři a vyplňuje jen prázdná pole, ručně upravená data zachová.
+Každé použití předvyplnění označí návrh jako změněný a zruší zaškrtnutou kontrolu.
+Před dry-runem či přenosem je potřeba změny potvrdit a uložit.
+
 ## Co obsahuje výsledné XML
 
 Společná obálka je `winstrom version="1.0"`. Jeden doklad má `create="ok"`
@@ -81,8 +112,8 @@ a `update="fail"` a vlastní `id` ve tvaru `ext:cozy-incoming:<UUID>`. Interní
 | `pokladni-pohyb` | `typDokl=code:STANDARD`, `typPohybuK=typPohybu.vydej`, `pokladna=code:POKLADNA KČ`, účet 211001 | Dodavatel, číslo původního dokladu, vystavení, celkem, odpovídající rekapitulace |
 | `zavazek` | `typDokl=code:1.OST. ZÁVAZ - KARTA`, účet 325000, předpis a členění DPH ze vzoru | Dodavatel, číslo původního dokladu, vystavení, splatnost, celkem, odpovídající rekapitulace |
 
-Při nenulové DPH formulář vyžaduje `duzpPuv` i `duzpUcto`; data neodhaduje z
-originálu ani z aktuálního dne. Adresa, IČO/DIČ, variabilní symbol, datum účtování,
+Při nenulové DPH formulář vyžaduje `duzpPuv` i `duzpUcto`; datumové návrhy podle
+výše uvedených pravidel musí obsluha zkontrolovat. Adresa, IČO/DIČ, variabilní symbol, datum účtování,
 bankovní spojení a popis lze doplnit. Konkrétní požadavky firmy, účtů a kontrolního
 hlášení včetně DIČ ověří ABRA dry-run. Číslo dokladu a dodavatel jsou společné
 aplikační požadavky pro dohledatelnost, nikoliv tvrzení o povinnosti ve všech
