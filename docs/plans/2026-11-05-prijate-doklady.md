@@ -1,7 +1,7 @@
 # Přijaté doklady – jednoduché MVP
 
-**Stav:** návrh pro implementaci. **Aktualizováno:** 5. 11. 2026.
-Tento plán zatím nezahajuje implementaci.
+**Stav:** implementace připravena k CI a pilotnímu ověření. **Aktualizováno:** 5. 11. 2026.
+Implementace a provozní nastavení: [Přijaté doklady — pilot](../features/INCOMING_DOCUMENTS.md).
 
 ## Cíl a přijatá rozhodnutí
 
@@ -20,8 +20,9 @@ admin přihlášení, Ecto/PostgreSQL, Req a Oban. Nebudeme vytvářet samostatn
 ## Průchod MVP
 
 1. **Nahrát soubor a vybrat agendu.** Jeden soubor obsahuje jeden doklad;
-   může to být vícestránkové PDF nebo JPEG/PNG. První agendy jsou přijaté faktury
-   a ostatní závazky. Každá má jeden uložený vzor importního XML.
+   může to být vícestránkové PDF nebo JPEG/PNG. První agendy jsou přijaté faktury,
+   pokladní výdaje a ostatní závazky pro platby kartou. Každá má jeden uložený
+   vzor importního XML.
 2. **Vytvořit XML pomocí OpenAI.** Server pošle originál, vzor vybrané agendy
    a stručné pokyny. OpenAI vrátí cílové XML pro import do ABRA Flexi.
    Zavedeme přímé generování XML, bez samostatného univerzálního JSON kontraktu
@@ -31,7 +32,7 @@ admin přihlášení, Ecto/PostgreSQL, Req a Oban. Nebudeme vytvářet samostatn
    data, částky a DPH, případně položky podle vzoru. Zobrazíme také agendu a účetní
    nastavení převzaté ze vzoru. Uživatel může opravit hodnoty a prohlédnout XML.
    Opravy se promítnou přímo do XML, které bude odesláno; kvůli opravě pole
-   se OpenAI znovu nevolá. Stačí jednoduché mapování polí pro oba konkrétní vzory.
+   se OpenAI znovu nevolá. Stačí jednoduché mapování polí pro všechny tři konkrétní vzory.
 4. **Odeslat do ABRA.** Tlačítko „Schválit a odeslat“ odešle zkontrolované XML
    do nastavené firmy. Před zápisem provedeme ABRA dry-run nad stejným XML;
    chyby a varování zobrazíme uživateli, při neúspěchu neodesíláme. Upozornění
@@ -44,7 +45,7 @@ admin přihlášení, Ecto/PostgreSQL, Req a Oban. Nebudeme vytvářet samostatn
 - Vzory připravíme ze správných příkladů pro cílové agendy a vyzkoušíme je
   v testovací firmě. Pro začátek stačí soubory v konfiguraci aplikace;
   editor vzorů ani verzované účetní profily nepotřebujeme. Před prvním průchodem
-  jsou potřeba oba vzory a přístup k testovací firmě.
+  jsou potřeba všechny tři vzory a přístup k testovací firmě.
 - Vzor určuje strukturu a výchozí účetní nastavení. Model doplňuje údaje
   z nového dokladu, chybějící hodnoty si nemá vymýšlet. Pokyny uvnitř nahraného
   dokumentu nesmějí měnit zadání ani spouštět akce.
@@ -88,9 +89,9 @@ potřebná data hromadně, bez dotazů pro každý řádek.
 
 ## Postup a ověření
 
-1. Připravit oba vzory a nastavení testovací firmy.
+1. Připravit tři vzory a nastavení testovací firmy.
 2. Dodat jeden celý průchod: upload → OpenAI XML → kontrola a oprava → ABRA.
-3. Ručně vyzkoušet několik skutečných dokladů v obou agendách, včetně PDF,
+3. Ručně vyzkoušet několik skutečných dokladů ve všech třech agendách, včetně PDF,
    fotografie a účtenky se slevou nebo rozdílem v zaokrouhlení. Porovnat výsledek
    přímo v ABRA včetně účtování a DPH; podle zjištění upravit vzor nebo program.
 4. Automaticky ověřit zásadní chování: oprava pole mění odesílané XML, vadný
@@ -99,7 +100,7 @@ potřebná data hromadně, bez dotazů pro každý řádek.
 5. Po ověření přepnout konfiguraci na ostrou firmu a první doklady jednotlivě
    pečlivě kontrolovat. Produkční zápisy nejsou součástí vývoje ani CI.
 
-**MVP je hotové**, když uživatel v obou agendách projde celý tok, opraví údaj
+**MVP je hotové**, když uživatel ve všech třech agendách projde celý tok, opraví údaj
 proti originálu a po vědomém odeslání najde odpovídající doklad v testovací ABRA.
 Není nutná rozsáhlá referenční sada ani vyřešení všech typů dokladů před pilotem.
 
@@ -113,6 +114,6 @@ zatím zpracujeme ručně. Další funkce přidáme podle zkušeností z pilotu.
 
 ## Nejbližší krok
 
-Při zahájení implementace přečíst AGENTS.md, existující ABRA klienty a jejich testy,
-převzít vzory pro obě agendy a dodat první kompletní průchod v testovací firmě.
-Konkrétní pole vzorů a chování ABRA ověřit na skutečném importu; nevymýšlet je.
+Po kontrole GitHub CI nastavit model OpenAI, ověřit cílovou testovací firmu
+a projít celý tok se skutečným dokladem ve všech třech agendách. Porovnat částky,
+DPH a účtování v ABRA a podle výsledku upravit vzory. Pilot zatím nebyl proveden.

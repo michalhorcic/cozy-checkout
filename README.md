@@ -39,6 +39,7 @@ jako [HTML web s menu a vyhledáváním](docs/development/DOCUMENTATION_WEB.md).
 | Obsluhovat bar | [POS](docs/features/POS_SYSTEM.md) · [Platby](docs/features/PAYMENT_FUNCTIONALITY.md) · [Servisní účty](docs/features/SERVICE_ORDERS.md) |
 | Připravit jídla a nákup | [Menu z receptů, porce, nákup, náklady a mrazák](docs/features/CATERING.md) |
 | Vystavovat pobytové doklady | [Fakturace, PDF a platby](docs/features/BILLING.md) |
+| Zpracovat přijatou fakturu nebo účtenku | [Přijaté doklady — pilot](docs/features/INCOMING_DOCUMENTS.md) |
 | Nastavit účetní integrace | [ABRA: bar, ubytování a banka](docs/integrations/ABRA_INTEGRATION.md) · [PDF přílohy v ABRA](docs/integrations/ABRA_PDF_ATTACHMENTS.md) · [POHODA](docs/integrations/POHODA_EXPORT.md) |
 | Sledovat ekonomiku firmy | [Ekonomika a mapování nákladů](docs/features/ECONOMICS.md) |
 | Nasadit a spravovat aplikaci | [Docker, konfigurace, migrace a zálohy](docs/development/DEPLOYMENT.md) |

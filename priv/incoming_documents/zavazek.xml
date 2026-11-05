@@ -1,0 +1,46 @@
+<winstrom version="1.0">
+  <zavazek create="ok" update="fail">
+    <typDokl>code:1.OST. ZÁVAZ - KARTA</typDokl>
+    <mena>code:CZK</mena>
+    <stat>code:CZ</stat>
+    <statDph>code:CZ</statDph>
+    <typUcOp>code:2.NÁKUP POTRAVINY</typUcOp>
+    <primUcet>code:325000</primUcet>
+    <protiUcet>code:501100</protiUcet>
+    <dphZaklUcet>code:343100</dphZaklUcet>
+    <dphSnizUcet>code:343100</dphSnizUcet>
+    <dphSniz2Ucet>code:343100</dphSniz2Ucet>
+    <clenDph>code:40-41</clenDph>
+    <clenKonVykDph>code:B.2-3.AUTO</clenKonVykDph>
+    <stredisko>code:C</stredisko>
+    <szbDphSniz>12.0</szbDphSniz>
+    <szbDphSniz2>0.0</szbDphSniz2>
+    <szbDphZakl>21.0</szbDphZakl>
+    <bezPolozek>true</bezPolozek>
+    <ucetni>true</ucetni>
+    <cisDosle />
+    <varSym />
+    <datVyst />
+    <duzpPuv />
+    <duzpUcto />
+    <datSplat />
+    <datUcto />
+    <popis />
+    <nazFirmy />
+    <ic />
+    <dic />
+    <ulice />
+    <mesto />
+    <psc />
+    <buc />
+    <iban />
+    <sumOsv>0.00</sumOsv>
+    <sumZklSniz>0.00</sumZklSniz>
+    <sumZklSniz2>0.00</sumZklSniz2>
+    <sumZklZakl>0.00</sumZklZakl>
+    <sumDphSniz>0.00</sumDphSniz>
+    <sumDphSniz2>0.00</sumDphSniz2>
+    <sumDphZakl>0.00</sumDphZakl>
+    <sumCelkem>0.00</sumCelkem>
+  </zavazek>
+</winstrom>

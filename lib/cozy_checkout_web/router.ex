@@ -47,6 +47,7 @@ defmodule CozyCheckoutWeb.Router do
   scope "/admin", CozyCheckoutWeb do
     pipe_through [:browser, :admin_auth]
 
+    get "/incoming-documents/:id/original", IncomingDocumentController, :show
     get "/billing/documents/:id/pdf", BillingDocumentController, :show
     get "/kitchen-costs/catalog.json", KitchenCostsController, :catalog
     get "/kitchen-costs/contract/:file", KitchenCostsController, :contract
@@ -60,6 +61,8 @@ defmodule CozyCheckoutWeb.Router do
     live_session :admin,
       on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}, CozyCheckoutWeb.AdminNavigation],
       layout: {CozyCheckoutWeb.Layouts, :admin} do
+      live "/incoming-documents", IncomingDocumentsLive
+      live "/incoming-documents/:id", IncomingDocumentsLive
       live "/", DashboardLive
       live "/billing/settings", BillingLive.Settings
       live "/billing/transfers", BillingLive.Transfers

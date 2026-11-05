@@ -57,6 +57,7 @@ defmodule CozyCheckoutWeb.AdminNavigation do
        ]},
       {"Finance a přehledy",
        [
+         {"Přijaté doklady", "/admin/incoming-documents"},
          {"Barové platby", "/admin/payments"},
          {"Ekonomika pobytů", "/admin/economy"},
          {"Statistiky prodeje", "/admin/statistics"},
