@@ -333,7 +333,9 @@ defmodule CozyCheckout.IncomingDocuments.XML do
     end
   end
 
-  defp required_label("cisDosle"), do: "cisDosle (číslo původního dokladu)"
+  defp required_label("cisDosle"),
+    do: "cisDosle (číslo původního dokladu; u PENNY hledejte EV-č včetně patičky účtenky)"
+
   defp required_label("nazFirmy"), do: "nazFirmy (dodavatel)"
   defp required_label("datVyst"), do: "datVyst (datum vystavení)"
 

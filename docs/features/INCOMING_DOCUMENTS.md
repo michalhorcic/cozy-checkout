@@ -78,6 +78,30 @@ sloupcem nejsou fyzicky odstraňovány; UI zatím neposkytuje mazání.
    a použít „Schválit a odeslat“. Přesně schválené XML se uloží a uzamkne.
 6. Po přenosu se uloží odpověď a ID s odkazem do ABRA. Odeslaný doklad se neupravuje.
 
+### Číslo původního dokladu (`cisDosle`)
+
+`cisDosle` identifikuje dodavatelský doklad, zatímco `kod` je interní číslo ABRA
+a `varSym` slouží platebnímu styku. ABRA uvádí číslo došlé u přijaté faktury jako
+povinné a používá jej také při tvorbě kontrolního hlášení z přijatých faktur,
+ostatních závazků a pokladny. Naše aplikace vyžaduje číslo originálu ve všech třech
+agendách jako podmínku kontroly; tato aplikační podmínka není tvrzením, že ABRA
+technicky vyžaduje stejné pole u každého typu dokladu.
+
+Model prohledává celý originál včetně patičky a hledá číslo faktury/daňového
+dokladu/účtenky nebo evidenční číslo. Pro PENNY používá podle uživatelského
+pozorování také vodítko `EV-č` (varianty `EV-č:`, `ev. č.`, `ev.č.`).
+Označení nebylo potvrzeno veřejným oficiálním návodem PENNY; rozhodující je
+skutečný popisek a hodnota na konkrétní účtence. Do pole patří hodnota bez popisku,
+se zachovanými počátečními nulami, písmeny, pomlčkami a lomítky. Platební karta,
+terminál, autorizační kód, věrnostní karta či reference karetní transakce nejsou
+náhradou čísla daňového dokladu. Nečitelné nebo nejednoznačné číslo zůstane prázdné
+pro ruční opravu; z data či vzorového dokladu se negeneruje. `varSym` se vytěžuje
+samostatně, pokud je na originálu uveden.
+
+Zdroje: [ABRA — přijatá faktura](https://podpora.flexibee.eu/cs/articles/4611404-prijata-faktura),
+[ABRA — kontrolní hlášení](https://podpora.flexibee.eu/cs/articles/4585915-kontrolni-hlaseni),
+[Finanční správa — časté dotazy ke kontrolnímu hlášení](https://financnisprava.gov.cz/cs/dane/dane/dan-z-pridane-hodnoty/kontrolni-hlaseni-dph/caste-dotazy-a-odpovedi).
+
 ### Jednotlivé položky a rekapitulace
 
 Model má přepsat všechny položky účtenky nebo faktury v původním pořadí,

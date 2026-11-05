@@ -547,6 +547,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             >
               <p class="sm:col-span-2">
                 Porovnejte všechny údaje s originálem. XML i kontrola ABRA mohou obsahovat účetní chyby.
+                Číslo původního dokladu může být označeno jako číslo účtenky či evidenční číslo; u PENNY hledejte EV-č i v patičce. Zachovejte počáteční nuly a oddělovače.
               </p>
               <.input
                 :for={key <- XML.editable()}
