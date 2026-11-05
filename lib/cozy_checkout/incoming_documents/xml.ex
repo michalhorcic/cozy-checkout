@@ -5,6 +5,7 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   @text ~w(cisDosle varSym datVyst duzpPuv duzpUcto datSplat datUcto popis nazFirmy ic dic ulice mesto psc buc iban)
   @amounts ~w(sumOsv sumZklSniz sumZklSniz2 sumZklZakl sumDphSniz sumDphSniz2 sumDphZakl sumCelkem)
   @fixed ~w(typDokl mena stat statDph typUcOp primUcet protiUcet dphZaklUcet dphSnizUcet dphSniz2Ucet clenDph clenKonVykDph stredisko pokladna typPohybuK szbDphSniz szbDphSniz2 szbDphZakl bezPolozek ucetni)
+  @rates ~w(szbDphSniz szbDphSniz2 szbDphZakl)
   @dates ~w(datVyst duzpPuv duzpUcto datSplat datUcto)
   @discard ~w(id kod lastUpdate createdDate createdBy updatedBy datUhr stavUhrK zuctovano)
 
@@ -133,29 +134,99 @@ defmodule CozyCheckout.IncomingDocuments.XML do
     "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<winstrom version=\"1.0\"><#{agenda} create=\"ok\" update=\"fail\">#{identity}#{Enum.join(body)}</#{agenda}></winstrom>"
   end
 
+  @doc "Lists accounting differences without weakening the template's fixed settings."
+  def accounting_differences(xml, agenda, template) do
+    with {:ok, fields} <- parse(xml, agenda),
+         {:ok, defaults} <- parse(template, agenda) do
+      {:ok, fixed_differences(fields, defaults)}
+    end
+  end
+
+  @doc "Prepares a repair draft; validation and approval are still required before import."
+  def restore_accounting(xml, agenda, template, external_id) do
+    with {:ok, fields} <- parse(xml, agenda),
+         {:ok, defaults} <- parse(template, agenda) do
+      fields = Map.merge(Map.take(fields, editable()), Map.take(defaults, @fixed))
+      {:ok, render(fields, agenda, external_id) |> String.replace("><", ">\n<")}
+    end
+  end
+
+  defp fixed_differences(fields, defaults) do
+    for key <- @fixed,
+        Map.has_key?(fields, key),
+        not equivalent?(key, fields[key], defaults[key]),
+        do: %{field: key, expected: defaults[key], actual: fields[key]}
+  end
+
+  defp equivalent?(key, actual, expected) when key in @rates do
+    valid_number = fn value ->
+      is_binary(value) and Regex.match?(~r/^\d{1,3}(\.\d{1,6})?$/, value)
+    end
+
+    valid_number.(actual) and valid_number.(expected) and
+      Decimal.equal?(Decimal.new(actual), Decimal.new(expected))
+  end
+
+  defp equivalent?(_, actual, expected), do: actual == expected
+
   defp validate_fixed(fields, defaults) do
-    if Enum.all?(@fixed, fn key ->
-         not Map.has_key?(fields, key) or fields[key] == defaults[key]
-       end), do: :ok, else: {:error, "Účetní nastavení se liší od vzoru"}
+    case fixed_differences(fields, defaults) do
+      [] ->
+        :ok
+
+      differences ->
+        details =
+          Enum.map_join(differences, "; ", fn diff ->
+            "#{diff.field}: vzor #{inspect(diff.expected)}, vráceno #{inspect(diff.actual)}"
+          end)
+
+        {:error, "Účetní nastavení se liší od vzoru — " <> details}
+    end
   end
 
   defp validate(fields) do
-    with true <- Enum.all?(~w(nazFirmy cisDosle datVyst), &(fields[&1] not in [nil, ""])),
-         true <-
-           Enum.all?(
-             @dates,
-             &(fields[&1] in [nil, ""] or match?({:ok, _}, Date.from_iso8601(fields[&1])))
-           ),
-         {:ok, amounts} <- decimals(fields),
-         total =
-           Enum.reduce(@amounts -- ["sumCelkem"], Decimal.new(0), &Decimal.add(amounts[&1], &2)),
-         true <- Decimal.equal?(total, amounts["sumCelkem"]),
-         true <- Decimal.positive?(amounts["sumCelkem"]) do
-      :ok
-    else
-      _ ->
+    missing = Enum.filter(~w(nazFirmy cisDosle datVyst), &(fields[&1] in [nil, ""]))
+
+    dates =
+      Enum.filter(
+        @dates,
+        &(fields[&1] not in [nil, ""] and not match?({:ok, _}, Date.from_iso8601(fields[&1])))
+      )
+
+    cond do
+      missing != [] ->
+        {:error, "Chybí povinná pole: " <> Enum.join(missing, ", ")}
+
+      dates != [] ->
         {:error,
-         "Vyplňte dodavatele, číslo a datum dokladu. Částky musí být platná čísla a součet základů včetně osvobozené částky a DPH musí přesně odpovídat celku (CZK)."}
+         "Neplatné datum (očekáváno RRRR-MM-DD): " <>
+           Enum.map_join(dates, "; ", &"#{&1}=#{inspect(fields[&1])}")}
+
+      true ->
+        validate_amounts(fields)
+    end
+  end
+
+  defp validate_amounts(fields) do
+    case decimals(fields) do
+      {:ok, amounts} ->
+        total =
+          Enum.reduce(@amounts -- ["sumCelkem"], Decimal.new(0), &Decimal.add(amounts[&1], &2))
+
+        cond do
+          not Decimal.equal?(total, amounts["sumCelkem"]) ->
+            {:error,
+             "Nesouhlasí sumCelkem: uvedeno #{amounts["sumCelkem"]} Kč, součet základů, osvobozené částky a DPH je #{total} Kč (rozdíl #{Decimal.sub(amounts["sumCelkem"], total)} Kč)"}
+
+          not Decimal.positive?(amounts["sumCelkem"]) ->
+            {:error, "sumCelkem musí být větší než nula"}
+
+          true ->
+            :ok
+        end
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
@@ -165,7 +236,10 @@ defmodule CozyCheckout.IncomingDocuments.XML do
 
       if is_binary(value) and Regex.match?(~r/^-?\d{1,12}(\.\d{1,2})?$/, value),
         do: {:cont, {:ok, Map.put(acc, key, Decimal.new(value))}},
-        else: {:halt, :error}
+        else:
+          {:halt,
+           {:error,
+            "Neplatná částka #{key}=#{inspect(value)}: použijte číslo s tečkou a nejvýše dvěma desetinnými místy"}}
     end)
   end
 

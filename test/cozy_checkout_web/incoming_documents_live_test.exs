@@ -85,4 +85,74 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert has_element?(view, "#incoming-validate")
     assert has_element?(view, "iframe")
   end
+
+  test "failed XML shows a difference table and can be repaired without extraction", %{conn: conn} do
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "repair.pdf", "zavazek")
+    {:ok, fields} = XML.parse(doc.template_xml, doc.agenda)
+
+    raw =
+      fields
+      |> Map.merge(%{
+        "primUcet" => "code:999999",
+        "nazFirmy" => "Dodavatel",
+        "cisDosle" => "A-1",
+        "datVyst" => "2026-11-05",
+        "sumOsv" => "10.00",
+        "sumCelkem" => "10.00"
+      })
+      |> XML.render(doc.agenda)
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "failed",
+      error_stage: "extraction",
+      error: "Účetní nastavení se liší od vzoru",
+      generated_xml: raw
+    )
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "#incoming-accounting-differences", "primUcet")
+    assert html =~ "code:325000"
+    assert html =~ "code:999999"
+    assert has_element?(view, "#incoming-repair textarea")
+    refute has_element?(view, "#incoming-validate")
+
+    view
+    |> form("#incoming-repair", %{"fields" => %{"xml" => raw}})
+    |> render_submit(%{"action" => "save"})
+
+    assert IncomingDocuments.get!(doc.id).state == "failed"
+
+    view
+    |> form("#incoming-repair", %{"fields" => %{"xml" => raw}})
+    |> render_submit(%{"action" => "restore"})
+
+    assert IncomingDocuments.get!(doc.id).state == "failed"
+    refute has_element?(view, "#incoming-accounting-differences")
+    view |> form("#incoming-repair") |> render_submit(%{"action" => "save"})
+    assert IncomingDocuments.get!(doc.id).state == "review"
+    assert IncomingDocuments.get!(doc.id).generated_xml == raw
+    assert has_element?(view, "#incoming-fields")
+    assert has_element?(view, "#incoming-validate")
+    refute has_element?(view, "#incoming-approve")
+    refute has_element?(view, "#incoming-repair")
+  end
+
+  test "legacy extraction failures explain the need for one new extraction", %{conn: conn} do
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "legacy.pdf", "zavazek")
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "failed",
+      error_stage: "extraction",
+      error: "Účetní nastavení se liší od vzoru"
+    )
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert html =~ "XML z tohoto pokusu není uložené"
+    assert has_element?(view, "button[phx-click=retry]")
+    refute has_element?(view, "#incoming-repair")
+  end
 end

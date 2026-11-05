@@ -81,6 +81,36 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     )
   end
 
+  def handle_event("repair-change", %{"fields" => %{"xml" => xml}}, socket),
+    do: {:noreply, repair_draft(socket, xml)}
+
+  def handle_event("repair", %{"fields" => %{"xml" => xml}} = params, socket) do
+    doc = socket.assigns.doc
+    socket = repair_draft(socket, xml)
+
+    if params["action"] == "restore" do
+      case XML.restore_accounting(xml, doc.agenda, doc.template_xml, doc.external_id) do
+        {:ok, draft} ->
+          {:noreply,
+           socket
+           |> repair_draft(draft)
+           |> put_flash(
+             :info,
+             "Účetní nastavení v návrhu převzato ze vzoru. Zkontrolujte XML a uložte opravu."
+           )}
+
+        {:error, reason} ->
+          {:noreply, put_flash(socket, :error, error(reason))}
+      end
+    else
+      result(
+        socket,
+        IncomingDocuments.repair_xml(doc.id, xml, socket.assigns.extraction_hash),
+        "Oprava prošla kontrolou. Porovnejte údaje s originálem a spusťte kontrolu ABRA."
+      )
+    end
+  end
+
   def handle_event("validate", _, socket) do
     if socket.assigns.dirty,
       do: {:noreply, put_flash(socket, :error, "Nejprve uložte změny")},
@@ -152,13 +182,37 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         _ -> %{}
       end
 
+    socket = assign(socket, doc: doc)
+    socket = repair_draft(socket, doc.generated_xml || "")
+
     assign(socket,
       doc: doc,
       fields: fields,
+      template_fields:
+        case XML.parse(doc.template_xml, doc.agenda) do
+          {:ok, fields} -> fields
+          _ -> %{}
+        end,
       edit_form: to_form(Map.take(fields, XML.editable()), as: :fields),
       dirty: false,
       hash: if(doc.current_xml, do: IncomingDocuments.digest(doc.current_xml)),
+      extraction_hash: IncomingDocuments.digest(doc.generated_xml || ""),
       enabled: IncomingDocuments.enabled?()
+    )
+  end
+
+  defp repair_draft(socket, xml) do
+    doc = socket.assigns.doc
+
+    differences =
+      case XML.accounting_differences(xml, doc.agenda, doc.template_xml) do
+        {:ok, differences} -> differences
+        _ -> []
+      end
+
+    assign(socket,
+      repair_form: to_form(%{"xml" => xml}, as: :fields),
+      accounting_differences: differences
     )
   end
 
@@ -215,7 +269,18 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           "clenDph" => "Řádky DPH",
           "clenKonVykDph" => "Kontrolní hlášení",
           "pokladna" => "Pokladna",
-          "stredisko" => "Středisko"
+          "stredisko" => "Středisko",
+          "stat" => "Stát",
+          "statDph" => "Stát DPH",
+          "typPohybuK" => "Typ pohybu",
+          "dphZaklUcet" => "Účet DPH — základní sazba",
+          "dphSnizUcet" => "Účet DPH — snížená sazba",
+          "dphSniz2Ucet" => "Účet DPH — 2. snížená sazba",
+          "szbDphZakl" => "Základní sazba DPH",
+          "szbDphSniz" => "Snížená sazba DPH",
+          "szbDphSniz2" => "2. snížená sazba DPH",
+          "bezPolozek" => "Bezpoložkový doklad",
+          "ucetni" => "Účetní doklad"
         },
         key,
         key
@@ -353,6 +418,70 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             </div>
           </div>
           <div class="min-w-0 space-y-4">
+            <div :if={@doc.state == "failed" && @doc.error_stage == "extraction"} class="space-y-4">
+              <p :if={!@doc.generated_xml} class="alert alert-info">
+                XML z tohoto pokusu není uložené. Pro podrobnou kontrolu a ruční opravu spusťte vytěžení znovu.
+              </p>
+              <div :if={@accounting_differences != []} class="bg-white rounded-xl p-4 overflow-x-auto">
+                <h2 class="text-lg font-bold">Rozdíly účetního nastavení</h2>
+                <table id="incoming-accounting-differences" class="table">
+                  <thead>
+                    <tr>
+                      <th>Pole</th><th>Hodnota ze vzoru</th><th>Hodnota v návrhu XML</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr :for={diff <- @accounting_differences}>
+                      <td>{label(diff.field)} <code>({diff.field})</code></td>
+                      <td class="break-all">
+                        {if diff.expected in [nil, ""],
+                          do: "(ve vzoru není vyplněno)",
+                          else: diff.expected}
+                      </td>
+                      <td class="break-all">
+                        {if diff.actual == "", do: "(prázdné)", else: diff.actual}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <.form
+                :if={@doc.generated_xml}
+                for={@repair_form}
+                id="incoming-repair"
+                phx-change="repair-change"
+                phx-submit="repair"
+                class="bg-white rounded-xl p-4 space-y-3"
+              >
+                <h2 class="text-lg font-bold">Opravit výstup vytěžení</h2>
+                <p>
+                  Opravte XML podle uvedené chyby a originálu. Účetní nastavení musí odpovídat vzoru. Uložení znovu ověří celý doklad a nic neodesílá do ABRA.
+                  Převzetí nastavení ze vzoru nemění částky ani nepřepočítává měnu; nastavení musí odpovídat originálu.
+                </p>
+                <.input
+                  field={@repair_form[:xml]}
+                  type="textarea"
+                  label="XML k opravě"
+                  rows="20"
+                  spellcheck="false"
+                  class="textarea w-full font-mono text-xs"
+                />
+                <div class="flex flex-wrap gap-3">
+                  <button
+                    class="btn btn-primary"
+                    name="action"
+                    value="save"
+                    phx-disable-with="Kontroluji…"
+                  >Uložit opravené XML</button>
+                  <button
+                    :if={@accounting_differences != []}
+                    class="btn"
+                    name="action"
+                    value="restore"
+                  >Použít účetní nastavení ze vzoru</button>
+                </div>
+              </.form>
+            </div>
             <.form
               :if={@doc.current_xml}
               for={@edit_form}
@@ -377,10 +506,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                 phx-disable-with="Ukládám…"
               >Uložit opravy</button>
             </.form>
-            <details :if={@doc.current_xml} class="bg-white rounded-xl p-4">
+            <details :if={@doc.template_xml} class="bg-white rounded-xl p-4">
               <summary>Účetní nastavení ze vzoru</summary><dl class="space-y-1 mt-3">
-                <div :for={key <- XML.fixed()} :if={@fields[key]}>
-                  <dt class="font-semibold">{label(key)}</dt><dd>{@fields[key]}</dd>
+                <div :for={key <- XML.fixed()} :if={@template_fields[key]}>
+                  <dt class="font-semibold">{label(key)}</dt><dd>{@template_fields[key]}</dd>
                 </div>
               </dl>
             </details>

@@ -99,6 +99,34 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
+  @doc "Repairs a failed extraction without calling OpenAI or allowing an unvalidated import."
+  def repair_xml(id, xml, expected_hash) do
+    locked(id, fn doc ->
+      require_state!(doc, ["failed"])
+
+      unless doc.error_stage == "extraction" and is_binary(doc.generated_xml) and
+               is_nil(doc.sent_xml),
+             do: Repo.rollback("Tento doklad nelze opravit jako neúspěšné vytěžení")
+
+      if digest(doc.generated_xml) != expected_hash,
+        do: Repo.rollback("Výstup vytěžení se mezitím změnil. Obnovte stránku.")
+
+      case XML.normalize(xml, doc.agenda, doc.template_xml, doc.external_id) do
+        {:ok, normalized} ->
+          update!(doc,
+            state: "review",
+            current_xml: normalized,
+            dry_run: %{},
+            error: nil,
+            error_stage: nil
+          )
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
+  end
+
   def retry_extraction(id) do
     locked(id, fn doc ->
       require_state!(doc, ["failed"])
@@ -154,10 +182,16 @@ defmodule CozyCheckout.IncomingDocuments do
       end)
 
       result =
-        with {:ok, xml} <- Extractor.extract(doc, config()),
-             {:ok, normalized} <-
-               XML.normalize(xml, doc.agenda, doc.template_xml, doc.external_id),
-             do: {:ok, xml, normalized}
+        case Extractor.extract(doc, config()) do
+          {:ok, raw} ->
+            case XML.normalize(raw, doc.agenda, doc.template_xml, doc.external_id) do
+              {:ok, normalized} -> {:ok, raw, normalized}
+              {:error, reason} -> {:error, reason, raw}
+            end
+
+          {:error, reason} ->
+            {:error, reason, nil}
+        end
 
       locked(id, fn current ->
         require_state!(current, ["processing"])
@@ -172,8 +206,15 @@ defmodule CozyCheckout.IncomingDocuments do
               error_stage: nil
             )
 
-          {:error, reason} ->
-            update!(current, state: "failed", error_stage: "extraction", error: reason)
+          {:error, reason, raw} ->
+            update!(current,
+              state: "failed",
+              generated_xml: raw,
+              current_xml: nil,
+              dry_run: %{},
+              error_stage: "extraction",
+              error: reason
+            )
         end
       end)
     end

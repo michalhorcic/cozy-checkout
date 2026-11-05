@@ -74,6 +74,26 @@ sloupcem nejsou fyzicky odstraňovány; UI zatím neposkytuje mazání.
    a použít „Schválit a odeslat“. Přesně schválené XML se uloží a uzamkne.
 6. Po přenosu se uloží odpověď a ID s odkazem do ABRA. Odeslaný doklad se neupravuje.
 
+### Oprava neúspěšného vytěžení
+
+Pokud výstup modelu neprojde kontrolou, uloží se původní XML i konkrétní chyba.
+Při rozdílu účetního nastavení detail zobrazí tabulku: název pole, hodnota ze
+vzoru a hodnota v návrhu. Číselně stejné sazby DPH (např. `12` a `12.0`) se
+považují za shodné; skutečně odlišné nastavení zůstává blokované.
+
+V editoru „Opravit výstup vytěžení“ lze upravit XML bez dalšího volání OpenAI.
+„Použít účetní nastavení ze vzoru“ přenese pevné hodnoty pouze do návrhu editoru;
+částky nemění a měnu nepřepočítává. Následné „Uložit opravené XML“ musí projít
+stejným bezpečným parserem, kontrolou účetních polí, povinných údajů, dat a součtů.
+Chyby uvádějí konkrétní pole, u nesouladu celku také uvedenou částku, vypočtený
+součet a rozdíl. Původní odpověď modelu zůstává zachována.
+
+Úspěšná oprava vrátí doklad ke kontrole s prázdným dry-runem; nespouští import.
+Přenos vyžaduje nový dry-run a následné schválení. Již schválené nebo nejisté
+přenosy tímto editorem upravit nelze. Návrh v editoru se do úspěšného uložení
+uchovává jen na otevřené stránce. Starší neúspěšné pokusy, jejichž XML aplikace
+ještě neukládala, vyžadují jednou „Znovu vytěžit“.
+
 Před síťovým zápisem se trvale uloží stav nejistého výsledku. Timeout, pád workeru
 nebo nejednoznačná odpověď nikdy nezpůsobí slepé opakování POST. Další pokus
 pouze vyhledává stabilní externí ID v původní firmě. Pokud dokument nenajde,

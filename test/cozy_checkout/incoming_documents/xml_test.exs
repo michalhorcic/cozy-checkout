@@ -96,4 +96,89 @@ defmodule CozyCheckout.IncomingDocuments.XMLTest do
                )
     end
   end
+
+  defp valid_xml do
+    template = XML.template("zavazek")
+    {:ok, fields} = XML.parse(template, "zavazek")
+
+    fields =
+      Map.merge(fields, %{
+        "nazFirmy" => "Dodavatel",
+        "cisDosle" => "A-1",
+        "datVyst" => "2026-11-05",
+        "sumZklZakl" => "100.00",
+        "sumDphZakl" => "21.00",
+        "sumCelkem" => "121.00"
+      })
+
+    {XML.render(fields, "zavazek"), template}
+  end
+
+  test "equivalent VAT rate numbers normalize to the template representation" do
+    {xml, template} = valid_xml()
+
+    xml =
+      xml
+      |> String.replace("<szbDphSniz>12.0</szbDphSniz>", "<szbDphSniz>12</szbDphSniz>")
+      |> String.replace("<szbDphZakl>21.0</szbDphZakl>", "<szbDphZakl>21.000</szbDphZakl>")
+
+    assert {:ok, []} = XML.accounting_differences(xml, "zavazek", template)
+    assert {:ok, normalized} = XML.normalize(xml, "zavazek", template, "ext:test")
+    assert normalized =~ "<szbDphSniz>12.0</szbDphSniz>"
+    assert normalized =~ "<szbDphZakl>21.0</szbDphZakl>"
+
+    assert {:error, reason} =
+             XML.normalize(
+               String.replace(xml, ">21.000<", ">20.0<"),
+               "zavazek",
+               template,
+               "ext:test"
+             )
+
+    assert reason =~ "szbDphZakl"
+    assert reason =~ "21.0"
+    assert reason =~ "20.0"
+  end
+
+  test "shows each fixed difference and explicit restoration preserves extracted data" do
+    {xml, template} = valid_xml()
+
+    xml =
+      xml
+      |> String.replace("code:325000", "code:999999")
+      |> String.replace("code:CZK", "code:EUR")
+
+    assert {:ok, differences} = XML.accounting_differences(xml, "zavazek", template)
+    assert %{field: "primUcet", expected: "code:325000", actual: "code:999999"} in differences
+    assert %{field: "mena", expected: "code:CZK", actual: "code:EUR"} in differences
+    assert {:error, reason} = XML.normalize(xml, "zavazek", template, "ext:test")
+    assert reason =~ "primUcet"
+    assert reason =~ "code:325000"
+    assert reason =~ "code:999999"
+    assert reason =~ "mena"
+    assert {:ok, draft} = XML.restore_accounting(xml, "zavazek", template, "ext:test")
+    assert {:ok, normalized} = XML.normalize(draft, "zavazek", template, "ext:test")
+    assert normalized =~ "<nazFirmy>Dodavatel</nazFirmy>"
+    assert normalized =~ "<sumCelkem>121.00</sumCelkem>"
+    assert normalized =~ "<id>ext:test</id>"
+
+    assert {:error, _} =
+             XML.restore_accounting("<!DOCTYPE evil><winstrom/>", "zavazek", template, "ext:test")
+  end
+
+  test "validation identifies missing fields, invalid dates, malformed amounts and the total difference" do
+    {xml, template} = valid_xml()
+
+    for {from, to, expected} <- [
+          {"<nazFirmy>Dodavatel</nazFirmy>", "<nazFirmy/>", "nazFirmy"},
+          {"2026-11-05", "2026-02-30", "datVyst"},
+          {"<sumDphZakl>21.00</sumDphZakl>", "<sumDphZakl>NaN</sumDphZakl>", "sumDphZakl"},
+          {"<sumCelkem>121.00</sumCelkem>", "<sumCelkem>120.00</sumCelkem>", "rozdíl -1.00 Kč"}
+        ] do
+      assert {:error, reason} =
+               XML.normalize(String.replace(xml, from, to), "zavazek", template, "ext:test")
+
+      assert reason =~ expected
+    end
+  end
 end

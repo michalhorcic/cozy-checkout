@@ -301,4 +301,67 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert :ok = Incoming.perform(doc.id, "send")
     assert Incoming.get!(doc.id).state == "uncertain"
   end
+
+  test "failed extraction retains raw XML and allows a validated repair without another HTTP request" do
+    doc = upload()
+    raw = extracted(doc).current_xml |> String.replace("code:325000", "code:999999")
+
+    doc
+    |> Ecto.Changeset.change(state: "uploaded", current_xml: nil, generated_xml: nil)
+    |> Repo.update!()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "status" => "completed",
+        "output" => [
+          %{"type" => "message", "content" => [%{"type" => "output_text", "text" => raw}]}
+        ]
+      })
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "extract")
+    failed = Incoming.get!(doc.id)
+    assert failed.state == "failed"
+    assert failed.generated_xml == raw
+    assert failed.current_xml == nil
+    assert failed.error =~ "primUcet"
+    assert failed.error =~ "code:325000"
+    hash = Incoming.digest(raw)
+    assert {:error, _} = Incoming.repair_xml(doc.id, raw, hash)
+
+    assert {:ok, draft} =
+             XML.restore_accounting(raw, doc.agenda, doc.template_xml, doc.external_id)
+
+    assert {:error, _} = Incoming.repair_xml(doc.id, draft, "stale")
+
+    assert {:error, _} =
+             Incoming.repair_xml(doc.id, String.replace(draft, "121.00", "120.00"), hash)
+
+    assert Incoming.get!(doc.id).state == "failed"
+    assert {:ok, repaired} = Incoming.repair_xml(doc.id, draft, hash)
+    assert repaired.state == "review"
+    assert repaired.generated_xml == raw
+    assert repaired.current_xml =~ "code:325000"
+    assert repaired.current_xml =~ "Dodavatel"
+    assert repaired.error == nil
+    assert repaired.dry_run == %{}
+    assert {:error, _} = Incoming.approve(doc.id, Incoming.digest(repaired.current_xml))
+    assert {:error, _} = Incoming.repair_xml(doc.id, draft, hash)
+  end
+
+  test "repair never edits approved or uncertain imports" do
+    doc = upload() |> extracted() |> dry_run()
+    assert {:ok, _} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
+
+    assert {:error, _} =
+             Incoming.repair_xml(doc.id, doc.current_xml, Incoming.digest(doc.generated_xml))
+
+    sending = Incoming.get!(doc.id)
+    sending |> Ecto.Changeset.change(state: "uncertain") |> Repo.update!()
+
+    assert {:error, _} =
+             Incoming.repair_xml(doc.id, doc.current_xml, Incoming.digest(doc.generated_xml))
+
+    assert Incoming.get!(doc.id).sent_xml == doc.current_xml
+  end
 end
