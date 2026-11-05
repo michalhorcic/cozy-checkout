@@ -317,6 +317,30 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert IncomingDocuments.get!(doc.id).dry_run == %{}
   end
 
+  test "previously stored FreeMarker HTML is shown as a readable technical diagnosis", %{
+    conn: conn
+  } do
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "o2.pdf", "faktura-prijata")
+    html = File.read!("test/fixtures/incoming_documents/freemarker_error.html")
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "review",
+      dry_run: %{"http_status" => 200, "content_type" => "text/html", "raw_body" => html}
+    )
+    |> Repo.update!()
+
+    {:ok, view, rendered} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "details[data-abra-response][open]")
+    assert has_element?(view, "[data-abra-diagnostic]", "FreeMarker")
+    assert has_element?(view, "[data-abra-diagnostic]", "==> object")
+    assert has_element?(view, "[data-abra-diagnostic]", "2026.6.7")
+    assert has_element?(view, "[data-abra-diagnostic]", "evidence/faktura-prijata/view.ftl")
+    refute has_element?(view, "[data-abra-diagnostic]", "SCRIPT_CONTENT")
+    assert rendered =~ "&lt;script&gt;"
+    refute rendered =~ "<script>window.secret"
+  end
+
   test "ABRA response details show status and content safely as text", %{conn: conn} do
     {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "diagnostic.pdf", "zavazek")
 

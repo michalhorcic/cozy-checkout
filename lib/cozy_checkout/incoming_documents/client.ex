@@ -1,6 +1,8 @@
 defmodule CozyCheckout.IncomingDocuments.Client do
   @moduledoc "XML import using the existing ABRA connection conventions, without logging document data."
 
+  alias CozyCheckout.IncomingDocuments.ResponseDiagnostics
+
   def import(doc, xml, dry_run?, cfg) do
     case Req.post(url(doc) <> ".json",
            body: xml,
@@ -15,7 +17,28 @@ defmodule CozyCheckout.IncomingDocuments.Client do
          ) do
       {:ok, response} ->
         content_type = response |> Req.Response.get_header("content-type") |> Enum.join(", ")
-        parse_response(response.status, response.body, dry_run?, content_type)
+
+        headers =
+          for name <- ~w(content-type location server via retry-after www-authenticate),
+              values = Req.Response.get_header(response, name),
+              values != [],
+              into: %{} do
+            value = Enum.join(values, ", ") |> String.slice(0, 1500)
+            {name, if(name == "location", do: ResponseDiagnostics.safe_url(value), else: value)}
+          end
+
+        metadata = %{
+          "request" => %{
+            "method" => "POST",
+            "url" => ResponseDiagnostics.safe_url(url(doc) <> ".json"),
+            "dry_run" => dry_run?,
+            "accept" => "application/json",
+            "content_type" => "application/xml"
+          },
+          "response_headers" => headers
+        }
+
+        parse_response(response.status, response.body, dry_run?, content_type, metadata)
 
       {:error, _} ->
         {:uncertain, "ABRA není dostupná nebo vypršel časový limit"}
@@ -103,7 +126,7 @@ defmodule CozyCheckout.IncomingDocuments.Client do
   def document_url(doc), do: url(doc) <> "/#{encode(doc.remote_id)}"
   defp encode(value), do: URI.encode(value, &URI.char_unreserved?/1)
 
-  defp parse_response(status, raw, dry?, content_type) do
+  defp parse_response(status, raw, dry?, content_type, metadata) do
     parsed =
       if is_binary(raw) do
         case Jason.decode(raw) do
@@ -114,14 +137,15 @@ defmodule CozyCheckout.IncomingDocuments.Client do
         raw
       end
 
-    response = %{
-      "http_status" => status,
-      "content_type" => content_type,
-      "raw_body" => preview(raw),
-      "truncated" => is_binary(raw) and String.valid?(raw) and String.length(raw) > 100_000,
-      "warnings" => [],
-      "errors" => []
-    }
+    response =
+      Map.merge(metadata, %{
+        "http_status" => status,
+        "content_type" => content_type,
+        "raw_body" => preview(raw),
+        "truncated" => is_binary(raw) and String.valid?(raw) and String.length(raw) > 100_000,
+        "warnings" => [],
+        "errors" => []
+      })
 
     case parsed do
       %{"winstrom" => body} when is_map(body) ->
@@ -144,8 +168,10 @@ defmodule CozyCheckout.IncomingDocuments.Client do
               "tělo odpovědi není očekávané JSON"
           end
 
-        {:uncertain, "ABRA HTTP #{status}: #{format}. Rozbalte podrobnosti odpovědi ABRA.",
-         response}
+        diagnostic = ResponseDiagnostics.describe(status, raw, metadata["response_headers"])
+
+        {:uncertain, "ABRA HTTP #{status}: #{format}. " <> diagnostic["summary"],
+         Map.put(response, "format_diagnostic", diagnostic)}
     end
   end
 

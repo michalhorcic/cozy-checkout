@@ -849,6 +849,72 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert {:error, _} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
   end
 
+  test "FreeMarker HTML is diagnosed with the API request and never treated as a dry-run success" do
+    doc = upload("faktura-prijata") |> extracted()
+    html = File.read!("test/fixtures/incoming_documents/freemarker_error.html")
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      assert conn.method == "POST"
+      assert conn.request_path == "/c/pilot/faktura-prijata.json"
+      assert Plug.Conn.get_req_header(conn, "accept") == ["application/json"]
+      assert Plug.Conn.get_req_header(conn, "content-type") == ["application/xml"]
+      conn = Plug.Conn.fetch_query_params(conn)
+      assert conn.query_params["dry-run"] == "true"
+
+      conn
+      |> Plug.Conn.put_resp_content_type("text/html")
+      |> Plug.Conn.put_resp_header("set-cookie", "session=DO_NOT_STORE")
+      |> Plug.Conn.send_resp(200, html)
+    end)
+
+    assert {:ok, _} = Incoming.validate(doc.id, Incoming.digest(doc.current_xml))
+    assert :ok = Incoming.perform(doc.id, "validate")
+    checked = Incoming.get!(doc.id)
+    assert checked.state == "review"
+    assert checked.error =~ "FreeMarker"
+    assert checked.dry_run["format_diagnostic"]["kind"] == "server_template_error"
+    assert checked.dry_run["format_diagnostic"]["text"] =~ "==> object"
+    assert checked.dry_run["format_diagnostic"]["text"] =~ "evidence/faktura-prijata/view.ftl"
+    refute checked.dry_run["format_diagnostic"]["text"] =~ "SCRIPT_CONTENT"
+
+    assert checked.dry_run["request"]["url"] ==
+             "https://accounting.test/c/pilot/faktura-prijata.json"
+
+    assert checked.dry_run["request"]["dry_run"] == true
+    refute Map.has_key?(checked.dry_run["response_headers"], "set-cookie")
+    refute checked.dry_run["ok"]
+    assert {:error, _} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
+  end
+
+  test "HTML from a real write remains uncertain and is never blindly posted twice" do
+    doc = upload() |> extracted() |> dry_run()
+    assert {:ok, approved} = Incoming.approve(doc.id, Incoming.digest(doc.current_xml))
+    Req.Test.expect(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 404, "") end)
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      conn
+      |> Plug.Conn.put_resp_content_type("text/html")
+      |> Plug.Conn.send_resp(
+        200,
+        File.read!("test/fixtures/incoming_documents/freemarker_error.html")
+      )
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "send")
+    checked = Incoming.get!(doc.id)
+    assert checked.state == "uncertain"
+    assert checked.sent_xml == approved.sent_xml
+    assert checked.response["format_diagnostic"]["kind"] == "server_template_error"
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      assert conn.method == "GET"
+      Plug.Conn.send_resp(conn, 404, "")
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "send")
+    assert Incoming.get!(doc.id).state == "uncertain"
+  end
+
   test "ABRA errors include affected field, path, code and value" do
     doc = upload() |> extracted()
 

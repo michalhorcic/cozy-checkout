@@ -329,6 +329,28 @@ při zápisu zůstává výsledek nejistý a další pokus pouze dohledává ext
 Starší neplatné odpovědi, jejichž tělo se ještě neukládalo, zpětně zobrazit nelze.
 Nový dry-run může bezpečně doplnit aktuální diagnostiku; nejistý zápis se neopakuje.
 
+HTML odpovědi mají samostatnou čitelnou diagnostiku místo samotného zdrojového
+kódu. Rozlišuje se přesměrování, HTTP 401/403, chyba serveru, pravděpodobná
+přihlašovací stránka a nečekaná HTML stránka. U konkrétní chyby FreeMarker
+(„object“ v `evidence/faktura-prijata/view.ftl`) zobrazí technický výpis od chyby,
+bez navigace a skriptů, titulek a verzi uvedenou v HTML. To je chyba vykreslení
+odpovědi, nikoli doklad o úspěšné validaci ani identifikace chybného pole faktury.
+Text se pouze extrahuje a escapuje; HTML/JavaScript se nevykonává.
+
+Pro nové odpovědi se uloží i metoda, adresa API bez userinfo/query, přepínač
+dry-run, požadované Content-Type/Accept a omezené diagnostické hlavičky.
+Přesměrovací Location se zobrazuje bez přihlašovacích údajů a query/fragmentu;
+Set-Cookie ani Authorization se neukládají. Původní HTML zůstává zvlášť v zavřeném
+technickém výpisu. Čitelná diagnostika se počítá i ze starších uložených odpovědí;
+u nich nelze zpětně doplnit tehdejší adresu/hlavičky požadavku.
+
+Klient již požaduje `.json` a `Accept: application/json`; vstupní XML má
+`Content-Type: application/xml`. To odpovídá [dokumentaci formátů ABRA](https://podpora.flexibee.eu/cs/articles/4719998-podporovane-formaty).
+Pokud přesto přijde webová stránka, diagnostika pomůže prověřit adresu, proxy
+nebo konkrétní verzi ABRA, ale sama neodstraní chybu na serveru. Není zavedené
+automatické opakování POST při HTML odpovědi. Dry-run nesplní schvalovací podmínku;
+nejasný skutečný zápis zůstane nejistý a další pokusy pouze dohledávají externí ID.
+
 Dosud neodeslaný doklad ve stavu „Ke kontrole“ lze výslovně vytěžit znovu,
 například pro doplnění položek novým zadáním. Potvrzení upozorní na nahrazení
 oprav a zrušení dry-runu. Po zahájení importu tato možnost není dostupná.

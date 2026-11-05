@@ -1,7 +1,16 @@
 defmodule CozyCheckoutWeb.IncomingDocumentsLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
-  alias CozyCheckout.IncomingDocuments.{Builder, Client, Editor, Extractor, XML}
+
+  alias CozyCheckout.IncomingDocuments.{
+    Builder,
+    Client,
+    Editor,
+    Extractor,
+    ResponseDiagnostics,
+    XML
+  }
+
   import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
 
   def mount(_, _, socket) do
@@ -378,6 +387,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
       accounting_open: false,
       accounting_dirty: false,
       accounting_error: nil,
+      abra_responses: [
+        {"Kontrola ABRA (dry-run)", ResponseDiagnostics.for_display(doc.dry_run)},
+        {"Přenos do ABRA", ResponseDiagnostics.for_display(doc.response)}
+      ],
       source_data: IncomingDocuments.transcription(doc),
       source_issues: Builder.source_issues(IncomingDocuments.transcription(doc)),
       source_dirty: false,
@@ -675,17 +688,42 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           <li :for={warning <- @doc.response["warnings"]}>Upozornění při zápisu: {warning}</li>
         </ul>
         <details
-          :for={
-            {title, response} <- [
-              {"Kontrola ABRA (dry-run)", @doc.dry_run},
-              {"Přenos do ABRA", @doc.response}
-            ]
-          }
+          :for={{title, response} <- @abra_responses}
           :if={response["http_status"]}
+          open={is_map(response["format_diagnostic"])}
           class="bg-white rounded-xl p-4"
           data-abra-response
         >
           <summary>{title} — podrobnosti odpovědi (HTTP {response["http_status"]})</summary>
+          <div :if={response["format_diagnostic"]} class="space-y-3 mt-3" data-abra-diagnostic>
+            <p class="alert alert-error">{response["format_diagnostic"]["summary"]}</p>
+            <p>{response["format_diagnostic"]["hint"]}</p>
+            <p :if={response["format_diagnostic"]["title"] not in [nil, ""]}>
+              <strong>Titulek stránky:</strong> {response["format_diagnostic"]["title"]}
+            </p>
+            <p :if={response["format_diagnostic"]["version_in_html"]}>
+              <strong>Verze uvedená v HTML:</strong> {response["format_diagnostic"]["version_in_html"]}
+            </p>
+            <pre
+              :if={response["format_diagnostic"]["text"] != ""}
+              class="text-sm whitespace-pre-wrap break-all max-h-64 overflow-auto border rounded p-3"
+            >{response["format_diagnostic"]["text"]}</pre>
+          </div>
+          <div :if={response["request"]} class="text-sm break-all mt-3">
+            <p>
+              Volání: {response["request"]["method"]} {response["request"]["url"]} · dry-run={to_string(
+                response["request"]["dry_run"]
+              )}
+            </p>
+            <p>
+              Požadovaný výstup: {response["request"]["accept"]} · Odeslaný obsah: {response[
+                "request"
+              ]["content_type"]}
+            </p>
+          </div>
+          <p :if={get_in(response, ["response_headers", "location"])}>
+            Přesměrování: {response["response_headers"]["location"]}
+          </p>
           <p class="mt-3">
             Typ obsahu: {if response["content_type"] in [nil, ""],
               do: "neuveden",
@@ -704,7 +742,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             </p>
           </div>
           <p :if={response["truncated"]}>Výpis těla je zkrácen na prvních 100 000 znaků.</p>
-          <pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{response["raw_body"] || Jason.encode!(response["body"] || %{}, pretty: true)}</pre>
+          <details>
+            <summary>Původní odpověď serveru (technický výpis)</summary>
+            <pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{response["raw_body"] || Jason.encode!(response["body"] || %{}, pretty: true)}</pre>
+          </details>
         </details>
         <div class="grid lg:grid-cols-2 gap-6">
           <div class="space-y-3 min-w-0">
