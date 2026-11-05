@@ -1,0 +1,267 @@
+{
+  "document_number": "0052-20261105-01-0039",
+  "document_number_label": "EV-č:",
+  "variable_symbol": null,
+  "issue_date": "2026-11-05",
+  "tax_date": null,
+  "due_date": null,
+  "currency": "CZK",
+  "total": "1178.34",
+  "supplier": {
+    "name": "PENNY MARKET s.r.o.",
+    "ic": "64945880",
+    "dic": "CZ64945880",
+    "street": "Počernická 257",
+    "city": "Radonice",
+    "postal_code": "25073"
+  },
+  "vat_legend": [
+    {
+      "marker": "C",
+      "rate": "12"
+    }
+  ],
+  "vat_summary": [
+    {
+      "rate": "12",
+      "net": "1052.09",
+      "vat": "126.25",
+      "gross": null
+    }
+  ],
+  "items": [
+    {
+      "name": "Květák",
+      "quantity": "1",
+      "unit_price": "24.90",
+      "line_total": "24.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Květák: 1 x 24.90 = 24.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Chléb konzumní 1200 g",
+      "quantity": "1",
+      "unit_price": "44.90",
+      "line_total": "44.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Chléb konzumní 1200 g: 1 x 44.90 = 44.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Chléb konzumní 1200 g",
+      "quantity": "1",
+      "unit_price": "44.90",
+      "line_total": "44.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Chléb konzumní 1200 g: 1 x 44.90 = 44.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Celer řapíkatý",
+      "quantity": "1",
+      "unit_price": "29.90",
+      "line_total": "29.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Celer řapíkatý: 1 x 29.90 = 29.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Máslo 82 % 250 g",
+      "quantity": "5",
+      "unit_price": "32.90",
+      "line_total": "164.50",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Máslo 82 % 250 g: 5 x 32.90 = 164.50 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Rajče cherry 500 g",
+      "quantity": "3",
+      "unit_price": "79.90",
+      "line_total": "239.70",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Rajče cherry 500 g: 3 x 79.90 = 239.70 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Česnek",
+      "quantity": "1",
+      "unit_price": "10.90",
+      "line_total": "10.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Česnek: 1 x 10.90 = 10.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Česnek",
+      "quantity": "1",
+      "unit_price": "10.90",
+      "line_total": "10.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Česnek: 1 x 10.90 = 10.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Okurka salátová",
+      "quantity": "1",
+      "unit_price": "14.90",
+      "line_total": "14.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Okurka salátová: 1 x 14.90 = 14.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Paprika bílá/trikolora 500 g",
+      "quantity": "1",
+      "unit_price": "54.90",
+      "line_total": "54.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Paprika bílá/trikolora 500 g: 1 x 54.90 = 54.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Petržel kořenová",
+      "quantity": "1",
+      "unit_price": "29.90",
+      "line_total": "29.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Petržel kořenová: 1 x 29.90 = 29.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Mrkev 1 kg",
+      "quantity": "1",
+      "unit_price": "24.90",
+      "line_total": "24.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Mrkev 1 kg: 1 x 24.90 = 24.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Okurka salátová",
+      "quantity": "1",
+      "unit_price": "14.90",
+      "line_total": "14.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Okurka salátová: 1 x 14.90 = 14.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Okurka salátová",
+      "quantity": "1",
+      "unit_price": "14.90",
+      "line_total": "14.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Okurka salátová: 1 x 14.90 = 14.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Okurka salátová",
+      "quantity": "1",
+      "unit_price": "14.90",
+      "line_total": "14.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Okurka salátová: 1 x 14.90 = 14.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Okurka salátová",
+      "quantity": "1",
+      "unit_price": "14.90",
+      "line_total": "14.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Okurka salátová: 1 x 14.90 = 14.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Pomeranč",
+      "quantity": "0.582",
+      "unit_price": "49.90",
+      "line_total": "29.04",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Pomeranč: 0.582 x 49.90 = 29.04 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Smetana ke šlehání 31 % 200 g",
+      "quantity": "1",
+      "unit_price": "24.90",
+      "line_total": "24.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Smetana ke šlehání 31 % 200 g: 1 x 24.90 = 24.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Smetana ke šlehání 31 % 200 g",
+      "quantity": "1",
+      "unit_price": "24.90",
+      "line_total": "24.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Smetana ke šlehání 31 % 200 g: 1 x 24.90 = 24.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Dezert tiramisu 300 g",
+      "quantity": "1",
+      "unit_price": "69.90",
+      "line_total": "69.90",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Dezert tiramisu 300 g: 1 x 69.90 = 69.90 C",
+      "price_includes_vat": true
+    },
+    {
+      "name": "Sirup pomeranč 0.7 l",
+      "quantity": "12",
+      "unit_price": "22.90",
+      "line_total": "274.80",
+      "discount_percent": null,
+      "vat_marker": "C",
+      "vat_rate": null,
+      "raw_text": "Sirup pomeranč 0.7 l: 12 x 22.90 = 274.80 C",
+      "price_includes_vat": true
+    }
+  ],
+  "complete": true,
+  "uncertainties": []
+}

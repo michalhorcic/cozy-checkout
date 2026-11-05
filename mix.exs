@@ -21,7 +21,7 @@ defmodule CozyCheckout.MixProject do
   def application do
     [
       mod: {CozyCheckout.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :xmerl]
     ]
   end
 

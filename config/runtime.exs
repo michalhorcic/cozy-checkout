@@ -165,7 +165,7 @@ accommodation_enabled_from =
     _ -> nil
   end
 
-config :cozy_checkout, :abra_accommodation,
+accommodation_connection = [
   enabled: System.get_env("ABRA_ACCOMMODATION_ENABLED", "false") == "true",
   # Accounting defaults copied from the supplied ZDD example; payments require explicit confirmation.
   tax_receipt_outside_mode: System.get_env("ABRA_ACCOMMODATION_ZDD_OUTSIDE_MODE", "sumOsv"),
@@ -194,6 +194,9 @@ config :cozy_checkout, :abra_accommodation,
   password: abra_connection[:password],
   advance_type_code: System.get_env("ABRA_ACCOMMODATION_ADVANCE_TYPE_CODE", "ZÁLOHA"),
   bank_account_code: System.get_env("ABRA_ACCOMMODATION_BANK_ACCOUNT_CODE", "BANKOVNÍ ÚČET")
+]
+
+config :cozy_checkout, :abra_accommodation, accommodation_connection
 
 config :cozy_checkout, :abra_pdf, enabled: System.get_env("ABRA_PDF_ENABLED", "false") == "true"
 
@@ -212,3 +215,13 @@ config :cozy_checkout, :economics,
   company_id: System.get_env("ECONOMICS_ABRA_COMPANY_ID"),
   username: System.get_env("ECONOMICS_ABRA_USERNAME"),
   password: System.get_env("ECONOMICS_ABRA_PASSWORD")
+
+# Received documents share the accommodation accounting target; activation is independent.
+config :cozy_checkout, :incoming_documents,
+  enabled: System.get_env("INCOMING_DOCUMENTS_ENABLED", "false") == "true",
+  base_url: accommodation_connection[:base_url],
+  company_id: accommodation_connection[:company_id],
+  username: accommodation_connection[:username],
+  password: accommodation_connection[:password],
+  openai_api_key: System.get_env("OPENAI_API_KEY"),
+  openai_model: System.get_env("INCOMING_DOCUMENTS_OPENAI_MODEL")

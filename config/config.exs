@@ -89,6 +89,9 @@ config :cozy_checkout, Oban,
 config :cozy_checkout,
   email_from_address: "jindrichuvdum@jindrichuvdum.cz"
 
+# Received-document corrections must not appear in Phoenix event parameter logs.
+config :phoenix, :filter_parameters, ["password", "token", "secret", "fields"]
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
