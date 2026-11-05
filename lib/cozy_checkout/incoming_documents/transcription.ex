@@ -36,18 +36,48 @@ defmodule CozyCheckout.IncomingDocuments.Transcription do
   @doc "Normalizes unambiguous Czech numeric formatting without changing source values."
   def canonicalize(data) do
     data
-    |> normalize_fields(~w(total))
+    |> normalize_money_fields(~w(total), data["currency"])
     |> Map.update!(
       "vat_summary",
-      &Enum.map(&1, fn row -> normalize_fields(row, ~w(rate net vat gross)) end)
+      &Enum.map(&1, fn row ->
+        row
+        |> normalize_fields(~w(rate))
+        |> normalize_money_fields(~w(net vat gross), data["currency"])
+      end)
     )
     |> Map.update!("vat_legend", &Enum.map(&1, fn row -> normalize_fields(row, ~w(rate)) end))
     |> Map.update!(
       "items",
       &Enum.map(&1, fn row ->
-        normalize_fields(row, ~w(quantity unit_price line_total discount_percent vat_rate))
+        row
+        |> normalize_fields(~w(quantity discount_percent vat_rate))
+        |> normalize_money_fields(~w(unit_price line_total), data["currency"])
       end)
     )
+  end
+
+  defp normalize_money_fields(map, keys, currency) do
+    Enum.reduce(keys, map, fn key, acc ->
+      Map.update!(acc, key, fn value ->
+        value = if currency == "CZK" and is_binary(value), do: strip_czk(value), else: value
+        canonical_number(value)
+      end)
+    end)
+  end
+
+  defp strip_czk(value) do
+    value = String.trim(value)
+
+    cond do
+      Regex.match?(~r/^(?:Kč|CZK)\s*[-+]?\d/iu, value) ->
+        Regex.replace(~r/^(?:Kč|CZK)\s*/iu, value, "")
+
+      Regex.match?(~r/\d\s*(?:Kč|CZK)$/iu, value) ->
+        Regex.replace(~r/\s*(?:Kč|CZK)$/iu, value, "")
+
+      true ->
+        value
+    end
   end
 
   defp normalize_fields(map, keys) do

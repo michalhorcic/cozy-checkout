@@ -155,6 +155,28 @@ importem ověřte chyby, částky, cílovou firmu a případnou duplicitu. Autom
 zápis z aplikace nadále vyžaduje úspěšnou kontrolu a schválení. Zcela neplatné
 XML/JSON či údaje, které nelze mapovat do agendy, se místo souboru zobrazí chybou.
 
+### Neúplné řádky a měna v částkách
+
+U peněžních polí přepisu v CZK se toleruje také označení `Kč` nebo `CZK` před
+částkou či za ní: `99.00 Kč`, `99,00 Kč` a `CZK 99.00` se mapují na XML číslo
+`99.00`. Označení se neodstraňuje z množství, sazeb, identifikátorů ani textu;
+cizí měna či složená jednotka `Kč/kg` se bez jasného významu nepřevádí. Původní
+JSON a raw_text zůstávají zachované. V XML ABRA je správně desetinná tečka,
+bez mezer a označení měny ([datové typy ABRA](https://podpora.flexibee.eu/cs/articles/4722246-podporovane-typy-promennych)).
+
+Formulář i upozornění před stažením nyní uvádějí pokrytí celkové částky čitelnými
+řádkovými částkami (pokud není některá cena výslovně bez DPH), neurčenou sazbu
+a neurčený typ ceny. Rozpor se používá také jako zpětná vazba pro opravný přepis,
+i když model vrátil complete=true. Rekapitulace DPH se nepovažuje za další položku
+nákupu a z její částky se automaticky nevytváří chybějící služba.
+
+Regresní neúplný O2 přepis obsahuje pouze Splátkový prodej 99 Kč, zatímco total
+je 1902,34 Kč a rekapitulace 21 % obsahuje gross 1803,34 Kč. Upozornění proto
+ukáže rozdíl řádků 1803,34 Kč. V diagnostickém exportu zůstane jediná doložená
+položka, číselně očištěná; bez doplnění skutečných údajů nelze vytvořit úplný
+import celé faktury. Prázdné typSzbDphK a typCenyDphK nejsou potvrzením nulové
+sazby nebo osvobození. Stažení návrhu s upozorněními zůstává možné.
+
 ### Účetní předpis, interní číslo a diagnostický dry-run
 
 U každého neodeslaného dokladu je sekce „Účetní nastavení dokladu“.

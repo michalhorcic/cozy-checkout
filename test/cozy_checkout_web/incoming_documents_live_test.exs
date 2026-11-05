@@ -231,6 +231,33 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert has_element?(view, "#incoming-diagnose")
   end
 
+  test "incomplete O2 extraction warns about missing service coverage before download", %{
+    conn: conn
+  } do
+    data = File.read!("test/fixtures/incoming_documents/o2_incomplete.json") |> Jason.decode!()
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "o2.pdf", "faktura-prijata")
+
+    doc
+    |> Ecto.Changeset.change(state: "failed", error_stage: "extraction", extracted_data: data)
+    |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "#incoming-export-issues", "1803.34")
+    assert has_element?(view, "#incoming-source-issues", "Neurčená sazba neznamená")
+    assert has_element?(view, "#incoming-draft-download a")
+
+    download =
+      build_conn()
+      |> admin()
+      |> get("/admin/incoming-documents/#{doc.id}/draft.xml")
+      |> response(200)
+
+    assert {:ok, fields} = XML.parse(download, "faktura-prijata")
+    assert length(XML.items(fields)) == 1
+    assert hd(XML.items(fields))["cenaMj"] == "99.00"
+    assert IncomingDocuments.get!(doc.id).sent_xml == nil
+  end
+
   test "legacy extraction failures explain the need for one new extraction", %{conn: conn} do
     {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "legacy.pdf", "zavazek")
 

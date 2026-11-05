@@ -64,6 +64,16 @@ defmodule CozyCheckout.IncomingDocuments.TranscriptionTest do
         %{"gross" => "1 803,34", "net" => "1 490,36", "rate" => "21", "vat" => "312,98"}
       ])
 
+    row =
+      hd(source()["items"])
+      |> Map.merge(%{
+        "unit_price" => "1 803,34",
+        "line_total" => "1 803,34",
+        "vat_marker" => nil,
+        "vat_rate" => "21"
+      })
+
+    data = Map.put(data, "items", [row])
     assert Builder.summary_issues(data) == []
     assert {:ok, raw} = Builder.build(data, doc("faktura-prijata"))
     assert {:ok, fields} = XML.parse(raw, "faktura-prijata")
@@ -100,6 +110,45 @@ defmodule CozyCheckout.IncomingDocuments.TranscriptionTest do
     assert Transcription.canonicalize(Map.put(data, "total", "1 80,34"))["total"] == "1 80,34"
   end
 
+  test "O2 incomplete extraction strips CZK labels but never invents the missing service or a zero VAT rate" do
+    data = File.read!("test/fixtures/incoming_documents/o2_incomplete.json") |> Jason.decode!()
+    canonical = Transcription.canonicalize(data)
+    assert canonical["total"] == "1902.34"
+    assert hd(canonical["items"])["unit_price"] == "99.00"
+    assert hd(canonical["vat_summary"])["vat"] == "312.98"
+    assert canonical["document_number"] == data["document_number"]
+    assert hd(canonical["items"])["raw_text"] == hd(data["items"])["raw_text"]
+    issues = Builder.source_issues(data)
+    assert Enum.any?(issues, &(&1.path == "items" and &1.message =~ "1803.34"))
+    assert Enum.any?(issues, &(&1.path == "items.0.vat_rate"))
+    assert Enum.any?(issues, &(&1.path == "items.0.price_includes_vat"))
+    assert {:error, reason, raw} = Builder.build(data, doc("faktura-prijata"))
+    assert reason =~ "1803.34"
+    assert {:ok, fields} = XML.parse(raw, "faktura-prijata")
+    assert length(XML.items(fields)) == 1
+    assert hd(XML.items(fields))["cenaMj"] == "99.00"
+    assert hd(XML.items(fields))["typSzbDphK"] == ""
+    assert hd(XML.items(fields))["typCenyDphK"] == ""
+    refute raw =~ ">99.00 Kč<"
+  end
+
+  test "currency labels are stripped only from money in the declared CZK currency" do
+    for value <- ["99,00 Kč", "CZK 99.00", "99.00 CZK", "99,00\u00a0Kč"] do
+      assert Transcription.canonicalize(Map.put(source(), "total", value))["total"] == "99.00"
+    end
+
+    assert Transcription.canonicalize(Map.put(source(), "total", "99.00 EUR"))["total"] ==
+             "99.00 EUR"
+
+    assert Transcription.canonicalize(Map.put(source(), "total", "99.00 Kč/kg"))["total"] ==
+             "99.00 Kč/kg"
+
+    data = source() |> Map.put("currency", "EUR") |> Map.put("total", "99 Kč")
+    assert Transcription.canonicalize(data)["total"] == "99 Kč"
+    data = put_in(source(), ["items", Access.at(0), "quantity"], "1 Kč")
+    assert hd(Transcription.canonicalize(data)["items"])["quantity"] == "1 Kč"
+  end
+
   test "strict source contract rejects missing keys, injected accounting fields and 201 rows" do
     assert :ok = Transcription.validate(source())
     assert {:error, _} = Transcription.validate(Map.delete(source(), "complete"))
@@ -134,7 +183,7 @@ defmodule CozyCheckout.IncomingDocuments.TranscriptionTest do
           ])
         ] do
       doc = doc("zavazek")
-      assert {:ok, raw} = Builder.build(data, doc)
+      assert {:ok, raw} = Builder.draft(data, doc)
       assert {:error, _} = XML.normalize(raw, doc.agenda, doc.template_xml, doc.external_id)
     end
 

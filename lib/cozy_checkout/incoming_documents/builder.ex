@@ -28,8 +28,19 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
     case draft(data, doc) do
       {:ok, raw} ->
         case compose(data, doc, true) do
-          {:ok, xml} -> {:ok, xml}
-          {:error, reason, _} -> {:error, reason, raw}
+          {:ok, xml} ->
+            case coverage_issues(Transcription.canonicalize(data)) do
+              [] -> {:ok, xml}
+              issues -> {:error, Enum.map_join(issues, "; ", & &1.message), raw}
+            end
+
+          {:error, reason, _} ->
+            issues = coverage_issues(Transcription.canonicalize(data))
+
+            prefix =
+              if issues == [], do: "", else: Enum.map_join(issues, "; ", & &1.message) <> " "
+
+            {:error, prefix <> reason, raw}
         end
 
       {:error, reason} ->
@@ -146,6 +157,73 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
       {:ok, fields, _} -> {:ok, fields}
       error -> error
     end
+  end
+
+  @doc "Source coverage is independent of JSON's complete flag and of the VAT summary."
+  def source_issues(data) do
+    case Transcription.validate(data) do
+      :ok ->
+        canonical = Transcription.canonicalize(data)
+        summary_issues(data) ++ coverage_issues(canonical) ++ item_source_issues(canonical)
+
+      _ ->
+        []
+    end
+  end
+
+  defp coverage_issues(data) do
+    totals = Enum.map(data["items"], &money(&1["line_total"]))
+
+    with {:ok, total} <- money(data["total"]),
+         true <- Enum.all?(totals, &match?({:ok, _}, &1)),
+         false <- Enum.any?(data["items"], &(&1["price_includes_vat"] == false)) do
+      sum =
+        Enum.reduce(totals, Decimal.new(0), fn {:ok, amount}, acc -> Decimal.add(acc, amount) end)
+
+      if Decimal.equal?(total, sum) do
+        []
+      else
+        [
+          %{
+            path: "items",
+            message:
+              "Položky pokrývají #{sum} Kč z celku #{total} Kč (total / sumCelkem); rozdíl #{Decimal.sub(total, sum)} Kč. Rekapitulace DPH není položka. Znovu zkontrolujte účtované služby a všechny strany originálu; chybějící položky nelze domyslet z rekapitulace."
+          }
+        ]
+      end
+    else
+      _ -> []
+    end
+  end
+
+  defp item_source_issues(data) do
+    Enum.flat_map(Enum.with_index(data["items"]), fn {row, index} ->
+      rate =
+        case item_rate(row, data["vat_legend"]) do
+          {:ok, _} ->
+            []
+
+          {:error, reason} ->
+            [
+              %{
+                path: "items.#{index}.vat_rate",
+                message: reason <> ". Neurčená sazba neznamená osvobození ani plnění bez DPH."
+              }
+            ]
+        end
+
+      price =
+        if is_boolean(row["price_includes_vat"]),
+          do: [],
+          else: [
+            %{
+              path: "items.#{index}.price_includes_vat",
+              message: "Není určeno, zda je jednotková cena s DPH nebo bez DPH"
+            }
+          ]
+
+      rate ++ price
+    end)
   end
 
   def summary_issues(data) do

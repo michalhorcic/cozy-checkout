@@ -1,0 +1,47 @@
+{
+  "document_number": "5300372845",
+  "document_number_label": "Číslo vyúčtování",
+  "variable_symbol": "5300372845",
+  "issue_date": "2026-10-31",
+  "tax_date": "2026-10-31",
+  "due_date": "2026-11-23",
+  "currency": "CZK",
+  "total": "1902.34 Kč",
+  "supplier": {
+    "city": "Praha 4 - Michle",
+    "dic": "CZ60193336",
+    "ic": "60193336",
+    "name": "O2 Czech Republic a.s.",
+    "postal_code": "140 22",
+    "street": "Za Brumlovkou 266/2"
+  },
+  "vat_legend": [
+    {
+      "marker": "21 %",
+      "rate": "21"
+    }
+  ],
+  "vat_summary": [
+    {
+      "gross": "1803.34 Kč",
+      "net": "1490.36 Kč",
+      "rate": "21",
+      "vat": "312.98 Kč"
+    }
+  ],
+  "items": [
+    {
+      "discount_percent": null,
+      "line_total": "99.00 Kč",
+      "name": "Splátkový prodej",
+      "price_includes_vat": null,
+      "quantity": "1",
+      "raw_text": "Splátkový prodej 1 × 99,00 Kč",
+      "unit_price": "99.00 Kč",
+      "vat_marker": null,
+      "vat_rate": null
+    }
+  ],
+  "complete": true,
+  "uncertainties": []
+}

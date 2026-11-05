@@ -379,7 +379,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
       accounting_dirty: false,
       accounting_error: nil,
       source_data: IncomingDocuments.transcription(doc),
-      source_issues: Builder.summary_issues(IncomingDocuments.transcription(doc)),
+      source_issues: Builder.source_issues(IncomingDocuments.transcription(doc)),
       source_dirty: false,
       source_locked:
         doc.state not in ["failed", "review"] or not is_nil(doc.sent_xml) or
@@ -398,7 +398,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     assign(socket,
       source_data: data,
       source_dirty: true,
-      source_issues: Builder.summary_issues(data),
+      source_issues: Builder.source_issues(data),
       transcription_form: to_form(%{"data" => Jason.encode!(data, pretty: true)}, as: :fields)
     )
   end
@@ -586,6 +586,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           <p>
             XML návrh lze stáhnout i přes účetní chyby. Stažení neprovádí zápis ani kontrolu v ABRA. Není-li doklad schválený, jde o neověřený návrh; před ručním importem zkontrolujte chyby a cílovou firmu.
           </p>
+          <ul :if={@source_issues != []} class="alert alert-warning" id="incoming-export-issues">
+            <li :for={issue <- @source_issues}>{issue.message}</li>
+          </ul>
           <p :if={@source_dirty or @accounting_dirty} class="text-warning">
             Před stažením nejdříve uložte změny návrhu.
           </p>
@@ -806,6 +809,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
               id="incoming-source-editor"
             >
               <h2 class="text-xl font-bold">Údaje přečtené z originálu</h2>
+              <ul :if={@source_issues != []} class="alert alert-warning" id="incoming-source-issues">
+                <li :for={issue <- @source_issues}>{issue.path}: {issue.message}</li>
+              </ul>
               <p>
                 Částky lze zadat česky, např. 1 803,34. Prázdné pole znamená neznámý údaj. Uložení uchová návrh i s chybami a znovu sestaví XML z těchto údajů. Nahradí dosavadní opravy XML a zruší kontrolu ABRA; nic neodesílá.
               </p>
@@ -946,12 +952,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                         name={Editor.name(["items", index, key])}
                         value={row[key] || ""}
                         label={title}
+                        errors={source_error(@source_issues, ["items", index, key])}
                       />
                       <.input
                         name={Editor.name(["items", index, "price_includes_vat"])}
                         value={Editor.value(@source_data, ["items", index, "price_includes_vat"])}
                         type="select"
                         label="Jednotková cena"
+                        errors={source_error(@source_issues, ["items", index, "price_includes_vat"])}
                         options={[
                           {"Neznámý typ ceny", ""},
                           {"Včetně DPH", "true"},
