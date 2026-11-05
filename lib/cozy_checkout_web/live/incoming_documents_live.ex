@@ -896,7 +896,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                     phx-click="source-add"
                     phx-value-collection="vat_summary"
                   >Přidat sazbu</button>
-                  <details>
+                  <details id="incoming-source-vat-legend" phx-mounted={JS.ignore_attributes("open")}>
                     <summary>Legenda značek DPH</summary>
                     <div
                       :for={{row, index} <- Enum.with_index(@source_data["vat_legend"])}
@@ -926,6 +926,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                   <h3 class="font-bold">Jednotlivé položky ({length(@source_data["items"])})</h3>
                   <details
                     :for={{row, index} <- Enum.with_index(@source_data["items"])}
+                    id={"incoming-source-item-#{@doc.id}-#{index}"}
+                    phx-mounted={JS.ignore_attributes("open")}
+                    open={row["name"] in [nil, ""]}
                     class="border rounded-lg p-3"
                     data-source-item={index}
                   >
@@ -1001,7 +1004,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                   >Uložit návrh a zkontrolovat</button>
                 </fieldset>
               </form>
-              <details id="incoming-source-json">
+              <details id="incoming-source-json" phx-mounted={JS.ignore_attributes("open")}>
                 <summary>JSON aktuálního návrhu (pokročilé úpravy)</summary>
                 <.form
                   :if={!@source_locked}
