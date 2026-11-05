@@ -65,7 +65,9 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
             content: [
               %{
                 type: "input_text",
-                text: "Selected agenda: #{doc.agenda}. XML template:\n" <> doc.template_xml
+                text:
+                  "Selected agenda: #{doc.agenda}. XML template:\n" <>
+                    CozyCheckout.IncomingDocuments.XML.template_for(doc)
               }
               | parts
             ]

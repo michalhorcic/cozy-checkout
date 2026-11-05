@@ -528,6 +528,194 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert Incoming.digest(approved.sent_xml) == doc.dry_run["payload_hash"]
   end
 
+  test "accounting selection uses the company's expense and VAT accounts and preserves corrected XML" do
+    doc = upload("faktura-prijata") |> extracted()
+
+    assert {:ok, doc} =
+             Incoming.save(doc.id, %{"cisDosle" => "CORRECTED"}, Incoming.digest(doc.current_xml))
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      assert conn.method == "GET"
+      assert conn.request_path == "/c/pilot/predpis-zauctovani.json"
+      conn = Plug.Conn.fetch_query_params(conn)
+      assert conn.query_params["relations"] == "code"
+
+      Req.Test.json(conn, %{
+        "winstrom" => %{
+          "predpis-zauctovani" => [
+            %{
+              "kod" => "SLUZBY",
+              "nazev" => "Telefonní služby",
+              "modulFap" => "true",
+              "protiUcetVydej" => "code:518100",
+              "dphZaklUcet" => "code:343100"
+            }
+          ]
+        }
+      })
+    end)
+
+    assert {:ok, saved} =
+             Incoming.save_accounting(
+               doc.id,
+               %{"preset" => "SLUZBY", "internal_code" => "fp-2026-001"},
+               Incoming.transcription_hash(doc)
+             )
+
+    assert {:ok, fields} = XML.parse(saved.current_xml, doc.agenda)
+    assert fields["typUcOp"] == "code:SLUZBY"
+    assert fields["protiUcet"] == "code:518100"
+    assert fields["primUcet"] == "code:321001"
+    assert fields["kod"] == "FP-2026-001"
+    assert fields["cisDosle"] == "CORRECTED"
+    assert fields["sumCelkem"] == "121.00"
+    assert saved.template_xml == doc.template_xml
+    assert saved.dry_run == %{}
+    assert {:error, _} = Incoming.approve(doc.id, Incoming.digest(saved.current_xml))
+    assert {:ok, payload} = Incoming.diagnostic_xml(saved)
+    assert payload =~ "<kod>FP-2026-001</kod>"
+
+    assert {:error, _} =
+             Incoming.save_accounting(
+               doc.id,
+               %{"internal_code" => "OTHER"},
+               Incoming.transcription_hash(doc)
+             )
+  end
+
+  test "presets are paginated in batches and filtered for the selected agenda" do
+    doc = upload("faktura-prijata")
+
+    page =
+      for i <- 1..200, do: %{"kod" => "P#{i}", "nazev" => "Předpis #{i}", "modulFap" => "true"}
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      conn = Plug.Conn.fetch_query_params(conn)
+      assert conn.query_params["start"] == "0"
+      Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => page}})
+    end)
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      conn = Plug.Conn.fetch_query_params(conn)
+      assert conn.query_params["start"] == "200"
+
+      Req.Test.json(conn, %{
+        "winstrom" => %{
+          "predpis-zauctovani" => [
+            %{"kod" => "POKLADNA", "modulFap" => "false", "modulPokV" => "true"}
+          ]
+        }
+      })
+    end)
+
+    assert {:ok, rows} = Incoming.accounting_presets(doc.id)
+    assert length(rows) == 200
+    refute Enum.any?(rows, &(&1["kod"] == "POKLADNA"))
+  end
+
+  test "unavailable accounting catalog never changes the draft" do
+    doc = upload("faktura-prijata") |> extracted()
+    Req.Test.expect(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 403, "forbidden") end)
+
+    assert {:error, reason} =
+             Incoming.save_accounting(
+               doc.id,
+               %{"preset" => "SLUZBY"},
+               Incoming.transcription_hash(doc)
+             )
+
+    assert reason =~ "403"
+    assert Incoming.get!(doc.id).current_xml == doc.current_xml
+    assert Incoming.get!(doc.id).accounting_settings == %{}
+  end
+
+  test "internal code is optional, editable without catalog access, and retained through subsequent source edits" do
+    doc = upload() |> extracted()
+
+    assert {:ok, changed} =
+             Incoming.save_accounting(
+               doc.id,
+               %{"internal_code" => "Z2026-1"},
+               Incoming.transcription_hash(doc)
+             )
+
+    assert changed.current_xml =~ "<kod>Z2026-1</kod>"
+
+    assert {:ok, changed} =
+             Incoming.save(
+               changed.id,
+               %{"popis" => "Oprava"},
+               Incoming.digest(changed.current_xml)
+             )
+
+    assert changed.current_xml =~ "<kod>Z2026-1</kod>"
+
+    assert {:ok, cleared} =
+             Incoming.save_accounting(
+               doc.id,
+               %{"internal_code" => ""},
+               Incoming.transcription_hash(changed)
+             )
+
+    refute cleared.current_xml =~ "<kod>"
+  end
+
+  test "diagnostic dry-run checks an invalid draft without granting permission to send" do
+    doc = upload()
+    data = put_in(transcription(), ["vat_summary", Access.at(0), "vat"], nil)
+
+    doc =
+      doc
+      |> Ecto.Changeset.change(
+        state: "failed",
+        error_stage: "extraction",
+        error: "Chybí daň",
+        extracted_data: data
+      )
+      |> Repo.update!()
+
+    assert {:ok, _} = Incoming.diagnose(doc.id, Incoming.transcription_hash(doc))
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      conn = Plug.Conn.fetch_query_params(conn)
+      assert conn.query_params["dry-run"] == "true"
+      success(conn, "-1")
+    end)
+
+    assert :ok = Incoming.perform(doc.id, "validate")
+    checked = Incoming.get!(doc.id)
+    assert checked.state == "failed"
+    assert checked.dry_run["diagnostic"] == true
+    assert checked.dry_run["accepted"] == true
+    assert checked.dry_run["ok"] == false
+    refute checked.dry_run["hash"]
+    assert checked.sent_xml == nil
+    assert checked.error == "Chybí daň"
+    assert {:error, _} = Incoming.approve(doc.id, Incoming.digest("anything"))
+  end
+
+  test "dry-run preview exposes generated internal code without reserving or copying it" do
+    doc = upload() |> extracted()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "winstrom" => %{
+          "success" => true,
+          "results" => [
+            %{
+              "id" => "-1",
+              "content" => %{"zavazek" => [%{"kod" => "ZV-123", "protiUcet" => "code:518100"}]}
+            }
+          ]
+        }
+      })
+    end)
+
+    assert {:ok, response} = Client.import(doc, doc.current_xml, true, Incoming.config())
+    assert response["preview"] == [%{"kod" => "ZV-123", "protiUcet" => "code:518100"}]
+    assert Incoming.get!(doc.id).accounting_settings == %{}
+  end
+
   test "invalid source edits are saved for correction and diagnostic export without authorizing a write" do
     doc = upload()
     original = transcription()

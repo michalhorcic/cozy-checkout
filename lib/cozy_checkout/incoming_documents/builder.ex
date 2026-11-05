@@ -50,7 +50,7 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
          data = Transcription.canonicalize(data),
          :ok <- if(strict, do: currency(data["currency"]), else: :ok),
          :ok <- if(strict, do: number_label(data["document_number_label"]), else: :ok),
-         {:ok, defaults} <- XML.parse(doc.template_xml, doc.agenda),
+         {:ok, defaults} <- XML.parse(XML.template_for(doc), doc.agenda),
          {:ok, fields} <- summary(defaults, data["vat_summary"], strict),
          {:ok, rows} <- rows(data["items"], data["vat_legend"], strict) do
       fields =

@@ -4,7 +4,7 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   @agendas ["faktura-prijata", "pokladni-pohyb", "zavazek"]
   @text ~w(cisDosle varSym datVyst duzpPuv duzpUcto datSplat datUcto popis nazFirmy ic dic ulice mesto psc buc iban)
   @amounts ~w(sumOsv sumZklSniz sumZklSniz2 sumZklZakl sumDphSniz sumDphSniz2 sumDphZakl sumCelkem)
-  @fixed ~w(typDokl mena stat statDph typUcOp primUcet protiUcet dphZaklUcet dphSnizUcet dphSniz2Ucet clenDph clenKonVykDph stredisko pokladna typPohybuK szbDphSniz szbDphSniz2 szbDphZakl bezPolozek ucetni)
+  @fixed ~w(kod typDokl mena stat statDph typUcOp primUcet protiUcet dphZaklUcet dphSnizUcet dphSniz2Ucet clenDph clenKonVykDph stredisko pokladna typPohybuK szbDphSniz szbDphSniz2 szbDphZakl bezPolozek ucetni)
   @item_fields ~w(nazev mnozMj cenaMj typCenyDphK typSzbDphK slevaPol sumZkl sumDph sumCelkem szbDph typPolozkyK)
   @item_editable ~w(nazev mnozMj cenaMj typCenyDphK typSzbDphK slevaPol)
   @rates ~w(szbDphSniz szbDphSniz2 szbDphZakl)
@@ -21,6 +21,34 @@ defmodule CozyCheckout.IncomingDocuments.XML do
 
   def template(agenda) when agenda in @agendas do
     :cozy_checkout |> Application.app_dir("priv/incoming_documents/#{agenda}.xml") |> File.read!()
+  end
+
+  @doc "Only explicit persisted accounting choices override the original template snapshot."
+  def template_for(doc) do
+    settings = Map.get(doc, :accounting_settings, %{})
+
+    if settings == %{} do
+      doc.template_xml
+    else
+      {:ok, fields} = parse(doc.template_xml, doc.agenda)
+
+      fields =
+        if settings["typUcOp"],
+          do: Map.drop(fields, CozyCheckout.IncomingDocuments.Accounting.accounts()),
+          else: fields
+
+      fields =
+        Map.merge(
+          fields,
+          Map.take(settings, [
+            "typUcOp",
+            "kod" | CozyCheckout.IncomingDocuments.Accounting.accounts()
+          ])
+        )
+
+      fields = if fields["kod"] in [nil, ""], do: Map.delete(fields, "kod"), else: fields
+      render(fields, doc.agenda)
+    end
   end
 
   @doc "Parses without creating atoms from names; only one bounded item collection is allowed, without DTD or entities."
@@ -296,7 +324,7 @@ defmodule CozyCheckout.IncomingDocuments.XML do
   end
 
   defp fixed_differences(fields, defaults) do
-    for key <- @fixed -- (@rates ++ ["bezPolozek"]),
+    for key <- @fixed -- (@rates ++ ["bezPolozek", "kod"]),
         Map.has_key?(fields, key),
         not equivalent?(key, fields[key], defaults[key]),
         do: %{field: key, expected: defaults[key], actual: fields[key]}

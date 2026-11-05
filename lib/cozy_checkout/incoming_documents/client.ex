@@ -22,6 +22,50 @@ defmodule CozyCheckout.IncomingDocuments.Client do
     end
   end
 
+  def presets(doc, cfg), do: presets_page(doc, cfg, 0, [])
+
+  defp presets_page(_doc, _cfg, offset, _rows) when offset >= 2000,
+    do: {:error, "Číselník dosáhl limitu 2000 předpisů; načtení nebylo potvrzeno jako úplné"}
+
+  defp presets_page(doc, cfg, offset, rows) do
+    endpoint =
+      "#{String.trim_trailing(doc.base_url, "/")}/c/#{encode(doc.company_id)}/predpis-zauctovani.json"
+
+    fields =
+      "id,kod,nazev,modulFap,modulZav,modulPokV,protiUcetVydej,dphZaklUcet,dphSnizUcet,dphSniz2Ucet"
+
+    case Req.get(endpoint,
+           params: [
+             detail: "custom:" <> fields,
+             relations: "code",
+             limit: 200,
+             start: offset,
+             order: "id"
+           ],
+           auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
+           retry: false,
+           redirect: false,
+           receive_timeout: 15_000,
+           connect_options: [timeout: 10_000]
+         ) do
+      {:ok, %{status: 200, body: %{"winstrom" => %{"predpis-zauctovani" => page}}}}
+      when is_list(page) and length(page) <= 200 ->
+        if Enum.all?(page, &is_map/1) do
+          if length(page) < 200,
+            do: {:ok, rows ++ page},
+            else: presets_page(doc, cfg, offset + 200, rows ++ page)
+        else
+          {:error, "ABRA vrátila neplatný číselník předpisů"}
+        end
+
+      {:ok, %{status: status}} ->
+        {:error, "Načtení předpisů ABRA selhalo (HTTP #{status})"}
+
+      _ ->
+        {:error, "Číselník předpisů ABRA není dostupný"}
+    end
+  end
+
   def find(doc, cfg) do
     id = URI.encode(doc.external_id, &URI.char_unreserved?/1)
 
@@ -111,7 +155,14 @@ defmodule CozyCheckout.IncomingDocuments.Client do
     warnings = messages(body, "warnings")
     result = if is_list(results) and length(results) == 1, do: hd(results), else: %{}
     id = if is_map(result), do: result["id"]
-    response = Map.merge(response, %{"body" => body, "warnings" => warnings, "errors" => errors})
+
+    response =
+      Map.merge(response, %{
+        "body" => body,
+        "warnings" => warnings,
+        "errors" => errors,
+        "preview" => dry_run_preview(result)
+      })
 
     cond do
       status in [200, 201] and body["success"] in [true, "true"] and errors == [] and
@@ -130,6 +181,20 @@ defmodule CozyCheckout.IncomingDocuments.Client do
          response}
     end
   end
+
+  defp dry_run_preview(%{"content" => content}) when is_map(content) do
+    for {agenda, records} <- content,
+        agenda in ["faktura-prijata", "pokladni-pohyb", "zavazek"],
+        record <- List.wrap(records),
+        is_map(record),
+        do:
+          Map.take(
+            record,
+            ~w(kod typUcOp primUcet protiUcet dphZaklUcet dphSnizUcet dphSniz2Ucet)
+          )
+  end
+
+  defp dry_run_preview(_), do: []
 
   defp messages(body, key) do
     entries =

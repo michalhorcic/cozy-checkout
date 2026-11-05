@@ -2,7 +2,17 @@ defmodule CozyCheckout.IncomingDocuments do
   @moduledoc "Admin-reviewed received documents with immutable create-only ABRA delivery."
   import Ecto.Query
   alias CozyCheckout.Repo
-  alias CozyCheckout.IncomingDocuments.{Builder, Client, Document, Extractor, SourceImages, XML}
+
+  alias CozyCheckout.IncomingDocuments.{
+    Accounting,
+    Builder,
+    Client,
+    Document,
+    Extractor,
+    SourceImages,
+    XML
+  }
+
   alias CozyCheckout.Workers.IncomingDocumentWorker
 
   @max_size 10_000_000
@@ -93,7 +103,7 @@ defmodule CozyCheckout.IncomingDocuments do
       require_state!(doc, ["review"])
       require_hash!(doc, expected_hash)
 
-      case XML.edit(doc.current_xml, attrs, doc.agenda, doc.template_xml, doc.external_id) do
+      case XML.edit(doc.current_xml, attrs, doc.agenda, XML.template_for(doc), doc.external_id) do
         {:ok, xml} -> update!(doc, current_xml: xml, dry_run: %{}, error: nil, error_stage: nil)
         {:error, reason} -> Repo.rollback(reason)
       end
@@ -112,7 +122,7 @@ defmodule CozyCheckout.IncomingDocuments do
       if digest(doc.generated_xml) != expected_hash,
         do: Repo.rollback("Výstup vytěžení se mezitím změnil. Obnovte stránku.")
 
-      case XML.normalize(xml, doc.agenda, doc.template_xml, doc.external_id) do
+      case XML.normalize(xml, doc.agenda, XML.template_for(doc), doc.external_id) do
         {:ok, normalized} ->
           update!(doc,
             state: "review",
@@ -150,6 +160,123 @@ defmodule CozyCheckout.IncomingDocuments do
         extraction_attempts: 0,
         error: nil,
         error_stage: nil
+      )
+    end)
+  end
+
+  def accounting_presets(id) do
+    doc = get!(id)
+
+    with :ok <- target(doc), {:ok, rows} <- Client.presets(doc, config()) do
+      {:ok, Enum.filter(rows, &Accounting.applicable?(&1, doc.agenda))}
+    end
+  end
+
+  def save_accounting(id, attrs, expected_hash) do
+    snapshot = get!(id)
+    preset = attrs["preset"] || ""
+
+    with :ok <- target(snapshot),
+         {:ok, code} <- Accounting.internal_code(attrs["internal_code"] || ""),
+         {:ok, settings} <- accounting_choice(snapshot, preset, code) do
+      locked(id, fn doc ->
+        require_state!(doc, ["failed", "review"])
+
+        if not is_nil(doc.sent_xml) or (doc.state == "failed" and doc.error_stage != "extraction"),
+          do: Repo.rollback("Účetní nastavení je uzamčené")
+
+        if transcription_hash(doc) != expected_hash,
+          do: Repo.rollback("Doklad se mezitím změnil; obnovte stránku")
+
+        require_target!(doc)
+        changed = %{doc | accounting_settings: settings}
+
+        built =
+          if is_nil(doc.current_xml) and transcription(doc) != %{} do
+            build_transcription(transcription(doc), changed)
+          else
+            with {:ok, raw} <-
+                   XML.restore_accounting(
+                     doc.current_xml || doc.generated_xml || "",
+                     doc.agenda,
+                     XML.template_for(changed),
+                     doc.external_id
+                   ) do
+              case XML.normalize(raw, doc.agenda, XML.template_for(changed), doc.external_id) do
+                {:ok, xml} -> {:ok, raw, xml}
+                {:error, reason} -> {:error, reason, raw}
+              end
+            else
+              {:error, reason} -> {:error, reason, nil}
+            end
+          end
+
+        case built do
+          {:ok, _raw, xml} ->
+            update!(doc,
+              accounting_settings: settings,
+              current_xml: xml,
+              state: "review",
+              dry_run: %{},
+              error: nil,
+              error_stage: nil
+            )
+
+          {:error, reason, raw} ->
+            update!(doc,
+              accounting_settings: settings,
+              current_xml: nil,
+              generated_xml: raw || doc.generated_xml,
+              state: "failed",
+              dry_run: %{},
+              error: reason,
+              error_stage: "extraction"
+            )
+        end
+      end)
+    end
+  end
+
+  defp accounting_choice(doc, "", code), do: {:ok, Map.put(doc.accounting_settings, "kod", code)}
+
+  defp accounting_choice(doc, preset, code) do
+    with {:ok, rows} <- Client.presets(doc, config()),
+         row when not is_nil(row) <- Enum.find(rows, &(&1["kod"] == preset)),
+         {:ok, settings} <- Accounting.select(row, doc.agenda, code),
+         do: {:ok, settings},
+         else: (
+           nil -> {:error, "Předpis není v číselníku ABRA"}
+           error -> error
+         )
+  end
+
+  def diagnose(id, expected_hash) do
+    locked(id, fn doc ->
+      require_state!(doc, ["failed", "review"])
+
+      if not is_nil(doc.sent_xml) or (doc.state == "failed" and doc.error_stage != "extraction"),
+        do: Repo.rollback("Tento návrh již nelze měnit ani diagnostikovat")
+
+      if transcription_hash(doc) != expected_hash,
+        do: Repo.rollback("Návrh se změnil; obnovte stránku")
+
+      require_target!(doc)
+
+      case diagnostic_xml(doc) do
+        {:ok, _} -> :ok
+        {:error, reason} -> Repo.rollback(reason)
+      end
+
+      job!(id, "validate")
+
+      update!(doc,
+        state: "validating",
+        dry_run: %{
+          "diagnostic" => true,
+          "resume_state" => doc.state,
+          "original_error" => doc.error,
+          "original_error_stage" => doc.error_stage
+        }
       )
     end)
   end
@@ -237,44 +364,65 @@ defmodule CozyCheckout.IncomingDocuments do
     if doc.state == "validating" do
       result =
         with :ok <- target(doc),
-             {:ok, payload} <- XML.import_xml(doc.current_xml, doc.agenda),
+             {:ok, payload} <-
+               if(doc.dry_run["diagnostic"],
+                 do: diagnostic_xml(doc),
+                 else: XML.import_xml(doc.current_xml, doc.agenda)
+               ),
              {:ok, response} <- Client.import(doc, payload, true, config()),
              do: {:ok, Map.put(response, "payload_hash", digest(payload))}
 
       locked(id, fn current ->
         require_state!(current, ["validating"])
 
-        case result do
-          {:ok, response} ->
-            update!(current,
-              state: "review",
-              dry_run: Map.merge(response, %{"ok" => true, "hash" => digest(doc.current_xml)}),
-              error: nil
-            )
+        if doc.dry_run["diagnostic"] do
+          {response, accepted, reason} =
+            case result do
+              {:ok, response} -> {response, true, nil}
+              {_, reason, response} -> {response, false, reason}
+              {_, reason} -> {%{}, false, reason}
+            end
 
-          {:rejected, reason, response} ->
-            update!(current,
-              state: "review",
-              dry_run: response,
-              error_stage: "validation",
-              error: reason
-            )
+          update!(current,
+            state: doc.dry_run["resume_state"],
+            dry_run:
+              Map.merge(response, %{"diagnostic" => true, "accepted" => accepted, "ok" => false}),
+            error: reason || doc.dry_run["original_error"],
+            error_stage: doc.dry_run["original_error_stage"]
+          )
+        else
+          case result do
+            {:ok, response} ->
+              update!(current,
+                state: "review",
+                dry_run: Map.merge(response, %{"ok" => true, "hash" => digest(doc.current_xml)}),
+                error: nil
+              )
 
-          {:uncertain, reason, response} ->
-            update!(current,
-              state: "review",
-              dry_run: response,
-              error_stage: "validation",
-              error: reason
-            )
+            {:rejected, reason, response} ->
+              update!(current,
+                state: "review",
+                dry_run: response,
+                error_stage: "validation",
+                error: reason
+              )
 
-          {_, reason} ->
-            update!(current,
-              state: "review",
-              dry_run: %{},
-              error_stage: "validation",
-              error: reason
-            )
+            {:uncertain, reason, response} ->
+              update!(current,
+                state: "review",
+                dry_run: response,
+                error_stage: "validation",
+                error: reason
+              )
+
+            {_, reason} ->
+              update!(current,
+                state: "review",
+                dry_run: %{},
+                error_stage: "validation",
+                error: reason
+              )
+          end
         end
       end)
     end
@@ -452,7 +600,7 @@ defmodule CozyCheckout.IncomingDocuments do
   defp build_extraction(doc) do
     if Extractor.strategy(doc) == "simple_xml" do
       if is_binary(doc.generated_xml) do
-        case XML.normalize(doc.generated_xml, doc.agenda, doc.template_xml, doc.external_id) do
+        case XML.normalize(doc.generated_xml, doc.agenda, XML.template_for(doc), doc.external_id) do
           {:ok, xml} -> {:ok, doc.generated_xml, xml}
           {:error, reason} -> {:error, reason, doc.generated_xml}
         end
@@ -470,7 +618,7 @@ defmodule CozyCheckout.IncomingDocuments do
   defp build_transcription(data, doc) do
     case Builder.build(data, doc) do
       {:ok, raw} ->
-        case XML.normalize(raw, doc.agenda, doc.template_xml, doc.external_id) do
+        case XML.normalize(raw, doc.agenda, XML.template_for(doc), doc.external_id) do
           {:ok, xml} -> {:ok, raw, xml}
           {:error, reason} -> {:error, reason, raw}
         end
@@ -496,7 +644,9 @@ defmodule CozyCheckout.IncomingDocuments do
   end
 
   def transcription(doc), do: doc.edited_data || doc.extracted_data
-  def transcription_hash(doc), do: digest(Jason.encode!([transcription(doc), doc.current_xml]))
+
+  def transcription_hash(doc),
+    do: digest(Jason.encode!([transcription(doc), doc.current_xml, doc.accounting_settings]))
 
   def repair_transcription(id, json, expected_hash) do
     with true <- is_binary(json) and byte_size(json) <= 250_000,
@@ -566,7 +716,7 @@ defmodule CozyCheckout.IncomingDocuments do
 
         with {:ok, raw} when is_binary(raw) <- draft,
              {:ok, xml} <-
-               XML.restore_accounting(raw, doc.agenda, doc.template_xml, doc.external_id),
+               XML.restore_accounting(raw, doc.agenda, XML.template_for(doc), doc.external_id),
              {:ok, fields} <- XML.parse(xml, doc.agenda) do
           fields =
             if XML.items(fields) == [],
@@ -641,6 +791,14 @@ defmodule CozyCheckout.IncomingDocuments do
             state: "failed",
             error_stage: "extraction",
             error: "Vytěžení bylo přerušeno. Zkuste jej znovu."
+          )
+
+        {"validate", "validating"} when is_map_key(doc.dry_run, "diagnostic") ->
+          update!(doc,
+            state: doc.dry_run["resume_state"],
+            dry_run: %{},
+            error: doc.dry_run["original_error"] || "Diagnostická kontrola byla přerušena",
+            error_stage: doc.dry_run["original_error_stage"]
           )
 
         {"validate", "validating"} ->

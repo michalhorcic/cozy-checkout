@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
   alias CozyCheckout.IncomingDocuments.{Builder, Client, Editor, Extractor, XML}
+  import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
 
   def mount(_, _, socket) do
     if connected?(socket), do: Process.send_after(self(), :refresh, 2000)
@@ -87,6 +88,92 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     )
   end
 
+  def handle_event("accounting-load", _, socket) do
+    case IncomingDocuments.accounting_presets(socket.assigns.doc.id) do
+      {:ok, rows} ->
+        options =
+          Enum.map(rows, fn row ->
+            %{
+              id: Base.url_encode64(row["kod"], padding: false),
+              name: "#{row["kod"]} — #{row["nazev"]}",
+              hint: row["protiUcetVydej"] || "Účet neurčen",
+              search_text: "#{row["kod"]} #{row["nazev"]} #{row["protiUcetVydej"]}"
+            }
+          end)
+
+        {:noreply,
+         assign(socket, accounting_options: options, accounting_open: true, accounting_error: nil)}
+
+      {:error, reason} ->
+        {:noreply, assign(socket, accounting_error: reason)}
+    end
+  end
+
+  def handle_event("accounting-open", _, socket),
+    do: {:noreply, assign(socket, accounting_open: true)}
+
+  def handle_event("accounting-close", _, socket),
+    do: {:noreply, assign(socket, accounting_open: false)}
+
+  def handle_event("accounting-search", params, socket),
+    do:
+      {:noreply,
+       assign(socket,
+         accounting_query: get_in(params, ["accounting_search", "0"]) || "",
+         accounting_open: true
+       )}
+
+  def handle_event("accounting-select", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.accounting_options, &(&1.id == id)) do
+      attrs = Map.put(socket.assigns.accounting_form.params, "preset", id)
+
+      {:noreply,
+       assign(socket,
+         accounting_form: to_form(attrs, as: :fields),
+         accounting_query: nil,
+         accounting_open: false,
+         accounting_dirty: true
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("accounting-change", %{"fields" => attrs}, socket),
+    do:
+      {:noreply,
+       assign(socket, accounting_form: to_form(attrs, as: :fields), accounting_dirty: true)}
+
+  def handle_event("accounting-save", %{"fields" => attrs}, socket) do
+    case Base.url_decode64(attrs["preset"] || "", padding: false) do
+      {:ok, preset} ->
+        result(
+          socket,
+          IncomingDocuments.save_accounting(
+            socket.assigns.doc.id,
+            Map.put(attrs, "preset", preset),
+            socket.assigns.transcription_hash
+          ),
+          "Účetní nastavení uloženo. Spusťte nový dry-run ABRA."
+        )
+
+      :error ->
+        {:noreply, put_flash(socket, :error, "Vyberte předpis z načteného číselníku")}
+    end
+  end
+
+  def handle_event("diagnose", _, socket) do
+    if socket.assigns.source_dirty or socket.assigns.accounting_dirty or socket.assigns.dirty do
+      {:noreply, put_flash(socket, :error, "Nejprve uložte změny návrhu")}
+    else
+      result(
+        socket,
+        IncomingDocuments.diagnose(socket.assigns.doc.id, socket.assigns.transcription_hash),
+        "Probíhá diagnostické testovací uložení v ABRA; žádný doklad se nevytvoří."
+      )
+    end
+  end
+
   def handle_event("source-change", %{"fields" => %{"source" => attrs}}, socket) do
     {:noreply, source_draft(socket, Editor.apply(socket.assigns.source_data, attrs))}
   end
@@ -147,7 +234,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     socket = repair_draft(socket, xml)
 
     if params["action"] == "restore" do
-      case XML.restore_accounting(xml, doc.agenda, doc.template_xml, doc.external_id) do
+      case XML.restore_accounting(xml, doc.agenda, XML.template_for(doc), doc.external_id) do
         {:ok, draft} ->
           {:noreply,
            socket
@@ -170,7 +257,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
   end
 
   def handle_event("validate", _, socket) do
-    if socket.assigns.dirty,
+    if socket.assigns.dirty or socket.assigns.source_dirty or socket.assigns.accounting_dirty,
       do: {:noreply, put_flash(socket, :error, "Nejprve uložte změny")},
       else:
         result(
@@ -181,19 +268,21 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
   end
 
   def handle_event("approve", attrs, socket) do
-    if socket.assigns.dirty or attrs["reviewed"] != "true",
-      do: {:noreply, put_flash(socket, :error, "Uložte změny a potvrďte porovnání s originálem")},
-      else:
-        result(
-          socket,
-          IncomingDocuments.approve(
-            socket.assigns.doc.id,
-            socket.assigns.hash,
-            attrs["warnings"] == "true",
-            attrs["rounding"] == "true"
-          ),
-          "Doklad schválen. Probíhá přenos do ABRA."
-        )
+    if socket.assigns.dirty or socket.assigns.source_dirty or socket.assigns.accounting_dirty or
+         attrs["reviewed"] != "true",
+       do:
+         {:noreply, put_flash(socket, :error, "Uložte změny a potvrďte porovnání s originálem")},
+       else:
+         result(
+           socket,
+           IncomingDocuments.approve(
+             socket.assigns.doc.id,
+             socket.assigns.hash,
+             attrs["warnings"] == "true",
+             attrs["rounding"] == "true"
+           ),
+           "Doklad schválen. Probíhá přenos do ABRA."
+         )
   end
 
   def handle_event("retry", params, socket),
@@ -246,6 +335,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
         _ -> %{}
       end
 
+    accounting_options =
+      if socket.assigns.doc && socket.assigns.doc.id == doc.id,
+        do: Map.get(socket.assigns, :accounting_options, []),
+        else: []
+
     socket = assign(socket, doc: doc)
     socket = repair_draft(socket, doc.generated_xml || "")
 
@@ -253,7 +347,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
       doc: doc,
       fields: fields,
       template_fields:
-        case XML.parse(doc.template_xml, doc.agenda) do
+        case XML.parse(XML.template_for(doc), doc.agenda) do
           {:ok, fields} -> fields
           _ -> %{}
         end,
@@ -275,6 +369,15 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           as: :fields
         ),
       transcription_hash: IncomingDocuments.transcription_hash(doc),
+      accounting_options: accounting_options,
+      accounting_form:
+        to_form(%{"preset" => "", "internal_code" => doc.accounting_settings["kod"] || ""},
+          as: :fields
+        ),
+      accounting_query: nil,
+      accounting_open: false,
+      accounting_dirty: false,
+      accounting_error: nil,
       source_data: IncomingDocuments.transcription(doc),
       source_issues: Builder.summary_issues(IncomingDocuments.transcription(doc)),
       source_dirty: false,
@@ -316,7 +419,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     doc = socket.assigns.doc
 
     differences =
-      case XML.accounting_differences(xml, doc.agenda, doc.template_xml) do
+      case XML.accounting_differences(xml, doc.agenda, XML.template_for(doc)) do
         {:ok, differences} -> differences
         _ -> []
       end
@@ -375,6 +478,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           "typDokl" => "Typ dokladu",
           "mena" => "Měna",
           "typUcOp" => "Předpis zaúčtování",
+          "kod" => "Interní číslo ABRA",
           "primUcet" => "Účet DAL",
           "protiUcet" => "Účet MD",
           "clenDph" => "Řádky DPH",
@@ -482,14 +586,29 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           <p>
             XML návrh lze stáhnout i přes účetní chyby. Stažení neprovádí zápis ani kontrolu v ABRA. Není-li doklad schválený, jde o neověřený návrh; před ručním importem zkontrolujte chyby a cílovou firmu.
           </p>
-          <p :if={@source_dirty} class="text-warning">Před stažením nejdříve uložte změny návrhu.</p>
+          <p :if={@source_dirty or @accounting_dirty} class="text-warning">
+            Před stažením nejdříve uložte změny návrhu.
+          </p>
           <.link
-            :if={!@source_dirty}
+            :if={!@source_dirty and !@accounting_dirty}
             href={~p"/admin/incoming-documents/#{@doc.id}/draft.xml"}
             class="btn"
             download
           >Stáhnout XML pro ABRA</.link>
+          <button
+            :if={!@source_locked}
+            id="incoming-diagnose"
+            class="btn"
+            phx-click="diagnose"
+            disabled={@source_dirty or @accounting_dirty or @dirty or !@enabled}
+            phx-disable-with="Zařazuji…"
+          >Ověřit návrh v ABRA bez zápisu (dry-run)</button>
         </div>
+        <p :if={@doc.dry_run["diagnostic"]} class="alert alert-info" id="incoming-diagnostic-result">
+          Diagnostický dry-run: {if @doc.dry_run["accepted"],
+            do: "ABRA návrh přijala",
+            else: "ABRA návrh nepřijala"}. Návrh se neuložil. Tato kontrola nenahrazuje schválení validního XML.
+        </p>
         <details
           :if={@doc.extracted_data != %{} || @doc.extraction_metadata != %{}}
           class="bg-white rounded-xl p-4"
@@ -573,6 +692,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             <li :for={message <- response["errors"] || []} class="text-error">{message}</li>
             <li :for={message <- response["warnings"] || []} class="text-warning">{message}</li>
           </ul>
+          <div :for={preview <- response["preview"] || []} class="border rounded p-3 mb-3">
+            <p :for={{key, value} <- preview}>
+              {label(key)}: {if is_binary(value), do: value, else: inspect(value)}
+            </p>
+            <p>
+              Interní číslo z dry-runu není rezervované; při skutečném zápisu může ABRA přidělit jiné.
+            </p>
+          </div>
           <p :if={response["truncated"]}>Výpis těla je zkrácen na prvních 100 000 znaků.</p>
           <pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{response["raw_body"] || Jason.encode!(response["body"] || %{}, pretty: true)}</pre>
         </details>
@@ -617,6 +744,62 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             </div>
           </div>
           <div class="min-w-0 space-y-4">
+            <section class="bg-white rounded-xl p-4 space-y-3" id="incoming-accounting">
+              <h2 class="text-xl font-bold">Účetní nastavení dokladu</h2>
+              <p>
+                Aktuální předpis: <strong>{@template_fields["typUcOp"] || "neurčen"}</strong>. Nákladový účet MD: <strong>{@template_fields["protiUcet"] || "doplní ABRA"}</strong>.
+              </p>
+              <p>
+                Pro O2 zvolte odpovídající předpis služeb z vaší ABRA. Výběr převezme také jeho nákladový účet a účty DPH; původní účet potravin se nezachová.
+              </p>
+              <button
+                :if={!@source_locked}
+                type="button"
+                class="btn"
+                phx-click="accounting-load"
+                phx-disable-with="Načítám…"
+              >Načíst předpisy zaúčtování z ABRA</button>
+              <p :if={@accounting_error} class="alert alert-error">{@accounting_error}</p>
+              <.form
+                for={@accounting_form}
+                id="incoming-accounting-form"
+                phx-change="accounting-change"
+                phx-submit="accounting-save"
+                class="space-y-3"
+              >
+                <fieldset disabled={@source_locked} class="space-y-3">
+                  <.searchable_picker
+                    field={@accounting_form[:preset]}
+                    options={@accounting_options}
+                    label="Nový předpis zaúčtování"
+                    required={false}
+                    prompt="Ponechat aktuální předpis"
+                    placeholder="Načtěte číselník a hledejte název nebo účet…"
+                    search_name="accounting_search"
+                    search_event="accounting-search"
+                    open_event="accounting-open"
+                    close_event="accounting-close"
+                    select_event="accounting-select"
+                    query={@accounting_query}
+                    open={@accounting_open}
+                    empty_message="Žádný odpovídající předpis. Načtěte číselník z ABRA nebo upravte hledání."
+                  />
+                  <.input
+                    field={@accounting_form[:internal_code]}
+                    label="Interní číslo ABRA (nepovinné)"
+                    maxlength="20"
+                  />
+                  <p class="text-sm">
+                    Prázdné pole ponechá číslování na ABRA podle typu dokladu a jeho řady. Číslo dodavatelské faktury patří do „Číslo dokladu“, ne sem. Pokud ruční import číslo vyžaduje, lze je zde zadat a stáhnout nové XML.
+                  </p>
+                  <button
+                    :if={!@source_locked}
+                    class="btn btn-primary"
+                    phx-disable-with="Ukládám…"
+                  >Uložit účetní nastavení</button>
+                </fieldset>
+              </.form>
+            </section>
             <section
               :if={@source_data != %{}}
               class="bg-white rounded-xl p-4 space-y-4"
@@ -970,7 +1153,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
               >Uložit opravy</button>
             </.form>
             <details :if={@doc.template_xml} class="bg-white rounded-xl p-4">
-              <summary>Účetní nastavení ze vzoru</summary><dl class="space-y-1 mt-3">
+              <summary>Účetní nastavení dokladu (vzor a vybraný předpis)</summary><dl class="space-y-1 mt-3">
                 <div :for={key <- XML.fixed()} :if={@template_fields[key]}>
                   <dt class="font-semibold">{label(key)}</dt><dd>
                     {if key == "bezPolozek" && @doc.current_xml,
@@ -988,7 +1171,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
               id="incoming-validate"
               class="btn"
               phx-click="validate"
-              disabled={@dirty || !@enabled}
+              disabled={@dirty || @source_dirty || @accounting_dirty || !@enabled}
               phx-disable-with="Zařazuji…"
             >Zkontrolovat aktuální XML v ABRA</button>
             <div :if={@doc.dry_run["ok"]} class="alert alert-info">
@@ -1028,7 +1211,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
               Zkontroloval/a jsem rekapitulaci originálu a schvaluji uvedenou samostatnou haléřovou korekci DPH.</label>
               <button
                 class="btn btn-primary"
-                disabled={@dirty || !@enabled}
+                disabled={@dirty || @source_dirty || @accounting_dirty || !@enabled}
                 phx-disable-with="Schvaluji…"
               >Schválit a odeslat</button>
             </form>

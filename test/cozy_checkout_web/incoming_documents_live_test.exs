@@ -210,6 +210,27 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert IncomingDocuments.get!(doc.id).sent_xml == nil
   end
 
+  test "accounting form lets the operator fill the internal ABRA code", %{conn: conn} do
+    data = "test/fixtures/incoming_documents/penny.json" |> File.read!() |> Jason.decode!()
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "o2.pdf", "faktura-prijata")
+
+    doc
+    |> Ecto.Changeset.change(state: "failed", error_stage: "extraction", extracted_data: data)
+    |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "#fields_preset-picker")
+
+    view
+    |> form("#incoming-accounting-form", fields: %{internal_code: "FP2026-001"})
+    |> render_submit()
+
+    saved = IncomingDocuments.get!(doc.id)
+    assert saved.current_xml =~ "<kod>FP2026-001</kod>"
+    assert saved.dry_run == %{}
+    assert has_element?(view, "#incoming-diagnose")
+  end
+
   test "legacy extraction failures explain the need for one new extraction", %{conn: conn} do
     {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "legacy.pdf", "zavazek")
 

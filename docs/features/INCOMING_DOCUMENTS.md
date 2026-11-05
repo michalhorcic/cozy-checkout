@@ -155,6 +155,49 @@ importem ověřte chyby, částky, cílovou firmu a případnou duplicitu. Autom
 zápis z aplikace nadále vyžaduje úspěšnou kontrolu a schválení. Zcela neplatné
 XML/JSON či údaje, které nelze mapovat do agendy, se místo souboru zobrazí chybou.
 
+### Účetní předpis, interní číslo a diagnostický dry-run
+
+U každého neodeslaného dokladu je sekce „Účetní nastavení dokladu“.
+„Načíst předpisy zaúčtování z ABRA“ čte číselník `predpis-zauctovani` ze stejné
+firmy jako přenos. Nabízí jen předpisy použitelné pro danou agendu (`modulFap`,
+`modulZav`, `modulPokV`). Výběr používá sdílený vyhledávací picker i pro velké
+číselníky. Číselník se načítá pouze na výslovný pokyn, po stránkách 200 záznamů,
+nejvýše do bezpečnostního limitu 2000; neúplný výsledek je chyba. Účty se načítají
+hromadně, nikoli samostatným dotazem pro každý předpis (bez N+1).
+
+Při uložení se vybraný předpis znovu ověří proti aktuálnímu číselníku. Přenese se
+`typUcOp`, nákladový účet `protiUcetVydej` do `protiUcet` a účty DPH. Původní
+nákladové/DPH účty ze vzoru se při změně předpisu odstraní; chybějící účet se
+neodhadne ani nezůstane účet pro potraviny, ale ponechá se k doplnění/ověření ABRA.
+Primární účet závazku/pokladny a ostatní pevné nastavení zůstávají podle zvolené
+agendy. U O2 vybírejte vhodný předpis služeb z vaší firmy; aplikace nehádá konkrétní
+účet. Vzor i účetní volbu lze zobrazit v detailu. Ruční účetní volba je uložená
+odděleně od původního vzoru v `accounting_settings`; vyžaduje migraci
+`20261105210000_add_incoming_accounting_settings`. Uložení mění jen účetní
+nastavení aktuálního návrhu, zachová již opravené XML údaje a ruší dry-run.
+
+Pole „Interní číslo ABRA“ odpovídá `kod` (nejvýše 20 znaků). Je nepovinné:
+prázdné pole jej do importu nepřidá a číslování ponechá ABRA. Dodavatelské číslo
+zůstává samostatně v `cisDosle`. Model nikdy nepřiděluje interní číslo; server
+přebírá jen explicitní ruční volbu a přepíše/odstraní případný starý `kod` z modelu.
+Ruční import může interní číslo vyžadovat; o chování API rozhoduje typ dokladu,
+řada a nastavení firmy, které je potřeba ověřit dry-runem, nikoli hádáním čísla.
+
+„Ověřit návrh v ABRA bez zápisu (dry-run)“ funguje i u návrhu, který ještě
+neprošel místní kontrolou. Posílá stejný diagnostický XML payload jako stažení,
+vždy s `dry-run=true`. Ukáže konkrétní chyby/upozornění a případné vrácené interní
+číslo/účty z `results[].content`. Návrh se po kontrole vrátí do původního stavu;
+kladná diagnostika nepřidá schvalovací hash ani `ok=true` a neopravňuje k zápisu.
+Automatický přenos dál vyžaduje validní aktuální XML a běžnou kontrolu stejného
+payloadu tlačítkem „Zkontrolovat aktuální XML v ABRA“.
+
+Interní číslo z dry-runu se nekopíruje do návrhu ani nerezervuje: ABRA jej uvolní
+a při skutečném zápisu může přidělit jiné. Stejně tak dry-run neposuzuje věcnou
+správnost volby účtu na základě obsahu faktury; předpis musí zkontrolovat obsluha.
+Zdroje: [ABRA — testovací uložení](https://podpora.flexibee.eu/cs/articles/4720123-testovaci-ulozeni-dry-run),
+[API metadata přijaté faktury](https://demo.flexibee.eu/c/demo/faktura-prijata/properties.json),
+[API metadata předpisů](https://demo.flexibee.eu/c/demo/predpis-zauctovani/properties.json).
+
 ### Číslo původního dokladu (`cisDosle`)
 
 `cisDosle` identifikuje dodavatelský doklad, zatímco `kod` je interní číslo ABRA

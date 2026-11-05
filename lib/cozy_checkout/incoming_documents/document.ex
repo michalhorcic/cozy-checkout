@@ -13,6 +13,7 @@ defmodule CozyCheckout.IncomingDocuments.Document do
     field :template_xml, :string
     field :extracted_data, :map, default: %{}
     field :edited_data, :map
+    field :accounting_settings, :map, default: %{}
     field :extraction_metadata, :map, default: %{}
     field :extraction_attempts, :integer, default: 0
     field :generated_xml, :string
