@@ -43,8 +43,12 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
    neznamená úspěšnou validaci, ale neblokuje explicitní přímé odeslání.
 8. Potvrdit skutečné vytvoření a kontrolu případného dřívějšího ručního importu,
    poté stisknout „Nahrát do ABRA“. Lokálně se znovu zkontroluje struktura XML,
-   součty a povinná data; na ABRA se odešle stejný bezpoložkový payload jako při
-   stažení XML, s `Content-Type: application/xml` a JSON výsledkem přes `.json`.
+   součty a povinná data. Schválené XML se pro API deterministicky převede na
+   nativní JSON obálku `winstrom` a odešle přes `Req.post(json: payload)` na `.json`,
+   stejně jako fungující faktury za ubytování. Přenášejí se stejné částky, kódy,
+   poznámka a externí ID; XML ke stažení i uložený schválený XML snapshot zůstávají.
+   Prázdné nepovinné hodnoty se vynechají, `ucetni` a `bezPolozek` jsou JSON booleany.
+   Desetinné částky a data zůstávají řetězci bez dalšího přepočítávání.
    Skutečný POST neobsahuje parametr `dry-run`; testovací požadavek má
    `dry-run=true`. Neprovádí se automatické zkoušení dalších importních endpointů.
 
@@ -98,6 +102,30 @@ V každé agendě se přenáší `bezPolozek=true`, `ucetni=true`, `mena=code:CZ
 
 Model nevybírá účetní předpis, účty, typ dokladu ani XML elementy. Text je escapován
 stávajícím XML rendererem. Formulář nepřijímá účetní pole nebo položkové kolekce.
+
+## Rozdíl proti přenosu faktur za ubytování
+
+`CozyCheckout.Abra.Client.create_invoice/2` používá nativní JSON přes `json:` na
+endpointu `.json`. Přijaté doklady původně posílaly XML přes `body:` s
+`Content-Type: application/xml` na `.json`. Oba formáty ABRA dokumentuje, ale
+v této instalaci se u XML přenosu objevovala webová FreeMarker odpověď místo
+výsledku API, zatímco ruční import stejného souboru fungoval.
+
+Přenos přijatých dokladů nyní kopíruje fungující JSON konvenci ubytování.
+`ImportPayload.from_xml/2` používá existující omezený XML parser, nikdy neposílá
+raw text jako JSON řetězec a model se převodu neúčastní. Nastavuje `@create=ok`,
+`@update=fail` a stávající externí ID. Neprovádí automatický druhý POST v jiném
+formátu, pokud první odpověď není jednoznačná. Starší položkové XML se převede na
+JSON pole bez XML obálky jednotlivých řádků; souhrnný formulář žádné řádky nepřidává.
+
+Diagnostika požadavku ukazuje skutečný `Content-Type: application/json`, hash
+zdrojového XML a hash odeslaného JSON těla. Dry-run i skutečné odeslání používají
+stejný převod. Schvalování a zmrazené `sent_xml` nadále pracují se stejným XML
+snapshotem, jeho obsah se nepřepisuje.
+
+Tím je odstraněn doložený rozdíl ve formátu požadavku. Bez živého požadavku na
+cílovou ABRA není potvrzeno, že právě tento rozdíl způsoboval FreeMarker chybu;
+samotné HTML nadále nepovažujeme za úspěch.
 
 ## Zdroje ověřené při implementaci
 

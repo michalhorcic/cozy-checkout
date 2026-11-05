@@ -303,9 +303,15 @@ defmodule CozyCheckout.IncomingDocumentsTest do
       assert conn.request_path == "/c/pilot/faktura-prijata.json"
       refute Map.has_key?(Plug.Conn.fetch_query_params(conn).query_params, "dry-run")
       {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert body == approved.sent_xml
+
+      assert {:ok, expected} =
+               CozyCheckout.IncomingDocuments.ImportPayload.from_xml(approved.sent_xml, approved)
+
+      assert Jason.decode!(body) == expected
       assert body =~ "CORRECTED"
-      assert body =~ "update=\"fail\""
+
+      assert Jason.decode!(body)["winstrom"][doc.agenda] |> hd() |> Map.fetch!("@update") ==
+               "fail"
 
       assert Plug.Conn.get_req_header(conn, "authorization") == [
                "Basic " <> Base.encode64("test:test")
@@ -782,7 +788,7 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert Incoming.get!(doc.id).sent_xml == doc.current_xml
   end
 
-  test "itemized dry run and create send identical item XML without duplicate header totals" do
+  test "itemized dry run and create send identical JSON projected from approved item XML" do
     doc = upload("pokladni-pohyb") |> extracted()
     {:ok, fields} = XML.parse(doc.current_xml, doc.agenda)
 
@@ -802,7 +808,8 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     Req.Test.expect(__MODULE__, fn conn ->
       assert Plug.Conn.fetch_query_params(conn).query_params["dry-run"] == "true"
       {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert body == payload
+      assert {:ok, expected} = CozyCheckout.IncomingDocuments.ImportPayload.from_xml(payload, doc)
+      assert Jason.decode!(body) == expected
       success(conn, "-1")
     end)
 
@@ -819,7 +826,8 @@ defmodule CozyCheckout.IncomingDocumentsTest do
 
     Req.Test.expect(__MODULE__, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert body == payload
+      assert {:ok, expected} = CozyCheckout.IncomingDocuments.ImportPayload.from_xml(payload, doc)
+      assert Jason.decode!(body) == expected
       success(conn)
     end)
 
@@ -857,7 +865,7 @@ defmodule CozyCheckout.IncomingDocumentsTest do
       assert conn.method == "POST"
       assert conn.request_path == "/c/pilot/faktura-prijata.json"
       assert Plug.Conn.get_req_header(conn, "accept") == ["application/json"]
-      assert Plug.Conn.get_req_header(conn, "content-type") == ["application/xml"]
+      assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
       conn = Plug.Conn.fetch_query_params(conn)
       assert conn.query_params["dry-run"] == "true"
 

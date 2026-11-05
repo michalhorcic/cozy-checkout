@@ -351,8 +351,13 @@ Set-Cookie ani Authorization se neukládají. Původní HTML zůstává zvláš�
 technickém výpisu. Čitelná diagnostika se počítá i ze starších uložených odpovědí;
 u nich nelze zpětně doplnit tehdejší adresu/hlavičky požadavku.
 
-Klient již požaduje `.json` a `Accept: application/json`; vstupní XML má
-`Content-Type: application/xml`. To odpovídá [dokumentaci formátů ABRA](https://podpora.flexibee.eu/cs/articles/4719998-podporovane-formaty).
+Původní klient požadoval `.json` a `Accept: application/json`, ale posílal XML
+s `Content-Type: application/xml`. Aktuální klient převádí schválené XML na nativní
+JSON a používá `Req.post(json: payload)`, stejně jako faktury za ubytování.
+Podrobnosti převodu a jeho ověření jsou v [dokumentaci formuláře](INCOMING_DOCUMENT_FORM.md).
+[Dokumentace formátů ABRA](https://podpora.flexibee.eu/cs/articles/4719998-podporovane-formaty)
+popisuje oba formáty; bez živého ověření nelze samotnou záměnu formátu označit za
+potvrzenou příčinu konkrétní FreeMarker chyby.
 Pokud přesto přijde webová stránka, diagnostika pomůže prověřit adresu, proxy
 nebo konkrétní verzi ABRA, ale sama neodstraní chybu na serveru. Není zavedené
 automatické opakování POST při HTML odpovědi. Dry-run nesplní schvalovací podmínku;

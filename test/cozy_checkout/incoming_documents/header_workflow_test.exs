@@ -88,9 +88,14 @@ defmodule CozyCheckout.IncomingDocuments.HeaderWorkflowTest do
       conn = Plug.Conn.fetch_query_params(conn)
       assert conn.query_params["dry-run"] == "true"
       {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert body == doc.current_xml
-      refute body =~ "polozkyDokladu"
-      assert body =~ "<poznam>Položky jen orientačně</poznam>"
+
+      assert {:ok, expected} =
+               CozyCheckout.IncomingDocuments.ImportPayload.from_xml(doc.current_xml, doc)
+
+      assert Jason.decode!(body) == expected
+      [record] = Jason.decode!(body)["winstrom"][doc.agenda]
+      refute Map.has_key?(record, "polozkyDokladu")
+      assert record["poznam"] == "Položky jen orientačně"
 
       Req.Test.json(conn, %{
         "winstrom" => %{"success" => true, "results" => [%{"id" => "-1", "warnings" => []}]}
@@ -158,9 +163,13 @@ defmodule CozyCheckout.IncomingDocuments.HeaderWorkflowTest do
       assert conn.method == "POST"
       assert conn.request_path == "/c/pilot/zavazek.json"
       refute Map.has_key?(Plug.Conn.fetch_query_params(conn).query_params, "dry-run")
-      assert Plug.Conn.get_req_header(conn, "content-type") == ["application/xml"]
+      assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
       {:ok, body, conn} = Plug.Conn.read_body(conn)
-      assert body == approved.sent_xml
+
+      assert {:ok, expected} =
+               CozyCheckout.IncomingDocuments.ImportPayload.from_xml(approved.sent_xml, approved)
+
+      assert Jason.decode!(body) == expected
       Req.Test.json(conn, %{"winstrom" => %{"success" => true, "results" => [%{"id" => "42"}]}})
     end)
 

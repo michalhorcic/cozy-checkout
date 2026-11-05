@@ -1,12 +1,19 @@
 defmodule CozyCheckout.IncomingDocuments.Client do
-  @moduledoc "XML import using the existing ABRA connection conventions, without logging document data."
+  @moduledoc "Native JSON import projected from reviewed XML, matching accommodation API requests."
 
-  alias CozyCheckout.IncomingDocuments.ResponseDiagnostics
+  alias CozyCheckout.IncomingDocuments.{ImportPayload, ResponseDiagnostics}
 
   def import(doc, xml, dry_run?, cfg) do
+    case ImportPayload.from_xml(xml, doc) do
+      {:ok, payload} -> request_import(doc, xml, payload, dry_run?, cfg)
+      {:error, reason} -> {:rejected, reason, %{"errors" => [reason], "warnings" => []}}
+    end
+  end
+
+  defp request_import(doc, xml, payload, dry_run?, cfg) do
     case Req.post(url(doc) <> ".json",
-           body: xml,
-           headers: [{"content-type", "application/xml"}, {"accept", "application/json"}],
+           json: payload,
+           headers: [{"accept", "application/json"}],
            params: if(dry_run?, do: [{"dry-run", "true"}], else: []),
            auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
            retry: false,
@@ -33,7 +40,9 @@ defmodule CozyCheckout.IncomingDocuments.Client do
             "url" => ResponseDiagnostics.safe_url(url(doc) <> ".json"),
             "dry_run" => dry_run?,
             "accept" => "application/json",
-            "content_type" => "application/xml"
+            "content_type" => "application/json",
+            "source_xml_hash" => CozyCheckout.IncomingDocuments.digest(xml),
+            "json_payload_hash" => CozyCheckout.IncomingDocuments.digest(Jason.encode!(payload))
           },
           "response_headers" => headers
         }
