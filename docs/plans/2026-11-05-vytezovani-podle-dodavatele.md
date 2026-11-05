@@ -1,14 +1,14 @@
 # Dvoufázové vytěžování a instrukce podle dodavatele
 
-- **Stav:** připraveno k implementaci v dalším chatu; funkcionalita není implementována.
-- **Vytvořeno / aktualizováno:** 5. 11. 2026.
+- **Stav:** implementováno ve větvi; čeká na CI a provozní pilot.
+- **Vytvořeno / aktualizováno:** 5. / 6. 11. 2026.
 - **Zadání:** nejdříve rozpoznat dodavatele, potom vytěžit doklad s jeho uloženými
   instrukcemi; instrukce editovat přímo ve formuláři přijatého dokladu.
 - **Podklad:** větev `codex/prijate-doklady-formular`, implementace do commitu
   `f377546`, [PR #99](https://github.com/michalhorcic/cozy-checkout/pull/99).
 - **Současný návod:** [Formulář přijatého dokladu](../features/INCOMING_DOCUMENT_FORM.md).
-- Tento commit přidává plán a jeho zařazení do přehledu, nikoli migrace nebo změnu
-  běžící aplikace. Nový chat má nejprve ověřit aktuální kód a stav PR.
+- Původní plán níže popisuje výchozí stav před implementací. Aktuální postup,
+  migraci a ověřovací limity popisuje návod a předání v části 13.
 
 ## 1. Problém a výsledek
 
@@ -319,18 +319,19 @@ neuloženého globálního textu instrukcí, který uložený účetní payload 
 
 ## 10. Implementační kroky
 
-- [ ] Ověřit aktuální větev a PR, přečíst tento plán, AGENTS.md a současný návod.
-- [ ] Migrace profilů, běhů a aktivní vazby; constrainty a kompatibilita starých dat.
-- [ ] Čisté normalizace identity, kontrakt první fáze, přesné párování a kolize.
-- [ ] Ukládání instrukcí s revizí a snapshots, bez volání modelu při běžném uložení.
-- [ ] Oddělené metody Extractoru pro identifikaci a obsah, deterministické zadání.
-- [ ] Orchestrace: rezervace obou fází, run ID v jobu, obnova, limity, stale výsledky.
-- [ ] Jeden celý tok s existujícím profilem přes Req.Test; zachovat ABRA a formát výstupu.
-- [ ] UI profil/editor, výběr, obě akce uložení, phase polling, přehled použité revize.
-- [ ] Ruční oprava identity, neznámý dodavatel, opakování druhé fáze, obnova návrhu.
-- [ ] Regrese ručního formuláře, starších strategií a již odeslaných dokumentů.
-- [ ] Testy včetně souběhu a query chování; formátování podle AGENTS.md.
-- [ ] Návod skutečně dodané funkce, aktualizace stavu tohoto plánu a předání pilotu.
+- [x] Ověřit aktuální větev a PR, přečíst tento plán, AGENTS.md a současný návod.
+- [x] Migrace profilů, běhů a aktivní vazby; constrainty a kompatibilita starých dat.
+- [x] Čisté normalizace identity, kontrakt první fáze, přesné párování a kolize.
+- [x] Ukládání instrukcí s revizí a snapshots, bez volání modelu při běžném uložení.
+- [x] Oddělené metody Extractoru pro identifikaci a obsah, deterministické zadání.
+- [x] Orchestrace: rezervace obou fází, run ID v jobu, obnova, limity, stale výsledky.
+- [x] Jeden celý tok s existujícím profilem přes Req.Test; zachovat ABRA a formát výstupu.
+- [x] UI profil/editor, výběr, obě akce uložení, phase polling, přehled použité revize.
+- [x] Ruční oprava identity, neznámý dodavatel, opakování druhé fáze, obnova návrhu.
+- [x] Regrese ručního formuláře, starších strategií a již odeslaných dokumentů.
+- [x] Testy včetně souběhu a query chování; formátování podle AGENTS.md.
+- [x] Návod skutečně dodané funkce a aktualizace stavu tohoto plánu.
+- [ ] Provozní pilot O2 a dalšího dodavatele; vyhodnocení přesnosti, usage a nákladů.
 
 ## 11. Ověření a podmínky dokončení
 
@@ -405,21 +406,31 @@ odpovídat novému layoutu; dvojí obrazový vstup zvýší cenu a odezvu; dlouh
 zhorší výkon; nekontrolované retry zvýší počet volání. Omezit je přesným párováním,
 snapshoty, editorem s limitem, samostatnými rezervacemi a měřením pilotu.
 
-## 13. Předání dalšímu chatu
+## 13. Předání implementace
 
-**Hotovo:** plán podle skutečného kódu k `f377546`, uložený v PR #99. Funkce
-profilů ani dvoufázového vytěžování dosud neexistuje; žádné migrace tímto plánem
-nebyly spuštěny.
+**Dodáno:** migrace `20261106090000`, striktní identita a normalizace, firemně
+izolované profily s revizemi, dvoufázový orchestrátor `ExtractionRuns`, samostatné
+rezervace placených volání, snapshoty, kompatibilita starších jobů, obsahové
+opakování, obecné vytěžení, obnova ručního návrhu a editor ve formuláři včetně
+vyhledávání a historie. Nové běhy nemění přenosové JSON/XML kontrakty ABRA.
 
-**Zbývá:** všechny implementační checkboxy výše. **Blokuje:** žádná známá technická
-překážka pro zahájení; otevřené obchodní volby mají navržené omezené výchozí řešení.
+Přijaty návrhové výchozí volby: namespace cílové firmy, automaticky jen české
+IČO, DIČ ručně, jeden text na profil, bez automatického mazání historie. Není
+přidán přepínač; každý nový běh `header_form` používá dvě fáze. Uložení profilu a
+nového obsahového jobu je jedna transakce. Obnovený návrh nemá schvalovatelné XML,
+musí znovu projít kontrolou a uložením formuláře.
 
-**Nejbližší krok:** ověřit aktuální stav PR/větve, navrhnout konkrétní migraci
-profilů/běhů a nejprve dodat unit testy identity a kontext ukládání revizí.
+**Kontrola N+1:** seznam dokladů zůstává jedním omezeným dotazem bez binárních
+originálů. Přesné automatické párování používá jeden indexovaný dotaz. Detail
+načítá jeden aktivní běh a jeden profil; historii jedním stránkovaným dotazem
+pouze při otevření či změně běhu, nikoliv při každém pollingu seznamu. Testy
+kontrolují konstantní počet dotazů pro seznam, párování i stránku historie.
 
-Doporučené zadání nového chatu:
+**Ověření:** kompilace aplikace s `--warnings-as-errors`, kompilace změněných
+testovacích modulů bez spuštění a formátování s připnutým Elixir 1.20.4 / OTP 29.1.
+Lokální testy se podle AGENTS.md nespouštěly; výsledek GitHub CI ověří uživatel.
+Nebyly provedeny živé AI/ABRA požadavky ani migrace provozní databáze.
 
-> Přečti docs/plans/2026-11-05-vytezovani-podle-dodavatele.md a AGENTS.md, ověř
-> současný stav větve codex/prijate-doklady-formular / PR #99 a implementuj plán
-> od prvního nedokončeného kroku. Zachovej současný souhrnný formulář a přenos
-> JSON do ABRA. Nejprve řeš datový model, identitu a revize, potom dvě fáze AI a UI.
+**Zbývá:** ověřit CI a provést pilot podle části 11 na skutečných soukromých
+podkladech, popsat zlepšení i omezení. Bez pilotu není potvrzena přesnost, odezva
+ani cena dvoufázového vytěžování. Funkce se nasazuje standardní aditivní migrací.

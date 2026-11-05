@@ -289,6 +289,31 @@ defmodule CozyCheckout.IncomingDocuments.HeaderWorkflowTest do
     }
 
     Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.json(conn, %{
+        "status" => "completed",
+        "output" => [
+          %{
+            "type" => "message",
+            "content" => [
+              %{
+                "type" => "output_text",
+                "text" =>
+                  Jason.encode!(%{
+                    "name" => nil,
+                    "ic" => nil,
+                    "dic" => nil,
+                    "country_code" => nil,
+                    "ambiguous" => false,
+                    "uncertainties" => []
+                  })
+              }
+            ]
+          }
+        ]
+      })
+    end)
+
+    Req.Test.expect(__MODULE__, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
       request = Jason.decode!(body)
       assert request["store"] == false
@@ -308,7 +333,7 @@ defmodule CozyCheckout.IncomingDocuments.HeaderWorkflowTest do
     IncomingDocuments.perform(doc.id, "extract")
     doc = IncomingDocuments.get!(doc.id)
     assert doc.state == "review"
-    assert doc.extraction_attempts == 1
+    assert doc.extraction_attempts == 2
     assert doc.current_xml == nil
     assert doc.extracted_data["complete"] == false
     assert {:error, _} = IncomingDocuments.diagnostic_xml(doc)
