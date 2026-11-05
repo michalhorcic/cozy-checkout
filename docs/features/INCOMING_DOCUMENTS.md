@@ -117,6 +117,44 @@ sloupcem nejsou fyzicky odstraňovány; UI zatím neposkytuje mazání.
    a použít „Schválit a odeslat“. Přesně schválené XML se uloží a uzamkne.
 6. Po přenosu se uloží odpověď a ID s odkazem do ABRA. Odeslaný doklad se neupravuje.
 
+### Formulář přepisu a stažení návrhu i s chybami
+
+Přepis JSON je zobrazený v přímém formuláři: číslo dokladu, data, dodavatel,
+celková částka, rekapitulace DPH, legenda značek a všechny položky. Sazby i řádky
+lze přidávat/odebírat. U rekapitulace jsou chyby u konkrétního pole; hláška uvádí
+hodnotu nebo výpočet rozdílu. JSON aktuálního návrhu je pod formulářem pro
+pokročilé úpravy. Původní odpověď modelu je dostupná odděleně.
+
+Český formát čísel se převádí bez změny hodnot: `1 803,34`, včetně nezlomitelných
+mezer, odpovídá `1803.34`. Převod se týká pouze číselných polí; číslo dokladu,
+IČO/DIČ a texty se nemění. Nejednoznačné zápisy a skutečně chybějící částky se
+neodhadují. Například O2: `1 490,36 + 312,98 = 1 803,34` je platná rekapitulace,
+nikoli rozpor DPH. Matematické kontroly zůstávají zachované.
+
+„Uložit návrh a zkontrolovat“ uloží i účetně chybný návrh (pokud má platnou
+JSON strukturu). Přepis se nemusí opravit celý naráz. Platný návrh přejde ke kontrole;
+chybný zůstane označený chybou a lze jej dál upravovat. Úpravy jsou uložené ve
+sloupci `edited_data`, původní `extracted_data` se zachová. Vyžaduje to migraci
+`20261105200000_add_incoming_edited_data`. Nové vytěžení ruční návrh vymaže.
+Uložení znovu sestaví XML a ruší předchozí dry-run; proto nahrazuje případné
+ruční opravy XML. Hash zahrnuje i aktuální XML, aby jiné okno nemohlo přepsat
+mezitím provedenou opravu. Schválené/nejisté/odeslané dokumenty tímto měnit nelze.
+
+„Stáhnout XML pro ABRA“ stáhne uložený návrh i přes účetní chyby, pokud jej lze
+strukturálně sestavit. Soubor je označen `NEOVERENO-abra.xml`, chráněn admin PINem,
+bez cache a poskytován jako příloha. Export sám nevolá OpenAI ani ABRA, nemění
+stav a neschvaluje import. Při nesouladu se neprovádí vymyšlené vyrovnání a
+částky řádků zůstávají v návrhu tak, jak byly přepsány. Účetní nastavení a externí
+ID vždy pochází z aplikace. Pro položkový návrh nejsou exportované kontrolní
+součty hlavičky, aby mohla ABRA sestavit hlavičku z položek. Pokud je aktuální XML
+validní, export odpovídá běžnému importnímu payloadu; po schválení vrací přesně
+uzamčené `sent_xml`. Neuložené opravy je před stažením potřeba uložit.
+
+Neověřený návrh slouží k ruční diagnostice v testovací ABRA; před skutečným
+importem ověřte chyby, částky, cílovou firmu a případnou duplicitu. Automatický
+zápis z aplikace nadále vyžaduje úspěšnou kontrolu a schválení. Zcela neplatné
+XML/JSON či údaje, které nelze mapovat do agendy, se místo souboru zobrazí chybou.
+
 ### Číslo původního dokladu (`cisDosle`)
 
 `cisDosle` identifikuje dodavatelský doklad, zatímco `kod` je interní číslo ABRA
@@ -183,7 +221,7 @@ Dříve vydané/odeslané dokumenty zůstávají beze změny.
 ### Oprava neúspěšného vytěžení
 
 Pokud přepis neprojde kontrolou ani po opravném pokusu, uloží se původní JSON,
-konkrétní chyba a sestavené XML, je-li dostupné. Detail nabízí opravu JSON bez
+konkrétní chyba a sestavené XML, je-li dostupné. Detail nabízí opravu ve formuláři nebo JSON bez
 nového volání modelu; opravený přepis musí projít stejnými kontrolami a účetní XML
 z něj znovu sestaví server. Původní přepis se zachová. Pro dohledání jsou uložené
 verze pokynů (SHA-256), model, počty obrazových vstupů a spotřeba tokenů jednotlivých
@@ -249,6 +287,8 @@ Před odesíláním skutečných dokladů ověřte firemní podmínky zpracován
 Implementace obsahuje regresní testy XML, uploadu, autorizace, oprav, HTTP chyb,
 upozornění, změny cíle a nejistého zápisu. HTTP používá výhradně `Req.Test`.
 Při implementaci nebyly lokálně spuštěny testy ani proveden skutečný import.
+Samostatná reprodukce zadaného úryvku O2 ověřila převod českého formátu a
+konkrétní chybu pole při chybějící DPH; nejde o ověření celé faktury O2.
 Samostatná kontrola nad ručním přepisem PENNY ověřila 21 řádků + jednu účetní
 korekci a přesné výsledné částky ve všech agendách. Tvorba výřezů byla ověřena
 na syntetickém dlouhém obrázku a změněné testovací moduly byly zkompilované bez

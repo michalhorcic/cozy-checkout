@@ -48,6 +48,7 @@ defmodule CozyCheckoutWeb.Router do
     pipe_through [:browser, :admin_auth]
 
     get "/incoming-documents/:id/original", IncomingDocumentController, :show
+    get "/incoming-documents/:id/draft.xml", IncomingDocumentController, :xml
     get "/billing/documents/:id/pdf", BillingDocumentController, :show
     get "/kitchen-costs/catalog.json", KitchenCostsController, :catalog
     get "/kitchen-costs/contract/:file", KitchenCostsController, :contract

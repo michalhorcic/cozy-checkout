@@ -450,7 +450,7 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert failed.extracted_data == bad
     assert failed.generated_xml =~ "999.00"
     assert failed.current_xml == nil
-    hash = Incoming.digest(Jason.encode!(bad))
+    hash = Incoming.transcription_hash(failed)
 
     assert {:error, _} =
              Incoming.repair_transcription(doc.id, Jason.encode!(transcription()), "stale")
@@ -526,6 +526,56 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert approved.sent_xml =~ "typPolozky.ucetni"
     refute approved.sent_xml == doc.current_xml
     assert Incoming.digest(approved.sent_xml) == doc.dry_run["payload_hash"]
+  end
+
+  test "invalid source edits are saved for correction and diagnostic export without authorizing a write" do
+    doc = upload()
+    original = transcription()
+
+    doc =
+      doc
+      |> Ecto.Changeset.change(
+        state: "failed",
+        error_stage: "extraction",
+        extracted_data: original
+      )
+      |> Repo.update!()
+
+    bad = put_in(original, ["vat_summary", Access.at(0), "vat"], nil)
+    hash = Incoming.transcription_hash(doc)
+    assert {:ok, saved} = Incoming.save_transcription(doc.id, bad, hash)
+    assert saved.state == "failed"
+    assert saved.current_xml == nil
+    assert saved.extracted_data == original
+    assert saved.edited_data == bad
+    assert saved.error =~ "vat_summary.0.vat"
+    assert saved.dry_run == %{}
+    assert {:ok, payload} = Incoming.diagnostic_xml(saved.id)
+    assert {:ok, fields} = XML.parse(payload, doc.agenda)
+    assert fields["id"] == doc.external_id
+    refute Map.has_key?(fields, "sumCelkem")
+    assert length(XML.items(fields)) == 21
+    assert Incoming.get!(doc.id).sent_xml == nil
+    assert {:error, _} = Incoming.validate(doc.id, Incoming.digest(payload))
+    assert {:error, _} = Incoming.approve(doc.id, Incoming.digest(payload))
+    assert {:error, _} = Incoming.save_transcription(doc.id, original, hash)
+
+    assert {:ok, repaired} =
+             Incoming.save_transcription(doc.id, original, Incoming.transcription_hash(saved))
+
+    assert repaired.state == "review"
+    assert repaired.edited_data == original
+  end
+
+  test "source edits cannot overwrite an XML correction from another tab" do
+    doc = upload() |> extracted()
+    doc = doc |> Ecto.Changeset.change(extracted_data: transcription()) |> Repo.update!()
+    hash = Incoming.transcription_hash(doc)
+
+    assert {:ok, _} =
+             Incoming.save(doc.id, %{"cisDosle" => "CHANGED"}, Incoming.digest(doc.current_xml))
+
+    assert {:error, _} = Incoming.save_transcription(doc.id, transcription(), hash)
   end
 
   test "repair never edits approved or uncertain imports" do

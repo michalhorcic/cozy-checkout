@@ -56,6 +56,50 @@ defmodule CozyCheckout.IncomingDocuments.TranscriptionTest do
     end
   end
 
+  test "O2 Czech numeric formatting is canonicalized without changing amounts" do
+    data =
+      source()
+      |> Map.put("total", "1 803,34")
+      |> Map.put("vat_summary", [
+        %{"gross" => "1 803,34", "net" => "1 490,36", "rate" => "21", "vat" => "312,98"}
+      ])
+
+    assert Builder.summary_issues(data) == []
+    assert {:ok, raw} = Builder.build(data, doc("faktura-prijata"))
+    assert {:ok, fields} = XML.parse(raw, "faktura-prijata")
+    assert fields["sumZklZakl"] == "1490.36"
+    assert fields["sumDphZakl"] == "312.98"
+    assert fields["sumCelkem"] == "1803.34"
+    assert data["vat_summary"] |> hd() |> Map.fetch!("vat") == "312,98"
+
+    for value <- ["1\u00a0803,34", "1\u202f803,34"] do
+      assert Transcription.canonicalize(Map.put(data, "total", value))["total"] == "1803.34"
+    end
+  end
+
+  test "missing VAT produces an exact field error but preserves a diagnostic XML draft" do
+    data =
+      put_in(source(), ["vat_summary"], [
+        %{"rate" => "21", "net" => "1490,36", "vat" => nil, "gross" => "1803,34"}
+      ])
+
+    assert [%{path: "vat_summary.0.vat", message: message}] = Builder.summary_issues(data)
+    assert message =~ "DPH"
+    assert message =~ "nil"
+    assert {:error, reason, raw} = Builder.build(data, doc("zavazek"))
+    assert reason =~ "vat_summary.0.vat"
+    assert is_binary(raw)
+    assert {:ok, _} = XML.parse(raw, "zavazek")
+    assert {:error, _} = XML.normalize(raw, "zavazek", doc("zavazek").template_xml, "ext:test")
+  end
+
+  test "numeric normalization does not change identifiers or guess ambiguous numbers" do
+    data = source() |> Map.put("document_number", "000123") |> Map.put("total", "1,803.34")
+    assert Transcription.canonicalize(data)["document_number"] == "000123"
+    assert Transcription.canonicalize(data)["total"] == "1,803.34"
+    assert Transcription.canonicalize(Map.put(data, "total", "1 80,34"))["total"] == "1 80,34"
+  end
+
   test "strict source contract rejects missing keys, injected accounting fields and 201 rows" do
     assert :ok = Transcription.validate(source())
     assert {:error, _} = Transcription.validate(Map.delete(source(), "complete"))
@@ -76,7 +120,8 @@ defmodule CozyCheckout.IncomingDocuments.TranscriptionTest do
           Map.put(original, "document_number_label", "PENNY KARTA"),
           Map.put(original, "items", [])
         ] do
-      assert {:error, _, nil} = Builder.build(bad, doc("zavazek"))
+      assert {:error, _, raw} = Builder.build(bad, doc("zavazek"))
+      assert is_binary(raw)
     end
   end
 

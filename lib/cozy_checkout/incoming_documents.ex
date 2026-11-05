@@ -145,6 +145,7 @@ defmodule CozyCheckout.IncomingDocuments do
         generated_xml: nil,
         dry_run: %{},
         extracted_data: %{},
+        edited_data: nil,
         extraction_metadata: %{"strategy" => strategy},
         extraction_attempts: 0,
         error: nil,
@@ -494,32 +495,93 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
-  def repair_transcription(id, json, expected_hash) do
-    locked(id, fn doc ->
-      require_state!(doc, ["failed"])
+  def transcription(doc), do: doc.edited_data || doc.extracted_data
+  def transcription_hash(doc), do: digest(Jason.encode!([transcription(doc), doc.current_xml]))
 
-      unless doc.error_stage == "extraction" and is_nil(doc.sent_xml),
+  def repair_transcription(id, json, expected_hash) do
+    with true <- is_binary(json) and byte_size(json) <= 250_000,
+         {:ok, data} <- Jason.decode(json) do
+      save_transcription(id, data, expected_hash)
+    else
+      _ -> {:error, "Přepis nemá platnou JSON strukturu"}
+    end
+  end
+
+  def save_transcription(id, data, expected_hash) do
+    locked(id, fn doc ->
+      require_state!(doc, ["failed", "review"])
+
+      unless is_nil(doc.sent_xml) and (doc.state == "review" or doc.error_stage == "extraction"),
         do: Repo.rollback("Přepis nelze upravit po zahájení importu")
 
-      if digest(Jason.encode!(doc.extracted_data)) != expected_hash,
+      if transcription_hash(doc) != expected_hash,
         do: Repo.rollback("Přepis se mezitím změnil; obnovte stránku")
 
-      with true <- is_binary(json) and byte_size(json) <= 250_000,
-           {:ok, data} <- Jason.decode(json),
-           {:ok, _raw, xml} <- build_transcription(data, doc) do
-        update!(doc,
-          state: "review",
-          current_xml: xml,
-          dry_run: %{},
-          error: nil,
-          error_stage: nil
-        )
-      else
-        {:error, reason, _} -> Repo.rollback(reason)
-        _ -> Repo.rollback("Přepis nemá platnou JSON strukturu")
+      case CozyCheckout.IncomingDocuments.Transcription.validate(data) do
+        :ok -> :ok
+        {:error, reason} -> Repo.rollback(reason)
+      end
+
+      if byte_size(Jason.encode!(data)) > 250_000, do: Repo.rollback("Přepis přesahuje 250 kB")
+
+      case build_transcription(data, doc) do
+        {:ok, _raw, xml} ->
+          update!(doc,
+            edited_data: data,
+            state: "review",
+            current_xml: xml,
+            dry_run: %{},
+            error: nil,
+            error_stage: nil
+          )
+
+        {:error, reason, raw} ->
+          update!(doc,
+            edited_data: data,
+            state: "failed",
+            current_xml: nil,
+            generated_xml: raw,
+            dry_run: %{},
+            error: reason,
+            error_stage: "extraction"
+          )
       end
     end)
   end
+
+  @doc "Downloads are diagnostic only; no accounting write or approval is performed."
+  def diagnostic_xml(%Document{} = doc) do
+    cond do
+      is_binary(doc.sent_xml) ->
+        {:ok, doc.sent_xml}
+
+      is_binary(doc.current_xml) ->
+        XML.import_xml(doc.current_xml, doc.agenda)
+
+      true ->
+        draft =
+          if transcription(doc) != %{},
+            do: Builder.draft(transcription(doc), doc),
+            else: {:ok, doc.generated_xml}
+
+        with {:ok, raw} when is_binary(raw) <- draft,
+             {:ok, xml} <-
+               XML.restore_accounting(raw, doc.agenda, doc.template_xml, doc.external_id),
+             {:ok, fields} <- XML.parse(xml, doc.agenda) do
+          fields =
+            if XML.items(fields) == [],
+              do: fields,
+              else: Map.reject(fields, fn {key, _} -> XML.amount?(key) end)
+
+          {:ok, XML.render(fields, doc.agenda, doc.external_id)}
+        else
+          {:error, reason} -> {:error, reason}
+          _ -> {:error, "Dosud není dostupný návrh XML"}
+        end
+    end
+  end
+
+  def diagnostic_xml(id), do: id |> get!() |> diagnostic_xml()
 
   defp finish_import(doc, result) do
     locked(doc.id, fn current ->

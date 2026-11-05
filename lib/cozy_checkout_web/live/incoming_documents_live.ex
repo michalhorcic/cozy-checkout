@@ -1,7 +1,7 @@
 defmodule CozyCheckoutWeb.IncomingDocumentsLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
-  alias CozyCheckout.IncomingDocuments.{Client, Extractor, XML}
+  alias CozyCheckout.IncomingDocuments.{Builder, Client, Editor, Extractor, XML}
 
   def mount(_, _, socket) do
     if connected?(socket), do: Process.send_after(self(), :refresh, 2000)
@@ -87,11 +87,46 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
     )
   end
 
+  def handle_event("source-change", %{"fields" => %{"source" => attrs}}, socket) do
+    {:noreply, source_draft(socket, Editor.apply(socket.assigns.source_data, attrs))}
+  end
+
+  def handle_event("source-save", %{"fields" => %{"source" => attrs}}, socket) do
+    data = Editor.apply(socket.assigns.source_data, attrs)
+
+    result(
+      socket,
+      IncomingDocuments.save_transcription(
+        socket.assigns.doc.id,
+        data,
+        socket.assigns.transcription_hash
+      ),
+      "Návrh uložen. Výsledek kontroly je uveden u dokladu; XML lze stáhnout i s chybami."
+    )
+  end
+
+  def handle_event("source-add", %{"collection" => collection}, socket),
+    do: {:noreply, source_draft(socket, Editor.add(socket.assigns.source_data, collection))}
+
+  def handle_event("source-delete", %{"collection" => collection, "index" => index}, socket),
+    do:
+      {:noreply,
+       source_draft(socket, Editor.delete(socket.assigns.source_data, collection, index))}
+
   def handle_event("repair-data-change", %{"fields" => %{"data" => json}}, socket),
-    do: {:noreply, assign(socket, :transcription_form, to_form(%{"data" => json}, as: :fields))}
+    do:
+      {:noreply,
+       assign(socket,
+         source_dirty: true,
+         transcription_form: to_form(%{"data" => json}, as: :fields)
+       )}
 
   def handle_event("repair-data", %{"fields" => %{"data" => json}}, socket) do
-    socket = assign(socket, :transcription_form, to_form(%{"data" => json}, as: :fields))
+    socket =
+      assign(socket,
+        source_dirty: true,
+        transcription_form: to_form(%{"data" => json}, as: :fields)
+      )
 
     result(
       socket,
@@ -236,8 +271,17 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
       hash: if(doc.current_xml, do: IncomingDocuments.digest(doc.current_xml)),
       extraction_hash: IncomingDocuments.digest(doc.generated_xml || ""),
       transcription_form:
-        to_form(%{"data" => Jason.encode!(doc.extracted_data, pretty: true)}, as: :fields),
-      transcription_hash: IncomingDocuments.digest(Jason.encode!(doc.extracted_data)),
+        to_form(%{"data" => Jason.encode!(IncomingDocuments.transcription(doc), pretty: true)},
+          as: :fields
+        ),
+      transcription_hash: IncomingDocuments.transcription_hash(doc),
+      source_data: IncomingDocuments.transcription(doc),
+      source_issues: Builder.summary_issues(IncomingDocuments.transcription(doc)),
+      source_dirty: false,
+      source_locked:
+        doc.state not in ["failed", "review"] or not is_nil(doc.sent_xml) or
+          (doc.state == "failed" and doc.error_stage != "extraction"),
+      draft_available: match?({:ok, _}, IncomingDocuments.diagnostic_xml(doc)),
       rounding:
         case XML.rounding_adjustments(doc.current_xml || "", doc.agenda) do
           {:ok, adjustments} -> adjustments
@@ -246,6 +290,18 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
       enabled: IncomingDocuments.enabled?()
     )
   end
+
+  defp source_draft(socket, data) do
+    assign(socket,
+      source_data: data,
+      source_dirty: true,
+      source_issues: Builder.summary_issues(data),
+      transcription_form: to_form(%{"data" => Jason.encode!(data, pretty: true)}, as: :fields)
+    )
+  end
+
+  defp source_error(issues, path),
+    do: for(issue <- issues, issue.path == Enum.join(path, "."), do: issue.message)
 
   defp form_items(fields),
     do:
@@ -418,6 +474,22 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           · {state_label(@doc.state)} · Firma ABRA: <strong>{@doc.company_id}</strong>
         </p>
         <p :if={@doc.error} class="alert alert-error" id="incoming-error">{@doc.error}</p>
+        <div
+          :if={@draft_available}
+          class="bg-white rounded-xl p-4 space-y-2"
+          id="incoming-draft-download"
+        >
+          <p>
+            XML návrh lze stáhnout i přes účetní chyby. Stažení neprovádí zápis ani kontrolu v ABRA. Není-li doklad schválený, jde o neověřený návrh; před ručním importem zkontrolujte chyby a cílovou firmu.
+          </p>
+          <p :if={@source_dirty} class="text-warning">Před stažením nejdříve uložte změny návrhu.</p>
+          <.link
+            :if={!@source_dirty}
+            href={~p"/admin/incoming-documents/#{@doc.id}/draft.xml"}
+            class="btn"
+            download
+          >Stáhnout XML pro ABRA</.link>
+        </div>
         <details
           :if={@doc.extracted_data != %{} || @doc.extraction_metadata != %{}}
           class="bg-white rounded-xl p-4"
@@ -432,7 +504,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
           <p :if={get_in(@doc.extraction_metadata, ["images", "warning"])} class="text-warning">
             {get_in(@doc.extraction_metadata, ["images", "warning"])}
           </p>
-          <pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{Jason.encode!(@doc.extracted_data, pretty: true)}</pre>
           <details class="mt-3">
             <summary>Verze zadání, obrazové vstupy a spotřeba tokenů</summary><pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{Jason.encode!(Map.update(@doc.extraction_metadata, "calls", [], &Enum.map(&1, fn call -> Map.delete(call, "raw_output") end)), pretty: true)}</pre>
           </details>
@@ -546,6 +617,225 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
             </div>
           </div>
           <div class="min-w-0 space-y-4">
+            <section
+              :if={@source_data != %{}}
+              class="bg-white rounded-xl p-4 space-y-4"
+              id="incoming-source-editor"
+            >
+              <h2 class="text-xl font-bold">Údaje přečtené z originálu</h2>
+              <p>
+                Částky lze zadat česky, např. 1 803,34. Prázdné pole znamená neznámý údaj. Uložení uchová návrh i s chybami a znovu sestaví XML z těchto údajů. Nahradí dosavadní opravy XML a zruší kontrolu ABRA; nic neodesílá.
+              </p>
+              <form
+                id="incoming-source-form"
+                phx-change="source-change"
+                phx-submit="source-save"
+                class="space-y-4"
+              >
+                <fieldset disabled={@source_locked} class="space-y-4">
+                  <div class="grid md:grid-cols-3 gap-3">
+                    <.input
+                      :for={
+                        {key, title} <- [
+                          {"document_number", "Číslo dokladu"},
+                          {"document_number_label", "Popisek čísla (např. EV-č)"},
+                          {"variable_symbol", "Variabilní symbol"},
+                          {"issue_date", "Datum vystavení"},
+                          {"tax_date", "DUZP"},
+                          {"due_date", "Datum splatnosti"},
+                          {"currency", "Měna"},
+                          {"total", "Celkem s DPH"}
+                        ]
+                      }
+                      name={Editor.name([key])}
+                      value={Editor.value(@source_data, [key])}
+                      label={title}
+                    />
+                  </div>
+                  <h3 class="font-bold">Dodavatel</h3>
+                  <div class="grid md:grid-cols-3 gap-3">
+                    <.input
+                      :for={
+                        {key, title} <- [
+                          {"name", "Název"},
+                          {"ic", "IČO"},
+                          {"dic", "DIČ"},
+                          {"street", "Ulice"},
+                          {"city", "Město"},
+                          {"postal_code", "PSČ"}
+                        ]
+                      }
+                      name={Editor.name(["supplier", key])}
+                      value={Editor.value(@source_data, ["supplier", key])}
+                      label={title}
+                    />
+                  </div>
+                  <h3 class="font-bold">Rekapitulace DPH</h3>
+                  <div
+                    :for={{row, index} <- Enum.with_index(@source_data["vat_summary"])}
+                    class="border rounded-lg p-3 space-y-2"
+                    data-vat-summary={index}
+                  >
+                    <p>Řádek {index + 1}</p>
+                    <div class="grid md:grid-cols-4 gap-3">
+                      <.input
+                        :for={
+                          {key, title} <- [
+                            {"rate", "Sazba (%)"},
+                            {"net", "Základ bez DPH"},
+                            {"vat", "DPH"},
+                            {"gross", "Částka s DPH (nepovinná)"}
+                          ]
+                        }
+                        name={Editor.name(["vat_summary", index, key])}
+                        value={row[key] || ""}
+                        label={title}
+                        errors={source_error(@source_issues, ["vat_summary", index, key])}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      phx-click="source-delete"
+                      phx-value-collection="vat_summary"
+                      phx-value-index={index}
+                    >Odebrat sazbu</button>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-sm"
+                    phx-click="source-add"
+                    phx-value-collection="vat_summary"
+                  >Přidat sazbu</button>
+                  <details>
+                    <summary>Legenda značek DPH</summary>
+                    <div
+                      :for={{row, index} <- Enum.with_index(@source_data["vat_legend"])}
+                      class="flex flex-wrap items-end gap-3 my-3"
+                    >
+                      <.input
+                        :for={{key, title} <- [{"marker", "Značka"}, {"rate", "Sazba (%)"}]}
+                        name={Editor.name(["vat_legend", index, key])}
+                        value={row[key] || ""}
+                        label={title}
+                      />
+                      <button
+                        type="button"
+                        class="btn btn-sm"
+                        phx-click="source-delete"
+                        phx-value-collection="vat_legend"
+                        phx-value-index={index}
+                      >Odebrat</button>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-sm"
+                      phx-click="source-add"
+                      phx-value-collection="vat_legend"
+                    >Přidat značku</button>
+                  </details>
+                  <h3 class="font-bold">Jednotlivé položky ({length(@source_data["items"])})</h3>
+                  <details
+                    :for={{row, index} <- Enum.with_index(@source_data["items"])}
+                    class="border rounded-lg p-3"
+                    data-source-item={index}
+                  >
+                    <summary>
+                      Položka {index + 1}: {row["name"] || "bez názvu"} · množství {row["quantity"] ||
+                        "?"} · celkem {row[
+                        "line_total"
+                      ] || "?"}
+                    </summary>
+                    <div class="grid md:grid-cols-3 gap-3 mt-3">
+                      <.input
+                        :for={
+                          {key, title} <- [
+                            {"name", "Název"},
+                            {"quantity", "Množství"},
+                            {"unit_price", "Jednotková cena"},
+                            {"line_total", "Celkem za řádek"},
+                            {"discount_percent", "Sleva (%)"},
+                            {"vat_marker", "Značka DPH"},
+                            {"vat_rate", "Sazba DPH (%)"},
+                            {"raw_text", "Text přečtený z originálu"}
+                          ]
+                        }
+                        name={Editor.name(["items", index, key])}
+                        value={row[key] || ""}
+                        label={title}
+                      />
+                      <.input
+                        name={Editor.name(["items", index, "price_includes_vat"])}
+                        value={Editor.value(@source_data, ["items", index, "price_includes_vat"])}
+                        type="select"
+                        label="Jednotková cena"
+                        options={[
+                          {"Neznámý typ ceny", ""},
+                          {"Včetně DPH", "true"},
+                          {"Bez DPH", "false"}
+                        ]}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-sm mt-3"
+                      phx-click="source-delete"
+                      phx-value-collection="items"
+                      phx-value-index={index}
+                    >Odebrat položku</button>
+                  </details>
+                  <button
+                    type="button"
+                    class="btn btn-sm"
+                    phx-click="source-add"
+                    phx-value-collection="items"
+                  >Přidat položku</button>
+                  <.input
+                    name={Editor.name(["complete"])}
+                    value={Editor.value(@source_data, ["complete"])}
+                    type="select"
+                    label="Je přepis úplný?"
+                    options={[{"Ano", "true"}, {"Ne", "false"}]}
+                  />
+                  <.input
+                    name={Editor.name(["uncertainties"])}
+                    value={Editor.value(@source_data, ["uncertainties"])}
+                    type="textarea"
+                    label="Nejasnosti (každá na samostatném řádku)"
+                  />
+                  <button
+                    :if={!@source_locked}
+                    class="btn btn-primary"
+                    phx-disable-with="Ukládám…"
+                  >Uložit návrh a zkontrolovat</button>
+                </fieldset>
+              </form>
+              <details id="incoming-source-json">
+                <summary>JSON aktuálního návrhu (pokročilé úpravy)</summary>
+                <.form
+                  :if={!@source_locked}
+                  for={@transcription_form}
+                  id="incoming-repair-data"
+                  phx-change="repair-data-change"
+                  phx-submit="repair-data"
+                  class="space-y-3 mt-3"
+                >
+                  <.input
+                    field={@transcription_form[:data]}
+                    type="textarea"
+                    label="JSON návrhu"
+                    rows="16"
+                    spellcheck="false"
+                    class="textarea w-full font-mono text-xs"
+                  />
+                  <button class="btn" phx-disable-with="Ukládám…">Uložit JSON návrhu</button>
+                </.form>
+                <pre :if={@source_locked} class="text-xs whitespace-pre-wrap break-all">{Jason.encode!(@source_data, pretty: true)}</pre>
+              </details>
+              <details>
+                <summary>Původní JSON modelu</summary><pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{Jason.encode!(@doc.extracted_data, pretty: true)}</pre>
+              </details>
+            </section>
             <div :if={@doc.state == "failed" && @doc.error_stage == "extraction"} class="space-y-4">
               <p :if={!@doc.generated_xml} class="alert alert-info">
                 XML z tohoto pokusu není uložené. Je-li dostupný přepis originálu níže, opravte jej; jinak spusťte vytěžení znovu.
@@ -573,28 +863,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLive do
                   </tbody>
                 </table>
               </div>
-              <.form
-                :if={@doc.extracted_data != %{}}
-                for={@transcription_form}
-                id="incoming-repair-data"
-                phx-change="repair-data-change"
-                phx-submit="repair-data"
-                class="bg-white rounded-xl p-4 space-y-3"
-              >
-                <h2 class="text-lg font-bold">Opravit přepis originálu</h2>
-                <p>
-                  Opravte údaje v JSON podle originálu. Aplikace znovu sestaví a zkontroluje XML bez volání OpenAI. Položky a rekapitulace musí zůstat úplné; complete potvrzuje úplnost a uncertainties obsahuje jen skutečně nevyřešené problémy.
-                </p>
-                <.input
-                  field={@transcription_form[:data]}
-                  type="textarea"
-                  label="Přepis údajů z originálu"
-                  rows="20"
-                  spellcheck="false"
-                  class="textarea w-full font-mono text-xs"
-                />
-                <button class="btn btn-primary" phx-disable-with="Kontroluji…">Uložit opravený přepis</button>
-              </.form>
               <.form
                 :if={@doc.generated_xml}
                 for={@repair_form}

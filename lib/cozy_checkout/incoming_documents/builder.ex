@@ -25,12 +25,34 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
   }
 
   def build(data, doc) do
+    case draft(data, doc) do
+      {:ok, raw} ->
+        case compose(data, doc, true) do
+          {:ok, xml} -> {:ok, xml}
+          {:error, reason, _} -> {:error, reason, raw}
+        end
+
+      {:error, reason} ->
+        {:error, reason, nil}
+    end
+  end
+
+  @doc "Well-formed diagnostic XML even when the source amounts need correction. Never authorizes import."
+  def draft(data, doc) do
+    case compose(data, doc, false) do
+      {:ok, xml} -> {:ok, xml}
+      {:error, reason, _} -> {:error, reason}
+    end
+  end
+
+  defp compose(data, doc, strict) do
     with :ok <- Transcription.validate(data),
-         :ok <- currency(data["currency"]),
-         :ok <- number_label(data["document_number_label"]),
+         data = Transcription.canonicalize(data),
+         :ok <- if(strict, do: currency(data["currency"]), else: :ok),
+         :ok <- if(strict, do: number_label(data["document_number_label"]), else: :ok),
          {:ok, defaults} <- XML.parse(doc.template_xml, doc.agenda),
-         {:ok, fields} <- summary(defaults, data["vat_summary"]),
-         {:ok, rows} <- rows(data["items"], data["vat_legend"]) do
+         {:ok, fields} <- summary(defaults, data["vat_summary"], strict),
+         {:ok, rows} <- rows(data["items"], data["vat_legend"], strict) do
       fields =
         Enum.reduce(@header, fields, fn {from, to}, acc -> Map.put(acc, to, data[from] || "") end)
 
@@ -45,10 +67,10 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
       xml = XML.render(fields, doc.agenda, doc.external_id)
 
       cond do
-        data["complete"] != true ->
+        strict and data["complete"] != true ->
           {:error, "Přepis originálu není úplný: " <> Enum.join(data["uncertainties"], "; "), xml}
 
-        data["uncertainties"] != [] ->
+        strict and data["uncertainties"] != [] ->
           {:error, "Přepis vyžaduje kontrolu: " <> Enum.join(data["uncertainties"], "; "), xml}
 
         true ->
@@ -98,18 +120,19 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
 
   defp rate(_), do: {:error, "Chybí sazba DPH z originálu"}
 
-  defp summary(_defaults, []) do
+  defp summary(_defaults, [], true) do
     {:error, "Chybí rekapitulace DPH z originálu"}
   end
 
-  defp summary(defaults, summaries) do
+  defp summary(defaults, summaries, strict) do
     defaults =
       Enum.reduce(Enum.filter(XML.editable(), &XML.amount?/1), defaults, &Map.put(&2, &1, "0.00"))
 
-    Enum.reduce_while(summaries, {:ok, defaults, []}, fn row, {:ok, fields, seen} ->
+    Enum.reduce_while(Enum.with_index(summaries), {:ok, defaults, []}, fn {row, index},
+                                                                          {:ok, fields, seen} ->
       with {:ok, key} <- rate(row["rate"]),
            false <- key in seen,
-           :ok <- summary_gross(row, key) do
+           :ok <- if(strict, do: summary_gross(row, key, index), else: :ok) do
         {net_key, vat_key, _} = @groups[key]
         fields = Map.put(fields, net_key, row["net"] || if(key == "0", do: row["gross"]) || "")
         fields = if vat_key, do: Map.put(fields, vat_key, row["vat"] || ""), else: fields
@@ -125,27 +148,78 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
     end
   end
 
-  defp summary_gross(row, key) do
-    values =
-      if key == "0",
-        do: [row["net"] || row["gross"], row["vat"] || "0.00"],
-        else: [row["net"], row["vat"]]
+  def summary_issues(data) do
+    case Transcription.validate(data) do
+      :ok ->
+        data = Transcription.canonicalize(data)
 
-    with {:ok, net} <- money(Enum.at(values, 0)),
-         {:ok, vat} <- money(Enum.at(values, 1)),
-         true <- key != "0" or Decimal.equal?(vat, 0) do
-      if is_nil(row["gross"]) do
-        :ok
-      else
-        with {:ok, gross} <- money(row["gross"]),
-             true <- Decimal.equal?(gross, Decimal.add(net, vat)),
-             do: :ok,
-             else: (_ ->
-                      {:error,
-                       "Rekapitulace DPH #{key} %: základ a daň nesouhlasí s částkou včetně DPH"})
-      end
+        Enum.flat_map(Enum.with_index(data["vat_summary"]), fn {row, index} ->
+          case rate(row["rate"]) do
+            {:ok, key} -> vat_issues(row, key, index)
+            {:error, reason} -> [%{path: "vat_summary.#{index}.rate", message: reason}]
+          end
+        end)
+
+      _ ->
+        []
+    end
+  end
+
+  defp summary_gross(row, key, index) do
+    case vat_issues(row, key, index) do
+      [] -> :ok
+      issues -> {:error, Enum.map_join(issues, "; ", &(&1.path <> ": " <> &1.message))}
+    end
+  end
+
+  defp vat_issues(row, key, index) do
+    net_value = row["net"] || if(key == "0", do: row["gross"])
+    vat_value = row["vat"] || if(key == "0", do: "0")
+
+    issues =
+      for {field, value} <- [{"net", net_value}, {"vat", vat_value}],
+          match?({:error, _}, money(value)),
+          do: %{
+            path: "vat_summary.#{index}.#{field}",
+            message:
+              "Rekapitulace DPH #{key} %: #{if field == "net", do: "základ", else: "DPH"} má nečitelnou nebo chybějící hodnotu #{inspect(value)}"
+          }
+
+    if issues != [] do
+      issues
     else
-      _ -> {:error, "Rekapitulace DPH #{key} % nemá čitelné a konzistentní částky"}
+      {:ok, net} = money(net_value)
+      {:ok, vat} = money(vat_value)
+
+      cond do
+        key == "0" and not Decimal.equal?(vat, 0) ->
+          [%{path: "vat_summary.#{index}.vat", message: "Sazba 0 % nemůže mít nenulovou DPH"}]
+
+        is_nil(row["gross"]) ->
+          []
+
+        true ->
+          case money(row["gross"]) do
+            {:ok, gross} ->
+              if Decimal.equal?(gross, Decimal.add(net, vat)),
+                do: [],
+                else: [
+                  %{
+                    path: "vat_summary.#{index}.gross",
+                    message:
+                      "Základ #{net} + DPH #{vat} = #{Decimal.add(net, vat)}, uvedeno s DPH #{gross}"
+                  }
+                ]
+
+            _ ->
+              [
+                %{
+                  path: "vat_summary.#{index}.gross",
+                  message: "Nečitelná částka s DPH #{inspect(row["gross"])}"
+                }
+              ]
+          end
+      end
     end
   end
 
@@ -157,11 +231,11 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
 
   defp money(_), do: {:error, "Chybí částka"}
 
-  defp rows([], _legend), do: {:error, "Chybí jednotlivé položky originálu"}
+  defp rows([], _legend, true), do: {:error, "Chybí jednotlivé položky originálu"}
 
-  defp rows(items, legend) do
+  defp rows(items, legend, strict) do
     Enum.reduce_while(Enum.with_index(items, 1), {:ok, []}, fn {row, index}, {:ok, acc} ->
-      case row(row, legend) do
+      case row(row, legend, strict) do
         {:ok, mapped} -> {:cont, {:ok, [mapped | acc]}}
         {:error, reason} -> {:halt, {:error, "Položka #{index}: #{reason}"}}
       end
@@ -172,29 +246,33 @@ defmodule CozyCheckout.IncomingDocuments.Builder do
     end
   end
 
-  defp row(source, legend) do
-    with {:ok, key} <- item_rate(source, legend) do
-      {_, _, vat_type} = @groups[key]
-
-      row = %{
-        "nazev" => source["name"] || "",
-        "mnozMj" => source["quantity"] || "",
-        "cenaMj" => source["unit_price"] || "",
-        "slevaPol" => source["discount_percent"] || "0",
-        "typSzbDphK" => vat_type,
-        "typCenyDphK" =>
-          case source["price_includes_vat"] do
-            true -> "typCeny.sDph"
-            false -> "typCeny.bezDph"
-            _ -> ""
-          end
-      }
-
-      row =
-        if source["line_total"], do: Map.put(row, "sumCelkem", source["line_total"]), else: row
-
-      {:ok, row}
+  defp row(source, legend, strict) do
+    case item_rate(source, legend) do
+      {:ok, key} -> {:ok, map_row(source, elem(@groups[key], 2))}
+      error when strict -> error
+      _ -> {:ok, map_row(source, "")}
     end
+  end
+
+  defp map_row(source, vat_type) do
+    row = %{
+      "nazev" => source["name"] || "",
+      "mnozMj" => source["quantity"] || "",
+      "cenaMj" => source["unit_price"] || "",
+      "slevaPol" => source["discount_percent"] || "0",
+      "typSzbDphK" => vat_type,
+      "typCenyDphK" =>
+        case source["price_includes_vat"] do
+          true -> "typCeny.sDph"
+          false -> "typCeny.bezDph"
+          _ -> ""
+        end
+    }
+
+    row =
+      if source["line_total"], do: Map.put(row, "sumCelkem", source["line_total"]), else: row
+
+    row
   end
 
   defp item_rate(source, legend) do

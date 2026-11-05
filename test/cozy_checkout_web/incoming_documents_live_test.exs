@@ -173,6 +173,43 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert queued.extraction_metadata["strategy"] == "simple_xml"
   end
 
+  test "source form highlights missing VAT, preserves invalid edits and offers a PIN-protected XML download",
+       %{conn: conn} do
+    data = "test/fixtures/incoming_documents/penny.json" |> File.read!() |> Jason.decode!()
+    data = put_in(data, ["vat_summary", Access.at(0), "vat"], nil)
+    {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "o2.pdf", "faktura-prijata")
+
+    doc
+    |> Ecto.Changeset.change(state: "failed", error_stage: "extraction", extracted_data: data)
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-documents/#{doc.id}")
+    assert has_element?(view, "#incoming-source-form")
+    assert html =~ "DPH má nečitelnou nebo chybějící hodnotu"
+
+    view
+    |> form("#incoming-source-form", %{
+      "fields" => %{"source" => %{"vat_summary" => %{"0" => %{"vat" => ""}}}}
+    })
+    |> render_submit()
+
+    saved = IncomingDocuments.get!(doc.id)
+    assert saved.edited_data["vat_summary"] |> hd() |> Map.fetch!("vat") == nil
+    assert saved.state == "failed"
+    assert has_element?(view, "#incoming-draft-download a")
+    path = "/admin/incoming-documents/#{doc.id}/draft.xml"
+    assert get(build_conn(), path) |> redirected_to() =~ "/admin/login"
+    downloaded = build_conn() |> admin() |> get(path)
+    assert get_resp_header(downloaded, "cache-control") == ["private, no-store"]
+
+    assert get_resp_header(downloaded, "content-disposition") == [
+             "attachment; filename=\"NEOVERENO-abra.xml\""
+           ]
+
+    assert {:ok, _} = XML.parse(response(downloaded, 200), "faktura-prijata")
+    assert IncomingDocuments.get!(doc.id).sent_xml == nil
+  end
+
   test "legacy extraction failures explain the need for one new extraction", %{conn: conn} do
     {:ok, %{document: doc}} = IncomingDocuments.upload("%PDF-test", "legacy.pdf", "zavazek")
 

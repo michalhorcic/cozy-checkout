@@ -33,6 +33,52 @@ defmodule CozyCheckout.IncomingDocuments.Transcription do
     })
   end
 
+  @doc "Normalizes unambiguous Czech numeric formatting without changing source values."
+  def canonicalize(data) do
+    data
+    |> normalize_fields(~w(total))
+    |> Map.update!(
+      "vat_summary",
+      &Enum.map(&1, fn row -> normalize_fields(row, ~w(rate net vat gross)) end)
+    )
+    |> Map.update!("vat_legend", &Enum.map(&1, fn row -> normalize_fields(row, ~w(rate)) end))
+    |> Map.update!(
+      "items",
+      &Enum.map(&1, fn row ->
+        normalize_fields(row, ~w(quantity unit_price line_total discount_percent vat_rate))
+      end)
+    )
+  end
+
+  defp normalize_fields(map, keys) do
+    Enum.reduce(keys, map, fn key, acc -> Map.update!(acc, key, &canonical_number/1) end)
+  end
+
+  defp canonical_number(value) when is_binary(value) do
+    trimmed = String.trim(value)
+    grouped? = Regex.match?(~r/^-?\d{1,3}([ \x{00a0}\x{202f}]+\d{3})+([.,]\d{1,12})?$/u, trimmed)
+
+    compact =
+      if grouped?, do: String.replace(trimmed, ~r/[ \x{00a0}\x{202f}]/u, ""), else: trimmed
+
+    compact = String.replace(compact, ",", ".")
+
+    cond do
+      compact == "" ->
+        nil
+
+      Regex.match?(~r/^-?\d{1,12}(\.\d{1,12})?$/, compact) ->
+        if Regex.match?(~r/\.\d{2}0+$/, compact),
+          do: compact |> Decimal.new() |> Decimal.normalize() |> Decimal.to_string(:normal),
+          else: compact
+
+      true ->
+        value
+    end
+  end
+
+  defp canonical_number(value), do: value
+
   defp object(properties),
     do: %{
       "type" => "object",
