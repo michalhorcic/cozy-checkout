@@ -51,27 +51,59 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert to =~ "/admin/login"
   end
 
-  test "manual form requires confirmation and stays in the new form with accounting and delivery",
+  test "manual form validates amounts and saves directly without consent checkboxes",
        %{conn: conn} do
     {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form")
     params = %{"agenda" => "zavazek", "document" => attrs()}
-    view |> form("#incoming-header-form", params) |> render_submit()
+    refute has_element?(view, "#incoming-header-form input[type=checkbox]")
+
+    view
+    |> form("#incoming-header-form", put_in(params, ["document", "sumCelkem"], "10"))
+    |> render_submit()
+
     assert IncomingDocuments.list() == []
-    view |> form("#incoming-header-form", Map.put(params, "reviewed", "true")) |> render_change()
-    assert has_element?(view, "input[name=reviewed][type=checkbox][checked]")
-    view |> form("#incoming-header-form", Map.put(params, "reviewed", "true")) |> render_submit()
+    view |> form("#incoming-header-form", params) |> render_submit()
     [doc] = IncomingDocuments.list()
     assert_patch(view, "/admin/incoming-document-form/#{doc.id}")
     {:ok, detail, _} = live(admin(build_conn()), "/admin/incoming-documents/#{doc.id}")
     assert has_element?(detail, "#incoming-accounting")
     assert has_element?(detail, "#incoming-header-form")
     assert has_element?(detail, "#incoming-send")
+    refute has_element?(detail, "#incoming-send input[type=checkbox]")
+    refute has_element?(detail, "#supplier-instructions-form input[type=checkbox]")
     refute has_element?(detail, "iframe")
     refute has_element?(detail, "img[data-original]")
 
     assert_error_sent 404, fn ->
       get(admin(build_conn()), "/admin/incoming-documents/#{doc.id}/original")
     end
+  end
+
+  test "identity warning remains visible but saving needs no additional agreement", %{conn: conn} do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    doc
+    |> Ecto.Changeset.change(
+      extraction_metadata:
+        Map.put(
+          doc.extraction_metadata,
+          "identity_conflict",
+          "IČO se liší od zvoleného dodavatele."
+        )
+    )
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert html =~ "IČO se liší od zvoleného dodavatele."
+    refute has_element?(view, "#incoming-header-form input[type=checkbox]")
+
+    view
+    |> form("#incoming-header-form", %{"document" => Map.put(attrs(), "cisDosle", "OPRAVENO")})
+    |> render_submit()
+
+    saved = IncomingDocuments.get!(doc.id)
+    assert saved.state == "review"
+    assert saved.current_xml =~ "<cisDosle>OPRAVENO</cisDosle>"
   end
 
   test "partial proposals can be opened in either detail without the item editor crashing", %{
@@ -126,7 +158,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert has_element?(view, "input[name='document[cisDosle]'][value='DRAFT']")
     assert IncomingDocuments.get!(doc.id).accounting_settings["typUcOp"] == "code:SLUŽBY"
     assert has_element?(view, "#incoming-send button[disabled]")
-    view |> form("#incoming-header-form", %{"reviewed" => "true"}) |> render_submit()
+    view |> form("#incoming-header-form") |> render_submit()
     updated = IncomingDocuments.get!(doc.id)
     assert updated.current_xml =~ "<cisDosle>DRAFT</cisDosle>"
     assert updated.current_xml =~ "<protiUcet>code:518100</protiUcet>"
@@ -151,8 +183,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     send(view.pid, :refresh)
     assert render(view) =~ "FreeMarker"
     view |> form("#incoming-send") |> render_submit()
-    assert IncomingDocuments.get!(doc.id).state == "review"
-    view |> form("#incoming-send", %{"confirm_send" => "true"}) |> render_submit()
     assert IncomingDocuments.get!(doc.id).state == "sending"
     assert has_element?(view, "#incoming-header-form input[name='document[cisDosle]'][disabled]")
   end
@@ -287,8 +317,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
         "ic" => "64945880",
         "dic" => "CZ64945880",
         "country_code" => "CZ",
-        "instructions" => "<script>test</script>",
-        "confirmed" => "true"
+        "instructions" => "<script>test</script>"
       }
     }
 
@@ -343,8 +372,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     params =
       Map.merge(supplier, %{
         "profile_id" => profile.id,
-        "instructions" => "Moje změna",
-        "confirmed" => "true"
+        "instructions" => "Moje změna"
       })
 
     html =

@@ -23,8 +23,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
        agenda: "faktura-prijata",
        values: HeaderForm.defaults(),
        loaded_values: HeaderForm.defaults(),
-       reviewed: false,
-       identity_reviewed: false,
        include_items: false,
        extraction_run: nil,
        supplier_form: to_form(%{}, as: :supplier),
@@ -69,8 +67,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             loaded_values: HeaderForm.defaults(),
             agenda: "faktura-prijata",
             include_items: false,
-            dirty: false,
-            reviewed: false
+            dirty: false
           )
 
         :edit ->
@@ -129,8 +126,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     {:noreply,
      assign(socket,
        values: Map.take(attrs, HeaderForm.keys()),
-       reviewed: params["reviewed"] == "true",
-       identity_reviewed: params["identity_reviewed"] == "true",
        agenda:
          if(socket.assigns.doc,
            do: socket.assigns.doc.agenda,
@@ -148,7 +143,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
        assign(socket,
          values: Map.merge(socket.assigns.values, suggestions.vat),
          suggestion_messages: suggestions.messages,
-         reviewed: false,
          dirty: true
        )}
     else
@@ -171,7 +165,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           if acc[key] in [nil, ""], do: Map.put(acc, key, value), else: acc
         end)
 
-      {:noreply, assign(socket, values: values, reviewed: false, dirty: true)}
+      {:noreply, assign(socket, values: values, dirty: true)}
     else
       {:noreply, socket}
     end
@@ -203,7 +197,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           {:noreply,
            socket
            |> put_flash(:info, message)
-           |> assign(reviewed: false, dirty: false)
+           |> assign(dirty: false)
            |> push_patch(to: ~p"/admin/incoming-document-form/#{doc.id}")}
 
         [{:error, reason}] ->
@@ -219,40 +213,36 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   def handle_event("save", %{"document" => attrs} = params, socket) do
     socket = assign(socket, values: Map.take(attrs, HeaderForm.keys()), dirty: true)
 
-    if params["reviewed"] != "true" do
-      {:noreply, put_flash(socket, :error, "Potvrďte kontrolu údajů, měny CZK a rozpisu DPH.")}
-    else
-      result =
-        if socket.assigns.doc do
-          IncomingDocuments.save_header(
-            socket.assigns.doc.id,
-            attrs,
-            socket.assigns.hash,
-            params["identity_reviewed"] == "true"
-          )
-        else
-          IncomingDocuments.create_header(params["agenda"], attrs)
-        end
-
-      case result do
-        {:ok, doc} ->
-          {:noreply,
-           socket
-           |> assign_document(doc)
-           |> put_flash(
-             :info,
-             "Formulář uložen. Níže můžete zvolit předpis, ověřit doklad nebo jej odeslat do ABRA."
-           )
-           |> push_patch(to: ~p"/admin/incoming-document-form/#{doc.id}")}
-
-        {:error, reason} ->
-          {:noreply,
-           put_flash(
-             socket,
-             :error,
-             if(is_binary(reason), do: reason, else: "Doklad se nepodařilo uložit.")
-           )}
+    result =
+      if socket.assigns.doc do
+        IncomingDocuments.save_header(
+          socket.assigns.doc.id,
+          attrs,
+          socket.assigns.hash,
+          true
+        )
+      else
+        IncomingDocuments.create_header(params["agenda"], attrs)
       end
+
+    case result do
+      {:ok, doc} ->
+        {:noreply,
+         socket
+         |> assign_document(doc)
+         |> put_flash(
+           :info,
+           "Formulář uložen. Níže můžete zvolit předpis, ověřit doklad nebo jej odeslat do ABRA."
+         )
+         |> push_patch(to: ~p"/admin/incoming-document-form/#{doc.id}")}
+
+      {:error, reason} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           if(is_binary(reason), do: reason, else: "Doklad se nepodařilo uložit.")
+         )}
     end
   end
 
@@ -320,7 +310,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
              Map.put(attrs, "preset", preset),
              socket.assigns.hash
            ) do
-      previous = Map.take(socket.assigns, [:values, :dirty, :reviewed])
+      previous = Map.take(socket.assigns, [:values, :dirty])
       socket = socket |> assign(accounting_dirty: false) |> assign_document(doc)
       socket = if previous.dirty, do: assign(socket, previous), else: socket
       {:noreply, put_flash(socket, :info, "Předpis zaúčtování uložen.")}
@@ -342,7 +332,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     )
   end
 
-  def handle_event("send", params, socket) do
+  def handle_event("send", _, socket) do
     operation(
       socket,
       fn doc ->
@@ -350,7 +340,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           IncomingDocuments.send_header(
             doc.id,
             IncomingDocuments.digest(doc.current_xml),
-            params["confirm_send"] == "true"
+            true
           )
         else
           {:error, "Nejprve uložte formulář"}
@@ -429,7 +419,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   def handle_event("supplier-save", %{"supplier" => attrs} = params, socket) do
     doc = socket.assigns.doc
     retry? = params["action"] == "retry"
-    confirmed = attrs["confirmed"] == "true"
 
     if retry? && (socket.assigns.dirty || socket.assigns.accounting_dirty) do
       {:noreply,
@@ -440,7 +429,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         socket.assigns.supplier_id,
         attrs,
         socket.assigns.supplier_revision,
-        confirmed
+        true
       ]
 
       result =
@@ -536,8 +525,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       |> Map.merge(%{
         "profile_id" => if(profile, do: profile.id, else: ""),
         "identity_kind" => if(profile, do: profile.identity_kind, else: "ic"),
-        "instructions" => if(profile, do: profile.instructions, else: ""),
-        "confirmed" => "false"
+        "instructions" => if(profile, do: profile.instructions, else: "")
       })
 
     options =
@@ -667,8 +655,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       loaded_values: HeaderForm.values(doc),
       suggestion_messages: FormSuggestions.from(doc.extracted_data).messages,
       hash: IncomingDocuments.transcription_hash(doc),
-      reviewed: false,
-      identity_reviewed: false,
       dirty: false,
       template_fields: template_fields,
       responses: [
@@ -943,11 +929,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             <p :if={@supplier_dirty} class="text-warning">
               Instrukce mají neuložené změny. Uložení pro příště nevolá AI.
             </p>
-            <.input
-              type="checkbox"
-              field={@supplier_form[:confirmed]}
-              label="Potvrzuji samostatně identitu a příslušnost tohoto profilu k dodavateli originálu."
-            />
             <button class="btn" name="action" value="save">Uložit instrukce pro příště</button>
             <button
               :if={@doc.original && !@locked}
@@ -1085,26 +1066,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               label="Poznámka — orientační přepis položek"
               disabled={@locked}
             />
-            <.input
-              type="checkbox"
-              name="reviewed"
-              value="true"
-              checked={@reviewed}
-              label="Zkontroloval/a jsem údaje, měnu CZK a souhrnný rozpis DPH."
-              disabled={@locked}
-            />
             <div
               :if={@doc && @doc.extraction_metadata["identity_conflict"]}
               class="alert alert-warning"
             >
               <p>{@doc.extraction_metadata["identity_conflict"]}</p>
-              <.input
-                type="checkbox"
-                name="identity_reviewed"
-                checked={@identity_reviewed}
-                label="Zkontroloval/a jsem rozpor identity proti originálu a opravil/a dodavatele v tomto formuláři."
-                disabled={@locked}
-              />
             </div>
             <button class="btn btn-primary" disabled={@locked} phx-disable-with="Ukládám…">Uložit formulář</button>
           </.form>
@@ -1235,13 +1201,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               phx-submit="send"
               class="space-y-3"
             >
-              <.input
-                type="checkbox"
-                name="confirm_send"
-                checked={false}
-                label="Potvrzuji skutečné vytvoření dokladu v ABRA. Zkontroloval/a jsem údaje, předpis a případný dřívější ruční import."
-                disabled={@locked or @dirty or @accounting_dirty}
-              />
               <button
                 class="btn btn-primary"
                 disabled={@locked or @dirty or @accounting_dirty}
