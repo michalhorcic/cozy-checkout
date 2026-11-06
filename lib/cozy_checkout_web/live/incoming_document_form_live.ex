@@ -25,6 +25,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
        loaded_values: HeaderForm.defaults(),
        reviewed: false,
        identity_reviewed: false,
+       include_items: false,
        extraction_run: nil,
        supplier_form: to_form(%{}, as: :supplier),
        supplier_id: nil,
@@ -67,6 +68,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             values: HeaderForm.defaults(),
             loaded_values: HeaderForm.defaults(),
             agenda: "faktura-prijata",
+            include_items: false,
             dirty: false,
             reviewed: false
           )
@@ -119,6 +121,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   defp busy?(doc), do: doc.state in ~w(uploaded processing validating sending uncertain)
 
   def handle_event("upload-change", _, socket), do: {:noreply, socket}
+
+  def handle_event("extraction-options", params, socket),
+    do: {:noreply, assign(socket, include_items: params["include_items"] == "true")}
 
   def handle_event("change", %{"document" => attrs} = params, socket) do
     {:noreply,
@@ -179,7 +184,13 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       results =
         consume_uploaded_entries(socket, :source, fn %{path: path}, entry ->
           {:ok,
-           IncomingDocuments.upload(File.read!(path), entry.client_name, agenda, "header_form")}
+           IncomingDocuments.upload(
+             File.read!(path),
+             entry.client_name,
+             agenda,
+             "header_form",
+             extraction_options(socket)
+           )}
         end)
 
       case results do
@@ -365,7 +376,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   def handle_event("retry", _, socket) do
     operation(
       socket,
-      fn doc -> IncomingDocuments.retry_extraction(doc.id, "header_form") end,
+      fn doc ->
+        IncomingDocuments.retry_extraction(doc.id, "header_form", extraction_options(socket))
+      end,
       "Probíhá nové vytěžení."
     )
   end
@@ -432,7 +445,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
 
       result =
         if retry?,
-          do: apply(IncomingDocuments, :save_supplier_and_retry, args),
+          do:
+            apply(
+              IncomingDocuments,
+              :save_supplier_and_retry,
+              args ++ [extraction_options(socket)]
+            ),
           else: apply(IncomingDocuments, :save_supplier_instructions, args)
 
       case result do
@@ -463,7 +481,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     else
       operation(
         socket,
-        fn doc -> IncomingDocuments.retry_content_extraction(doc.id) end,
+        fn doc ->
+          IncomingDocuments.retry_content_extraction(doc.id, extraction_options(socket))
+        end,
         "Probíhá nové obsahové vytěžení s poslední uloženou revizí."
       )
     end
@@ -473,7 +493,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     do:
       operation(
         socket,
-        fn doc -> IncomingDocuments.retry_content_extraction(doc.id, without_supplier: true) end,
+        fn doc ->
+          IncomingDocuments.retry_content_extraction(
+            doc.id,
+            Keyword.put(extraction_options(socket), :without_supplier, true)
+          )
+        end,
         "Probíhá obecné vytěžení bez určení dodavatele."
       )
 
@@ -583,6 +608,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       socket
     end
   end
+
+  defp extraction_options(socket), do: [include_items: socket.assigns.include_items]
 
   defp editable?(nil), do: true
 
@@ -769,6 +796,24 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         <p :if={@doc && @doc.extraction_metadata["restored_from_run"]} class="alert alert-warning">
           Zobrazený pracovní návrh byl obnoven z historie. Zkontrolujte jej proti originálu a znovu uložte.
         </p>
+        <.form
+          :if={!@doc || @doc.original}
+          for={%{}}
+          id="incoming-extraction-options"
+          phx-change="extraction-options"
+          phx-submit="extraction-options"
+          class="bg-base-200 rounded-xl p-4 space-y-2"
+        >
+          <.input
+            type="checkbox"
+            name="include_items"
+            checked={@include_items}
+            label="Načítat také položky (orientační přepis)"
+          />
+          <p>
+            Volba platí pro příští vytěžení včetně opakování. Při vypnutí se OpenAI soustředí jen na hlavní údaje a rekapitulaci DPH; položky nejsou součástí zadání ani výstupního schématu.
+          </p>
+        </.form>
         <details
           :if={@doc}
           class="bg-base-200 rounded-xl p-4 space-y-4"
@@ -917,6 +962,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               <p>
                 Běh {run.generation}: {run.mode}, {run.state}, fáze {run.active_step}; revize {run.profile_revision ||
                   "bez profilu"}.
+              </p>
+              <p>
+                {if Extractor.includes_items?(run),
+                  do: "Hlavička, DPH a orientační položky",
+                  else: "Pouze hlavní údaje a DPH, bez položek"}
               </p>
               <p :if={run.identity_conflict} class="text-warning">{run.identity_conflict}</p>
               <div :for={

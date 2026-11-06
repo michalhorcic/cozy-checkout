@@ -8,6 +8,18 @@ defmodule CozyCheckout.IncomingDocuments.TranscriptionTest do
   defp doc(agenda),
     do: %{agenda: agenda, template_xml: XML.template(agenda), external_id: "ext:test"}
 
+  test "header-only contract excludes item fields and remains strict about required header data" do
+    schema = Transcription.header_schema()
+    header = Map.delete(source(), "items")
+    refute Map.has_key?(schema["properties"], "items")
+    refute "items" in schema["required"]
+    assert :ok = Transcription.validate(header, schema)
+    assert {:error, _} = Transcription.validate(source(), schema)
+    assert {:error, _} = Transcription.validate(Map.delete(header, "document_number"), schema)
+    assert {:error, _} = Transcription.validate(header)
+    assert :ok = Transcription.validate(source())
+  end
+
   for agenda <- XML.agendas() do
     test "#{agenda}: Penny keeps all 21 source rows and matches the printed VAT summary" do
       doc = doc(unquote(agenda))

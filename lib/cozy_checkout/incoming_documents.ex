@@ -50,7 +50,7 @@ defmodule CozyCheckout.IncomingDocuments do
   def duplicate?(sha),
     do: Repo.exists?(from d in Document, where: d.sha256 == ^sha and is_nil(d.deleted_at))
 
-  def upload(bytes, filename, agenda, strategy \\ "structured") do
+  def upload(bytes, filename, agenda, strategy \\ "structured", opts \\ []) do
     cfg = config()
 
     with :ok <- configured(cfg),
@@ -81,7 +81,7 @@ defmodule CozyCheckout.IncomingDocuments do
 
         doc =
           if strategy == "header_form" do
-            ExtractionRuns.start_locked(doc, initial: true)
+            ExtractionRuns.start_locked(doc, Keyword.put(opts, :initial, true))
           else
             job!(doc.id, "extract")
             doc
@@ -218,11 +218,11 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
-  def retry_extraction(id, strategy \\ nil) do
+  def retry_extraction(id, strategy \\ nil, opts \\ []) do
     doc = get!(id)
 
     if (strategy || Extractor.strategy(doc)) == "header_form",
-      do: ExtractionRuns.start(id),
+      do: ExtractionRuns.start(id, opts),
       else: retry_legacy_extraction(id, strategy)
   end
 
@@ -283,14 +283,13 @@ defmodule CozyCheckout.IncomingDocuments do
     SupplierProfiles.save(supplier_scope!(id), profile_id, attrs, expected_revision, confirmed)
   end
 
-  def save_supplier_and_retry(id, profile_id, attrs, expected_revision, confirmed) do
+  def save_supplier_and_retry(id, profile_id, attrs, expected_revision, confirmed, opts \\ []) do
     locked(id, fn doc ->
       case SupplierProfiles.save(doc, profile_id, attrs, expected_revision, confirmed) do
         {:ok, profile} ->
-          ExtractionRuns.start_locked(doc,
-            mode: "extract_only",
-            profile_id: profile.id,
-            confirmed: true
+          ExtractionRuns.start_locked(
+            doc,
+            Keyword.merge(opts, mode: "extract_only", profile_id: profile.id, confirmed: true)
           )
 
         {:error, reason} ->

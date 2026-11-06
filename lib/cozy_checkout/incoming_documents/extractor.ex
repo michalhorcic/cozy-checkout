@@ -9,12 +9,20 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
   def strategy_label("simple_xml"), do: "Jednoduché zadání → XML"
   def strategy_label(_), do: "Podrobný přepis → JSON → XML"
 
-  def instructions(strategy \\ "structured") do
+  def instructions(strategy \\ "structured", include_items \\ true) do
     filename =
       case strategy do
-        "simple_xml" -> "extraction_instructions_simple.md"
-        "header_form" -> "extraction_instructions_form.md"
-        _ -> "extraction_instructions.md"
+        "simple_xml" ->
+          "extraction_instructions_simple.md"
+
+        "header_form" ->
+          if(include_items,
+            do: "extraction_instructions_form.md",
+            else: "extraction_instructions_header.md"
+          )
+
+        _ ->
+          "extraction_instructions.md"
       end
 
     :cozy_checkout
@@ -52,6 +60,8 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
         &SupplierIdentity.validate/1
       )
 
+  def includes_items?(run), do: Map.has_key?(run.schemas["content"]["properties"], "items")
+
   def extract_content(run, cfg, parts) do
     instructions =
       run.common_instructions <>
@@ -62,16 +72,23 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
       "Přepiš původní doklad. Identita jako kontext, nikoli náhrada originálu: " <>
         Jason.encode!(run.identity)
 
-    phase_request(
-      cfg,
-      parts,
-      instructions,
-      context,
-      "receipt_transcription",
-      run.schemas["content"],
-      24000,
-      &Transcription.validate/1
-    )
+    case phase_request(
+           cfg,
+           parts,
+           instructions,
+           context,
+           "receipt_transcription",
+           run.schemas["content"],
+           24000,
+           &Transcription.validate(&1, run.schemas["content"])
+         ) do
+      {:ok, data, metadata} ->
+        # Downstream form helpers keep the existing internal shape; the API never sees items in header-only mode.
+        {:ok, Map.put_new(data, "items", []), metadata}
+
+      error ->
+        error
+    end
   end
 
   defp phase_request(cfg, parts, instructions, context, name, schema, limit, validator) do
