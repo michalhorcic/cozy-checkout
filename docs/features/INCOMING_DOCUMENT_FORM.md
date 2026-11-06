@@ -360,3 +360,32 @@ Varování o rozdílné identitě zůstává viditelné. Validace částek a pov
 kontrola neuložených změn, optimistické zámky, admin PIN, kontrola externího ID,
 nejistého přenosu a neměnnost odeslaného XML zůstávají aktivní. Tlačítko odeslání
 se nevolá automaticky po uložení nebo vytěžení. Změna nevyžaduje migraci.
+
+### Oprava přerušení prvního vytěžení
+
+První úplný běh se známým profilem používá tři volání (identifikace, obecný obsah,
+dodavatelský úkol). Původní databázový constraint `incoming_extraction_attempts`
+povoloval pouze dvě, takže rezervace třetího volání padala ještě před HTTP
+požadavkem. Worker chybu skryl za obecné „přerušeno“. Ruční opakování bez
+identifikace mělo jen dvě volání, a proto fungovalo.
+
+Migrace `20261106130000` rozšiřuje rozsah počítadla na 0–3. Limity rezervací
+jednotlivých fází zůstávají stejné; čtvrté volání databáze dál odmítne. Historické
+počty se nepřepisují. Po aktualizaci lokálního kódu spusťte `mix ecto.migrate`,
+restartujte aplikaci a spusťte nový běh. Starý neúspěšný běh se automaticky
+nezopakuje. Návrat databáze ke starému limitu není možný, pokud by zneplatnil
+historické běhy se třemi voláními; při návratu aplikace ponechte migraci.
+
+Neočekávaná výjimka nového extrakčního jobu se teď uloží do konkrétní fáze hned
+při prvním selhání, včetně bezpečného názvu typu chyby. U porušení starého limitu
+se zobrazí pokyn ke spuštění migrací. Text výjimky, argumenty, doklady ani auth
+hlavičky se do diagnostiky či Oban chyb nekopírují. Pozdní výjimka starého běhu
+nemůže označit novější běh za neúspěšný. Nejasná rezervovaná AI volání se dál
+automaticky neopakují.
+
+Pro reprodukci této chyby byly výjimečně spuštěny lokální testy podle AGENTS.md,
+na dočasném PostgreSQL 17 s HTTP přes Req.Test. Testy běhů (28) prošly; související
+regrese kontextu, hlavičkového workflow a dodavatelského kontraktu prošly a po
+opravě neúplného testovacího sent fixture prošlo také všech 15 testů formuláře.
+Původní stav byl reprodukován selháním na databázovém constraintu před třetím
+voláním. Živá OpenAI ani ABRA nebyly volány.

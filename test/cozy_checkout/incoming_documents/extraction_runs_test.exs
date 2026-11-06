@@ -254,7 +254,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
     assert run.content["usage"]["input_tokens"] == 100
     assert run.schemas["identity"]["additionalProperties"] == false
     assert run.common_instructions_hash == IncomingDocuments.digest(run.common_instructions)
-    refute Jason.encode!(Map.from_struct(run)) =~ "private-test-key"
+    refute Jason.encode!(Map.from_struct(run) |> Map.delete(:__meta__)) =~ "private-test-key"
     assert result.state == "review"
     assert result.current_xml == nil
     assert result.extraction_attempts == 3
@@ -414,6 +414,109 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
       content_result: data() |> Map.put("items", []) |> Map.put("document_number", "39")
     )
     |> Repo.update!()
+  end
+
+  test "worker reports the old two-call database constraint without hiding the reason or paying for a third request" do
+    # Reproduce a local database which has not received the new migration.
+    Ecto.Adapters.SQL.query!(
+      Repo,
+      "ALTER TABLE incoming_documents DROP CONSTRAINT incoming_extraction_attempts"
+    )
+
+    Ecto.Adapters.SQL.query!(
+      Repo,
+      "ALTER TABLE incoming_documents ADD CONSTRAINT incoming_extraction_attempts CHECK (extraction_attempts BETWEEN 0 AND 2)"
+    )
+
+    doc = upload()
+    profile(doc)
+    expect(identity())
+    expect(data())
+
+    job = %Oban.Job{
+      args: %{
+        "document_id" => doc.id,
+        "operation" => "extract",
+        "run_id" => doc.active_extraction_run_id
+      },
+      attempt: 1,
+      max_attempts: 3
+    }
+
+    assert {:error, _} = CozyCheckout.Workers.IncomingDocumentWorker.perform(job)
+    failed = IncomingDocuments.get!(doc.id)
+    run = IncomingDocuments.active_extraction_run(failed)
+    assert failed.state == "failed"
+    assert failed.error =~ "Databáze odmítla počet volání"
+    assert failed.error =~ "migrace"
+    assert failed.extraction_attempts == 2
+    assert run.identification["state"] == "completed"
+    assert run.content["state"] == "completed"
+    assert run.supplier_task["state"] == "failed"
+    assert run.supplier_task["exception_type"] == "Ecto.ConstraintError"
+    assert run.supplier_task["constraint"] == "incoming_extraction_attempts"
+    assert :ok = CozyCheckout.Workers.IncomingDocumentWorker.perform(%{job | attempt: 2})
+    assert IncomingDocuments.get!(doc.id).sent_xml == nil
+  end
+
+  test "worker records an exception category immediately without exposing private error text" do
+    doc = upload()
+    private = "private document text and authorization-header-value"
+    Req.Test.expect(__MODULE__, fn _conn -> raise private end)
+
+    job = %Oban.Job{
+      args: %{
+        "document_id" => doc.id,
+        "operation" => "extract",
+        "run_id" => doc.active_extraction_run_id
+      },
+      attempt: 1,
+      max_attempts: 3
+    }
+
+    assert {:error, message} = CozyCheckout.Workers.IncomingDocumentWorker.perform(job)
+    failed = IncomingDocuments.get!(doc.id)
+    run = IncomingDocuments.active_extraction_run(failed)
+    assert failed.state == "failed"
+    assert failed.error =~ "RuntimeError"
+    assert run.identification["state"] == "failed"
+    assert run.identification["exception_type"] == "RuntimeError"
+    refute message =~ private
+    refute failed.error =~ private
+    refute Jason.encode!(run.identification) =~ private
+    assert :ok = CozyCheckout.Workers.IncomingDocumentWorker.perform(%{job | attempt: 2})
+    assert IncomingDocuments.get!(doc.id).extraction_attempts == 1
+  end
+
+  test "database allows three calls but still rejects a fourth and negative counters" do
+    doc = upload()
+    assert {:ok, _} = doc |> Ecto.Changeset.change(extraction_attempts: 3) |> Repo.update()
+
+    for count <- [4, -1] do
+      change =
+        doc
+        |> Ecto.Changeset.change(extraction_attempts: count)
+        |> Ecto.Changeset.check_constraint(:extraction_attempts,
+          name: :incoming_extraction_attempts
+        )
+
+      assert {:error, _} = Repo.update(change, mode: :savepoint)
+    end
+  end
+
+  test "late exception reporting cannot mark a newer generation as failed" do
+    doc = upload()
+    old_run = IncomingDocuments.active_extraction_run(doc)
+    ExtractionRuns.interrupt(doc.id, old_run.id)
+    assert {:ok, next} = IncomingDocuments.retry_extraction(doc.id)
+
+    assert {:error, :stale} =
+             ExtractionRuns.worker_exception(doc.id, old_run.id, %RuntimeError{message: "private"})
+
+    assert IncomingDocuments.get!(doc.id).active_extraction_run_id ==
+             next.active_extraction_run_id
+
+    assert IncomingDocuments.get!(doc.id).state == "uploaded"
   end
 
   test "ambiguous, missing, invalid, foreign, name-only and conflicting VAT identities stay generic" do
