@@ -461,7 +461,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
            socket
            |> assign(supplier_dirty: false)
            |> assign_document(saved)
-           |> put_flash(:info, "Instrukce uloženy. Probíhá pouze obsahové vytěžení.")}
+           |> put_flash(
+             :info,
+             "Instrukce uloženy. Probíhá vytěžení obsahu a samostatný dotaz podle instrukcí."
+           )}
 
         {:ok, profile} ->
           {:noreply,
@@ -675,6 +678,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     )
   end
 
+  defp extraction_phase("identify"), do: "Určujeme dodavatele originálu…"
+  defp extraction_phase("content"), do: "Vytěžujeme hlavní údaje originálu…"
+  defp extraction_phase("supplier_task"), do: "Samostatně zpracováváme dodavatelské instrukce…"
+  defp extraction_phase(_), do: "Vytěžení dokončeno."
+
   defp state_label(state),
     do:
       Map.get(
@@ -789,9 +797,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           class="alert alert-info"
           role="status"
         >
-          {if @extraction_run.active_step == "identify",
-            do: "Určujeme dodavatele originálu…",
-            else: "Vytěžujeme obsah s uloženým zadáním…"}
+          {extraction_phase(@extraction_run.active_step)}
         </p>
         <p :if={@doc && @doc.extraction_metadata["restored_from_run"]} class="alert alert-warning">
           Zobrazený pracovní návrh byl obnoven z historie. Zkontrolujte jej proti originálu a znovu uložte.
@@ -822,7 +828,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         >
           <summary class="font-bold">Instrukce pro vytěžování dodavatele</summary>
           <p>
-            Cílová firma: {@doc.company_id}. Instrukce ovlivňují čtení originálu, účetní údaje vždy zkontrolujte.
+            Cílová firma: {@doc.company_id}. Uložené instrukce se zpracují samostatným dotazem nad originálem.
+            Jen výslovně vrácené údaje nahradí obecné čtení; nezjištěný požadovaný údaj zůstane prázdný. Účetní údaje vždy zkontrolujte.
           </p>
           <div :if={@extraction_run} class="space-y-2">
             <p>
@@ -833,9 +840,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             <p>{@extraction_run.selection_reason} Přiřazení: {@extraction_run.selection}.</p>
             <p :for={message <- @extraction_run.identity_result["uncertainties"] || []}>{message}</p>
             <p :if={@doc.state in ~w(uploaded processing)} role="status">
-              {if @extraction_run.active_step == "identify",
-                do: "Určujeme dodavatele…",
-                else: "Vytěžujeme obsah originálu…"}
+              {extraction_phase(@extraction_run.active_step)}
             </p>
             <p :if={@extraction_run.profile_revision}>
               Poslední běh použil revizi {@extraction_run.profile_revision}.
@@ -852,9 +857,29 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             </p>
             <details id="incoming-used-instructions" phx-mounted={JS.ignore_attributes("open")}>
               <summary>Přesné dodavatelské instrukce posledního běhu</summary>
+              <p :if={Extractor.separate_supplier_task?(@extraction_run)}>
+                Tyto instrukce se posílají v samostatném dotazu nad originálem, bez obecného zadání a bez předchozí odpovědi.
+              </p>
               <pre class="whitespace-pre-wrap">{@extraction_run.supplier_instructions}</pre>
             </details>
           </div>
+          <details
+            :if={@extraction_run && @extraction_run.supplier_task_result != %{}}
+            id="incoming-supplier-task-result"
+            phx-mounted={JS.ignore_attributes("open")}
+          >
+            <summary>Výsledek samostatného dodavatelského dotazu</summary>
+            <p :for={field <- @extraction_run.supplier_task_result["fields"] || []}>
+              {field["field"]}: {field["value"] || "nezjištěno"} · Zdroj: {field["source_text"]}
+            </p>
+            <p :for={message <- @extraction_run.supplier_task_result["uncertainties"] || []}>
+              {message}
+            </p>
+            <pre
+              :if={@extraction_run.supplier_task_result["vat_summary"]}
+              class="text-xs whitespace-pre-wrap"
+            >{Jason.encode!(@extraction_run.supplier_task_result["vat_summary"], pretty: true)}</pre>
+          </details>
           <.form
             for={@supplier_form}
             id="supplier-instructions-form"
@@ -937,7 +962,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               class="btn"
               phx-click="content-retry"
               data-confirm="Nahradit ruční opravy obsahovým vytěžením s poslední uloženou revizí?"
-            >Zopakovat jen obsahové vytěžení</button>
+            >Zopakovat obsah a dodavatelské instrukce</button>
             <button
               class="btn"
               phx-click="generic-extract"
@@ -952,7 +977,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           <details id="extraction-history" phx-mounted={JS.ignore_attributes("open")}>
             <summary>Historie vytěžování</summary>
             <p class="text-sm">
-              Usage je uvedena pro každou fázi zvlášť. Bez ověřeného ceníku cenu neodhadujeme; originál se posílá v obou fázích.
+              Usage je uvedena pro každou fázi zvlášť. Bez ověřeného ceníku cenu neodhadujeme; originál se posílá znovu pro každé volání. U dodavatele s instrukcemi přibývá samostatný dotaz.
             </p>
             <div
               :for={run <- @extraction_history}
@@ -970,7 +995,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               </p>
               <p :if={run.identity_conflict} class="text-warning">{run.identity_conflict}</p>
               <div :for={
-                {label, meta} <- [{"Identifikace", run.identification}, {"Obsah", run.content}]
+                {label, meta} <- [
+                  {"Identifikace", run.identification},
+                  {"Obsah", run.content},
+                  {"Samostatné dodavatelské instrukce", run.supplier_task}
+                ]
               }>
                 <p>
                   {label}: {meta["state"] || "nevoláno"} · {meta["model"]} · HTTP {meta["http_status"]} · {meta[
@@ -985,6 +1014,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               >
                 <summary>Použité instrukce a otisky</summary>
                 <pre class="text-xs whitespace-pre-wrap">{run.supplier_instructions}</pre>
+                <p :for={field <- run.supplier_task_result["fields"] || []}>
+                  {field["field"]}: {field["value"] || "nezjištěno"} · Zdroj: {field["source_text"]}
+                </p>
+                <p :for={message <- run.supplier_task_result["uncertainties"] || []}>{message}</p>
+                <pre :if={run.supplier_task_result["vat_summary"]} class="text-xs whitespace-pre-wrap">{Jason.encode!(run.supplier_task_result["vat_summary"], pretty: true)}</pre>
                 <p class="text-xs break-all">
                   Společné: {run.common_instructions_hash}; dodavatel: {run.supplier_instructions_hash}
                 </p>

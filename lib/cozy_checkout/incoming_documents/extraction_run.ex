@@ -25,6 +25,10 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRun do
     field :schemas, :map
     field :identification, :map, default: %{}
     field :content, :map, default: %{}
+    field :content_result, :map, default: %{}
+    field :supplier_task, :map, default: %{}
+    field :supplier_task_result, :map, default: %{}
+    field :supplier_task_instructions, :string
     field :result, :map, default: %{}
     field :previous_draft, :map, default: %{}
     field :origin_run_id, :binary_id

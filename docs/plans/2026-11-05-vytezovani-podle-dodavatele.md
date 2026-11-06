@@ -440,3 +440,14 @@ položek. Viditelný přepínač platí pro všechny nové a opakované běhy. V
 používá samostatné hlavní zadání a menší API schéma bez `items`, nikoliv jen
 skrytí položek ve formuláři. Snapshot rozsahu je součástí běhu a historie.
 Stávající běhy zůstávají beze změny; není potřeba další migrace.
+
+**Změna podle následného zadání: samostatný dodavatelský dotaz.** Nové běhy s
+neprázdnými instrukcemi mají identifikaci, obecné čtení a další nezávislý dotaz,
+který dostane jen originál a úkol z instrukcí. Předchozí odpověď ani obecné zadání
+se nepředávají. Řídký výsledek s citací nahrazuje jen výslovně vrácená povolená
+pole; null odstraňuje obecný odhad. Původní obecný výsledek i cílená odpověď se
+uchovávají zvlášť. Každé volání má samostatnou rezervaci, metadata a usage.
+Bez instrukcí třetí volání není. Obsahové opakování s profilem nově znamená dvě
+volání bez nové identifikace. Vyžaduje migraci `20261106120000`; starší běhy se
+nemění a nepřibývají jim automatická volání. Původní dvoufázový návrh výše je
+historický podklad; aktuální postup je v návodu formuláře.

@@ -7,7 +7,8 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 
 - [Dvoufázové vytěžování a instrukce podle dodavatele](2026-11-05-vytezovani-podle-dodavatele.md)
   — **implementováno ve větvi, čeká na CI a pilot**; identifikace dodavatele,
-  vytěžení se snapshotem instrukcí, editor profilů, revize a obnova běhů.
+  obecné vytěžení a samostatný dodavatelský dotaz se snapshotem instrukcí,
+  editor profilů, revize a obnova běhů.
   [Návod](../features/INCOMING_DOCUMENT_FORM.md#instrukce-podle-dodavatele-a-historie-běhů).
 
 - [Skupinové rezervace, více plátců a jednodušší zakládání pobytů](2026-11-04-skupinove-rezervace-a-vice-platcu.md)

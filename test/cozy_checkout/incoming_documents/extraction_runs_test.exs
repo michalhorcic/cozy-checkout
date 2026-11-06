@@ -84,9 +84,25 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
 
   defp expect(value), do: Req.Test.expect(__MODULE__, &response(&1, value))
 
+  defp empty_task, do: %{"fields" => [], "vat_summary" => nil, "uncertainties" => []}
+
+  defp number_task,
+    do: %{
+      "fields" => [
+        %{
+          "field" => "document_number",
+          "value" => "0052-20261105-01-0039",
+          "source_text" => "EV-č: 0052-20261105-01-0039"
+        }
+      ],
+      "vat_summary" => nil,
+      "uncertainties" => []
+    }
+
   defp finish(doc) do
     expect(identity())
     expect(data())
+    expect(empty_task())
     assert :ok = IncomingDocuments.perform(doc.id, "extract")
     IncomingDocuments.get!(doc.id)
   end
@@ -167,9 +183,9 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
            )
   end
 
-  test "known supplier sends exactly two distinct requests with matching original and frozen instructions" do
+  test "known supplier sends independent general and focused requests with frozen instructions and matching original" do
     doc = upload()
-    p = profile(doc)
+    p = profile(doc, "Přečti pouze číslo dokladu za označením EV-Č v patičce.")
     owner = self()
 
     Req.Test.expect(__MODULE__, fn conn ->
@@ -188,9 +204,10 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
       request = Jason.decode!(body)
       assert request["store"] == false
       assert request["text"]["format"]["name"] == "receipt_transcription"
-      assert request["instructions"] =~ p.instructions
+      refute request["instructions"] =~ p.instructions
       assert_receive {:input, parts}
       assert tl(hd(request["input"])["content"]) == parts
+      send(owner, {:input, parts})
       run = IncomingDocuments.active_extraction_run(IncomingDocuments.get!(doc.id))
       assert run.profile_revision == 1
       assert run.supplier_instructions == p.instructions
@@ -205,7 +222,24 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
                )
 
       assert updated.revision == 2
-      response(conn, data())
+      response(conn, Map.put(data(), "document_number", "39"))
+    end)
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      request = Jason.decode!(body)
+      assert request["store"] == false
+      assert request["text"]["format"]["name"] == "supplier_task"
+      run = IncomingDocuments.active_extraction_run(IncomingDocuments.get!(doc.id))
+      assert request["instructions"] == run.supplier_task_instructions
+      refute request["instructions"] =~ run.common_instructions
+      [text | parts] = hd(request["input"])["content"]
+      assert text["text"] == p.instructions
+      assert_receive {:input, expected_parts}
+      assert parts == expected_parts
+      refute Map.has_key?(request, "previous_response_id")
+      assert run.content_result["document_number"] == "39"
+      response(conn, number_task())
     end)
 
     IncomingDocuments.perform(doc.id, "extract")
@@ -223,9 +257,163 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
     refute Jason.encode!(Map.from_struct(run)) =~ "private-test-key"
     assert result.state == "review"
     assert result.current_xml == nil
-    assert result.extraction_attempts == 2
+    assert result.extraction_attempts == 3
+    assert run.supplier_task["attempts"] == 1
+    assert run.supplier_task["usage"]["input_tokens"] == 100
+    assert run.content_result["document_number"] == "39"
+    assert run.supplier_task_result == number_task()
+    assert result.extracted_data["document_number"] == "0052-20261105-01-0039"
     assert :ok = IncomingDocuments.perform(doc.id, "extract")
     assert :ok = IncomingDocuments.perform_extraction(doc.id, run.id, 2)
+  end
+
+  test "a known supplier with empty instructions does not add a focused request" do
+    doc = upload()
+    profile(doc, "")
+    expect(identity())
+    expect(data())
+    IncomingDocuments.perform(doc.id, "extract")
+    result = IncomingDocuments.get!(doc.id)
+    run = IncomingDocuments.active_extraction_run(result)
+    assert result.state == "review"
+    assert result.extraction_attempts == 2
+    assert run.supplier_task == %{}
+  end
+
+  test "pre-existing pending snapshots retain their combined prompt and original call count" do
+    doc = upload()
+    p = profile(doc)
+    run = IncomingDocuments.active_extraction_run(doc)
+
+    run
+    |> Ecto.Changeset.change(
+      schemas: Map.delete(run.schemas, "supplier_task"),
+      supplier_task_instructions: nil
+    )
+    |> Repo.update!()
+
+    expect(identity())
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      assert Jason.decode!(body)["instructions"] =~ p.instructions
+      response(conn, data())
+    end)
+
+    IncomingDocuments.perform(doc.id, "extract")
+    assert IncomingDocuments.get!(doc.id).state == "review"
+    assert IncomingDocuments.get!(doc.id).extraction_attempts == 2
+  end
+
+  test "focused HTTP failure preserves the completed general reading and never falls back silently" do
+    doc = upload()
+    profile(doc)
+    expect(identity())
+    expect(data())
+    Req.Test.expect(__MODULE__, &Plug.Conn.send_resp(&1, 500, "{}"))
+    IncomingDocuments.perform(doc.id, "extract")
+    failed = IncomingDocuments.get!(doc.id)
+    run = IncomingDocuments.active_extraction_run(failed)
+    assert failed.state == "failed"
+    assert failed.current_xml == nil
+    assert failed.extracted_data == %{}
+    assert run.content["state"] == "completed"
+    assert run.content_result["document_number"] == data()["document_number"]
+    assert run.supplier_task["state"] == "failed"
+    assert run.supplier_task["http_status"] == 500
+    IncomingDocuments.perform_extraction(doc.id, run.id, 2)
+    assert IncomingDocuments.get!(doc.id).extraction_attempts == 3
+  end
+
+  test "restart after committed general reading runs only the unreserved focused request" do
+    doc = upload()
+    run = prepare_task_phase(doc)
+    expect(number_task())
+    IncomingDocuments.perform_extraction(doc.id, run.id, 2)
+    result = IncomingDocuments.get!(doc.id)
+    assert result.state == "review"
+    assert result.extracted_data["document_number"] == "0052-20261105-01-0039"
+
+    assert IncomingDocuments.active_extraction_run(result).content_result["document_number"] ==
+             "39"
+
+    assert result.extraction_attempts == 3
+    IncomingDocuments.perform_extraction(doc.id, run.id, 3)
+  end
+
+  test "uncertain focused reservation requires a manual new run" do
+    doc = upload()
+    run = prepare_task_phase(doc)
+
+    run
+    |> Ecto.Changeset.change(
+      supplier_task: %{"state" => "reserved", "token" => "old", "attempts" => 1}
+    )
+    |> Repo.update!()
+
+    IncomingDocuments.perform_extraction(doc.id, run.id, 2)
+    failed = IncomingDocuments.get!(doc.id)
+    run = IncomingDocuments.active_extraction_run(failed)
+    assert failed.state == "failed"
+    assert run.supplier_task["state"] == "failed"
+    assert run.supplier_task["attempts"] == 1
+    assert run.content["state"] == "completed"
+    assert run.content_result["document_number"] == "39"
+  end
+
+  test "duplicate focused worker and its late reply cannot replace a newer generation" do
+    doc = upload()
+    run = prepare_task_phase(doc)
+    parent = self()
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      send(parent, :focused_reserved)
+
+      receive do
+        :release -> response(conn, number_task())
+      after
+        5000 -> raise "test synchronization timeout"
+      end
+    end)
+
+    task =
+      Task.async(fn ->
+        receive do
+          :go -> IncomingDocuments.perform_extraction(doc.id, run.id)
+        end
+      end)
+
+    Req.Test.allow(__MODULE__, self(), task.pid)
+    send(task.pid, :go)
+    assert_receive :focused_reserved, 5000
+    assert :ok = IncomingDocuments.perform_extraction(doc.id, run.id)
+    assert IncomingDocuments.get!(doc.id).extraction_attempts == 3
+    ExtractionRuns.interrupt(doc.id, run.id)
+    assert {:ok, next} = IncomingDocuments.retry_extraction(doc.id)
+    send(task.pid, :release)
+    assert :ok = Task.await(task)
+    current = IncomingDocuments.get!(doc.id)
+    assert current.active_extraction_run_id == next.active_extraction_run_id
+    assert current.extracted_data == %{}
+    assert current.extraction_attempts == 0
+  end
+
+  defp prepare_task_phase(doc) do
+    run = IncomingDocuments.active_extraction_run(doc)
+    doc |> Ecto.Changeset.change(state: "processing", extraction_attempts: 2) |> Repo.update!()
+
+    run
+    |> Ecto.Changeset.change(
+      state: "running",
+      active_step: "supplier_task",
+      identity: identity(),
+      identity_result: identity(),
+      supplier_instructions: "Přečti EV-Č",
+      identification: %{"state" => "completed", "attempts" => 1},
+      content: %{"state" => "completed", "attempts" => 1},
+      content_result: data() |> Map.put("items", []) |> Map.put("document_number", "39")
+    )
+    |> Repo.update!()
   end
 
   test "ambiguous, missing, invalid, foreign, name-only and conflicting VAT identities stay generic" do
@@ -306,7 +494,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
     assert dic_profile.identity_kind == "dic"
   end
 
-  test "save and retry creates one content call, archives manual draft and invalidates its approval" do
+  test "save and retry creates content and focused calls, archives manual draft and invalidates its approval" do
     doc = upload()
     p = profile(doc)
     doc = finish(doc)
@@ -338,8 +526,9 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
     assert run.previous_draft["header_values"]["cisDosle"] == "MANUAL"
     assert run.profile_revision == 2
     expect(data())
+    expect(empty_task())
     IncomingDocuments.perform_extraction(queued.id, run.id)
-    assert IncomingDocuments.get!(queued.id).extraction_attempts == 1
+    assert IncomingDocuments.get!(queued.id).extraction_attempts == 2
     assert {:ok, restored} = IncomingDocuments.restore_draft_from_run(queued.id, run.id)
     assert restored.current_xml == nil
     assert restored.dry_run == %{}
@@ -405,6 +594,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
     IncomingDocuments.perform_extraction(doc.id, run.id, 2)
     assert {:ok, next} = IncomingDocuments.retry_content_extraction(doc.id)
     expect(data())
+    expect(empty_task())
     IncomingDocuments.perform(doc.id, "extract")
     assert IncomingDocuments.active_extraction_run(next).origin_run_id == run.id
   end
