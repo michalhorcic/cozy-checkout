@@ -7,7 +7,7 @@ kódu, ale nemá přístupnou routu. Jeho položkové kontroly a kontextové API
 
 Formulář používá stejné tři vzory, připojení ABRA, soukromé originály, OpenAI
 Responses API a Oban worker. Obsahuje účetní předpis, volitelný dry-run, stažení
-XML i potvrzené přímé odeslání; není potřeba přecházet na další obrazovku.
+XML i přímé odeslání tlačítkem; není potřeba přecházet na další obrazovku.
 
 ## Stav převzatého řešení
 
@@ -33,7 +33,8 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
    zůstávají uložená, ruční formulář je uložen zvlášť. Nejasnosti, přečtená měna a
    rekapitulace originálu jsou viditelné. Podporovány jsou tuzemské doklady v CZK
    a souhrnné sazby 0 %, 12 % a 21 %. Jiné sazby nebo měny vyžadují jiné zpracování.
-5. Potvrdit kontrolu CZK, údajů a souhrnné DPH. Teprve uložením formuláře vzniká
+5. Zkontrolovat CZK, údaje a souhrnnou DPH a stisknout „Uložit formulář“.
+   Souhlasové checkboxy se nevyžadují. Teprve uložením formuláře vzniká
    validované XML. Součet základů, osvobozené částky a daní musí souhlasit s celkem;
    chybějící DPH se nepřevádí automaticky na osvobozenou částku.
 6. Uložením zůstanete ve formuláři. V sekci Účetní nastavení načíst a vyhledat
@@ -43,8 +44,9 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
 7. Volitelně spustit „Ověřit v ABRA (dry-run)“. Výsledek, chyby, upozornění i
    diagnostika HTML/FreeMarker odpovědí se zobrazují přímo zde. Neúspěšný dry-run
    neznamená úspěšnou validaci, ale neblokuje explicitní přímé odeslání.
-8. Potvrdit skutečné vytvoření a kontrolu případného dřívějšího ručního importu,
-   poté stisknout „Nahrát do ABRA“. Lokálně se znovu zkontroluje struktura XML,
+8. Zkontrolovat případný dřívější ruční import a stisknout „Nahrát do ABRA“.
+   Samotné tlačítko spustí skutečný přenos bez dalšího zaškrtávání. Lokálně se
+   znovu zkontroluje struktura XML,
    součty a povinná data. Schválené XML se pro API deterministicky převede na
    nativní JSON obálku `winstrom` a odešle přes `Req.post(json: payload)` na `.json`,
    stejně jako fungující faktury za ubytování. Přenášejí se stejné částky, kódy,
@@ -59,11 +61,11 @@ po ručním importu staženého souboru, nový doklad se nezakládá. Odeslané 
 zmrazí a uloží se způsob schválení a hash payloadu. HTML nebo nejasný výsledek
 skutečného importu vede do stavu „Nutno ověřit v ABRA“; další pokus už jen hledá
 externí ID, neopakuje POST. Ruční import bez původního externího ID tato ochrana
-nedokáže spárovat, proto je součástí potvrzení i kontrola dřívějšího importu.
+nedokáže spárovat, proto před odesláním ověřte případný dřívější ruční import.
 
 Po zahájení přenosu je formulář uzamčený. Změny uloženého návrhu ruší předchozí
 dry-run. Existující starší návrhy se načtou do nového formuláře a až jeho
-potvrzené uložení je převede na bezpoložkový režim; původní řádky se přenesou jako
+uložení je převede na bezpoložkový režim; původní řádky se přenesou jako
 text do poznámky. Odeslané starší doklady se zobrazí zamčené.
 
 Načítání položek je ve výchozím stavu vypnuté. Přepínačem „Načítat také položky
@@ -107,8 +109,8 @@ splatnosti a účetnímu období. Tlačítko „Doplnit prázdná data“ použ�
 data ve formuláři a chybějící zdrojová data převezme z vytěženého originálu.
 Vyplňuje jen prázdná pole, ručně upravená data zachová; funguje tedy i u staršího
 uloženého návrhu, který má všechna data prázdná.
-Každé použití předvyplnění označí návrh jako změněný a zruší zaškrtnutou kontrolu.
-Před dry-runem či přenosem je potřeba změny potvrdit a uložit.
+Každé použití předvyplnění označí návrh jako změněný.
+Před dry-runem či přenosem je potřeba změny uložit; další zaškrtávání není potřeba.
 
 ## Co obsahuje výsledné XML
 
@@ -212,8 +214,9 @@ Neznámá, zahraniční nebo nejednoznačná identita pokračuje společným zad
 Chyba HTTP či neplatná JSON odpověď první fáze naopak běh ukončí.
 
 Existující profil lze vyhledat podle názvu, IČO i DIČ. Výběr sám nemění hlavičku
-ani nespouští AI. Pro nový profil obsluha samostatně potvrdí identitu, zemi a klíč
-(české IČO nebo ručně potvrzené DIČ včetně prefixu země). Nevznikají automatické
+ani nespouští AI. Pro nový profil obsluha vyplní identitu, zemi a klíč
+(české IČO nebo ručně zvolené DIČ včetně prefixu země) a profil uloží tlačítkem,
+bez souhlasového checkboxu. Nevznikají automatické
 prázdné profily. Instrukce mají limit 8 000 znaků a mohou být prázdné.
 
 - **Uložit instrukce pro příště** mění jen profil, bez AI a bez změny dokladu.
@@ -221,7 +224,7 @@ prázdné profily. Instrukce mají limit 8 000 znaků a mohou být prázdné.
   druhé okno nesmí přepsat novější text bez jeho načtení a porovnání.
 - **Uložit instrukce a znovu vytěžit** atomicky uloží profil a založí nový běh
   bez nové identifikace: obecný obsah a samostatný dodavatelský úkol nad stejným
-  originálem a výslovně potvrzeným profilem.
+  originálem a výslovně uloženým profilem.
   Selhání zařazení vrátí zpět i změnu instrukcí.
 - **Zopakovat jen obsahové vytěžení** převezme identitu předchozího běhu stejného
   originálu a poslední uloženou revizi; znovu provede obsah i dodavatelský úkol.
@@ -238,8 +241,8 @@ nejsou AI akce dostupné, ruční formulář a editor budoucích instrukcí zůs
 Oprava IČO či názvu ve finanční hlavičce nikdy nepřepisuje profil.
 
 Obsahová fáze nesmí přepojit identitu na jiný profil. Při jiném IČO nebo DIČ se
-zobrazí rozpor a před uložením formuláře je potřeba zvlášť potvrdit jeho kontrolu
-proti originálu. Instrukce nevytvářejí účetní pravidla; společná pravidla,
+zobrazí rozpor k ověření proti originálu; uložení proběhne přímo tlačítkem
+bez dalšího checkboxu. Instrukce nevytvářejí účetní pravidla; společná pravidla,
 strukturovaný kontrakt, deterministická kontrola částek a ruční přenos zůstávají.
 
 Každý běh uchovává identitu, kontrakty jednotlivých volání, přesné společné
@@ -323,7 +326,7 @@ u požadovaného pole vrátí null, aplikace smaže původní obecný odhad; nev
 potichu k chybnému číslu. Ostatní údaje, data, částky a položky zůstanou zachované.
 Sloučený přepis znovu projde kontrolou struktury a pak stávajícími ručními
 kontrolami formuláře. Změna IČO/DIČ neaktualizuje profil a zachovává výstrahu
-rozporu identity s nutností samostatného potvrzení. Citovaný text pomáhá kontrole,
+rozporu identity k ruční kontrole. Citovaný text pomáhá kontrole,
 není nezávislým důkazem správnosti modelu.
 
 Historie i sekce dodavatele zobrazují samostatnou odpověď a citaci zdroje;
@@ -347,3 +350,13 @@ samostatného volání, obnovu po obecném čtení, nejistou rezervaci, souběh 
 výsledek. Lokálně testy nebyly spuštěny; výsledky CI ověří uživatel. Kompilace
 aplikace i změněných testovacích modulů a formátování byly ověřeny. Živá OpenAI
 ani ABRA nebyla volána; přesnost na skutečných dokladech ještě vyžaduje pilot.
+
+### Přímé akce bez souhlasových checkboxů
+
+Uložení hlavičky, uložení instrukcí i odeslání do ABRA probíhá příslušným tlačítkem.
+Odstraněny jsou checkboxy kontroly údajů/DPH, potvrzení identity, potvrzení profilu
+a souhlasu se skutečným importem. Přepínač načítání položek zůstává funkční volbou.
+Varování o rozdílné identitě zůstává viditelné. Validace částek a povinných údajů,
+kontrola neuložených změn, optimistické zámky, admin PIN, kontrola externího ID,
+nejistého přenosu a neměnnost odeslaného XML zůstávají aktivní. Tlačítko odeslání
+se nevolá automaticky po uložení nebo vytěžení. Změna nevyžaduje migraci.
