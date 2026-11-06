@@ -1,6 +1,6 @@
 defmodule CozyCheckout.IncomingDocuments.Extractor do
   @moduledoc "Stateless extraction with selectable detailed JSON or short template-based XML prompts."
-  alias CozyCheckout.IncomingDocuments.{Transcription, SupplierIdentity}
+  alias CozyCheckout.IncomingDocuments.{Transcription, SupplierIdentity, SupplierTask}
 
   def strategies, do: ["structured", "simple_xml", "header_form"]
   def strategy(doc), do: Map.get(doc.extraction_metadata, "strategy", "structured")
@@ -60,13 +60,42 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
         &SupplierIdentity.validate/1
       )
 
+  def supplier_task_instructions do
+    :cozy_checkout
+    |> Application.app_dir("priv/incoming_documents/supplier_task_instructions.md")
+    |> File.read!()
+  end
+
+  def separate_supplier_task?(run), do: Map.has_key?(run.schemas, "supplier_task")
+
+  def has_supplier_task?(run),
+    do: separate_supplier_task?(run) and String.trim(run.supplier_instructions) != ""
+
+  def extract_supplier_task(run, cfg, parts) do
+    phase_request(
+      cfg,
+      parts,
+      run.supplier_task_instructions,
+      run.supplier_instructions,
+      "supplier_task",
+      run.schemas["supplier_task"],
+      6000,
+      &SupplierTask.validate/1
+    )
+  end
+
   def includes_items?(run), do: Map.has_key?(run.schemas["content"]["properties"], "items")
 
   def extract_content(run, cfg, parts) do
     instructions =
-      run.common_instructions <>
-        "\n\nDoplňující instrukce obsluhy pro čtení dodavatele (společná pravidla mají přednost; nemění účty, agendu ani schema):\n" <>
-        run.supplier_instructions
+      if separate_supplier_task?(run) do
+        run.common_instructions
+      else
+        # Preserve the prompt snapshots and call count of pre-existing runs.
+        run.common_instructions <>
+          "\n\nDoplňující instrukce obsluhy pro čtení dodavatele (společná pravidla mají přednost; nemění účty, agendu ani schema):\n" <>
+          run.supplier_instructions
+      end
 
     context =
       "Přepiš původní doklad. Identita jako kontext, nikoli náhrada originálu: " <>

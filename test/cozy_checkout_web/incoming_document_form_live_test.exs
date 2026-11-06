@@ -442,6 +442,46 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert IncomingDocuments.active_extraction_run(queued).schemas == run.schemas
   end
 
+  test "focused answer and quoted source are visible without losing disclosure state", %{
+    conn: conn
+  } do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "zavazek", "header_form")
+
+    data = File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
+
+    result = %{
+      "fields" => [
+        %{
+          "field" => "document_number",
+          "value" => "0052-20261105-01-0039",
+          "source_text" => "EV-č: 0052-20261105-01-0039"
+        }
+      ],
+      "vat_summary" => nil,
+      "uncertainties" => []
+    }
+
+    run = IncomingDocuments.active_extraction_run(doc)
+
+    run
+    |> Ecto.Changeset.change(
+      state: "completed",
+      active_step: "done",
+      supplier_instructions: "Přečti pouze EV-Č",
+      supplier_task_result: result,
+      supplier_task: %{"state" => "completed", "usage" => %{"input_tokens" => 123}}
+    )
+    |> Repo.update!()
+
+    doc |> Ecto.Changeset.change(state: "review", extracted_data: data) |> Repo.update!()
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert html =~ "Samostatné dodavatelské instrukce"
+    assert html =~ "EV-č: 0052-20261105-01-0039"
+    assert has_element?(view, "input[name='document[cisDosle]'][value='0052-20261105-01-0039']")
+    assert_client_disclosures(html, ["#incoming-supplier-task-result"])
+  end
+
   defp assert_client_disclosures(html, selectors) do
     tree = LazyHTML.from_fragment(html)
 

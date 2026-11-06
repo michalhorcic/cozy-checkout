@@ -25,8 +25,9 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
    PDF/JPEG/PNG. U nahrávání se zachovává kontrola duplicity a limit 10 MB.
 3. Nová strategie `header_form` vrací návrhy hlavičky a rekapitulace DPH. I při
    `complete=false`, neúplných položkách nebo chybějící celkové částce se zpřístupní
-   formulář. Nový běh nejprve jednou určí dodavatele a pak jednou vytěží obsah
-   se snapshotem jeho instrukcí. Chybějící položky nedoplňuje opakováním.
+   formulář. Nový běh nejprve určí dodavatele a pak vytěží obecné údaje.
+   Pokud má dodavatel neprázdné instrukce, další samostatný dotaz provede jen
+   jejich úkol nad originálem. Chybějící položky nedoplňuje opakováním.
    Chybu API lze vyřešit ručním vyplněním stejného formuláře.
 4. Zkontrolovat a opravit návrhy proti zobrazenému originálu. Původní vytěžená data
    zůstávají uložená, ruční formulář je uložen zvlášť. Nejasnosti, přečtená měna a
@@ -219,10 +220,12 @@ prázdné profily. Instrukce mají limit 8 000 znaků a mohou být prázdné.
   Funguje i na odeslaném nebo ručním dokladu. Každé uložení zvyšuje revizi;
   druhé okno nesmí přepsat novější text bez jeho načtení a porovnání.
 - **Uložit instrukce a znovu vytěžit** atomicky uloží profil a založí nový běh
-  jen obsahové fáze nad stejným originálem a výslovně potvrzeným profilem.
+  bez nové identifikace: obecný obsah a samostatný dodavatelský úkol nad stejným
+  originálem a výslovně potvrzeným profilem.
   Selhání zařazení vrátí zpět i změnu instrukcí.
 - **Zopakovat jen obsahové vytěžení** převezme identitu předchozího běhu stejného
-  originálu a poslední uloženou revizi. **Znovu určit dodavatele** spustí nový
+  originálu a poslední uloženou revizi; znovu provede obsah i dodavatelský úkol.
+  **Znovu určit dodavatele** spustí nový
   úplný běh. Neuložené instrukce je nutné před těmito akcemi uložit či znovu načíst.
 - **Vytěžit bez určení dodavatele** výslovně založí obsahový běh bez profilu;
   lze ho využít i po chybě první fáze.
@@ -239,18 +242,21 @@ zobrazí rozpor a před uložením formuláře je potřeba zvlášť potvrdit je
 proti originálu. Instrukce nevytvářejí účetní pravidla; společná pravidla,
 strukturovaný kontrakt, deterministická kontrola částek a ruční přenos zůstávají.
 
-Každý běh uchovává identitu, oba kontrakty, přesné společné i dodavatelské zadání,
-revizi a hash instrukcí, výsledek, oddělené rezervace a metadata obou volání.
+Každý běh uchovává identitu, kontrakty jednotlivých volání, přesné společné
+zadání i samostatné dodavatelské zadání, revizi a hash instrukcí, obecný výsledek,
+výsledek cíleného úkolu, výsledný sloučený návrh a samostatné rezervace i metadata.
 Historie se stránkuje po deseti bězích a nevybírá velké raw odpovědi.
-Usage obou fází je viditelná zvlášť; cenu bez ověřeného ceníku neodhadujeme.
-Originál se odesílá dvakrát, takže druhé volání zvyšuje i obrazové vstupní tokeny.
+Usage každého volání je viditelná zvlášť; cenu bez ověřeného ceníku neodhadujeme.
+S instrukcemi se originál posílá třikrát (při opakování bez identifikace dvakrát),
+bez instrukcí dvakrát. Každé volání přidává i obrazové vstupní tokeny.
 Žádné tajné klíče či autorizační hlavičky se do snapshotů neukládají.
 
 Oban retry nevytváří nový běh a neopakuje rezervované placené volání. Po pádu
 mezi rezervací a uložením odpovědi není jisté, zda poskytovatel požadavek provedl:
 obnovený worker označí fázi jako přerušenou a další pokus musí vyvolat obsluha.
 Dokončená identifikace přežije restart, takže lze pokračovat dosud nerezervovaným
-obsahovým voláním. Pozdní výsledky starého běhu nesmí přepsat novou generaci,
+obsahovým voláním. Dokončené obecné čtení přežije také restart před samostatným
+úlohovým dotazem. Pozdní výsledky starého běhu nesmí přepsat novou generaci,
 změněný originál ani odeslaný doklad.
 
 ### Nasazení a ověření nového toku
@@ -297,3 +303,47 @@ z předchozí verze aplikace. Starší strategie `structured` a `simple_xml` se 
 Není potřeba další migrace, proměnná prostředí ani další placené volání.
 Zjednodušení zadání samo o sobě nezaručuje správné rozpoznání každého čísla;
 číslo i ostatní údaje je dál nutné kontrolovat proti originálu.
+
+### Samostatné zpracování dodavatelských instrukcí
+
+Pro nové běhy s neprázdným profilem jsou instrukce **samostatný dotaz**. Nejsou
+připojené k obecnému zadání. Model dostane původní obrazové vstupy, stručný kontrakt
+cíleného čtení a přesný snapshot dodavatelského textu jako uživatelský úkol.
+Nedostane předchozí obecnou odpověď, její tip na číslo, obecné zadání ani identitu
+jako další úkol. Pro instrukci „Přečti číslo za EV-Č“ tedy řeší pouze tento úkol.
+
+Odpověď je řídký seznam `fields`: pouze řešené pole, jeho hodnota a citovaný
+`source_text` z originálu. Povolené jsou hlavní hlavičkové údaje a identita
+vystavitele; zvlášť lze vrátit rekapitulaci DPH, pokud ji úkol řeší. Ostatní pole
+se nevyplňují. Účty, XML a položky nejsou v tomto kontraktu. Aplikace kontroluje
+typy, délky, duplicity i povolené názvy polí bez tvorby atomů.
+
+Výslovně vrácené hodnoty nahradí stejné údaje z obecného čtení. Pokud cílený dotaz
+u požadovaného pole vrátí null, aplikace smaže původní obecný odhad; nevrátí se
+potichu k chybnému číslu. Ostatní údaje, data, částky a položky zůstanou zachované.
+Sloučený přepis znovu projde kontrolou struktury a pak stávajícími ručními
+kontrolami formuláře. Změna IČO/DIČ neaktualizuje profil a zachovává výstrahu
+rozporu identity s nutností samostatného potvrzení. Citovaný text pomáhá kontrole,
+není nezávislým důkazem správnosti modelu.
+
+Historie i sekce dodavatele zobrazují samostatnou odpověď a citaci zdroje;
+v historii má volání vlastní model, usage, stav a chybu. Prázdné nebo nepřiřazené
+instrukce další dotaz nevyvolají. Neúspěšný cílený dotaz ukončí běh jako chybu:
+obecný výsledek je zachovaný v běhu, ale nepoužije se automaticky jako dokončený
+návrh. Lze vyplnit formulář ručně, obnovit předchozí návrh či vědomě spustit nový
+běh. Po nejasné rezervaci se placené volání automaticky neopakuje.
+
+Nasazení vyžaduje aditivní migraci `20261106120000`: vlastní metadata, odpověď,
+společný text cíleného dotazu a obecný výsledek, plus rozšířený constraint fáze.
+Původní existující běhy bez kontraktu `supplier_task` si ponechají původní
+kombinované zadání a počet volání, i pokud jsou teprve ve frontě. Nový režim se
+použije až novým během. Nejsou potřeba nové přihlašovací údaje ani konfigurace.
+Před návratem ke starší aplikaci dokončit či ukončit nové joby a ponechat databázové
+snapshoty; rollback databáze by odstranil nově přidanou historii.
+
+Testy přes Req.Test ověřují oddělení zadání a předchozí odpovědi, správný snapshot
+při změně revize, převzetí cíleného čísla místo obecného odhadu, citaci, chybu
+samostatného volání, obnovu po obecném čtení, nejistou rezervaci, souběh a pozdní
+výsledek. Lokálně testy nebyly spuštěny; výsledky CI ověří uživatel. Kompilace
+aplikace i změněných testovacích modulů a formátování byly ověřeny. Živá OpenAI
+ani ABRA nebyla volána; přesnost na skutečných dokladech ještě vyžaduje pilot.

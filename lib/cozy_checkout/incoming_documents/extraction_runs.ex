@@ -1,5 +1,5 @@
 defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
-  @moduledoc "Durable two-phase extraction. Reservations prevent automatic replay of uncertain paid calls."
+  @moduledoc "Durable extraction with an independent supplier task. Reservations prevent automatic replay of uncertain paid calls."
   import Ecto.Query
   alias CozyCheckout.{IncomingDocuments, Repo}
 
@@ -10,6 +10,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
     SourceImages,
     SupplierIdentity,
     SupplierProfiles,
+    SupplierTask,
     Transcription
   }
 
@@ -54,6 +55,8 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
           :supplier_profile_id,
           :profile_revision,
           :supplier_instructions,
+          :supplier_task_instructions,
+          :supplier_task_result,
           :common_instructions_hash,
           :supplier_instructions_hash,
           :identity_conflict,
@@ -61,7 +64,8 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
         ])
         |> merge(%{
           identification: fragment("? - 'raw_output' - 'images' - 'token'", r.identification),
-          content: fragment("? - 'raw_output' - 'images' - 'token'", r.content)
+          content: fragment("? - 'raw_output' - 'images' - 'token'", r.content),
+          supplier_task: fragment("? - 'raw_output' - 'images' - 'token'", r.supplier_task)
         })
   end
 
@@ -110,9 +114,11 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
       common_instructions: common,
       common_instructions_hash: IncomingDocuments.digest(common),
       identity_instructions: Extractor.identity_instructions(),
+      supplier_task_instructions: Extractor.supplier_task_instructions(),
       supplier_instructions_hash: IncomingDocuments.digest(""),
       schemas: %{
         "identity" => SupplierIdentity.schema(),
+        "supplier_task" => SupplierTask.schema(),
         "content" =>
           if(include_items, do: Transcription.schema(), else: Transcription.header_schema())
       },
@@ -303,6 +309,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
             {:ok, parts, images} ->
               step(id, run_id, "identify", parts, images)
               step(id, run_id, "content", parts, images)
+              step(id, run_id, "supplier_task", parts, images)
 
             {:error, reason} when is_binary(reason) ->
               fail(id, run_id, reason)
@@ -317,7 +324,11 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
   end
 
   defp reserved?(run),
-    do: Enum.any?([run.identification, run.content], &(&1["state"] == "reserved"))
+    do:
+      Enum.any?(
+        [run.identification, run.content, run.supplier_task],
+        &(&1["state"] == "reserved")
+      )
 
   defp step(id, run_id, phase, parts, images) do
     case locked(id, fn doc ->
@@ -331,7 +342,9 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
              "token" => token,
              "attempts" => 1,
              "started_at" => now(),
-             "model" => run.identification["model"] || IncomingDocuments.config()[:openai_model],
+             "model" =>
+               run.identification["model"] || run.content["model"] ||
+                 IncomingDocuments.config()[:openai_model],
              "images" => images
            }
 
@@ -344,9 +357,11 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
           Keyword.put(IncomingDocuments.config(), :openai_model, metadata(run, phase)["model"])
 
         result =
-          if phase == "identify",
-            do: Extractor.identify(run, cfg, parts),
-            else: Extractor.extract_content(run, cfg, parts)
+          case phase do
+            "identify" -> Extractor.identify(run, cfg, parts)
+            "content" -> Extractor.extract_content(run, cfg, parts)
+            "supplier_task" -> Extractor.extract_supplier_task(run, cfg, parts)
+          end
 
         case persist(id, run, phase, token, result) do
           {:error, reason} when is_binary(reason) -> fail(id, run_id, reason)
@@ -429,33 +444,56 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
 
           update!(doc, extraction_metadata: summary)
 
+        phase == "content" and Extractor.has_supplier_task?(run) ->
+          update!(run, content_result: data, active_step: "supplier_task")
+          update!(doc, extraction_metadata: summary)
+
+        phase == "supplier_task" ->
+          merged = SupplierTask.merge(run.content_result, data)
+
+          case Transcription.validate(merged) do
+            :ok ->
+              run = update!(run, supplier_task_result: data)
+              complete!(doc, run, merged, summary)
+
+            {:error, reason} ->
+              Repo.rollback(reason)
+          end
+
         true ->
-          conflict = SupplierIdentity.conflict(run.identity, data["supplier"])
-
-          update!(run,
-            result: data,
-            state: "completed",
-            active_step: "done",
-            identity_conflict: conflict
-          )
-
-          update!(doc,
-            state: "review",
-            extracted_data: data,
-            edited_data: nil,
-            current_xml: nil,
-            generated_xml: nil,
-            dry_run: %{},
-            error: nil,
-            error_stage: nil,
-            extraction_metadata: Map.put(summary, "identity_conflict", conflict)
-          )
+          run = update!(run, content_result: data)
+          complete!(doc, run, data, summary)
       end
     end)
   end
 
+  defp complete!(doc, run, data, summary) do
+    conflict = SupplierIdentity.conflict(run.identity, data["supplier"])
+
+    update!(run,
+      result: data,
+      state: "completed",
+      active_step: "done",
+      identity_conflict: conflict
+    )
+
+    update!(doc,
+      state: "review",
+      extracted_data: data,
+      edited_data: nil,
+      current_xml: nil,
+      generated_xml: nil,
+      dry_run: %{},
+      error: nil,
+      error_stage: nil,
+      extraction_metadata: Map.put(summary, "identity_conflict", conflict)
+    )
+  end
+
   defp metadata(run, "identify"), do: run.identification
   defp metadata(run, "content"), do: run.content
+  defp metadata(run, "supplier_task"), do: run.supplier_task
+  defp field("supplier_task"), do: :supplier_task
   defp field("identify"), do: :identification
   defp field("content"), do: :content
 
