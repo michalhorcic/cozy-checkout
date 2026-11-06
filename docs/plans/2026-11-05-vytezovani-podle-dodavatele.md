@@ -451,3 +451,11 @@ Bez instrukcí třetí volání není. Obsahové opakování s profilem nově zn
 volání bez nové identifikace. Vyžaduje migraci `20261106120000`; starší běhy se
 nemění a nepřibývají jim automatická volání. Původní dvoufázový návrh výše je
 historický podklad; aktuální postup je v návodu formuláře.
+
+**Oprava prvního běhu:** migrace `20261106130000` opravuje opomenutý původní
+constraint `extraction_attempts BETWEEN 0 AND 2`, který blokoval třetí fázi
+úplného běhu, zatímco ruční opakování se dvěma voláními procházelo. Nový rozsah
+je 0–3; rezervace, idempotence a limity jednotlivých fází se nemění. Worker ukládá
+bezpečný typ výjimky a srozumitelnou příčinu ihned, bez soukromého textu chyb.
+Příčina byla reprodukována a ověřena lokálními cílenými testy v režimu výjimky
+AGENTS.md pro hledání a opravu konkrétní chyby; žádné živé AI/ABRA volání.

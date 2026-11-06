@@ -505,13 +505,32 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
         "Fáze vytěžení byla přerušena; není jisté, zda OpenAI dotaz provedlo. Nový placený pokus spusťte ručně."
       )
 
-  defp fail(id, run_id, reason) do
+  @doc "Records a safe exception category immediately, without private exception messages or arguments."
+  def worker_exception(id, run_id, exception) do
+    type = exception.__struct__ |> Module.split() |> Enum.join(".")
+
+    {reason, details} =
+      case exception do
+        %Ecto.ConstraintError{constraint: "incoming_extraction_attempts"} ->
+          {"Databáze odmítla počet volání vytěžení. Spusťte aktuální migrace a vytěžení zopakujte ručně.",
+           %{"exception_type" => type, "constraint" => "incoming_extraction_attempts"}}
+
+        _ ->
+          {"Vytěžení selhalo na interní chybě (#{type}). Pokud byl dotaz rezervován, jeho provedení není jisté; nový pokus spusťte ručně.",
+           %{"exception_type" => type}}
+      end
+
+    fail(id, run_id, reason, details)
+  end
+
+  defp fail(id, run_id, reason, details \\ %{}) do
     locked(id, fn doc ->
       run = Repo.get!(ExtractionRun, run_id)
       guard!(doc, run, false)
 
       meta =
         metadata(run, run.active_step)
+        |> Map.merge(details)
         |> Map.merge(%{
           "state" => "failed",
           "error" => reason,

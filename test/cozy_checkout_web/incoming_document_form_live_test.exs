@@ -304,7 +304,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
   test "supplier instructions can be saved on a sent manual document without changing it or invoking AI",
        %{conn: conn} do
     {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
-    doc = doc |> Ecto.Changeset.change(state: "sent", sent_xml: doc.current_xml) |> Repo.update!()
+
+    doc =
+      doc
+      |> Ecto.Changeset.change(state: "sent", sent_xml: doc.current_xml, remote_id: "42")
+      |> Repo.update!()
+
     {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
     assert has_element?(view, "#incoming-supplier")
     refute has_element?(view, "button[phx-click=content-retry]")
