@@ -734,7 +734,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         <div :if={@doc && @suggestion_messages != []} class="alert alert-warning">
           <p :for={message <- @suggestion_messages}>{message}</p>
         </div>
-        <details :if={@doc && @doc.extracted_data != %{}} class="bg-base-200 rounded-lg p-4">
+        <details
+          :if={@doc && @doc.extracted_data != %{}}
+          id="incoming-source-vat"
+          phx-mounted={JS.ignore_attributes("open")}
+          class="bg-base-200 rounded-lg p-4"
+        >
           <summary>Rekapitulace DPH přečtená z originálu</summary>
           <button type="button" phx-click="prefill-vat" class="btn btn-sm" disabled={@locked}>Převzít rekapitulaci do polí DPH</button>
           <table class="table">
@@ -764,7 +769,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         <p :if={@doc && @doc.extraction_metadata["restored_from_run"]} class="alert alert-warning">
           Zobrazený pracovní návrh byl obnoven z historie. Zkontrolujte jej proti originálu a znovu uložte.
         </p>
-        <details :if={@doc} class="bg-base-200 rounded-xl p-4 space-y-4" id="incoming-supplier">
+        <details
+          :if={@doc}
+          class="bg-base-200 rounded-xl p-4 space-y-4"
+          id="incoming-supplier"
+          phx-mounted={JS.ignore_attributes("open")}
+        >
           <summary class="font-bold">Instrukce pro vytěžování dodavatele</summary>
           <p>
             Cílová firma: {@doc.company_id}. Instrukce ovlivňují čtení originálu, účetní údaje vždy zkontrolujte.
@@ -795,7 +805,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             >
               Profil má novější revizi {@supplier_revision}; výsledek posledního běhu se nezměnil.
             </p>
-            <details>
+            <details id="incoming-used-instructions" phx-mounted={JS.ignore_attributes("open")}>
               <summary>Přesné dodavatelské instrukce posledního běhu</summary>
               <pre class="whitespace-pre-wrap">{@extraction_run.supplier_instructions}</pre>
             </details>
@@ -894,12 +904,16 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               data-confirm="Znovu určit dodavatele a vytěžit obsah? Ruční opravy a kontrola se zruší."
             >Znovu určit dodavatele</button>
           </div>
-          <details id="extraction-history">
+          <details id="extraction-history" phx-mounted={JS.ignore_attributes("open")}>
             <summary>Historie vytěžování</summary>
             <p class="text-sm">
               Usage je uvedena pro každou fázi zvlášť. Bez ověřeného ceníku cenu neodhadujeme; originál se posílá v obou fázích.
             </p>
-            <div :for={run <- @extraction_history} class="border-t py-3 space-y-2">
+            <div
+              :for={run <- @extraction_history}
+              id={"extraction-run-#{run.id}"}
+              class="border-t py-3 space-y-2"
+            >
               <p>
                 Běh {run.generation}: {run.mode}, {run.state}, fáze {run.active_step}; revize {run.profile_revision ||
                   "bez profilu"}.
@@ -915,7 +929,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
                 </p>
                 <pre class="text-xs whitespace-pre-wrap">{Jason.encode!(meta["usage"] || %{})}</pre>
               </div>
-              <details>
+              <details
+                id={"extraction-run-instructions-#{run.id}"}
+                phx-mounted={JS.ignore_attributes("open")}
+              >
                 <summary>Použité instrukce a otisky</summary>
                 <pre class="text-xs whitespace-pre-wrap">{run.supplier_instructions}</pre>
                 <p class="text-xs break-all">
@@ -1170,6 +1187,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           <details
             :for={{title, response} <- @responses}
             :if={response["http_status"]}
+            id={"incoming-response-#{Base.url_encode64(title, padding: false)}"}
+            phx-mounted={JS.ignore_attributes("open")}
             class="bg-base-200 rounded-xl p-4"
             data-abra-response
           >
@@ -1183,7 +1202,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
                 {warning}
               </li>
             </ul>
-            <details>
+            <details
+              id={"incoming-response-details-#{Base.url_encode64(title, padding: false)}"}
+              phx-mounted={JS.ignore_attributes("open")}
+            >
               <summary>Technické podrobnosti odpovědi</summary><pre class="text-xs whitespace-pre-wrap break-all max-h-96 overflow-auto">{Jason.encode!(response, pretty: true)}</pre>
             </details>
           </details>
