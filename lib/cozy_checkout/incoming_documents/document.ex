@@ -4,6 +4,7 @@ defmodule CozyCheckout.IncomingDocuments.Document do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "incoming_documents" do
+    field :active_extraction_run_id, :binary_id
     field :agenda, :string
     field :state, :string, default: "uploaded"
     field :filename, :string

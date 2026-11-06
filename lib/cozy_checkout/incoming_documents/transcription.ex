@@ -33,6 +33,17 @@ defmodule CozyCheckout.IncomingDocuments.Transcription do
     })
   end
 
+  @doc "Header-only output omits item rows entirely from the model contract."
+  def header_schema do
+    full = schema()
+
+    %{
+      full
+      | "properties" => Map.delete(full["properties"], "items"),
+        "required" => List.delete(full["required"], "items")
+    }
+  end
+
   @doc "Normalizes unambiguous Czech numeric formatting without changing source values."
   def canonicalize(data) do
     data
@@ -120,10 +131,10 @@ defmodule CozyCheckout.IncomingDocuments.Transcription do
   defp array(items), do: %{"type" => "array", "items" => items}
 
   @doc "Validate locally as well: schema adherence is not proof that the source was read correctly."
-  def validate(data) do
-    with :ok <- shape(data, schema(), "doklad"),
+  def validate(data, contract \\ schema()) do
+    with :ok <- shape(data, contract, "doklad"),
          true <-
-           length(data["items"]) <= 200 and length(data["vat_summary"]) <= 4 and
+           length(data["items"] || []) <= 200 and length(data["vat_summary"]) <= 4 and
              length(data["vat_legend"]) <= 10 do
       :ok
     else

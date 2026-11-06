@@ -9,6 +9,8 @@ defmodule CozyCheckout.IncomingDocuments do
     Client,
     Document,
     Extractor,
+    ExtractionRuns,
+    SupplierProfiles,
     SourceImages,
     XML
   }
@@ -48,7 +50,7 @@ defmodule CozyCheckout.IncomingDocuments do
   def duplicate?(sha),
     do: Repo.exists?(from d in Document, where: d.sha256 == ^sha and is_nil(d.deleted_at))
 
-  def upload(bytes, filename, agenda, strategy \\ "structured") do
+  def upload(bytes, filename, agenda, strategy \\ "structured", opts \\ []) do
     cfg = config()
 
     with :ok <- configured(cfg),
@@ -77,7 +79,14 @@ defmodule CozyCheckout.IncomingDocuments do
             log: false
           )
 
-        job!(doc.id, "extract")
+        doc =
+          if strategy == "header_form" do
+            ExtractionRuns.start_locked(doc, Keyword.put(opts, :initial, true))
+          else
+            job!(doc.id, "extract")
+            doc
+          end
+
         %{document: doc, duplicate?: duplicate}
       end)
     else
@@ -123,7 +132,7 @@ defmodule CozyCheckout.IncomingDocuments do
     end
   end
 
-  def save_header(id, attrs, expected_hash) do
+  def save_header(id, attrs, expected_hash, identity_confirmed \\ false) do
     locked(id, fn doc ->
       unless is_nil(doc.sent_xml) and
                (doc.state == "review" or
@@ -133,12 +142,18 @@ defmodule CozyCheckout.IncomingDocuments do
       unless transcription_hash(doc) == expected_hash,
         do: Repo.rollback("Doklad mezitím někdo upravil. Obnovte stránku.")
 
+      if doc.extraction_metadata["identity_conflict"] && identity_confirmed != true,
+        do: Repo.rollback("Potvrďte samostatně kontrolu rozporu identity dodavatele.")
+
       case CozyCheckout.IncomingDocuments.HeaderForm.build(attrs, doc) do
         {:ok, values, xml} ->
           update!(doc,
             state: "review",
             edited_data: %{"header_form" => values},
-            extraction_metadata: Map.put(doc.extraction_metadata, "strategy", "header_form"),
+            extraction_metadata:
+              doc.extraction_metadata
+              |> Map.put("strategy", "header_form")
+              |> Map.put("identity_confirmed", identity_confirmed),
             current_xml: xml,
             dry_run: %{},
             error: nil,
@@ -203,7 +218,15 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
-  def retry_extraction(id, strategy \\ nil) do
+  def retry_extraction(id, strategy \\ nil, opts \\ []) do
+    doc = get!(id)
+
+    if (strategy || Extractor.strategy(doc)) == "header_form",
+      do: ExtractionRuns.start(id, opts),
+      else: retry_legacy_extraction(id, strategy)
+  end
+
+  defp retry_legacy_extraction(id, strategy) do
     locked(id, fn doc ->
       require_state!(doc, ["failed", "review"])
 
@@ -228,6 +251,50 @@ defmodule CozyCheckout.IncomingDocuments do
         error: nil,
         error_stage: nil
       )
+    end)
+  end
+
+  def supplier_profiles(%Document{} = doc), do: SupplierProfiles.list(doc)
+  def supplier_profiles(id), do: id |> supplier_scope!() |> SupplierProfiles.list()
+  def supplier_profile(%Document{} = doc, profile_id), do: SupplierProfiles.get(doc, profile_id)
+
+  def supplier_profile(id, profile_id),
+    do: id |> supplier_scope!() |> SupplierProfiles.get(profile_id)
+
+  def active_extraction_run(doc), do: ExtractionRuns.active(doc)
+  def extraction_status(doc), do: ExtractionRuns.active_for_display(doc)
+
+  defp supplier_scope!(id) do
+    Repo.one!(
+      from d in Document,
+        where: d.id == ^id and is_nil(d.deleted_at),
+        select: struct(d, [:id, :base_url, :company_id])
+    )
+  end
+
+  def list_extraction_runs(id, page \\ 0), do: ExtractionRuns.list(id, page)
+
+  def retry_content_extraction(id, opts \\ []),
+    do: ExtractionRuns.start(id, Keyword.put(opts, :mode, "extract_only"))
+
+  def restore_draft_from_run(id, run_id), do: ExtractionRuns.restore(id, run_id)
+
+  def save_supplier_instructions(id, profile_id, attrs, expected_revision, confirmed) do
+    SupplierProfiles.save(supplier_scope!(id), profile_id, attrs, expected_revision, confirmed)
+  end
+
+  def save_supplier_and_retry(id, profile_id, attrs, expected_revision, confirmed, opts \\ []) do
+    locked(id, fn doc ->
+      case SupplierProfiles.save(doc, profile_id, attrs, expected_revision, confirmed) do
+        {:ok, profile} ->
+          ExtractionRuns.start_locked(
+            doc,
+            Keyword.merge(opts, mode: "extract_only", profile_id: profile.id, confirmed: true)
+          )
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
     end)
   end
 
@@ -455,26 +522,31 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
+  def perform_extraction(id, run_id, attempt \\ 1)
+
+  def perform_extraction(id, nil, attempt) do
+    if Extractor.strategy(get!(id)) == "header_form" do
+      case ExtractionRuns.ensure_legacy(id) do
+        {:ok, run_id} when is_binary(run_id) -> ExtractionRuns.perform(id, run_id, attempt)
+        _ -> :ok
+      end
+    else
+      perform(id, "extract")
+    end
+  end
+
+  def perform_extraction(id, run_id, attempt), do: ExtractionRuns.perform(id, run_id, attempt)
+
   def perform(id, "extract") do
     doc = get!(id)
 
-    if doc.state in ["uploaded", "processing"] do
-      case locked(id, fn current ->
-             require_state!(current, ["uploaded", "processing"])
-             update!(current, state: "processing")
-           end) do
-        {:ok, _} ->
-          case SourceImages.prepare(
-                 doc,
-                 Keyword.put(config(), :original_only, Extractor.strategy(doc) == "simple_xml")
-               ) do
-            {:ok, parts, image_metadata} -> transcribe(id, parts, image_metadata)
-            {:error, reason} -> extraction_failed(id, reason, nil)
-          end
-
-        _ ->
-          :ok
+    if Extractor.strategy(doc) == "header_form" do
+      case ExtractionRuns.ensure_legacy(id) do
+        {:ok, run_id} when is_binary(run_id) -> ExtractionRuns.perform(id, run_id)
+        _ -> :ok
       end
+    else
+      perform_legacy_extraction(id)
     end
 
     :ok
@@ -612,6 +684,31 @@ defmodule CozyCheckout.IncomingDocuments do
 
       _ ->
         :ok
+    end
+
+    :ok
+  end
+
+  defp perform_legacy_extraction(id) do
+    doc = get!(id)
+
+    if doc.state in ["uploaded", "processing"] do
+      case locked(id, fn current ->
+             require_state!(current, ["uploaded", "processing"])
+             update!(current, state: "processing")
+           end) do
+        {:ok, _} ->
+          case SourceImages.prepare(
+                 doc,
+                 Keyword.put(config(), :original_only, Extractor.strategy(doc) == "simple_xml")
+               ) do
+            {:ok, parts, image_metadata} -> transcribe(id, parts, image_metadata)
+            {:error, reason} -> extraction_failed(id, reason, nil)
+          end
+
+        _ ->
+          :ok
+      end
     end
 
     :ok
@@ -780,7 +877,15 @@ defmodule CozyCheckout.IncomingDocuments do
   def transcription(doc), do: doc.edited_data || doc.extracted_data
 
   def transcription_hash(doc),
-    do: digest(Jason.encode!([transcription(doc), doc.current_xml, doc.accounting_settings]))
+    do:
+      digest(
+        Jason.encode!([
+          transcription(doc),
+          doc.current_xml,
+          doc.accounting_settings,
+          doc.active_extraction_run_id
+        ])
+      )
 
   def repair_transcription(id, json, expected_hash) do
     with true <- is_binary(json) and byte_size(json) <= 250_000,
@@ -926,7 +1031,8 @@ defmodule CozyCheckout.IncomingDocuments do
   def worker_failed(id, operation) do
     locked(id, fn doc ->
       case {operation, doc.state} do
-        {"extract", state} when state in ["uploaded", "processing"] ->
+        {"extract", state}
+        when state in ["uploaded", "processing"] and is_nil(doc.active_extraction_run_id) ->
           update!(doc,
             state: "failed",
             error_stage: "extraction",
