@@ -56,7 +56,11 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
   defp attrs(text \\ "Přečti datum podle popisku."),
     do: Map.merge(identity(), %{"identity_kind" => "ic", "instructions" => text})
 
-  defp data, do: File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
+  defp data,
+    do:
+      File.read!("test/fixtures/incoming_documents/penny.json")
+      |> Jason.decode!()
+      |> Map.delete("items")
 
   defp profile(doc, text \\ "Přečti datum podle popisku.") do
     {:ok, profile} =
@@ -96,6 +100,72 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRunsTest do
       "sumOsv" => "123.45",
       "sumCelkem" => "123.45"
     }
+
+  test "default extraction asks only for header and VAT and restores the compatible internal empty items" do
+    doc = upload()
+    expect(identity())
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      payload = Jason.decode!(body)
+      schema = payload["text"]["format"]["schema"]
+      refute Map.has_key?(schema["properties"], "items")
+      refute "items" in schema["required"]
+      assert payload["instructions"] =~ "Položky zboží nečti ani nepřepisuj"
+      refute payload["instructions"] =~ "Položky přepiš podle možností"
+      response(conn, data())
+    end)
+
+    IncomingDocuments.perform(doc.id, "extract")
+    doc = IncomingDocuments.get!(doc.id)
+    assert doc.state == "review"
+    assert doc.extracted_data["document_number"] == "0052-20261105-01-0039"
+    assert doc.extracted_data["items"] == []
+    assert doc.extraction_metadata["include_items"] == false
+    assert HeaderForm.values(doc)["cisDosle"] == "0052-20261105-01-0039"
+  end
+
+  test "items are opt-in and each subsequent extraction keeps its chosen schema snapshot" do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "test.pdf", "zavazek", "header_form",
+        include_items: true
+      )
+
+    full = File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
+    expect(identity())
+
+    Req.Test.expect(__MODULE__, fn conn ->
+      {:ok, body, conn} = Plug.Conn.read_body(conn)
+      payload = Jason.decode!(body)
+      assert Map.has_key?(payload["text"]["format"]["schema"]["properties"], "items")
+      assert payload["instructions"] =~ "Položky přepiš podle možností"
+      response(conn, full)
+    end)
+
+    IncomingDocuments.perform(doc.id, "extract")
+    doc = IncomingDocuments.get!(doc.id)
+    assert doc.extracted_data["items"] == full["items"]
+    original_run = IncomingDocuments.active_extraction_run(doc)
+
+    assert {:ok, queued} =
+             IncomingDocuments.retry_content_extraction(doc.id, include_items: false)
+
+    header_run = IncomingDocuments.active_extraction_run(queued)
+    refute Map.has_key?(header_run.schemas["content"]["properties"], "items")
+    assert Map.has_key?(original_run.schemas["content"]["properties"], "items")
+    expect(data())
+    IncomingDocuments.perform(doc.id, "extract")
+    assert IncomingDocuments.get!(doc.id).extracted_data["items"] == []
+    assert Repo.get!(ExtractionRun, original_run.id).schemas == original_run.schemas
+
+    assert {:ok, queued} =
+             IncomingDocuments.retry_extraction(doc.id, "header_form", include_items: true)
+
+    assert Map.has_key?(
+             IncomingDocuments.active_extraction_run(queued).schemas["content"]["properties"],
+             "items"
+           )
+  end
 
   test "known supplier sends exactly two distinct requests with matching original and frozen instructions" do
     doc = upload()

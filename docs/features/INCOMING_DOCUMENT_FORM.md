@@ -65,7 +65,9 @@ dry-run. Existující starší návrhy se načtou do nového formuláře a až j
 potvrzené uložení je převede na bezpoložkový režim; původní řádky se přenesou jako
 text do poznámky. Odeslané starší doklady se zobrazí zamčené.
 
-Položky OpenAI podle možností přepíše do `items`, ale použijí se pouze jako
+Načítání položek je ve výchozím stavu vypnuté. Přepínačem „Načítat také položky
+(orientační přepis)“ je lze výslovně zapnout pro příští nahrání či opakování.
+Při zapnutí OpenAI podle možností přepíše položky do `items`, ale použijí se pouze jako
 orientační text v `poznam`. Do ABRA neposíláme kolekci `polozkyDokladu`, skladové
 pohyby ani ceny jednotlivých položek. ABRA může interně vytvořit své automatické
 účetní řádky podle souhrnné DPH; to popisuje její dokumentace bezpoložkových dokladů.
@@ -273,3 +275,25 @@ kompilace aplikace i změněných testovacích modulů bez spuštění testů a 
 formátování s Elixir 1.20.4 / OTP 29.1. Výsledek CI ověří uživatel. Živá OpenAI
 ani ABRA se nevolaly. Pilot na několika dokladech O2 a jiného dodavatele zbývá;
 zlepšení přesnosti, času a ceny dosud není ověřené.
+
+### Vytěžování bez položek
+
+Přepínač **Načítat také položky (orientační přepis)** je ve výchozím stavu vypnutý,
+i při otevření staršího dokladu. Platí pro příští běh: upload, nové určení
+vystavitele, opakování obsahu, obecné vytěžení i uložení instrukcí s novým během.
+Samotné přepnutí nic nevytěžuje, nemění aktuální návrh a neruší účetní validaci.
+
+Při vypnutí používá obsahová fáze samostatné kratší zadání zaměřené na dodavatele,
+celé označené číslo dokladu, variabilní symbol, data, měnu, celkovou částku a DPH.
+Pole `items` není v API schématu ani v seznamu požadovaných polí. Výsledek projde
+lokální kontrolou tohoto menšího kontraktu; až potom aplikace doplní interní
+`items: []`, aby zachovala kompatibilitu formuláře. Nejde tedy pouze o skrytí
+položek, které by model dál četl.
+
+Při zapnutí zůstává dosavadní přepis položek do poznámky. Zvolený rozsah určuje
+uložený snapshot schématu a společných instrukcí každého běhu a je vidět v jeho
+historii. Změna přepínače neovlivní již běžící nebo historický běh, včetně běhů
+z předchozí verze aplikace. Starší strategie `structured` a `simple_xml` se nemění.
+Není potřeba další migrace, proměnná prostředí ani další placené volání.
+Zjednodušení zadání samo o sobě nezaručuje správné rozpoznání každého čísla;
+číslo i ostatní údaje je dál nutné kontrolovat proti originálu.

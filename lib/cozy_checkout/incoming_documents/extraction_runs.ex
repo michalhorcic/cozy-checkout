@@ -44,6 +44,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
           :id,
           :generation,
           :mode,
+          :schemas,
           :state,
           :active_step,
           :identity,
@@ -94,7 +95,9 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
            select: max(r.generation)
        ) || 0) + 1
 
-    common = Extractor.instructions("header_form")
+    include_items = Keyword.get(opts, :include_items, false)
+    unless is_boolean(include_items), do: Repo.rollback("Neplatná volba načítání položek.")
+    common = Extractor.instructions("header_form", include_items)
 
     run = %ExtractionRun{
       document_id: doc.id,
@@ -108,7 +111,11 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
       common_instructions_hash: IncomingDocuments.digest(common),
       identity_instructions: Extractor.identity_instructions(),
       supplier_instructions_hash: IncomingDocuments.digest(""),
-      schemas: %{"identity" => SupplierIdentity.schema(), "content" => Transcription.schema()},
+      schemas: %{
+        "identity" => SupplierIdentity.schema(),
+        "content" =>
+          if(include_items, do: Transcription.schema(), else: Transcription.header_schema())
+      },
       previous_draft: draft(doc),
       origin_run_id: previous && previous.id
     }
@@ -131,7 +138,11 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
       extracted_data: %{},
       edited_data: nil,
       dry_run: %{},
-      extraction_metadata: %{"strategy" => "header_form", "run_id" => run.id},
+      extraction_metadata: %{
+        "strategy" => "header_form",
+        "run_id" => run.id,
+        "include_items" => include_items
+      },
       extraction_attempts: 0,
       error: nil,
       error_stage: nil

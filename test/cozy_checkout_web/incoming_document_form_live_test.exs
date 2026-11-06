@@ -403,6 +403,45 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert assert_client_disclosures(html, selectors) == ids
   end
 
+  test "item extraction defaults off and the checkbox affects only a newly requested run", %{
+    conn: conn
+  } do
+    {:ok, new_view, _} = live(admin(conn), "/admin/incoming-document-form")
+
+    refute has_element?(
+             new_view,
+             "#incoming-extraction-options input[name=include_items][type=checkbox][checked]"
+           )
+
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "zavazek", "header_form")
+
+    CozyCheckout.IncomingDocuments.ExtractionRuns.interrupt(doc.id, doc.active_extraction_run_id)
+    {:ok, view, _} = live(admin(build_conn()), "/admin/incoming-document-form/#{doc.id}")
+    view |> form("#incoming-extraction-options", %{"include_items" => "true"}) |> render_change()
+
+    assert has_element?(
+             view,
+             "#incoming-extraction-options input[name=include_items][type=checkbox][checked]"
+           )
+
+    view |> element("button[phx-click=generic-extract]") |> render_click()
+    queued = IncomingDocuments.get!(doc.id)
+    assert queued.extraction_metadata["include_items"] == true
+    run = IncomingDocuments.active_extraction_run(queued)
+    assert Map.has_key?(run.schemas["content"]["properties"], "items")
+    view |> form("#incoming-extraction-options", %{"include_items" => "false"}) |> render_change()
+    send(view.pid, :refresh)
+    render(view)
+
+    refute has_element?(
+             view,
+             "#incoming-extraction-options input[name=include_items][type=checkbox][checked]"
+           )
+
+    assert IncomingDocuments.active_extraction_run(queued).schemas == run.schemas
+  end
+
   defp assert_client_disclosures(html, selectors) do
     tree = LazyHTML.from_fragment(html)
 

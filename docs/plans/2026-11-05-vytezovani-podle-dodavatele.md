@@ -434,3 +434,9 @@ Nebyly provedeny živé AI/ABRA požadavky ani migrace provozní databáze.
 **Zbývá:** ověřit CI a provést pilot podle části 11 na skutečných soukromých
 podkladech, popsat zlepšení i omezení. Bez pilotu není potvrzena přesnost, odezva
 ani cena dvoufázového vytěžování. Funkce se nasazuje standardní aditivní migrací.
+
+**Doplnění rozsahu vytěžování:** formulář nyní ve výchozím stavu vypíná načítání
+položek. Viditelný přepínač platí pro všechny nové a opakované běhy. Vypnutí
+používá samostatné hlavní zadání a menší API schéma bez `items`, nikoliv jen
+skrytí položek ve formuláři. Snapshot rozsahu je součástí běhu a historie.
+Stávající běhy zůstávají beze změny; není potřeba další migrace.

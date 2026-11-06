@@ -276,7 +276,9 @@ defmodule CozyCheckout.IncomingDocuments.HeaderWorkflowTest do
 
   test "partial extraction produces editable suggestions without items, XML or automatic retries" do
     {:ok, %{document: doc}} =
-      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "pokladni-pohyb", "header_form")
+      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "pokladni-pohyb", "header_form",
+        include_items: true
+      )
 
     data = File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
 
