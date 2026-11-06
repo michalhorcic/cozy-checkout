@@ -357,4 +357,67 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     view |> element("button[phx-click=supplier-reload]") |> render_click()
     assert render(view) =~ "Druhé okno"
   end
+
+  test "document disclosures preserve browser-controlled open state while editor and polling update content",
+       %{conn: conn} do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "zavazek", "header_form")
+
+    data = File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "review",
+      extracted_data: data,
+      dry_run: %{"http_status" => 200},
+      response: %{"http_status" => 500}
+    )
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+
+    selectors = [
+      "#incoming-source-vat",
+      "#incoming-supplier",
+      "#incoming-used-instructions",
+      "#extraction-history",
+      "#extraction-run-instructions-#{doc.active_extraction_run_id}",
+      "details[data-abra-response]",
+      "details[data-abra-response] > details"
+    ]
+
+    ids = assert_client_disclosures(html, selectors)
+    instructions = "Nové instrukce během psaní"
+
+    html =
+      view
+      |> form("#supplier-instructions-form", %{"supplier" => %{"instructions" => instructions}})
+      |> render_change()
+
+    assert html =~ instructions
+    assert html =~ "Instrukce mají neuložené změny"
+    assert assert_client_disclosures(html, selectors) == ids
+    send(view.pid, :refresh)
+    html = render(view)
+    assert html =~ instructions
+    assert assert_client_disclosures(html, selectors) == ids
+  end
+
+  defp assert_client_disclosures(html, selectors) do
+    tree = LazyHTML.from_fragment(html)
+
+    Enum.flat_map(selectors, fn selector ->
+      nodes = LazyHTML.query(tree, selector)
+      refute Enum.empty?(nodes)
+
+      Enum.map(nodes, fn node ->
+        [id] = LazyHTML.attribute(node, "id")
+        [mounted] = LazyHTML.attribute(node, "phx-mounted")
+        assert Jason.decode!(mounted) == [["ignore_attrs", %{"attrs" => ["open"]}]]
+        # Only the native open attribute is ignored; dynamic children must still patch.
+        assert LazyHTML.attribute(node, "phx-update") == []
+        id
+      end)
+    end)
+  end
 end
