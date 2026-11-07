@@ -72,6 +72,8 @@
       </div>
     </header>
 
+    <.bar_podium :if={!@service_mode} entries={@leaderboard} />
+
     <!-- Účty Section -->
     <div :if={@orders != []} class="mb-4">
       <h2 class="text-lg font-bold text-primary-500 mb-2">Účty</h2>
@@ -96,6 +98,9 @@
             </h2>
             <div class="text-xs text-primary-300">
               Účet #{order.order_number}
+            </div>
+            <div :if={Map.has_key?(@bar_badges, order.id)} class="mt-2">
+              <.bar_badge entry={@bar_badges[order.id]} />
             </div>
           </div>
 

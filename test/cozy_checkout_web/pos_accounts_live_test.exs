@@ -50,10 +50,12 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     {:ok, view, html} = live(conn, "/pos")
     assert has_element?(view, "#pos-new-account", "Nový účet")
     assert has_element?(view, "#pos-order-#{account.id}", "Novákovi")
+
     assert has_element?(
              view,
              "#pos-order-#{account.id} img[src='/images/account-stamps/#{account.account_stamp}.svg']"
            )
+
     assert has_element?(view, "#pos-order-#{historical.id}", booking.guest.name)
     refute has_element?(view, "[phx-click='select_booking']")
     refute html =~ "Bez pobytu"
@@ -97,6 +99,34 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     refute render(detail) =~ "Standalone Order"
   end
 
+  test "podium and badges rank spending while account cards keep their original order", %{
+    conn: conn
+  } do
+    first = order_fixture(%{"name" => "Abecedně první", "total_amount" => "10"})
+    winner = order_fixture(%{"name" => "Zlatý host", "total_amount" => "200"})
+    zero = order_fixture(%{"name" => "Bez útraty"})
+
+    {:ok, view, _} = live(conn, "/pos")
+    assert has_element?(view, "#bar-podium h2", "Pohár štědré ruky")
+    assert has_element?(view, "#bar-podium li[data-rank='1']", "Zlatý host")
+    assert has_element?(view, "#pos-order-#{winner.id} [data-bar-rank='1']", "Zlatý mecenáš")
+    assert has_element?(view, "#pos-order-#{first.id} [data-bar-rank='2']")
+    refute has_element?(view, "#pos-order-#{zero.id} [data-bar-rank]")
+
+    ids =
+      view
+      |> render()
+      |> LazyHTML.from_document()
+      |> LazyHTML.query("div[id^='pos-order-']")
+      |> LazyHTML.attribute("id")
+
+    assert ids == Enum.map(Sales.list_open_orders(), &"pos-order-#{&1.id}")
+
+    view |> element("[phx-click='toggle_service_mode']") |> render_click()
+    refute has_element?(view, "#bar-podium")
+    refute has_element?(view, "[data-bar-rank]")
+  end
+
   test "admin creates a named account with items without choosing a booking", %{conn: conn} do
     conn =
       Plug.Test.init_test_session(conn, %{AdminAuth.session_key() => System.system_time(:second)})
@@ -117,6 +147,7 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     view
     |> form("#order-form", order: %{name: "  Nový admin účet  ", account_stamp: "moon"})
     |> render_change()
+
     render_click(view, "save")
 
     order = Repo.get_by!(Order, name: "Nový admin účet") |> Repo.preload(:order_items)

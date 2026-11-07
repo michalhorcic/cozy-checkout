@@ -33,6 +33,19 @@ Razítko se zobrazuje v seznamu i detailu účtu v POS a v detailu ve správě.
 Motivy jsou vlastní SVG v `priv/static/images/account-stamps/`, doplněné textovými
 popisy pro čtečky; rozlišení nezávisí jen na barvě.
 
+## Pohár štědré ruky
+
+Nad účty je pódium a rozbalovací žebříček. Účty si zachovávají původní pořadí;
+jejich karty dostávají zlatý, stříbrný či bronzový odznak, další „Barového parťáka“.
+Shodná útrata sdílí pořadí a medaili (například 1., 1., 3.). Nulová útrata nesoutěží.
+
+U účtů propojených s hostem a aktuálním aktivním pobytem se sčítají jeho účty
+za tento pobyt, včetně zaplacených. Samostatný účet je jeden soutěžící do uzavření;
+jeho počet osob aplikace neeviduje. Útrata vychází z částky po slevách bez spropitného.
+Servisní, stornované a smazané účty se nepočítají. Žebříček se v režimu obsluhy
+nezobrazuje. Data se načítají při otevření přehledu nebo přepnutí režimu jedním
+dotazem s vazbami na pobyt a hosta, bez dotazu pro každého soutěžícího.
+
 ## Ceny a data
 
 Položky používají aktivní ceník. Při přidání se ukládá cena a DPH; pozdější změna
