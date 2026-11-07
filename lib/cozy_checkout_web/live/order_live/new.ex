@@ -7,12 +7,13 @@ defmodule CozyCheckoutWeb.OrderLive.New do
   @impl true
   def mount(_params, _session, socket) do
     order_number = Sales.generate_order_number()
+    order = %Order{order_number: order_number, account_stamp: Sales.suggest_account_stamp()}
 
     socket =
       socket
       |> assign(:page_title, "New Order")
-      |> assign(:order, %Order{order_number: order_number})
-      |> assign(:form, to_form(Sales.change_order(%Order{order_number: order_number})))
+      |> assign(:order, order)
+      |> assign(:form, to_form(Sales.change_order(order)))
       |> assign(:products, Catalog.list_products())
       |> assign(:order_items, [])
       |> assign(:discount_amount, Decimal.new("0"))
@@ -119,6 +120,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
       true ->
         order_params = %{
           "name" => order_name,
+          "account_stamp" => Ecto.Changeset.get_field(socket.assigns.form.source, :account_stamp),
           "notes" => Ecto.Changeset.get_field(socket.assigns.form.source, :notes),
           "order_number" => socket.assigns.order.order_number
         }
@@ -226,6 +228,11 @@ defmodule CozyCheckoutWeb.OrderLive.New do
             <h2 class="text-2xl font-bold text-primary-500 mb-4">Účet</h2>
             <.form for={@form} id="order-form" phx-change="validate">
               <.input field={@form[:name]} type="text" label="Název účtu" required />
+              <.account_stamp_picker
+                id="admin-stamp-picker"
+                name="order[account_stamp]"
+                value={@form[:account_stamp].value}
+              />
               <.input field={@form[:notes]} type="textarea" label="Order Notes" />
             </.form>
           </div>

@@ -88,8 +88,8 @@
           ]}
         >
           <div>
-            <div class="flex items-center gap-2">
-              <.icon name="hero-shopping-cart" class="w-5 h-5 text-tertiary-600" />
+            <div class="mb-3">
+              <.account_stamp stamp={AccountStamps.key(order)} />
             </div>
             <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
               {Sales.get_order_display_name(order)}
@@ -113,7 +113,7 @@
       :if={@orders == []}
       class="rounded-xl border border-secondary-200 bg-white px-4 py-8 text-center"
     >
-      <.icon name="hero-shopping-cart" class="w-10 h-10 text-secondary-300 mx-auto mb-3" />
+      <.account_stamp stamp="mug" class="mx-auto mb-3 h-16 w-16" />
       <h2 class="text-lg font-bold text-primary-400 mb-1">
         Zatím tu nejsou žádné otevřené účty
       </h2>
@@ -123,7 +123,7 @@
     <!-- Quick Order Modal -->
     <%= if @show_quick_order_modal do %>
       <div class="fixed inset-0 bg-primary-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-8 animate-in fade-in zoom-in duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-6 animate-in fade-in zoom-in duration-200">
           <h3 class="text-3xl font-bold text-primary-500 mb-6">Nový účet</h3>
 
           <div class="mb-8">
@@ -147,6 +147,14 @@
               Zadejte jméno nebo název, podle kterého svůj účet poznáte.
             </p>
           </div>
+
+          <form id="pos-stamp-form" phx-change="select_account_stamp" class="mb-6">
+            <.account_stamp_picker
+              id="pos-stamp-picker"
+              name="account_stamp"
+              value={@quick_order_stamp}
+            />
+          </form>
 
           <div class="flex gap-4">
             <button
