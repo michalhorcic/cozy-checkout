@@ -50,6 +50,10 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     {:ok, view, html} = live(conn, "/pos")
     assert has_element?(view, "#pos-new-account", "Nový účet")
     assert has_element?(view, "#pos-order-#{account.id}", "Novákovi")
+    assert has_element?(
+             view,
+             "#pos-order-#{account.id} img[src='/images/account-stamps/#{account.account_stamp}.svg']"
+           )
     assert has_element?(view, "#pos-order-#{historical.id}", booking.guest.name)
     refute has_element?(view, "[phx-click='select_booking']")
     refute html =~ "Bez pobytu"
@@ -76,13 +80,21 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     assert has_element?(view, "h3", "Nový účet")
     assert has_element?(view, "button[phx-click='create_quick_order'][disabled]")
 
+    view |> form("#pos-stamp-form", account_stamp: "mushroom") |> render_change()
+    assert has_element?(view, "#pos-stamp-picker input[value='mushroom'][checked]")
+
     render_keyup(view, "update_quick_order_name", %{"value" => "  Novákovi  "})
     view |> element("[phx-click='create_quick_order']") |> render_click()
 
     order = Repo.get_by!(Order, name: "Novákovi")
     assert order.booking_id == nil
     assert order.guest_id == nil
+    assert order.account_stamp == "mushroom"
     assert_redirect(view, "/pos/orders/#{order.id}")
+
+    {:ok, detail, _} = live(conn, "/pos/orders/#{order.id}")
+    assert has_element?(detail, "img[src='/images/account-stamps/mushroom.svg']")
+    refute render(detail) =~ "Standalone Order"
   end
 
   test "admin creates a named account with items without choosing a booking", %{conn: conn} do
@@ -102,12 +114,15 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     assert render(view) =~ "Vyplňte název účtu."
     refute Repo.get_by(Order, name: "Nový admin účet")
 
-    view |> form("#order-form", order: %{name: "  Nový admin účet  "}) |> render_change()
+    view
+    |> form("#order-form", order: %{name: "  Nový admin účet  ", account_stamp: "moon"})
+    |> render_change()
     render_click(view, "save")
 
     order = Repo.get_by!(Order, name: "Nový admin účet") |> Repo.preload(:order_items)
     assert order.booking_id == nil
     assert order.guest_id == nil
+    assert order.account_stamp == "moon"
     assert length(order.order_items) == 1
     assert_amount(order.total_amount, "100")
     assert_redirect(view, "/admin/orders/#{order.id}")

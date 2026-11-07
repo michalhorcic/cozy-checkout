@@ -6,13 +6,35 @@ defmodule CozyCheckout.Sales do
   import Ecto.Query, warn: false
   alias CozyCheckout.Repo
 
-  alias CozyCheckout.Sales.{Order, OrderItem, Payment}
+  alias CozyCheckout.Sales.{AccountStamps, Order, OrderItem, Payment}
   alias CozyCheckout.Catalog
   alias CozyCheckout.Bookings
   alias CozyCheckout.Inventory
   alias CozyCheckout.Workers.AbraSyncWorker
 
   ## Orders
+
+  @doc """
+  Suggests a least-used stamp with one query over all open accounts.
+  Legacy accounts participate using their stable ID-based stamp.
+  """
+  def suggest_account_stamp do
+    Order
+    |> where([o], is_nil(o.deleted_at) and o.status in ["open", "partially_paid"])
+    |> select([o], map(o, [:id, :account_stamp]))
+    |> Repo.all()
+    |> AccountStamps.suggest()
+  end
+
+  defp assign_account_stamp(%Ecto.Changeset{valid?: true} = changeset) do
+    if Ecto.Changeset.get_field(changeset, :account_stamp) do
+      changeset
+    else
+      Ecto.Changeset.put_change(changeset, :account_stamp, suggest_account_stamp())
+    end
+  end
+
+  defp assign_account_stamp(changeset), do: changeset
 
   @doc """
   Lists open POS accounts, including historical accounts linked to bookings.
@@ -368,6 +390,7 @@ defmodule CozyCheckout.Sales do
 
     %Order{}
     |> Order.changeset(attrs)
+    |> assign_account_stamp()
     |> Repo.insert()
   end
 
@@ -382,6 +405,7 @@ defmodule CozyCheckout.Sales do
 
     %Order{}
     |> Order.changeset(attrs)
+    |> assign_account_stamp()
     |> Repo.insert()
   end
 

@@ -18,6 +18,21 @@ POS je veřejné rozhraní na `/` a `/pos`. Administrace na `/admin` vyžaduje
 [Rozlišení standardních a servisních účtů](SERVICE_ORDERS.md) slouží mimo jiné
 pro vlastní spotřebu. Hostům zůstává výběr produktů a účtů veřejně dostupný.
 
+## Značky účtů
+
+Každý účet má vlastní chalupářské razítko: lišku, šišku, petrolejku, hříbek,
+smrk, klíč, měsíc nad kopcem nebo hrnek. Nový účet dostane předvybranou nejméně
+používanou značku mezi otevřenými účty (včetně servisních). Při založení v POS
+nebo ve správě ji lze změnit klepnutím; výběr není další povinný krok.
+Po vyčerpání osmi motivů se značky mohou opakovat, proto zůstává hlavní název účtu.
+Značky nejsou jedinečný identifikátor a souběžné založení může použít stejný motiv.
+
+U nových účtů se značka ukládá do `orders.account_stamp` a při přejmenování
+zůstává stejná. Starší účty bez uložené značky používají stálý výběr podle ID.
+Razítko se zobrazuje v seznamu i detailu účtu v POS a v detailu ve správě.
+Motivy jsou vlastní SVG v `priv/static/images/account-stamps/`, doplněné textovými
+popisy pro čtečky; rozlišení nezávisí jen na barvě.
+
 ## Ceny a data
 
 Položky používají aktivní ceník. Při přidání se ukládá cena a DPH; pozdější změna

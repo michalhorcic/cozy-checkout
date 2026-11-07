@@ -2,6 +2,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
   use CozyCheckoutWeb, :live_view
 
   alias CozyCheckout.Sales
+  alias CozyCheckout.Sales.AccountStamps
 
   @impl true
   def mount(_params, _session, socket) do
@@ -11,6 +12,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
        |> assign(:page_title, "Samoobslužný bar")
        |> assign(:show_quick_order_modal, false)
        |> assign(:quick_order_name, "")
+       |> assign(:quick_order_stamp, nil)
        |> assign(:service_mode, false)
        |> load_orders()}
     else
@@ -20,6 +22,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
          orders: [],
          show_quick_order_modal: false,
          quick_order_name: "",
+         quick_order_stamp: nil,
          service_mode: false
        )}
     end
@@ -32,7 +35,21 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
 
   @impl true
   def handle_event("show_quick_order_modal", _params, socket) do
-    {:noreply, assign(socket, show_quick_order_modal: true, quick_order_name: "")}
+    {:noreply,
+     assign(socket,
+       show_quick_order_modal: true,
+       quick_order_name: "",
+       quick_order_stamp: Sales.suggest_account_stamp()
+     )}
+  end
+
+  @impl true
+  def handle_event("select_account_stamp", %{"account_stamp" => stamp}, socket) do
+    if stamp in AccountStamps.keys() do
+      {:noreply, assign(socket, :quick_order_stamp, stamp)}
+    else
+      {:noreply, socket}
+    end
   end
 
   @impl true
@@ -57,6 +74,7 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
     else
       case Sales.create_standalone_order(%{
              "name" => order_name,
+             "account_stamp" => socket.assigns.quick_order_stamp,
              "status" => "open",
              "is_service_order" => service_mode
            }) do
