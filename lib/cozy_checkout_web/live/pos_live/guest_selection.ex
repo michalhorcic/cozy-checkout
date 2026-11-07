@@ -1,6 +1,8 @@
 defmodule CozyCheckoutWeb.PosLive.GuestSelection do
   use CozyCheckoutWeb, :live_view
 
+  import CozyCheckoutWeb.BarLeaderboardComponents
+
   alias CozyCheckout.Sales
   alias CozyCheckout.Sales.AccountStamps
 
@@ -20,6 +22,8 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
        assign(socket,
          page_title: "Samoobslužný bar",
          orders: [],
+         leaderboard: [],
+         bar_badges: %{},
          show_quick_order_modal: false,
          quick_order_name: "",
          quick_order_stamp: nil,
@@ -101,6 +105,15 @@ defmodule CozyCheckoutWeb.PosLive.GuestSelection do
   end
 
   defp load_orders(socket) do
-    assign(socket, :orders, Sales.list_open_orders(socket.assigns.service_mode))
+    leaderboard = if socket.assigns.service_mode, do: [], else: Sales.bar_leaderboard()
+
+    badges =
+      for entry <- leaderboard, order_id <- entry.order_ids, into: %{}, do: {order_id, entry}
+
+    assign(socket,
+      orders: Sales.list_open_orders(socket.assigns.service_mode),
+      leaderboard: leaderboard,
+      bar_badges: badges
+    )
   end
 end

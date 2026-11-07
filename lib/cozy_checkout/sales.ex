@@ -50,6 +50,30 @@ defmodule CozyCheckout.Sales do
   end
 
   @doc """
+  Personal spending for current stays (including paid accounts) and open standalone
+  accounts. Uses one joined query, excludes service accounts, cancellations and tips.
+  """
+  def bar_leaderboard do
+    today = Date.utc_today()
+
+    Order
+    |> join(:left, [o], b in CozyCheckout.Bookings.Booking, on: b.id == o.booking_id)
+    |> join(:left, [o, b], g in assoc(o, :guest))
+    |> where([o], is_nil(o.deleted_at) and o.is_service_order == false)
+    |> where([o], o.status in ["open", "partially_paid", "paid"])
+    |> where(
+      [o, b],
+      (is_nil(o.booking_id) and o.status in ["open", "partially_paid"]) or
+        (not is_nil(o.guest_id) and is_nil(b.deleted_at) and b.status == "active" and
+           b.check_in_date <= ^today and
+           (is_nil(b.check_out_date) or b.check_out_date >= ^today))
+    )
+    |> preload([o, b, g], guest: g)
+    |> Repo.all()
+    |> CozyCheckout.Sales.BarLeaderboard.rank()
+  end
+
+  @doc """
   Returns the list of active bookings with their open order counts.
   """
   def list_active_bookings_with_orders do
