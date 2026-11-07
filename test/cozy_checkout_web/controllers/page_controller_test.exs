@@ -10,6 +10,6 @@ defmodule CozyCheckoutWeb.PageControllerTest do
            |> Enum.any?()
 
     assert LazyHTML.query(document, "#pos-new-account") |> LazyHTML.text() |> String.trim() ==
-             "Nový účet bez pobytu"
+             "Nový účet"
   end
 end

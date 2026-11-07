@@ -5,9 +5,9 @@ POS je veřejné rozhraní na `/` a `/pos`. Administrace na `/admin` vyžaduje
 
 ## Běžný postup
 
-1. Vyberte aktivní rezervaci nebo založte pojmenovaný rychlý účet bez rezervace.
-2. Jediný otevřený nebo částečně zaplacený účet se otevře přímo. U více účtů nebo více hostů pokračujete
-   na výběr `/pos/bookings/:booking_id/orders`; účet lze založit konkrétnímu hostu.
+1. Vyberte otevřený účet nebo tlačítkem **Nový účet** založte pojmenovaný účet.
+2. Seznam zahrnuje otevřené i částečně zaplacené účty, včetně starších účtů
+   navázaných na pobyt. Rezervace se nenabízejí a nové účty se na ně nevážou.
 3. V účtu `/pos/orders/:id` vybírejte produkty podle kategorií nebo oblíbenosti.
    U produktů s jednotkou vyberte přednastavené nebo vlastní množství.
 4. Zkontrolujte položky a celkovou částku. Opakované položky se
@@ -22,12 +22,14 @@ pro vlastní spotřebu. Hostům zůstává výběr produktů a účtů veřejně
 
 Položky používají aktivní ceník. Při přidání se ukládá cena a DPH; pozdější změna
 katalogu nepřepočítává starý nákup. Součty, slevy a spropitné používají `Decimal`.
+Také ve správě se nový účet zakládá pod vlastním názvem, bez výběru rezervace.
+Historické vazby účtů zůstávají zachované.
 Barové účty jsou oddělené od [fakturace ubytování](BILLING.md).
 
 ## Implementace
 
-- `lib/cozy_checkout/sales.ex`: rezervace s účty, tvorba účtů a položek, platby.
-- `lib/cozy_checkout_web/live/pos_live/`: výběr rezervace, účtu a správa objednávky.
+- `lib/cozy_checkout/sales.ex`: seznam otevřených účtů, tvorba účtů a položek, platby.
+- `lib/cozy_checkout_web/live/pos_live/`: výběr účtu a správa objednávky.
 - `lib/cozy_checkout_web/live/order_item_grouper.ex`: seskupení pro zobrazení.
 - `assets/js/app.js`: importy JavaScriptu a POS hooky včetně dotykového ovládání.
 - `lib/cozy_checkout_web/router.ex`: veřejné POS a chráněné administrativní cesty.
@@ -37,6 +39,6 @@ Cesty ke zdrojům v dokumentaci jsou relativní ke kořeni repozitáře.
 ## Ověření
 
 [Finanční sada](../development/FINANCIAL_TESTS.md) pokrývá ceny a platby.
-Při ruční kontrole ověřte výběr rezervace i rychlý účet, přidání různých množství,
+Při ruční kontrole ověřte výběr účtu i založení nového účtu, přidání různých množství,
 seskupení a odebrání položek, rozdělení platby, QR náhled a účtenku.
 Dotyková gesta je potřeba ověřit na dotykovém zařízení.
