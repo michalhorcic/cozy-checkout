@@ -15,6 +15,19 @@ defmodule CozyCheckout.Sales do
   ## Orders
 
   @doc """
+  Lists open POS accounts, including historical accounts linked to bookings.
+  """
+  def list_open_orders(is_service_order \\ false) do
+    Order
+    |> where([o], is_nil(o.deleted_at))
+    |> where([o], o.status in ["open", "partially_paid"])
+    |> where([o], o.is_service_order == ^is_service_order)
+    |> preload(:guest)
+    |> order_by([o], asc: o.name, asc: o.order_number)
+    |> Repo.all()
+  end
+
+  @doc """
   Returns the list of active bookings with their open order counts.
   """
   def list_active_bookings_with_orders do
