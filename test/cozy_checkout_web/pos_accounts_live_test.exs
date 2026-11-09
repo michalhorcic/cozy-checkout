@@ -141,8 +141,8 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     |> render_submit()
 
     render_click(view, "save")
-    assert render(view) =~ "Vyplňte název účtu."
-    refute Repo.get_by(Order, name: "Nový admin účet")
+    assert has_element?(view, "#flash-error", "Vyplňte název účtu.")
+    assert Repo.aggregate(Order, :count) == 0
 
     view
     |> form("#order-form", order: %{name: "  Nový admin účet  ", account_stamp: "moon"})
