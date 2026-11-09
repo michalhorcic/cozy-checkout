@@ -182,9 +182,10 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
   end
 
   defp enqueue!(document_id, run_id) do
+    # The enclosing transaction owns rollback; retries would reuse an aborted transaction.
     case %{document_id: document_id, operation: "extract", run_id: run_id}
          |> IncomingDocumentWorker.new(queue: :incoming_extraction)
-         |> Oban.insert() do
+         |> Oban.insert(retry: false) do
       {:ok, %{conflict?: false}} -> :ok
       _ -> Repo.rollback("Nové vytěžení se nepodařilo zařadit do fronty.")
     end

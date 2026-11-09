@@ -217,11 +217,20 @@ defmodule CozyCheckout.IncomingDocuments.BatchesTest do
 
   test "a job insertion failure rolls back every run, job and document state" do
     batch = batch()
-    doc = source(batch)
-    # Database failure during the actual Oban insert, after the run was inserted.
+    one = source(batch, "%PDF-one")
+    two = source(batch, "%PDF-two")
+    # Fail the second job, after the first document's run, job and state were updated.
     Ecto.Adapters.SQL.query!(
       Repo,
-      "CREATE FUNCTION pg_temp.reject_batch_job() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic failure'; END $$"
+      """
+      CREATE FUNCTION pg_temp.reject_batch_job() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF NEW.args->>'document_id' = '#{two.id}' THEN
+          RAISE EXCEPTION 'synthetic failure';
+        END IF;
+        RETURN NEW;
+      END $$
+      """
     )
 
     Ecto.Adapters.SQL.query!(
@@ -229,9 +238,17 @@ defmodule CozyCheckout.IncomingDocuments.BatchesTest do
       "CREATE TRIGGER reject_batch_job BEFORE INSERT ON oban_jobs FOR EACH ROW EXECUTE FUNCTION pg_temp.reject_batch_job()"
     )
 
-    assert_raise Postgrex.Error, fn -> Batches.start(batch.id) end
+    error = assert_raise Postgrex.Error, fn -> Batches.start(batch.id) end
+    assert error.postgres.message == "synthetic failure"
     assert is_nil(Batches.get!(batch.id).started_at)
-    assert IncomingDocuments.get!(doc.id).state == "staged"
+
+    for original <- [one, two] do
+      doc = IncomingDocuments.get!(original.id)
+      assert doc.state == "staged"
+      assert is_nil(doc.active_extraction_run_id)
+      assert is_nil(doc.initial_extraction_run_id)
+    end
+
     assert Repo.aggregate(ExtractionRun, :count) == 0
     assert Repo.aggregate(Oban.Job, :count) == 0
   end
@@ -319,7 +336,9 @@ defmodule CozyCheckout.IncomingDocuments.BatchesTest do
     doc = source(batch)
     Batches.start(batch.id)
     finish(IncomingDocuments.get!(doc.id), "completed")
-    foreign = source(batch())
+    assert {:ok, ready} = Batches.refresh(batch.id)
+    assert ready.extraction_finished_at
+    foreign = source(batch(), "%PDF-foreign")
     assert_raise Ecto.NoResultsError, fn -> Batches.review!(batch.id, foreign.id) end
   end
 

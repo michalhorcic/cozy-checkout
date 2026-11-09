@@ -81,7 +81,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     |> form("#incoming-header-form", %{"document" => %{"cisDosle" => "NEW"}})
     |> render_submit()
 
-    assert_patch(view, "/admin/incoming-document-form/#{doc.id}")
+    refute_patched(view)
     changed = IncomingDocuments.get!(doc.id)
     assert changed.extraction_metadata["strategy"] == "header_form"
     assert changed.current_xml =~ "<cisDosle>NEW</cisDosle>"
