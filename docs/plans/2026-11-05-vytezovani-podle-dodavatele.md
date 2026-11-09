@@ -1,461 +1,413 @@
-# Dvoufázové vytěžování a instrukce podle dodavatele
+# Vytěžování dokladů: aktuální stav a další etapa hromadného zpracování
 
-- **Stav:** implementováno ve větvi; čeká na CI a provozní pilot.
-- **Vytvořeno / aktualizováno:** 5. / 6. 11. 2026.
-- **Zadání:** nejdříve rozpoznat dodavatele, potom vytěžit doklad s jeho uloženými
-  instrukcemi; instrukce editovat přímo ve formuláři přijatého dokladu.
-- **Podklad:** větev `codex/prijate-doklady-formular`, implementace do commitu
-  `f377546`, [PR #99](https://github.com/michalhorcic/cozy-checkout/pull/99).
-- **Současný návod:** [Formulář přijatého dokladu](../features/INCOMING_DOCUMENT_FORM.md).
-- Původní plán níže popisuje výchozí stav před implementací. Aktuální postup,
-  migraci a ověřovací limity popisuje návod a předání v části 13.
+- **Aktualizováno:** 9. 11. 2026 po kontrole implementace a upřesnění s uživatelem.
+- **Stav:** jednotlivé doklady a dodavatelské instrukce jsou implementované;
+  dávky a jejich kontrolní rozhraní jsou níže navržené, zatím neimplementované.
+- **Implementace:** větev `feat/supplier-specific-extraction`,
+  [PR #100](https://github.com/michalhorcic/cozy-checkout/pull/100), při revizi
+  poslední implementační commit `2dd842f`. PR je v době zápisu otevřený.
+- **Návod současné funkce:** [INCOMING_DOCUMENT_FORM.md](../features/INCOMING_DOCUMENT_FORM.md).
+- Tento dokument nahrazuje původní dvoufázový plán. Popisuje skutečný stav,
+  opravy z pilotování a zadání pro další vlákno. Historický návrh je v Git historii.
 
-## 1. Problém a výsledek
+## 1. Zadání pro další vlákno
 
-Dodavatele OpenAI podle dosavadní zkušenosti uživatele poznává spolehlivěji než
-rekapitulaci DPH a jednotlivá data. Stejní dodavatelé posílají opakující se formáty,
-ve kterých se opakují stejné chyby. Chceme postupně opravovat zadání čtení pro
-konkrétního dodavatele, bez ručního přepisování obecných instrukcí pro všechny.
+Uživatel chce najednou nahrát více fotek stejné kategorie, po dokončení nahrávání
+výslovně spustit vytěžování a vrátit se k hotovým návrhům. Aplikace zpracuje doklady
+na pozadí, oznámí výsledek v aplikaci a nabídne postupnou kontrolu proti originálu.
+Uživatel jednotlivé doklady opraví a odešle do ABRY. Počet 10 plateb kartou,
+5 faktur nebo 20 hotovostních účtenek byl příklad, nikoli pevně dané limity.
 
-Výsledkem má být tento průchod:
+### Potvrzené odpovědi uživatele z 9. 11. 2026
 
-1. Obsluha nahraje PDF/obrázek a vybere agendu jako dnes.
-2. Malý první dotaz přečte pouze identitu dodavatele.
-3. Server podle identity a cílové firmy vybere uložené instrukce.
-4. Druhý dotaz znovu dostane originál, společné zadání a snapshot instrukcí.
-5. Stávající formulář nabídne výsledky k opravě, včetně předvyplnění DPH a dat.
-6. V nové sekci lze upravit instrukce pro příště nebo je uložit a zopakovat
-   vytěžení aktuálního dokladu.
-
-Model zůstává čtečkou originálu. Instrukce nevytvářejí účtovací pravidla,
-neschvalují doklad a nespouštějí ABRA. Zápis do účetnictví zůstává ruční akcí.
-
-## 2. Co už máme a na co navázat
-
-| Oblast | Současná implementace | Dopad nové funkce |
-| --- | --- | --- |
-| Upload, soukromý originál, hash, cílová firma | `IncomingDocuments.upload/4`, `Document` | Zachovat stejné soubory a limity; identita se vztahuje ke konkrétnímu originálu |
-| Fronta a opakování | `IncomingDocumentWorker`, `perform/2`, `transcribe/3` | Doplnit dvoufázový průchod pro `header_form`, oddělit běhy a fáze |
-| OpenAI | `Extractor.extract/4`, Responses API, Req, `store=false` | Přidat identifikační kontrakt a sestavení druhého zadání |
-| Výstup do formuláře | `Transcription.schema/0`, `validate/1` | Druhá fáze dál vrací tento kontrakt, neměnit účetní XML ani JSON API |
-| Zadání | `priv/incoming_documents/extraction_instructions_form.md` | Zůstává společný základ; dodavatelský text je řízený doplněk |
-| Datové návrhy | `HeaderForm`, `FormSuggestions` | Dál řeší přiřazení polí, souhrny a návrhy dat deterministicky |
-| Administrace | `IncomingDocumentFormLive` | Sekce dodavatele, editor, stav a oddělené akce uložení/opakování |
-| Odesílání | `ImportPayload`, `Client`, `send_header/3` | Formát JSON, externí ID, kontrola duplicit a zmrazení přenosu zůstávají |
-| Současné pokusy | `extraction_attempts`, `extraction_metadata.calls` | Dosud jedna fáze; prosté zvýšení `max_attempts` na 2 neimplementuje dvě různé fáze |
-
-`header_form` nyní dovoluje jedno volání na vytěžení. Skrytý starší režim
-`structured` má dvě a `simple_xml` jedno. Oban worker má tři pokusy, což není
-povolení třikrát zopakovat placené volání OpenAI. Nový návrh musí toto rozlišit.
-
-V prohledaných kontextech není samostatný registr dodavatelů přijatých dokladů.
-`Billing.profile` popisuje naši firmu a `Inventory.PurchaseOrder.supplier_note`
-je textová poznámka; ani jedno nepoužít jako číselník protistran.
-
-Uživatel již potvrdil zlepšení přenosu přes JSON i předvyplňování. Nejde o nový
-výsledek automatických testů nebo živé kontroly ABRA provedené při psaní plánu.
-Historický [plán MVP](2026-11-05-prijate-doklady.md) obsahuje dřívější rozhodnutí;
-aktuální datový a přenosový postup popisuje odkazovaný návod formuláře.
-
-## 3. Rozsah a návrhová rozhodnutí
-
-### Součást první etapy
-
-- Dvě jasně oddělené fáze pro nový formulář `header_form`.
-- Profily dodavatelů s editovatelnými instrukcemi a revizí.
-- Přesné párování primárně podle IČO; bezpečný obecný postup při nejistotě.
-- Snapshot použitého zadání a výsledku obou fází pro každý běh.
-- Ruční výběr/oprava dodavatele a opakování druhé fáze s novými instrukcemi.
-- Srozumitelný stav, chybové hlášení a náklady obou volání v administraci.
-- Zachování původních výsledků a ochrana před pozdní odpovědí starého běhu.
-
-### Mimo první etapu
-
-ARES, automatické zakládání partnerů v ABRA, fuzzy spojování firem, automatické
-učení instrukcí z oprav, více modelů, prompt management mimo aplikaci, automatické
-účetní předpisy a schvalování, položkové účtování, pravidla podle typu dokumentu
-uvnitř jednoho dodavatele, hromadné zpětné vytěžování a nový samostatný registr UI.
-Žádné automatické přepisování historických nebo odeslaných dokladů.
-
-| Rozhodnutí | Zdroj / charakter |
+| Otázka | Rozhodnutí |
 | --- | --- |
-| První dotaz dodavatel, druhý samotné vytěžení | Návrh uživatele odsouhlasený v chatu |
-| Instrukce uložené v DB a editovatelné u formuláře | Požadavek uživatele |
-| IČO jako hlavní klíč, název jen pomocný | Technický návrh rozvedený níže |
-| Instrukce ovlivňují čtení, nikoli účetní výpočty a ABRA | Navazuje na odsouhlasený rozsah formuláře |
-| Přesný snapshot zadání a běhy místo přepisování historie | Technický návrh pro dohledatelnost a obnovu |
-| Profily oddělené pro každou cílovou firmu ABRA | Navržený výchozí rozsah, nikoli dříve potvrzený obchodní požadavek |
+| Fotky a doklady | Jedna fotka = jeden samostatný doklad. Spojování více fotek jednoho dokladu později. |
+| Kategorie | Předvyplní společné účetní nastavení dávky; u jednotlivého dokladu půjde upravit. |
+| Kdy kontrolovat | Až po dokončení vytěžování celé dávky. |
+| Upozornění | Stačí uvnitř aplikace, bez e-mailu nebo jiné externí zprávy. |
 
-## 4. Rozpoznání a párování dodavatele
+Dále platí předchozí požadavky: přesnost má přednost před úsporou počtu dotazů,
+položky účtenek řešit později, nepřidávat souhlasové checkboxy a nezavírat
+rozbalené sekce při editaci ani při aktualizaci stavů.
 
-### Kontrakt první fáze
+### Přijaté pracovní návrhy pro implementaci
 
-Přidat samostatný `SupplierIdentity` kontrakt se striktním JSON schématem:
-`name`, `ic`, `dic`, `country_code` jako nullable string, `ambiguous` jako boolean
-plus `uncertainties` jako pole textů. Instrukce mají výslovně rozlišovat vystavitele
-od odběratele, banky, zprostředkovatele plateb a značky prodávaného výrobku.
-Nepotřebujeme položky, data ani DPH. Nepoužívat modelové číselné skóre důvěry jako
-jediný podklad automatického párování. Výsledek ověřit lokálně stejně jako dnes
-`Transcription`, včetně limitů délky a typu, bez dynamických atomů.
+Následující jsou technické/productové návrhy tohoto plánu, nikoliv další odpovědi
+uživatele. Lze je použít bez opakování již zodpovězených otázek:
 
-### Pravidla identity
+- Jedna dávka má jednu kategorii a jednu cílovou firmu ABRA. Pro jinou kategorii
+  vznikne další dávka. Zatím tři kategorie odpovídající stávajícím agendám.
+- Po spuštění je sestava souborů a výchozí nastavení dávky uzamčené; další soubory
+  patří do nové dávky. Není potřeba správa uživatelských kategorií.
+- Dokončení vytěžování znamená úspěch **nebo evidovanou chybu** u každého dokladu.
+  Chyba jednoho dokladu neblokuje ostatní ani otevření kontroly hotové dávky.
+- Každý doklad se odesílá zvlášť explicitním tlačítkem. Hromadné schválení či
+  automatické odeslání celé dávky do ABRY není součástí této etapy.
+- Návrh provozního limitu je 50 souborů v dávce, stále nejvýše 10 MB na soubor;
+  počet má být konfigurovatelný. Uploady i zpracování mají omezený souběh.
+- Zachovat PDF/JPEG/PNG. Jeden PDF soubor je jeden doklad i při více stranách;
+  nerozdělovat PDF s několika různými doklady ani nespojovat jednotlivé fotky.
 
-1. Zachovat počáteční nuly; IČO je řetězec. Odstranit pouze povolené mezery a
-   popisek, ne libovolné znaky. U českého IČO ověřit osm číslic a kontrolní součet.
-2. Vyhledávat ve stejném rozsahu cílové firmy a země. Platné IČO + shoda jediného
-   aktivního profilu dovoluje použít jeho instrukce, pokud identita není sporná.
-3. DIČ normalizovat na velká písmena bez mezer. Nerozebírat české DIČ fyzické osoby
-   na domnělé IČO. Při rozporu IČO a uloženého DIČ nepoužít profil automaticky.
-4. Samotný název nestačí k automatickému použití uložených instrukcí. Lze podle
-   něj nabídnout kandidáty k ručnímu výběru. Neprovádět automatické slučování.
-5. Pokud nelze bezpečně určit zemi/identitu, nebo první výsledek označuje více
-   dodavatelů, pokračovat druhým dotazem se společným zadáním bez zvláštních
-   instrukcí. U formuláře zviditelnit důvod; nedělat třetí automatický dotaz.
-6. Platný výsledek „neznámý dodavatel“ je jiný než HTTP chyba nebo poškozený JSON.
-   Při selhání volání první fáze viz pravidla obnovy níže.
-7. Druhý výsledek nesmí skrytě přepsat vybranou identitu. Zjistí-li jiné IČO/DIČ,
-   zobrazit rozpor, nepřepojovat profil ani nic v něm neukládat. Vyžádat kontrolu
-   před použitím výsledku; žádné automatické odeslání do ABRA.
+## 2. Kde jsme skutečně skončili
 
-První implementace může automaticky párovat jen validní česká IČO. DIČ jako
-náhradní klíč profilu musí být výslovně potvrzené obsluhou; bez něj lze použít
-obecné vytěžení. Rozšíření na zahraniční identity není podmínkou pilotu.
+### 2.1 Současný tok jednoho dokladu
 
-## 5. Datový model a migrace
+1. `/admin/incoming-documents` je seznam, `/admin/incoming-document-form` nový
+   formulář, `/admin/incoming-document-form/:id` jeho detail. Staré detailové
+   adresy také vedou na nový formulář. Přístup chrání existující admin PIN.
+2. Formulář přijímá jeden soubor (`max_entries: 1`), nejvýše 10 MB.
+   `IncomingDocuments.upload/5` uloží soukromý originál do DB, hash, šablonu,
+   cílovou firmu a externí ID a **ihned** založí extrakční běh i Oban job.
+   Neexistuje oddělená příprava dávky před spuštěním.
+3. Nový `header_form` běh má identifikaci dodavatele a obecné čtení hlavičky/DPH.
+   Pokud se přiřadí profil s neprázdnými instrukcemi, následuje samostatný
+   dodavatelský dotaz. Celkem tedy dvě nebo tři AI volání.
+4. Samostatný dotaz dostává originál a dodavatelský úkol se stručným systémovým
+   kontraktem a striktním JSON schématem. Nedostává obecné zadání ani předchozí
+   odpověď. Není to zcela volný chatový dotaz. Vrací řídká pole `field`, `value`,
+   `source_text`, případně DPH a nejasnosti. Výslovná hodnota přepíše obecný odhad,
+   `null` jej smaže. Obecný, cílený a sloučený výsledek zůstávají v historii.
+5. Bezpečně se automaticky páruje české IČO s kontrolním součtem; DIČ jako klíč
+   profilu se volí ručně. Profily jsou oddělené podle normalizované URL a firmy
+   ABRA. Mají revize, limit 8 000 znaků a ochranu proti souběžnému přepsání.
+6. Nové běhy mají položky výchozně vypnuté. API schéma pole `items` vůbec
+   nepožaduje; interní prázdné pole se doplní až po validaci. Volitelný přepis
+   položek je jen text do poznámky, nikoli položkové účtování.
+7. Formulář nabízí hlavičku, návrhy dat a souhrnnou DPH v CZK (0/12/21 %),
+   originál, instrukce, historii, účetní předpis a volitelný ABRA dry-run.
+   Neúplné údaje lze ručně doplnit. Uložením vzniká validované XML.
+8. Explicitní odeslání převádí uložené XML na nativní JSON ABRA. Zachovává externí
+   ID, kontrolu duplicitního přenosu, zámky a neměnné `sent_xml`. Nejasný výsledek
+   skutečného importu se pouze ověřuje podle externího ID; POST se neopakuje.
 
-Použít Ecto migrace, UUID, UTC časová razítka, FK a databázové constrainty.
-Názvy níže jsou návrh pro implementaci, nikoliv existující tabulky.
+### 2.2 Běhy, chyby a obnova
 
-### `incoming_supplier_profiles`
+`ExtractionRuns` ukládá generaci, source hash, instrukce, schémata, revizi profilu,
+výsledky, model a usage jednotlivých fází. Každá fáze rezervuje placené volání
+pod DB zámkem; HTTP probíhá mimo transakci. Pozdní výsledek nesmí přepsat nový
+běh, jiný zdroj nebo odeslaný doklad. Oban retry není nový placený pokus.
+Po nejisté rezervaci musí další pokus výslovně vyvolat obsluha.
 
-| Pole | Význam |
+Obsahové opakování s profilem provede dvě volání bez nové identifikace. Nové
+určení dodavatele vytvoří úplný běh. Před opakováním se archivuje pracovní návrh
+a zneplatní XML/dry-run; návrh lze po neúspěchu vědomě obnovit. Uložení instrukcí
+pro příště nevolá AI. Uložení instrukcí a nový běh jsou jedna transakce.
+
+Selhání samostatného dodavatelského dotazu nyní znamená neúspěšný běh. Obecný
+výsledek zůstává v historii, ale automaticky se neoznačí jako hotový návrh.
+Dávky toto pravidlo zachovají a nabídnou ruční opravu nebo nový běh.
+
+### 2.3 Důležité opravy a poznatky z tohoto vlákna
+
+- **Skutečně použitý model:** aplikace čte `INCOMING_DOCUMENTS_OPENAI_MODEL`,
+  nikoli model vybraný v Codexu. V neúspěšném pokusu historie ukázala
+  `gpt-4o-mini`, přestože uživatel očekával Sol. Shellový zápis
+  `${INCOMING_DOCUMENTS_OPENAI_MODEL:-gpt-6.1-sol}` zachovává již nastavenou hodnotu.
+  Pro lokální změnu použít `export INCOMING_DOCUMENTS_OPENAI_MODEL=gpt-6.1-sol`,
+  restartovat běžící aplikaci a založit nový běh. Model se nyní připíná od první
+  rezervované fáze daného běhu, ne už při vytvoření uploadu.
+- Uživatel po nápravě modelu hlásil výrazně lepší výsledek. Nejde o systematicky
+  změřenou přesnost. Příklad PENNY byl číslo za `EV-Č` v patičce, zaměňované
+  za číslo soudu v hlavičce. Nevkládat konkrétní očekávané číslo do obecných promptů.
+- **První běh přerušený, opakování funkční:** DB původně povolovala maximálně
+  dvě volání. Úplný běh potřebuje tři, obsahové opakování dvě. Migrace
+  `20261106130000` upravila constraint na 0–3. Worker zaznamená bezpečný typ
+  výjimky a srozumitelný důvod ihned. Nevracet se k prostému navýšení Oban retry.
+- **Zavírající se sekce:** `<details>` mají stabilní ID a
+  `phx-mounted={JS.ignore_attributes("open")}`. Aktualizace nesmí obnovovat celý
+  editor nebo ničit neuložené opravy. Zachovat i při novém kontrolním rozhraní.
+- Souhlasové checkboxy byly odstraněny. Tlačítka vyjadřují akci; validace,
+  varování, ochrana neuložených změn a přenosové zámky zůstávají.
+- `SourceImages` posílá originál a u dlouhých účtenek překrývající se výřezy,
+  pokud je dostupný ImageMagick. Opakované obrazové vstupy mohou být drahé;
+  historie ukazuje skutečné usage. Přesnost ani cenu nezaručuje samotná délka promptu.
+
+### 2.4 Nasazení a dosavadní ověření
+
+Po předchozích migracích přijatých dokladů jsou nutné také:
+
+| Migrace | Účel |
 | --- | --- |
-| `id` | UUID profilu |
-| `base_url`, `company_id` | Namespace cílové ABRA, převzatý z uloženého dokladu |
-| `country_code`, `identity_kind`, `identity_value` | Normalizovaná země a klíč `ic`/ručně potvrzené `dic` |
-| `name`, `ic`, `dic` | Zobrazovaná identita; žádné odhadované doplňování z názvu |
-| `instructions` | Prostý text, navržený limit 8 000 znaků |
-| `revision` | Celé číslo pro optimistický zámek, zvýšit při každé změně |
-| `deleted_at`, timestamps | Vyřazení bez ztráty návaznosti historie |
+| `20261106090000` | Dodavatelské profily, extrakční běhy, aktivní vazba a constrainty |
+| `20261106120000` | Samostatná dodavatelská fáze a oddělené výsledky |
+| `20261106130000` | Povolit tři volání při prvním úplném běhu |
 
-Normalizovat základní URL konzistentně se stávající konfigurací (např. koncové
-lomítko), nevyvozovat shodu různých hostů. Aktivní unikátní index:
-`(base_url, company_id, country_code, identity_kind, identity_value)` s podmínkou
-`deleted_at IS NULL`. Stejné IČO nemá mít v jednom namespace více aktivních profilů.
-Při souběžném prvním uložení využít constraint a vrátit srozumitelnou kolizi.
-Prázdné instrukce znamenají společné zadání; neukládat automaticky prázdné profily
-pro každého neznámého dodavatele. Profil vzniká až výslovným uložením obsluhou.
+Lokálně je potřeba `mix ecto.migrate`, restart a nový běh; staré neúspěšné běhy
+se samy nezopakují. Starší uložené kontrakty zachovávají původní počet fází.
+Historii ani zmrazené odeslané doklady nepřepisovat.
 
-### `incoming_extraction_runs`
+Při opravě konkrétního přerušování byly lokálně spuštěny cílené testy s Req.Test:
+28 testů běhů, 48 souvisejících testů kontextu/workflow/dodavatelského kontraktu
+a 15 testů formuláře prošlo. Následné nesouvisející CI opravy ve stejném PR
+(jednodenní pobyty leaderboardu, helper reportů a chybějící validační flash
+při zakládání barového účtu) byly ověřeny 21 cílenými testy. Tyto počty nejsou
+výsledek celé CI sady. Kompilace s `--warnings-as-errors` a formátování prošly.
 
-Jeden záznam pro každý nový běh, včetně opakování. Navržená pole:
+Živé OpenAI/ABRA požadavky agent při ověřování neprováděl. Zbývá pilot na více
+soukromých dokladech různých dodavatelů, měření oprav, času a usage. Stav CI
+ověří uživatel. Úprava tohoto plánu sama nepřidává implementaci ani nové testy.
 
-- `id`, `document_id`, `generation`, `mode` (`identify_and_extract` / `extract_only`).
-- `source_sha256`, snapshot cílové firmy, `strategy`, stav a `active_step`.
-- Výsledek identifikace, normalizovaná identita, způsob výběru (`exact_ic`,
-  `manual`, `none`) a nullable `supplier_profile_id`.
-- `profile_revision`, **plné znění** použitých dodavatelských instrukcí a hash.
-- Přesné společné zadání nebo jeho obsahový snapshot, jeho verze/hash a verze
-  výstupních schémat; nestačí jen odkaz na aktuální soubor v `priv`.
-- Oddělená metadata obou fází: model, stav, rezervace/attempt token, časy,
-  počet pokusů, HTTP stav, bounded raw output, usage a srozumitelná chyba.
-- Výsledek druhé fáze, a snapshot předchozího pracovního návrhu při ručním
-  opakování, aby opravy nebyly nevratně ztraceny.
-- Timestamps; dokončené výsledky běhů a snapshoty dále nepřepisovat.
+## 3. Uživatelský průchod dávkou
 
-Na `incoming_documents` přidat nullable `active_extraction_run_id`. Jednoznačně
-indexovat generaci v rámci dokladu; FK musí mířit na běh téhož dokladu (constraint
-nebo ekvivalentně vynucená vazba, ne jen volný UUID bez ověření). Výběr profilu
-aktuálního běhu lze číst přes tuto vazbu; neduplikovat jej nezávisle ve třech místech.
+### Příprava a nahrávání
 
-Staré doklady mají vazbu null. Nezakládat jim zpětně fiktivní běhy ani nevolat AI.
-Při nasazení zohlednit již zařazené Oban joby bez `run_id`: buď je dokončit
-starou větví, nebo pod zámkem jednoznačně převést na nový běh před prvním AI
-voláním. Chybějící argument nesmí při každém Oban retry vytvářet další běh.
+Na seznamu přijatých dokladů přidat „Nová dávka“ a přehled předchozích dávek;
+stávající „Nový doklad“ a ruční formulář zachovat.
 
-Původní `extracted_data`, `edited_data` a XML dál slouží aktuálnímu formuláři.
-`extraction_metadata` může obsahovat stručný kompatibilní přehled, zdrojem pravdy
-pro nový proces je běh. Nezdvojovat do něj všechny binární originály.
+1. Vybrat kategorii a případně název dávky (jinak výchozí název podle kategorie
+   a času). Zobrazit cílovou firmu a výchozí účetní nastavení.
+2. Kategorie mapovat na dnešní agendy:
+   **Faktury → `faktura-prijata`**, **Hotově → `pokladni-pohyb`**,
+   **Kartou → `zavazek`**. Použít existující šablony a předpisy, nikoli AI výběr.
+3. Umožnit společný výběr účetního předpisu z ABRY. Převzít validovaný snapshot
+   použitelný pro danou agendu; u jednotlivých dokladů jej lze později změnit.
+   Nedávat všem stejné interní číslo `kod` ani společné částky/data. Interní číslo
+   nechat standardně přidělit ABŘE. Ostatní výchozí nastavení odpovídá šabloně agendy.
+4. Vybrat více souborů, ukázat jednotlivé průběhy, chyby a seznam již uložených
+   originálů. Upload sám provede **nula AI volání a nevloží extrakční job**.
+   Úspěšně uložené soubory musí přežít obnovu stránky; nedokončený přenos se
+   nezobrazuje jako uložený. Soubor s chybou nevrací zpět úspěšné uploady.
+5. Před spuštěním lze soubor odebrat a doplnit jiný. Prázdnou dávku nelze spustit.
+   Probíhající upload musí doběhnout nebo být odstraněn ze seznamu.
+6. „Spustit vytěžování N dokladů“ uzamkne složení a nastavení dávky, ukáže
+   skutečně nakonfigurovaný model a založí běhy/joby. Dvojklik je idempotentní.
+   Žádný další souhlasový checkbox.
 
-## 6. Orchestrace dvou dotazů a obnova
+Duplicitní soubor: dnešní `duplicate?/1` pouze varuje a nebrání vložení. Pro
+novou dávku navrhujeme stejný hash uvnitř dávky nepřidávat podruhé; opakování
+uploadového požadavku vrátí existující položku. U shody s jinou dávkou/dokladem
+zobrazit odkaz a stav, standardně nový doklad vynechat. Pokud jej obsluha vědomě
+potřebuje znovu, samostatná akce „Přesto přidat“ bez checkboxu. Srovnávat v cílové
+firmě; jde o shodu souboru, ne důkaz totožnosti dvou různých fotek téže účtenky.
+Stávající jednotlivé uploady nemusí měnit své chování.
 
-Přidat samostatnou větev orchestrátoru pro `header_form`; nesnažit se nový tok
-implementovat obecnou smyčkou stávajícího `transcribe/3`. Staré strategie zachovat.
-Návrh rozdělení: `SupplierIdentity`, `SupplierProfiles`, `ExtractionRun`, rozšířený
-`Extractor` a kontextové orchestrace v `IncomingDocuments`. Doménová logika
-nepatří do LiveView.
+### Zpracování na pozadí a upozornění
 
-### První běh
+Po spuštění zobrazit počty: čeká / zpracovává se / vytěženo / chyba. Zavření
+prohlížeče nesmí zastavit joby. Neposílat všechny doklady jedním AI dotazem:
+každý používá vlastní současný bezpečný tok a vlastní historii.
 
-1. V krátké transakci zamknout doklad, ověřit, že nemá `sent_xml` ani aktivní
-   kolidující operaci, založit běh a nastavit aktivní generaci. Job obsahuje
-   `document_id` i `run_id`; uniqueness musí rozlišovat běhy a zároveň nedovolit
-   dva aktivní běhy stejného dokladu.
-2. Připravit obrazové vstupy přes `SourceImages`; pro obě fáze použít stejný
-   privátní originál. Výřezy lze v jednom workeru sdílet v paměti. Po restartu je
-   případně znovu vytvořit z téhož souboru, nikoliv z jiného uploadu.
-3. Rezervovat identifikační volání pod zámkem; síťový požadavek provést mimo
-   transakci. Použít stejný konfigurovaný model, malý výstupní limit (návrh 2 000
-   tokenů), krátké zadání, `store=false`, bez automatického HTTP retry.
-4. Uložit výsledek pouze při shodě `run_id`, fáze, tokenu rezervace a source hashe.
-5. Vybrat profil podle části 4. Bezpečně načíst jednu revizi a uložit její text
-   do běhu **před** rezervací druhého volání. Změna profilu během volání již
-   nesmí změnit toto zadání. Při změně cílové konfigurace firmy nepoužít pravidla
-   jiné firmy; zachovat stávající ochranu cíle.
-6. Rezervovat druhé volání a odeslat společné zadání + snapshot instrukcí +
-   identitu jako kontext + originál. Výstupem je dnešní striktní `Transcription`.
-7. Zkontrolovat strukturu, případný rozpor identity a předat výsledky stávajícím
-   `HeaderForm`/`FormSuggestions`. Neúplné faktické údaje jsou editovatelný návrh,
-   ne důvod automaticky volat třetí dotaz. XML vzniká uložením formuláře jako dnes.
-8. Dokončit běh a přepsat aktuální návrh jen při shodě aktivní generace. Pozdní
-   výsledek lze uchovat v historii, nikdy jím nepřepsat nový běh nebo odeslaný doklad.
+Kontrolní průchod dávkou se zpřístupní, až všechny její první běhy skončí
+úspěchem nebo chybou. Upozornění např. „Dávka Kartou je připravena ke kontrole:
+18 vytěženo, 2 vyžadují zásah“ zůstane v přehledu přijatých dokladů i po návratu
+uživatele, nebude to jen pomíjivý flash. Pokud selže všechno, nabídnout řešení
+chyb, nehlásit úspěšné vytěžení. Čekající nebo běžící job nelze počítat za hotový.
 
-### Limity, chyby a opakování
+Přehled dávky během běhu umožňuje vidět průběh a důvody chyb; nenabízí postupnou
+kontrolu dříve. Při startu průchodu kontrolou znovu ověřit připravenost na serveru.
+Následné ruční opakování jednoho dokladu z již připravené dávky neuzamkne znovu
+kontrolu ostatních; blokuje práci jen na tom konkrétním dokladu.
 
-- Základní běh má nejvýše jedno volání identifikace a jedno vytěžení. Oba pokusy
-  se evidují samostatně; pouhý čítač 2 nezabrání dvěma totožným voláním.
-- Rozlišit Oban retry od nového běhu vyvolaného uživatelem. Dokončená identifikace
-  se při obnově nezopakuje, pokračuje se následující dosud nerezervovanou fází.
-- Po timeoutu, pádu mezi rezervací a uložením výsledku nebo přerušení procesu
-  není jisté, zda poskytovatel už dotaz provedl. Automaticky jej znovu neposílat;
-  zobrazit přerušenou fázi a nabídnout vědomý nový pokus. Neslibovat exactly-once
-  zpracování mimo naši DB bez podporovaného idempotency mechanismu poskytovatele.
-- Chyba identifikace: zachovat metadata, zpřístupnit ruční vyplnění, nový běh nebo
-  výslovné „Vytěžit bez určení dodavatele“ (nový běh jen druhé fáze bez profilu).
-- Chyba druhé fáze: zachovat identitu i snapshot; ruční opakování druhé fáze tvoří
-  nový běh s doloženým původem identity, ne třetí volání téhož běhu.
-- Ruční „znovu určit dodavatele“ vždy vytvoří nový plný běh. Úprava souboru nebo
-  jeho hashe zneplatní možnost převzít předchozí identifikaci.
-- Při zahájení opakování uložit předchozí návrh do historie a zneplatnit `dry_run`,
-  kontrolní checkbox a aktuální schvalovatelný XML návrh. Nikdy neodeslat starou
-  validaci zatímco vzniká nový výsledek. Neúspěch dovolí výslovně obnovit starý
-  pracovní návrh, s novou kontrolou; ne tiše znovu schválit starý stav.
-- Přenos do ABRA, stav `sending`, `sent`, `uncertain` a jakýkoliv `sent_xml` blokují
-  nové vytěžení i aplikaci jeho výsledků. Zůstává kontrola externí identity a
-  pravidlo, že nejistý zápis se pouze ověřuje, nikoliv opakuje.
+### Postupná kontrola a odeslání
 
-Interní fáze ukládat do běhu, není nutné přidávat stav dokladu pro každý síťový
-krok. UI může dál používat `processing` s detailním popiskem fáze. Aktualizovat
-`worker_failed/2`, polling a guardy podle nové generace, ne pouze globálního stavu.
+- Otevřít první nevyřízený doklad; stabilní pořadí uploadu, ukazatel „3 z 20“,
+  stav a přehled zbývajících. Filtrovat nevyřízené, chybné/odložené a odeslané.
+- Na větší obrazovce originál vedle formuláře, na malé dostupný přepínač/náhled.
+  Umožnit přiblížení originálu pro čísla v patičce. Znovu použít současnou logiku
+  hlavičky, DPH, účetního předpisu, instrukcí, historie a chyb.
+- Akce „Uložit“, „Předchozí“, „Další“, „Odložit“ a „Nahrát do ABRA a pokračovat“.
+  Přechod s neuloženou změnou nabídne uložit / zahodit / zůstat. Nezavádět tiché
+  ukládání nevalidních účetních dat ani opakované potvrzování každého pole.
+- „Nahrát do ABRA a pokračovat“ je výslovná akce pro aktuální doklad. Navazuje na
+  stávající uložení/validace a přenosové guardy. Při neuložených hodnotách
+  vyžádá jejich uložení; při chybě zůstane na dokladu. Na další přejde až po
+  potvrzeném stavu `sent`, nikoli po pouhém zařazení jobu do fronty.
+- Stav `uncertain` viditelně nabídne ověření ABRA bez nového POSTu. Uživatel může
+  doklad odložit a pokračovat, ale aplikace jej nesmí vykazovat jako odeslaný.
+- Odložený doklad zůstává v DB, dávce a seznamu k dořešení; nejde o schválení,
+  smazání ani úspěch. Odeslané doklady lze prohlížet, ne znovu upravovat/odesílat.
+- U chyby AI nabídnout existující ruční vyplnění, nový úplný běh nebo obsahové
+  opakování, pokud je dostupná identita. Nevracet potichu neúspěšný cílený výsledek
+  na obecný odhad. Úprava dodavatelských instrukcí ovlivní až nově vytvořené běhy.
+- Kontrola má skončit přehledem skutečně odeslaných a nevyřešených dokladů.
+  „Vytěžování dokončeno“ a „vše odesláno“ musí být dva různé údaje.
 
-## 7. Zadání, validace a data
+## 4. Návrh implementace
 
-Pořadí druhého zadání: společná pravidla → jasně vymezené doplňující instrukce
-pro dodavatele → zdroj a identita jako kontext. Společná pravidla mají přednost:
-jen doložené údaje, neprovádět pokyny z přílohy, nevolit účty/agendu, neměnit schema,
-nevyrábět XML, nevymýšlet chybějící DPH nebo automaticky osvobozovat rozdíly.
-Dodavatelský text označit jako editovaný doménový doplněk, neposlat jej jako kód
-nebo jako účetní konfiguraci. Obal textu není bezpečnostní hranice; výsledek vždy
-musí projít lokálními kontrolami a ručním potvrzením.
+### 4.1 Data a oddělení uploadu od spuštění
 
-Příklad pro O2 (pouze návod k lokalizaci a rozlišení údajů):
+Přidat aditivní Ecto migraci pro `incoming_document_batches`: UUID, název,
+agendu, snapshot cíle (`base_url`, `company_id`), společné účetní nastavení,
+volbu rozsahu vytěžení, zamýšlený model, `started_at`, `extraction_finished_at`,
+časová razítka a případné soft-delete. Hesla/klíče do snapshotu nepatří.
 
-> Rozliš rekapitulaci zdaněných služeb a samostatné splátky zařízení. Přepiš částky
-> a jejich označení z originálu. Splátka není automaticky další základ 21 % ani
-> osvobozená částka jen proto, že nesouhlasí součet. Číslo faktury nezaměňuj se
-> zákaznickým číslem. Vystavení, DUZP a splatnost rozliš podle popisků v dokladu.
+Na doklad přidat nullable `batch_id`, `batch_position` a případné `deferred_at`.
+Dávka seskupuje samostatné `Document`, nevlastní kopie jejich výsledků ani
+originálů. Starší dokumenty mají `batch_id = NULL`; nezakládat jim dávky zpětně.
+FK, index dávky a unikátní pořadí v dávce vynutit v DB. Zachovat namespace cíle
+při vytvoření/přiřazení dokladu, nepřesouvat doklady mezi firmami.
 
-Model nemusí instrukci splnit spolehlivě; nevydávat instrukci za účetní důkaz.
-Společné limity souboru, povolená pole, Decimal, datumové návrhy a součty zachovat.
-Text, raw odpovědi a snapshoty jsou soukromé, bez HTML renderování a bez běžného
-logování. Neukládat klíče ani auth hlavičky. První dotaz také používá originál,
-takže dva dotazy neznamenají jen dvojnásobek malého textu — obrázky/PDF se posílají
-dvakrát. Sledovat usage každé fáze a běhů; ceny odhadovat jen při známém ceníku.
+Přidat jasný stav dokladu pro uložený originál před spuštěním (návrh `staged`),
+včetně DB constraintu. Dnešní `uploaded` znamená čekání na worker a UI jej
+považuje za busy; nepoužít jej pro neomezeně rozpracovaný upload. Nový stav musí
+řešit i seznam, detail, guardy, odebrání a kompatibilita starých jobů.
 
-## 8. Formulář a kontextové operace
+Rozdělit v kontextu uložení originálu od zahájení běhu. Zachovat současné
+`upload` API pro jednotlivý doklad jako složení obou kroků. Návrhy nových API:
+`create_batch`, `add_batch_source`, `remove_batch_source`, `start_batch`,
+`batch_progress`, `list_batch_documents`, `defer_document`.
+Logiku nenechávat v LiveView.
 
-Přidat rozbalovací sekci **Instrukce pro vytěžování dodavatele**:
+Při spuštění pod zámkem dávky ověřit stav, soubory, cílovou firmu a AI konfiguraci.
+Založit běhy a Oban joby atomicky se změnou stavu dávky, bez síťových požadavků
+v transakci. Pro omezenou dávku stačí jedna transakce; selhání zařazení nesmí
+zanechat půl dávky spuštěné. Souběžné přidání/odebrání používá stejný zámek.
+Nenačítat všechny binární originály do jedné velké kolekce jen pro start.
 
-- Rozpoznaný název/IČO/DIČ, způsob přiřazení, případné nejasnosti a cílová firma.
-- Rozlišit „neznámý dodavatel“, „známý bez instrukcí“ a „použita revize N“.
-- Vyhledatelný výběr existujícího profilu a možnost potvrdit identitu pro nový.
-  Použít stávající searchable picker, zejména nad 30 položkami.
-- Prostý textarea editor, délka, stav neuložených změn a aktuální revize.
-- **Uložit instrukce pro příště:** pouze změní profil; nevolá AI, neruší již
-  uložený návrh a nepřepisuje doklady téhož dodavatele.
-- **Uložit instrukce a znovu vytěžit:** nejprve uloží přes konkrétní revizi,
-  potom založí běh `extract_only` s novým snapshotem. Druhá fáze běží nad stejným
-  originálem a výslovně zvolenou identitou. Upozornit na nahrazení ručních oprav
-  a zrušení kontroly, stejně jako při dnešním opakování.
-- **Znovu určit dodavatele:** nový úplný běh. Žádný skrytý první dotaz při každém
-  uložení textu nebo opravě pole.
-- Rozlišit text aktuálního profilu a přesné instrukce posledního běhu; nová revize
-  sama nemění starý výsledek. Historii běhů zobrazit střídmě, detaily až po rozbalení.
+Společné účetní nastavení připravit validovaně před startem, kopírovat do dokladů
+jako snapshot. Nenahrávat účetní číselník jednou pro každý doklad.
+`save_accounting/3` dnes pracuje pouze v `review`/vybraném `failed` stavu;
+není hotovým API pro nastavení dávky. Sdílet jeho validátory, neobcházet je.
 
-Oprava `nazFirmy`/IČO ve finanční hlavičce sama nesmí ukládat instrukce pod nový
-profil ani přepojovat původní profil. Změnu příslušnosti potvrdit odděleně; nový
-výběr sám neopraví dodavatele v dokladu a nespustí AI. Nezaměnit identitu vystavitele
-s naší firmou či cílem importu. Při neuloženém editoru jasně sdělit, že běh používá
-poslední uloženou revizi, nebo akci zablokovat a nabídnout výslovné uložení.
+Model pro dávku připnout při explicitním startu do všech prvních běhů a používat
+jej i při přípravě obrázků a všech fázích. Aktuální kód jej připíná až při první
+rezervaci; tuto mezeru pro čekající dávky odstranit. Změna env při restartu nesmí
+část již spuštěné dávky skrytě převést na jiný model. Obecné instrukce a schémata
+snapshotovat při založení běhu; profil dodavatele až při jeho identifikaci,
+stejně jako dnes. Změna profilu může ovlivnit dosud neidentifikované doklady,
+nikoli už uložený snapshot; revizi zobrazovat pro každý doklad zvlášť.
 
-Navržená kontextová API: `identify_supplier`, `resolve_supplier_profile`,
-`save_supplier_instructions(expected_revision)`, `start_extraction_run`,
-`retry_content_extraction`, `restore_draft_from_run`, `list_extraction_runs`.
-Finální názvy přizpůsobit kódu. LiveView jen validuje formulářový vstup a volá kontext.
-Uložení profilu a následné založení jobu buď koordinovat transakcí, nebo srozumitelně
-vrátit „instrukce uloženy, nové vytěžení se nepodařilo zařadit“; nikdy hlásit spuštění
-před úspěšným vložením do Obanu.
+### 4.2 Fronta, obnova a konec dávky
 
-Stejný admin PIN jako dnes. Profil je možné upravit pro příští doklady i při
-prohlížení odeslaného dokladu, ale opakování/výměna výsledku takového dokladu je
-zablokovaná. Bez originálu zůstává ruční formulář funkční a AI akce jsou nedostupné.
-Před přenosem blokovat neuložené změny samotného dokladu/účtování; oddělit od
-neuloženého globálního textu instrukcí, který uložený účetní payload nemění.
+Dnes `IncomingDocumentWorker` běží ve frontě `billing` s paralelismem 2,
+společně pro extrakci i přenos. Pro nové extrakce oddělit frontu (návrh
+`incoming_extraction`, zpočátku souběh 2); účetní odesílání nechat nezávislé.
+Zachovat zpracování již existujících jobů a dosavadní ochrany rezervací/generací.
+Neimplementovat smyčku, která znovu vytěží celou dávku při jedné chybě.
 
-## 9. Dotazy a souběh
+HTTP chyby a nejasné rezervace zůstávají viditelné u konkrétního běhu.
+Respektovat limity poskytovatele; žádné skryté opakování placeného požadavku.
+Samotný Oban retry může pokračovat jen dosud nerezervovanou fází. Nový placený
+pokus vyvolává obsluha a založí novou generaci konkrétního dokladu.
 
-- Automatické nalezení profilu: jeden indexovaný dotaz pro konkrétní namespace
-  a identitu. Detail: doklad + aktivní běh a případný profil hromadně/preloadem.
-- Seznam dokladů dál používá omezený výběr bez originálů a velkých JSON snapshotů;
-  nepřidávat načítání profilu či historie pro každý řádek. Historii načíst jedním
-  stránkovaným dotazem až pro otevřený doklad, nikoliv opakovaně při pollingu seznamu.
-- V implementaci doložit kontrolu N+1. Pokud vznikne a bude potřeba měnit řešení,
-  postupovat podle aktuálního AGENTS.md, upozornit a nechat schválit nápravu.
-- Dvě otevřená okna editoru: kontrola `revision` a srozumitelná kolize místo last-write-wins.
-- Dva workery: DB rezervace každé fáze, aktivní run/generation a unikátní job;
-  samotná Oban uniqueness neřeší všechny mezery při síťovém volání.
-- Změna profilu ve druhém okně během volání: dokončit starý snapshot, v UI uvést,
-  že existuje novější revize. Neprovádět automatické nové vytěžení všech dokladů.
+Konec dávky odvodit ze stavů všech jejích prvních běhů, ne z počtu úspěchů
+ani bezpodmínečného inkrementu čítače. Souběžná poslední dokončení musí nastavit
+`extraction_finished_at` idempotentně. Pozdní výsledek staré generace nesmí
+přepsat stav novějšího běhu ani znovu oznamovat dokončení dávky.
 
-## 10. Implementační kroky
+Zahrnout i havárii procesu/uzlu a vyčerpaný či zrušený Oban job: po obnovení
+aplikace se DB stav musí srovnat s joby. Vyřešit dohled/reconciliation, který
+po prokazatelném ukončení jobu označí rozpracovaný běh jako přerušený, bez nového
+AI volání. Pouhé stáří řádku není důkaz, že stále běžící HTTP požadavek skončil.
+Pád při zápisu posledního výsledku nebo ztracená notifikace nesmí nechat dávku
+navždy čekat; souhrn lze znovu odvodit z DB.
 
-- [x] Ověřit aktuální větev a PR, přečíst tento plán, AGENTS.md a současný návod.
-- [x] Migrace profilů, běhů a aktivní vazby; constrainty a kompatibilita starých dat.
-- [x] Čisté normalizace identity, kontrakt první fáze, přesné párování a kolize.
-- [x] Ukládání instrukcí s revizí a snapshots, bez volání modelu při běžném uložení.
-- [x] Oddělené metody Extractoru pro identifikaci a obsah, deterministické zadání.
-- [x] Orchestrace: rezervace obou fází, run ID v jobu, obnova, limity, stale výsledky.
-- [x] Jeden celý tok s existujícím profilem přes Req.Test; zachovat ABRA a formát výstupu.
-- [x] UI profil/editor, výběr, obě akce uložení, phase polling, přehled použité revize.
-- [x] Ruční oprava identity, neznámý dodavatel, opakování druhé fáze, obnova návrhu.
-- [x] Regrese ručního formuláře, starších strategií a již odeslaných dokumentů.
-- [x] Testy včetně souběhu a query chování; formátování podle AGENTS.md.
-- [x] Návod skutečně dodané funkce a aktualizace stavu tohoto plánu.
-- [ ] Provozní pilot O2 a dalšího dodavatele; vyhodnocení přesnosti, usage a nákladů.
+### 4.3 Rozhraní, upozornění a dotazy
 
-## 11. Ověření a podmínky dokončení
+Navržené routy jsou `/admin/incoming-document-batches`, detail `/:id` a kontrola
+`/:id/review/:document_id`. Umístit do stávající admin PIN session; ověřit,
+že kontrolovaný doklad opravdu patří dávce. Přímé současné routy zachovat.
+Znovu použít kontext/formulář, nevytvářet druhou implementaci účetního workflow.
 
-Všechny HTTP testy přes Req.Test, bez živých volání OpenAI, zápisů do ABRA nebo
-osobních dokladů ve veřejných fixtures. Výchozí pravidlo AGENTS.md ponechává běh
-testů CI; lokální běh jen podle jeho výslovných výjimek. Při psaní tohoto plánu
-žádné testy spuštěny nebyly.
+PubSub může po commitu signalizovat změnu; DB je zdroj pravdy. Po reconnectu
+načíst souhrn znovu a případně použít omezený fallback polling. Upozornění na hotové
+dávky odvodit z uloženého stavu v přehledu přijatých dokladů/dávek, takže přežije
+odchod ze stránky. Nepřidávat e-mail, push ani uživatelské účty kvůli notifikacím.
 
-### Automatické scénáře
+Stavy ostatních dokladů nesmějí znovu inicializovat právě otevřený formulář.
+Zachovat focus, neuložené hodnoty a otevřené `<details>`/picker; aktualizovat jen
+příslušné assigny/řádky. Načítání dalšího dokladu resetuje data vědomě až při
+navigaci. Select nad 30 položek musí používat vyhledávání.
 
-1. Známé validní IČO → přesně dva různé requesty, první bez instrukcí dodavatele,
-   druhý s přesným snapshotem; oba `store=false`, stejné zdrojové dokumenty.
-2. Neznámý dodavatel → druhá fáze obecná; neplatný/nejednoznačný identifikátor,
-   jiné IČO odběratele, shodný název firem a rozpor DIČ nesmějí použít cizí profil.
-3. Stejné IČO v jiné cílové firmě nesdílí instrukce; unikátní index drží souběžné
-   založení. IČO s úvodní nulou se nepoškodí, DIČ se nepřevádí na domnělé IČO.
-4. Dvojklik, dvě okna, změna revize během volání, dva workery a pozdní výsledek
-   předchozího běhu nezpůsobí více volání nebo přepis novějšího návrhu.
-5. Pád před voláním/po rezervaci/po identifikaci/po výsledku druhé fáze: již
-   potvrzené kroky se neopakují, nejasné volání vyžaduje ruční obnovu.
-6. Uložit instrukce → nula AI volání. Uložit a znovu vytěžit → jedno obsahové
-   volání s novou revizí a bez nové identifikace, pokud platí původ zdroje/identity.
-7. Změna source hashe, cílové firmy nebo rozpor nového dodavatele zabrání použití
-   nepříslušných instrukcí či aplikaci výsledku.
-8. Neúplná faktická data zůstávají editovatelná; invalid JSON, HTTP 429/5xx,
-   timeout a odmítnutí poskytovatele mají správnou fázi a nepřidají třetí dotaz.
-9. Zneplatnění starého dry-runu při opakování, archivace a vědomá obnova návrhu;
-   žádné změny `sent_xml`, přepis odeslaného dokumentu ani opakovaný POST ABRA.
-10. Uložení budoucích instrukcí ze sent dokladu změní profil, nikoliv doklad;
-    ruční formulář bez souboru funguje bez AI; admin PIN chrání nová data i operace.
-11. Text obsahující HTML nebo pokyny k přepsání účtů nemění typy/účty/agendu,
-    nezpůsobí vykonání HTML a nezruší lokální kontroly.
-12. Seznam a detail nemají N+1; metadata/přístupové logy neobsahují API klíč,
-    autorizační hlavičky ani neomezené obsahy souborů.
+Souhrnné počty získat agregací, seznam stránkovaným omezeným dotazem bez
+`original`, XML a velkých JSON/raw odpovědí. Fáze načíst joinem/omezeným preloadem,
+ne voláním `get!` a načítáním historie pro každý řádek. Originál načítat až pro
+otevřený doklad ze soukromého endpointu, nikoli 50 base64 náhledů do LiveView.
+Počet dotazů pro stránku nemá růst s počtem dokladů. Při zjištění skutečného
+N+1 postupovat podle AGENTS.md; tento plán nepředjímá výjimku z jeho pravidla.
 
-### Pilot a přijetí
+## 5. Implementační kroky další etapy
 
-Na několika různých dokladech O2 a alespoň jednom dalším opakujícím se dodavateli
-porovnat běžné zadání s uloženými instrukcemi. Zachovat různé doklady pro úpravu
-instrukcí a pro ověření, aby se úspěch neměřil jen na jediném opraveném vzoru.
-Porovnat správnost identity, DPH, splátky mimo DPH, vystavení/DUZP/splatnosti,
-ručních zásahů, času a usage. Instrukce nejsou hotové jen proto, že se uložily.
+- [ ] Načíst tento plán, AGENTS.md a návod; fetch aktuálního `origin/main`, ověřit
+  stav PR #100 a navázat na skutečně dodaný kód. Pokud je PR sloučený, nová větev
+  z main; pokud není, zachovat jeho změny a nesouběžně je nepřepisovat.
+- [ ] Migrace dávek, nullable vazby/pořadí, stavu před spuštěním a indexů.
+- [ ] Rozdělení uložení originálu a startu, idempotentní víceupload, duplicity,
+  částečné chyby uploadu a společné účetní nastavení.
+- [ ] Atomický start dávky, snapshot modelu, oddělená fronta a kompatibilita jobů.
+- [ ] Agregace výsledků, trvalé dokončení a obnova po havárii bez opakování AI.
+- [ ] Přehled dávek, průběh uploadu/zpracování a trvalé upozornění po dokončení.
+- [ ] Postupný kontrolní průchod nad současným formulářem, ochrana změn,
+  odložení, návrat a přechod po úspěšném individuálním přenosu do ABRY.
+- [ ] Cílené regresní testy níže, kontrola query chování, formátování/kompilace
+  podle AGENTS.md. Lokální testy jen dle jeho výjimek; ostatní ověří CI.
+- [ ] Aktualizovat uživatelský návod a tento plán podle skutečné implementace.
+- [ ] Ruční pilot několika dávek všech tří kategorií včetně chyby a návratu
+  po zavření stránky; zaznamenat rychlost kontroly, přesnost a usage.
 
-Hotovo znamená: celý tok proběhne, obsluha umí instrukce upravit bez odchodu
-z formuláře, další běh použije správnou revizi a její použití lze zpětně doložit.
-Neznámý dodavatel neblokuje obecné vytěžení a chyby nezpůsobí neřízená placená
-volání ani ohrožení účetních dokladů. Pilotní zlepšení popsat s konkrétními
-omezeními, neslibovat plnou přesnost či automatizaci.
+## 6. Ověřovací scénáře a podmínky přijetí
 
-## 12. Nasazení, rizika a otevřené body
+Testy AI a ABRA přes Req.Test, žádná skutečná placená volání ani účetní zápisy.
+Použít syntetické podklady bez soukromých účtenek v repozitáři.
 
-Migrace je aditivní, bez zpětného přepisování dokumentů. Zpočátku nevyžaduje jiný
-API klíč/model; první fáze má vlastní výstupní limit. Pokud bude potřeba řízené
-zapnutí, přidat explicitní konfigurační přepínač pro nový header tok a popsat jeho
-výchozí stav, nevyužívat existující čítač pokusů jako neviditelný feature flag.
-Návrat na starší aplikaci naplánovat přes vypnutí nového toku a dokončení/ukončení
-jeho jobů, ne přes destruktivní mazání tabulek se snapshoty.
+1. Nahrání několika souborů samo nevytvoří AI request ani extrakční job.
+   Refresh zachová úspěšné originály; vadný/velký soubor nezničí ostatní.
+2. Dvojklik startu, souběžné starty a opakovaný upload nevytvoří duplicitní
+   dokument/běh/job. Konflikt vložení jobu vrátí celou startovací transakci.
+3. Kategorie určuje správnou agendu/šablonu a společný předpis. Individuální
+   změna neovlivní další doklady. Žádné společné interní číslo ani změna cílové firmy.
+4. Každý doklad dostane pouze svůj originál a správný profil; žádná data jiného
+   dokladu v promptu. Bez profilu dvě volání, s instrukcemi tři, položky vypnuté.
+5. Skutečný model odpovídá snapshotu startu, i po restartu se změněnou env.
+   Identifikace, obsah, cílená fáze i příprava obrazů respektují stejnou volbu.
+6. Smíšený výsledek (úspěch, neúplná data, HTTP chyba, přerušená rezervace)
+   dokončí dávku po ukončení všech běhů a správně rozdělí počty. Totéž při samých
+   chybách. Běžící/čekající dokument nezpřístupní kontrolu celé dávky předčasně.
+7. Restart workeru, vyčerpaný job, ztracený PubSub event a pád při označení konce
+   dávky se dají obnovit z DB; žádný automatický opakovaný placený request.
+8. Retry jedné položky připravené dávky nemění hotové návrhy ostatních. Pozdní
+   odpověď a duplicitní notifikace nevytvoří druhý výsledek nebo falešné počty.
+9. Postupná kontrola zachová pořadí, odložení a uložené opravy po návratu.
+   Polling/PubSub nezavírá editor ani nepřepisuje neuložené hodnoty/focus.
+   Ověřit také v prohlížeči, nejen porovnáním HEEx atributů v testu.
+10. Odeslání je individuální; navigace až po `sent`. Chyba zůstane viditelná,
+    `uncertain` pouze ověřuje externí ID, opakovaný klik nevyvolá druhý POST.
+    Odeslaný doklad je neměnný. Žádné souhlasové checkboxy nepřibudou.
+11. PIN chrání seznamy, detail, akce i originály; cizí document ID v routě dávky
+    se odmítne. Starší jednotlivé/ruční doklady a existující joby dál fungují.
+12. Počet dotazů při zobrazení stránky je konstantní; binární originály a velké
+    výsledky se nenačítají do seznamu. Účetní číselník se nestahuje pro každý řádek.
 
-Před implementací potvrdit nebo vědomě přijmout navržené výchozí volby:
+Hotovo znamená: obsluha připraví dávku, spustí ji jednou, může odejít, po návratu
+vidí skutečný souhrn a až po ukončení všech prvních běhů postupně projde návrhy
+i chyby. Každý účetní zápis zůstává vědomou akcí pro konkrétní doklad a žádná
+chyba jednoho dokladu nevyžaduje nové vytěžení celé dávky.
 
-- Profily izolovat pro cílovou firmu ABRA, nebo mají být někdy sdílené? Návrh je
-  izolovat, což lze dodat bez čekání na širší sdílený adresář.
-- Má první verze podporovat automatický klíč DIČ i mimo ČR? Návrh je CZ IČO,
-  jiné případy ručně; tato otázka neblokuje český pilot.
-- Je potřeba oddělit pravidla podle agendy/typu dokladu téhož dodavatele?
-  Návrh je zatím jediný text s popsanými výjimkami; další členění až po zkušenosti.
-- Doba uchování historie a případné vyřazování profilů se musí sladit s existujícím
-  provozním ukládáním účetních podkladů. V první verzi historii automaticky nemazat.
+## 7. Mimo tuto etapu a zbývající nejistoty
 
-Hlavní rizika: chybná identita vybere špatné instrukce; starší text přestane
-odpovídat novému layoutu; dvojí obrazový vstup zvýší cenu a odezvu; dlouhé instrukce
-zhorší výkon; nekontrolované retry zvýší počet volání. Omezit je přesným párováním,
-snapshoty, editorem s limitem, samostatnými rezervacemi a měřením pilotu.
+Mimo rozsah: více fotek jednoho dokladu, rozdělování PDF, AI určování kategorie,
+položkové účtování, automatické schválení/odeslání, externí notifikace, OpenAI
+Batch API, vlastní registr kategorií, automatické učení instrukcí, ARES a
+automatické zakládání partnerů ABRA. „Dávka“ je aplikační skupina samostatných
+běhů přes dnešní Responses API, nikoli změna API poskytovatele.
 
-## 13. Předání implementace
+Potvrzené produktové otázky jsou uzavřené. Pilot má ověřit rozumný počet souborů,
+souběh, cenu opakovaných obrazových vstupů, přesnost a pohodlí kontroly.
+Před plošným použitím zkontrolovat paměť při nahrávání a růst DB s originály;
+pro tento objem zatím zachovat soukromé DB úložiště, neplánovat nevyžádanou
+migraci na externí storage. Pouhá shoda hashe neodhalí různé fotky stejného dokladu.
 
-**Dodáno:** migrace `20261106090000`, striktní identita a normalizace, firemně
-izolované profily s revizemi, dvoufázový orchestrátor `ExtractionRuns`, samostatné
-rezervace placených volání, snapshoty, kompatibilita starších jobů, obsahové
-opakování, obecné vytěžení, obnova ručního návrhu a editor ve formuláři včetně
-vyhledávání a historie. Nové běhy nemění přenosové JSON/XML kontrakty ABRA.
+## 8. Mapa kódu pro pokračování
 
-Přijaty návrhové výchozí volby: namespace cílové firmy, automaticky jen české
-IČO, DIČ ručně, jeden text na profil, bez automatického mazání historie. Není
-přidán přepínač; každý nový běh `header_form` používá dvě fáze. Uložení profilu a
-nového obsahového jobu je jedna transakce. Obnovený návrh nemá schvalovatelné XML,
-musí znovu projít kontrolou a uložením formuláře.
+| Soubor | Co zde hledat / změnit |
+| --- | --- |
+| `lib/cozy_checkout/incoming_documents.ex` | Upload spojený se startem, seznam omezený na 100, uložení/přenos/účetní nastavení |
+| `lib/cozy_checkout/incoming_documents/document.ex` | Doklad, soukromý originál, stavy, nová vazba na dávku |
+| `lib/cozy_checkout/incoming_documents/extraction_runs.ex` | Zámky, generace, snapshoty, start_locked, rezervace, dokončení/chyby |
+| `lib/cozy_checkout/incoming_documents/extraction_run.ex` | Schéma historie běhu |
+| `lib/cozy_checkout/incoming_documents/extractor.ex` | Responses API a tři oddělené kontrakty |
+| `lib/cozy_checkout/incoming_documents/source_images.ex` | Originál/výřezy, příprava podle modelu |
+| `lib/cozy_checkout/incoming_documents/supplier_task.ex` | Řídká cílená odpověď, citace a slučování |
+| `lib/cozy_checkout/incoming_documents/accounting.ex` | Validace a převzetí účetního předpisu |
+| `lib/cozy_checkout/incoming_documents/header_form.ex` | Hlavička, souhrnná DPH a validace XML |
+| `lib/cozy_checkout/workers/incoming_document_worker.ex` | Sdílená billing fronta, bezpečné zachycení výjimek |
+| `lib/cozy_checkout_web/live/incoming_document_form_live.ex` | Aktivní seznam/detail, upload, dirty stav, polling, editor a historie |
+| `lib/cozy_checkout_web/router.ex` | Aktivní routy pod admin PIN |
+| `config/config.exs`, `config/runtime.exs` | Oban fronty a skutečná konfigurace AI/ABRA |
+| `test/cozy_checkout/incoming_documents/extraction_runs_test.exs` | Rezervace, chyby, source/model, snapshoty, souběh a query testy |
+| `test/cozy_checkout_web/incoming_document_form_live_test.exs` | Formulář, ochrana oprav, otevřené sekce, přímé akce |
 
-**Kontrola N+1:** seznam dokladů zůstává jedním omezeným dotazem bez binárních
-originálů. Přesné automatické párování používá jeden indexovaný dotaz. Detail
-načítá jeden aktivní běh a jeden profil; historii jedním stránkovaným dotazem
-pouze při otevření či změně běhu, nikoliv při každém pollingu seznamu. Testy
-kontrolují konstantní počet dotazů pro seznam, párování i stránku historie.
-
-**Ověření:** kompilace aplikace s `--warnings-as-errors`, kompilace změněných
-testovacích modulů bez spuštění a formátování s připnutým Elixir 1.20.4 / OTP 29.1.
-Lokální testy se podle AGENTS.md nespouštěly; výsledek GitHub CI ověří uživatel.
-Nebyly provedeny živé AI/ABRA požadavky ani migrace provozní databáze.
-
-**Zbývá:** ověřit CI a provést pilot podle části 11 na skutečných soukromých
-podkladech, popsat zlepšení i omezení. Bez pilotu není potvrzena přesnost, odezva
-ani cena dvoufázového vytěžování. Funkce se nasazuje standardní aditivní migrací.
-
-**Doplnění rozsahu vytěžování:** formulář nyní ve výchozím stavu vypíná načítání
-položek. Viditelný přepínač platí pro všechny nové a opakované běhy. Vypnutí
-používá samostatné hlavní zadání a menší API schéma bez `items`, nikoliv jen
-skrytí položek ve formuláři. Snapshot rozsahu je součástí běhu a historie.
-Stávající běhy zůstávají beze změny; není potřeba další migrace.
-
-**Změna podle následného zadání: samostatný dodavatelský dotaz.** Nové běhy s
-neprázdnými instrukcemi mají identifikaci, obecné čtení a další nezávislý dotaz,
-který dostane jen originál a úkol z instrukcí. Předchozí odpověď ani obecné zadání
-se nepředávají. Řídký výsledek s citací nahrazuje jen výslovně vrácená povolená
-pole; null odstraňuje obecný odhad. Původní obecný výsledek i cílená odpověď se
-uchovávají zvlášť. Každé volání má samostatnou rezervaci, metadata a usage.
-Bez instrukcí třetí volání není. Obsahové opakování s profilem nově znamená dvě
-volání bez nové identifikace. Vyžaduje migraci `20261106120000`; starší běhy se
-nemění a nepřibývají jim automatická volání. Původní dvoufázový návrh výše je
-historický podklad; aktuální postup je v návodu formuláře.
-
-**Oprava prvního běhu:** migrace `20261106130000` opravuje opomenutý původní
-constraint `extraction_attempts BETWEEN 0 AND 2`, který blokoval třetí fázi
-úplného běhu, zatímco ruční opakování se dvěma voláními procházelo. Nový rozsah
-je 0–3; rezervace, idempotence a limity jednotlivých fází se nemění. Worker ukládá
-bezpečný typ výjimky a srozumitelnou příčinu ihned, bez soukromého textu chyb.
-Příčina byla reprodukována a ověřena lokálními cílenými testy v režimu výjimky
-AGENTS.md pro hledání a opravu konkrétní chyby; žádné živé AI/ABRA volání.
+`IncomingDocumentsLive` je starší implementace bez aktivní routy; novou kontrolu
+nestavět omylem na něm. Přehled v tabulce je mapa, ne požadavek rozšiřovat jeden
+velký LiveView: nové dávkové kontexy/komponenty mohou současný formulář sdílet.
