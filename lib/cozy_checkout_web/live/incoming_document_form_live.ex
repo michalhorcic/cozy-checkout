@@ -66,8 +66,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           assign(socket,
             page_title: "Přijaté doklady",
             doc: nil,
-            documents: IncomingDocuments.list(),
-            batches: Batches.list()
+            documents: IncomingDocuments.list()
           )
 
         :new ->
@@ -115,7 +114,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
 
   def handle_info(:refresh, %{assigns: %{live_action: :index}} = socket) do
     Process.send_after(self(), :refresh, 5000)
-    {:noreply, assign(socket, batches: Batches.list())}
+    {:noreply, assign(socket, documents: IncomingDocuments.list())}
   end
 
   def handle_info(:refresh, %{assigns: %{doc: nil}} = socket), do: {:noreply, socket}
@@ -995,30 +994,45 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         >Přijaté doklady</.link>
       </div>
       <div :if={@live_action == :index} class="space-y-4">
-        <.link
-          navigate={~p"/admin/incoming-document-batches/new"}
-          class="btn btn-primary btn-lg w-full sm:w-auto"
-        ><.icon name="hero-camera" class="size-6" /> Nahrát doklady</.link>
-        <.link navigate={~p"/admin/incoming-document-form"} class="btn">Nový doklad ručně</.link>
-        <.link navigate={~p"/admin/incoming-document-batches"} class="btn">Přehled dávek</.link>
-        <p :for={row <- @batches} :if={row.batch.extraction_finished_at} class="alert alert-info">
-          Dávka {row.batch.name} je připravena ke kontrole: {row.extracted} vytěženo, {row.failed} chyb. Odesláno {row.sent} z {row.total}.
-          <.link navigate={~p"/admin/incoming-document-batches/#{row.batch.id}"} class="link">Otevřít dávku</.link>
+        <CozyCheckoutWeb.IncomingDocumentComponents.navigation active="documents" />
+        <p
+          :if={@documents == []}
+          class="rounded-xl border border-base-300 bg-base-100 p-6 text-base-content/60"
+        >
+          Zatím tu nejsou žádné doklady. Začněte nahráním dokladů nebo vytvořte doklad ručně.
         </p>
-        <div class="overflow-x-auto">
-          <table class="table" id="incoming-list">
-            <thead>
+        <div
+          :if={@documents != []}
+          class="rounded-xl border border-base-300 bg-base-100 overflow-hidden"
+        >
+          <table class="table w-full table-fixed" id="incoming-list">
+            <thead class="hidden md:table-header-group bg-base-200/50">
               <tr>
-                <th>Doklad</th><th>Agenda</th><th>Stav</th><th>Firma ABRA</th>
+                <th class="w-2/5">Doklad</th><th>Kategorie</th><th>Stav</th><th>Firma ABRA</th>
               </tr>
             </thead>
-            <tbody>
-              <tr :for={doc <- @documents}>
-                <td>
-                  <.link navigate={~p"/admin/incoming-document-form/#{doc.id}"} class="link">{doc.filename}</.link>
+            <tbody class="block md:table-row-group">
+              <tr
+                :for={doc <- @documents}
+                class="block p-4 space-y-2 md:table-row md:p-0 md:space-y-0"
+              >
+                <td class="block p-0 md:table-cell md:p-4">
+                  <.link
+                    navigate={~p"/admin/incoming-document-form/#{doc.id}"}
+                    class="link font-semibold break-words"
+                  >{doc.filename}</.link>
                 </td>
-                <td>{IncomingDocuments.agenda_label(doc.agenda)}</td><td>{state_label(doc.state)}</td><td>
-                  {doc.company_id}
+                <td class="block p-0 text-base-content/60 md:table-cell md:p-4">
+                  {IncomingDocuments.agenda_label(doc.agenda)}
+                </td>
+                <td class="block p-0 md:table-cell md:p-4">
+                  <span class={[
+                    "badge badge-outline h-auto py-1 whitespace-normal",
+                    CozyCheckoutWeb.IncomingDocumentComponents.document_state_class(doc.state)
+                  ]}>{state_label(doc.state)}</span>
+                </td>
+                <td class="block p-0 break-words text-base-content/60 md:table-cell md:p-4">
+                  <span class="md:hidden">Firma ABRA: </span>{doc.company_id}
                 </td>
               </tr>
             </tbody>

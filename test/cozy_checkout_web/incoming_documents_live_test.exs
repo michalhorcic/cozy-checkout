@@ -44,7 +44,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     conn = conn |> admin() |> get("/admin/incoming-documents/#{doc.id}/original")
     assert response(conn, 200) == "%PDF-test"
     assert get_resp_header(conn, "cache-control") == ["private, no-store"]
-    {:ok, view, _} = live(admin(build_conn()), "/admin/incoming-documents")
+    {:ok, view, _} = live(admin(build_conn()), "/admin/incoming-documents/all")
     assert has_element?(view, "#incoming-list")
     assert has_element?(view, "a[href='/admin/incoming-document-form/#{doc.id}']")
     refute has_element?(view, "#incoming-upload")

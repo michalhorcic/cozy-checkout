@@ -72,7 +72,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
   end
 
   test "PIN protects batch routes", %{conn: conn} do
-    for path <- ["/admin/incoming-document-batches", "/admin/incoming-document-batches/new"] do
+    for path <- [
+          "/admin/incoming-documents",
+          "/admin/incoming-documents/all",
+          "/admin/incoming-document-batches",
+          "/admin/incoming-document-batches/new"
+        ] do
       assert redirected_to(get(conn, path)) == "/admin/login"
     end
   end
@@ -212,7 +217,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
     assert_patch(view, "/admin/incoming-document-batches/#{batch.id}/review/#{one}")
     {:ok, index, _} = live(admin(build_conn()), "/admin/incoming-documents")
     assert render(index) =~ "Kartou test"
-    assert render(index) =~ "připravena ke kontrole"
+    assert has_element?(index, "#batch-list", "Ke kontrole")
+    {:ok, documents, _} = live(admin(build_conn()), "/admin/incoming-documents/all")
+    assert has_element?(documents, "#incoming-list")
+    refute has_element?(documents, ".alert-info", "Dávka")
   end
 
   test "failed-only batch presents errors and retry does not remove the completion notice", %{

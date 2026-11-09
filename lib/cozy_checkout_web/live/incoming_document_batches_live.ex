@@ -52,6 +52,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
             preset: String.replace_prefix(batch.accounting_settings["typUcOp"] || "", "code:", "")
           )
           |> reload()
+          |> maybe_open_review(params)
       end
 
     if connected?(socket), do: Process.send_after(self(), :refresh, 2000)
@@ -279,35 +280,147 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   defp review_id(rows),
     do: Enum.find(rows, &(&1.state != "sent" and is_nil(&1.deferred_at))) || List.first(rows)
 
+  defp maybe_open_review(socket, %{"review" => "true"}) do
+    if socket.assigns.batch.extraction_finished_at && review_id(socket.assigns.rows) do
+      push_navigate(socket,
+        to:
+          ~p"/admin/incoming-document-batches/#{socket.assigns.batch.id}/review/#{review_id(socket.assigns.rows).id}"
+      )
+    else
+      socket
+    end
+  end
+
+  defp maybe_open_review(socket, _), do: socket
+
+  defp batch_status(row) do
+    cond do
+      is_nil(row.batch.started_at) -> "Příprava"
+      is_nil(row.batch.extraction_finished_at) -> "Probíhá vytěžování"
+      row.sent == row.total -> "Vše odesláno"
+      row.failed > 0 -> "Ke kontrole · chyby vytěžení"
+      true -> "Ke kontrole"
+    end
+  end
+
+  defp batch_status_class(row) do
+    cond do
+      is_nil(row.batch.started_at) -> "badge-ghost"
+      is_nil(row.batch.extraction_finished_at) -> "badge-info"
+      row.sent == row.total -> "badge-success"
+      row.failed > 0 -> "badge-error"
+      true -> "badge-warning"
+    end
+  end
+
+  defp batch_action(row) do
+    cond do
+      is_nil(row.batch.started_at) -> "Pokračovat v nahrávání"
+      is_nil(row.batch.extraction_finished_at) -> "Zobrazit průběh"
+      row.sent == row.total -> "Otevřít dávku"
+      row.sent > 0 -> "Pokračovat v kontrole"
+      true -> "Zkontrolovat doklady"
+    end
+  end
+
+  defp batch_action_path(row) do
+    if row.batch.extraction_finished_at && row.sent < row.total,
+      do: ~p"/admin/incoming-document-batches/#{row.batch.id}?review=true",
+      else: ~p"/admin/incoming-document-batches/#{row.batch.id}"
+  end
+
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} content_class="mx-auto w-full max-w-7xl space-y-6">
       <h1 class="text-3xl font-bold">
-        {if @live_action == :new, do: "Nahrát doklady", else: "Dávky přijatých dokladů"}
+        {if @live_action == :index,
+          do: "Přijaté doklady",
+          else: if(@live_action == :new, do: "Nahrát doklady", else: "Dávka přijatých dokladů")}
       </h1>
-      <div class="flex gap-3 flex-wrap">
-        <.link navigate={~p"/admin/incoming-documents"} class="btn">Přijaté doklady</.link>
-        <.link navigate={~p"/admin/incoming-document-batches"} class="btn">Přehled dávek</.link>
-        <.link navigate={~p"/admin/incoming-document-batches/new"} class="btn btn-primary"><.icon
-          name="hero-camera"
-          class="size-5"
-        /> Nahrát doklady</.link>
-      </div>
+      <CozyCheckoutWeb.IncomingDocumentComponents.navigation
+        :if={@live_action == :index}
+        active="batches"
+      />
+      <.link
+        :if={@live_action != :index}
+        navigate={~p"/admin/incoming-documents"}
+        class="btn btn-ghost min-h-11"
+      ><.icon name="hero-arrow-left" class="size-4" /> Zpět na dávky</.link>
       <div :if={@live_action == :index} id="batch-list" class="space-y-4">
-        <article :for={row <- @batches} class="card bg-base-100 p-4 border">
-          <.link
-            navigate={~p"/admin/incoming-document-batches/#{row.batch.id}"}
-            class="link font-bold"
-          >{row.batch.name}</.link>
-          <p>{row.total} dokladů · Odesláno {row.sent} · Firma {row.batch.company_id}</p>
-          <p :if={row.batch.extraction_finished_at} role="status">
-            Vytěžování dokončeno: {row.extracted} vytěženo, {row.failed} chyb. Dávka je připravena ke kontrole.
-          </p>
-          <p :if={!row.batch.started_at}>Příprava — AI dosud nebyla spuštěna.</p>
-          <p :if={row.batch.started_at && !row.batch.extraction_finished_at}>Probíhá vytěžování…</p>
-        </article>
-        <button class="btn" phx-click="page" phx-value-delta="-1" disabled={@page == 0}>Předchozí stránka</button>
-        <button class="btn" phx-click="page" phx-value-delta="1" disabled={length(@batches) < 25}>Další stránka</button>
+        <p
+          :if={@batches == []}
+          class="rounded-xl border border-base-300 bg-base-100 p-6 text-base-content/60"
+        >
+          {if @page == 0,
+            do: "Zatím tu nejsou žádné dávky. Začněte tlačítkem Nahrát doklady.",
+            else: "Na této stránce nejsou další dávky."}
+        </p>
+        <div
+          :if={@batches != []}
+          class="rounded-xl border border-base-300 bg-base-100 overflow-hidden"
+        >
+          <table class="table w-full table-fixed">
+            <thead class="hidden md:table-header-group bg-base-200/50">
+              <tr>
+                <th>Dávka</th><th>Stav a průběh</th><th class="w-52">
+                  <span class="sr-only">Akce</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody class="block md:table-row-group">
+              <tr
+                :for={row <- @batches}
+                id={"batch-#{row.batch.id}"}
+                class="block p-4 space-y-3 md:table-row md:p-0 md:space-y-0"
+              >
+                <td class="block p-0 md:table-cell md:p-4">
+                  <.link
+                    navigate={~p"/admin/incoming-document-batches/#{row.batch.id}"}
+                    class="link font-semibold break-words"
+                  >{row.batch.name}</.link>
+                  <p class="mt-1 text-sm text-base-content/60 break-words">
+                    {IncomingDocuments.agenda_label(row.batch.agenda)} · Firma {row.batch.company_id}
+                  </p>
+                  <p class="mt-1 text-sm">Dokladů: {row.total}</p>
+                </td>
+                <td class="block p-0 md:table-cell md:p-4">
+                  <span class={[
+                    "badge badge-outline h-auto py-1 whitespace-normal",
+                    batch_status_class(row)
+                  ]}>{batch_status(row)}</span>
+                  <div :if={row.batch.started_at} class="mt-2 space-y-1 text-sm" role="status">
+                    <p>
+                      Vytěženo {row.extracted} z {row.total}<span class={
+                        row.failed > 0 && "text-error font-semibold"
+                      }> · Chyby {row.failed}</span>
+                    </p>
+                    <p>Odesláno do ABRA {row.sent} z {row.total}</p>
+                  </div>
+                </td>
+                <td class="block p-0 md:table-cell md:p-4 md:text-right">
+                  <.link
+                    navigate={batch_action_path(row)}
+                    class="btn btn-outline btn-sm min-h-11 w-full md:w-auto"
+                  >{batch_action(row)}</.link>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <nav
+          :if={@page > 0 || length(@batches) == 25}
+          aria-label="Stránkování dávek"
+          class="flex items-center justify-between gap-2"
+        >
+          <button class="btn min-h-11" phx-click="page" phx-value-delta="-1" disabled={@page == 0}>Předchozí</button>
+          <span class="text-sm">Strana {@page + 1}</span>
+          <button
+            class="btn min-h-11"
+            phx-click="page"
+            phx-value-delta="1"
+            disabled={length(@batches) < 25}
+          >Další</button>
+        </nav>
       </div>
       <.form
         :if={@live_action == :new}

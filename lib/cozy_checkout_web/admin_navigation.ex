@@ -98,6 +98,12 @@ defmodule CozyCheckoutWeb.AdminNavigation do
   def active?(path, "/admin/orders"),
     do: within?(path, "/admin/orders") or within?(path, "/admin/payments")
 
+  def active?(path, "/admin/incoming-documents"),
+    do:
+      within?(path, "/admin/incoming-documents") or
+        within?(path, "/admin/incoming-document-batches") or
+        within?(path, "/admin/incoming-document-form")
+
   def active?(path, target), do: within?(path, target)
 
   def secondary_path(path) do
