@@ -164,7 +164,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
          assign(socket,
            presets:
              Enum.map(rows, &%{id: &1["kod"], hint: "", name: "#{&1["kod"]} — #{&1["nazev"]}"}),
-           accounting_open: true
+           accounting_open: true,
+           accounting_query: nil
          )}
 
       {:error, reason} ->
@@ -181,10 +182,24 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   def handle_event("accounting-search", params, socket),
     do:
       {:noreply,
-       assign(socket, accounting_query: get_in(params, ["accounting_search", "0"]) || "")}
+       assign(socket,
+         accounting_query: get_in(params, ["accounting_search", "0"]) || "",
+         accounting_open: true
+       )}
 
-  def handle_event("accounting-select", %{"id" => id}, socket),
-    do: {:noreply, assign(socket, preset: id, settings_dirty: true, accounting_open: false)}
+  def handle_event("accounting-select", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.presets, &(&1.id == id)) do
+      {:noreply,
+       assign(socket,
+         preset: id,
+         settings_dirty: true,
+         accounting_open: false,
+         accounting_query: nil
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
 
   def handle_event("page", %{"delta" => delta}, socket) do
     page = max(0, socket.assigns.page + String.to_integer(delta))

@@ -110,6 +110,47 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
     refute has_element?(refreshed, "#batch-upload")
   end
 
+  test "searched accounting preset replaces the query and remains selected after polling and saving",
+       %{conn: conn} do
+    batch = batch()
+
+    target = %{
+      "kod" => "2.NÁKUP POTRAVINY",
+      "nazev" => "Nákup potravin",
+      "modulZav" => true,
+      "protiUcetVydej" => "code:501100"
+    }
+
+    rows =
+      Enum.map(1..35, &%{"kod" => "TEST#{&1}", "nazev" => "Předpis #{&1}", "modulZav" => true}) ++
+        [target]
+
+    for _ <- 1..2 do
+      Req.Test.expect(__MODULE__, fn conn ->
+        Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => rows}})
+      end)
+    end
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-batches/#{batch.id}")
+    view |> element("button[phx-click=accounting-load]") |> render_click()
+    refute has_element?(view, "button[phx-value-id='2.NÁKUP POTRAVINY']")
+    render_change(view, "accounting-search", %{"accounting_search" => %{"0" => "potrav"}})
+    view |> element("button[phx-value-id='2.NÁKUP POTRAVINY']") |> render_click()
+    assert has_element?(view, "#fields_preset-search[value='2.NÁKUP POTRAVINY — Nákup potravin']")
+    refute has_element?(view, "#fields_preset-options")
+    send(view.pid, :refresh)
+    assert has_element?(view, "#fields_preset-search[value='2.NÁKUP POTRAVINY — Nákup potravin']")
+    view |> form("#batch-settings") |> render_submit()
+    assert Batches.get!(batch.id).accounting_settings["typUcOp"] == "code:2.NÁKUP POTRAVINY"
+    assert Batches.get!(batch.id).accounting_settings["protiUcet"] == "code:501100"
+    render_click(view, "accounting-select", %{"id" => "unlisted"})
+    assert has_element?(view, "#fields_preset-search[value='2.NÁKUP POTRAVINY — Nákup potravin']")
+    render_change(view, "accounting-search", %{"accounting_search" => %{"0" => "TEST35"}})
+    assert has_element?(view, "#fields_preset-options button[phx-value-id=TEST35]")
+    view |> element("button[phx-value-id=TEST35]") |> render_click()
+    assert has_element?(view, "#fields_preset-search[value='TEST35 — Předpis 35']")
+  end
+
   test "readiness and membership are checked on the server; direct staged details redirect", %{
     conn: conn
   } do
