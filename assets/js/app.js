@@ -28,12 +28,14 @@ import {BillingPopover} from "./hooks/billing_popover"
 import {CalculationEditor} from "./hooks/calculation_editor"
 import {MenuEditor, MenuPreview} from "./hooks/menu_editor"
 import {ShoppingChecklist} from "./hooks/shopping_checklist"
+import {IncomingBatchUpload} from "./hooks/incoming_batch_upload"
 import {IncomingDocumentPreview} from "./incoming_document_preview"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 // Custom hooks
 const Hooks = {
+  IncomingBatchUpload,
   IncomingDocumentPreview,
   MenuEditor,
   MenuPreview,

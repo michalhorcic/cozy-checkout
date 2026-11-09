@@ -75,11 +75,19 @@ config :cozy_checkout,
 # Oban background job processing
 config :cozy_checkout, Oban,
   repo: CozyCheckout.Repo,
-  queues: [abra_sync: 3, abra_pdf: 1, booking_emails: 5, billing: 2, economics_sync: 1],
+  queues: [
+    abra_sync: 3,
+    abra_pdf: 1,
+    booking_emails: 5,
+    billing: 2,
+    incoming_extraction: 2,
+    economics_sync: 1
+  ],
   plugins: [
     {Oban.Plugins.Cron,
      crontab: [
        {"* * * * *", CozyCheckout.Workers.AbraPdfScanWorker},
+       {"* * * * *", CozyCheckout.Workers.IncomingBatchReconcileWorker},
        {"0 * * * *", CozyCheckout.Workers.AbraBankDownloadWorker},
        {"*/15 * * * *", CozyCheckout.Workers.AbraBankWorker},
        {"0 4 * * *", CozyCheckout.Economics.SyncWorker}

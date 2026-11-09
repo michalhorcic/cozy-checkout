@@ -389,3 +389,70 @@ regrese kontextu, hlavičkového workflow a dodavatelského kontraktu prošly a 
 opravě neúplného testovacího sent fixture prošlo také všech 15 testů formuláře.
 Původní stav byl reprodukován selháním na databázovém constraintu před třetím
 voláním. Živá OpenAI ani ABRA nebyly volány.
+
+## Hromadné nahrávání a kontrola dávek
+
+Ze seznamu přijatých dokladů otevřete **Nová dávka**. Kategorie **Faktury**,
+**Hotově** a **Kartou** odpovídají agendám `faktura-prijata`, `pokladni-pohyb`
+a `zavazek`. Dávka si uchová cílovou firmu ABRA. Před spuštěním lze načíst
+vyhledávatelný účetní předpis a uložit společné nastavení; interní čísla nechává
+přidělit ABRA. Pozdější změna jednoho dokladu neovlivňuje ostatní.
+
+Vyberte více PDF/JPEG/PNG. Prohlížeč nahrává nejvýše dva soubory současně,
+každý úspěšný originál se hned samostatně uloží. Obnovení stránky zachová uložené
+soubory, nedokončené přenosy je třeba vybrat znovu. Jedna fotka nebo jeden PDF
+soubor (i vícestránkový) je jeden doklad. Před spuštěním můžete uložené soubory
+i čekající uploady odebrat. Neúspěšný soubor nevrací ostatní uploady zpět.
+
+Nahrání do dávky **nevolá AI a nezakládá extrakční job**. Shodný soubor ve stejné
+dávce vrátí stávající položku. Při shodě s jiným dokladem ve stejné cílové firmě
+se zobrazí odkaz a stav; nový doklad vznikne pouze akcí **Přesto přidat**.
+Shoda souboru neodhalí dvě různé fotky stejné účtenky.
+
+**Spustit vytěžování N dokladů** je výslovný, idempotentní start. Po dokončení
+uploadů uzamkne složení a společné nastavení, připne aktuálně nakonfigurovaný
+model ke všem prvním běhům a atomicky založí jejich joby. Každý doklad používá
+vlastní dosavadní dodavatelský tok a historii. Prohlížeč můžete zavřít.
+
+Přehled ukazuje čekající, běžící, vytěžené a chybné první běhy odděleně od počtu
+odeslaných dokladů. Kontrola se otevře až po úspěchu nebo evidované chybě všech
+prvních běhů. Dokončení je uložené v DB a oznámení zůstává v přehledu dávek
+(stránkovaném po 25) a mezi posledními dávkami na seznamu přijatých dokladů.
+Přehled se průběžně obnovuje; nejsou odesílány e-maily ani jiné zprávy.
+Při samých chybách rozhraní výslovně nabídne jejich řešení.
+
+Kontrola používá současný formulář s originálem vedle něj, odkazem na plnou
+velikost, pořadím a filtry nevyřízených, chybných/odložených a odeslaných.
+**Předchozí / Další** a návrat do souhrnu nabídnou při změnách **Uložit a
+pokračovat / Zahodit a pokračovat / Zůstat**. Odložený doklad se nesmaže a lze
+jej vrátit mezi nevyřízené. **Nahrát do ABRA a pokračovat** odešle pouze aktuální
+uložený doklad; přechod nastane až při `sent`. Při chybě nebo nejistém výsledku
+zůstává otevřený. `uncertain` se řeší dosavadním ověřením externího ID bez dalšího
+POSTu. Odeslané doklady zůstávají neměnné. Pozdější ruční opakování vytěžení
+jednoho dokladu neuzamkne kontrolu ostatních a nemění výsledek prvních běhů.
+
+### Nasazení dávek
+
+- Spusťte migraci `20261109130000` a restartujte aplikaci. Přidává tabulku dávek,
+  nullable vazby dokladů, stav `staged`, počáteční běh a model běhu. Staré jednotlivé
+  doklady zůstávají bez dávky; historie a odeslané XML se nepřepisují.
+- `INCOMING_DOCUMENTS_BATCH_MAX_FILES` nastavuje limit nových dávek (výchozí 50).
+  Limit se ukládá při vytvoření dávky; změna konfigurace neskryje starší položky.
+  Limit souboru zůstává 10 MB. Nejsou potřeba nové přihlašovací údaje.
+- Nové extrakce běží ve frontě `incoming_extraction` se souběhem 2, odesílání
+  zůstává v `billing`. Již existující joby v `billing` fungují dál.
+- Každou minutu běží `IncomingBatchReconcileWorker`. Ukončený Oban job
+  (`completed`, `discarded`, `cancelled`) s nedokončeným během označí jako chybu
+  bez nového AI volání. Souhrn dokončení obnovuje agregací z DB, i po ztracené
+  aktualizaci stránky. Samotné stáří běhu nikdy nespouští nový placený pokus.
+
+Byly přidány kontextové a LiveView regrese, včetně dotazů nezávislých na počtu
+řádků. ExUnit testy nebyly lokálně spuštěny; byly zkompilovány a výsledky CI ověří
+uživatel. S připnutým Elixir 1.20.4 / OTP 29.1 prošly kompilace aplikace
+s `--warnings-as-errors`, formátování, sestavení JS/CSS a migrace na dočasném
+PostgreSQL 17. V Chromiu prošel upload pěti syntetických souborů po dvou,
+obnovení stránky, explicitní start, dokončení přes frontu s náhradními odpověďmi,
+uložení XML, individuální přenos a přechod až po `sent`, zachování neuložené
+hodnoty a otevřené sekce. Ověřena byla i blokace shodného souboru v jiné dávce
+a jeho následné explicitní přidání. Mobilní šířka 390 px neměla vodorovný přesah.
+Živá OpenAI ani ABRA nebyly volány; pilot na skutečných dokladech zbývá.

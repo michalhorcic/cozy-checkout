@@ -4,6 +4,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRun do
   schema "incoming_extraction_runs" do
     field :document_id, :binary_id
     field :generation, :integer
+    field :model, :string
     field :mode, :string
     field :strategy, :string, default: "header_form"
     field :source_sha256, :string

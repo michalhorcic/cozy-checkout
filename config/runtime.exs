@@ -224,4 +224,5 @@ config :cozy_checkout, :incoming_documents,
   username: accommodation_connection[:username],
   password: accommodation_connection[:password],
   openai_api_key: System.get_env("OPENAI_API_KEY"),
-  openai_model: System.get_env("INCOMING_DOCUMENTS_OPENAI_MODEL")
+  openai_model: System.get_env("INCOMING_DOCUMENTS_OPENAI_MODEL"),
+  batch_max_files: String.to_integer(System.get_env("INCOMING_DOCUMENTS_BATCH_MAX_FILES", "50"))

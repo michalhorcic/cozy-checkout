@@ -166,8 +166,8 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
-  defp content_type(bytes, filename)
-       when is_binary(bytes) and byte_size(bytes) > 0 and byte_size(bytes) <= @max_size do
+  def content_type(bytes, filename)
+      when is_binary(bytes) and byte_size(bytes) > 0 and byte_size(bytes) <= @max_size do
     case {String.downcase(Path.extname(filename)), bytes} do
       {".pdf", <<"%PDF-", _::binary>>} -> {:ok, "application/pdf"}
       {ext, <<0xFF, 0xD8, 0xFF, _::binary>>} when ext in [".jpg", ".jpeg"] -> {:ok, "image/jpeg"}
@@ -176,7 +176,7 @@ defmodule CozyCheckout.IncomingDocuments do
     end
   end
 
-  defp content_type(_, _), do: {:error, "Soubor je prázdný nebo větší než 10 MB"}
+  def content_type(_, _), do: {:error, "Soubor je prázdný nebo větší než 10 MB"}
 
   def save(id, attrs, expected_hash) do
     locked(id, fn doc ->
@@ -987,6 +987,7 @@ defmodule CozyCheckout.IncomingDocuments do
           {:ok, response} ->
             update!(current,
               state: "sent",
+              deferred_at: nil,
               response: response,
               remote_id: response["id"],
               sent_at: DateTime.utc_now(:second),
@@ -997,6 +998,7 @@ defmodule CozyCheckout.IncomingDocuments do
           {:found, remote_id} ->
             update!(current,
               state: "sent",
+              deferred_at: nil,
               response: Map.put(current.response, "verified_by_external_id", true),
               remote_id: remote_id,
               sent_at: DateTime.utc_now(:second),
@@ -1074,7 +1076,11 @@ defmodule CozyCheckout.IncomingDocuments do
   defp update!(doc, attrs), do: doc |> Ecto.Changeset.change(attrs) |> Repo.update!(log: false)
 
   defp job!(id, op) do
-    case %{document_id: id, operation: op} |> IncomingDocumentWorker.new() |> Oban.insert() do
+    case %{document_id: id, operation: op}
+         |> IncomingDocumentWorker.new(
+           queue: if(op == "extract", do: :incoming_extraction, else: :billing)
+         )
+         |> Oban.insert() do
       {:ok, %Oban.Job{conflict?: true}} ->
         Repo.rollback("Předchozí operace ještě čeká ve frontě. Zkuste to znovu za chvíli.")
 
@@ -1118,7 +1124,7 @@ defmodule CozyCheckout.IncomingDocuments do
     end
   end
 
-  defp configured(cfg) do
+  def configured(cfg) do
     if cfg[:enabled] == true and
          Enum.all?([:base_url, :company_id, :username, :password], &(cfg[&1] not in [nil, ""])),
        do: :ok,

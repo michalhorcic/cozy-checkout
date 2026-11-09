@@ -1,14 +1,48 @@
 # Vytěžování dokladů: aktuální stav a další etapa hromadného zpracování
 
 - **Aktualizováno:** 9. 11. 2026 po kontrole implementace a upřesnění s uživatelem.
-- **Stav:** jednotlivé doklady a dodavatelské instrukce jsou implementované;
-  dávky a jejich kontrolní rozhraní jsou níže navržené, zatím neimplementované.
-- **Implementace:** větev `feat/supplier-specific-extraction`,
-  [PR #100](https://github.com/michalhorcic/cozy-checkout/pull/100), při revizi
-  poslední implementační commit `2dd842f`. PR je v době zápisu otevřený.
+- **Stav:** jednotlivé doklady, dodavatelské instrukce a dávkové zpracování včetně
+  postupné kontroly jsou implementované; skutečný provozní pilot a ověření CI zbývají.
+- **Implementace:** původní [PR #100](https://github.com/michalhorcic/cozy-checkout/pull/100)
+  byl sloučen 9. 11. 2026. Dávky navazují ve větvi `feat/supplier-extraction-next`
+  z `origin/main` (`b741b5e`).
 - **Návod současné funkce:** [INCOMING_DOCUMENT_FORM.md](../features/INCOMING_DOCUMENT_FORM.md).
 - Tento dokument nahrazuje původní dvoufázový plán. Popisuje skutečný stav,
   opravy z pilotování a zadání pro další vlákno. Historický návrh je v Git historii.
+
+## Implementovaná dávková etapa (9. 11. 2026)
+
+Nové moduly `IncomingDocuments.Batches`, `Batch` a `IncomingDocumentBatchesLive`
+implementují přípravu, víceupload, duplicity, společný předpis, explicitní atomický
+start, průběh a trvalé dokončení. Migrace `20261109130000` přidává vazby, stav
+`staged`, první běh a model; limit nových dávek je konfigurovatelný přes
+`INCOMING_DOCUMENTS_BATCH_MAX_FILES` (výchozí 50) a snapshotovaný při vytvoření.
+Originály se při startu ani ve výpisech nenačítají. Přehledy mají konstantní počet
+dotazů; první běhy se připojují joinem. Číselník se vybírá a validuje pro dávku,
+ne pro každý doklad.
+
+Nové extrakce používají frontu `incoming_extraction` (2), původní joby zůstávají
+kompatibilní a přenos je v `billing`. Periodická obnova vychází z terminálních
+stavů Oban jobů, nikdy ze samotného stáří, a neprovádí AI požadavky. Dokončení se
+obnovuje z prvních běhů; pozdější opakování nemění připravenost ostatních.
+
+PIN chrání dávkové routy i kontrolu; členství dokladu a dokončení celé dávky se
+ověřují na serveru. Kontrola sdílí `IncomingDocumentFormLive`, včetně historie,
+validací a přenosových zámků. Přibyly filtry, odložení/návrat, ochrana neuložených
+změn a individuální odeslání s přechodem až po `sent`. Přehled dávek se stránkuje
+po 25; přehled položek je omezen uloženým limitem dané dávky. Aktualizace běhu
+neobnovuje data ostatních formulářů a otevřený účetní picker se zachovává.
+
+Přidány kontextové a LiveView testy. ExUnit sada nebyla podle AGENTS.md lokálně
+spuštěna, nové testovací moduly byly zkompilovány. Prošly formátování, kompilace
+s `--warnings-as-errors`, sestavení assetů a migrace na dočasném PostgreSQL 17.
+Chromium ověřil pět uploadů po dvou, refresh, start a dokončení přes frontu,
+uložení XML a přechod po potvrzeném individuálním přenosu, ochranu neuložené
+hodnoty a otevřené sekce, bez JS chyb; šířka 390 px bez vodorovného přesahu.
+AI a ABRA byly nahrazené lokálními odpověďmi. Živá přesnost, cena a ergonomie
+na skutečných soukromých dokladech nebyly tímto ověřené; provozní pilot zbývá.
+
+Následující zadání zachovává přijatá rozhodnutí a akceptační scénáře pro revizi.
 
 ## 1. Zadání pro další vlákno
 
@@ -49,7 +83,9 @@ uživatele. Lze je použít bez opakování již zodpovězených otázek:
 - Zachovat PDF/JPEG/PNG. Jeden PDF soubor je jeden doklad i při více stranách;
   nerozdělovat PDF s několika různými doklady ani nespojovat jednotlivé fotky.
 
-## 2. Kde jsme skutečně skončili
+## 2. Výchozí stav po PR #100
+
+Tato část zachycuje předání před implementací dávkové etapy popsané výše.
 
 ### 2.1 Současný tok jednoho dokladu
 
@@ -319,20 +355,20 @@ N+1 postupovat podle AGENTS.md; tento plán nepředjímá výjimku z jeho pravid
 
 ## 5. Implementační kroky další etapy
 
-- [ ] Načíst tento plán, AGENTS.md a návod; fetch aktuálního `origin/main`, ověřit
+- [x] Načíst tento plán, AGENTS.md a návod; fetch aktuálního `origin/main`, ověřit
   stav PR #100 a navázat na skutečně dodaný kód. Pokud je PR sloučený, nová větev
   z main; pokud není, zachovat jeho změny a nesouběžně je nepřepisovat.
-- [ ] Migrace dávek, nullable vazby/pořadí, stavu před spuštěním a indexů.
-- [ ] Rozdělení uložení originálu a startu, idempotentní víceupload, duplicity,
+- [x] Migrace dávek, nullable vazby/pořadí, stavu před spuštěním a indexů.
+- [x] Rozdělení uložení originálu a startu, idempotentní víceupload, duplicity,
   částečné chyby uploadu a společné účetní nastavení.
-- [ ] Atomický start dávky, snapshot modelu, oddělená fronta a kompatibilita jobů.
-- [ ] Agregace výsledků, trvalé dokončení a obnova po havárii bez opakování AI.
-- [ ] Přehled dávek, průběh uploadu/zpracování a trvalé upozornění po dokončení.
-- [ ] Postupný kontrolní průchod nad současným formulářem, ochrana změn,
+- [x] Atomický start dávky, snapshot modelu, oddělená fronta a kompatibilita jobů.
+- [x] Agregace výsledků, trvalé dokončení a obnova po havárii bez opakování AI.
+- [x] Přehled dávek, průběh uploadu/zpracování a trvalé upozornění po dokončení.
+- [x] Postupný kontrolní průchod nad současným formulářem, ochrana změn,
   odložení, návrat a přechod po úspěšném individuálním přenosu do ABRY.
-- [ ] Cílené regresní testy níže, kontrola query chování, formátování/kompilace
+- [x] Přidat cílené regresní testy níže, zkontrolovat query chování a formátování/kompilaci
   podle AGENTS.md. Lokální testy jen dle jeho výjimek; ostatní ověří CI.
-- [ ] Aktualizovat uživatelský návod a tento plán podle skutečné implementace.
+- [x] Aktualizovat uživatelský návod a tento plán podle skutečné implementace.
 - [ ] Ruční pilot několika dávek všech tří kategorií včetně chyby a návratu
   po zavření stránky; zaznamenat rychlost kontroly, přesnost a usage.
 

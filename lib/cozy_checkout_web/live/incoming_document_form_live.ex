@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
+  alias CozyCheckout.IncomingDocuments.Batches
 
   alias CozyCheckout.IncomingDocuments.{
     Client,
@@ -19,6 +20,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
      socket
      |> assign(
        page_title: "Nový doklad — formulář",
+       batch: nil,
+       batch_rows: [],
+       review_filter: "pending",
+       pending_navigation: nil,
+       advance_after_send: false,
        doc: nil,
        agenda: "faktura-prijata",
        values: HeaderForm.defaults(),
@@ -57,7 +63,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           assign(socket,
             page_title: "Přijaté doklady",
             doc: nil,
-            documents: IncomingDocuments.list()
+            documents: IncomingDocuments.list(),
+            batches: Batches.list()
           )
 
         :new ->
@@ -70,14 +77,41 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             dirty: false
           )
 
+        :batch_review ->
+          {batch, rows} = Batches.review!(params["batch_id"], params["id"])
+
+          socket
+          |> assign(
+            batch: batch,
+            batch_rows: rows,
+            pending_navigation: nil,
+            advance_after_send: false
+          )
+          |> load(params["id"])
+
         :edit ->
-          load(socket, params["id"])
+          doc = IncomingDocuments.get!(params["id"])
+
+          if doc.batch_id do
+            {:ok, batch} = Batches.refresh(doc.batch_id)
+
+            if batch.extraction_finished_at,
+              do: assign_document(assign(socket, batch: nil), doc),
+              else: push_navigate(socket, to: ~p"/admin/incoming-document-batches/#{batch.id}")
+          else
+            load(assign(socket, batch: nil), params["id"])
+          end
       end
 
-    if connected?(socket) and busy?(socket.assigns.doc),
+    if connected?(socket) and (socket.assigns.live_action == :index || busy?(socket.assigns.doc)),
       do: Process.send_after(self(), :refresh, 2000)
 
     {:noreply, socket}
+  end
+
+  def handle_info(:refresh, %{assigns: %{live_action: :index}} = socket) do
+    Process.send_after(self(), :refresh, 5000)
+    {:noreply, assign(socket, batches: Batches.list())}
   end
 
   def handle_info(:refresh, %{assigns: %{doc: nil}} = socket), do: {:noreply, socket}
@@ -111,11 +145,132 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           assign_document(socket, doc)
       end
 
+    socket =
+      cond do
+        socket.assigns.batch && socket.assigns.advance_after_send && doc.state == "sent" ->
+          navigate_review(assign(socket, advance_after_send: false), :next_pending)
+
+        socket.assigns.advance_after_send && doc.state in ["failed", "uncertain"] ->
+          assign(socket, advance_after_send: false)
+
+        true ->
+          socket
+      end
+
     {:noreply, socket}
   end
 
   defp busy?(nil), do: false
   defp busy?(doc), do: doc.state in ~w(uploaded processing validating sending uncertain)
+
+  def handle_event("review-summary", _, socket) do
+    if unsaved?(socket),
+      do: {:noreply, assign(socket, pending_navigation: :summary)},
+      else: {:noreply, navigate_review(socket, :summary)}
+  end
+
+  def handle_event("review-move", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.batch_rows, &(&1.id == id)) do
+      if unsaved?(socket),
+        do: {:noreply, assign(socket, pending_navigation: id)},
+        else: {:noreply, navigate_review(socket, id)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("review-stay", _, socket),
+    do: {:noreply, assign(socket, pending_navigation: nil)}
+
+  def handle_event("review-discard", _, socket),
+    do: {:noreply, navigate_review(socket, socket.assigns.pending_navigation)}
+
+  def handle_event("review-save-leave", _, socket) do
+    # Reuse the same validations and optimistic locks. All three writes roll
+    # back together if any section cannot be saved.
+    result =
+      CozyCheckout.Repo.transaction(fn ->
+        doc = socket.assigns.doc
+
+        doc =
+          if socket.assigns.dirty do
+            case IncomingDocuments.save_header(
+                   doc.id,
+                   socket.assigns.values,
+                   socket.assigns.hash,
+                   true
+                 ) do
+              {:ok, saved} -> saved
+              {:error, reason} -> CozyCheckout.Repo.rollback(reason)
+            end
+          else
+            doc
+          end
+
+        if socket.assigns.accounting_dirty do
+          case IncomingDocuments.save_accounting(
+                 doc.id,
+                 socket.assigns.accounting_form.params,
+                 IncomingDocuments.transcription_hash(doc)
+               ) do
+            {:ok, saved} -> saved
+            {:error, reason} -> CozyCheckout.Repo.rollback(reason)
+          end
+        end
+
+        if socket.assigns.supplier_dirty do
+          case IncomingDocuments.save_supplier_instructions(
+                 doc.id,
+                 socket.assigns.supplier_id,
+                 socket.assigns.supplier_form.params,
+                 socket.assigns.supplier_revision,
+                 true
+               ) do
+            {:ok, _} -> :ok
+            {:error, reason} -> CozyCheckout.Repo.rollback(reason)
+          end
+        end
+      end)
+
+    case result do
+      {:ok, _} -> {:noreply, navigate_review(socket, socket.assigns.pending_navigation)}
+      {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
+    end
+  end
+
+  def handle_event("review-filter", %{"filter" => filter}, socket),
+    do: {:noreply, assign(socket, review_filter: filter)}
+
+  def handle_event("review-defer", _, socket) do
+    if unsaved?(socket) do
+      {:noreply,
+       put_flash(socket, :error, "Nejprve uložte změny nebo použijte přechod na další doklad.")}
+    else
+      case Batches.defer(socket.assigns.batch.id, socket.assigns.doc.id) do
+        {:ok, _} -> {:noreply, navigate_review(socket, :next_pending)}
+        {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
+      end
+    end
+  end
+
+  def handle_event("review-return", _, socket) do
+    case Batches.defer(socket.assigns.batch.id, socket.assigns.doc.id, false) do
+      {:ok, _} ->
+        {:noreply, assign(socket, batch_rows: Batches.documents(socket.assigns.batch.id))}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reason)}
+    end
+  end
+
+  def handle_event("send-next", _, socket) do
+    {:noreply, updated} = handle_event("send", %{}, socket)
+
+    if updated.assigns.doc.state == "sent",
+      do: {:noreply, navigate_review(updated, :next_pending)},
+      else:
+        {:noreply, assign(updated, advance_after_send: updated.assigns.doc.state == "sending")}
+  end
 
   def handle_event("upload-change", _, socket), do: {:noreply, socket}
 
@@ -198,7 +353,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
            socket
            |> put_flash(:info, message)
            |> assign(dirty: false)
-           |> push_patch(to: ~p"/admin/incoming-document-form/#{doc.id}")}
+           |> push_patch(to: document_path(socket, doc.id))}
 
         [{:error, reason}] ->
           {:noreply, put_flash(socket, :error, reason)}
@@ -234,7 +389,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
            :info,
            "Formulář uložen. Níže můžete zvolit předpis, ověřit doklad nebo jej odeslat do ABRA."
          )
-         |> push_patch(to: ~p"/admin/incoming-document-form/#{doc.id}")}
+         |> push_patch(to: document_path(socket, doc.id))}
 
       {:error, reason} ->
         {:noreply,
@@ -625,6 +780,48 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     end
   end
 
+  defp unsaved?(socket),
+    do: socket.assigns.dirty || socket.assigns.accounting_dirty || socket.assigns.supplier_dirty
+
+  defp document_path(%{assigns: %{batch: %{id: id}}}, doc_id),
+    do: ~p"/admin/incoming-document-batches/#{id}/review/#{doc_id}"
+
+  defp document_path(_, doc_id), do: ~p"/admin/incoming-document-form/#{doc_id}"
+
+  defp navigate_review(socket, :next_pending) do
+    rows = Batches.documents(socket.assigns.batch.id)
+    position = Enum.find_index(rows, &(&1.id == socket.assigns.doc.id)) || 0
+    {before, after_current} = Enum.split(rows, position + 1)
+
+    next =
+      Enum.find(
+        after_current ++ before,
+        &(&1.id != socket.assigns.doc.id && &1.state != "sent" && is_nil(&1.deferred_at))
+      )
+
+    destination = if next, do: next.id, else: :summary
+
+    if unsaved?(socket),
+      do: assign(socket, pending_navigation: destination),
+      else: navigate_review(socket, destination)
+  end
+
+  defp navigate_review(socket, :summary),
+    do: push_navigate(socket, to: ~p"/admin/incoming-document-batches/#{socket.assigns.batch.id}")
+
+  defp navigate_review(socket, nil), do: socket
+
+  defp navigate_review(socket, id),
+    do: socket |> assign(pending_navigation: nil) |> push_patch(to: document_path(socket, id))
+
+  defp review_rows(rows, "sent"), do: Enum.filter(rows, &(&1.state == "sent"))
+
+  defp review_rows(rows, "errors"),
+    do: Enum.filter(rows, &(&1.state in ["failed", "uncertain"] || &1.deferred_at))
+
+  defp review_rows(rows, _),
+    do: Enum.filter(rows, &(&1.state != "sent" && is_nil(&1.deferred_at)))
+
   defp load(socket, id), do: assign_document(socket, IncomingDocuments.get!(id))
 
   defp assign_document(socket, doc) do
@@ -641,8 +838,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             to_form(%{"preset" => "", "internal_code" => doc.accounting_settings["kod"] || ""},
               as: :fields
             ),
-          accounting_open: false,
-          accounting_query: nil
+          accounting_open: same? && socket.assigns.accounting_open,
+          accounting_query: if(same?, do: socket.assigns.accounting_query, else: nil)
         )
       end
 
@@ -650,6 +847,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
 
     assign(socket,
       doc: doc,
+      batch_rows:
+        Enum.map(socket.assigns.batch_rows, fn row ->
+          if row.id == doc.id,
+            do: Map.merge(row, %{state: doc.state, deferred_at: doc.deferred_at}),
+            else: row
+        end),
       agenda: doc.agenda,
       values: HeaderForm.values(doc),
       loaded_values: HeaderForm.values(doc),
@@ -673,6 +876,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     do:
       Map.get(
         %{
+          "staged" => "Připraveno před spuštěním",
           "uploaded" => "Nahráno",
           "processing" => "Vytěžování",
           "review" => "Ke kontrole",
@@ -706,6 +910,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       </div>
       <div :if={@live_action == :index} class="space-y-4">
         <.link navigate={~p"/admin/incoming-document-form"} class="btn btn-primary">Nový doklad</.link>
+        <.link navigate={~p"/admin/incoming-document-batches/new"} class="btn btn-primary">Nová dávka</.link>
+        <.link navigate={~p"/admin/incoming-document-batches"} class="btn">Přehled dávek</.link>
+        <p :for={row <- @batches} :if={row.batch.extraction_finished_at} class="alert alert-info">
+          Dávka {row.batch.name} je připravena ke kontrole: {row.extracted} vytěženo, {row.failed} chyb. Odesláno {row.sent} z {row.total}.
+          <.link navigate={~p"/admin/incoming-document-batches/#{row.batch.id}"} class="link">Otevřít dávku</.link>
+        </p>
         <div class="overflow-x-auto">
           <table class="table" id="incoming-list">
             <thead>
@@ -726,6 +936,72 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           </table>
         </div>
       </div>
+      <section :if={@batch} id="batch-review" class="space-y-3 border rounded-xl p-4">
+        <h2 class="text-xl font-bold">
+          {@batch.name} · {Enum.find_index(@batch_rows, &(&1.id == @doc.id)) + 1} z {length(
+            @batch_rows
+          )}
+        </h2>
+        <p>
+          Odesláno {Enum.count(@batch_rows, &(&1.state == "sent"))} · Zbývá {Enum.count(
+            @batch_rows,
+            &(&1.state != "sent")
+          )}
+        </p>
+        <div class="flex gap-2 flex-wrap">
+          <button
+            :for={{row, index} <- Enum.with_index(@batch_rows)}
+            :if={abs(index - Enum.find_index(@batch_rows, &(&1.id == @doc.id))) == 1}
+            class="btn"
+            phx-click="review-move"
+            phx-value-id={row.id}
+          >{if index < Enum.find_index(@batch_rows, &(&1.id == @doc.id)),
+            do: "Předchozí",
+            else: "Další"}</button>
+          <button :if={@doc.state != "sent" && !@doc.deferred_at} phx-click="review-defer" class="btn">Odložit</button>
+          <button :if={@doc.deferred_at} phx-click="review-return" class="btn">Vrátit mezi nevyřízené</button>
+          <button
+            :if={!@locked}
+            phx-click="send-next"
+            class="btn btn-primary"
+            disabled={@dirty || @accounting_dirty}
+          >Nahrát do ABRA a pokračovat</button>
+          <button phx-click="review-summary" class="btn">Souhrn dávky</button>
+        </div>
+        <.form for={to_form(%{})} id="review-filter" phx-change="review-filter">
+          <.input
+            type="select"
+            name="filter"
+            value={@review_filter}
+            label="Zobrazit"
+            options={[
+              {"Nevyřízené", "pending"},
+              {"Chybné / odložené", "errors"},
+              {"Odeslané", "sent"}
+            ]}
+          />
+        </.form>
+        <div class="flex flex-wrap gap-2">
+          <button
+            :for={row <- review_rows(@batch_rows, @review_filter)}
+            class="btn btn-sm"
+            phx-click="review-move"
+            phx-value-id={row.id}
+          >{row.position}. {row.filename} · {state_label(row.state)}</button>
+        </div>
+        <div
+          :if={@pending_navigation}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Neuložené změny"
+          class="alert alert-warning"
+        >
+          <p>Ve formuláři jsou neuložené změny.</p>
+          <button class="btn" phx-click="review-save-leave">Uložit a pokračovat</button>
+          <button class="btn" phx-click="review-discard">Zahodit a pokračovat</button>
+          <button class="btn" phx-click="review-stay">Zůstat</button>
+        </div>
+      </section>
       <div :if={@live_action != :index} class="space-y-6">
         <p>
           Vyberte agendu a vyplňte hlavičku a souhrnnou DPH. Obrázek nebo PDF může navrhnout údaje. Položky zůstanou pouze v poznámce.
@@ -1101,6 +1377,13 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               title="Originál dokladu"
               class="w-full min-h-[75vh] border rounded-lg"
             />
+            <p :if={@doc && @doc.original}>
+              <.link
+                href={~p"/admin/incoming-documents/#{@doc.id}/original"}
+                target="_blank"
+                class="link"
+              >Otevřít originál v plné velikosti</.link>
+            </p>
             <img
               :if={@doc && @doc.original && @doc.content_type != "application/pdf"}
               src={~p"/admin/incoming-documents/#{@doc.id}/original"}
