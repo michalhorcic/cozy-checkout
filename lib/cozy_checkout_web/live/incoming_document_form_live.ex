@@ -909,8 +909,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         <.link :if={@live_action != :index} navigate={~p"/admin/incoming-documents"} class="btn">Přijaté doklady</.link>
       </div>
       <div :if={@live_action == :index} class="space-y-4">
-        <.link navigate={~p"/admin/incoming-document-form"} class="btn btn-primary">Nový doklad</.link>
-        <.link navigate={~p"/admin/incoming-document-batches/new"} class="btn btn-primary">Nová dávka</.link>
+        <.link
+          navigate={~p"/admin/incoming-document-batches/new"}
+          class="btn btn-primary btn-lg w-full sm:w-auto"
+        ><.icon name="hero-camera" class="size-6" /> Nahrát doklady</.link>
+        <.link navigate={~p"/admin/incoming-document-form"} class="btn">Nový doklad ručně</.link>
         <.link navigate={~p"/admin/incoming-document-batches"} class="btn">Přehled dávek</.link>
         <p :for={row <- @batches} :if={row.batch.extraction_finished_at} class="alert alert-info">
           Dávka {row.batch.name} je připravena ke kontrole: {row.extracted} vytěženo, {row.failed} chyb. Odesláno {row.sent} z {row.total}.

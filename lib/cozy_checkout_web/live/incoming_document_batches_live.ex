@@ -20,7 +20,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
        include_items: false,
        duplicates: %{},
        upload_messages: [],
-       queued_uploads: []
+       queued_uploads: [],
+       upload_preparing: false
      )
      |> allow_upload(:sources,
        accept: ~w(.pdf .png .jpg .jpeg),
@@ -74,8 +75,19 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   def handle_event("cancel-queued", %{"index" => index}, socket),
     do: {:noreply, push_event(socket, "batch-upload-remove", %{index: index})}
 
-  def handle_event("upload-queue", %{"names" => names}, socket) do
-    {:noreply, assign(socket, queued_uploads: Enum.take(names, 1000))}
+  def handle_event("upload-queue", %{"names" => names} = params, socket) do
+    {:noreply,
+     assign(socket,
+       queued_uploads: Enum.take(names, 1000),
+       upload_preparing: params["preparing"] == true
+     )}
+  end
+
+  def handle_event("upload-preparation-error", %{"name" => name}, socket) do
+    message =
+      "Fotku #{String.slice(name, 0, 150)} se nepodařilo připravit. Zkuste ji vybrat jako JPEG nebo vyfotit znovu."
+
+    {:noreply, assign(socket, upload_messages: [message | socket.assigns.upload_messages])}
   end
 
   def handle_event("preset-change", _, socket), do: {:noreply, socket}
@@ -116,7 +128,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
 
   def handle_event("start", _, socket) do
     cond do
-      socket.assigns.uploads.sources.entries != [] || socket.assigns.queued_uploads != [] ->
+      socket.assigns.upload_preparing || socket.assigns.uploads.sources.entries != [] ||
+          socket.assigns.queued_uploads != [] ->
         {:noreply, put_flash(socket, :error, "Počkejte na dokončení uploadů nebo je odeberte.")}
 
       socket.assigns.settings_dirty ->
@@ -237,11 +250,16 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   def render(assigns) do
     ~H"""
     <Layouts.app flash={@flash} content_class="mx-auto w-full max-w-7xl space-y-6">
-      <h1 class="text-3xl font-bold">Dávky přijatých dokladů</h1>
+      <h1 class="text-3xl font-bold">
+        {if @live_action == :new, do: "Nahrát doklady", else: "Dávky přijatých dokladů"}
+      </h1>
       <div class="flex gap-3 flex-wrap">
         <.link navigate={~p"/admin/incoming-documents"} class="btn">Přijaté doklady</.link>
         <.link navigate={~p"/admin/incoming-document-batches"} class="btn">Přehled dávek</.link>
-        <.link navigate={~p"/admin/incoming-document-batches/new"} class="btn btn-primary">Nová dávka</.link>
+        <.link navigate={~p"/admin/incoming-document-batches/new"} class="btn btn-primary"><.icon
+          name="hero-camera"
+          class="size-5"
+        /> Nahrát doklady</.link>
       </div>
       <div :if={@live_action == :index} id="batch-list" class="space-y-4">
         <article :for={row <- @batches} class="card bg-base-100 p-4 border">
@@ -275,7 +293,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
         />
         <.input name="batch[name]" label="Název (nepovinný)" value="" maxlength="150" />
         <p>Cílová firma ABRA: {IncomingDocuments.config()[:company_id]}</p>
-        <button class="btn btn-primary">Připravit dávku</button>
+        <button class="btn btn-primary">Pokračovat k nahrávání</button>
       </.form>
       <div :if={@live_action == :show && @batch} class="space-y-5">
         <h2 class="text-2xl font-bold">{@batch.name}</h2>
@@ -284,6 +302,78 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
           <p>
             Jedna fotka nebo PDF = jeden doklad. Nejvýše {@batch.max_files} souborů, 10 MB na soubor. Nahrání nespouští AI.
           </p>
+          <div
+            id="batch-upload-queue"
+            phx-hook="IncomingBatchUpload"
+            data-active={length(@uploads.sources.entries)}
+          >
+            <.form for={to_form(%{})} id="batch-upload" phx-change="upload-change">
+              <div class="grid gap-3 sm:grid-cols-2">
+                <label for="batch-camera" class="btn btn-primary min-h-14 text-base cursor-pointer">
+                  <.icon name="hero-camera" class="size-6" /> Vyfotit doklad
+                </label>
+                <label
+                  for={@uploads.sources.ref}
+                  class="btn btn-outline min-h-14 text-base cursor-pointer"
+                >
+                  <.icon name="hero-photo" class="size-6" /> Vybrat fotky / PDF
+                </label>
+              </div>
+              <input
+                id="batch-camera"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                class="sr-only"
+                aria-label="Vyfotit doklad zadním fotoaparátem"
+              />
+              <.live_file_input
+                upload={@uploads.sources}
+                class="sr-only"
+                aria-label="Vybrat fotky nebo PDF"
+              />
+              <p class="mt-3 text-sm">
+                Fotky před nahráním automaticky zmenšíme na delší stranu nejvýše 1920 px. PDF ponecháme beze změny.
+              </p>
+              <p :if={@upload_preparing} role="status">Připravujeme fotky k nahrání…</p>
+              <p :for={error <- upload_errors(@uploads.sources)} class="text-error">
+                {upload_error(error)}
+              </p>
+              <div :for={entry <- @uploads.sources.entries} class="space-y-1">
+                <p>{entry.client_name} — {entry.progress} %</p>
+                <p :for={error <- upload_errors(@uploads.sources, entry)} class="text-error">
+                  {upload_error(error)}
+                </p>
+                <p :if={@duplicates[entry.ref]} class="text-warning">
+                  Stejný soubor už existuje:
+                  <.link
+                    navigate={~p"/admin/incoming-document-form/#{@duplicates[entry.ref].id}"}
+                    class="link"
+                  >{@duplicates[entry.ref].filename}</.link>
+                  ({@duplicates[entry.ref].state}).
+                </p>
+                <button
+                  :if={@duplicates[entry.ref]}
+                  type="button"
+                  phx-click="allow-duplicate"
+                  phx-value-ref={entry.ref}
+                  class="btn"
+                >Přesto přidat</button>
+                <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn">Odebrat upload</button>
+              </div>
+            </.form>
+            <p :for={{name, index} <- Enum.with_index(@queued_uploads)}>
+              Čeká na nahrání: {name}
+              <button
+                type="button"
+                class="btn btn-sm"
+                phx-click="cancel-queued"
+                phx-value-index={index}
+              >Odebrat</button>
+            </p>
+          </div>
+          <p :for={message <- @upload_messages} class="text-error">{message}</p>
+          <.batch_documents batch={@batch} rows={@rows} />
           <p>
             Předpis: {@batch.accounting_settings["preset_name"] || "podle šablony agendy"}. Interní čísla přidělí ABRA.
           </p>
@@ -322,57 +412,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
             />
             <button class="btn" disabled={!@settings_dirty}>Uložit společné nastavení</button>
           </.form>
-          <div
-            id="batch-upload-queue"
-            phx-hook="IncomingBatchUpload"
-            data-active={length(@uploads.sources.entries)}
-          >
-            <.form for={to_form(%{})} id="batch-upload" phx-change="upload-change">
-              <.live_file_input upload={@uploads.sources} />
-              <p :for={error <- upload_errors(@uploads.sources)} class="text-error">
-                {upload_error(error)}
-              </p>
-              <div :for={entry <- @uploads.sources.entries} class="space-y-1">
-                <p>{entry.client_name} — {entry.progress} %</p>
-                <p :for={error <- upload_errors(@uploads.sources, entry)} class="text-error">
-                  {upload_error(error)}
-                </p>
-                <p :if={@duplicates[entry.ref]} class="text-warning">
-                  Stejný soubor už existuje:
-                  <.link
-                    navigate={~p"/admin/incoming-document-form/#{@duplicates[entry.ref].id}"}
-                    class="link"
-                  >{@duplicates[entry.ref].filename}</.link>
-                  ({@duplicates[entry.ref].state}).
-                </p>
-                <button
-                  :if={@duplicates[entry.ref]}
-                  type="button"
-                  phx-click="allow-duplicate"
-                  phx-value-ref={entry.ref}
-                  class="btn"
-                >Přesto přidat</button>
-                <button type="button" phx-click="cancel-upload" phx-value-ref={entry.ref} class="btn">Odebrat upload</button>
-              </div>
-            </.form>
-            <p :for={{name, index} <- Enum.with_index(@queued_uploads)}>
-              Čeká na nahrání: {name}
-              <button
-                type="button"
-                class="btn btn-sm"
-                phx-click="cancel-queued"
-                phx-value-index={index}
-              >Odebrat</button>
-            </p>
-          </div>
-          <p :for={message <- @upload_messages} class="text-error">{message}</p>
           <p>Model při spuštění: {IncomingDocuments.config()[:openai_model] || "nenastaven"}</p>
           <button
             id="batch-start"
             phx-click="start"
             class="btn btn-primary"
             disabled={
-              @counts.total == 0 || @uploads.sources.entries != [] || @queued_uploads != [] ||
+              @counts.total == 0 || @upload_preparing || @uploads.sources.entries != [] ||
+                @queued_uploads != [] ||
                 @settings_dirty
             }
           >Spustit vytěžování {@counts.total} dokladů</button>
@@ -394,31 +441,47 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
             Kontrola bude dostupná po ukončení všech prvních běhů. Stránku můžete zavřít.
           </p>
         </div>
-        <table class="table" id="batch-documents">
-          <thead>
-            <tr>
-              <th>Pořadí</th><th>Soubor</th><th>Stav</th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr :for={row <- @rows}>
-              <td>{row.position}</td><td>{row.filename}</td><td>
-                {row.state}
-                <p :if={row.error} class="text-error">{row.error}</p><span :if={row.deferred_at}>Odloženo</span>
-              </td>
-              <td>
-                <button :if={!@batch.started_at} phx-click="remove" phx-value-id={row.id} class="btn">Odebrat</button>
-                <.link
-                  :if={@batch.extraction_finished_at}
-                  navigate={~p"/admin/incoming-document-batches/#{@batch.id}/review/#{row.id}"}
-                  class="link"
-                >Otevřít</.link>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <.batch_documents :if={@batch.started_at} batch={@batch} rows={@rows} />
       </div>
     </Layouts.app>
+    """
+  end
+
+  attr :batch, :any, required: true
+  attr :rows, :list, required: true
+
+  defp batch_documents(assigns) do
+    ~H"""
+    <div class="overflow-x-auto">
+      <table class="table" id="batch-documents">
+        <thead>
+          <tr>
+            <th>Pořadí</th><th>Soubor</th><th>Stav</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :for={row <- @rows}>
+            <td>{row.position}</td><td>{row.filename}</td><td>
+              {row.state}
+              <p :if={row.error} class="text-error">{row.error}</p><span :if={row.deferred_at}>Odloženo</span>
+            </td>
+            <td>
+              <button
+                :if={!@batch.started_at}
+                phx-click="remove"
+                phx-value-id={row.id}
+                class="btn"
+              >Odebrat</button>
+              <.link
+                :if={@batch.extraction_finished_at}
+                navigate={~p"/admin/incoming-document-batches/#{@batch.id}/review/#{row.id}"}
+                class="link"
+              >Otevřít</.link>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     """
   end
 

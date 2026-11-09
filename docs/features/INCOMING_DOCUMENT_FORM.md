@@ -392,11 +392,25 @@ voláním. Živá OpenAI ani ABRA nebyly volány.
 
 ## Hromadné nahrávání a kontrola dávek
 
-Ze seznamu přijatých dokladů otevřete **Nová dávka**. Kategorie **Faktury**,
+Ze seznamu přijatých dokladů otevřete výrazné tlačítko **Nahrát doklady**. Kategorie **Faktury**,
 **Hotově** a **Kartou** odpovídají agendám `faktura-prijata`, `pokladni-pohyb`
 a `zavazek`. Dávka si uchová cílovou firmu ABRA. Před spuštěním lze načíst
 vyhledávatelný účetní předpis a uložit společné nastavení; interní čísla nechává
 přidělit ABRA. Pozdější změna jednoho dokladu neovlivňuje ostatní.
+
+Na telefonu použijte **Vyfotit doklad** (požadavek na zadní fotoaparát) nebo
+**Vybrat fotky / PDF** pro galerii a více souborů. Po každé fotce lze tlačítko
+použít znovu. Nahrávání a seznam uložených souborů jsou před účetním nastavením.
+
+Fotky se ještě v prohlížeči otočí podle orientace snímku, zmenší se při zachování
+poměru stran na delší stranu nejvýše **1920 px** a převedou na JPEG s kvalitou
+85 %. Menší obrázky se rozlišením nezvětšují; průhledné pozadí PNG bude bílé.
+Do DB se uloží pouze připravený soubor, původní plné rozlišení se neposílá.
+Stejný soubor se používá pro náhled i vytěžování. PDF se nemění a dříve uložené
+soubory se zpětně neupravují. Při chybě převodu se ukáže chyba konkrétní fotky,
+velký originál se místo ní automaticky nenahraje. Příprava běží po jedné fotce
+a před jejím dokončením nelze spustit vytěžování. Limit 10 MB se vztahuje na
+soubor připravený k uploadu. Tato úprava nevyžaduje další migraci ani konfiguraci.
 
 Vyberte více PDF/JPEG/PNG. Prohlížeč nahrává nejvýše dva soubory současně,
 každý úspěšný originál se hned samostatně uloží. Obnovení stránky zachová uložené
@@ -456,3 +470,10 @@ uložení XML, individuální přenos a přechod až po `sent`, zachování neul
 hodnoty a otevřené sekce. Ověřena byla i blokace shodného souboru v jiné dávce
 a jeho následné explicitní přidání. Mobilní šířka 390 px neměla vodorovný přesah.
 Živá OpenAI ani ABRA nebyly volány; pilot na skutečných dokladech zbývá.
+
+Mobilní upload byl ověřen v Chromiu při šířce 390 px včetně skutečně uložených
+souborů: snímek 4000 × 3000 se uložil jako JPEG 1920 × 1440, otočený snímek
+3000 × 2000 jako 1280 × 1920 a malý obrázek zůstal 640 × 480. PDF zůstalo
+beze změny; poškozená fotka se neuložila a ostatní uploady dokončily. Fyzický
+fotoaparát telefonu nebyl v cloudovém prostředí ověřen. ExUnit sada nebyla
+lokálně spuštěna; nové/změněné testovací moduly byly zkompilovány, CI ověří uživatel.

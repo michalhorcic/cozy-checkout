@@ -94,6 +94,13 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
 
     render_upload(upload, "one.pdf")
     assert render(view) =~ "one.pdf"
+    assert has_element?(view, "#batch-camera[capture=environment][accept='image/*']")
+    assert has_element?(view, "label[for=batch-camera]", "Vyfotit doklad")
+    render_hook(view, "upload-queue", %{"names" => [], "preparing" => true})
+    render_click(view, "start")
+    assert is_nil(Batches.get!(String.split(path, "/") |> List.last()).started_at)
+    assert has_element?(view, "#batch-start[disabled]")
+    render_hook(view, "upload-queue", %{"names" => [], "preparing" => false})
     assert Repo.aggregate(ExtractionRun, :count) == 0
     assert Repo.aggregate(Oban.Job, :count) == 0
     {:ok, refreshed, _} = live(admin(build_conn()), path)
