@@ -17,6 +17,7 @@ defmodule CozyCheckout.Sales.Order do
   schema "orders" do
     field :order_number, :string
     field :name, :string
+    field :account_stamp, :string
     field :status, :string, default: "open"
     field :total_amount, :decimal, default: Decimal.new("0")
     field :discount_amount, :decimal, default: Decimal.new("0")
@@ -47,6 +48,7 @@ defmodule CozyCheckout.Sales.Order do
       :guest_id,
       :booking_id,
       :name,
+      :account_stamp,
       :order_number,
       :status,
       :total_amount,
@@ -58,6 +60,7 @@ defmodule CozyCheckout.Sales.Order do
     ])
     |> validate_required([:order_number])
     |> validate_order_reference()
+    |> validate_inclusion(:account_stamp, CozyCheckout.Sales.AccountStamps.keys())
     |> validate_inclusion(:status, ["open", "paid", "partially_paid", "cancelled"])
     |> validate_number(:total_amount, greater_than_or_equal_to: 0)
     |> validate_number(:discount_amount, greater_than_or_equal_to: 0)

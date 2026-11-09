@@ -86,6 +86,7 @@ defmodule CozyCheckoutWeb do
       import Phoenix.HTML
       # Core UI components
       import CozyCheckoutWeb.CoreComponents
+      import CozyCheckoutWeb.AccountStampComponents
       # Booking UI components
       import CozyCheckoutWeb.BookingComponents
 

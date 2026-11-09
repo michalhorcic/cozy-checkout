@@ -7,7 +7,7 @@ Používá stejnou tabulku `orders` a položky jako běžný účet; odlišuje j
 ## Použití v POS
 
 1. Na `/pos` zapněte servisní režim v hlavičce.
-2. Založte rychlý účet nebo vyberte rezervaci. Nový účet převezme servisní příznak.
+2. Založte nový pojmenovaný účet. Nový účet převezme servisní příznak.
 3. Výběr účtů rezervace dostane režim parametrem `service_mode=true`.
 4. V detailu nezaplaceného účtu lze přepnout mezi standardním a servisním účtem.
    U zaplaceného účtu je převod odmítnut.

@@ -6,13 +6,72 @@ defmodule CozyCheckout.Sales do
   import Ecto.Query, warn: false
   alias CozyCheckout.Repo
 
-  alias CozyCheckout.Sales.{Order, OrderItem, Payment}
+  alias CozyCheckout.Sales.{AccountStamps, Order, OrderItem, Payment}
   alias CozyCheckout.Catalog
   alias CozyCheckout.Bookings
   alias CozyCheckout.Inventory
   alias CozyCheckout.Workers.AbraSyncWorker
 
   ## Orders
+
+  @doc """
+  Suggests a least-used stamp with one query over all open accounts.
+  Legacy accounts participate using their stable ID-based stamp.
+  """
+  def suggest_account_stamp do
+    Order
+    |> where([o], is_nil(o.deleted_at) and o.status in ["open", "partially_paid"])
+    |> select([o], map(o, [:id, :account_stamp]))
+    |> Repo.all()
+    |> AccountStamps.suggest()
+  end
+
+  defp assign_account_stamp(%Ecto.Changeset{valid?: true} = changeset) do
+    if Ecto.Changeset.get_field(changeset, :account_stamp) do
+      changeset
+    else
+      Ecto.Changeset.put_change(changeset, :account_stamp, suggest_account_stamp())
+    end
+  end
+
+  defp assign_account_stamp(changeset), do: changeset
+
+  @doc """
+  Lists open POS accounts, including historical accounts linked to bookings.
+  """
+  def list_open_orders(is_service_order \\ false) do
+    Order
+    |> where([o], is_nil(o.deleted_at))
+    |> where([o], o.status in ["open", "partially_paid"])
+    |> where([o], o.is_service_order == ^is_service_order)
+    |> preload(:guest)
+    |> order_by([o], asc: o.name, asc: o.order_number)
+    |> Repo.all()
+  end
+
+  @doc """
+  Personal spending for current stays (including paid accounts) and open standalone
+  accounts. Uses one joined query, excludes service accounts, cancellations and tips.
+  """
+  def bar_leaderboard do
+    today = Date.utc_today()
+
+    Order
+    |> join(:left, [o], b in CozyCheckout.Bookings.Booking, on: b.id == o.booking_id)
+    |> join(:left, [o, b], g in assoc(o, :guest))
+    |> where([o], is_nil(o.deleted_at) and o.is_service_order == false)
+    |> where([o], o.status in ["open", "partially_paid", "paid"])
+    |> where(
+      [o, b],
+      (is_nil(o.booking_id) and o.status in ["open", "partially_paid"]) or
+        (not is_nil(o.guest_id) and is_nil(b.deleted_at) and b.status == "active" and
+           b.check_in_date <= ^today and
+           (is_nil(b.check_out_date) or b.check_out_date >= ^today))
+    )
+    |> preload([o, b, g], guest: g)
+    |> Repo.all()
+    |> CozyCheckout.Sales.BarLeaderboard.rank()
+  end
 
   @doc """
   Returns the list of active bookings with their open order counts.
@@ -355,6 +414,7 @@ defmodule CozyCheckout.Sales do
 
     %Order{}
     |> Order.changeset(attrs)
+    |> assign_account_stamp()
     |> Repo.insert()
   end
 
@@ -369,6 +429,7 @@ defmodule CozyCheckout.Sales do
 
     %Order{}
     |> Order.changeset(attrs)
+    |> assign_account_stamp()
     |> Repo.insert()
   end
 

@@ -128,7 +128,10 @@ defmodule CozyCheckoutWeb.OrderLive.Show do
         </.link>
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-4xl font-bold text-primary-500">Order {@order.order_number}</h1>
+            <div class="flex items-center gap-3">
+              <.account_stamp stamp={CozyCheckout.Sales.AccountStamps.key(@order)} />
+              <h1 class="text-4xl font-bold text-primary-500">Order {@order.order_number}</h1>
+            </div>
             <p class="text-primary-400 mt-2">
               {Calendar.strftime(@order.inserted_at, "%B %d, %Y at %H:%M")}
             </p>

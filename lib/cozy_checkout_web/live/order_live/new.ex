@@ -1,22 +1,21 @@
 defmodule CozyCheckoutWeb.OrderLive.New do
   use CozyCheckoutWeb, :live_view
 
-  alias CozyCheckout.{Sales, Bookings, Catalog}
+  alias CozyCheckout.{Sales, Catalog}
   alias CozyCheckout.Sales.Order
 
   @impl true
   def mount(_params, _session, socket) do
     order_number = Sales.generate_order_number()
+    order = %Order{order_number: order_number, account_stamp: Sales.suggest_account_stamp()}
 
     socket =
       socket
       |> assign(:page_title, "New Order")
-      |> assign(:order, %Order{order_number: order_number})
-      |> assign(:form, to_form(Sales.change_order(%Order{order_number: order_number})))
-      |> assign(:bookings, Bookings.list_active_bookings())
+      |> assign(:order, order)
+      |> assign(:form, to_form(Sales.change_order(order)))
       |> assign(:products, Catalog.list_products())
       |> assign(:order_items, [])
-      |> assign(:selected_booking_id, nil)
       |> assign(:discount_amount, Decimal.new("0"))
 
     {:ok, socket}
@@ -109,20 +108,19 @@ defmodule CozyCheckoutWeb.OrderLive.New do
   end
 
   def handle_event("save", _params, socket) do
-    # Get the order params from the form
-    booking_id = Ecto.Changeset.get_field(socket.assigns.form.source, :booking_id)
+    order_name = String.trim(Ecto.Changeset.get_field(socket.assigns.form.source, :name) || "")
 
-    if socket.assigns.order_items == [] do
-      {:noreply, put_flash(socket, :error, "Please add at least one item to the order")}
-    else
-      if is_nil(booking_id) do
-        {:noreply, put_flash(socket, :error, "Please select a booking")}
-      else
-        booking = Bookings.get_booking!(booking_id)
+    cond do
+      order_name == "" ->
+        {:noreply, put_flash(socket, :error, "Vyplňte název účtu.")}
 
+      socket.assigns.order_items == [] ->
+        {:noreply, put_flash(socket, :error, "Please add at least one item to the order")}
+
+      true ->
         order_params = %{
-          "booking_id" => booking_id,
-          "guest_id" => booking.guest_id,
+          "name" => order_name,
+          "account_stamp" => Ecto.Changeset.get_field(socket.assigns.form.source, :account_stamp),
           "notes" => Ecto.Changeset.get_field(socket.assigns.form.source, :notes),
           "order_number" => socket.assigns.order.order_number
         }
@@ -137,7 +135,6 @@ defmodule CozyCheckoutWeb.OrderLive.New do
           {:error, reason} ->
             {:noreply, put_flash(socket, :error, "Failed to create order: #{inspect(reason)}")}
         end
-      end
     end
   end
 
@@ -226,24 +223,15 @@ defmodule CozyCheckoutWeb.OrderLive.New do
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <%!-- Order Form --%>
         <div class="lg:col-span-2 space-y-8">
-          <%!-- Booking Selection --%>
+          <%!-- Account name --%>
           <div class="bg-white shadow-lg rounded-lg p-6">
-            <h2 class="text-2xl font-bold text-primary-500 mb-4">Booking Information</h2>
+            <h2 class="text-2xl font-bold text-primary-500 mb-4">Účet</h2>
             <.form for={@form} id="order-form" phx-change="validate">
-              <.input
-                field={@form[:booking_id]}
-                type="select"
-                label="Booking"
-                prompt="Select a booking"
-                options={
-                  Enum.map(
-                    @bookings,
-                    &{&1.guest.name <>
-                       if(&1.room_number, do: " (Room #{&1.room_number})", else: "") <>
-                       " - #{Calendar.strftime(&1.check_in_date, "%b %d")}", &1.id}
-                  )
-                }
-                required
+              <.input field={@form[:name]} type="text" label="Název účtu" required />
+              <.account_stamp_picker
+                id="admin-stamp-picker"
+                name="order[account_stamp]"
+                value={@form[:account_stamp].value}
               />
               <.input field={@form[:notes]} type="textarea" label="Order Notes" />
             </.form>
