@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
+  alias CozyCheckoutWeb.IncomingAccountingCatalog
   alias CozyCheckout.IncomingDocuments.SourceAttachments
   alias CozyCheckout.IncomingDocuments.Batches
 
@@ -52,6 +53,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
        accounting_dirty: false,
        accounting_form: to_form(%{"preset" => "", "internal_code" => ""}, as: :fields)
      )
+     |> assign(IncomingAccountingCatalog.defaults())
      |> allow_upload(:source,
        accept: ~w(.pdf .png .jpg .jpeg),
        max_entries: 1,
@@ -170,6 +172,15 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
       doc.state in ~w(uploaded processing validating sending uncertain) ||
         doc.source_attachment["state"] in ["queued", "processing"] ||
         doc.source_attachment["retry_pending"] == true
+
+  def handle_async({:accounting_catalog, key}, result, socket),
+    do: {:noreply, IncomingAccountingCatalog.complete(socket, key, result, :document)}
+
+  defp maybe_load_accounting(socket, force \\ false) do
+    if socket.assigns.doc && editable?(socket.assigns.doc),
+      do: IncomingAccountingCatalog.load(socket, socket.assigns.doc, :document, force),
+      else: socket
+  end
 
   def handle_event("review-summary", _, socket) do
     if unsaved?(socket),
@@ -354,26 +365,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
     save_current(socket, params["agenda"], false)
   end
 
-  def handle_event("accounting-load", _, socket) do
-    case IncomingDocuments.accounting_presets(socket.assigns.doc.id) do
-      {:ok, rows} ->
-        options =
-          Enum.map(rows, fn row ->
-            %{
-              id: Base.url_encode64(row["kod"], padding: false),
-              name: "#{row["kod"]} — #{row["nazev"]}",
-              hint: row["protiUcetVydej"] || "Účet neurčen",
-              search_text: "#{row["kod"]} #{row["nazev"]} #{row["protiUcetVydej"]}"
-            }
-          end)
-
-        {:noreply,
-         assign(socket, accounting_options: options, accounting_open: true, accounting_error: nil)}
-
-      {:error, reason} ->
-        {:noreply, assign(socket, accounting_error: reason)}
-    end
-  end
+  def handle_event("accounting-load", _, socket),
+    do: {:noreply, maybe_load_accounting(socket, true)}
 
   def handle_event("accounting-open", _, socket),
     do: {:noreply, assign(socket, accounting_open: true)}
@@ -916,6 +909,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         {"Odeslání do ABRA", ResponseDiagnostics.for_display(doc.response)}
       ]
     )
+    |> maybe_load_accounting()
   end
 
   defp save_state(doc, dirty) do
@@ -1136,6 +1130,90 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
             class="btn btn-sm"
           >Originál</button>
         </div>
+        <section
+          :if={@doc}
+          class={[
+            "rounded-xl border border-primary/20 bg-base-100 p-4 sm:p-5 space-y-4 shadow-sm lg:block",
+            @mobile_view == "original" && "hidden"
+          ]}
+          id="incoming-accounting"
+          aria-labelledby="incoming-accounting-title"
+        >
+          <div class="flex items-start gap-3">
+            <span class="rounded-lg bg-primary/10 p-2 text-primary"><.icon
+              name="hero-calculator"
+              class="size-6"
+            /></span>
+            <div class="min-w-0">
+              <h2 id="incoming-accounting-title" class="text-lg font-semibold">
+                Předpis zaúčtování
+              </h2>
+              <p class="text-sm text-base-content/70">Zkontrolujte před odesláním do ABRA.</p>
+            </div>
+          </div>
+          <div class="rounded-lg bg-base-200/60 p-3 text-sm space-y-1 break-words">
+            <p>
+              <span class="text-base-content/70">Vybraný předpis:</span>
+              <strong>{selected_accounting(assigns)}</strong><span
+                :if={@accounting_dirty}
+                class="text-warning"
+              > · Neuložená změna</span>
+            </p>
+            <p class="text-base-content/70">
+              Uložený nákladový účet MD: {@template_fields["protiUcet"] || "doplní ABRA"}
+            </p>
+          </div>
+          <CozyCheckoutWeb.IncomingDocumentComponents.accounting_catalog_status
+            :if={!@locked}
+            loading={@accounting_loading}
+            error={@accounting_error}
+            empty={@accounting_options == []}
+          />
+          <.form
+            for={@accounting_form}
+            id="incoming-accounting-form"
+            phx-change="accounting-change"
+            phx-submit="workflow-save"
+            class="space-y-3"
+          >
+            <fieldset disabled={@locked} class="space-y-3">
+              <.searchable_picker
+                field={@accounting_form[:preset]}
+                options={@accounting_options}
+                label="Předpis zaúčtování"
+                required={false}
+                prompt="Ponechat aktuální předpis"
+                placeholder="Hledat podle názvu, kódu nebo účtu…"
+                search_name="accounting_search"
+                search_event="accounting-search"
+                open_event="accounting-open"
+                close_event="accounting-close"
+                select_event="accounting-select"
+                query={@accounting_query}
+                open={@accounting_open}
+                empty_message="Žádný odpovídající předpis. Zkuste jiný název, kód nebo účet."
+              />
+              <p class="text-sm text-base-content/70">
+                Výběr převezme nákladový účet a účty DPH z ABRA. Změnu uložíte tlačítkem Uložit ve spodní liště.
+              </p>
+              <details id="incoming-internal-code" phx-mounted={JS.ignore_attributes("open")}>
+                <summary class="cursor-pointer text-sm text-base-content/70">
+                  Interní číslo ABRA (nepovinné)
+                </summary>
+                <div class="mt-3 space-y-2">
+                  <.input
+                    field={@accounting_form[:internal_code]}
+                    label="Interní číslo ABRA (nepovinné)"
+                    maxlength="20"
+                  />
+                  <p class="text-sm">
+                    Prázdné pole ponechá číslování na ABRA podle typu dokladu a jeho řady. Číslo dodavatelské faktury patří do „Číslo dokladu“, ne sem. Pokud ruční import číslo vyžaduje, lze je zde zadat a stáhnout nové XML.
+                  </p>
+                </div>
+              </details>
+            </fieldset>
+          </.form>
+        </section>
         <div class="grid gap-6 lg:grid-cols-2">
           <.form
             for={to_form(@values, as: :document)}
@@ -1232,61 +1310,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           </div>
         </div>
         <div :if={@doc} class={["space-y-5 lg:block", @mobile_view == "original" && "hidden"]}>
-          <details
-            class="bg-white rounded-xl p-4 space-y-3"
-            id="incoming-accounting"
-            phx-mounted={JS.ignore_attributes("open")}
-          >
-            <summary class="cursor-pointer">
-              Předpis: {selected_accounting(assigns)} · Změnit
-            </summary>
-            <p>
-              Aktuální předpis: <strong>{@template_fields["typUcOp"] || "neurčen"}</strong>. Nákladový účet MD: <strong>{@template_fields["protiUcet"] || "doplní ABRA"}</strong>.
-            </p>
-            <p>Výběr předpisu převezme nákladový účet a účty DPH z ABRA.</p>
-            <button
-              :if={!@locked}
-              type="button"
-              class="btn"
-              phx-click="accounting-load"
-              phx-disable-with="Načítám…"
-            >Načíst předpisy zaúčtování z ABRA</button>
-            <p :if={@accounting_error} class="alert alert-error">{@accounting_error}</p>
-            <.form
-              for={@accounting_form}
-              id="incoming-accounting-form"
-              phx-change="accounting-change"
-              phx-submit="workflow-save"
-              class="space-y-3"
-            >
-              <fieldset disabled={@locked} class="space-y-3">
-                <.searchable_picker
-                  field={@accounting_form[:preset]}
-                  options={@accounting_options}
-                  label="Nový předpis zaúčtování"
-                  required={false}
-                  prompt="Ponechat aktuální předpis"
-                  placeholder="Načtěte číselník a hledejte název nebo účet…"
-                  search_name="accounting_search"
-                  search_event="accounting-search"
-                  open_event="accounting-open"
-                  close_event="accounting-close"
-                  select_event="accounting-select"
-                  query={@accounting_query}
-                  open={@accounting_open}
-                  empty_message="Žádný odpovídající předpis. Načtěte číselník z ABRA nebo upravte hledání."
-                />
-                <.input
-                  field={@accounting_form[:internal_code]}
-                  label="Interní číslo ABRA (nepovinné)"
-                  maxlength="20"
-                />
-                <p class="text-sm">
-                  Prázdné pole ponechá číslování na ABRA podle typu dokladu a jeho řady. Číslo dodavatelské faktury patří do „Číslo dokladu“, ne sem. Pokud ruční import číslo vyžaduje, lze je zde zadat a stáhnout nové XML.
-                </p>
-              </fieldset>
-            </.form>
-          </details>
           <p :if={@doc.state == "uncertain"} class="alert alert-warning">
             Výsledek zápisu není potvrzený. Zkontrolujte ABRA; nový zápis je zablokovaný, aby nevznikl duplicitní doklad.
           </p>

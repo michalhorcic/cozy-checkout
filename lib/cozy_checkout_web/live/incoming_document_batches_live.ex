@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
+  alias CozyCheckoutWeb.IncomingAccountingCatalog
   alias CozyCheckout.IncomingDocuments.SourceAttachments
   alias CozyCheckout.IncomingDocuments.Batches
   import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
@@ -13,7 +14,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
        batch: nil,
        rows: [],
        page: 0,
-       presets: [],
+       accounting_options: [],
+       accounting_error: nil,
        preset: "",
        accounting_open: false,
        accounting_query: nil,
@@ -24,6 +26,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
        queued_uploads: [],
        upload_preparing: false
      )
+     |> assign(IncomingAccountingCatalog.defaults())
      |> allow_upload(:sources,
        accept: ~w(.pdf .png .jpg .jpeg),
        max_entries: max(2, Batches.limit()),
@@ -53,6 +56,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
           )
           |> reload()
           |> maybe_open_review(params)
+          |> maybe_load_accounting()
       end
 
     if connected?(socket), do: Process.send_after(self(), :refresh, 2000)
@@ -69,6 +73,16 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
 
     Process.send_after(self(), :refresh, 2000)
     {:noreply, socket}
+  end
+
+  def handle_async({:accounting_catalog, key}, result, socket),
+    do: {:noreply, IncomingAccountingCatalog.complete(socket, key, result, :batch)}
+
+  defp maybe_load_accounting(socket, force \\ false) do
+    if socket.assigns.live_action == :show && socket.assigns.batch &&
+         is_nil(socket.assigns.batch.started_at),
+       do: IncomingAccountingCatalog.load(socket, socket.assigns.batch, :batch, force),
+       else: socket
   end
 
   def handle_event("create", %{"batch" => attrs}, socket) do
@@ -175,21 +189,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
         true
       )
 
-  def handle_event("accounting-load", _, socket) do
-    case Batches.presets(socket.assigns.batch.id) do
-      {:ok, rows} ->
-        {:noreply,
-         assign(socket,
-           presets:
-             Enum.map(rows, &%{id: &1["kod"], hint: "", name: "#{&1["kod"]} — #{&1["nazev"]}"}),
-           accounting_open: true,
-           accounting_query: nil
-         )}
-
-      {:error, reason} ->
-        {:noreply, put_flash(socket, :error, reason)}
-    end
-  end
+  def handle_event("accounting-load", _, socket),
+    do: {:noreply, maybe_load_accounting(socket, true)}
 
   def handle_event("accounting-open", _, socket),
     do: {:noreply, assign(socket, accounting_open: true)}
@@ -206,7 +207,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
        )}
 
   def handle_event("accounting-select", %{"id" => id}, socket) do
-    if Enum.any?(socket.assigns.presets, &(&1.id == id)) do
+    if Enum.any?(socket.assigns.accounting_options, &(&1.id == id)) do
       {:noreply,
        assign(socket,
          preset: id,
@@ -517,22 +518,35 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
             </p>
           </div>
           <p :for={message <- @upload_messages} class="text-error">{message}</p>
-          <.batch_documents batch={@batch} rows={@rows} />
-          <details
+          <section
             id="batch-accounting-settings"
-            phx-mounted={JS.ignore_attributes("open")}
-            class="rounded-lg border p-3 space-y-3"
+            aria-labelledby="batch-accounting-title"
+            class="rounded-xl border border-primary/20 bg-base-100 p-4 sm:p-5 space-y-4 shadow-sm"
           >
-            <summary class="cursor-pointer">
-              Předpis: {Enum.find_value(@presets, fn option ->
+            <div class="flex items-start gap-3">
+              <span class="rounded-lg bg-primary/10 p-2 text-primary"><.icon
+                name="hero-calculator"
+                class="size-6"
+              /></span>
+              <div class="min-w-0">
+                <h3 id="batch-accounting-title" class="text-lg font-semibold">Předpis zaúčtování</h3>
+                <p class="text-sm text-base-content/70">
+                  Společný pro všechny doklady této dávky. Před spuštěním ho zkontrolujte.
+                </p>
+              </div>
+            </div>
+            <p class="rounded-lg bg-base-200/60 p-3 text-sm break-words">
+              <span class="text-base-content/70">Vybraný předpis:</span>
+              <strong>{Enum.find_value(@accounting_options, fn option ->
                 if option.id == @preset, do: option.name
               end) || @batch.accounting_settings["preset_name"] || "podle šablony agendy"}{if @settings_dirty,
-                do: " · Změněno"} · Změnit
-            </summary>
-            <p>
-              Předpis: {@batch.accounting_settings["preset_name"] || "podle šablony agendy"}. Interní čísla přidělí ABRA.
+                do: " · Neuložená změna"}</strong>
             </p>
-            <button phx-click="accounting-load" class="btn">Načíst předpisy z ABRA</button>
+            <CozyCheckoutWeb.IncomingDocumentComponents.accounting_catalog_status
+              loading={@accounting_loading}
+              error={@accounting_error}
+              empty={@accounting_options == []}
+            />
             <.form
               for={to_form(%{"preset" => @preset}, as: :fields)}
               id="batch-preset-form"
@@ -541,7 +555,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
               <.searchable_picker
                 field={to_form(%{"preset" => @preset}, as: :fields)[:preset]}
                 label="Společný účetní předpis"
-                options={@presets}
+                prompt="Ponechat předpis ze šablony"
+                placeholder="Hledat podle názvu, kódu nebo účtu…"
+                empty_message="Žádný odpovídající předpis. Zkuste jiný název, kód nebo účet."
+                options={@accounting_options}
                 open={@accounting_open}
                 query={@accounting_query}
                 open_event="accounting-open"
@@ -566,7 +583,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
                 value="true"
               />
             </.form>
-          </details>
+            <p class="text-sm text-base-content/70">
+              Předpis se uloží při spuštění vytěžování. Interní čísla přidělí ABRA.
+            </p>
+          </section>
           <details id="batch-model">
             <summary class="text-sm cursor-pointer">Podrobnosti vytěžování</summary>Model: {IncomingDocuments.config()[
               :openai_model
@@ -581,6 +601,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
                 @queued_uploads != []
             }
           >Spustit vytěžování {@counts.total} dokladů</button>
+          <.batch_documents batch={@batch} rows={@rows} />
         </section>
         <div :if={@batch.started_at} role="status" class="space-y-2">
           <p>

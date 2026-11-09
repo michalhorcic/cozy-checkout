@@ -8,7 +8,22 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
   setup do
     previous = IncomingDocuments.config()
     req_options = Req.default_options()
-    Req.default_options(plug: {Req.Test, __MODULE__})
+
+    Req.Test.stub({__MODULE__, :catalog}, fn conn ->
+      Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => []}})
+    end)
+
+    Req.default_options(
+      plug: fn conn ->
+        name =
+          if String.ends_with?(conn.request_path, "/predpis-zauctovani.json"),
+            do: {__MODULE__, :catalog},
+            else: __MODULE__
+
+        Req.Test.call(conn, name)
+      end
+    )
+
     Req.Test.verify_on_exit!()
     pin = Application.get_env(:cozy_checkout, :admin_pin_hash)
     Application.put_env(:cozy_checkout, :admin_pin_hash, AdminAuth.hash_pin("482731"))
@@ -131,13 +146,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
         [target]
 
     for _ <- 1..2 do
-      Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.expect({__MODULE__, :catalog}, fn conn ->
         Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => rows}})
       end)
     end
 
     {:ok, view, _} = live(admin(conn), "/admin/incoming-document-batches/#{batch.id}")
-    view |> element("button[phx-click=accounting-load]") |> render_click()
+    render_async(view)
+    assert has_element?(view, "section#batch-accounting-settings")
     refute has_element?(view, "button[phx-value-id='2.NÁKUP POTRAVINY']")
     render_change(view, "accounting-search", %{"accounting_search" => %{"0" => "potrav"}})
     view |> element("button[phx-value-id='2.NÁKUP POTRAVINY']") |> render_click()
@@ -154,6 +170,73 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
     assert has_element?(view, "#fields_preset-options button[phx-value-id=TEST35]")
     view |> element("button[phx-value-id=TEST35]") |> render_click()
     assert has_element?(view, "#fields_preset-search[value='TEST35 — Předpis 35']")
+  end
+
+  test "catalog failure can be retried without losing the batch settings", %{conn: conn} do
+    batch = batch()
+    Req.Test.expect({__MODULE__, :catalog}, fn conn -> Plug.Conn.send_resp(conn, 503, "") end)
+
+    Req.Test.expect({__MODULE__, :catalog}, fn conn ->
+      Req.Test.json(conn, %{
+        "winstrom" => %{
+          "predpis-zauctovani" => [
+            %{"kod" => "SLUZBY", "nazev" => "Služby", "modulZav" => true}
+          ]
+        }
+      })
+    end)
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-batches/#{batch.id}")
+    render_async(view)
+    assert has_element?(view, "#batch-accounting-settings [role=alert]", "HTTP 503")
+    view |> form("#batch-settings", %{"include_items" => "true"}) |> render_change()
+    view |> element("button[phx-click=accounting-load]", "Zkusit znovu") |> render_click()
+    render_async(view)
+    refute has_element?(view, "#batch-accounting-settings [role=alert]")
+    assert has_element?(view, "input[name=include_items][checked]")
+    render_change(view, "accounting-search", %{"accounting_search" => %{"0" => "sluzby"}})
+    assert has_element?(view, "button[phx-value-id=SLUZBY]", "Služby")
+    assert is_nil(Batches.get!(batch.id).started_at)
+  end
+
+  test "review reuses the catalog between documents and polling preserves a draft", %{conn: conn} do
+    batch = batch()
+    one = source(batch, "%PDF-catalog-one")
+    two = source(batch, "%PDF-catalog-two")
+    ready(batch, [one, two])
+    parent = self()
+
+    Req.Test.stub({__MODULE__, :catalog}, fn conn ->
+      send(parent, :catalog_requested)
+
+      Req.Test.json(conn, %{
+        "winstrom" => %{
+          "predpis-zauctovani" => [
+            %{"kod" => "SLUZBY", "nazev" => "Služby", "modulZav" => true}
+          ]
+        }
+      })
+    end)
+
+    {:ok, view, _} =
+      live(admin(conn), "/admin/incoming-document-batches/#{batch.id}/review/#{one}")
+
+    render_async(view)
+    assert_receive :catalog_requested
+    render_click(view, "review-move", %{"id" => two})
+    assert_patch(view, "/admin/incoming-document-batches/#{batch.id}/review/#{two}")
+    render_async(view)
+    refute_receive :catalog_requested
+    render_change(view, "accounting-search", %{"accounting_search" => %{"0" => "sluzby"}})
+
+    view
+    |> element("button[phx-value-id='#{Base.url_encode64("SLUZBY", padding: false)}']")
+    |> render_click()
+
+    send(view.pid, :refresh)
+    assert has_element?(view, "#fields_preset-search[value='SLUZBY — Služby']")
+    assert has_element?(view, "#incoming-accounting", "Neuložená změna")
+    assert IncomingDocuments.get!(two).accounting_settings == %{}
   end
 
   test "readiness and membership are checked on the server; direct staged details redirect", %{

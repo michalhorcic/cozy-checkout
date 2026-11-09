@@ -7,7 +7,22 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
   setup do
     previous = IncomingDocuments.config()
     req_options = Req.default_options()
-    Req.default_options(plug: {Req.Test, __MODULE__})
+
+    Req.Test.stub({__MODULE__, :catalog}, fn conn ->
+      Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => []}})
+    end)
+
+    Req.default_options(
+      plug: fn conn ->
+        name =
+          if String.ends_with?(conn.request_path, "/predpis-zauctovani.json"),
+            do: {__MODULE__, :catalog},
+            else: __MODULE__
+
+        Req.Test.call(conn, name)
+      end
+    )
+
     Req.Test.verify_on_exit!()
     pin = Application.get_env(:cozy_checkout, :admin_pin_hash)
     Application.put_env(:cozy_checkout, :admin_pin_hash, AdminAuth.hash_pin("482731"))
@@ -139,14 +154,15 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     }
 
     for _ <- 1..2 do
-      Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.expect({__MODULE__, :catalog}, fn conn ->
         assert conn.request_path == "/c/pilot/predpis-zauctovani.json"
         Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => [row]}})
       end)
     end
 
     {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
-    view |> element("button[phx-click=accounting-load]") |> render_click()
+    render_async(view)
+    assert has_element?(view, "section#incoming-accounting")
 
     render_click(view, "accounting-select", %{"id" => Base.url_encode64("SLUŽBY", padding: false)})
 

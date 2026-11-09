@@ -6,6 +6,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
   alias CozyCheckoutWeb.AdminAuth
 
   setup do
+    req_options = Req.default_options()
+    Req.default_options(plug: {Req.Test, __MODULE__})
+
+    Req.Test.stub(__MODULE__, fn conn ->
+      assert String.ends_with?(conn.request_path, "/predpis-zauctovani.json")
+      Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => []}})
+    end)
+
     old_pin = Application.get_env(:cozy_checkout, :admin_pin_hash)
     old_config = IncomingDocuments.config()
     Application.put_env(:cozy_checkout, :admin_pin_hash, AdminAuth.hash_pin("482731"))
@@ -19,6 +27,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     )
 
     on_exit(fn ->
+      Req.default_options(req_options)
+
       if old_pin,
         do: Application.put_env(:cozy_checkout, :admin_pin_hash, old_pin),
         else: Application.delete_env(:cozy_checkout, :admin_pin_hash)
