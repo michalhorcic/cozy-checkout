@@ -453,16 +453,25 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   defp batch_documents(assigns) do
     ~H"""
     <div class="overflow-x-auto">
-      <table class="table" id="batch-documents">
+      <table class="table w-full table-fixed sm:table-auto" id="batch-documents">
         <thead>
           <tr>
-            <th>Pořadí</th><th>Soubor</th><th>Stav</th><th></th>
+            <th class="hidden sm:table-cell">Pořadí</th><th>Soubor</th><th class="hidden sm:table-cell">
+              Stav
+            </th><th class="w-28 sm:w-auto"></th>
           </tr>
         </thead>
         <tbody>
           <tr :for={row <- @rows}>
-            <td>{row.position}</td><td>{row.filename}</td><td>
-              {row.state}
+            <td class="hidden sm:table-cell">{row.position}</td>
+            <td class="break-all">
+              {row.filename}
+              <span class="block text-sm sm:hidden">{document_state(row.state)}{if row.deferred_at,
+                do: " · Odloženo"}</span>
+              <p :if={row.error} class="text-error sm:hidden">{row.error}</p>
+            </td>
+            <td class="hidden sm:table-cell">
+              {document_state(row.state)}
               <p :if={row.error} class="text-error">{row.error}</p><span :if={row.deferred_at}>Odloženo</span>
             </td>
             <td>
@@ -470,7 +479,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
                 :if={!@batch.started_at}
                 phx-click="remove"
                 phx-value-id={row.id}
-                class="btn"
+                class="btn btn-sm min-h-11"
               >Odebrat</button>
               <.link
                 :if={@batch.extraction_finished_at}
@@ -484,6 +493,24 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
     </div>
     """
   end
+
+  defp document_state(state),
+    do:
+      Map.get(
+        %{
+          "staged" => "Uloženo",
+          "uploaded" => "Čeká",
+          "processing" => "Vytěžování",
+          "review" => "Ke kontrole",
+          "failed" => "Chyba",
+          "validating" => "Ověřování",
+          "sending" => "Odesílání",
+          "sent" => "Odesláno",
+          "uncertain" => "Nutno ověřit"
+        },
+        state,
+        state
+      )
 
   defp upload_error(:too_large), do: "Soubor je větší než 10 MB"
   defp upload_error(:too_many_files), do: "Překročen počet souborů v dávce"
