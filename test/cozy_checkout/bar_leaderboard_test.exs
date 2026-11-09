@@ -84,7 +84,13 @@ defmodule CozyCheckout.BarLeaderboardTest do
   defp active_booking(attrs \\ %{}) do
     menu_booking_fixture(
       Map.merge(
-        %{status: "active", check_in_date: Date.utc_today(), check_out_date: Date.utc_today()},
+        %{
+          status: "active",
+          check_in_date: Date.utc_today(),
+          check_out_date: Date.utc_today(),
+          first_meal: "breakfast",
+          last_meal: "dinner"
+        },
         attrs
       )
     )

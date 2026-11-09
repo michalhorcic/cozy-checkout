@@ -4,7 +4,7 @@ defmodule CozyCheckout.Economics.ReportsTest do
   alias CozyCheckout.Economics.Reports
 
   defp build(
-         posted \\ posted(),
+         posted,
          trial \\ trial(),
          items \\ [],
          unposted \\ [],
