@@ -88,6 +88,8 @@ defmodule CozyCheckout.IncomingDocuments.Batches do
           position: d.batch_position,
           deferred_at: d.deferred_at,
           error: d.error,
+          source_attachment: d.source_attachment,
+          has_source: not is_nil(d.sha256),
           initial_state: r.state
         }
     )

@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
+  alias CozyCheckout.IncomingDocuments.SourceAttachments
   alias CozyCheckout.IncomingDocuments.Batches
 
   alias CozyCheckout.IncomingDocuments.{
@@ -161,7 +162,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
   end
 
   defp busy?(nil), do: false
-  defp busy?(doc), do: doc.state in ~w(uploaded processing validating sending uncertain)
+
+  defp busy?(doc),
+    do:
+      doc.state in ~w(uploaded processing validating sending uncertain) ||
+        doc.source_attachment["state"] in ["queued", "processing"] ||
+        doc.source_attachment["retry_pending"] == true
 
   def handle_event("review-summary", _, socket) do
     if unsaved?(socket),
@@ -502,6 +508,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         end
       end,
       "Doklad byl zařazen k odeslání do ABRA."
+    )
+  end
+
+  def handle_event("source-attachment-retry", _, socket) do
+    operation(
+      socket,
+      fn doc -> SourceAttachments.enqueue(doc.id) end,
+      "Podklad byl zařazen k přenosu do ABRA."
     )
   end
 
@@ -1502,6 +1516,27 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               class="btn"
               phx-disable-with="Ověřuji…"
             >Ověřit v ABRA bez opakování zápisu</button>
+            <section
+              :if={@doc.state == "sent" && @doc.original}
+              id="incoming-source-attachment"
+              class="space-y-2"
+            >
+              <h3 class="font-bold">Podklad v přílohách ABRA</h3>
+              <p :if={@doc.source_attachment["state"] == "uploaded"} class="text-success">
+                Obrázek / PDF je přiložený a jeho obsah byl ověřen.
+              </p>
+              <p :if={@doc.source_attachment["state"] in ["queued", "processing"]} role="status">
+                Probíhá přiložení uloženého obrázku / PDF k dokladu v ABRA.
+              </p>
+              <p :if={@doc.source_attachment["error"]} class="text-error">
+                {@doc.source_attachment["error"]} Účetní doklad zůstává odeslaný.
+              </p>
+              <button
+                :if={@doc.source_attachment["state"] in [nil, "failed"]}
+                class="btn"
+                phx-click="source-attachment-retry"
+              >Odeslat podklad do příloh ABRA</button>
+            </section>
             <p :if={@doc.state == "sent"} class="alert alert-success">
               Doklad je v ABRA, ID {@doc.remote_id}.
               <a href={Client.document_url(@doc)} class="link" target="_blank" rel="noopener">Otevřít v ABRA</a>

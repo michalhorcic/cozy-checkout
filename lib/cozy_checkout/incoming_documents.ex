@@ -994,6 +994,7 @@ defmodule CozyCheckout.IncomingDocuments do
               error: nil,
               error_stage: nil
             )
+            |> CozyCheckout.IncomingDocuments.SourceAttachments.enqueue_locked()
 
           {:found, remote_id} ->
             update!(current,
@@ -1005,6 +1006,7 @@ defmodule CozyCheckout.IncomingDocuments do
               error: nil,
               error_stage: nil
             )
+            |> CozyCheckout.IncomingDocuments.SourceAttachments.enqueue_locked()
 
           {:rejected, reason, response} ->
             update!(current,

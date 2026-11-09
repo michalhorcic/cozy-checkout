@@ -532,4 +532,42 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
       end)
     end)
   end
+
+  test "a source attachment can be retried on a sent document without another accounting send", %{
+    conn: conn
+  } do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+    bytes = "%PDF-source"
+
+    doc =
+      doc
+      |> Ecto.Changeset.change(
+        state: "sent",
+        remote_id: "42",
+        sent_xml: doc.current_xml,
+        original: bytes,
+        content_type: "application/pdf",
+        sha256: IncomingDocuments.digest(bytes),
+        source_attachment: %{"state" => "failed", "error" => "Attachment permission denied"}
+      )
+      |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert has_element?(view, "#incoming-source-attachment", "Attachment permission denied")
+    view |> element("button[phx-click=source-attachment-retry]") |> render_click()
+    queued = IncomingDocuments.get!(doc.id)
+    assert queued.source_attachment["state"] == "queued"
+    assert queued.state == "sent"
+    assert queued.sent_xml == doc.sent_xml
+    refute has_element?(view, "#incoming-send")
+
+    queued
+    |> Ecto.Changeset.change(
+      source_attachment: Map.put(queued.source_attachment, "state", "uploaded")
+    )
+    |> Repo.update!()
+
+    send(view.pid, :refresh)
+    assert render(view) =~ "Obrázek / PDF je přiložený a jeho obsah byl ověřen"
+  end
 end

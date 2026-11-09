@@ -477,3 +477,48 @@ souborů: snímek 4000 × 3000 se uložil jako JPEG 1920 × 1440, otočený sní
 beze změny; poškozená fotka se neuložila a ostatní uploady dokončily. Fyzický
 fotoaparát telefonu nebyl v cloudovém prostředí ověřen. ExUnit sada nebyla
 lokálně spuštěna; nové/změněné testovací moduly byly zkompilovány, CI ověří uživatel.
+
+## Obrázek / PDF v přílohách ABRA
+
+Po potvrzeném založení dokladu (také při dohledání jeho externího ID) se automaticky
+zařadí přenos uloženého podkladu do příloh příslušného dokladu v ABRA. Platí pro
+přijaté faktury, pokladní výdaje a závazky. Posílají se přesně uložené bajty PDF,
+JPEG nebo PNG, tedy také zmenšená fotka z telefonu, která byla podkladem vytěžení.
+Název v ABRA je `podklad-<UUID>.<pdf|jpg|png>`.
+
+Příloha má vlastní Oban job a stav, nezávislý na účetním importu. Před uploadem
+se projdou stránky seznamu příloh, případná existující příloha se stáhne a její
+SHA256 se porovná s uloženým podkladem. Stejná kontrola následuje po uploadu.
+Existující příloha s odlišným nebo nejednoznačným obsahem se nepřepisuje ani nemaže.
+Po rezervovaném uploadu, jehož výsledek není jistý, automatický pokus už pouze
+ověřuje stav; nový upload musí povolit obsluha tlačítkem. Duplicitní spuštění,
+starý job nebo pozdní výsledek nemohou přepsat novější záměr přenosu.
+
+Detail ukazuje čekání, ověřené přiložení nebo konkrétní chybu a tlačítko
+**Odeslat podklad do příloh ABRA**. Ve výpisu dávky je stav přílohy a u chyby
+**Zopakovat**. Odeslaný účetní doklad a jeho XML se při opakování přílohy nemění.
+Postupná kontrola může pokračovat po potvrzení účetního přenosu; příloha se
+mezitím dokončí na pozadí. Po zavření prohlížeče zůstává job v DB.
+
+Starší odeslaný doklad s uloženým zdrojem lze doplnit uvedeným tlačítkem v jeho
+detailu. Zpětné hromadné odeslání starších příloh není automatické. Ruční doklady
+bez zdroje nevytvářejí job přílohy. Přenos je blokován při změně cílové firmy,
+URL nebo obsahu podkladu. Přístup k akcím zůstává pod admin PIN.
+
+Nasazení vyžaduje `mix ecto.migrate` (migrace `20261109150000`) a restart aplikace.
+Nový job běží ve stávající frontě `abra_pdf` a má nejvýše pět pokusů; minutová
+obnova označí neukončený přenos po terminálním stavu jobu za chybu. Není potřeba
+nová konfigurace ani zapínat `ABRA_PDF_ENABLED`, které se týká pobytových faktur.
+Účet ABRA používaný pro přijaté doklady musí mít také čtení a zápis příloh.
+
+Použité endpointy jsou `GET <agenda>/<id>/prilohy.json`,
+`PUT <agenda>/<id>/prilohy/new/<název>` s původním obsahem a odpovídajícím MIME
+typem a `GET <agenda>/<id>/prilohy/<příloha-id>/content`, pod stávající cílovou
+firmou `/c/<firma>`. Využívají stejný klientský postup jako pobytové PDF.
+
+Kompilace aplikace, nových/změněných testovacích modulů a formátování byly ověřeny
+s připnutým toolchainem. Migrace prošla na dočasném PostgreSQL 17. Průchod
+prohlížečem s náhradami externích odpovědí ověřil účetní import, automatický job
+přílohy, následné ověření obsahu a zobrazení úspěchu. Podklady PDF/JPEG/PNG byly
+ověřeny ve všech třech agendách. Živé uploady do ABRA nebyly provedeny. ExUnit
+sada nebyla lokálně spuštěna podle AGENTS.md; výsledky CI ověří uživatel.

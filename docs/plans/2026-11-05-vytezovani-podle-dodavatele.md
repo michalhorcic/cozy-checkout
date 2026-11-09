@@ -42,6 +42,12 @@ hodnoty a otevřené sekce, bez JS chyb; šířka 390 px bez vodorovného přesa
 AI a ABRA byly nahrazené lokálními odpověďmi. Živá přesnost, cena a ergonomie
 na skutečných soukromých dokladech nebyly tímto ověřené; provozní pilot zbývá.
 
+Po potvrzeném přenosu do ABRA se navíc automaticky zařadí samostatný job přílohy
+uloženého podkladu (PDF/JPEG/PNG). Stav a opakování jsou nezávislé na účetním
+importu, existující obsah se ověřuje SHA256 a po nejistém uploadu se automaticky
+jen dohledává. Migrace `20261109150000` přidává trvalý stav přílohy. Podrobnosti
+jsou v uživatelském návodu; živé přenosy do ABRA agent neprováděl.
+
 Následující zadání zachovává přijatá rozhodnutí a akceptační scénáře pro revizi.
 
 ## 1. Zadání pro další vlákno

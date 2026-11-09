@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.IncomingDocuments
+  alias CozyCheckout.IncomingDocuments.SourceAttachments
   alias CozyCheckout.IncomingDocuments.Batches
   import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
 
@@ -120,6 +121,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
        |> reload()}
     else
       {:noreply, socket}
+    end
+  end
+
+  def handle_event("source-attachment-retry", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.rows, &(&1.id == id && &1.state == "sent")) do
+      result(socket, SourceAttachments.enqueue(id))
+    else
+      {:noreply, put_flash(socket, :error, "Doklad nepatří této dávce nebo není odeslaný")}
     end
   end
 
@@ -481,6 +490,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
             <td class="hidden sm:table-cell">{row.position}</td>
             <td class="break-all">
               {row.filename}
+              <p :if={row.state == "sent" && row.has_source} class="text-sm">
+                {attachment_label(row.source_attachment["state"])}
+              </p>
+              <p :if={row.source_attachment["error"]} class="text-error text-sm">
+                {row.source_attachment["error"]}
+              </p>
               <span class="block text-sm sm:hidden">{document_state(row.state)}{if row.deferred_at,
                 do: " · Odloženo"}</span>
               <p :if={row.error} class="text-error sm:hidden">{row.error}</p>
@@ -490,6 +505,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
               <p :if={row.error} class="text-error">{row.error}</p><span :if={row.deferred_at}>Odloženo</span>
             </td>
             <td>
+              <button
+                :if={row.state == "sent" && row.source_attachment["state"] == "failed"}
+                class="btn btn-sm min-h-11"
+                phx-click="source-attachment-retry"
+                phx-value-id={row.id}
+              >Zopakovat</button>
               <button
                 :if={!@batch.started_at}
                 phx-click="remove"
@@ -508,6 +529,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
     </div>
     """
   end
+
+  defp attachment_label("uploaded"), do: "Podklad přiložen v ABRA"
+  defp attachment_label("failed"), do: "Chyba přenosu přílohy"
+  defp attachment_label(state) when state in ["queued", "processing"], do: "Přenos přílohy…"
+  defp attachment_label(_), do: "Podklad nepřiložen"
 
   defp document_state(state),
     do:

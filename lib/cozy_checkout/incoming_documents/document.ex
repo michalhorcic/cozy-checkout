@@ -29,6 +29,7 @@ defmodule CozyCheckout.IncomingDocuments.Document do
     field :external_id, :string
     field :dry_run, :map, default: %{}
     field :response, :map, default: %{}
+    field :source_attachment, :map, default: %{}
     field :remote_id, :string
     field :error, :string
     field :error_stage, :string
