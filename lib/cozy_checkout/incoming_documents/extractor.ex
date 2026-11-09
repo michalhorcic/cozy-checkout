@@ -1,6 +1,6 @@
 defmodule CozyCheckout.IncomingDocuments.Extractor do
   @moduledoc "Stateless extraction with selectable detailed JSON or short template-based XML prompts."
-  alias CozyCheckout.IncomingDocuments.Transcription
+  alias CozyCheckout.IncomingDocuments.{Transcription, SupplierIdentity, SupplierTask}
 
   def strategies, do: ["structured", "simple_xml", "header_form"]
   def strategy(doc), do: Map.get(doc.extraction_metadata, "strategy", "structured")
@@ -9,12 +9,20 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
   def strategy_label("simple_xml"), do: "Jednoduché zadání → XML"
   def strategy_label(_), do: "Podrobný přepis → JSON → XML"
 
-  def instructions(strategy \\ "structured") do
+  def instructions(strategy \\ "structured", include_items \\ true) do
     filename =
       case strategy do
-        "simple_xml" -> "extraction_instructions_simple.md"
-        "header_form" -> "extraction_instructions_form.md"
-        _ -> "extraction_instructions.md"
+        "simple_xml" ->
+          "extraction_instructions_simple.md"
+
+        "header_form" ->
+          if(include_items,
+            do: "extraction_instructions_form.md",
+            else: "extraction_instructions_header.md"
+          )
+
+        _ ->
+          "extraction_instructions.md"
       end
 
     :cozy_checkout
@@ -30,6 +38,114 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
       {:error, "Chybí OPENAI_API_KEY nebo INCOMING_DOCUMENTS_OPENAI_MODEL", %{}}
     else
       request(doc, cfg, parts, feedback)
+    end
+  end
+
+  def identity_instructions do
+    :cozy_checkout
+    |> Application.app_dir("priv/incoming_documents/supplier_identity_instructions.md")
+    |> File.read!()
+  end
+
+  def identify(run, cfg, parts),
+    do:
+      phase_request(
+        cfg,
+        parts,
+        run.identity_instructions,
+        "Urči vystavitele originálu.",
+        "supplier_identity",
+        run.schemas["identity"],
+        2000,
+        &SupplierIdentity.validate/1
+      )
+
+  def supplier_task_instructions do
+    :cozy_checkout
+    |> Application.app_dir("priv/incoming_documents/supplier_task_instructions.md")
+    |> File.read!()
+  end
+
+  def separate_supplier_task?(run), do: Map.has_key?(run.schemas, "supplier_task")
+
+  def has_supplier_task?(run),
+    do: separate_supplier_task?(run) and String.trim(run.supplier_instructions) != ""
+
+  def extract_supplier_task(run, cfg, parts) do
+    phase_request(
+      cfg,
+      parts,
+      run.supplier_task_instructions,
+      run.supplier_instructions,
+      "supplier_task",
+      run.schemas["supplier_task"],
+      6000,
+      &SupplierTask.validate/1
+    )
+  end
+
+  def includes_items?(run), do: Map.has_key?(run.schemas["content"]["properties"], "items")
+
+  def extract_content(run, cfg, parts) do
+    instructions =
+      if separate_supplier_task?(run) do
+        run.common_instructions
+      else
+        # Preserve the prompt snapshots and call count of pre-existing runs.
+        run.common_instructions <>
+          "\n\nDoplňující instrukce obsluhy pro čtení dodavatele (společná pravidla mají přednost; nemění účty, agendu ani schema):\n" <>
+          run.supplier_instructions
+      end
+
+    context =
+      "Přepiš původní doklad. Identita jako kontext, nikoli náhrada originálu: " <>
+        Jason.encode!(run.identity)
+
+    case phase_request(
+           cfg,
+           parts,
+           instructions,
+           context,
+           "receipt_transcription",
+           run.schemas["content"],
+           24000,
+           &Transcription.validate(&1, run.schemas["content"])
+         ) do
+      {:ok, data, metadata} ->
+        # Downstream form helpers keep the existing internal shape; the API never sees items in header-only mode.
+        {:ok, Map.put_new(data, "items", []), metadata}
+
+      error ->
+        error
+    end
+  end
+
+  defp phase_request(cfg, parts, instructions, context, name, schema, limit, validator) do
+    if cfg[:openai_api_key] in [nil, ""] or cfg[:openai_model] in [nil, ""] do
+      {:error, "Chybí OPENAI_API_KEY nebo INCOMING_DOCUMENTS_OPENAI_MODEL", %{}}
+    else
+      payload = %{
+        model: cfg[:openai_model],
+        store: false,
+        max_output_tokens: limit,
+        instructions: instructions,
+        text: %{format: %{type: "json_schema", name: name, strict: true, schema: schema}},
+        input: [%{role: "user", content: [%{type: "input_text", text: context} | parts]}]
+      }
+
+      case response(payload, cfg) do
+        {:ok, raw, metadata} ->
+          with true <- byte_size(raw) <= 250_000,
+               {:ok, data} <- Jason.decode(raw),
+               :ok <- validator.(data) do
+            {:ok, data, metadata}
+          else
+            _ -> {:error, "OpenAI nevrátilo platnou JSON strukturu této fáze.", metadata}
+          end
+
+        error ->
+          error
+      end
     end
   end
 
@@ -80,6 +196,28 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
         payload
       end
 
+    case response(payload, cfg) do
+      {:ok, raw, metadata} ->
+        if strategy(doc) == "simple_xml" do
+          if raw != "" and byte_size(raw) <= 250_000,
+            do: {:ok_xml, raw, metadata},
+            else: {:error, "OpenAI nevrátilo XML v povolené velikosti", metadata}
+        else
+          with true <- byte_size(raw) <= 250_000,
+               {:ok, data} <- Jason.decode(raw),
+               :ok <- Transcription.validate(data) do
+            {:ok, data, metadata}
+          else
+            _ -> {:error, "OpenAI nevrátilo úplný přepis v očekávané JSON struktuře", metadata}
+          end
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp response(payload, cfg) do
     case Req.post("https://api.openai.com/v1/responses",
            auth: {:bearer, cfg[:openai_api_key]},
            json: payload,
@@ -104,19 +242,7 @@ defmodule CozyCheckout.IncomingDocuments.Extractor do
           "raw_output" => String.slice(raw, 0, 250_000)
         }
 
-        if strategy(doc) == "simple_xml" do
-          if raw != "" and byte_size(raw) <= 250_000,
-            do: {:ok_xml, raw, metadata},
-            else: {:error, "OpenAI nevrátilo XML v povolené velikosti", metadata}
-        else
-          with true <- byte_size(raw) <= 250_000,
-               {:ok, data} <- Jason.decode(raw),
-               :ok <- Transcription.validate(data) do
-            {:ok, data, metadata}
-          else
-            _ -> {:error, "OpenAI nevrátilo úplný přepis v očekávané JSON struktuře", metadata}
-          end
-        end
+        {:ok, raw, metadata}
 
       {:ok, %{status: status, body: body}} ->
         kind = if is_map(body), do: body["status"] || "error", else: "error"

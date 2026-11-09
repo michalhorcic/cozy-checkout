@@ -7,7 +7,7 @@ kódu, ale nemá přístupnou routu. Jeho položkové kontroly a kontextové API
 
 Formulář používá stejné tři vzory, připojení ABRA, soukromé originály, OpenAI
 Responses API a Oban worker. Obsahuje účetní předpis, volitelný dry-run, stažení
-XML i potvrzené přímé odeslání; není potřeba přecházet na další obrazovku.
+XML i přímé odeslání tlačítkem; není potřeba přecházet na další obrazovku.
 
 ## Stav převzatého řešení
 
@@ -25,13 +25,16 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
    PDF/JPEG/PNG. U nahrávání se zachovává kontrola duplicity a limit 10 MB.
 3. Nová strategie `header_form` vrací návrhy hlavičky a rekapitulace DPH. I při
    `complete=false`, neúplných položkách nebo chybějící celkové částce se zpřístupní
-   formulář. Vytěžování má jeden pokus, nedoplňuje chybějící položky opakováním.
+   formulář. Nový běh nejprve určí dodavatele a pak vytěží obecné údaje.
+   Pokud má dodavatel neprázdné instrukce, další samostatný dotaz provede jen
+   jejich úkol nad originálem. Chybějící položky nedoplňuje opakováním.
    Chybu API lze vyřešit ručním vyplněním stejného formuláře.
 4. Zkontrolovat a opravit návrhy proti zobrazenému originálu. Původní vytěžená data
    zůstávají uložená, ruční formulář je uložen zvlášť. Nejasnosti, přečtená měna a
    rekapitulace originálu jsou viditelné. Podporovány jsou tuzemské doklady v CZK
    a souhrnné sazby 0 %, 12 % a 21 %. Jiné sazby nebo měny vyžadují jiné zpracování.
-5. Potvrdit kontrolu CZK, údajů a souhrnné DPH. Teprve uložením formuláře vzniká
+5. Zkontrolovat CZK, údaje a souhrnnou DPH a stisknout „Uložit formulář“.
+   Souhlasové checkboxy se nevyžadují. Teprve uložením formuláře vzniká
    validované XML. Součet základů, osvobozené částky a daní musí souhlasit s celkem;
    chybějící DPH se nepřevádí automaticky na osvobozenou částku.
 6. Uložením zůstanete ve formuláři. V sekci Účetní nastavení načíst a vyhledat
@@ -41,8 +44,9 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
 7. Volitelně spustit „Ověřit v ABRA (dry-run)“. Výsledek, chyby, upozornění i
    diagnostika HTML/FreeMarker odpovědí se zobrazují přímo zde. Neúspěšný dry-run
    neznamená úspěšnou validaci, ale neblokuje explicitní přímé odeslání.
-8. Potvrdit skutečné vytvoření a kontrolu případného dřívějšího ručního importu,
-   poté stisknout „Nahrát do ABRA“. Lokálně se znovu zkontroluje struktura XML,
+8. Zkontrolovat případný dřívější ruční import a stisknout „Nahrát do ABRA“.
+   Samotné tlačítko spustí skutečný přenos bez dalšího zaškrtávání. Lokálně se
+   znovu zkontroluje struktura XML,
    součty a povinná data. Schválené XML se pro API deterministicky převede na
    nativní JSON obálku `winstrom` a odešle přes `Req.post(json: payload)` na `.json`,
    stejně jako fungující faktury za ubytování. Přenášejí se stejné částky, kódy,
@@ -57,14 +61,16 @@ po ručním importu staženého souboru, nový doklad se nezakládá. Odeslané 
 zmrazí a uloží se způsob schválení a hash payloadu. HTML nebo nejasný výsledek
 skutečného importu vede do stavu „Nutno ověřit v ABRA“; další pokus už jen hledá
 externí ID, neopakuje POST. Ruční import bez původního externího ID tato ochrana
-nedokáže spárovat, proto je součástí potvrzení i kontrola dřívějšího importu.
+nedokáže spárovat, proto před odesláním ověřte případný dřívější ruční import.
 
 Po zahájení přenosu je formulář uzamčený. Změny uloženého návrhu ruší předchozí
 dry-run. Existující starší návrhy se načtou do nového formuláře a až jeho
-potvrzené uložení je převede na bezpoložkový režim; původní řádky se přenesou jako
+uložení je převede na bezpoložkový režim; původní řádky se přenesou jako
 text do poznámky. Odeslané starší doklady se zobrazí zamčené.
 
-Položky OpenAI podle možností přepíše do `items`, ale použijí se pouze jako
+Načítání položek je ve výchozím stavu vypnuté. Přepínačem „Načítat také položky
+(orientační přepis)“ je lze výslovně zapnout pro příští nahrání či opakování.
+Při zapnutí OpenAI podle možností přepíše položky do `items`, ale použijí se pouze jako
 orientační text v `poznam`. Do ABRA neposíláme kolekci `polozkyDokladu`, skladové
 pohyby ani ceny jednotlivých položek. ABRA může interně vytvořit své automatické
 účetní řádky podle souhrnné DPH; to popisuje její dokumentace bezpoložkových dokladů.
@@ -103,8 +109,8 @@ splatnosti a účetnímu období. Tlačítko „Doplnit prázdná data“ použ�
 data ve formuláři a chybějící zdrojová data převezme z vytěženého originálu.
 Vyplňuje jen prázdná pole, ručně upravená data zachová; funguje tedy i u staršího
 uloženého návrhu, který má všechna data prázdná.
-Každé použití předvyplnění označí návrh jako změněný a zruší zaškrtnutou kontrolu.
-Před dry-runem či přenosem je potřeba změny potvrdit a uložit.
+Každé použití předvyplnění označí návrh jako změněný.
+Před dry-runem či přenosem je potřeba změny uložit; další zaškrtávání není potřeba.
 
 ## Co obsahuje výsledné XML
 
@@ -195,3 +201,191 @@ opakování zápisu. Routové testy ověřují skrytí starého rozhraní a pře
 návrhů. Změna sjednocení rozhraní nevyžaduje další migraci ani konfiguraci. Lokální testy podle
 AGENTS.md nebyly spuštěny; výsledky GitHub CI ověří uživatel. Kompilace a kontrola
 formátování byly provedeny s Elixir 1.20.4 / OTP 29.1.
+
+## Instrukce podle dodavatele a historie běhů
+
+V sekci **Instrukce pro vytěžování dodavatele** je rozpoznaná identita, důvod
+přiřazení, revize použitá v posledním běhu a samostatný editor aktuálního profilu.
+Profily jsou izolované podle URL a cílové firmy ABRA. Koncové lomítko URL se při
+párování profilů ignoruje. Automaticky se přiřadí pouze jednoznačně přečtená země
+CZ a české IČO s platným kontrolním součtem; počáteční nuly se zachovají. Rozpor
+DIČ profil vyloučí. Název ani DIČ samostatně nespouští automatické párování.
+Neznámá, zahraniční nebo nejednoznačná identita pokračuje společným zadáním.
+Chyba HTTP či neplatná JSON odpověď první fáze naopak běh ukončí.
+
+Existující profil lze vyhledat podle názvu, IČO i DIČ. Výběr sám nemění hlavičku
+ani nespouští AI. Pro nový profil obsluha vyplní identitu, zemi a klíč
+(české IČO nebo ručně zvolené DIČ včetně prefixu země) a profil uloží tlačítkem,
+bez souhlasového checkboxu. Nevznikají automatické
+prázdné profily. Instrukce mají limit 8 000 znaků a mohou být prázdné.
+
+- **Uložit instrukce pro příště** mění jen profil, bez AI a bez změny dokladu.
+  Funguje i na odeslaném nebo ručním dokladu. Každé uložení zvyšuje revizi;
+  druhé okno nesmí přepsat novější text bez jeho načtení a porovnání.
+- **Uložit instrukce a znovu vytěžit** atomicky uloží profil a založí nový běh
+  bez nové identifikace: obecný obsah a samostatný dodavatelský úkol nad stejným
+  originálem a výslovně uloženým profilem.
+  Selhání zařazení vrátí zpět i změnu instrukcí.
+- **Zopakovat jen obsahové vytěžení** převezme identitu předchozího běhu stejného
+  originálu a poslední uloženou revizi; znovu provede obsah i dodavatelský úkol.
+  **Znovu určit dodavatele** spustí nový
+  úplný běh. Neuložené instrukce je nutné před těmito akcemi uložit či znovu načíst.
+- **Vytěžit bez určení dodavatele** výslovně založí obsahový běh bez profilu;
+  lze ho využít i po chybě první fáze.
+
+Při opakování se předchozí návrh včetně ručních hodnot a účetního nastavení
+archivuje. Aktuální XML i dry-run se zneplatní. Po neúspěchu lze z historie
+výslovně obnovit předchozí pracovní návrh; před přenosem se musí znovu zkontrolovat
+a uložit. Odeslané XML a stavy přenosu opakování i obnovu blokují. Bez originálu
+nejsou AI akce dostupné, ruční formulář a editor budoucích instrukcí zůstávají.
+Oprava IČO či názvu ve finanční hlavičce nikdy nepřepisuje profil.
+
+Obsahová fáze nesmí přepojit identitu na jiný profil. Při jiném IČO nebo DIČ se
+zobrazí rozpor k ověření proti originálu; uložení proběhne přímo tlačítkem
+bez dalšího checkboxu. Instrukce nevytvářejí účetní pravidla; společná pravidla,
+strukturovaný kontrakt, deterministická kontrola částek a ruční přenos zůstávají.
+
+Každý běh uchovává identitu, kontrakty jednotlivých volání, přesné společné
+zadání i samostatné dodavatelské zadání, revizi a hash instrukcí, obecný výsledek,
+výsledek cíleného úkolu, výsledný sloučený návrh a samostatné rezervace i metadata.
+Historie se stránkuje po deseti bězích a nevybírá velké raw odpovědi.
+Usage každého volání je viditelná zvlášť; cenu bez ověřeného ceníku neodhadujeme.
+S instrukcemi se originál posílá třikrát (při opakování bez identifikace dvakrát),
+bez instrukcí dvakrát. Každé volání přidává i obrazové vstupní tokeny.
+Žádné tajné klíče či autorizační hlavičky se do snapshotů neukládají.
+
+Oban retry nevytváří nový běh a neopakuje rezervované placené volání. Po pádu
+mezi rezervací a uložením odpovědi není jisté, zda poskytovatel požadavek provedl:
+obnovený worker označí fázi jako přerušenou a další pokus musí vyvolat obsluha.
+Dokončená identifikace přežije restart, takže lze pokračovat dosud nerezervovaným
+obsahovým voláním. Dokončené obecné čtení přežije také restart před samostatným
+úlohovým dotazem. Pozdní výsledky starého běhu nesmí přepsat novou generaci,
+změněný originál ani odeslaný doklad.
+
+### Nasazení a ověření nového toku
+
+Aditivní migrace `20261106090000` přidává profily, běhy a aktivní vazbu dokladu.
+Kompozitní FK zajišťuje, že aktivní běh patří stejnému dokladu. Aktivní identita
+profilu, generace dokladu a jediný rozpracovaný běh mají unikátní indexy. Historie
+se automaticky nemaže. Dosavadní doklady mají vazbu prázdnou a nevolají zpětně AI.
+Starý job bez `run_id` se pod zámkem převede na jediný běh, pouze pokud ještě
+nerezervoval staré volání. Již rezervované staré volání vyžaduje ruční obnovu.
+Původní strategie `structured` a `simple_xml` zůstávají ve své větvi.
+
+Nový tok platí pro všechny nové `header_form` běhy, nemá další konfigurační
+přepínač ani nový klíč/model. Před návratem ke staršímu release je potřeba zastavit
+vkládání nových běhů a dokončit či ukončit jejich joby. Tabulky historie nemazat.
+
+Přidané testy přes Req.Test pokrývají dvě různá volání, snapshot revize, přesné
+párování a namespace, konflikt editorů, přerušenou rezervaci, obnovení pouze druhé
+fáze, pozdní odpověď, historii návrhu, změněný zdroj/cíl, odeslané doklady,
+kompozitní FK, konstantní počet dotazů a editor ve formuláři. Lokálně proběhla
+kompilace aplikace i změněných testovacích modulů bez spuštění testů a kontrola
+formátování s Elixir 1.20.4 / OTP 29.1. Výsledek CI ověří uživatel. Živá OpenAI
+ani ABRA se nevolaly. Pilot na několika dokladech O2 a jiného dodavatele zbývá;
+zlepšení přesnosti, času a ceny dosud není ověřené.
+
+### Vytěžování bez položek
+
+Přepínač **Načítat také položky (orientační přepis)** je ve výchozím stavu vypnutý,
+i při otevření staršího dokladu. Platí pro příští běh: upload, nové určení
+vystavitele, opakování obsahu, obecné vytěžení i uložení instrukcí s novým během.
+Samotné přepnutí nic nevytěžuje, nemění aktuální návrh a neruší účetní validaci.
+
+Při vypnutí používá obsahová fáze samostatné kratší zadání zaměřené na dodavatele,
+celé označené číslo dokladu, variabilní symbol, data, měnu, celkovou částku a DPH.
+Pole `items` není v API schématu ani v seznamu požadovaných polí. Výsledek projde
+lokální kontrolou tohoto menšího kontraktu; až potom aplikace doplní interní
+`items: []`, aby zachovala kompatibilitu formuláře. Nejde tedy pouze o skrytí
+položek, které by model dál četl.
+
+Při zapnutí zůstává dosavadní přepis položek do poznámky. Zvolený rozsah určuje
+uložený snapshot schématu a společných instrukcí každého běhu a je vidět v jeho
+historii. Změna přepínače neovlivní již běžící nebo historický běh, včetně běhů
+z předchozí verze aplikace. Starší strategie `structured` a `simple_xml` se nemění.
+Není potřeba další migrace, proměnná prostředí ani další placené volání.
+Zjednodušení zadání samo o sobě nezaručuje správné rozpoznání každého čísla;
+číslo i ostatní údaje je dál nutné kontrolovat proti originálu.
+
+### Samostatné zpracování dodavatelských instrukcí
+
+Pro nové běhy s neprázdným profilem jsou instrukce **samostatný dotaz**. Nejsou
+připojené k obecnému zadání. Model dostane původní obrazové vstupy, stručný kontrakt
+cíleného čtení a přesný snapshot dodavatelského textu jako uživatelský úkol.
+Nedostane předchozí obecnou odpověď, její tip na číslo, obecné zadání ani identitu
+jako další úkol. Pro instrukci „Přečti číslo za EV-Č“ tedy řeší pouze tento úkol.
+
+Odpověď je řídký seznam `fields`: pouze řešené pole, jeho hodnota a citovaný
+`source_text` z originálu. Povolené jsou hlavní hlavičkové údaje a identita
+vystavitele; zvlášť lze vrátit rekapitulaci DPH, pokud ji úkol řeší. Ostatní pole
+se nevyplňují. Účty, XML a položky nejsou v tomto kontraktu. Aplikace kontroluje
+typy, délky, duplicity i povolené názvy polí bez tvorby atomů.
+
+Výslovně vrácené hodnoty nahradí stejné údaje z obecného čtení. Pokud cílený dotaz
+u požadovaného pole vrátí null, aplikace smaže původní obecný odhad; nevrátí se
+potichu k chybnému číslu. Ostatní údaje, data, částky a položky zůstanou zachované.
+Sloučený přepis znovu projde kontrolou struktury a pak stávajícími ručními
+kontrolami formuláře. Změna IČO/DIČ neaktualizuje profil a zachovává výstrahu
+rozporu identity k ruční kontrole. Citovaný text pomáhá kontrole,
+není nezávislým důkazem správnosti modelu.
+
+Historie i sekce dodavatele zobrazují samostatnou odpověď a citaci zdroje;
+v historii má volání vlastní model, usage, stav a chybu. Prázdné nebo nepřiřazené
+instrukce další dotaz nevyvolají. Neúspěšný cílený dotaz ukončí běh jako chybu:
+obecný výsledek je zachovaný v běhu, ale nepoužije se automaticky jako dokončený
+návrh. Lze vyplnit formulář ručně, obnovit předchozí návrh či vědomě spustit nový
+běh. Po nejasné rezervaci se placené volání automaticky neopakuje.
+
+Nasazení vyžaduje aditivní migraci `20261106120000`: vlastní metadata, odpověď,
+společný text cíleného dotazu a obecný výsledek, plus rozšířený constraint fáze.
+Původní existující běhy bez kontraktu `supplier_task` si ponechají původní
+kombinované zadání a počet volání, i pokud jsou teprve ve frontě. Nový režim se
+použije až novým během. Nejsou potřeba nové přihlašovací údaje ani konfigurace.
+Před návratem ke starší aplikaci dokončit či ukončit nové joby a ponechat databázové
+snapshoty; rollback databáze by odstranil nově přidanou historii.
+
+Testy přes Req.Test ověřují oddělení zadání a předchozí odpovědi, správný snapshot
+při změně revize, převzetí cíleného čísla místo obecného odhadu, citaci, chybu
+samostatného volání, obnovu po obecném čtení, nejistou rezervaci, souběh a pozdní
+výsledek. Lokálně testy nebyly spuštěny; výsledky CI ověří uživatel. Kompilace
+aplikace i změněných testovacích modulů a formátování byly ověřeny. Živá OpenAI
+ani ABRA nebyla volána; přesnost na skutečných dokladech ještě vyžaduje pilot.
+
+### Přímé akce bez souhlasových checkboxů
+
+Uložení hlavičky, uložení instrukcí i odeslání do ABRA probíhá příslušným tlačítkem.
+Odstraněny jsou checkboxy kontroly údajů/DPH, potvrzení identity, potvrzení profilu
+a souhlasu se skutečným importem. Přepínač načítání položek zůstává funkční volbou.
+Varování o rozdílné identitě zůstává viditelné. Validace částek a povinných údajů,
+kontrola neuložených změn, optimistické zámky, admin PIN, kontrola externího ID,
+nejistého přenosu a neměnnost odeslaného XML zůstávají aktivní. Tlačítko odeslání
+se nevolá automaticky po uložení nebo vytěžení. Změna nevyžaduje migraci.
+
+### Oprava přerušení prvního vytěžení
+
+První úplný běh se známým profilem používá tři volání (identifikace, obecný obsah,
+dodavatelský úkol). Původní databázový constraint `incoming_extraction_attempts`
+povoloval pouze dvě, takže rezervace třetího volání padala ještě před HTTP
+požadavkem. Worker chybu skryl za obecné „přerušeno“. Ruční opakování bez
+identifikace mělo jen dvě volání, a proto fungovalo.
+
+Migrace `20261106130000` rozšiřuje rozsah počítadla na 0–3. Limity rezervací
+jednotlivých fází zůstávají stejné; čtvrté volání databáze dál odmítne. Historické
+počty se nepřepisují. Po aktualizaci lokálního kódu spusťte `mix ecto.migrate`,
+restartujte aplikaci a spusťte nový běh. Starý neúspěšný běh se automaticky
+nezopakuje. Návrat databáze ke starému limitu není možný, pokud by zneplatnil
+historické běhy se třemi voláními; při návratu aplikace ponechte migraci.
+
+Neočekávaná výjimka nového extrakčního jobu se teď uloží do konkrétní fáze hned
+při prvním selhání, včetně bezpečného názvu typu chyby. U porušení starého limitu
+se zobrazí pokyn ke spuštění migrací. Text výjimky, argumenty, doklady ani auth
+hlavičky se do diagnostiky či Oban chyb nekopírují. Pozdní výjimka starého běhu
+nemůže označit novější běh za neúspěšný. Nejasná rezervovaná AI volání se dál
+automaticky neopakují.
+
+Pro reprodukci této chyby byly výjimečně spuštěny lokální testy podle AGENTS.md,
+na dočasném PostgreSQL 17 s HTTP přes Req.Test. Testy běhů (28) prošly; související
+regrese kontextu, hlavičkového workflow a dodavatelského kontraktu prošly a po
+opravě neúplného testovacího sent fixture prošlo také všech 15 testů formuláře.
+Původní stav byl reprodukován selháním na databázovém constraintu před třetím
+voláním. Živá OpenAI ani ABRA nebyly volány.

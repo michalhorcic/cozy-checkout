@@ -51,27 +51,59 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert to =~ "/admin/login"
   end
 
-  test "manual form requires confirmation and stays in the new form with accounting and delivery",
+  test "manual form validates amounts and saves directly without consent checkboxes",
        %{conn: conn} do
     {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form")
     params = %{"agenda" => "zavazek", "document" => attrs()}
-    view |> form("#incoming-header-form", params) |> render_submit()
+    refute has_element?(view, "#incoming-header-form input[type=checkbox]")
+
+    view
+    |> form("#incoming-header-form", put_in(params, ["document", "sumCelkem"], "10"))
+    |> render_submit()
+
     assert IncomingDocuments.list() == []
-    view |> form("#incoming-header-form", Map.put(params, "reviewed", "true")) |> render_change()
-    assert has_element?(view, "input[name=reviewed][type=checkbox][checked]")
-    view |> form("#incoming-header-form", Map.put(params, "reviewed", "true")) |> render_submit()
+    view |> form("#incoming-header-form", params) |> render_submit()
     [doc] = IncomingDocuments.list()
     assert_patch(view, "/admin/incoming-document-form/#{doc.id}")
     {:ok, detail, _} = live(admin(build_conn()), "/admin/incoming-documents/#{doc.id}")
     assert has_element?(detail, "#incoming-accounting")
     assert has_element?(detail, "#incoming-header-form")
     assert has_element?(detail, "#incoming-send")
+    refute has_element?(detail, "#incoming-send input[type=checkbox]")
+    refute has_element?(detail, "#supplier-instructions-form input[type=checkbox]")
     refute has_element?(detail, "iframe")
     refute has_element?(detail, "img[data-original]")
 
     assert_error_sent 404, fn ->
       get(admin(build_conn()), "/admin/incoming-documents/#{doc.id}/original")
     end
+  end
+
+  test "identity warning remains visible but saving needs no additional agreement", %{conn: conn} do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    doc
+    |> Ecto.Changeset.change(
+      extraction_metadata:
+        Map.put(
+          doc.extraction_metadata,
+          "identity_conflict",
+          "IČO se liší od zvoleného dodavatele."
+        )
+    )
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert html =~ "IČO se liší od zvoleného dodavatele."
+    refute has_element?(view, "#incoming-header-form input[type=checkbox]")
+
+    view
+    |> form("#incoming-header-form", %{"document" => Map.put(attrs(), "cisDosle", "OPRAVENO")})
+    |> render_submit()
+
+    saved = IncomingDocuments.get!(doc.id)
+    assert saved.state == "review"
+    assert saved.current_xml =~ "<cisDosle>OPRAVENO</cisDosle>"
   end
 
   test "partial proposals can be opened in either detail without the item editor crashing", %{
@@ -126,7 +158,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert has_element?(view, "input[name='document[cisDosle]'][value='DRAFT']")
     assert IncomingDocuments.get!(doc.id).accounting_settings["typUcOp"] == "code:SLUŽBY"
     assert has_element?(view, "#incoming-send button[disabled]")
-    view |> form("#incoming-header-form", %{"reviewed" => "true"}) |> render_submit()
+    view |> form("#incoming-header-form") |> render_submit()
     updated = IncomingDocuments.get!(doc.id)
     assert updated.current_xml =~ "<cisDosle>DRAFT</cisDosle>"
     assert updated.current_xml =~ "<protiUcet>code:518100</protiUcet>"
@@ -151,8 +183,6 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     send(view.pid, :refresh)
     assert render(view) =~ "FreeMarker"
     view |> form("#incoming-send") |> render_submit()
-    assert IncomingDocuments.get!(doc.id).state == "review"
-    view |> form("#incoming-send", %{"confirm_send" => "true"}) |> render_submit()
     assert IncomingDocuments.get!(doc.id).state == "sending"
     assert has_element?(view, "#incoming-header-form input[name='document[cisDosle]'][disabled]")
   end
@@ -269,5 +299,237 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     view |> element("button[phx-click=prefill-vat]") |> render_click()
     assert has_element?(view, "input[name='document[sumZklZakl]'][value='1490.36']")
     assert IncomingDocuments.get!(doc.id).current_xml == doc.template_xml
+  end
+
+  test "supplier instructions can be saved on a sent manual document without changing it or invoking AI",
+       %{conn: conn} do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    doc =
+      doc
+      |> Ecto.Changeset.change(state: "sent", sent_xml: doc.current_xml, remote_id: "42")
+      |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert has_element?(view, "#incoming-supplier")
+    refute has_element?(view, "button[phx-click=content-retry]")
+
+    params = %{
+      "supplier" => %{
+        "profile_id" => "",
+        "identity_kind" => "ic",
+        "name" => "PENNY MARKET",
+        "ic" => "64945880",
+        "dic" => "CZ64945880",
+        "country_code" => "CZ",
+        "instructions" => "<script>test</script>"
+      }
+    }
+
+    html =
+      view |> form("#supplier-instructions-form", params) |> render_submit(%{"action" => "save"})
+
+    assert html =~ "Instrukce uloženy pro příště"
+    assert html =~ "&lt;script&gt;test&lt;/script&gt;"
+    assert IncomingDocuments.get!(doc.id) == doc
+    [profile] = IncomingDocuments.supplier_profiles(doc.id)
+    assert profile.revision == 1
+    assert IncomingDocuments.list_extraction_runs(doc.id) == []
+  end
+
+  test "supplier editor detects a stale revision and preserves unsaved header edits", %{
+    conn: conn
+  } do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    supplier = %{
+      "name" => "PENNY",
+      "ic" => "64945880",
+      "dic" => "CZ64945880",
+      "country_code" => "CZ",
+      "identity_kind" => "ic",
+      "instructions" => "První revize"
+    }
+
+    {:ok, profile} =
+      IncomingDocuments.save_supplier_instructions(doc.id, nil, supplier, nil, true)
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    view |> element("input[phx-focus=supplier-open]") |> render_focus()
+
+    view |> element("#supplier_profile_id-option-#{profile.id}") |> render_click()
+
+    view
+    |> form("#incoming-header-form", %{
+      "document" => Map.put(attrs(), "nazFirmy", "Neuložená změna")
+    })
+    |> render_change()
+
+    assert {:ok, _} =
+             IncomingDocuments.save_supplier_instructions(
+               doc.id,
+               profile.id,
+               Map.put(supplier, "instructions", "Druhé okno"),
+               1,
+               true
+             )
+
+    params =
+      Map.merge(supplier, %{
+        "profile_id" => profile.id,
+        "instructions" => "Moje změna"
+      })
+
+    html =
+      view
+      |> form("#supplier-instructions-form", %{"supplier" => params})
+      |> render_submit(%{"action" => "save"})
+
+    assert html =~ "Instrukce mezitím někdo změnil"
+    assert has_element?(view, "input[name='document[nazFirmy]'][value='Neuložená změna']")
+    view |> element("button[phx-click=supplier-reload]") |> render_click()
+    assert render(view) =~ "Druhé okno"
+  end
+
+  test "document disclosures preserve browser-controlled open state while editor and polling update content",
+       %{conn: conn} do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "zavazek", "header_form")
+
+    data = File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
+
+    doc
+    |> Ecto.Changeset.change(
+      state: "review",
+      extracted_data: data,
+      dry_run: %{"http_status" => 200},
+      response: %{"http_status" => 500}
+    )
+    |> Repo.update!()
+
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+
+    selectors = [
+      "#incoming-source-vat",
+      "#incoming-supplier",
+      "#incoming-used-instructions",
+      "#extraction-history",
+      "#extraction-run-instructions-#{doc.active_extraction_run_id}",
+      "details[data-abra-response]",
+      "details[data-abra-response] > details"
+    ]
+
+    ids = assert_client_disclosures(html, selectors)
+    instructions = "Nové instrukce během psaní"
+
+    html =
+      view
+      |> form("#supplier-instructions-form", %{"supplier" => %{"instructions" => instructions}})
+      |> render_change()
+
+    assert html =~ instructions
+    assert html =~ "Instrukce mají neuložené změny"
+    assert assert_client_disclosures(html, selectors) == ids
+    send(view.pid, :refresh)
+    html = render(view)
+    assert html =~ instructions
+    assert assert_client_disclosures(html, selectors) == ids
+  end
+
+  test "item extraction defaults off and the checkbox affects only a newly requested run", %{
+    conn: conn
+  } do
+    {:ok, new_view, _} = live(admin(conn), "/admin/incoming-document-form")
+
+    refute has_element?(
+             new_view,
+             "#incoming-extraction-options input[name=include_items][type=checkbox][checked]"
+           )
+
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "zavazek", "header_form")
+
+    CozyCheckout.IncomingDocuments.ExtractionRuns.interrupt(doc.id, doc.active_extraction_run_id)
+    {:ok, view, _} = live(admin(build_conn()), "/admin/incoming-document-form/#{doc.id}")
+    view |> form("#incoming-extraction-options", %{"include_items" => "true"}) |> render_change()
+
+    assert has_element?(
+             view,
+             "#incoming-extraction-options input[name=include_items][type=checkbox][checked]"
+           )
+
+    view |> element("button[phx-click=generic-extract]") |> render_click()
+    queued = IncomingDocuments.get!(doc.id)
+    assert queued.extraction_metadata["include_items"] == true
+    run = IncomingDocuments.active_extraction_run(queued)
+    assert Map.has_key?(run.schemas["content"]["properties"], "items")
+    view |> form("#incoming-extraction-options", %{"include_items" => "false"}) |> render_change()
+    send(view.pid, :refresh)
+    render(view)
+
+    refute has_element?(
+             view,
+             "#incoming-extraction-options input[name=include_items][type=checkbox][checked]"
+           )
+
+    assert IncomingDocuments.active_extraction_run(queued).schemas == run.schemas
+  end
+
+  test "focused answer and quoted source are visible without losing disclosure state", %{
+    conn: conn
+  } do
+    {:ok, %{document: doc}} =
+      IncomingDocuments.upload("%PDF-test", "receipt.pdf", "zavazek", "header_form")
+
+    data = File.read!("test/fixtures/incoming_documents/penny.json") |> Jason.decode!()
+
+    result = %{
+      "fields" => [
+        %{
+          "field" => "document_number",
+          "value" => "0052-20261105-01-0039",
+          "source_text" => "EV-č: 0052-20261105-01-0039"
+        }
+      ],
+      "vat_summary" => nil,
+      "uncertainties" => []
+    }
+
+    run = IncomingDocuments.active_extraction_run(doc)
+
+    run
+    |> Ecto.Changeset.change(
+      state: "completed",
+      active_step: "done",
+      supplier_instructions: "Přečti pouze EV-Č",
+      supplier_task_result: result,
+      supplier_task: %{"state" => "completed", "usage" => %{"input_tokens" => 123}}
+    )
+    |> Repo.update!()
+
+    doc |> Ecto.Changeset.change(state: "review", extracted_data: data) |> Repo.update!()
+    {:ok, view, html} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert html =~ "Samostatné dodavatelské instrukce"
+    assert html =~ "EV-č: 0052-20261105-01-0039"
+    assert has_element?(view, "input[name='document[cisDosle]'][value='0052-20261105-01-0039']")
+    assert_client_disclosures(html, ["#incoming-supplier-task-result"])
+  end
+
+  defp assert_client_disclosures(html, selectors) do
+    tree = LazyHTML.from_fragment(html)
+
+    Enum.flat_map(selectors, fn selector ->
+      nodes = LazyHTML.query(tree, selector)
+      refute Enum.empty?(nodes)
+
+      Enum.map(nodes, fn node ->
+        [id] = LazyHTML.attribute(node, "id")
+        [mounted] = LazyHTML.attribute(node, "phx-mounted")
+        assert Jason.decode!(mounted) == [["ignore_attrs", %{"attrs" => ["open"]}]]
+        # Only the native open attribute is ignored; dynamic children must still patch.
+        assert LazyHTML.attribute(node, "phx-update") == []
+        id
+      end)
+    end)
   end
 end

@@ -75,9 +75,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert has_element?(view, "#incoming-header-form")
     refute has_element?(view, "#incoming-fields")
     refute has_element?(view, "#incoming-source-fields")
+    refute has_element?(view, "#incoming-header-form input[type=checkbox]")
 
     view
-    |> form("#incoming-header-form", %{"document" => %{"cisDosle" => "NEW"}, "reviewed" => "true"})
+    |> form("#incoming-header-form", %{"document" => %{"cisDosle" => "NEW"}})
     |> render_submit()
 
     assert_patch(view, "/admin/incoming-document-form/#{doc.id}")

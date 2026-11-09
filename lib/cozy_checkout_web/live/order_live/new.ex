@@ -208,7 +208,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="max-w-7xl mx-auto px-4 py-8">
+    <Layouts.app flash={@flash} content_class="max-w-7xl mx-auto" main_class="px-4 py-8">
       <div class="mb-8">
         <.link
           navigate={~p"/admin/orders"}
@@ -395,7 +395,7 @@ defmodule CozyCheckoutWeb.OrderLive.New do
           </div>
         </div>
       </div>
-    </div>
+    </Layouts.app>
     """
   end
 end
