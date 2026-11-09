@@ -367,3 +367,20 @@ body:has(#food-layout) #admin-brand-header { display: none; }
   overflow: auto;
 }
 .booking-billing-popover::backdrop { background: transparent; }
+
+/* Keep native table layout above phone widths, including in Safari. */
+.incoming-company-label { display: none; }
+.incoming-overview-table td { padding: 0.75rem; }
+
+@media (max-width: 639px) {
+  .incoming-overview-table,
+  .incoming-overview-table tbody,
+  .incoming-overview-table tr,
+  .incoming-overview-table td { display: block; width: 100%; }
+  .incoming-overview-table thead { display: none; }
+  .incoming-overview-table tr { padding: 1rem; }
+  .incoming-overview-table td { padding: 0; }
+  .incoming-overview-table td + td { margin-top: 0.5rem; }
+  .incoming-overview-table .incoming-overview-action { margin-top: 0.75rem; }
+  .incoming-overview-table .incoming-company-label { display: inline; }
+}

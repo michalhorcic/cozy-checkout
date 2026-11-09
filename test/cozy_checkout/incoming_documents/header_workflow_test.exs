@@ -77,6 +77,103 @@ defmodule CozyCheckout.IncomingDocuments.HeaderWorkflowTest do
              )
   end
 
+  test "unified save rolls back accounting and header together and atomically queues reviewed XML" do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    row = %{
+      "kod" => "SLUŽBY",
+      "nazev" => "Služby",
+      "modulZav" => true,
+      "protiUcetVydej" => "code:518100"
+    }
+
+    for _ <- 1..2 do
+      Req.Test.expect(__MODULE__, fn conn ->
+        Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => [row]}})
+      end)
+    end
+
+    accounting = %{"preset" => "SLUŽBY", "internal_code" => ""}
+
+    assert {:error, _} =
+             IncomingDocuments.save_form(
+               doc.id,
+               Map.put(attrs(), "sumCelkem", "1"),
+               IncomingDocuments.transcription_hash(doc),
+               accounting,
+               true
+             )
+
+    assert IncomingDocuments.get!(doc.id).accounting_settings == doc.accounting_settings
+    assert IncomingDocuments.get!(doc.id).current_xml == doc.current_xml
+    assert Repo.aggregate(Oban.Job, :count) == 0
+
+    assert {:ok, queued} =
+             IncomingDocuments.save_form(
+               doc.id,
+               Map.put(attrs(), "cisDosle", "CHANGED"),
+               IncomingDocuments.transcription_hash(doc),
+               accounting,
+               true
+             )
+
+    assert queued.state == "sending"
+    assert queued.sent_xml =~ "CHANGED"
+    assert queued.sent_xml =~ "code:518100"
+    assert queued.accounting_settings["typUcOp"] == "code:SLUŽBY"
+    assert Repo.aggregate(Oban.Job, :count) == 1
+
+    assert {:error, _} =
+             IncomingDocuments.save_form(
+               doc.id,
+               attrs(),
+               IncomingDocuments.transcription_hash(doc),
+               nil,
+               true
+             )
+
+    assert Repo.aggregate(Oban.Job, :count) == 1
+  end
+
+  test "unified save preserves stale-edit protection and rolls back if the target changed" do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    {:ok, saved} =
+      IncomingDocuments.save_form(
+        doc.id,
+        Map.put(attrs(), "cisDosle", "NEW"),
+        IncomingDocuments.transcription_hash(doc)
+      )
+
+    assert {:error, _} =
+             IncomingDocuments.save_form(
+               doc.id,
+               attrs(),
+               IncomingDocuments.transcription_hash(doc)
+             )
+
+    cfg = IncomingDocuments.config()
+
+    Application.put_env(
+      :cozy_checkout,
+      :incoming_documents,
+      Keyword.put(cfg, :company_id, "other")
+    )
+
+    assert {:error, _} =
+             IncomingDocuments.save_form(
+               doc.id,
+               Map.put(attrs(), "cisDosle", "SHOULD-ROLLBACK"),
+               IncomingDocuments.transcription_hash(saved),
+               nil,
+               true
+             )
+
+    assert IncomingDocuments.get!(doc.id).current_xml == saved.current_xml
+    assert IncomingDocuments.get!(doc.id).sent_xml == nil
+    assert Repo.aggregate(Oban.Job, :count) == 0
+  end
+
   test "dry-run validates the same item-free payload that approval freezes for sending" do
     {:ok, doc} =
       IncomingDocuments.create_header(

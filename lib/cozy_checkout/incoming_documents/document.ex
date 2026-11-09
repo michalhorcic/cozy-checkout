@@ -5,6 +5,10 @@ defmodule CozyCheckout.IncomingDocuments.Document do
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "incoming_documents" do
     field :active_extraction_run_id, :binary_id
+    field :batch_id, :binary_id
+    field :batch_position, :integer
+    field :deferred_at, :utc_datetime
+    field :initial_extraction_run_id, :binary_id
     field :agenda, :string
     field :state, :string, default: "uploaded"
     field :filename, :string
@@ -25,6 +29,7 @@ defmodule CozyCheckout.IncomingDocuments.Document do
     field :external_id, :string
     field :dry_run, :map, default: %{}
     field :response, :map, default: %{}
+    field :source_attachment, :map, default: %{}
     field :remote_id, :string
     field :error, :string
     field :error_stage, :string

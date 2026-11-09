@@ -33,18 +33,17 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
    zůstávají uložená, ruční formulář je uložen zvlášť. Nejasnosti, přečtená měna a
    rekapitulace originálu jsou viditelné. Podporovány jsou tuzemské doklady v CZK
    a souhrnné sazby 0 %, 12 % a 21 %. Jiné sazby nebo měny vyžadují jiné zpracování.
-5. Zkontrolovat CZK, údaje a souhrnnou DPH a stisknout „Uložit formulář“.
+5. Zkontrolovat CZK, údaje a souhrnnou DPH a použít stálé tlačítko „Uložit“ nebo „Uložit a odeslat“.
    Souhlasové checkboxy se nevyžadují. Teprve uložením formuláře vzniká
    validované XML. Součet základů, osvobozené částky a daní musí souhlasit s celkem;
    chybějící DPH se nepřevádí automaticky na osvobozenou částku.
-6. Uložením zůstanete ve formuláři. V sekci Účetní nastavení načíst a vyhledat
-   předpis z ABRA, případně změnit interní číslo a uložit. Rozpracované změny
-   hlavičky se při uložení předpisu neztratí. Před operacemi ABRA musí být obě
-   části uložené.
-7. Volitelně spustit „Ověřit v ABRA (dry-run)“. Výsledek, chyby, upozornění i
+6. Účetní předpis je shrnutý v řádku **Předpis · Změnit**. Rozbalením lze načíst
+   číselník, vybrat jiný předpis nebo upravit interní číslo. Stálá akce **Uložit**
+   uloží hlavičku, DPH i rozpracované účetní nastavení společně.
+7. V **Pokročilých možnostech a nápovědě** lze volitelně spustit „Ověřit v ABRA (dry-run)“. Výsledek, chyby, upozornění i
    diagnostika HTML/FreeMarker odpovědí se zobrazují přímo zde. Neúspěšný dry-run
    neznamená úspěšnou validaci, ale neblokuje explicitní přímé odeslání.
-8. Zkontrolovat případný dřívější ruční import a stisknout „Nahrát do ABRA“.
+8. Zkontrolovat případný dřívější ruční import a použít „Uložit a odeslat“.
    Samotné tlačítko spustí skutečný přenos bez dalšího zaškrtávání. Lokálně se
    znovu zkontroluje struktura XML,
    součty a povinná data. Schválené XML se pro API deterministicky převede na
@@ -389,3 +388,172 @@ regrese kontextu, hlavičkového workflow a dodavatelského kontraktu prošly a 
 opravě neúplného testovacího sent fixture prošlo také všech 15 testů formuláře.
 Původní stav byl reprodukován selháním na databázovém constraintu před třetím
 voláním. Živá OpenAI ani ABRA nebyly volány.
+
+## Hromadné nahrávání a kontrola dávek
+
+Ze seznamu přijatých dokladů otevřete výrazné tlačítko **Nahrát doklady**. Kategorie **Faktury**,
+**Hotově** a **Kartou** odpovídají agendám `faktura-prijata`, `pokladni-pohyb`
+a `zavazek`. Dávka si uchová cílovou firmu ABRA. Před spuštěním lze v rozbalovacím nastavení vyhledat účetní předpis;
+společné nastavení se uloží až akcí spuštění dávky. Interní čísla nechává
+přidělit ABRA. Pozdější změna jednoho dokladu neovlivňuje ostatní.
+
+Na telefonu použijte **Vyfotit doklad** (požadavek na zadní fotoaparát) nebo
+**Vybrat fotky / PDF** pro galerii a více souborů. Po každé fotce lze tlačítko
+použít znovu. Nahrávání a seznam uložených souborů jsou před účetním nastavením.
+
+Fotky se ještě v prohlížeči otočí podle orientace snímku, zmenší se při zachování
+poměru stran na delší stranu nejvýše **1920 px** a převedou na JPEG s kvalitou
+85 %. Menší obrázky se rozlišením nezvětšují; průhledné pozadí PNG bude bílé.
+Do DB se uloží pouze připravený soubor, původní plné rozlišení se neposílá.
+Stejný soubor se používá pro náhled i vytěžování. PDF se nemění a dříve uložené
+soubory se zpětně neupravují. Při chybě převodu se ukáže chyba konkrétní fotky,
+velký originál se místo ní automaticky nenahraje. Příprava běží po jedné fotce
+a před jejím dokončením nelze spustit vytěžování. Limit 10 MB se vztahuje na
+soubor připravený k uploadu. Tato úprava nevyžaduje další migraci ani konfiguraci.
+
+Vyberte více PDF/JPEG/PNG. Prohlížeč nahrává nejvýše dva soubory současně,
+každý úspěšný originál se hned samostatně uloží. Obnovení stránky zachová uložené
+soubory, nedokončené přenosy je třeba vybrat znovu. Jedna fotka nebo jeden PDF
+soubor (i vícestránkový) je jeden doklad. Před spuštěním můžete uložené soubory
+i čekající uploady odebrat. Neúspěšný soubor nevrací ostatní uploady zpět.
+
+Nahrání do dávky **nevolá AI a nezakládá extrakční job**. Shodný soubor ve stejné
+dávce vrátí stávající položku. Při shodě s jiným dokladem ve stejné cílové firmě
+se zobrazí odkaz a stav; nový doklad vznikne pouze akcí **Přesto přidat**.
+Shoda souboru neodhalí dvě různé fotky stejné účtenky.
+
+**Spustit vytěžování N dokladů** je výslovný, idempotentní start. Po dokončení
+uploadů uzamkne složení a společné nastavení, připne aktuálně nakonfigurovaný
+model ke všem prvním běhům a atomicky založí jejich joby. Každý doklad používá
+vlastní dosavadní dodavatelský tok a historii. Prohlížeč můžete zavřít.
+
+Přehled ukazuje čekající, běžící, vytěžené a chybné první běhy odděleně od počtu
+odeslaných dokladů. Kontrola se otevře až po úspěchu nebo evidované chybě všech
+prvních běhů. Dokončení je uložené v DB a oznámení zůstává v přehledu dávek
+(stránkovaném po 25) a mezi posledními dávkami na seznamu přijatých dokladů.
+Přehled se průběžně obnovuje; nejsou odesílány e-maily ani jiné zprávy.
+Při samých chybách rozhraní výslovně nabídne jejich řešení.
+
+Kontrola používá současný formulář s originálem vedle něj, odkazem na plnou
+velikost, pořadím a filtry nevyřízených, chybných/odložených a odeslaných.
+**Předchozí / Další** a návrat do souhrnu nabídnou při změnách **Uložit a
+pokračovat / Zahodit a pokračovat / Zůstat**. Odložený doklad se nesmaže a lze
+jej vrátit mezi nevyřízené. **Uložit a odeslat →** uloží a odešle pouze aktuální
+doklad; přechod nastane až při `sent`. Při chybě nebo nejistém výsledku
+zůstává otevřený. `uncertain` se řeší dosavadním ověřením externího ID bez dalšího
+POSTu. Odeslané doklady zůstávají neměnné. Pozdější ruční opakování vytěžení
+jednoho dokladu neuzamkne kontrolu ostatních a nemění výsledek prvních běhů.
+
+### Nasazení dávek
+
+- Spusťte migraci `20261109130000` a restartujte aplikaci. Přidává tabulku dávek,
+  nullable vazby dokladů, stav `staged`, počáteční běh a model běhu. Staré jednotlivé
+  doklady zůstávají bez dávky; historie a odeslané XML se nepřepisují.
+- `INCOMING_DOCUMENTS_BATCH_MAX_FILES` nastavuje limit nových dávek (výchozí 50).
+  Limit se ukládá při vytvoření dávky; změna konfigurace neskryje starší položky.
+  Limit souboru zůstává 10 MB. Nejsou potřeba nové přihlašovací údaje.
+- Nové extrakce běží ve frontě `incoming_extraction` se souběhem 2, odesílání
+  zůstává v `billing`. Již existující joby v `billing` fungují dál.
+- Každou minutu běží `IncomingBatchReconcileWorker`. Ukončený Oban job
+  (`completed`, `discarded`, `cancelled`) s nedokončeným během označí jako chybu
+  bez nového AI volání. Souhrn dokončení obnovuje agregací z DB, i po ztracené
+  aktualizaci stránky. Samotné stáří běhu nikdy nespouští nový placený pokus.
+
+Byly přidány kontextové a LiveView regrese, včetně dotazů nezávislých na počtu
+řádků. ExUnit testy nebyly lokálně spuštěny; byly zkompilovány a výsledky CI ověří
+uživatel. S připnutým Elixir 1.20.4 / OTP 29.1 prošly kompilace aplikace
+s `--warnings-as-errors`, formátování, sestavení JS/CSS a migrace na dočasném
+PostgreSQL 17. V Chromiu prošel upload pěti syntetických souborů po dvou,
+obnovení stránky, explicitní start, dokončení přes frontu s náhradními odpověďmi,
+uložení XML, individuální přenos a přechod až po `sent`, zachování neuložené
+hodnoty a otevřené sekce. Ověřena byla i blokace shodného souboru v jiné dávce
+a jeho následné explicitní přidání. Mobilní šířka 390 px neměla vodorovný přesah.
+Živá OpenAI ani ABRA nebyly volány; pilot na skutečných dokladech zbývá.
+
+Mobilní upload byl ověřen v Chromiu při šířce 390 px včetně skutečně uložených
+souborů: snímek 4000 × 3000 se uložil jako JPEG 1920 × 1440, otočený snímek
+3000 × 2000 jako 1280 × 1920 a malý obrázek zůstal 640 × 480. PDF zůstalo
+beze změny; poškozená fotka se neuložila a ostatní uploady dokončily. Fyzický
+fotoaparát telefonu nebyl v cloudovém prostředí ověřen. ExUnit sada nebyla
+lokálně spuštěna; nové/změněné testovací moduly byly zkompilovány, CI ověří uživatel.
+
+## Obrázek / PDF v přílohách ABRA
+
+Po potvrzeném založení dokladu (také při dohledání jeho externího ID) se automaticky
+zařadí přenos uloženého podkladu do příloh příslušného dokladu v ABRA. Platí pro
+přijaté faktury, pokladní výdaje a závazky. Posílají se přesně uložené bajty PDF,
+JPEG nebo PNG, tedy také zmenšená fotka z telefonu, která byla podkladem vytěžení.
+Název v ABRA je `podklad-<UUID>.<pdf|jpg|png>`.
+
+Příloha má vlastní Oban job a stav, nezávislý na účetním importu. Před uploadem
+se projdou stránky seznamu příloh, případná existující příloha se stáhne a její
+SHA256 se porovná s uloženým podkladem. Stejná kontrola následuje po uploadu.
+Existující příloha s odlišným nebo nejednoznačným obsahem se nepřepisuje ani nemaže.
+Po rezervovaném uploadu, jehož výsledek není jistý, automatický pokus už pouze
+ověřuje stav; nový upload musí povolit obsluha tlačítkem. Duplicitní spuštění,
+starý job nebo pozdní výsledek nemohou přepsat novější záměr přenosu.
+
+Detail ukazuje čekání, ověřené přiložení nebo konkrétní chybu a tlačítko
+**Odeslat podklad do příloh ABRA**. Ve výpisu dávky je stav přílohy a u chyby
+**Zopakovat**. Odeslaný účetní doklad a jeho XML se při opakování přílohy nemění.
+Postupná kontrola může pokračovat po potvrzení účetního přenosu; příloha se
+mezitím dokončí na pozadí. Po zavření prohlížeče zůstává job v DB.
+
+Starší odeslaný doklad s uloženým zdrojem lze doplnit uvedeným tlačítkem v jeho
+detailu. Zpětné hromadné odeslání starších příloh není automatické. Ruční doklady
+bez zdroje nevytvářejí job přílohy. Přenos je blokován při změně cílové firmy,
+URL nebo obsahu podkladu. Přístup k akcím zůstává pod admin PIN.
+
+Nasazení vyžaduje `mix ecto.migrate` (migrace `20261109150000`) a restart aplikace.
+Nový job běží ve stávající frontě `abra_pdf` a má nejvýše pět pokusů; minutová
+obnova označí neukončený přenos po terminálním stavu jobu za chybu. Není potřeba
+nová konfigurace ani zapínat `ABRA_PDF_ENABLED`, které se týká pobytových faktur.
+Účet ABRA používaný pro přijaté doklady musí mít také čtení a zápis příloh.
+
+Použité endpointy jsou `GET <agenda>/<id>/prilohy.json`,
+`PUT <agenda>/<id>/prilohy/new/<název>` s původním obsahem a odpovídajícím MIME
+typem a `GET <agenda>/<id>/prilohy/<příloha-id>/content`, pod stávající cílovou
+firmou `/c/<firma>`. Využívají stejný klientský postup jako pobytové PDF.
+
+Kompilace aplikace, nových/změněných testovacích modulů a formátování byly ověřeny
+s připnutým toolchainem. Migrace prošla na dočasném PostgreSQL 17. Průchod
+prohlížečem s náhradami externích odpovědí ověřil účetní import, automatický job
+přílohy, následné ověření obsahu a zobrazení úspěchu. Podklady PDF/JPEG/PNG byly
+ověřeny ve všech třech agendách. Živé uploady do ABRA nebyly provedeny. ExUnit
+sada nebyla lokálně spuštěna podle AGENTS.md; výsledky CI ověří uživatel.
+
+
+## Zjednodušené ovládání kontroly
+
+Běžný průchod je **nahrát dávku → spustit vytěžování → zkontrolovat → uložit a
+odeslat → další**. Spuštění dávky uloží rozpracovaný společný předpis a volbu
+položek ve stejné transakci jako start; prázdná či chybná dávka nastavení neuloží.
+
+Kontrola má jednu stálou spodní lištu: **Předchozí / Další**, stav uložení,
+**Uložit**, **Uložit a odeslat →** a nabídku **⋯** s odložením a návratem do
+souhrnu. Při chybě validace zůstávají rozepsané hodnoty i původní uložená data;
+část účetních změn se nesmí uložit samostatně. Odeslání se zařadí atomicky
+s uložením validního XML a na další se přechází až po potvrzeném `sent`.
+Nejasný výsledek přenosu nabízí v liště pouze ověření, nikoli další účetní POST.
+
+Na počítači je originál vedle formuláře a drží se při scrollování. Na telefonu
+se přepíná **Formulář / Originál**, bez obnovení nebo ztráty rozepsaného formuláře.
+Lišta počítá se spodním bezpečným okrajem a dostupným prostorem při klávesnici.
+Při navigaci s úpravami se zobrazí dialog uložit / zahodit / zůstat; zavření či
+obnovení stránky s úpravami vyvolá běžné upozornění prohlížeče.
+
+Předpis převzatý z dávky je shrnutý s akcí **Změnit**. Hromadný seznam a filtry
+jsou v **Přehledu dávky**. Nápověda, historie, instrukce dodavatele, opakování AI,
+XML, dry-run a diagnostika jsou v rozbalovacích pokročilých možnostech.
+Instrukce pro budoucí běhy dodavatele mají nadále vlastní výslovné ukládání;
+finanční tlačítko je automaticky nemění. Nejasnosti z vytěžení jsou sbalené pod
+počtem upozornění; konkrétní chyba, rozpor identity nebo nepodporovaná měna
+zůstávají viditelné. Otevřené sekce se při aktualizacích zachovávají.
+
+Průchod v Chromiu ověřil společný předpis uložený při startu dávky, společné
+uložení změny hlavičky a předpisu, zamítnutí neplatné částky bez přenosu,
+stálou lištu při scrollování, zachování hodnot při mobilním přepínání náhledu
+a přechod až po potvrzeném odeslání. Externí odpovědi byly nahrazené lokálními
+odpověďmi. Přidány kontextové regrese atomicity a zastaralých změn a upraveny
+LiveView testy; ExUnit sada nebyla lokálně spuštěna, výsledky CI ověří uživatel.
+Tato úprava nevyžaduje další migraci ani konfiguraci.

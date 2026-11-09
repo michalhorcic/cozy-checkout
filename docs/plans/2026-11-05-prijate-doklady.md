@@ -108,9 +108,12 @@ Není nutná rozsáhlá referenční sada ani vyřešení všech typů dokladů 
 
 Automatické schvalování, e-mailový příjem, hromadné importy, párování plateb,
 zakládání dodavatelů, skladové vazby, napojení na nákladovost kuchyně,
-automatické nahrávání originálu jako přílohy do ABRA, univerzální účetní pravidla,
+univerzální účetní pravidla,
 pokročilý audit a řešení všech zvláštních daňových případů. Nepodporované doklady
 zatím zpracujeme ručně. Další funkce přidáme podle zkušeností z pilotu.
+
+Podklady jako přílohy ABRA doplňuje následná etapa popsaná v
+[INCOMING_DOCUMENT_FORM.md](../features/INCOMING_DOCUMENT_FORM.md).
 
 ## Nejbližší krok
 

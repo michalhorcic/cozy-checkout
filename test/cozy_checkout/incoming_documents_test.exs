@@ -327,6 +327,14 @@ defmodule CozyCheckout.IncomingDocumentsTest do
     assert :ok = Incoming.perform(doc.id, "send")
     assert :ok = Incoming.perform(doc.id, "send")
     assert %{state: "sent", remote_id: "42"} = Incoming.get!(doc.id)
+    assert Incoming.get!(doc.id).source_attachment["state"] == "queued"
+
+    assert Repo.aggregate(
+             from(j in Oban.Job,
+               where: j.worker == "CozyCheckout.Workers.IncomingDocumentAttachmentWorker"
+             ),
+             :count
+           ) == 1
   end
 
   test "dry-run rejection and warnings block approval until explicitly resolved" do
@@ -379,6 +387,7 @@ defmodule CozyCheckout.IncomingDocumentsTest do
 
     assert :ok = Incoming.perform(doc.id, "send")
     assert %{state: "sent", remote_id: "88"} = Incoming.get!(doc.id)
+    assert Incoming.get!(doc.id).source_attachment["state"] == "queued"
   end
 
   test "uncertain state persisted before POST also survives process failure" do

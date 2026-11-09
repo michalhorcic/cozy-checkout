@@ -101,6 +101,33 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
 
     include_items = Keyword.get(opts, :include_items, false)
     unless is_boolean(include_items), do: Repo.rollback("Neplatná volba načítání položek.")
+    run = snapshot_run(doc, generation, mode, include_items, previous, opts[:model])
+
+    run = if mode == "extract_only", do: select_for_retry(run, doc, previous, opts), else: run
+    run = Repo.insert!(run, log: false)
+
+    enqueue!(doc.id, run.id)
+
+    update!(doc,
+      active_extraction_run_id: run.id,
+      state: "uploaded",
+      current_xml: nil,
+      generated_xml: nil,
+      extracted_data: %{},
+      edited_data: nil,
+      dry_run: %{},
+      extraction_metadata: %{
+        "strategy" => "header_form",
+        "run_id" => run.id,
+        "include_items" => include_items
+      },
+      extraction_attempts: 0,
+      error: nil,
+      error_stage: nil
+    )
+  end
+
+  defp snapshot_run(doc, generation, mode, include_items, previous, model) do
     common = Extractor.instructions("header_form", include_items)
 
     run = %ExtractionRun{
@@ -123,36 +150,45 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
           if(include_items, do: Transcription.schema(), else: Transcription.header_schema())
       },
       previous_draft: draft(doc),
-      origin_run_id: previous && previous.id
+      origin_run_id: previous && previous.id,
+      model: model
     }
 
-    run = if mode == "extract_only", do: select_for_retry(run, doc, previous, opts), else: run
-    run = Repo.insert!(run, log: false)
+    run
+  end
 
-    case %{document_id: doc.id, operation: "extract", run_id: run.id}
-         |> IncomingDocumentWorker.new()
-         |> Oban.insert() do
+  # The batch lock protects these new staged documents. This uses metadata only:
+  # no original binaries or per-document history queries are needed at start.
+  def start_batch_locked(documents, model, include_items) do
+    Enum.each(documents, fn doc ->
+      run = snapshot_run(doc, 1, "identify_and_extract", include_items, nil, model)
+      run = Repo.insert!(run, log: false)
+      enqueue!(doc.id, run.id)
+
+      Repo.update_all(from(d in Document, where: d.id == ^doc.id),
+        set: [
+          state: "uploaded",
+          active_extraction_run_id: run.id,
+          initial_extraction_run_id: run.id,
+          extraction_metadata: %{
+            "strategy" => "header_form",
+            "run_id" => run.id,
+            "include_items" => include_items
+          },
+          updated_at: DateTime.utc_now(:second)
+        ]
+      )
+    end)
+  end
+
+  defp enqueue!(document_id, run_id) do
+    # The enclosing transaction owns rollback; retries would reuse an aborted transaction.
+    case %{document_id: document_id, operation: "extract", run_id: run_id}
+         |> IncomingDocumentWorker.new(queue: :incoming_extraction)
+         |> Oban.insert(retry: false) do
       {:ok, %{conflict?: false}} -> :ok
       _ -> Repo.rollback("Nové vytěžení se nepodařilo zařadit do fronty.")
     end
-
-    update!(doc,
-      active_extraction_run_id: run.id,
-      state: "uploaded",
-      current_xml: nil,
-      generated_xml: nil,
-      extracted_data: %{},
-      edited_data: nil,
-      dry_run: %{},
-      extraction_metadata: %{
-        "strategy" => "header_form",
-        "run_id" => run.id,
-        "include_items" => include_items
-      },
-      extraction_attempts: 0,
-      error: nil,
-      error_stage: nil
-    )
   end
 
   defp select_for_retry(run, doc, previous, opts) do
@@ -303,7 +339,16 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
         true ->
           preparation =
             with {:ok, _} <- locked(id, fn current -> guard!(current, run) end),
-                 do: SourceImages.prepare(doc, IncomingDocuments.config())
+                 do:
+                   SourceImages.prepare(
+                     doc,
+                     Keyword.put(
+                       IncomingDocuments.config(),
+                       :openai_model,
+                       run.model || run.identification["model"] || run.content["model"] ||
+                         IncomingDocuments.config()[:openai_model]
+                     )
+                   )
 
           case preparation do
             {:ok, parts, images} ->
@@ -343,7 +388,7 @@ defmodule CozyCheckout.IncomingDocuments.ExtractionRuns do
              "attempts" => 1,
              "started_at" => now(),
              "model" =>
-               run.identification["model"] || run.content["model"] ||
+               run.model || run.identification["model"] || run.content["model"] ||
                  IncomingDocuments.config()[:openai_model],
              "images" => images
            }

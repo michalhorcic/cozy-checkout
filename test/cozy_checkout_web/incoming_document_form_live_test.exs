@@ -7,7 +7,22 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
   setup do
     previous = IncomingDocuments.config()
     req_options = Req.default_options()
-    Req.default_options(plug: {Req.Test, __MODULE__})
+
+    Req.Test.stub({__MODULE__, :catalog}, fn conn ->
+      Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => []}})
+    end)
+
+    Req.default_options(
+      plug: fn conn ->
+        name =
+          if String.ends_with?(conn.request_path, "/predpis-zauctovani.json"),
+            do: {__MODULE__, :catalog},
+            else: __MODULE__
+
+        Req.Test.call(conn, name)
+      end
+    )
+
     Req.Test.verify_on_exit!()
     pin = Application.get_env(:cozy_checkout, :admin_pin_hash)
     Application.put_env(:cozy_checkout, :admin_pin_hash, AdminAuth.hash_pin("482731"))
@@ -68,8 +83,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     {:ok, detail, _} = live(admin(build_conn()), "/admin/incoming-documents/#{doc.id}")
     assert has_element?(detail, "#incoming-accounting")
     assert has_element?(detail, "#incoming-header-form")
-    assert has_element?(detail, "#incoming-send")
-    refute has_element?(detail, "#incoming-send input[type=checkbox]")
+    assert has_element?(detail, "#incoming-actions button[phx-click=send-next]")
+    refute has_element?(detail, "#incoming-actions input[type=checkbox]")
     refute has_element?(detail, "#supplier-instructions-form input[type=checkbox]")
     refute has_element?(detail, "iframe")
     refute has_element?(detail, "img[data-original]")
@@ -139,14 +154,15 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     }
 
     for _ <- 1..2 do
-      Req.Test.expect(__MODULE__, fn conn ->
+      Req.Test.expect({__MODULE__, :catalog}, fn conn ->
         assert conn.request_path == "/c/pilot/predpis-zauctovani.json"
         Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => [row]}})
       end)
     end
 
     {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
-    view |> element("button[phx-click=accounting-load]") |> render_click()
+    render_async(view)
+    assert has_element?(view, "section#incoming-accounting")
 
     render_click(view, "accounting-select", %{"id" => Base.url_encode64("SLUŽBY", padding: false)})
 
@@ -157,12 +173,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     view |> form("#incoming-accounting-form") |> render_submit()
     assert has_element?(view, "input[name='document[cisDosle]'][value='DRAFT']")
     assert IncomingDocuments.get!(doc.id).accounting_settings["typUcOp"] == "code:SLUŽBY"
-    assert has_element?(view, "#incoming-send button[disabled]")
+    refute has_element?(view, "#incoming-actions button[phx-click=send-next][disabled]")
     view |> form("#incoming-header-form") |> render_submit()
     updated = IncomingDocuments.get!(doc.id)
     assert updated.current_xml =~ "<cisDosle>DRAFT</cisDosle>"
     assert updated.current_xml =~ "<protiUcet>code:518100</protiUcet>"
-    refute has_element?(view, "#incoming-send button[disabled]")
+    refute has_element?(view, "#incoming-actions button[phx-click=send-next][disabled]")
   end
 
   test "dry-run HTML is shown in place and explicit real send remains available", %{conn: conn} do
@@ -182,7 +198,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     IncomingDocuments.perform(doc.id, "validate")
     send(view.pid, :refresh)
     assert render(view) =~ "FreeMarker"
-    view |> form("#incoming-send") |> render_submit()
+    view |> element("button[phx-click=send-next]") |> render_click()
     assert IncomingDocuments.get!(doc.id).state == "sending"
     assert has_element?(view, "#incoming-header-form input[name='document[cisDosle]'][disabled]")
   end
@@ -531,5 +547,76 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
         id
       end)
     end)
+  end
+
+  test "a source attachment can be retried on a sent document without another accounting send", %{
+    conn: conn
+  } do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+    bytes = "%PDF-source"
+
+    doc =
+      doc
+      |> Ecto.Changeset.change(
+        state: "sent",
+        remote_id: "42",
+        sent_xml: doc.current_xml,
+        original: bytes,
+        content_type: "application/pdf",
+        sha256: IncomingDocuments.digest(bytes),
+        source_attachment: %{"state" => "failed", "error" => "Attachment permission denied"}
+      )
+      |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert has_element?(view, "#incoming-source-attachment", "Attachment permission denied")
+    view |> element("button[phx-click=source-attachment-retry]") |> render_click()
+    queued = IncomingDocuments.get!(doc.id)
+    assert queued.source_attachment["state"] == "queued"
+    assert queued.state == "sent"
+    assert queued.sent_xml == doc.sent_xml
+    refute has_element?(view, "#incoming-send")
+
+    queued
+    |> Ecto.Changeset.change(
+      source_attachment: Map.put(queued.source_attachment, "state", "uploaded")
+    )
+    |> Repo.update!()
+
+    send(view.pid, :refresh)
+    assert render(view) =~ "Obrázek / PDF je přiložený a jeho obsah byl ověřen"
+  end
+
+  test "review actions stay together, mobile preview preserves edits and invalid send saves nothing",
+       %{conn: conn} do
+    {:ok, doc} = IncomingDocuments.create_header("zavazek", attrs())
+
+    doc =
+      doc
+      |> Ecto.Changeset.change(
+        original: "%PDF-preview",
+        content_type: "application/pdf",
+        sha256: IncomingDocuments.digest("%PDF-preview")
+      )
+      |> Repo.update!()
+
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form/#{doc.id}")
+    assert has_element?(view, "#incoming-actions button[phx-click=workflow-save]")
+    assert has_element?(view, "#incoming-actions button[phx-click=send-next]")
+    refute has_element?(view, "#incoming-advanced[open]")
+    assert has_element?(view, "#incoming-advanced #incoming-validate")
+
+    view
+    |> form("#incoming-header-form", document: %{cisDosle: "KEEP-ME", sumCelkem: "1"})
+    |> render_change()
+
+    view |> element("button[phx-value-view=original]") |> render_click()
+    assert has_element?(view, "#incoming-header-form.hidden")
+    view |> element("button[phx-value-view=form]") |> render_click()
+    assert has_element?(view, "input[name='document[cisDosle]'][value=KEEP-ME]")
+    view |> element("button[phx-click=send-next]") |> render_click()
+    assert has_element?(view, "#incoming-actions [role=alert]")
+    assert IncomingDocuments.get!(doc.id).current_xml == doc.current_xml
+    assert IncomingDocuments.get!(doc.id).sent_xml == nil
   end
 end

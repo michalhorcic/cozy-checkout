@@ -6,6 +6,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
   alias CozyCheckoutWeb.AdminAuth
 
   setup do
+    req_options = Req.default_options()
+    Req.default_options(plug: {Req.Test, __MODULE__})
+
+    Req.Test.stub(__MODULE__, fn conn ->
+      assert String.ends_with?(conn.request_path, "/predpis-zauctovani.json")
+      Req.Test.json(conn, %{"winstrom" => %{"predpis-zauctovani" => []}})
+    end)
+
     old_pin = Application.get_env(:cozy_checkout, :admin_pin_hash)
     old_config = IncomingDocuments.config()
     Application.put_env(:cozy_checkout, :admin_pin_hash, AdminAuth.hash_pin("482731"))
@@ -19,6 +27,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     )
 
     on_exit(fn ->
+      Req.default_options(req_options)
+
       if old_pin,
         do: Application.put_env(:cozy_checkout, :admin_pin_hash, old_pin),
         else: Application.delete_env(:cozy_checkout, :admin_pin_hash)
@@ -44,7 +54,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     conn = conn |> admin() |> get("/admin/incoming-documents/#{doc.id}/original")
     assert response(conn, 200) == "%PDF-test"
     assert get_resp_header(conn, "cache-control") == ["private, no-store"]
-    {:ok, view, _} = live(admin(build_conn()), "/admin/incoming-documents")
+    {:ok, view, _} = live(admin(build_conn()), "/admin/incoming-documents/all")
     assert has_element?(view, "#incoming-list")
     assert has_element?(view, "a[href='/admin/incoming-document-form/#{doc.id}']")
     refute has_element?(view, "#incoming-upload")
@@ -81,12 +91,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     |> form("#incoming-header-form", %{"document" => %{"cisDosle" => "NEW"}})
     |> render_submit()
 
-    assert_patch(view, "/admin/incoming-document-form/#{doc.id}")
+    refute_patched(view)
     changed = IncomingDocuments.get!(doc.id)
     assert changed.extraction_metadata["strategy"] == "header_form"
     assert changed.current_xml =~ "<cisDosle>NEW</cisDosle>"
     assert has_element?(view, "#incoming-accounting-form")
-    assert has_element?(view, "#incoming-send")
+    assert has_element?(view, "#incoming-actions button[phx-click=send-next]")
   end
 
   test "stored FreeMarker responses are escaped and displayed within the new form", %{conn: conn} do

@@ -62,9 +62,18 @@ defmodule CozyCheckoutWeb.Router do
     live_session :admin,
       on_mount: [{CozyCheckoutWeb.AdminAuth, :ensure_admin}, CozyCheckoutWeb.AdminNavigation],
       layout: {CozyCheckoutWeb.Layouts, :admin} do
+      live "/incoming-document-batches", IncomingDocumentBatchesLive, :index
+      live "/incoming-document-batches/new", IncomingDocumentBatchesLive, :new
+      live "/incoming-document-batches/:id", IncomingDocumentBatchesLive, :show
+
+      live "/incoming-document-batches/:batch_id/review/:id",
+           IncomingDocumentFormLive,
+           :batch_review
+
       live "/incoming-document-form", IncomingDocumentFormLive, :new
       live "/incoming-document-form/:id", IncomingDocumentFormLive, :edit
-      live "/incoming-documents", IncomingDocumentFormLive, :index
+      live "/incoming-documents", IncomingDocumentBatchesLive, :index
+      live "/incoming-documents/all", IncomingDocumentFormLive, :index
       live "/incoming-documents/:id", IncomingDocumentFormLive, :edit
       live "/", DashboardLive
       live "/billing/settings", BillingLive.Settings
