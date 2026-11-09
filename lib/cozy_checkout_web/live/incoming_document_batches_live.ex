@@ -359,21 +359,20 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
           :if={@batches != []}
           class="rounded-xl border border-base-300 bg-base-100 overflow-hidden"
         >
-          <table class="table w-full table-fixed">
-            <thead class="hidden md:table-header-group bg-base-200/50">
+          <table class="table incoming-overview-table w-full table-fixed">
+            <thead class="bg-base-200/50">
               <tr>
-                <th>Dávka</th><th>Stav a průběh</th><th class="w-52">
+                <th>Dávka</th><th>Stav a průběh</th><th class="w-48">
                   <span class="sr-only">Akce</span>
                 </th>
               </tr>
             </thead>
-            <tbody class="block md:table-row-group">
+            <tbody>
               <tr
                 :for={row <- @batches}
                 id={"batch-#{row.batch.id}"}
-                class="block p-4 space-y-3 md:table-row md:p-0 md:space-y-0"
               >
-                <td class="block p-0 md:table-cell md:p-4">
+                <td>
                   <.link
                     navigate={~p"/admin/incoming-document-batches/#{row.batch.id}"}
                     class="link font-semibold break-words"
@@ -383,7 +382,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
                   </p>
                   <p class="mt-1 text-sm">Dokladů: {row.total}</p>
                 </td>
-                <td class="block p-0 md:table-cell md:p-4">
+                <td>
                   <span class={[
                     "badge badge-outline h-auto py-1 whitespace-normal",
                     batch_status_class(row)
@@ -397,10 +396,10 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
                     <p>Odesláno do ABRA {row.sent} z {row.total}</p>
                   </div>
                 </td>
-                <td class="block p-0 md:table-cell md:p-4 md:text-right">
+                <td class="incoming-overview-action sm:text-right">
                   <.link
                     navigate={batch_action_path(row)}
-                    class="btn btn-outline btn-sm min-h-11 w-full md:w-auto"
+                    class="btn btn-outline btn-sm min-h-11 w-full sm:w-auto"
                   >{batch_action(row)}</.link>
                 </td>
               </tr>

@@ -1005,34 +1005,31 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
           :if={@documents != []}
           class="rounded-xl border border-base-300 bg-base-100 overflow-hidden"
         >
-          <table class="table w-full table-fixed" id="incoming-list">
-            <thead class="hidden md:table-header-group bg-base-200/50">
+          <table class="table incoming-overview-table w-full table-fixed" id="incoming-list">
+            <thead class="bg-base-200/50">
               <tr>
                 <th class="w-2/5">Doklad</th><th>Kategorie</th><th>Stav</th><th>Firma ABRA</th>
               </tr>
             </thead>
-            <tbody class="block md:table-row-group">
-              <tr
-                :for={doc <- @documents}
-                class="block p-4 space-y-2 md:table-row md:p-0 md:space-y-0"
-              >
-                <td class="block p-0 md:table-cell md:p-4">
+            <tbody>
+              <tr :for={doc <- @documents}>
+                <td>
                   <.link
                     navigate={~p"/admin/incoming-document-form/#{doc.id}"}
                     class="link font-semibold break-words"
                   >{doc.filename}</.link>
                 </td>
-                <td class="block p-0 text-base-content/60 md:table-cell md:p-4">
+                <td class="text-base-content/60">
                   {IncomingDocuments.agenda_label(doc.agenda)}
                 </td>
-                <td class="block p-0 md:table-cell md:p-4">
+                <td>
                   <span class={[
                     "badge badge-outline h-auto py-1 whitespace-normal",
                     CozyCheckoutWeb.IncomingDocumentComponents.document_state_class(doc.state)
                   ]}>{state_label(doc.state)}</span>
                 </td>
-                <td class="block p-0 break-words text-base-content/60 md:table-cell md:p-4">
-                  <span class="md:hidden">Firma ABRA: </span>{doc.company_id}
+                <td class="break-words text-base-content/60">
+                  <span class="incoming-company-label">Firma ABRA: </span>{doc.company_id}
                 </td>
               </tr>
             </tbody>
