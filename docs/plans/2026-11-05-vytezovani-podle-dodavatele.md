@@ -48,6 +48,12 @@ importu, existující obsah se ověřuje SHA256 a po nejistém uploadu se automa
 jen dohledává. Migrace `20261109150000` přidává trvalý stav přílohy. Podrobnosti
 jsou v uživatelském návodu; živé přenosy do ABRA agent neprováděl.
 
+Kontrola je následně zjednodušená: jedna stálá akční lišta, společné atomické
+uložení hlavičky/DPH/předpisu, kombinované uložení a odeslání s přechodem až po
+`sent`, mobilní přepínání formuláře a originálu a rozbalovací pokročilé funkce.
+Spuštění dávky současně ukládá společné nastavení. Validační a přenosové guardy
+zůstávají zachované; tato úprava nepřidává migraci ani konfiguraci.
+
 Následující zadání zachovává přijatá rozhodnutí a akceptační scénáře pro revizi.
 
 ## 1. Zadání pro další vlákno

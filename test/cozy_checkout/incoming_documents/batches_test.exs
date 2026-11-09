@@ -263,6 +263,18 @@ defmodule CozyCheckout.IncomingDocuments.BatchesTest do
     assert IncomingDocuments.get!(two.id).accounting_settings == saved.accounting_settings
   end
 
+  test "start commits pending common settings with the initial jobs and rolls back empty batches" do
+    batch = batch()
+    pending = %{preset: "", include_items: true}
+    assert {:error, _} = Batches.start(batch.id, pending)
+    refute Batches.get!(batch.id).include_items
+    doc = source(batch)
+    assert {:ok, started} = Batches.start(batch.id, pending)
+    assert started.include_items
+    run = Repo.get!(ExtractionRun, IncomingDocuments.get!(doc.id).initial_extraction_run_id)
+    assert Map.has_key?(run.schemas["content"]["properties"], "items")
+  end
+
   test "mixed and all-failed batches become ready only after every first run ended" do
     for states <- [["completed", "failed"], ["failed", "failed"]] do
       batch = batch()

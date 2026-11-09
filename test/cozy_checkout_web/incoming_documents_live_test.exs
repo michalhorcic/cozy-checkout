@@ -86,7 +86,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentsLiveTest do
     assert changed.extraction_metadata["strategy"] == "header_form"
     assert changed.current_xml =~ "<cisDosle>NEW</cisDosle>"
     assert has_element?(view, "#incoming-accounting-form")
-    assert has_element?(view, "#incoming-send")
+    assert has_element?(view, "#incoming-actions button[phx-click=send-next]")
   end
 
   test "stored FreeMarker responses are escaped and displayed within the new form", %{conn: conn} do

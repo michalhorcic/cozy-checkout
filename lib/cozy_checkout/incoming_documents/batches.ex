@@ -244,57 +244,83 @@ defmodule CozyCheckout.IncomingDocuments.Batches do
     end)
   end
 
-  def start(id) do
-    locked(id, fn batch ->
-      target!(batch)
+  def start(id, pending_settings \\ nil) do
+    prepared =
+      if pending_settings do
+        batch = get!(id)
 
-      if batch.started_at do
-        batch
+        if batch.started_at do
+          {:ok, nil}
+        else
+          with :ok <- target(batch),
+               {:ok, selected} <- settings(batch, pending_settings.preset),
+               do: {:ok, {selected, pending_settings.include_items}}
+        end
       else
-        cfg = IncomingDocuments.config()
+        {:ok, nil}
+      end
 
-        unless is_binary(cfg[:openai_model]) and cfg[:openai_model] != "" and
-                 cfg[:openai_api_key] not in [nil, ""],
-               do: Repo.rollback("Chybí konfigurace OpenAI nebo model")
+    with {:ok, prepared} <- prepared do
+      locked(id, fn batch ->
+        target!(batch)
 
-        docs =
-          Repo.all(
-            from d in Document,
-              where: d.batch_id == ^id and is_nil(d.deleted_at),
-              order_by: d.batch_position,
-              select:
-                struct(d, [
-                  :id,
-                  :sha256,
-                  :base_url,
-                  :company_id,
-                  :agenda,
-                  :state,
-                  :accounting_settings,
-                  :extraction_metadata,
-                  :extracted_data,
-                  :edited_data
-                ])
+        if batch.started_at do
+          batch
+        else
+          batch =
+            if prepared do
+              {selected, include_items} = prepared
+              unless is_boolean(include_items), do: Repo.rollback("Neplatná volba vytěžování")
+              update!(batch, accounting_settings: selected, include_items: include_items)
+            else
+              batch
+            end
+
+          cfg = IncomingDocuments.config()
+
+          unless is_binary(cfg[:openai_model]) and cfg[:openai_model] != "" and
+                   cfg[:openai_api_key] not in [nil, ""],
+                 do: Repo.rollback("Chybí konfigurace OpenAI nebo model")
+
+          docs =
+            Repo.all(
+              from d in Document,
+                where: d.batch_id == ^id and is_nil(d.deleted_at),
+                order_by: d.batch_position,
+                select:
+                  struct(d, [
+                    :id,
+                    :sha256,
+                    :base_url,
+                    :company_id,
+                    :agenda,
+                    :state,
+                    :accounting_settings,
+                    :extraction_metadata,
+                    :extracted_data,
+                    :edited_data
+                  ])
+            )
+
+          if docs == [], do: Repo.rollback("Prázdnou dávku nelze spustit")
+
+          unless Enum.all?(
+                   docs,
+                   &(&1.state == "staged" && &1.base_url == batch.base_url &&
+                       &1.company_id == batch.company_id)
+                 ),
+                 do: Repo.rollback("Složení dávky se změnilo")
+
+          Repo.update_all(from(d in Document, where: d.batch_id == ^id and is_nil(d.deleted_at)),
+            set: [accounting_settings: batch.accounting_settings]
           )
 
-        if docs == [], do: Repo.rollback("Prázdnou dávku nelze spustit")
-
-        unless Enum.all?(
-                 docs,
-                 &(&1.state == "staged" && &1.base_url == batch.base_url &&
-                     &1.company_id == batch.company_id)
-               ),
-               do: Repo.rollback("Složení dávky se změnilo")
-
-        Repo.update_all(from(d in Document, where: d.batch_id == ^id and is_nil(d.deleted_at)),
-          set: [accounting_settings: batch.accounting_settings]
-        )
-
-        docs = Enum.map(docs, &%{&1 | accounting_settings: batch.accounting_settings})
-        ExtractionRuns.start_batch_locked(docs, cfg[:openai_model], batch.include_items)
-        update!(batch, started_at: now(), model: cfg[:openai_model])
-      end
-    end)
+          docs = Enum.map(docs, &%{&1 | accounting_settings: batch.accounting_settings})
+          ExtractionRuns.start_batch_locked(docs, cfg[:openai_model], batch.include_items)
+          update!(batch, started_at: now(), model: cfg[:openai_model])
+        end
+      end)
+    end
   end
 
   # The first run is immutable as the readiness criterion. Later retries cannot

@@ -33,18 +33,17 @@ zpracovávaného dokladu, nikoliv oslabením kontroly položkového režimu.
    zůstávají uložená, ruční formulář je uložen zvlášť. Nejasnosti, přečtená měna a
    rekapitulace originálu jsou viditelné. Podporovány jsou tuzemské doklady v CZK
    a souhrnné sazby 0 %, 12 % a 21 %. Jiné sazby nebo měny vyžadují jiné zpracování.
-5. Zkontrolovat CZK, údaje a souhrnnou DPH a stisknout „Uložit formulář“.
+5. Zkontrolovat CZK, údaje a souhrnnou DPH a použít stálé tlačítko „Uložit“ nebo „Uložit a odeslat“.
    Souhlasové checkboxy se nevyžadují. Teprve uložením formuláře vzniká
    validované XML. Součet základů, osvobozené částky a daní musí souhlasit s celkem;
    chybějící DPH se nepřevádí automaticky na osvobozenou částku.
-6. Uložením zůstanete ve formuláři. V sekci Účetní nastavení načíst a vyhledat
-   předpis z ABRA, případně změnit interní číslo a uložit. Rozpracované změny
-   hlavičky se při uložení předpisu neztratí. Před operacemi ABRA musí být obě
-   části uložené.
-7. Volitelně spustit „Ověřit v ABRA (dry-run)“. Výsledek, chyby, upozornění i
+6. Účetní předpis je shrnutý v řádku **Předpis · Změnit**. Rozbalením lze načíst
+   číselník, vybrat jiný předpis nebo upravit interní číslo. Stálá akce **Uložit**
+   uloží hlavičku, DPH i rozpracované účetní nastavení společně.
+7. V **Pokročilých možnostech a nápovědě** lze volitelně spustit „Ověřit v ABRA (dry-run)“. Výsledek, chyby, upozornění i
    diagnostika HTML/FreeMarker odpovědí se zobrazují přímo zde. Neúspěšný dry-run
    neznamená úspěšnou validaci, ale neblokuje explicitní přímé odeslání.
-8. Zkontrolovat případný dřívější ruční import a stisknout „Nahrát do ABRA“.
+8. Zkontrolovat případný dřívější ruční import a použít „Uložit a odeslat“.
    Samotné tlačítko spustí skutečný přenos bez dalšího zaškrtávání. Lokálně se
    znovu zkontroluje struktura XML,
    součty a povinná data. Schválené XML se pro API deterministicky převede na
@@ -394,8 +393,8 @@ voláním. Živá OpenAI ani ABRA nebyly volány.
 
 Ze seznamu přijatých dokladů otevřete výrazné tlačítko **Nahrát doklady**. Kategorie **Faktury**,
 **Hotově** a **Kartou** odpovídají agendám `faktura-prijata`, `pokladni-pohyb`
-a `zavazek`. Dávka si uchová cílovou firmu ABRA. Před spuštěním lze načíst
-vyhledávatelný účetní předpis a uložit společné nastavení; interní čísla nechává
+a `zavazek`. Dávka si uchová cílovou firmu ABRA. Před spuštěním lze v rozbalovacím nastavení vyhledat účetní předpis;
+společné nastavení se uloží až akcí spuštění dávky. Interní čísla nechává
 přidělit ABRA. Pozdější změna jednoho dokladu neovlivňuje ostatní.
 
 Na telefonu použijte **Vyfotit doklad** (požadavek na zadní fotoaparát) nebo
@@ -439,8 +438,8 @@ Kontrola používá současný formulář s originálem vedle něj, odkazem na p
 velikost, pořadím a filtry nevyřízených, chybných/odložených a odeslaných.
 **Předchozí / Další** a návrat do souhrnu nabídnou při změnách **Uložit a
 pokračovat / Zahodit a pokračovat / Zůstat**. Odložený doklad se nesmaže a lze
-jej vrátit mezi nevyřízené. **Nahrát do ABRA a pokračovat** odešle pouze aktuální
-uložený doklad; přechod nastane až při `sent`. Při chybě nebo nejistém výsledku
+jej vrátit mezi nevyřízené. **Uložit a odeslat →** uloží a odešle pouze aktuální
+doklad; přechod nastane až při `sent`. Při chybě nebo nejistém výsledku
 zůstává otevřený. `uncertain` se řeší dosavadním ověřením externího ID bez dalšího
 POSTu. Odeslané doklady zůstávají neměnné. Pozdější ruční opakování vytěžení
 jednoho dokladu neuzamkne kontrolu ostatních a nemění výsledek prvních běhů.
@@ -522,3 +521,39 @@ prohlížečem s náhradami externích odpovědí ověřil účetní import, aut
 přílohy, následné ověření obsahu a zobrazení úspěchu. Podklady PDF/JPEG/PNG byly
 ověřeny ve všech třech agendách. Živé uploady do ABRA nebyly provedeny. ExUnit
 sada nebyla lokálně spuštěna podle AGENTS.md; výsledky CI ověří uživatel.
+
+
+## Zjednodušené ovládání kontroly
+
+Běžný průchod je **nahrát dávku → spustit vytěžování → zkontrolovat → uložit a
+odeslat → další**. Spuštění dávky uloží rozpracovaný společný předpis a volbu
+položek ve stejné transakci jako start; prázdná či chybná dávka nastavení neuloží.
+
+Kontrola má jednu stálou spodní lištu: **Předchozí / Další**, stav uložení,
+**Uložit**, **Uložit a odeslat →** a nabídku **⋯** s odložením a návratem do
+souhrnu. Při chybě validace zůstávají rozepsané hodnoty i původní uložená data;
+část účetních změn se nesmí uložit samostatně. Odeslání se zařadí atomicky
+s uložením validního XML a na další se přechází až po potvrzeném `sent`.
+Nejasný výsledek přenosu nabízí v liště pouze ověření, nikoli další účetní POST.
+
+Na počítači je originál vedle formuláře a drží se při scrollování. Na telefonu
+se přepíná **Formulář / Originál**, bez obnovení nebo ztráty rozepsaného formuláře.
+Lišta počítá se spodním bezpečným okrajem a dostupným prostorem při klávesnici.
+Při navigaci s úpravami se zobrazí dialog uložit / zahodit / zůstat; zavření či
+obnovení stránky s úpravami vyvolá běžné upozornění prohlížeče.
+
+Předpis převzatý z dávky je shrnutý s akcí **Změnit**. Hromadný seznam a filtry
+jsou v **Přehledu dávky**. Nápověda, historie, instrukce dodavatele, opakování AI,
+XML, dry-run a diagnostika jsou v rozbalovacích pokročilých možnostech.
+Instrukce pro budoucí běhy dodavatele mají nadále vlastní výslovné ukládání;
+finanční tlačítko je automaticky nemění. Nejasnosti z vytěžení jsou sbalené pod
+počtem upozornění; konkrétní chyba, rozpor identity nebo nepodporovaná měna
+zůstávají viditelné. Otevřené sekce se při aktualizacích zachovávají.
+
+Průchod v Chromiu ověřil společný předpis uložený při startu dávky, společné
+uložení změny hlavičky a předpisu, zamítnutí neplatné částky bez přenosu,
+stálou lištu při scrollování, zachování hodnot při mobilním přepínání náhledu
+a přechod až po potvrzeném odeslání. Externí odpovědi byly nahrazené lokálními
+odpověďmi. Přidány kontextové regrese atomicity a zastaralých změn a upraveny
+LiveView testy; ExUnit sada nebyla lokálně spuštěna, výsledky CI ověří uživatel.
+Tato úprava nevyžaduje další migraci ani konfiguraci.

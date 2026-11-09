@@ -166,6 +166,54 @@ defmodule CozyCheckout.IncomingDocuments do
     end)
   end
 
+  @doc "Save the current header and optional accounting choice atomically; optionally enqueue delivery."
+  def save_form(id, attrs, expected_hash, accounting_attrs \\ nil, send? \\ false) do
+    settings =
+      if accounting_attrs do
+        snapshot =
+          Repo.one!(
+            from d in Document,
+              where: d.id == ^id and is_nil(d.deleted_at),
+              select: struct(d, [:id, :agenda, :base_url, :company_id, :accounting_settings])
+          )
+
+        with :ok <- target(snapshot),
+             {:ok, code} <- Accounting.internal_code(accounting_attrs["internal_code"] || ""),
+             do: accounting_choice(snapshot, accounting_attrs["preset"] || "", code)
+      else
+        {:ok, nil}
+      end
+
+    with {:ok, settings} <- settings do
+      locked(id, fn doc ->
+        unless transcription_hash(doc) == expected_hash,
+          do: Repo.rollback("Doklad mezitím někdo upravil. Obnovte stránku.")
+
+        unless is_nil(doc.sent_xml) &&
+                 (doc.state == "review" ||
+                    (doc.state == "failed" && doc.error_stage == "extraction")),
+               do: Repo.rollback("Formulář je uzamčen")
+
+        changed = if settings, do: update!(doc, accounting_settings: settings), else: doc
+
+        saved =
+          case save_header(doc.id, attrs, transcription_hash(changed), true) do
+            {:ok, saved} -> saved
+            {:error, reason} -> Repo.rollback(reason)
+          end
+
+        if send? do
+          case send_header(saved.id, digest(saved.current_xml), true) do
+            {:ok, queued} -> queued
+            {:error, reason} -> Repo.rollback(reason)
+          end
+        else
+          saved
+        end
+      end)
+    end
+  end
+
   def content_type(bytes, filename)
       when is_binary(bytes) and byte_size(bytes) > 0 and byte_size(bytes) <= @max_size do
     case {String.downcase(Path.extname(filename)), bytes} do

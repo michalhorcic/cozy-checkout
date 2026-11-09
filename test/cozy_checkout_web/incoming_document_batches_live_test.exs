@@ -140,7 +140,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
     refute has_element?(view, "#fields_preset-options")
     send(view.pid, :refresh)
     assert has_element?(view, "#fields_preset-search[value='2.NÁKUP POTRAVINY — Nákup potravin']")
-    view |> form("#batch-settings") |> render_submit()
+    render_click(view, "settings-save")
     assert Batches.get!(batch.id).accounting_settings["typUcOp"] == "code:2.NÁKUP POTRAVINY"
     assert Batches.get!(batch.id).accounting_settings["protiUcet"] == "code:501100"
     render_click(view, "accounting-select", %{"id" => "unlisted"})
@@ -226,7 +226,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
     assert render(view) =~ "Synthetic failure"
     assert {:ok, _} = IncomingDocuments.retry_extraction(id, "header_form")
     send(view.pid, :refresh)
-    assert render(view) =~ "Zahájit kontrolu"
+    assert render(view) =~ "Zkontrolovat doklady"
   end
 
   test "send-and-continue advances only on confirmed sent and uncertainty only verifies", %{
@@ -259,7 +259,9 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
     {:ok, view, _} =
       live(admin(conn), "/admin/incoming-document-batches/#{batch.id}/review/#{one}")
 
+    view |> form("#incoming-header-form", document: %{cisDosle: "R42-EDIT"}) |> render_change()
     view |> element("button[phx-click=send-next]") |> render_click()
+    assert IncomingDocuments.get!(one).sent_xml =~ "R42-EDIT"
     assert IncomingDocuments.get!(one).state == "sending"
     refute has_element?(view, "#batch-review", "2 z 2")
     Req.Test.expect(__MODULE__, fn conn -> Plug.Conn.send_resp(conn, 404, "") end)

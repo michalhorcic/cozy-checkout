@@ -44,7 +44,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
 
         :show ->
           {:ok, batch} = Batches.refresh(params["id"])
-          socket |> assign(batch: batch, include_items: batch.include_items) |> reload()
+
+          socket
+          |> assign(
+            batch: batch,
+            include_items: batch.include_items,
+            preset: String.replace_prefix(batch.accounting_settings["typUcOp"] || "", "code:", "")
+          )
+          |> reload()
       end
 
     if connected?(socket), do: Process.send_after(self(), :refresh, 2000)
@@ -141,11 +148,12 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
           socket.assigns.queued_uploads != [] ->
         {:noreply, put_flash(socket, :error, "Počkejte na dokončení uploadů nebo je odeberte.")}
 
-      socket.assigns.settings_dirty ->
-        {:noreply, put_flash(socket, :error, "Nejprve uložte společné účetní nastavení.")}
-
       true ->
-        result(socket, Batches.start(socket.assigns.batch.id))
+        pending =
+          if socket.assigns.settings_dirty,
+            do: %{preset: socket.assigns.preset, include_items: socket.assigns.include_items}
+
+        result(socket, Batches.start(socket.assigns.batch.id, pending), true)
     end
   end
 
@@ -323,9 +331,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
         <h2 class="text-2xl font-bold">{@batch.name}</h2>
         <p>{IncomingDocuments.agenda_label(@batch.agenda)} · Firma ABRA: {@batch.company_id}</p>
         <section :if={!@batch.started_at} class="space-y-4">
-          <p>
-            Jedna fotka nebo PDF = jeden doklad. Nejvýše {@batch.max_files} souborů, 10 MB na soubor. Nahrání nespouští AI.
-          </p>
+          <details id="batch-upload-help" phx-mounted={JS.ignore_attributes("open")}>
+            <summary class="text-sm cursor-pointer">Nápověda k nahrávání</summary><p>
+              Jedna fotka / PDF = jeden doklad. Nejvýše {@batch.max_files} souborů, 10 MB na soubor. Fotky zmenšujeme na 1920 px.
+            </p>
+          </details>
           <div
             id="batch-upload-queue"
             phx-hook="IncomingBatchUpload"
@@ -356,9 +366,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
                 class="sr-only"
                 aria-label="Vybrat fotky nebo PDF"
               />
-              <p class="mt-3 text-sm">
-                Fotky před nahráním automaticky zmenšíme na delší stranu nejvýše 1920 px. PDF ponecháme beze změny.
-              </p>
+
               <p :if={@upload_preparing} role="status">Připravujeme fotky k nahrání…</p>
               <p :for={error <- upload_errors(@uploads.sources)} class="text-error">
                 {upload_error(error)}
@@ -398,71 +406,88 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
           </div>
           <p :for={message <- @upload_messages} class="text-error">{message}</p>
           <.batch_documents batch={@batch} rows={@rows} />
-          <p>
-            Předpis: {@batch.accounting_settings["preset_name"] || "podle šablony agendy"}. Interní čísla přidělí ABRA.
-          </p>
-          <button phx-click="accounting-load" class="btn">Načíst předpisy z ABRA</button>
-          <.form
-            for={to_form(%{"preset" => @preset}, as: :fields)}
-            id="batch-preset-form"
-            phx-change="preset-change"
+          <details
+            id="batch-accounting-settings"
+            phx-mounted={JS.ignore_attributes("open")}
+            class="rounded-lg border p-3 space-y-3"
           >
-            <.searchable_picker
-              field={to_form(%{"preset" => @preset}, as: :fields)[:preset]}
-              label="Společný účetní předpis"
-              options={@presets}
-              open={@accounting_open}
-              query={@accounting_query}
-              open_event="accounting-open"
-              close_event="accounting-close"
-              search_event="accounting-search"
-              select_event="accounting-select"
-              search_name="accounting_search"
-              required={false}
-            />
-          </.form>
-          <.form
-            for={to_form(%{})}
-            id="batch-settings"
-            phx-change="settings-change"
-            phx-submit="settings-save"
-          >
-            <.input
-              name="include_items"
-              type="checkbox"
-              label="Načítat také položky (orientační přepis)"
-              checked={@include_items}
-              value="true"
-            />
-            <button class="btn" disabled={!@settings_dirty}>Uložit společné nastavení</button>
-          </.form>
-          <p>Model při spuštění: {IncomingDocuments.config()[:openai_model] || "nenastaven"}</p>
+            <summary class="cursor-pointer">
+              Předpis: {Enum.find_value(@presets, fn option ->
+                if option.id == @preset, do: option.name
+              end) || @batch.accounting_settings["preset_name"] || "podle šablony agendy"}{if @settings_dirty,
+                do: " · Změněno"} · Změnit
+            </summary>
+            <p>
+              Předpis: {@batch.accounting_settings["preset_name"] || "podle šablony agendy"}. Interní čísla přidělí ABRA.
+            </p>
+            <button phx-click="accounting-load" class="btn">Načíst předpisy z ABRA</button>
+            <.form
+              for={to_form(%{"preset" => @preset}, as: :fields)}
+              id="batch-preset-form"
+              phx-change="preset-change"
+            >
+              <.searchable_picker
+                field={to_form(%{"preset" => @preset}, as: :fields)[:preset]}
+                label="Společný účetní předpis"
+                options={@presets}
+                open={@accounting_open}
+                query={@accounting_query}
+                open_event="accounting-open"
+                close_event="accounting-close"
+                search_event="accounting-search"
+                select_event="accounting-select"
+                search_name="accounting_search"
+                required={false}
+              />
+            </.form>
+            <.form
+              for={to_form(%{})}
+              id="batch-settings"
+              phx-change="settings-change"
+              phx-submit="start"
+            >
+              <.input
+                name="include_items"
+                type="checkbox"
+                label="Načítat také položky (orientační přepis)"
+                checked={@include_items}
+                value="true"
+              />
+            </.form>
+          </details>
+          <details id="batch-model">
+            <summary class="text-sm cursor-pointer">Podrobnosti vytěžování</summary>Model: {IncomingDocuments.config()[
+              :openai_model
+            ] || "nenastaven"}
+          </details>
           <button
             id="batch-start"
             phx-click="start"
             class="btn btn-primary"
             disabled={
               @counts.total == 0 || @upload_preparing || @uploads.sources.entries != [] ||
-                @queued_uploads != [] ||
-                @settings_dirty
+                @queued_uploads != []
             }
           >Spustit vytěžování {@counts.total} dokladů</button>
         </section>
         <div :if={@batch.started_at} role="status" class="space-y-2">
           <p>
-            Model: {@batch.model} · Čeká {@counts.waiting} · Zpracovává se {@counts.processing} · Vytěženo {@counts.extracted} · Chyba {@counts.failed}
+            Hotovo {@counts.extracted + @counts.failed} z {@counts.total} · Chyby {@counts.failed}
           </p>
           <p>Odesláno do ABRA {@counts.sent} z {@counts.total} · Odloženo {@counts.deferred}</p>
           <p :if={@batch.extraction_finished_at && @counts.extracted == 0} class="alert alert-warning">
             Vytěžení všech dokladů selhalo. Otevřete kontrolu a vyřešte chyby nebo vyplňte doklady ručně.
           </p>
           <.link
-            :if={@batch.extraction_finished_at && review_id(@rows)}
+            :if={@batch.extraction_finished_at && @counts.sent < @counts.total && review_id(@rows)}
             navigate={~p"/admin/incoming-document-batches/#{@batch.id}/review/#{review_id(@rows).id}"}
             class="btn btn-primary"
-          >Zahájit kontrolu</.link>
+          >{if @counts.sent > 0, do: "Pokračovat v nevyřízených", else: "Zkontrolovat doklady"}</.link>
+          <p :if={@batch.extraction_finished_at && @counts.sent == @counts.total} class="text-success">
+            Všechny doklady jsou odeslané.
+          </p>
           <p :if={!@batch.extraction_finished_at}>
-            Kontrola bude dostupná po ukončení všech prvních běhů. Stránku můžete zavřít.
+            Doklady se zpracovávají na pozadí.
           </p>
         </div>
         <.batch_documents :if={@batch.started_at} batch={@batch} rows={@rows} />
