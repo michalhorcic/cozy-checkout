@@ -314,6 +314,21 @@ má vlastní záznam; opakování stejného úkolu používá stejný idempotenc
 Resend omezuje dobu platnosti svého idempotency key; po nejasné síťové chybě a
 pozdním ručním obnovení úkolu zkontrolujte historii poskytovatele.
 
+Pokud doklad odešlete mimo aplikaci (například samostatným e-mailem škole),
+zvolte u konkrétního dokladu **Zaznamenat ruční odeslání**. Vyplňte datum
+(předvyplněný dnešek, lze zadat minulost) a případně poznámku. E-mail příjemce
+se nezadává. Záznam neodesílá zprávu, nevytváří PDF, nemění úhradu ani neruší
+čekající odeslání z aplikace. Doklad lze nadále odeslat tlačítkem **Odeslat e-mailem**.
+
+U dokladu ve fakturaci pobytu se zobrazí **Odesláno ručně** s posledním datem
+platného ručního odeslání. Platné ruční záznamy se započítávají také do souhrnu
+odeslaných faktur v přehledu rezervací; každý doklad se počítá nejvýše jednou.
+Společná historie v detailu dokladu zobrazuje ruční záznamy i odeslání z aplikace.
+Tlačítko **Opravit** uloží novou verzi data a poznámky a zachová původní záznam.
+**Zrušit záznam** jej vyřadí ze souhrnu, ale ponechá v historii. Oprava ani zrušení
+nemění historii odesílání z aplikace. Správa záznamů vyžaduje správní PIN stejně
+jako ostatní fakturační obrazovky.
+
 Stav **Odesláno** znamená přijetí poskytovatelem, nikoli potvrzené doručení.
 Přehled historie obnovte tlačítkem; technické chyby a vyčerpané úkoly najdete
 v Oban dashboardu. Nefunkční odesílání nebrání stažení dokladu.

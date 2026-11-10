@@ -21,6 +21,9 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
     end
   end
 
+  def handle_info({:manual_delivery_changed, _id}, socket),
+    do: {:noreply, put_flash(socket, :info, "Evidence ručního odeslání byla uložena")}
+
   def handle_params(%{"id" => id}, _, socket) do
     doc = Billing.get_document!(id)
 
@@ -37,7 +40,6 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
          Accommodation.enabled?() and
            (doc.kind == "advance" or
               (doc.kind == "final" and CozyCheckout.Abra.FinalInvoiceExport.enabled?())),
-       deliveries: Billing.list_deliveries(id),
        correction_form:
          to_form(
            %{"request_id" => Ecto.UUID.generate(), "tax_date" => to_string(Billing.today())},
@@ -105,10 +107,6 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
   def handle_event("filter", %{"filter" => attrs}, socket),
     do: {:noreply, push_patch(socket, to: ~p"/admin/billing?#{attrs}")}
 
-  def handle_event("refresh", _, socket),
-    do:
-      {:noreply, assign(socket, :deliveries, Billing.list_deliveries(socket.assigns.document.id))}
-
   def handle_event("abra-export", _, socket) do
     case Accommodation.enqueue(socket.assigns.document.id) do
       {:ok, export} ->
@@ -140,7 +138,6 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
       {:ok, _} ->
         {:noreply,
          socket
-         |> assign(:deliveries, Billing.list_deliveries(socket.assigns.document.id))
          |> assign(
            :email_form,
            to_form(Map.put(attrs, "request_id", Ecto.UUID.generate()), as: :email)
@@ -410,21 +407,13 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             </button>
           </section>
           <section class="bg-white p-6 rounded-xl space-y-4">
-            <h2 class="text-xl font-bold">Odeslat e-mailem</h2>
+            <h2 class="text-xl font-bold">Odeslání dokladu</h2>
             <CozyCheckoutWeb.BillingComponents.email_form id="billing-email" form={@email_form} />
-            <button class="link" phx-click="refresh">Obnovit historii</button>
-            <div :for={d <- @deliveries} class="border-b py-2">
-              {d.recipient} · {delivery_label(d.state)} · pokusů {d.attempts}
-              <p :if={d.state in ["failed", "retrying"]} class="text-red-700">
-                Příprava PDF nebo odeslání se nezdařily.
-              </p>
-              <details :if={d.error && d.state in ["failed", "retrying"]}>
-                <summary>Podrobnosti chyby</summary><pre class="whitespace-pre-wrap text-sm">{d.error}</pre>
-              </details>
-            </div>
-            <p class="text-sm">
-              Odesláno znamená přijetí poštovním poskytovatelem, nikoli potvrzené doručení adresátovi.
-            </p>
+            <.live_component
+              module={CozyCheckoutWeb.BillingLive.ManualDeliveryComponent}
+              id={"document-manual-#{@document.id}"}
+              document_id={@document.id}
+            />
           </section>
           <section
             :if={@document.kind in ["final", "tax_receipt"]}
@@ -500,9 +489,4 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
   defp pdf_state(%{state: "queued"}), do: "PDF čeká na odeslání."
   defp pdf_state(%{state: "failed"}), do: "Přenos PDF se nezdařil."
   defp pdf_state(%{state: "uploaded"}), do: "PDF přeneseno a ověřeno v ABRA."
-
-  defp delivery_label("accepted"), do: "Odesláno"
-  defp delivery_label("queued"), do: "Ve frontě"
-  defp delivery_label("retrying"), do: "Čeká na opakování"
-  defp delivery_label(_), do: "Neodesláno"
 end
