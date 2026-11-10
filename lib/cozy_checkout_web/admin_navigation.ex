@@ -18,7 +18,7 @@ defmodule CozyCheckoutWeb.AdminNavigation do
       {"Seznam rezervací", "/admin/bookings", "hero-clipboard-document-list"},
       {"Kalendář", "/admin/bookings/calendar", "hero-calendar-days"},
       {"Stravování", "/admin/meal-planner", "hero-clipboard-document-list"},
-      {"Doklady", "/admin/billing", "hero-document-text"},
+      {"Doklady", "/admin/incoming-documents", "hero-document-text"},
       if(CozyCheckout.Economics.enabled?(),
         do: {"Ekonomika firmy", "/admin/economics", "hero-chart-bar"}
       ),
