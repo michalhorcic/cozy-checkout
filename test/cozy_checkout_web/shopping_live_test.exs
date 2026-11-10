@@ -259,6 +259,7 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
             %{name: "Červená čočka sezonní", category: "Luštěniny", purchase_mode: "Sezona"}
           ] do
         {ingredient, recipe} = shopping_recipe()
+        attrs = Map.update!(attrs, :name, &"#{&1} #{ingredient.id}")
         {:ok, ingredient} = Recipes.update_ingredient(ingredient, attrs)
         shopping_booking(recipe)
         ingredient
