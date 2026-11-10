@@ -27,13 +27,26 @@
               target="_blank"
               class="inline-flex items-center gap-2 rounded-lg border border-secondary-200 bg-white px-4 py-2.5 text-sm font-semibold text-primary-500 hover:border-tertiary-400"
             ><.icon name="hero-printer" class="h-5 w-5" />Tisk celého seznamu</.link>
+            <.link
+              :if={@result}
+              id="print-filtered-shopping-list"
+              navigate={shopping_path(:print, @range_form.params, @filter_form.params)}
+              target="_blank"
+              class="inline-flex items-center gap-2 rounded-lg border border-secondary-200 bg-white px-4 py-2.5 text-sm font-semibold text-primary-500 hover:border-tertiary-400"
+            ><.icon name="hero-printer" class="h-5 w-5" />Tisk podle filtru</.link>
           </:actions>
         </.kitchen_header>
       </div>
       <header :if={@live_action == :print} class="shopping-print-header mb-4">
         <div class="mb-5 flex justify-between gap-4 print:hidden">
           <.link
-            navigate={shopping_path(:index, @range_form.params)}
+            navigate={
+              shopping_path(:index, @range_form.params, %{
+                search: @search,
+                category: @category,
+                mode: @mode
+              })
+            }
             class="text-sm text-tertiary-600"
           >← Zpět na nákup</.link>
           <button
@@ -50,6 +63,16 @@
           )} · {Enum.find_value(@booking_options, fn {name, id} ->
             if id == @booking_id, do: name
           end)}
+        </p>
+        <p id="shopping-print-filters" class="mt-2 text-sm text-primary-400">
+          {case @mode do
+            "Sezona" -> "Na celé období"
+            "Průběžně" -> "Průběžně"
+            "" -> "Všechny způsoby nákupu"
+            _ -> "Způsob nákupu: #{@mode}"
+          end}
+          <span :if={@category != ""}> · Kategorie: {@category}</span>
+          <span :if={@search != ""}> · Hledání: {@search}</span>
         </p>
       </header>
       <details

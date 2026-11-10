@@ -27,6 +27,9 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
     socket =
       socket
       |> assign(:page_title, "Nákup pro kuchyň")
+      |> assign(:search, Map.get(params, "search", socket.assigns.search))
+      |> assign(:category, Map.get(params, "category", socket.assigns.category))
+      |> assign(:mode, Map.get(params, "mode", socket.assigns.mode))
       |> assign(
         :range_form,
         to_form(%{"from" => first, "to" => last, "booking" => booking_id}, as: :range)
@@ -236,12 +239,16 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
     end
   end
 
-  defp shopping_path(action, p) do
+  defp shopping_path(action, p, filters \\ %{}) do
+    params =
+      Map.merge(
+        %{from: p["from"], to: p["to"], booking: p["booking"] || ""},
+        Map.reject(filters, fn {_key, value} -> value == "" end)
+      )
+
     if action == :print,
-      do:
-        ~p"/admin/kitchen-shopping/print?#{%{from: p["from"], to: p["to"], booking: p["booking"] || ""}}",
-      else:
-        ~p"/admin/kitchen-shopping?#{%{from: p["from"], to: p["to"], booking: p["booking"] || ""}}"
+      do: ~p"/admin/kitchen-shopping/print?#{params}",
+      else: ~p"/admin/kitchen-shopping?#{params}"
   end
 
   defp default_weekend do

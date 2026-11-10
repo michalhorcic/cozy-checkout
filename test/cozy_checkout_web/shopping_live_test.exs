@@ -26,6 +26,11 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
       URI.encode_query(%{from: "2027-01-08", to: "2027-01-10", booking: booking})
   end
 
+  defp link_href(element) do
+    [href] = element |> render() |> LazyHTML.from_fragment() |> LazyHTML.attribute("href")
+    href
+  end
+
   test "shopping displays totals, recipe provenance and contextual recipe calculator", %{
     conn: conn
   } do
@@ -203,6 +208,95 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
     assert has_element?(view, "#rows-#{ingredient.id} [data-ingredient-name]", name)
     assert has_element?(view, "#rows-#{ingredient.id} .shopping-mode-recurring", "Průběžně")
     assert has_element?(view, "#shopping-buy-#{ingredient.id}", "13,5 kg")
+  end
+
+  test "print links separate purchase modes while full print ignores active filters", %{
+    conn: conn
+  } do
+    {seasonal, recipe} = shopping_recipe()
+    {booking, _} = shopping_booking(recipe)
+    {ongoing, recipe} = shopping_recipe()
+    {:ok, _} = Recipes.update_ingredient(ongoing, %{purchase_mode: "Průběžně"})
+    shopping_booking(recipe)
+    {:ok, view, _} = live(conn, path())
+
+    for {mode, included, excluded, label} <- [
+          {"Průběžně", ongoing, seasonal, "Průběžně"},
+          {"Sezona", seasonal, ongoing, "Na celé období"}
+        ] do
+      view |> form("#shopping-filter-form", filter: %{mode: mode}) |> render_change()
+
+      filtered_path = view |> element("#print-filtered-shopping-list") |> link_href()
+      {:ok, printed, _} = live(conn, filtered_path)
+      assert has_element?(printed, "#rows-#{included.id}")
+      refute has_element?(printed, "#rows-#{excluded.id}")
+      assert has_element?(printed, "#shopping-print-filters", label)
+      refute has_element?(printed, "#shopping-filter-form")
+
+      full_path = view |> element("#print-shopping-list") |> link_href()
+      refute Map.has_key?(URI.decode_query(URI.parse(full_path).query), "mode")
+      {:ok, full, _} = live(conn, full_path)
+      assert has_element?(full, "#rows-#{seasonal.id}")
+      assert has_element?(full, "#rows-#{ongoing.id}")
+    end
+
+    # The selected group and dates still scope the full list.
+    {:ok, scoped, _} = live(conn, path(booking.id))
+    full_path = scoped |> element("#print-shopping-list") |> link_href()
+    {:ok, full, _} = live(conn, full_path)
+    assert has_element?(full, "#rows-#{seasonal.id}")
+    refute has_element?(full, "#rows-#{ongoing.id}")
+  end
+
+  test "filtered print combines search, category and mode and preserves them on return", %{
+    conn: conn
+  } do
+    ingredients =
+      for attrs <- [
+            %{name: "Červená čočka", category: "Luštěniny", purchase_mode: "Průběžně"},
+            %{name: "Červená čočka jiná", category: "Jiné", purchase_mode: "Průběžně"},
+            %{name: "Hrách", category: "Luštěniny", purchase_mode: "Průběžně"},
+            %{name: "Červená čočka sezonní", category: "Luštěniny", purchase_mode: "Sezona"}
+          ] do
+        {ingredient, recipe} = shopping_recipe()
+        {:ok, ingredient} = Recipes.update_ingredient(ingredient, attrs)
+        shopping_booking(recipe)
+        ingredient
+      end
+
+    [included | excluded] = ingredients
+    {:ok, view, _} = live(conn, path())
+
+    view
+    |> form("#shopping-filter-form",
+      filter: %{search: "cervena cocka", category: "Luštěniny", mode: "Průběžně"}
+    )
+    |> render_change()
+
+    filtered_path = view |> element("#print-filtered-shopping-list") |> link_href()
+    {:ok, printed, _} = live(conn, filtered_path)
+    assert has_element?(printed, "#rows-#{included.id}")
+    for ingredient <- excluded, do: refute(has_element?(printed, "#rows-#{ingredient.id}"))
+    assert has_element?(printed, "#shopping-print-filters", "Kategorie: Luštěniny")
+    assert has_element?(printed, "#shopping-print-filters", "Hledání: cervena cocka")
+
+    return_path = printed |> element("a", "← Zpět na nákup") |> link_href()
+    {:ok, returned, _} = live(conn, return_path)
+    assert has_element?(returned, "#rows-#{included.id}")
+    for ingredient <- excluded, do: refute(has_element?(returned, "#rows-#{ingredient.id}"))
+
+    full_path = returned |> element("#print-shopping-list") |> link_href()
+    {:ok, full, _} = live(conn, full_path)
+    for ingredient <- ingredients, do: assert(has_element?(full, "#rows-#{ingredient.id}"))
+
+    returned
+    |> form("#shopping-filter-form", filter: %{search: "nenalezená surovina"})
+    |> render_change()
+
+    empty_path = returned |> element("#print-filtered-shopping-list") |> link_href()
+    {:ok, empty, _} = live(conn, empty_path)
+    assert has_element?(empty, "#shopping-empty", "Žádná surovina neodpovídá filtru")
+    for ingredient <- ingredients, do: refute(has_element?(empty, "#rows-#{ingredient.id}"))
   end
 
   test "buffet estimates are visible and directly editable", %{conn: conn} do
