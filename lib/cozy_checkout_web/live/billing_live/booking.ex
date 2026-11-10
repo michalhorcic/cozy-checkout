@@ -51,6 +51,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
        items_dirty?: false,
        pricing: nil,
        preview: nil,
+       manual_document: nil,
        email_document: nil,
        email_form: nil,
        email_error: nil,
@@ -81,6 +82,26 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
        CozyCheckout.Abra.Transfers.for_documents(socket.assigns.documents)
      )}
   end
+
+  def handle_info({:manual_delivery_changed, _id}, socket) do
+    {:noreply,
+     socket
+     |> assign(
+       :manual_delivery_summaries,
+       Billing.manual_delivery_summaries(socket.assigns.documents)
+     )
+     |> put_flash(:info, "Evidence ručního odeslání byla uložena")}
+  end
+
+  def handle_event("manual-delivery", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.documents, &(&1.id == id)) do
+      nil -> {:noreply, put_flash(socket, :error, "Doklad nepatří k této rezervaci")}
+      doc -> {:noreply, assign(socket, :manual_document, doc)}
+    end
+  end
+
+  def handle_event("close-manual-delivery", _, socket),
+    do: {:noreply, assign(socket, :manual_document, nil)}
 
   def handle_event("refresh", _, socket), do: {:noreply, refresh(socket)}
 
@@ -530,6 +551,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         calculation: calculation,
         pricing_hint: Billing.pricing_preview(id),
         documents: documents,
+        manual_delivery_summaries: Billing.manual_delivery_summaries(documents),
         abra_transfers: CozyCheckout.Abra.Transfers.for_documents(documents),
         payments: Billing.list_payments(id),
         bank_suggestions:
@@ -1357,6 +1379,13 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 {Billing.kind_label(doc.kind)} · {Presentation.date(doc.issued_on)}
               </p>
               <p class="mt-2 font-semibold tabular-nums">{Presentation.amount(doc.total)}</p>
+              <p
+                :if={Map.has_key?(@manual_delivery_summaries, doc.id)}
+                id={"manual-delivery-status-#{doc.id}"}
+                class="mt-2 text-sm text-primary-500"
+              >
+                Odesláno ručně · {Presentation.date(Map.get(@manual_delivery_summaries, doc.id))}
+              </p>
               <CozyCheckoutWeb.BillingComponents.abra_status
                 document={doc}
                 statuses={Map.get(@abra_transfers, doc.id, [])}
@@ -1380,6 +1409,15 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                 phx-value-id={doc.id}
               >
                 <.icon name="hero-envelope" class="size-4" />Odeslat e-mailem
+              </button>
+              <button
+                id={"billing-document-manual-#{doc.id}"}
+                type="button"
+                class="btn btn-sm"
+                phx-click="manual-delivery"
+                phx-value-id={doc.id}
+              >
+                Zaznamenat ruční odeslání
               </button>
               <.link
                 id={"billing-document-detail-#{doc.id}"}
@@ -1473,6 +1511,25 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             > · zkontrolujte včasnost daňového dokladu</span>
           </div>
         </section>
+        <.modal
+          :if={@manual_document}
+          id="billing-manual-modal"
+          show
+          on_cancel={JS.push("close-manual-delivery")}
+        >
+          <h2 id="billing-manual-modal-title" class="pr-10 text-xl font-bold">
+            Ruční odeslání dokladu
+          </h2>
+          <p class="mt-2 mb-6 text-sm text-primary-400">
+            {Billing.kind_label(@manual_document.kind)} {@manual_document.number}
+          </p>
+          <.live_component
+            module={CozyCheckoutWeb.BillingLive.ManualDeliveryComponent}
+            id={"booking-manual-#{@manual_document.id}"}
+            document_id={@manual_document.id}
+            open_form={true}
+          />
+        </.modal>
         <.modal :if={@email_document} id="billing-email-modal" show on_cancel={JS.push("close-email")}>
           <h2 id="billing-email-modal-title" class="pr-10 text-xl font-bold">
             Odeslat doklad e-mailem

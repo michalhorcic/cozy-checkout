@@ -25,6 +25,85 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     )
   end
 
+  test "records, corrects and cancels external invoice sending from booking and document screens",
+       %{conn: conn, booking: booking} do
+    document = issue!(booking, "final")
+    {:ok, view, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    view |> element("#billing-document-manual-#{document.id}") |> render_click()
+    form_id = "#booking-manual-#{document.id}-form"
+    assert has_element?(view, "#{form_id} input[type=date][value='#{Billing.today()}']")
+
+    view
+    |> form(form_id, manual_delivery: %{sent_on: "", note: "Ekonomce školy"})
+    |> render_submit()
+
+    assert has_element?(view, "#billing-manual-modal [role=alert]")
+
+    view
+    |> form(form_id,
+      manual_delivery: %{sent_on: to_string(Billing.today()), note: "Ekonomce školy"}
+    )
+    |> render_submit()
+
+    assert has_element?(view, "#manual-delivery-status-#{document.id}", "Odesláno ručně")
+    assert has_element?(view, "#billing-manual-modal", "Ekonomce školy")
+    [original] = Billing.list_manual_deliveries(document.id)
+
+    {:ok, detail, _} = live(conn, "/admin/billing/documents/#{document.id}")
+    detail |> element("#delivery-history-#{original.id} button", "Opravit") |> render_click()
+
+    detail
+    |> form("#document-manual-#{document.id}-form",
+      manual_delivery: %{sent_on: to_string(Date.add(Billing.today(), -1)), note: "Opraveno"}
+    )
+    |> render_submit()
+
+    assert has_element?(detail, "#delivery-history-#{original.id}", "opravený záznam")
+    assert has_element?(detail, "#delivery-history-#{original.id}", "Ekonomce školy")
+    corrected = Billing.list_manual_deliveries(document.id) |> Enum.find(&is_nil(&1.voided_at))
+    assert has_element?(detail, "#delivery-history-#{corrected.id}", "Opraveno")
+
+    detail
+    |> element("#delivery-history-#{corrected.id} button", "Zrušit záznam")
+    |> render_click()
+
+    assert has_element?(detail, "#delivery-history-#{corrected.id}", "zrušený záznam")
+    refute has_element?(detail, "#delivery-history-#{corrected.id} button")
+    assert has_element?(detail, "#billing-email")
+
+    {:ok, reloaded, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
+    refute has_element?(reloaded, "#manual-delivery-status-#{document.id}")
+    {:ok, list, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(list, "#booking-invoice-email-#{booking.id}", "odesláno 0/1")
+  end
+
+  test "manual invoice sending counts each document once and preserves application sending history",
+       %{conn: conn, booking: booking} do
+    document = issue!(booking, "advance")
+    attrs = %{"sent_on" => to_string(Billing.today())}
+    {:ok, _} = Billing.record_manual_delivery(document.id, attrs, Ecto.UUID.generate())
+    {:ok, _} = Billing.record_manual_delivery(document.id, attrs, Ecto.UUID.generate())
+
+    {:ok, email} =
+      Billing.enqueue_email(
+        document.id,
+        %{
+          "recipient" => "test@example.com",
+          "subject" => "Faktura",
+          "body" => "Příloha",
+          "consent" => "true"
+        },
+        Ecto.UUID.generate()
+      )
+
+    {:ok, detail, _} = live(conn, "/admin/billing/documents/#{document.id}")
+    assert has_element?(detail, "#delivery-history-#{email.id}", "Ve frontě")
+    assert has_element?(detail, "#delivery-history-#{email.id}", "test@example.com")
+    {:ok, list, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(list, "#booking-invoice-email-#{booking.id}", "odesláno 1/1")
+    refute has_element?(list, "#booking-invoice-email-#{booking.id}", "čeká")
+  end
+
   test "updates an advance from the current calculation with a preview and preserves its number",
        %{conn: conn, booking: booking} do
     doc = issue_without_abra!(booking, "advance", %{"percent" => "50"})

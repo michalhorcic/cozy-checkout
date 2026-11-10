@@ -13,6 +13,7 @@ defmodule CozyCheckout.Billing do
     Document,
     Payment,
     Delivery,
+    ManualDelivery,
     Money
   }
 
@@ -593,6 +594,94 @@ defmodule CozyCheckout.Billing do
 
   def list_deliveries(id),
     do: Repo.all(from d in Delivery, where: d.document_id == ^id, order_by: [desc: d.inserted_at])
+
+  def list_manual_deliveries(document_id) do
+    Repo.all(
+      from d in ManualDelivery,
+        where: d.document_id == ^document_id,
+        order_by: [desc: d.inserted_at, desc: d.id]
+    )
+  end
+
+  def manual_delivery_summaries(documents) do
+    ids = Enum.map(documents, & &1.id)
+
+    Repo.all(
+      from d in ManualDelivery,
+        where: d.document_id in ^ids and is_nil(d.voided_at),
+        group_by: d.document_id,
+        select: {d.document_id, max(d.sent_on)}
+    )
+    |> Map.new()
+  end
+
+  def record_manual_delivery(document_id, attrs, request_id, replaces_id \\ nil) do
+    transaction(fn ->
+      document = get_document!(document_id)
+      lock_booking!(document.booking_id)
+      validate_request!(request_id)
+
+      case Repo.get_by(ManualDelivery, request_id: request_id) do
+        %ManualDelivery{document_id: ^document_id, replaces_id: ^replaces_id} = existing ->
+          existing
+
+        nil ->
+          if replaces_id do
+            original = manual_delivery!(document_id, replaces_id)
+
+            if original.voided_at,
+              do: fail("Záznam již byl opraven nebo zrušen. Obnovte historii.")
+
+            void_manual_delivery!(original, "corrected")
+          end
+
+          %ManualDelivery{document_id: document_id, replaces_id: replaces_id}
+          |> ManualDelivery.changeset(Map.put(attrs, "request_id", request_id))
+          |> Repo.insert()
+          |> case do
+            {:ok, row} -> row
+            {:error, changeset} -> fail(changeset)
+          end
+
+        _ ->
+          fail("Požadavek již byl použit")
+      end
+    end)
+  end
+
+  def cancel_manual_delivery(document_id, id) do
+    transaction(fn ->
+      document = get_document!(document_id)
+      lock_booking!(document.booking_id)
+      row = manual_delivery!(document_id, id)
+
+      cond do
+        row.void_reason == "cancelled" -> row
+        row.voided_at -> fail("Záznam již byl opraven. Obnovte historii.")
+        true -> void_manual_delivery!(row, "cancelled")
+      end
+    end)
+  end
+
+  defp manual_delivery!(document_id, id) do
+    case Ecto.UUID.cast(id) do
+      {:ok, uuid} ->
+        Repo.get_by(ManualDelivery, id: uuid, document_id: document_id) ||
+          fail("Záznam nepatří k tomuto dokladu")
+
+      :error ->
+        fail("Neplatný záznam odeslání")
+    end
+  end
+
+  defp void_manual_delivery!(row, reason) do
+    row
+    |> Ecto.Changeset.change(
+      voided_at: DateTime.utc_now() |> DateTime.truncate(:second),
+      void_reason: reason
+    )
+    |> Repo.update!()
+  end
 
   def final_document(booking_id),
     do:
