@@ -138,10 +138,19 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     end
   end
 
-  test "main menu opens documents and sidebar links navigate across the module", %{conn: conn} do
+  test "main menu opens incoming document uploads", %{conn: conn} do
     {:ok, dashboard, _} = live(conn, "/admin")
-    result = dashboard |> element("#admin-desktop a[href='/admin/billing']") |> render_click()
-    {:ok, documents, _} = follow_redirect(result, conn, "/admin/billing")
+
+    result =
+      dashboard
+      |> element("#admin-desktop a[href='/admin/incoming-documents']", "Doklady")
+      |> render_click()
+
+    {:ok, _documents, _} = follow_redirect(result, conn, "/admin/incoming-documents")
+  end
+
+  test "billing sidebar links navigate across the module", %{conn: conn} do
+    {:ok, documents, _} = live(conn, "/admin/billing")
     result = documents |> element("#billing-desktop-transfers") |> render_click()
     {:ok, transfers, _} = follow_redirect(result, conn, "/admin/billing/transfers")
     assert has_element?(transfers, "#billing-desktop-transfers[aria-current='page']")
