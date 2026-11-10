@@ -684,6 +684,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         >
           <details
             id="billing-accounts"
+            phx-mounted={JS.ignore_attributes("open")}
             class="rounded-lg border border-secondary-200 bg-secondary-50 px-3 py-2"
           >
             <summary class="cursor-pointer text-sm">
@@ -905,7 +906,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               />
             </div>
             <.input field={@account_form[:email]} label="E-mail (volitelný)" type="email" />
-            <details>
+            <details id="billing-account-details" phx-mounted={JS.ignore_attributes("open")}>
               <summary class="cursor-pointer py-2">Fakturační údaje a výjimka termínu</summary>
               <.input
                 :for={{field, label} <- @buyer_fields -- [{"email", "Fakturační e-mail"}]}
@@ -963,7 +964,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
             <p :if={!@pricing_hint.season} class="alert alert-warning">
               Pro datum příjezdu chybí sezonní ceník. Ceny můžete doplnit ručně.
             </p>
-            <details id="calculation-options" class="text-sm">
+            <details
+              id="calculation-options"
+              phx-mounted={JS.ignore_attributes("open")}
+              class="text-sm"
+            >
               <summary class="cursor-pointer text-primary-400">
                 Možnosti kalkulace a přecenění
               </summary>
@@ -1083,6 +1088,7 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                     </div>
                     <details
                       id={"item-details-#{row.key}"}
+                      phx-mounted={JS.ignore_attributes("open")}
                       open={is_nil(row.changeset.data.id)}
                       class="mt-2"
                     >
@@ -1216,7 +1222,11 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
                   Pro vystavení dokladu stačí jméno nebo název odběratele.
                 </p>
               </div>
-              <details id="billing-customer-details" class="md:col-span-2">
+              <details
+                id="billing-customer-details"
+                phx-mounted={JS.ignore_attributes("open")}
+                class="md:col-span-2"
+              >
                 <summary class="cursor-pointer text-sm text-primary-400 hover:text-primary-700">
                   Další údaje <span class="text-xs">(nepovinné)</span>
                 </summary>
