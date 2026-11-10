@@ -23,6 +23,18 @@ and daisyUI; Docker deployment through Coolify.
 - Follow the existing light theme, shared layouts and components (`Layouts.app`, `.input`, `.icon`). Keep JavaScript in `assets/js`, imported through `app.js`, rather than adding inline scripts; preserve the existing theme-bootstrap exception.
 - V UI musí být select s více než 30 položkami vyhledávatelný; používej existující sdílenou komponentu, pokud je vhodná.
 
+## Documentation
+
+- Use Context7 MCP to retrieve up-to-date documentation
+  when implementing features involving external libraries.
+- Prefer Context7 over relying on remembered API signatures.
+- Especially use Context7 for Phoenix, LiveView, Ecto,
+  and other Elixir dependencies when documentation is available.
+- If Context7 does not cover a library, consult its official
+  documentation or source code.
+- Do not invoke Context7 for trivial edits or changes that
+  do not require external documentation.
+
 ## Financial integrity
 
 - Use `Decimal` and existing financial helpers; format money and numbers with `CozyCheckoutWeb.CurrencyHelper`.
