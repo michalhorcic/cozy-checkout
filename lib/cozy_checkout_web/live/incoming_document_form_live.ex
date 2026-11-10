@@ -955,6 +955,56 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
         state
       )
 
+  attr :values, :map, required: true
+  attr :locked, :boolean, required: true
+
+  defp vat_summary(assigns) do
+    assigns = assign(assigns, :totals, HeaderForm.vat_totals(assigns.values))
+
+    ~H"""
+    <section id="incoming-vat-summary" class="sm:col-span-2 space-y-3" aria-label="Rekapitulace DPH">
+      <fieldset
+        :for={{rate, base, vat} <- HeaderForm.vat_groups()}
+        id={"incoming-vat-#{rate}"}
+        class="rounded-lg border border-base-300 p-3"
+      >
+        <legend class="px-1 font-semibold">Sazba {rate} %</legend>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <.input
+            type="text"
+            name={"document[#{base}]"}
+            value={@values[base] || ""}
+            label={"Základ #{rate} % (Kč)"}
+            disabled={@locked}
+          />
+          <.input
+            type="text"
+            name={"document[#{vat}]"}
+            value={@values[vat] || ""}
+            label={"DPH #{rate} % (Kč)"}
+            disabled={@locked}
+          />
+        </div>
+        <p class="text-sm">
+          Kontrolní součet {rate} % (základ + DPH):
+          <output id={"incoming-vat-total-#{rate}"} class="font-semibold" aria-live="polite">
+            {if @totals[rate], do: format_currency(@totals[rate]), else: "—"}
+          </output>
+        </p>
+      </fieldset>
+      <p>
+        Kontrolní součet 12 % a 21 % včetně DPH:
+        <output id="incoming-vat-total-combined" class="font-semibold" aria-live="polite">
+          {if @totals.combined, do: format_currency(@totals.combined), else: "—"}
+        </output>
+      </p>
+      <p class="text-sm text-base-content/70">
+        Společný součet nezahrnuje osvobozené částky / částky bez DPH. Pomlčka znamená neplatnou částku.
+      </p>
+    </section>
+    """
+  end
+
   def render(assigns) do
     assigns =
       assign(
@@ -1247,14 +1297,17 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLive do
               </details>
             </div>
             <div class="grid gap-3 sm:grid-cols-2">
-              <.input
-                :for={{key, label, type} <- HeaderForm.fields()}
-                type={type}
-                name={"document[#{key}]"}
-                value={@values[key] || ""}
-                label={label}
-                disabled={@locked}
-              />
+              <%= for {key, label, type} <- HeaderForm.fields() do %>
+                <.vat_summary :if={key == "sumZklSniz"} values={@values} locked={@locked} />
+                <.input
+                  :if={key not in HeaderForm.vat_keys()}
+                  type={type}
+                  name={"document[#{key}]"}
+                  value={@values[key] || ""}
+                  label={label}
+                  disabled={@locked}
+                />
+              <% end %>
             </div>
             <.input
               type="textarea"

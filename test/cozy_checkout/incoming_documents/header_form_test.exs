@@ -27,6 +27,31 @@ defmodule CozyCheckout.IncomingDocuments.HeaderFormTest do
     }
   end
 
+  test "VAT control totals use current localized amounts and exclude exempt amounts" do
+    totals = HeaderForm.vat_totals(attrs())
+    assert Decimal.equal?(totals[12], Decimal.new("112.00"))
+    assert Decimal.equal?(totals[21], Decimal.new("1210.00"))
+    assert Decimal.equal?(totals.combined, Decimal.new("1322.00"))
+
+    for separator <- [" ", "\u00a0", "\u202f"] do
+      values = Map.put(attrs(), "sumZklZakl", "1#{separator}234,56")
+      assert Decimal.equal?(HeaderForm.vat_totals(values)[21], Decimal.new("1444.56"))
+    end
+
+    negative = Map.merge(attrs(), %{"sumZklSniz" => "-100,10", "sumDphSniz" => "-12,01"})
+    assert Decimal.equal?(HeaderForm.vat_totals(negative)[12], Decimal.new("-112.11"))
+    assert Decimal.equal?(HeaderForm.vat_totals(%{}).combined, Decimal.new("0.00"))
+  end
+
+  test "invalid VAT amounts suppress affected control totals" do
+    for invalid <- ["abc", "13 32,00", "12,345", "NaN", "Infinity", "1e3"] do
+      totals = HeaderForm.vat_totals(Map.put(attrs(), "sumDphSniz", invalid))
+      assert is_nil(totals[12])
+      assert is_nil(totals.combined)
+      assert Decimal.equal?(totals[21], Decimal.new("1210.00"))
+    end
+  end
+
   test "each agenda keeps its template and sends only header totals and a note" do
     for agenda <- XML.agendas() do
       document = doc(agenda)

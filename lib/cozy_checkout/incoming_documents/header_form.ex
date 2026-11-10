@@ -47,6 +47,32 @@ defmodule CozyCheckout.IncomingDocuments.HeaderForm do
     ]
   end
 
+  def vat_groups do
+    [{12, "sumZklSniz", "sumDphSniz"}, {21, "sumZklZakl", "sumDphZakl"}]
+  end
+
+  def vat_keys, do: Enum.flat_map(vat_groups(), fn {_, base, vat} -> [base, vat] end)
+
+  @doc "Read-only totals from the current form values; nil marks an invalid amount."
+  def vat_totals(values) do
+    totals =
+      Map.new(vat_groups(), fn {rate, base, vat} ->
+        {rate, sum_amounts(values, [base, vat])}
+      end)
+
+    Map.put(totals, :combined, sum_amounts(values, vat_keys()))
+  end
+
+  defp sum_amounts(values, keys) do
+    Enum.reduce_while(keys, Decimal.new("0.00"), fn key, total ->
+      value = amount(Map.get(values, key) || "")
+
+      if Regex.match?(~r/^-?\d{1,12}(\.\d{1,2})?$/, value),
+        do: {:cont, Decimal.add(total, Decimal.new(value))},
+        else: {:halt, nil}
+    end)
+  end
+
   def keys, do: Enum.map(fields(), &elem(&1, 0)) ++ ["poznam"]
 
   def defaults, do: Map.new(keys(), &{&1, ""})

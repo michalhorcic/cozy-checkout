@@ -66,6 +66,36 @@ defmodule CozyCheckoutWeb.IncomingDocumentFormLiveTest do
     assert to =~ "/admin/login"
   end
 
+  test "VAT fields stay grouped by rate and control totals follow unsaved edits", %{conn: conn} do
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form")
+
+    for {rate, base, vat} <- CozyCheckout.IncomingDocuments.HeaderForm.vat_groups() do
+      assert has_element?(view, "#incoming-vat-#{rate} input[name='document[#{base}]']")
+      assert has_element?(view, "#incoming-vat-#{rate} input[name='document[#{vat}]']")
+    end
+
+    values = %{
+      "sumOsv" => "10,00",
+      "sumZklSniz" => "100,00",
+      "sumDphSniz" => "12,00",
+      "sumZklZakl" => "1 000,00",
+      "sumDphZakl" => "210,00",
+      "sumCelkem" => "1 332,00"
+    }
+
+    view |> form("#incoming-header-form", %{"document" => values}) |> render_change()
+    assert has_element?(view, "#incoming-vat-total-12", "112.00 CZK")
+    assert has_element?(view, "#incoming-vat-total-21", "1 210.00 CZK")
+    assert has_element?(view, "#incoming-vat-total-combined", "1 322.00 CZK")
+
+    values = Map.put(values, "sumDphSniz", "oops")
+    view |> form("#incoming-header-form", %{"document" => values}) |> render_change()
+    assert has_element?(view, "#incoming-vat-total-12", "—")
+    assert has_element?(view, "#incoming-vat-total-combined", "—")
+    assert has_element?(view, "#incoming-vat-total-21", "1 210.00 CZK")
+    assert IncomingDocuments.list() == []
+  end
+
   test "manual form validates amounts and saves directly without consent checkboxes",
        %{conn: conn} do
     {:ok, view, _} = live(admin(conn), "/admin/incoming-document-form")
