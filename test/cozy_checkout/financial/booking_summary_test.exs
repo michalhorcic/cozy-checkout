@@ -54,12 +54,12 @@ defmodule CozyCheckout.BookingSummaryTest do
   test "advance coverage excludes personal stays", %{booking: booking} do
     issue!(booking, "advance")
 
-    {:ok, personal} =
-      Bookings.create_booking(%{
-        guest_id: booking.guest_id,
-        check_in_date: booking.check_in_date,
-        check_out_date: booking.check_out_date
-      })
+    assert {:ok, personal} =
+             Bookings.create_booking(%{
+               guest_id: booking.guest_id,
+               check_in_date: Date.add(booking.check_in_date, 7),
+               check_out_date: Date.add(booking.check_out_date, 7)
+             })
 
     assert {:ok, _} = Billing.create_calculation(personal.id)
     assert {:ok, _} = Billing.set_personal(personal.id)
