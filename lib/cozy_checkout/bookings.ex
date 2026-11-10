@@ -163,7 +163,7 @@ defmodule CozyCheckout.Bookings do
     |> preload([guest: g], guest: g)
   end
 
-  @doc "Counts issued advance coverage across the filtered list, before pagination."
+  @doc "Counts issued advance coverage across non-personal filtered stays, before pagination."
   def advance_coverage(params) do
     advances =
       from(d in CozyCheckout.Billing.Document,
@@ -178,6 +178,7 @@ defmodule CozyCheckout.Bookings do
 
     counts =
       booking_list_query()
+      |> where([billing: s], s.state != "personal")
       |> apply_custom_filters(params)
       |> Flop.filter(flop, for: Booking)
       |> exclude(:preload)

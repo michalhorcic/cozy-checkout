@@ -51,6 +51,30 @@ defmodule CozyCheckout.BookingSummaryTest do
     assert %{total: 1, issued: 1} = Bookings.advance_coverage(%{})
   end
 
+  test "advance coverage excludes personal stays", %{booking: booking} do
+    issue!(booking, "advance")
+
+    {:ok, personal} =
+      Bookings.create_booking(%{
+        guest_id: booking.guest_id,
+        check_in_date: booking.check_in_date,
+        check_out_date: booking.check_out_date
+      })
+
+    assert {:ok, _} = Billing.create_calculation(personal.id)
+    assert {:ok, _} = Billing.set_personal(personal.id)
+
+    assert %{total: 1, issued: 1, percent: percent} = Bookings.advance_coverage(%{})
+    assert Decimal.equal?(percent, 100)
+
+    assert %{total: 0, issued: 0, percent: nil} =
+             Bookings.advance_coverage(%{"invoice_state" => "personal"})
+
+    assert {:ok, _} = Billing.set_personal(personal.id, false)
+    assert %{total: 2, issued: 1, percent: percent} = Bookings.advance_coverage(%{})
+    assert Decimal.equal?(percent, 50)
+  end
+
   test "legacy calculation states never imply issued documents or money", %{booking: booking} do
     for state <- ~w(draft generated sent advance_paid paid) do
       {:ok, _} = Bookings.update_invoice_state(Billing.calculation(booking.id), state)
