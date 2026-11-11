@@ -5,6 +5,11 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 
 ## Přehled plánů
 
+- [Cozy Adventure](2026-11-11-cozy-adventure.md)
+  — **první etapa implementována ve větvi, čeká na CI**; samostatný herní context,
+  osobní profily, ruční questy a auditovaný XP ledger. Kampaně a provozní KPI
+  zůstávají další etapou. [Návod](../features/ADVENTURE.md).
+
 - [Dvoufázové vytěžování a instrukce podle dodavatele](2026-11-05-vytezovani-podle-dodavatele.md)
   — **implementováno ve větvi, čeká na CI a pilot**; identifikace dodavatele,
   obecné vytěžení a samostatný dodavatelský dotaz se snapshotem instrukcí,

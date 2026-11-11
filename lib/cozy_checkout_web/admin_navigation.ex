@@ -62,8 +62,14 @@ defmodule CozyCheckoutWeb.AdminNavigation do
          {"Ekonomika pobytů", "/admin/economy"},
          {"Statistiky prodeje", "/admin/statistics"},
          {"Export POHODA", "/admin/pohoda-export"}
-       ]}
+       ]},
+      {"Další agenda",
+       if(CozyCheckout.Adventure.enabled?(),
+         do: [{"Cozy Adventure", "/admin/adventure"}],
+         else: []
+       )}
     ]
+    |> Enum.reject(fn {_, entries} -> entries == [] end)
   end
 
   def active?(path, "/admin"), do: path in ["/admin", "/admin/"]

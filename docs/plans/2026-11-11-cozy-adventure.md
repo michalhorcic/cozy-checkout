@@ -1,6 +1,6 @@
 # Cozy Adventure – ekonomická strategie a RPG pro Cozy Checkout
 
-- Stav: návrh, připraveno k revizi; bez implementace
+- Stav: rozpracováno; etapa 1 implementována ve větvi, čeká na CI a kontrolu PR
 - Vytvořeno: 2026-11-11
 - Aktualizováno: 2026-11-11
 - Repozitář: `michalhorcic/cozy-checkout`
@@ -13,6 +13,47 @@ Provoz Jindřichova domu má měřitelné krátkodobé, sezónní i dlouhodobé 
 Úspěch MVP: správce otevře /admin/adventure, zvolí herní profil, vidí společnou sezónu a svůj postup, splní ruční quest, automatický milník se vyhodnotí z existujících dat a žádná odměna nevznikne duplicitně.
 
 ## Současný stav a podklady
+
+### Audit implementace 11. 11. 2026
+
+- Práce vychází z čerstvě staženého `origin/main` (`07f0dd9`).
+- `lib/cozy_checkout_web/router.ex`, `admin_auth.ex`, `admin_navigation.ex`:
+  sdílený admin PIN, `live_session :admin` a opakované ověření relace při
+  událostech. Samostatná osobní autentizace neexistuje.
+- `lib/cozy_checkout/bookings/booking.ex`: UUID, `deleted_at`, stavy
+  `upcoming/active/completed/cancelled`, počty `adults/children/infants/unclassified_guests`.
+  `booking_rooms` je vazba na pokoje, nikoli další pobyt.
+- `lib/cozy_checkout/bookings.ex:update_booking_status/1`: `completed` se
+  odvozuje od data odjezdu před dneškem (UTC), nikoli od doloženého uskutečnění.
+  `get_occupancy_for_range/2` dnes zahrnuje pouze upcoming/active a vylučuje
+  soft deletes. Příjezd zahrnut, odjezd vyloučen. Pro historickou realizovanou
+  obsazenost nelze toto API převzít beze změny definice.
+- `Bookings.cottage_capacity/0` vrací konstantu 45; `Rooms.Room.capacity`
+  uchovává kapacitu pokoje, bez historických změn kapacity. Zdroj historické
+  kapacity a význam uskutečněného pobytu je nutné rozhodnout před etapou 2.
+- `lib/cozy_checkout/economics/{source,snapshot,confirmation}.ex` a
+  `economics.ex`: lokální verzované snapshoty s aktivním zdrojem a potvrzením
+  měsíce. V první etapě Adventure tyto kontexty vůbec nevolá.
+- `lib/cozy_checkout/application.ex`, `config/config.exs`: Oban existuje,
+  Adventure nepřidává worker, cron ani provozní hook. Vypínač je vlastní
+  `ADVENTURE_ENABLED`, výchozí false, podle konfigurace v `config/runtime.exs`.
+- Provozní model je pro jednu chatu; nenalezen tenant/property scope.
+- Riziko N+1 pro budoucí pobytové KPI bylo oznámeno uživateli. Navržený budoucí
+  postup je agregace za celé období; implementace a případné schválení
+  dávkového řešení zůstávají v etapě 2. První etapa provozní data nenačítá.
+
+### Dodaný rozsah první etapy
+
+Uživatel výslovně zahájil implementaci a potvrdil výběr profilu ve sdílené PIN
+relaci. Herní modul je oddělený do `lib/cozy_checkout/adventure/` a vlastního
+adresáře LiveView. Viz [aktuální funkce a omezení](../features/ADVENTURE.md).
+
+Logický návrh je zúžen na tři nové tabulky: profily, instance ručních questů
+se snapshotem definice a XP ledger. Katalog definic je verzovaný v kódu;
+nastavení je samostatný konfigurační vypínač. Tabulky kampaní, achievementů
+a eventů budou přidány až s jejich chováním. Nevznikají žádné provozní FK ani
+zápisy mimo adventure_* tabulky. Quest completion i XP používají Ecto.Multi,
+profilový zámek a unikátní klíče; opravy jsou kompenzační záznamy.
 
 Ověřeno v dokumentaci na main dne 2026-11-11:
 - Phoenix 1.8, LiveView, PostgreSQL, Oban, Tailwind v4, daisyUI, Docker/Coolify.
@@ -108,17 +149,17 @@ MVP lze dodat jako dashboard + quests + settings, ostatní detaily v rozbalovac�
 ## Implementační kroky pro Codex
 
 ### Etapa 0 – audit před kódováním
-- [ ] Fetch latest origin/main; zkontrolovat AGENTS.md, router, admin auth, LiveViews, schemas, migrations a testy.
-- [ ] Najít autoritativní zdroj pobytů, statusů, kapacity, obsazenosti a ekonomických snapshotů; sepsat přesný mapping a zdrojové soubory do tohoto plánu.
-- [ ] Zkontrolovat existující identitu uživatele, Oban konfiguraci a přepínání feature flags.
+- [x] Fetch latest origin/main; zkontrolovat AGENTS.md, router, admin auth, LiveViews, schemas, migrations a testy.
+- [x] Najít autoritativní zdroj pobytů, statusů, kapacity, obsazenosti a ekonomických snapshotů; sepsat přesný mapping a zdrojové soubory do tohoto plánu.
+- [x] Zkontrolovat existující identitu uživatele, Oban konfiguraci a přepínání feature flags.
 - [ ] Upozornit na N+1 riziko a navrhnout batch query; před realizací optimalizace vyžadující schválení postupovat podle AGENTS.md.
 - [ ] Vyjasnit otevřené produktové otázky níže.
 
 ### Etapa 1 – MVP foundation
-- [ ] Migrace a schémata s DB constraints; bezpečné seed definice a profily bez duplicit při opakování.
-- [ ] Adventure kontext, XP ledger, level function, atomické splnění ručního questu, audit a deduplikace.
-- [ ] Admin LiveView dashboard, profil switcher a ruční questy; admin PIN guard, vypnutý modul bez veřejných tras.
-- [ ] Feature toggle default off; žádná nová externí služba.
+- [x] Migrace a schémata s DB constraints; bezpečné seed definice a profily bez duplicit při opakování.
+- [x] Adventure kontext, XP ledger, level function, atomické splnění ručního questu, audit a deduplikace.
+- [x] Admin LiveView dashboard, profil switcher a ruční questy; admin PIN guard, vypnutý modul bez veřejných tras.
+- [x] Feature toggle default off; žádná nová externí služba.
 
 ### Etapa 2 – automatická data a kampaně
 - [ ] Read-only stay adapter a testovaná definice lůžkonocí / pobytů.
@@ -186,12 +227,13 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 | 2026-11-11 | Společná chata i individuální profily | Zadání uživatele |
 | 2026-11-11 | Moderní dashboard s RPG prvky | Zadání uživatele |
 | 2026-11-11 | Pouze plán, bez implementace | Zadání uživatele |
-| 2026-11-11 | Osobní profil v MVP self-selected, nikoliv autentizovaný | Odvozeno ze současného sdíleného PINu; k potvrzení |
+| 2026-11-11 | Osobní profil v MVP self-selected, nikoliv autentizovaný | Výslovně potvrzeno uživatelem při implementaci |
+| 2026-11-11 | Zahájení implementace, samostatný context a adresář, žádné zpětné zápisy do provozu | Zadání uživatele v implementačním chatu |
 | 2026-11-11 | Automatické XP pouze z ověřených, deduplikovaných událostí | Návrh, k potvrzení |
 
 ## Otevřené otázky
 
-1. Má být výběr osobního profilu bez dalšího PINu dostačující pro MVP? Doporučeno ano, s jasným upozorněním na self-report.
+1. Vyřešeno: výběr osobního profilu bez dalšího PINu je pro MVP dostačující, s jasným upozorněním na self-report.
 2. Kdy přesně začíná a končí zimní kampaň? Navrženo 1. 12.–31. 3., upravitelné.
 3. Mají být ruční questy vytvářeny volně, nebo jen ze šablon? Doporučení: v MVP šablony + jednoduchý jednorázový vlastní quest s limitem XP.
 4. Při zpětném stornu pobytu: má být historický achievement ponechán jako dosažený milník, nebo kompenzován? Doporučení: KPI přepočítat, milník označit jako revoked s auditním záznamem, XP kompenzovat jen při prokazatelně chybném přiznání.
@@ -200,7 +242,13 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 
 ## Průběh a předání dalšímu chatu
 
-- Hotovo: návrh produktu, datového modelu, pravidel, obrazovek, integrací, etap a testů.
-- Zbývá: produktová rozhodnutí, audit implementačních souborů, jednotlivé implementační PR.
-- Blokuje: nic pro uložení plánu; otevřené otázky blokují příslušné části implementace.
-- Nejbližší další krok: otevřít tento plán v Codexu, provést Etapu 0, aktualizovat mapování na skutečný kód a před první migrací potvrdit otevřené otázky.
+- Hotovo ve větvi: audit zdrojů, základ etapy 1, samostatný context, migrace,
+  opakovatelný setup, 2 profily, šablony questů, atomické XP, opravné API,
+  admin dashboard/questy/nastavení, default-off flag, dokumentace a testy pro CI.
+- Potvrzeno uživatelem: výběr profilu uvnitř admin PIN relace dostačuje pro MVP.
+- Zbývá: CI a ruční checklist, etapa 2 (kampaně, read-only KPI, achievementy,
+  reconciliation); etapa 3 beze změny. Kompletní MVP zatím není dodané.
+- Před etapou 2 rozhodnout hranice kampaně, význam dokončeného pobytu,
+  historickou kapacitu a pravidla kompenzace automatických milníků.
+- V první etapě pouze pevné šablony; vlastní questy a společné XP odloženy.
+- Testy lokálně nespouštěny podle AGENTS.md; CI ověřuje uživatel.
