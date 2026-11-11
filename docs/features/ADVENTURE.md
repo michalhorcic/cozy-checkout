@@ -1,13 +1,15 @@
 # Cozy Adventure
 
-Volitelná hobby hra pro Michala a Lucku. První etapa obsahuje osobní ruční
-questy, XP a audit. Kampaně, společné XP, automatické achievementy a čtení
-provozních KPI přijdou v další etapě; současná verze je ještě nevyhodnocuje.
+Volitelná hobby hra pro Michala a Lucku. Obsahuje osobní ruční questy, osobní
+i společná XP, kampaně, dva automatické pobytové achievementy a audit přepočtů.
+Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních tabulek.
 
 ## Zapnutí a používání
 
-1. Nasaď migraci `20261111120000_create_adventure_foundation.exs` standardním
-   postupem aplikace. Přidává pouze tři tabulky s prefixem `adventure_`.
+1. Nasaď migrace `20261111120000_create_adventure_foundation.exs` a
+   `20261111130000_add_adventure_campaigns.exs` standardním postupem aplikace.
+   Přidávají celkem šest tabulek s prefixem `adventure_`; druhá rozšiřuje
+   pouze herní XP ledger o společného příjemce a vazbu na achievement.
 2. Nastav `ADVENTURE_ENABLED=true` a restartuj aplikaci. Výchozí hodnota je
    `false`. Vypnutí skryje odkaz v administraci a zablokuje herní stránky i akce;
    herní data a historie zůstanou uložené. Nevznikají žádné background joby.
@@ -22,7 +24,7 @@ provozních KPI přijdou v další etapě; současná verze je ještě nevyhodno
 6. Historii XP najdeš pod **Nastavení a audit**. Dashboard zobrazuje až 100
    questů (aktivní vždy před dokončenými) a posledních 20 XP transakcí.
 
-## Pravidla první verze
+## Osobní questy
 
 | Šablona | XP | Opakování |
 | --- | --- | --- |
@@ -50,13 +52,16 @@ skutečného stavu rezervace, zálohy či nákupního plánu.
 
 - Veškerá logika a schémata jsou v `lib/cozy_checkout/adventure/`, webová vrstva
   v `lib/cozy_checkout_web/live/adventure_live/`, testy ve vlastních adresářích.
-- Context `CozyCheckout.Adventure` zapisuje pouze do `adventure_profiles`,
-  `adventure_quests` a `adventure_xp_transactions`. Neobsahuje cizí provozní FK,
+- Context `CozyCheckout.Adventure` a jeho modul `Adventure.Campaigns` zapisují
+  pouze do tabulek `adventure_*`. Neobsahují cizí provozní FK,
   nevolá provozní mutace, neposílá emaily a nevytváří doklady či účetní operace.
 - Jediné integrační body jsou admin router, podmíněný odkaz v navigaci
   a konfigurace vypínače. POS neobsahuje herní prvky.
-- V této etapě hra ještě žádná provozní data nečte. Budoucí čtení patří do
-  `Adventure.Sources.*`; musí zůstat jednosměrné a bez zpětného zápisu.
+- `Adventure.Sources.Stays` provádí jeden agregovaný SELECT nad `bookings`
+  za rozsah kampaně. Nepřipojuje hosty ani pokoje, nevolá provozní contexty,
+  neaktualizuje statusy a neukládá jména, emaily či jiné osobní údaje hostů.
+  Zdroj se čte pouze při výslovném přepočtu nebo uzavření kampaně. Zobrazení
+  dashboardu používá lokální herní snapshoty a nikdy samo neuděluje XP.
 - Sdílený admin PIN chrání všechny tři trasy a LiveView události. Každá herní
   mutace navíc ověřuje vypínač a platný aktivní profil.
 
@@ -72,12 +77,82 @@ odměny a důvod o 10–1000 znacích. Přidá právě jednu zápornou transakci
 na původní odměnu, nepřepisuje ji a neotevře quest k dalšímu získání XP. Není to
 penalizace. Produkční obsluhu oprav lze později zpřístupnit ve chráněném UI.
 
+## Kampaně a provozní metriky
+
+V **Nastavení a auditu** založ návrh kampaně. Návrh lze upravovat. Výchozí
+zimní období 1. 12. 2026 – 31. 3. 2027 a kapacita 45 jsou pouze návrhy.
+Před aktivací vyber profil a výslovně zaškrtni potvrzení období, cílů a kapacity.
+Současně může běžet nejvýše jedna kampaň. Po aktivaci jsou období, kapacita,
+cíle a verze pravidel neměnné. Aktivovat nelze již skončené období.
+
+Období je včetně obou hraničních dnů, nejvýše tři roky, pásmo Europe/Prague.
+Kapacita je ručně potvrzená stálá hodnota 1–500 lůžek pro celé období.
+Provozní systém neposkytuje historii kapacit ani blokací; hra ji nedomýšlí
+ze současného seznamu pokojů. Při změnách kapacity zvol odpovídající období
+kampaně a ověř její předpoklady. Nejde o nezávisle ověřenou skutečnou účast hostů.
+
+Po aktivaci klikni na **Přepočítat z provozních dat**. Metriky nesměšují minulost
+a budoucnost:
+
+| Metrika | Pravidlo `stays_v1` |
+| --- | --- |
+| Dokončené pobyty | Stav `completed`, platný příjezd/odjezd, odjezd v kampani před dnešním pražským datem |
+| Realizované lůžkonoci podle stavů | Osoby × překryv nocí kampaně před dneškem, pouze `active` a `completed` |
+| Budoucí rezervované lůžkonoci | Osoby × překryv nocí kampaně od dneška, pouze `upcoming` a `active` |
+| Obsazenost uzavřených nocí | Realizované lůžkonoci / (potvrzená kapacita × dosavadní noci kampaně), procenta |
+
+Příjezdová noc se zahrnuje, odjezdová ne. Počet osob zahrnuje dospělé, děti,
+kojence i neurčené hosty podle stávajícího kalendáře. Více přiřazených pokojů
+nevytvoří další pobyt ani další osobonoci. `cancelled` a soft-deleted rezervace
+se zcela vylučují. Cíl budoucích lůžkonocí je aktuální výhled, nikoli kumulativní
+součet rezervací za sezonu; s postupem času se může snižovat.
+
+Každý přepočet ukládá zdroj, čas `as_of`, období, pravidla, hranici realizace,
+kapacitu a stav úplnosti. Chybějící nebo neplatný odjezd, neznámý počet osob,
+zastaralý/neslučitelný status nebo obsazenost nad 100 % označí podklady jako
+neúplné. Dílčí čísla jsou v UI označena; z neúplných podkladů se XP nepřiznávají
+ani neodebírají. Prázdné období má známý počet pobytů nula, ale bez uzavřených
+nocí je procentní obsazenost **nedostupná**, nikoli nula procent.
+
+Uzavření kampaně provede poslední přepočet a uzamkne datum hranice realizace.
+Další přepočet oprav je možný i potom. Čte aktuální verze rezervací se stejnou
+uzamčenou hranicí; nepředstírá historický provozní snapshot k okamžiku uzavření.
+Posledních 50 kampaní a posledních 20 přepočtů je dostupných v administraci;
+starší auditní záznamy zůstávají v DB. Žádný Oban job ani event hook nevzniká.
+
+## Automatické achievementy a společná XP
+
+- První způsobilý dokončený pobyt po aktivaci: **100 společných XP**.
+- Deset způsobilých dokončených pobytů po aktivaci: **250 společných XP**.
+
+Způsobilý pobyt musí splnit definici dokončeného pobytu výše a mít odjezd
+**po pražském dni aktivace**. Rezervace nemají čas skutečného dokončení;
+vyloučení celého dne aktivace zabraňuje odměnění pobytů dokončených dříve
+téhož dne. Historické pobyty mohou být součástí KPI, ale nejsou automaticky
+odměněné. Profil, který stiskl přepočet, se ukládá pouze jako aktér auditu.
+XP z automatických milníků patří výhradně chatě, nikoli tomuto profilu.
+
+Přepočet zamyká herní kampaň. Snapshot, achievement a XP jsou součástí jedné
+DB transakce. Opakování či souběžné požadavky nepřidělí další odměnu.
+Při opraveném stornu, smazání, datu nebo statusu se KPI přepočítají. Pokud
+úplné podklady již milník nesplňují, je odvolán s novým důkazem a jednou
+zápornou kompenzací. Původní důkaz i XP transakce zůstávají zachované.
+Odvolaný milník je pro danou kampaň konečný; další splnění jej znovu neodmění.
+Tím nelze opakovanými změnami pobytu získávat další XP.
+
+Změny definice vyžadují novou verzi pravidel a samostatnou implementaci;
+aktivní kampaň se nikdy tiše nepřevede na jinou definici. Obsazenostní
+achievement, skill tree, finanční metriky a rekonstrukce zůstávají další etapou.
+
 ## Ověření
 
 Přidané testy pokrývají hranice levelů, týden v Praze, idempotentní setup,
 limit aktivních questů, atomický rollback odměny, atribuci, opakované dokončení,
 kompenzace, souběh na samostatných PostgreSQL spojeních, vypnutí modulu,
 admin guard a kontrolu SQL zápisů pouze do herních tabulek.
+Navíc ověřují clipping lůžkonocí, více pokojů, příjezd/odjezd, kvalitu dat,
+oddělení rezervací a realizace, explicitní aktivaci, společnou atribuci,
+opakování přepočtu, rollback při selhání společných XP, audit a souběžné opravy.
 
 Testy se podle pravidel repozitáře spouštějí v CI; výsledek ověřuje správce PR.
 Pro ruční kontrolu po CI:
@@ -88,4 +163,9 @@ Pro ruční kontrolu po CI:
 - [ ] Dokončit quest s poznámkou, ověřit odměnu a audit, opakovat aktivaci.
 - [ ] Přepnout profil a ověřit oddělenou historii a XP; obnovit stránku.
 - [ ] Vypnout modul a ověřit zachovaná herní data.
+- [ ] Založit návrh kampaně, upravit cíle, potvrdit období a kapacitu a aktivovat.
+- [ ] Přepočítat a porovnat lůžkonoci s ručně vybranými pobyty bez změn provozu.
+- [ ] Ověřit, že aktivace ani zobrazení stránky nepřidávají automatické XP.
+- [ ] Ověřit oddělení společných a osobních XP a audit přepočtů.
+- [ ] Na testovacích datech ověřit storno, jednorázovou kompenzaci a uzavření.
 - [ ] Ověřit mobilní šířku, tabulátor a čitelné textové stavy.

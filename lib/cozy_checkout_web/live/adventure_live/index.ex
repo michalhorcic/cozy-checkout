@@ -1,6 +1,8 @@
 defmodule CozyCheckoutWeb.AdventureLive.Index do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Adventure
+  alias CozyCheckout.Adventure.{Campaign, Campaigns}
+  import CozyCheckoutWeb.AdventureLive.CampaignComponents
 
   @impl true
   def mount(_, _, socket) do
@@ -8,6 +10,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
       {:ok,
        socket
        |> assign(page_title: "Cozy Adventure", selected_profile_id: nil, completing: nil)
+       |> new_campaign()
        |> load()}
     else
       {:ok, redirect(socket, to: ~p"/admin")}
@@ -25,6 +28,53 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp handle_game_event("initialize", _, socket) do
     result(socket, Adventure.initialize())
+  end
+
+  defp handle_game_event("save-campaign", %{"campaign" => attrs}, socket) do
+    outcome =
+      if id = socket.assigns.editing_campaign_id,
+        do: Campaigns.update(id, attrs),
+        else: Campaigns.create(attrs)
+
+    case outcome do
+      {:ok, _} ->
+        result(new_campaign(socket), outcome)
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, campaign_form: to_form(changeset, as: :campaign))}
+
+      error ->
+        result(socket, error)
+    end
+  end
+
+  defp handle_game_event("edit-campaign", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.game.campaigns, &(&1.id == id and &1.status == "draft")) do
+      nil ->
+        result(socket, {:error, :not_found})
+
+      campaign ->
+        {:noreply,
+         assign(socket,
+           editing_campaign_id: campaign.id,
+           campaign_form: to_form(Campaign.changeset(campaign, %{}), as: :campaign)
+         )}
+    end
+  end
+
+  defp handle_game_event("new-campaign", _, socket), do: {:noreply, new_campaign(socket)}
+
+  defp handle_game_event("activate-campaign", %{"campaign_id" => id} = params, socket) do
+    confirmed = get_in(params, ["activation", "confirmed"]) == "true"
+    result(socket, Campaigns.activate(id, socket.assigns.selected_profile_id, confirmed))
+  end
+
+  defp handle_game_event("evaluate-campaign", %{"id" => id}, socket) do
+    result(socket, Campaigns.evaluate(id, socket.assigns.selected_profile_id))
+  end
+
+  defp handle_game_event("close-campaign", %{"id" => id}, socket) do
+    result(socket, Campaigns.close(id, socket.assigns.selected_profile_id))
   end
 
   defp handle_game_event("profile", %{"profile" => %{"id" => id}}, socket) do
@@ -67,6 +117,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
         :active_limit -> "Můžeš mít nejvýše 3 aktivní osobní questy."
         :evidence_required -> "Přidej poznámku o splnění (10–1000 znaků)."
         :invalid_profile -> "Nejprve vyber herní profil."
+        :confirmation_required -> "Před aktivací potvrď období, cíle a kapacitu."
+        :past_campaign -> "Nelze aktivovat již skončené období."
+        :immutable_campaign -> "Po aktivaci nelze období a pravidla měnit."
+        :inactive_campaign -> "Nejprve aktivuj kampaň."
+        %Ecto.Changeset{} -> "Kampaň nelze aktivovat. Může být aktivní nejvýše jedna kampaň."
         _ -> "Akci nelze dokončit. Obnov stránku a zkontroluj výběr profilu."
       end
 
@@ -75,12 +130,31 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp load(socket) do
     {:ok, data} = Adventure.dashboard(socket.assigns.selected_profile_id)
+    {:ok, game} = Campaigns.overview()
 
     assign(socket,
       data: data,
+      game: game,
       catalog: Adventure.catalog(),
       profile_form: to_form(%{"id" => data.profile && data.profile.id}, as: :profile),
       completion_form: to_form(%{"note" => ""}, as: :completion)
+    )
+  end
+
+  defp new_campaign(socket) do
+    campaign = %Campaign{
+      name: "Zimní kampaň 2026/27",
+      starts_on: ~D[2026-12-01],
+      ends_on: ~D[2027-03-31],
+      capacity: 45,
+      completed_goal: 10,
+      reserved_goal: 1000,
+      occupancy_goal: 50
+    }
+
+    assign(socket,
+      editing_campaign_id: nil,
+      campaign_form: to_form(Campaign.changeset(campaign, %{}), as: :campaign)
     )
   end
 
@@ -210,7 +284,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
       <section :if={@live_action == :settings} class="rounded-xl border border-base-300 p-5 space-y-3">
         <h2 class="text-xl font-semibold">Nastavení a audit</h2>
         <p>
-          Modul je zapnutý konfigurací ADVENTURE_ENABLED=true. Vypnutí zachová herní historii a zablokuje další herní akce. Kampaně zatím nejsou aktivované.
+          Modul je zapnutý konfigurací ADVENTURE_ENABLED=true. Vypnutí zachová herní historii a zablokuje další herní akce. Pobytová data se čtou pouze při ručním přepočtu.
         </p>
         <p>
           Pravidla šablon: verze 1. Zápisy probíhají pouze do adventure_* tabulek. Opravy XP se ukládají samostatným kompenzačním záznamem.
@@ -222,11 +296,16 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           </li>
         </ul>
       </section>
+      <.campaigns
+        game={@game}
+        definitions={Campaigns.achievements()}
+        profile_selected={!is_nil(@data.profile)}
+        settings={@live_action == :settings}
+        campaign_form={@campaign_form}
+        editing_id={@editing_campaign_id}
+      />
       <section class="rounded-xl border border-base-300 p-5 space-y-3">
-        <h2 class="text-xl font-semibold">Společná chata · připravujeme</h2>
-        <p>
-          Kampaň, společné XP a automatické achievementy čekají na další etapu a ověření zdrojových dat.
-        </p>
+        <h2 class="text-xl font-semibold">Další rozvoj chaty</h2>
         <p>Obchod · Finance · Kuchyně · Provoz · Hosté: dosud nevyhodnoceno.</p>
         <p>Rekonstrukce: neaktivní roadmapa, bez vykazování úspor či investičního fondu.</p>
       </section>

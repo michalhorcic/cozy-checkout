@@ -97,4 +97,61 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert_redirect(view, "/admin")
     assert Repo.aggregate(Profile, :count) == 0
   end
+
+  test "campaign draft requires confirmation and profile; recalculation is explicit", %{
+    conn: conn
+  } do
+    alias CozyCheckout.Adventure.{Campaign, Evaluation}
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    {:ok, view, _} = live(conn, "/admin/adventure/settings")
+    today = CozyCheckout.Adventure.Sources.Stays.today()
+
+    view
+    |> form("#adventure-campaign-form",
+      campaign: %{
+        name: "Nová kampaň",
+        starts_on: Date.to_iso8601(today),
+        ends_on: Date.to_iso8601(Date.add(today, 30)),
+        capacity: "45",
+        completed_goal: "10",
+        reserved_goal: "100",
+        occupancy_goal: "50"
+      }
+    )
+    |> render_submit()
+
+    c = Repo.one!(Campaign)
+    assert c.status == "draft"
+
+    render_click(view, "activate-campaign", %{
+      "campaign_id" => c.id,
+      "activation" => %{"confirmed" => "true"}
+    })
+
+    assert Repo.get!(Campaign, c.id).status == "draft"
+    view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+
+    view
+    |> form("#activate-campaign-#{c.id}", activation: %{confirmed: "false"})
+    |> render_submit()
+
+    assert Repo.get!(Campaign, c.id).status == "draft"
+
+    view
+    |> form("#activate-campaign-#{c.id}", activation: %{confirmed: "true"})
+    |> render_submit()
+
+    assert Repo.get!(Campaign, c.id).status == "active"
+    assert Repo.aggregate(Evaluation, :count) == 0
+    assert has_element?(view, "#campaign-#{c.id}", "Zatím nepřepočítáno")
+    view |> element("#evaluate-campaign-#{c.id}") |> render_click()
+    assert Repo.aggregate(Evaluation, :count) == 1
+    assert has_element?(view, "#campaign-#{c.id}", "Kvalita dat:")
+    assert Repo.aggregate(XpTransaction, :count) == 0
+    Application.put_env(:cozy_checkout, :adventure_enabled, false)
+    render_click(view, "evaluate-campaign", %{"id" => c.id})
+    assert_redirect(view, "/admin")
+    assert Repo.aggregate(Evaluation, :count) == 1
+  end
 end

@@ -1,6 +1,6 @@
 # Cozy Adventure – ekonomická strategie a RPG pro Cozy Checkout
 
-- Stav: rozpracováno; etapa 1 implementována ve větvi, čeká na CI a kontrolu PR
+- Stav: etapy 1 a 2 implementovány v PR #112, čeká na CI a ruční kontrolu
 - Vytvořeno: 2026-11-11
 - Aktualizováno: 2026-11-11
 - Repozitář: `michalhorcic/cozy-checkout`
@@ -30,7 +30,7 @@ Provoz Jindřichova domu má měřitelné krátkodobé, sezónní i dlouhodobé 
   obsazenost nelze toto API převzít beze změny definice.
 - `Bookings.cottage_capacity/0` vrací konstantu 45; `Rooms.Room.capacity`
   uchovává kapacitu pokoje, bez historických změn kapacity. Zdroj historické
-  kapacity a význam uskutečněného pobytu je nutné rozhodnout před etapou 2.
+  kapacity a význam uskutečněného pobytu řeší potvrzená pravidla etapy 2 níže.
 - `lib/cozy_checkout/economics/{source,snapshot,confirmation}.ex` a
   `economics.ex`: lokální verzované snapshoty s aktivním zdrojem a potvrzením
   měsíce. V první etapě Adventure tyto kontexty vůbec nevolá.
@@ -39,8 +39,8 @@ Provoz Jindřichova domu má měřitelné krátkodobé, sezónní i dlouhodobé 
   `ADVENTURE_ENABLED`, výchozí false, podle konfigurace v `config/runtime.exs`.
 - Provozní model je pro jednu chatu; nenalezen tenant/property scope.
 - Riziko N+1 pro budoucí pobytové KPI bylo oznámeno uživateli. Navržený budoucí
-  postup je agregace za celé období; implementace a případné schválení
-  dávkového řešení zůstávají v etapě 2. První etapa provozní data nenačítá.
+  postup je agregace za celé období; uživatel ji při zahájení etapy 2 výslovně
+  schválil. `Adventure.Sources.Stays` používá jeden agregovaný SELECT.
 
 ### Dodaný rozsah první etapy
 
@@ -50,10 +50,37 @@ adresáře LiveView. Viz [aktuální funkce a omezení](../features/ADVENTURE.md
 
 Logický návrh je zúžen na tři nové tabulky: profily, instance ručních questů
 se snapshotem definice a XP ledger. Katalog definic je verzovaný v kódu;
-nastavení je samostatný konfigurační vypínač. Tabulky kampaní, achievementů
-a eventů budou přidány až s jejich chováním. Nevznikají žádné provozní FK ani
+nastavení je samostatný konfigurační vypínač. Tabulky kampaní a achievementů
+doplňuje etapa 2. Eventový inbox není pro výslovný přepočet potřeba. Nevznikají žádné provozní FK ani
 zápisy mimo adventure_* tabulky. Quest completion i XP používají Ecto.Multi,
 profilový zámek a unikátní klíče; opravy jsou kompenzační záznamy.
+
+### Dodaný rozsah druhé etapy
+
+Na výslovnou žádost uživatele je etapa 2 ve stejném [PR #112](https://github.com/michalhorcic/cozy-checkout/pull/112).
+Uživatel schválil dávkový SELECT a definici milníků ze stavu `completed`,
+odjezdu v kampani po aktivaci a kompenzací při zpětných opravách.
+
+- `Adventure.Sources.Stays` čte pouze `bookings`, bez joinu pokojů či hostů,
+  bez aktualizace provozních statusů. Vrací dokončené pobyty, realizované
+  lůžkonoci, budoucí rezervované lůžkonoci, procentní obsazenost a metadata.
+- Odjezd musí být před aktuálním pražským dnem; pro milníky navíc po celém
+  dni aktivace. Chybějící čas skutečného dokončení se nenahrazuje odhadem.
+- Kapacita je explicitně potvrzená konstanta kampaně, nikoli domnělá historie
+  kapacit pokojů. Bez uzavřených nocí je procento nedostupné. Neúplné podklady
+  nepřiznávají ani neodebírají XP. Zdroj a omezení jsou viditelné v UI.
+- Kampaň má návrh/aktivní/uzavřená, upravitelné období a cíle před aktivací,
+  explicitní potvrzení kapacity a období, nejvýše jednu aktivní instanci.
+  Uzavření zmrazí časovou hranici realizace; další přepočet oprav je možný.
+- Další tři tabulky ukládají kampaně, achievementy a auditní přepočty.
+  Rozšířený XP ledger vynucuje odděleného příjemce profile/shared.
+- Dva achievementy (1 a 10 dokončených pobytů) dávají 100/250 XP pouze chatě.
+  Přepočet zamyká kampaň a ukládá důkaz i XP atomicky. Unikátní klíče brání
+  duplicitám. Při opraveném stornu či změně je milník odvolán a jednou
+  kompenzován; odvolaný milník se v této kampani znovu neodměňuje.
+- Dashboard čte pouze uložené herní snapshoty. Ruční přepočet a uzavření
+  jsou jediné akce čtoucí pobytové údaje. Žádné joby, hooky, emaily či HTTP.
+- Aktuální návod, přesné definice a checklist: [ADVENTURE.md](../features/ADVENTURE.md).
 
 Ověřeno v dokumentaci na main dne 2026-11-11:
 - Phoenix 1.8, LiveView, PostgreSQL, Oban, Tailwind v4, daisyUI, Docker/Coolify.
@@ -63,7 +90,7 @@ Ověřeno v dokumentaci na main dne 2026-11-11:
 - Existují rezervace/pobyty, plánování stravování, účetní a nákladové moduly. Konkrétní kontexty, tabulky, stavové přechody a události je před kódováním nutné ověřit přímo v lib/, priv/repo/migrations/ a test/.
 - AGENTS.md požaduje kontrolu aktuálního main, existující admin PIN, finanční integritu, UUID, Ecto migrace, Context7 pro externí API, omezení N+1 a PR.
 
-Neověřeno: konkrétní API pro rezervace a pobyty, jejich stabilní ID, definice obsazenosti, stávající event hooks, možnost rozlišení operátora, přesný model práv. Codex musí tyto body prověřit před implementací, nikoliv domýšlet.
+Při vzniku plánu nebyly ověřené konkrétní API a definice. Výsledky následného auditu a přijaté definice uvádějí implementační oddíly výše.
 
 ## Produktová pravidla
 
@@ -152,8 +179,8 @@ MVP lze dodat jako dashboard + quests + settings, ostatní detaily v rozbalovac�
 - [x] Fetch latest origin/main; zkontrolovat AGENTS.md, router, admin auth, LiveViews, schemas, migrations a testy.
 - [x] Najít autoritativní zdroj pobytů, statusů, kapacity, obsazenosti a ekonomických snapshotů; sepsat přesný mapping a zdrojové soubory do tohoto plánu.
 - [x] Zkontrolovat existující identitu uživatele, Oban konfiguraci a přepínání feature flags.
-- [ ] Upozornit na N+1 riziko a navrhnout batch query; před realizací optimalizace vyžadující schválení postupovat podle AGENTS.md.
-- [ ] Vyjasnit otevřené produktové otázky níže.
+- [x] Upozornit na N+1 riziko a schválit dávkový SELECT s uživatelem.
+- [x] Vyjasnit otázky pro etapy 1–2; konkrétní kampaň potvrzuje správce v UI před aktivací.
 
 ### Etapa 1 – MVP foundation
 - [x] Migrace a schémata s DB constraints; bezpečné seed definice a profily bez duplicit při opakování.
@@ -162,10 +189,10 @@ MVP lze dodat jako dashboard + quests + settings, ostatní detaily v rozbalovac�
 - [x] Feature toggle default off; žádná nová externí služba.
 
 ### Etapa 2 – automatická data a kampaně
-- [ ] Read-only stay adapter a testovaná definice lůžkonocí / pobytů.
-- [ ] Kampaň s konfigurovatelným obdobím, stavem, cíli, as_of a kvalitativním statusem dat.
-- [ ] Deterministické achievementy a bezpečný re-run/reconciliation.
-- [ ] Auditovatelná oprava při stornu, změně pobytu, změně pravidel nebo opakovaném jobu.
+- [x] Read-only stay adapter a definice lůžkonocí / pobytů s testy pro CI.
+- [x] Kampaň s konfigurovatelným obdobím, stavem, cíli, as_of a kvalitativním statusem dat.
+- [x] Deterministické achievementy a bezpečný re-run/reconciliation.
+- [x] Auditovatelná oprava při stornu či změně pobytu; pravidla uzamčená při aktivaci. Joby se nepřidávají.
 
 ### Etapa 3 – rozšíření (mimo MVP)
 - [ ] Skill tree s ověřitelnými kritérii.
@@ -173,7 +200,7 @@ MVP lze dodat jako dashboard + quests + settings, ostatní detaily v rozbalovac�
 - [ ] Strategické události a doporučení, případně AI až po definici bezpečných vstupů.
 - [ ] Rekonstrukční roadmapa, vizuální evoluce chaty, skutečné individuální účty.
 
-Každá etapa samostatný PR a ověřitelné acceptance criteria; plán samotný nepovoluje zahájení implementace.
+Etapy mají ověřitelná acceptance criteria. Uživatel při pokračování výslovně požádal ponechat etapy 1 a 2 ve stejném PR #112 pro společnou kontrolu.
 
 ## Testy a akceptační kritéria
 
@@ -229,26 +256,28 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 | 2026-11-11 | Pouze plán, bez implementace | Zadání uživatele |
 | 2026-11-11 | Osobní profil v MVP self-selected, nikoliv autentizovaný | Výslovně potvrzeno uživatelem při implementaci |
 | 2026-11-11 | Zahájení implementace, samostatný context a adresář, žádné zpětné zápisy do provozu | Zadání uživatele v implementačním chatu |
-| 2026-11-11 | Automatické XP pouze z ověřených, deduplikovaných událostí | Návrh, k potvrzení |
+| 2026-11-11 | Dávkový read-only SQL přepočet bez N+1 | Výslovně schváleno uživatelem |
+| 2026-11-11 | Completed pobyty s odjezdem v kampani po aktivaci; opravy odvolají milník a jednou kompenzují společná XP | Výslovně schváleno uživatelem |
+| 2026-11-11 | Etapy 1 a 2 ve stejném PR #112 | Výslovný pokyn uživatele |
 
 ## Otevřené otázky
 
 1. Vyřešeno: výběr osobního profilu bez dalšího PINu je pro MVP dostačující, s jasným upozorněním na self-report.
-2. Kdy přesně začíná a končí zimní kampaň? Navrženo 1. 12.–31. 3., upravitelné.
-3. Mají být ruční questy vytvářeny volně, nebo jen ze šablon? Doporučení: v MVP šablony + jednoduchý jednorázový vlastní quest s limitem XP.
-4. Při zpětném stornu pobytu: má být historický achievement ponechán jako dosažený milník, nebo kompenzován? Doporučení: KPI přepočítat, milník označit jako revoked s auditním záznamem, XP kompenzovat jen při prokazatelně chybném přiznání.
-5. Má společná chata vlastní XP level, nebo jen skill/milestone progres? Doporučení: vlastní společný XP level, jasně oddělený od osobních.
-6. Ověřit aktuální doménový zdroj kapacity a definici `completed stay` v kódu.
+2. Konkrétní zimní období potvrzuje správce v UI před aktivací; výchozí 1. 12.–31. 3. je návrh.
+3. Vlastní questy zůstávají mimo dodaný rozsah; používají se verzované pevné šablony.
+4. Vyřešeno: při úplných opravených podkladech milník revoked a jednorázová kompenzace; původní důkaz zachován.
+5. Dodáno: chata má vlastní společný XP level, oddělený od osobních profilů.
+6. Vyřešeno pro MVP: completed + datum odjezdu dle pravidel výše, kapacita jako explicitní potvrzená konstanta kampaně.
 
 ## Průběh a předání dalšímu chatu
 
-- Hotovo ve větvi: audit zdrojů, základ etapy 1, samostatný context, migrace,
-  opakovatelný setup, 2 profily, šablony questů, atomické XP, opravné API,
-  admin dashboard/questy/nastavení, default-off flag, dokumentace a testy pro CI.
+- Hotovo ve větvi v PR #112: etapy 1 a 2, samostatný context, šest herních tabulek,
+  2 profily, ruční questy, osobní i společné XP, kampaně, read-only pobytové KPI,
+  dva achievementy, audit a kompenzace, admin UI, default-off flag a testy pro CI.
 - Potvrzeno uživatelem: výběr profilu uvnitř admin PIN relace dostačuje pro MVP.
-- Zbývá: CI a ruční checklist, etapa 2 (kampaně, read-only KPI, achievementy,
-  reconciliation); etapa 3 beze změny. Kompletní MVP zatím není dodané.
-- Před etapou 2 rozhodnout hranice kampaně, význam dokončeného pobytu,
-  historickou kapacitu a pravidla kompenzace automatických milníků.
-- V první etapě pouze pevné šablony; vlastní questy a společné XP odloženy.
+- Zbývá: CI a ruční checklist včetně porovnání metrik s testovacími pobyty;
+  etapa 3 (skill tree, ekonomika, rekonstrukce a případná další rozšíření).
+- Před zapnutím zvolit a v UI potvrdit skutečné období a konstantní kapacitu.
+- Aktivní kampaně se nepřevádějí tiše mezi verzemi pravidel. Budoucí změny
+  definice vyžadují novou verzi a samostatnou implementaci.
 - Testy lokálně nespouštěny podle AGENTS.md; CI ověřuje uživatel.
