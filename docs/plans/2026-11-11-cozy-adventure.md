@@ -6,6 +6,12 @@
 - Repozitář: `michalhorcic/cozy-checkout`
 - Související dokumentace: `AGENTS.md`, `docs/features/ADMINISTRATION.md`, `docs/features/ECONOMICS.md`, `docs/features/CATERING.md`, `docs/features/BILLING.md`, `docs/plans/2026-10-28-ekonomicky-dashboard.md`
 
+> **Další směr revidován 12. 11. 2026:** [Úkolovník a kronika sezóny](2026-11-12-adventure-todos-a-prehled-sezony.md).
+> Pro další implementaci nahrazuje původní návrh pevného katalogu a povinných
+> rezervačních cílů: spravované osobní/společné todos, opakované šablony a
+> sezónní čísla včetně odděleného inkasa a vyúčtování pobytů.
+> Jde pouze o plán; níže zůstává audit a historie současné implementace.
+
 ## Problém a očekávaný výsledek
 
 Provoz Jindřichova domu má měřitelné krátkodobé, sezónní i dlouhodobé cíle, ale jejich průběžný rozvoj není motivující ani přehledný. Cozy Adventure má přidat volitelnou herní vrstvu nad reálnými provozními daty: společný postup chaty, osobní profily Michala a Lucky, úkoly, achievementy a sezónní kampaně. Nemá vytvářet účetní pravdu ani komplikovat běžný POS.
@@ -194,7 +200,17 @@ MVP lze dodat jako dashboard + quests + settings, ostatní detaily v rozbalovac�
 - [x] Deterministické achievementy a bezpečný re-run/reconciliation.
 - [x] Auditovatelná oprava při stornu či změně pobytu; pravidla uzamčená při aktivaci. Joby se nepřidávají.
 
-### Etapa 3 – rozšíření (mimo MVP)
+### Etapa 3 – další implementace, zatím pouze plán
+
+Podrobný rozsah a potvrzené volby jsou v [revizi úkolovníku a sezón](2026-11-12-adventure-todos-a-prehled-sezony.md).
+
+- [ ] 3A: správa jednorázových todos, přiřazení a společné úkoly; denní/týdenní šablony a působnost bez hromadění výskytů.
+- [ ] 3B: sezónní přehled s volitelnými cíli, read-only bar a fakturace, oddělené inkaso a vyúčtování podle odjezdu.
+- [ ] 3C: srovnatelné sezóny a další ověřené ukazatele.
+
+Tato revize nemění existující herní data ani nepovoluje začít implementovat.
+
+### Etapa 4 – pozdější rozšíření
 - [ ] Skill tree s ověřitelnými kritérii.
 - [ ] Read-only finanční metriky z Economics, pouze s kvalitou dat a potvrzením.
 - [ ] Strategické události a doporučení, případně AI až po definici bezpečných vstupů.
@@ -261,12 +277,13 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 | 2026-11-11 | Etapy 1 a 2 ve stejném PR #112 | Výslovný pokyn uživatele |
 | 2026-11-11 | Hravá horská grafika, čistá obrazovka, vysvětlení v overlay nápovědě a nepovinné poznámky questů | Následné zadání uživatele |
 | 2026-11-12 | Zapamatovat vybraného hrdinu v prohlížeči; roční herní cookie, ověření aktivního profilu při obnovení | Následné zadání uživatele |
+| 2026-11-12 | Další etapa: společný úkolovník, spravované opakování bez hromadění a sezónní přehled; dvě finanční perspektivy a vyúčtování podle odjezdu | Výslovně potvrzeno v plánovací diskusi; bez implementace |
 
 ## Otevřené otázky
 
 1. Vyřešeno: výběr osobního profilu bez dalšího PINu je pro MVP dostačující, s jasným upozorněním na self-report.
 2. Konkrétní zimní období potvrzuje správce v UI před aktivací; výchozí 1. 12.–31. 3. je návrh.
-3. Vlastní questy zůstávají mimo dodaný rozsah; používají se verzované pevné šablony.
+3. Vlastní questy jsou nově prioritou další etapy; současný kód stále používá pevné šablony. Rozhodnutí pro další verzi jsou v navazujícím plánu.
 4. Vyřešeno: při úplných opravených podkladech milník revoked a jednorázová kompenzace; původní důkaz zachován.
 5. Dodáno: chata má vlastní společný XP level, oddělený od osobních profilů.
 6. Vyřešeno pro MVP: completed + datum odjezdu dle pravidel výše, kapacita jako explicitní potvrzená konstanta kampaně.
@@ -277,8 +294,9 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
   2 profily, ruční questy, osobní i společné XP, kampaně, read-only pobytové KPI,
   dva achievementy, audit a kompenzace, admin UI, default-off flag a testy pro CI.
 - Potvrzeno uživatelem: výběr profilu uvnitř admin PIN relace dostačuje pro MVP.
-- Zbývá: CI a ruční checklist včetně porovnání metrik s testovacími pobyty;
-  etapa 3 (skill tree, ekonomika, rekonstrukce a případná další rozšíření).
+- Zbývá: CI a ruční checklist dosavadní implementace; další práce podle nové
+  [etapy 3 – úkolovník a sezónní přehled](2026-11-12-adventure-todos-a-prehled-sezony.md).
+  Skill tree, účetní zisk a rekonstrukce přicházejí až později.
 - Před zapnutím zvolit a v UI potvrdit skutečné období a konstantní kapacitu.
 - Aktivní kampaně se nepřevádějí tiše mezi verzemi pravidel. Budoucí změny
   definice vyžadují novou verzi a samostatnou implementaci.
