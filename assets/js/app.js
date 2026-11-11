@@ -32,12 +32,14 @@ import {IncomingActionBar} from "./hooks/incoming_action_bar"
 import {IncomingBatchUpload} from "./hooks/incoming_batch_upload"
 import {IncomingDocumentPreview} from "./incoming_document_preview"
 import {AdventureHelp} from "./adventure/help_dialog"
+import {AdventureHero} from "./adventure/hero_preference"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
 // Custom hooks
 const Hooks = {
   AdventureHelp,
+  AdventureHero,
   IncomingActionBar,
   IncomingBatchUpload,
   IncomingDocumentPreview,

@@ -17,8 +17,11 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
    (`/admin/adventure`) a klikni na **Založit herní profily**. Opakování setupu
    nezduplikuje profily a nezmění již uložené profily.
 4. Vyber Michala nebo Lucku. Jde o vlastní prohlášení, nikoli osobní přihlášení.
-   Volba trvá pouze po dobu otevření LiveView; opuštění stránky či obnovení ji
-   vymaže. Přepnutí profilu zruší rozpracované potvrzení questu.
+   Prohlížeč si volbu pamatuje jeden rok v cookie `cozy_adventure_hero`,
+   omezené na `/admin/adventure`. Po připojení hry se profil obnoví i při
+   přechodu mezi záložkami a po obnovení stránky. Vymazání výběru nebo cookies
+   volbu odstraní. Neplatný nebo neaktivní profil se neobnoví. Přepnutí
+   profilu zruší rozpracované potvrzení questu.
 5. Aktivuj nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
    splnění. Poznámka je nepovinná (nejvýše 1000 znaků, bez minimální délky);
    případně ji rozbal přes **Přidat poznámku**. Aktér, čas a odměna se auditují
@@ -98,6 +101,13 @@ na původní odměnu, nepřepisuje ji a neotevře quest k dalšímu získání X
 penalizace. Produkční obsluhu oprav lze později zpřístupnit ve chráněném UI.
 
 ## Kampaně a provozní metriky
+
+Kampaň je společná sezónní výprava chaty: vymezuje sledované období a ukazuje
+postup proti zvoleným cílům. Cíle pobytů, budoucích lůžkonocí a obsazenosti
+jsou zatím ukazatele; samy nepřidělují další XP. Odměňují jen dva milníky
+za 1 a 10 způsobilých pobytů. Osobní questy fungují nezávisle na kampani.
+Údaje se neobnovují automaticky na pozadí; přepočet vyvolá tlačítko nebo
+uzavření kampaně. Herní kampaň nemění skutečné rezervace či účetnictví.
 
 V **Nastavení a auditu** založ návrh kampaně. Návrh lze upravovat. Výchozí
 zimní období 1. 12. 2026 – 31. 3. 2027 a kapacita 45 jsou pouze návrhy.

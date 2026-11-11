@@ -79,7 +79,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp handle_game_event("profile", %{"profile" => %{"id" => id}}, socket) do
-    {:noreply, socket |> assign(selected_profile_id: id, completing: nil) |> load()}
+    {:noreply, select_profile(socket, id)}
+  end
+
+  defp handle_game_event("restore-profile", %{"id" => id}, socket) do
+    {:noreply, select_profile(socket, id)}
   end
 
   defp handle_game_event("activate", %{"code" => code}, socket) do
@@ -108,6 +112,15 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp handle_game_event(_, _, socket), do: {:noreply, socket}
+
+  defp select_profile(socket, id) do
+    socket = socket |> assign(selected_profile_id: id, completing: nil) |> load()
+    selected_id = socket.assigns.data.profile && socket.assigns.data.profile.id
+
+    socket
+    |> assign(:selected_profile_id, selected_id)
+    |> push_event("adventure:hero-selected", %{id: selected_id || ""})
+  end
 
   defp result(socket, {:ok, _}) do
     {:noreply,
@@ -170,7 +183,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
       main_class="px-3 py-4 sm:px-6 sm:py-6 lg:px-8"
     >
       <div class="adventure">
-        <div id="adventure-shell" class="adventure-shell">
+        <div id="adventure-shell" class="adventure-shell" phx-hook="AdventureHero">
           <header class="adventure-masthead">
             <.link navigate={~p"/admin/adventure"} class="adventure-wordmark"><span class="adventure-mark"><.symbol name="mountain-snow" /></span><span>Cozy
             <strong>Adventure</strong></span></.link>

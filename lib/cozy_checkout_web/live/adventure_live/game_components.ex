@@ -51,11 +51,13 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
           </section>
           <section>
             <h3>Kdo právě hraje?</h3><p>
-              Výběr profilu je vlastní prohlášení, nikoli ověřená identita. Platí do opuštění či obnovení stránky. Všechny stránky a akce chrání stávající společný admin PIN. Automatické XP nikdy nepřipadnou člověku jen proto, že stiskl přepočet.
+              Výběr profilu je vlastní prohlášení, nikoli ověřená identita. Prohlížeč si ho pamatuje rok v cookie této hry, i po obnovení stránky. Vymazáním výběru nebo cookies jej zapomene. Všechny stránky a akce dál chrání společný admin PIN. Automatické XP nikdy nepřipadnou člověku jen proto, že stiskl přepočet.
             </p>
           </section>
           <section>
-            <h3>Sezóna a skutečná data</h3><p>
+            <h3>Co dělá kampaň?</h3><p>
+              Kampaň je společná sezónní výprava chaty. Určuje období, za které sledujeme pobyty, lůžkonoci a obsazenost. Cíle ukazují postup; společné XP zatím dávají jen milníky za 1 a 10 pobytů. Přepočet spouštíš ručně tlačítkem nebo uzavřením kampaně, nic neběží na pozadí.
+            </p><p>
               Kampaň vzniká jako návrh. V Nastavení potvrď období, cíle a stálou kapacitu, teprve potom ji aktivuj. Současně může být aktivní jedna kampaň. Po aktivaci jsou pravidla uzamčená. Přepočítat lze i uzavřenou kampaň; její hranice realizace už se neposouvá.
             </p><p>
               Realizované lůžkonoci zahrnují noci před dneškem ve stavech active/completed, budoucí rezervace noci od dneška ve stavech upcoming/active. Příjezd se počítá, odjezd ne; osoby zahrnují i děti a kojence. Zrušené a smazané pobyty jsou vyloučené. Kapacita je ručně potvrzená konstanta, nikoli historie pokojů.

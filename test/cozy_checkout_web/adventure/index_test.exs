@@ -64,10 +64,31 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     refute has_element?(view, "#adventure-quest-#{quest.id}")
     assert render(view) =~ "Nový postup je zavedený."
     assert Repo.aggregate(XpTransaction, :count) == 1
-    # Reloading neither selects an identity nor creates another reward.
+    # Browser restoration is a separate hook event and cannot create another reward.
     {:ok, refreshed, _} = live(conn, "/admin/adventure")
     refute has_element?(refreshed, "#adventure-progress")
     assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
+  test "remembered hero is validated, restored and cleared without awarding XP", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    render_click(view, "restore-profile", %{"id" => p.id})
+    assert has_element?(view, "#adventure-progress", "Michal · úroveň 1")
+    profile_id = p.id
+    assert_push_event(view, "adventure:hero-selected", %{id: ^profile_id})
+
+    render_click(view, "restore-profile", %{"id" => "invalid-cookie"})
+    refute has_element?(view, "#adventure-progress")
+    assert_push_event(view, "adventure:hero-selected", %{id: ""})
+
+    p |> Ecto.Changeset.change(active: false) |> Repo.update!()
+    render_click(view, "restore-profile", %{"id" => p.id})
+    refute has_element?(view, "#adventure-progress")
+    assert_push_event(view, "adventure:hero-selected", %{id: ""})
+    assert Repo.aggregate(XpTransaction, :count) == 0
+    assert Repo.aggregate(Quest, :count) == 0
   end
 
   test "help is an optional overlay and completion does not require a note", %{conn: conn} do

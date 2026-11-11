@@ -2,7 +2,7 @@
 
 - Stav: etapy 1 a 2 implementovány v PR #112, čeká na CI a ruční kontrolu
 - Vytvořeno: 2026-11-11
-- Aktualizováno: 2026-11-11
+- Aktualizováno: 2026-11-12
 - Repozitář: `michalhorcic/cozy-checkout`
 - Související dokumentace: `AGENTS.md`, `docs/features/ADMINISTRATION.md`, `docs/features/ECONOMICS.md`, `docs/features/CATERING.md`, `docs/features/BILLING.md`, `docs/plans/2026-10-28-ekonomicky-dashboard.md`
 
@@ -101,7 +101,7 @@ Při vzniku plánu nebyly ověřené konkrétní API a definice. Výsledky násl
 Herní XP nejsou Kč, odměna ani účetní ukazatel. Reálné KPI se nikdy neodvozují z XP. Výsledek sezóny může být špatný, i když hráč získal hodně XP. Bez streaků a penalizace dovolené.
 
 ### Identity a oprávnění
-MVP používá ruční výběr aktivního profilu uvnitř existující admin PIN relace. Profil se ukládá do session (případně jako krátkodobá volba v LiveView); nepřidávat fiktivní `user_id` ani účty. Je to **self-report**, nikoliv ověřená identita; zobrazit tuto skutečnost v nastavení. Akce s dopadem na osobní XP zaznamená zvolený profil a způsob atribuce `self_selected`. Automatické události bez spolehlivého aktéra patří pouze společné chatě, nikoliv automaticky poslednímu vybranému hráči. Admin PIN stále chrání všechny stránky a mutace; POS je veřejný a Adventure se v něm nezobrazuje. Individuální přihlášení lze doplnit později samostatným projektem.
+MVP používá ruční výběr aktivního profilu uvnitř existující admin PIN relace. Profil si prohlížeč podle následného zadání pamatuje rok v herní cookie; po připojení LiveView se ověří, že je stále aktivní; nepřidávat fiktivní `user_id` ani účty. Je to **self-report**, nikoliv ověřená identita; zobrazit tuto skutečnost v nastavení. Akce s dopadem na osobní XP zaznamená zvolený profil a způsob atribuce `self_selected`. Automatické události bez spolehlivého aktéra patří pouze společné chatě, nikoliv automaticky poslednímu vybranému hráči. Admin PIN stále chrání všechny stránky a mutace; POS je veřejný a Adventure se v něm nezobrazuje. Individuální přihlášení lze doplnit později samostatným projektem.
 
 ### XP, levely, odměny
 - XP přidělovat pouze při přechodu quest instance do `completed` nebo při prvním odemčení achievementu, ne při zobrazení dashboardu či každé aktualizaci rezervace.
@@ -260,6 +260,7 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 | 2026-11-11 | Completed pobyty s odjezdem v kampani po aktivaci; opravy odvolají milník a jednou kompenzují společná XP | Výslovně schváleno uživatelem |
 | 2026-11-11 | Etapy 1 a 2 ve stejném PR #112 | Výslovný pokyn uživatele |
 | 2026-11-11 | Hravá horská grafika, čistá obrazovka, vysvětlení v overlay nápovědě a nepovinné poznámky questů | Následné zadání uživatele |
+| 2026-11-12 | Zapamatovat vybraného hrdinu v prohlížeči; roční herní cookie, ověření aktivního profilu při obnovení | Následné zadání uživatele |
 
 ## Otevřené otázky
 
