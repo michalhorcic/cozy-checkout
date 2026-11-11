@@ -7,9 +7,14 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
 ## Zapnutí a používání
 
 1. Nasaď migrace `20261111120000_create_adventure_foundation.exs` a
-   `20261111130000_add_adventure_campaigns.exs` standardním postupem aplikace.
+   `20261111130000_add_adventure_campaigns.exs` a
+   `20261112120000_add_adventure_tasks.exs` standardním postupem aplikace.
    Přidávají celkem šest tabulek s prefixem `adventure_`; druhá rozšiřuje
    pouze herní XP ledger o společného příjemce a vazbu na achievement.
+   Třetí přidává pole vlastních úkolů a povoluje společnou questovou odměnu;
+   nepřepisuje UUID, snapshoty ani odměny dosavadních questů. Je záměrně
+   nevratná přes `ecto.rollback`, aby nemazala novou historii. Návrat staré
+   aplikace po založení nových úkolů vyžaduje samostatné posouzení kompatibility.
 2. Nastav `ADVENTURE_ENABLED=true` a restartuj aplikaci. Výchozí hodnota je
    `false`. Vypnutí skryje odkaz v administraci a zablokuje herní stránky i akce;
    herní data a historie zůstanou uložené. Nevznikají žádné background joby.
@@ -71,6 +76,43 @@ se samostatně. XP nejsou Kč, provozní KPI, odměna zaměstnance ani účetní
 Poznámka a potvrzení představují ruční prohlášení o úkolu, nikoli kontrolu
 skutečného stavu rezervace, zálohy či nákupního plánu.
 
+## Vlastní jednorázové úkoly
+
+Ve **Questech → Společný úkolovník** může vybraný hrdina založit úkol pouhým
+názvem. Volitelné jsou přiřazení, termín, priorita, kategorie a popis.
+Velikost dává výchozích 50 / 100 / 250 XP, vlastní odměnu lze zadat před
+rozpracováním (1–10 000 XP). Priorita neurčuje XP.
+
+- Úkol začíná ve stavu **Čeká**. Zásobník může mít více než tři položky.
+- **Převzít a rozpracovat** přiřadí osobní úkol právě vybranému hrdinovi.
+  Předchozí přiřazení a aktér převzetí zůstávají v auditu. Do tří osobních
+  rozpracovaných se společně počítají vlastní i katalogové questy.
+- Při **Hotovo** vyber skutečného splnitele. Osobní odměnu získá tento
+  hrdina, i když byl úkol přiřazen druhému. Přiřazení ani historické
+  `profile_id` se nepředefinují na příjemce odměny.
+- Společný úkol vyžaduje výslovně vybrané přispěvatele a udělí jednu
+  odměnu chatě. Nevytváří osobní kopie XP ani nezabírá osobní slot.
+- Zadání lze upravovat pouze ve stavu **Čeká**. Po rozpracování zůstává
+  snapshot odměny neměnný. Dokončení, důkaz a ledger jsou v jedné transakci,
+  zamčený profil hlídá osobní limit a zamčený úkol souběžná dokončení.
+- **Archivovat** otevřený úkol zruší a uvolní slot. Dokončenému zachová
+  stav, čas, důkaz i XP; v obou případech uloží aktéra a čas archivace.
+  Obnovení a opětovné dokončení archivované práce není dostupné.
+- Filtry umožňují moje / volné / společné / všechny, stav a archiv, kategorii,
+  termín a hledání názvu. Seznam ukazuje nejvýše 100 výsledků; pro starší práci
+  upřesni výběr. Zmeškaný termín nepřiděluje penalizaci.
+
+Vlastní úkoly mají samostatný `Adventure.Tasks`, používají stávající quest
+instance a XP ledger. Sloupec `profile_id` zůstává původním vlastníkem pouze
+u katalogových questů; nové úkoly používají `assigned_profile_id`, `created_by_id`
+a aktéra v důkazu. Historii splněných osobních úkolů vidí skutečný splnitel
+v deníku; společná historie je ve společném úkolovníku.
+
+Spravované opakované šablony, jejich působnost a sezónní finanční přehled
+nejsou součástí této dodávky. Čtyři původní katalogové definice nadále fungují
+beze změny UUID a klíčů odměn. Znovuotevření dokončeného úkolu je odložené
+spolu s pravidly obnovení kompenzované odměny.
+
 ## Oddělení od provozu
 
 - Veškerá logika a schémata jsou v `lib/cozy_checkout/adventure/`, webová vrstva
@@ -92,7 +134,7 @@ skutečného stavu rezervace, zálohy či nákupního plánu.
 
 Aktivace, dokončení a opravy zamykají řádek herního profilu. Limit tří aktivních
 questů proto platí i při souběžných požadavcích. Dokončení, důkaz a XP se zapisují
-v jedné `Ecto.Multi` transakci. Unikátní `award_key` brání duplicitním odměnám.
+v jedné DB transakci (`Ecto.Multi` u původního katalogu). Unikátní `award_key` brání duplicitním odměnám.
 
 `Adventure.reverse_award(profile_id, award_id, reason)` je opravné doménové API
 pro chybně přiznané XP, zatím bez UI. Vyžaduje aktivní modul, vlastní profil
@@ -200,3 +242,8 @@ Pro ruční kontrolu po CI:
 - [ ] Ověřit oddělení společných a osobních XP a audit přepočtů.
 - [ ] Na testovacích datech ověřit storno, jednorázovou kompenzaci a uzavření.
 - [ ] Ověřit mobilní šířku, tabulátor a čitelné textové stavy.
+- [ ] Vytvořit pět vlastních úkolů, rozpracovat tři spolu s katalogem a ověřit limit.
+- [ ] Dokončit Michalův úkol jako Lucka a ověřit osobní XP i historii.
+- [ ] Dokončit společný úkol s explicitními přispěvateli a ověřit jedinou odměnu chatě.
+- [ ] Upravit čekající práci, archivovat rozpracovanou i dokončenou a ověřit historii.
+- [ ] Ověřit hledání, moje/volné/společné, termín, kategorii a archiv.

@@ -46,7 +46,12 @@ defmodule CozyCheckout.Adventure do
           do:
             Repo.all(
               from q in Quest,
-                where: q.profile_id == ^profile.id,
+                where:
+                  (not q.managed and q.profile_id == ^profile.id) or
+                    (q.managed and q.scope == "personal" and
+                       ((q.status == "active" and q.assigned_profile_id == ^profile.id) or
+                          (q.status == "completed" and
+                             fragment("?->>'actor_profile_id'", q.evidence) == ^profile.id))),
                 order_by: [asc: q.status, desc: q.inserted_at, desc: q.id],
                 limit: 100
             ),
@@ -125,7 +130,13 @@ defmodule CozyCheckout.Adventure do
             existing
 
           Repo.aggregate(
-            from(q in Quest, where: q.profile_id == ^profile.id and q.status == "active"),
+            from(q in Quest,
+              where:
+                q.status == "active" and
+                    ((not q.managed and q.profile_id == ^profile.id) or
+                       (q.managed and q.scope == "personal" and
+                          q.assigned_profile_id == ^profile.id))
+            ),
             :count
           ) >= 3 ->
             Repo.rollback(:active_limit)

@@ -142,6 +142,66 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(Profile, :count) == 0
   end
 
+  test "managed task board creates backlog and rewards the selected actual completer", %{
+    conn: conn
+  } do
+    alias CozyCheckout.Adventure.Tasks
+    {:ok, _} = Adventure.initialize()
+    michal = Repo.get_by!(Profile, slug: "michal")
+    lucka = Repo.get_by!(Profile, slug: "lucka")
+    {:ok, view, _} = live(conn, "/admin/adventure/quests")
+    refute has_element?(view, "#adventure-task-form")
+    view |> form("#adventure-profile", profile: %{id: michal.id}) |> render_change()
+
+    view
+    |> form("#adventure-task-form",
+      task: %{title: "Vyčistit kamna", assigned_profile_id: michal.id}
+    )
+    |> render_submit()
+
+    [task] = Tasks.list(michal.id)
+    assert task.status == "waiting"
+    view |> element("#task-#{task.id} button", "Převzít a rozpracovat") |> render_click()
+    view |> element("#task-#{task.id} button", "Hotovo") |> render_click()
+    assert has_element?(view, "#completion_actor_id")
+
+    view
+    |> form("#adventure-completion", completion: %{actor_id: lucka.id, note: ""})
+    |> render_submit()
+
+    assert Repo.one!(XpTransaction).profile_id == lucka.id
+    view |> form("#adventure-task-filters", filters: %{status: "completed"}) |> render_change()
+    assert has_element?(view, "#task-#{task.id}", "Lucka")
+    assert has_element?(view, "#adventure-progress", "0 XP")
+  end
+
+  test "shared task completion requires contributors and archive keeps history", %{conn: conn} do
+    alias CozyCheckout.Adventure.Tasks
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    {:ok, task} = Tasks.create(p.id, %{"title" => "Opravit plot", "scope" => "shared"})
+    {:ok, _} = Tasks.start(p.id, task.id)
+    {:ok, view, _} = live(conn, "/admin/adventure/quests")
+    # An event without a selected hero cannot open a completion modal.
+    render_click(view, "prepare-task-completion", %{"id" => task.id})
+    refute has_element?(view, "#adventure-completion")
+    view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+    view |> element("#task-#{task.id} button", "Hotovo") |> render_click()
+    view |> form("#adventure-completion", completion: %{actor_id: p.id}) |> render_submit()
+    assert render(view) =~ "vyber alespoň jednoho přispěvatele"
+
+    view
+    |> form("#adventure-completion", completion: %{actor_id: p.id, contributors: [p.id]})
+    |> render_submit()
+
+    assert Repo.one!(XpTransaction).recipient_type == "shared"
+    view |> form("#adventure-task-filters", filters: %{status: "completed"}) |> render_change()
+    view |> element("#task-#{task.id} button", "Archivovat") |> render_click()
+    view |> form("#adventure-task-filters", filters: %{status: "archived"}) |> render_change()
+    assert has_element?(view, "#task-#{task.id}", "Přispěli: Michal")
+    assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
   test "campaign draft requires confirmation and profile; recalculation is explicit", %{
     conn: conn
   } do

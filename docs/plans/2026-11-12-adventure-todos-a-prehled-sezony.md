@@ -1,6 +1,6 @@
 # Cozy Adventure – úkolovník a kronika sezóny
 
-- Stav: návrh další implementace; pouze plán, bez změn aplikace
+- Stav: první část etapy 3A implementována ve feature větvi; opakování a etapy 3B/3C čekají
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: správa questů, opakované šablony a sezónní přehled reálného provozu
@@ -27,7 +27,7 @@ Uživatel potvrdil:
 - Poznámka u splnění zůstává nepovinná, hrdina zapamatovaný v prohlížeči.
 
 Další návrhy v tomto dokumentu jsou doporučený rozsah, nikoli už nasazené chování.
-Tento plán nepovoluje zahájení implementace bez dalšího pokynu uživatele.
+Implementaci uživatel následně zahájil výslovným pokynem pokračovat podle obou plánů.
 
 ## 1. Úkoly: seznam práce a tři rozpracované výpravy
 
@@ -276,3 +276,36 @@ Každou dodávku lze ověřit samostatně. Nezačínat automatizací plateb či 
   a přiznaná self-report identita zůstanou zachované. Bez přístupu z veřejného POS.
 - Nové testy podle AGENTS.md, CI a následný ruční checklist. Tento dokument
   zatím nepředstavuje implementaci ani výsledek nových testů.
+
+## 8. První dodávka etapy 3A (12. 11. 2026)
+
+Implementováno: vlastní jednorázové úkoly, přiřazení a převzetí, velikost/XP,
+termín, priorita, kategorie a popis; zásobník, společný limit tří rozpracovaných
+s původním katalogem; skutečný splnitel, explicitní přispěvatelé a jediná
+společná odměna; editace před rozpracováním, archivace a filtrovaná historie.
+Správa je v Questech, hlavní tábor ukazuje jen osobní rozpracované výpravy.
+
+Migrace `20261112120000` rozšiřuje stávající herní tabulky bez přepsání
+legacy UUID, snapshotů, `profile_id` nebo award keys. Nové přiřazení a zadavatel
+mají vlastní FK, splnitel a přispěvatelé jsou v důkazu. Transakční profilový
+zámek chrání limit a questový zámek jednu odměnu napříč různými splniteli.
+Archivace neotevírá možnost opakovaného získání odměny. Migrace má záměrně
+nevratné `down`, protože odstranění polí by zničilo novou historii.
+
+Nové ExUnit/LiveView testy připravené pro CI: limit napříč katalogem a úkoly,
+atribuce, společné odměny, souběhy na samostatných spojeních, rollback,
+filtry, validace, archivace, flag a zápisy pouze do Adventure. Lokální
+ExUnit testy nebyly spuštěny; CI ověřuje uživatel. Prošla kompilace
+`MIX_ENV=test mix compile --warnings-as-errors`, sestavení assetů, formátování
+celého projektu a migrace na prázdném PostgreSQL 17. V Chromium byl ručně
+proklikán přechod založení → rozpracování → dokončení jiným splnitelem
+(Michalovo přiřazení, Lucka +100 XP) a společné dokončení s povinnými
+přispěvateli (+250 pouze chatě), editace i archivace. Šířky 390/320 px
+neměly vodorovný přesah. Souběhové ExUnit scénáře zůstávají pro CI.
+
+Zbývá z etapy 3A: spravované denní/týdenní šablony, kontinuita původních
+čtyř definic při převodu na šablony, působnost, generování bez hromadění,
+pozastavení a historie termínů. Nové sezónní režimy a finanční adaptéry
+(etapa 3B) zůstávají beze změn. Před jejich implementací je třeba dle
+AGENTS.md schválit nové dávkové čtení provozních zdrojů. Dosavadní kampaně
+a jejich milníky se touto dodávkou nemění.

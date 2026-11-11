@@ -1,8 +1,9 @@
 defmodule CozyCheckoutWeb.AdventureLive.Index do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Adventure
-  alias CozyCheckout.Adventure.{Campaign, Campaigns}
+  alias CozyCheckout.Adventure.{Campaign, Campaigns, Quest, Tasks}
   import CozyCheckoutWeb.AdventureLive.CampaignComponents
+  import CozyCheckoutWeb.AdventureLive.TaskComponents
   import CozyCheckoutWeb.AdventureLive.GameComponents
 
   @impl true
@@ -11,6 +12,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
       {:ok,
        socket
        |> assign(page_title: "Cozy Adventure", selected_profile_id: nil, completing: nil)
+       |> assign(
+         task_filters: %{},
+         editing_task_id: nil,
+         task_form: to_form(Tasks.change(%Quest{}), as: :task)
+       )
        |> new_campaign()
        |> load()}
     else
@@ -25,6 +31,56 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     else
       {:noreply, redirect(socket, to: ~p"/admin")}
     end
+  end
+
+  defp handle_game_event("save-task", %{"task" => attrs}, socket) do
+    outcome =
+      if socket.assigns.editing_task_id,
+        do:
+          Tasks.update(socket.assigns.selected_profile_id, socket.assigns.editing_task_id, attrs),
+        else: Tasks.create(socket.assigns.selected_profile_id, attrs)
+
+    case outcome do
+      {:ok, _} ->
+        result(reset_task(socket), outcome)
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, task_form: to_form(changeset, as: :task))}
+
+      error ->
+        result(socket, error)
+    end
+  end
+
+  defp handle_game_event("new-task", _, socket), do: {:noreply, reset_task(socket)}
+
+  defp handle_game_event("filter-tasks", %{"filters" => filters}, socket),
+    do: {:noreply, socket |> assign(task_filters: filters) |> load()}
+
+  defp handle_game_event("edit-task", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.tasks, &(&1.id == id and &1.status == "waiting")) do
+      nil ->
+        result(socket, {:error, :not_found})
+
+      task ->
+        {:noreply,
+         assign(socket, editing_task_id: id, task_form: to_form(Tasks.change(task), as: :task))}
+    end
+  end
+
+  defp handle_game_event("start-task", %{"id" => id}, socket),
+    do: result(socket, Tasks.start(socket.assigns.selected_profile_id, id))
+
+  defp handle_game_event("archive-task", %{"id" => id}, socket),
+    do: result(socket, Tasks.archive(socket.assigns.selected_profile_id, id))
+
+  defp handle_game_event("prepare-task-completion", %{"id" => id}, socket) do
+    task =
+      if socket.assigns.data.profile,
+        do: Enum.find(socket.assigns.tasks, &(&1.id == id and &1.status == "active")),
+        else: nil
+
+    {:noreply, assign(socket, completing: task)}
   end
 
   defp handle_game_event("initialize", _, socket) do
@@ -104,7 +160,15 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     if quest = socket.assigns.completing do
       result(
         socket,
-        Adventure.complete_manual_quest(socket.assigns.selected_profile_id, quest.id, note)
+        if quest.managed do
+          Tasks.complete(
+            get_in(params, ["completion", "actor_id"]) || socket.assigns.selected_profile_id,
+            quest.id,
+            params["completion"] || %{}
+          )
+        else
+          Adventure.complete_manual_quest(socket.assigns.selected_profile_id, quest.id, note)
+        end
       )
     else
       {:noreply, socket}
@@ -124,12 +188,18 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp result(socket, {:ok, _}) do
     {:noreply,
-     socket |> assign(completing: nil) |> load() |> put_flash(:info, "Herní postup uložen.")}
+     socket
+     |> assign(completing: nil)
+     |> load()
+     |> clear_flash(:error)
+     |> put_flash(:info, "Herní postup uložen.")}
   end
 
   defp result(socket, {:error, reason}) do
     message =
       case reason do
+        :immutable_task -> "Upravovat lze jen čekající úkol. Splnění vyžaduje rozpracovaný úkol."
+        :contributors_required -> "U společného úkolu vyber alespoň jednoho přispěvatele."
         :active_limit -> "Můžeš mít nejvýše 3 aktivní osobní questy."
         :invalid_note -> "Poznámka může mít nejvýše 1000 znaků."
         :invalid_profile -> "Nejprve vyber herní profil."
@@ -137,11 +207,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
         :past_campaign -> "Nelze aktivovat již skončené období."
         :immutable_campaign -> "Po aktivaci nelze období a pravidla měnit."
         :inactive_campaign -> "Nejprve aktivuj kampaň."
-        %Ecto.Changeset{} -> "Kampaň nelze aktivovat. Může být aktivní nejvýše jedna kampaň."
+        %Ecto.Changeset{} -> "Zkontroluj zadané údaje a aktuální stav úkolu nebo kampaně."
         _ -> "Akci nelze dokončit. Obnov stránku a zkontroluj výběr profilu."
       end
 
-    {:noreply, put_flash(socket, :error, message)}
+    {:noreply, socket |> clear_flash(:info) |> put_flash(:error, message)}
   end
 
   defp load(socket) do
@@ -150,11 +220,18 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
     assign(socket,
       data: data,
+      tasks: Tasks.list(data.profile && data.profile.id, socket.assigns.task_filters),
+      filter_form: to_form(socket.assigns.task_filters, as: :filters),
       game: game,
       catalog: Adventure.catalog(),
       profile_form: to_form(%{"id" => data.profile && data.profile.id}, as: :profile),
-      completion_form: to_form(%{"note" => ""}, as: :completion)
+      completion_form:
+        to_form(%{"note" => "", "actor_id" => data.profile && data.profile.id}, as: :completion)
     )
+  end
+
+  defp reset_task(socket) do
+    assign(socket, editing_task_id: nil, task_form: to_form(Tasks.change(%Quest{}), as: :task))
   end
 
   defp new_campaign(socket) do
@@ -267,6 +344,15 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             </div>
             <span :if={!@data.profile} class="adventure-muted">Tvá výprava čeká.</span>
           </section>
+          <.task_board
+            :if={@live_action == :quests}
+            tasks={@tasks}
+            profiles={@data.profiles}
+            profile={@data.profile}
+            task_form={@task_form}
+            filter_form={@filter_form}
+            editing_id={@editing_task_id}
+          />
           <div class={[
             "adventure-content",
             @live_action == :settings && "adventure-content--settings"
@@ -412,7 +498,9 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             </p><h2 id="adventure-completion-modal-title">
               {@completing.definition_snapshot["title"]}
             </h2><p id="adventure-completion-modal-description">
-              Dokončit jako {@data.profile.display_name}?
+              {if @completing.managed && @completing.scope == "shared",
+                do: "Společná odměna chatě. Vyber splnitele a přispěvatele.",
+                else: "Dokončit jako #{@data.profile.display_name}?"}
             </p><strong class="adventure-big-reward">+{@completing.definition_snapshot["xp"]} XP</strong>
           </div>
           <.form
@@ -421,6 +509,25 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             phx-submit="complete"
             class="adventure-completion-form"
           >
+            <.input
+              :if={@completing.managed}
+              field={@completion_form[:actor_id]}
+              type="select"
+              label="Skutečný splnitel"
+              options={Enum.map(@data.profiles, &{&1.display_name, &1.id})}
+            />
+            <fieldset :if={@completing.managed && @completing.scope == "shared"}>
+              <legend>Přispěvatelé · odměnu získá jednou společná chata</legend>
+              <label :for={profile <- @data.profiles} class="flex items-center gap-2 my-2">
+                <input
+                  type="checkbox"
+                  name="completion[contributors][]"
+                  value={profile.id}
+                  class="checkbox"
+                />
+                {profile.display_name}
+              </label>
+            </fieldset>
             <details>
               <summary>Přidat poznámku <span class="adventure-muted">nepovinné</span></summary><.input
                 field={@completion_form[:note]}

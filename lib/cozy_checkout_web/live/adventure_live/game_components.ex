@@ -45,6 +45,13 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
             </p>
           </section>
           <section>
+            <h3>Vlastní úkoly</h3><p>
+              V Questech přidej práci do společného úkolovníku. Stačí název; termín, popis a poznámka jsou nepovinné. Velikost předvyplní 50, 100 nebo 250 XP. Přiřazení samo nezabírá slot. Převzetí a rozpracování osobního úkolu ho přiřadí právě vybranému hrdinovi a počítá se do společného limitu tří výprav včetně katalogu.
+            </p><p>
+              Při dokončení zvol skutečného splnitele, který dostane osobní XP. U společného úkolu výslovně vyber přispěvatele; jednu odměnu dostane jen chata. Zadání lze upravit pouze ve stavu Čeká. Archivace otevřenou práci zruší, historii ani již udělená XP nesmaže. Termín není penalizace. Spravované opakování zatím není dostupné.
+            </p>
+          </section>
+          <section>
             <h3>XP a úrovně</h3><p>
               Osobní questy odměňují vybraný profil. Automatické milníky odměňují pouze společnou chatu. XP nejsou peníze ani provozní ukazatel. Další úroveň začíná při 100 × L × (L + 1) / 2 XP. Opakované potvrzení nevytváří novou odměnu.
             </p>
