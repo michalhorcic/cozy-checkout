@@ -89,10 +89,14 @@ defmodule CozyCheckout.AdventureTest do
     |> Ecto.Changeset.change(definition_snapshot: Map.put(quest.definition_snapshot, "xp", 0))
     |> Repo.update!()
 
-    assert {:error, %Ecto.Changeset{}} =
+    assert {:error, %Ecto.Changeset{} = changeset} =
              Adventure.complete_manual_quest(p.id, quest.id, "Dokončeno a ověřeno.")
 
-    assert Repo.get!(Quest, quest.id).status == "active"
+    assert "must be greater than 0" in errors_on(changeset).amount
+    unchanged = Repo.get!(Quest, quest.id)
+    assert unchanged.status == "active"
+    assert unchanged.completed_at == nil
+    assert unchanged.evidence == %{}
     assert Repo.aggregate(XpTransaction, :count) == 0
   end
 

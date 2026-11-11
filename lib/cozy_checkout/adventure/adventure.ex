@@ -194,17 +194,13 @@ defmodule CozyCheckout.Adventure do
 
           case Repo.get_by(XpTransaction, award_key: key) do
             nil ->
-              %XpTransaction{
+              XpTransaction.award_changeset(%{
                 profile_id: quest.profile_id,
                 quest_id: quest.id,
                 award_key: key,
                 amount: quest.definition_snapshot["xp"],
-                reason: quest.definition_snapshot["title"],
-                attribution: "self_selected"
-              }
-              |> Ecto.Changeset.change()
-              |> Ecto.Changeset.validate_required([:amount, :reason])
-              |> Ecto.Changeset.validate_number(:amount, greater_than: 0)
+                reason: quest.definition_snapshot["title"]
+              })
               |> Repo.insert()
 
             award ->

@@ -280,4 +280,8 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 - Před zapnutím zvolit a v UI potvrdit skutečné období a konstantní kapacitu.
 - Aktivní kampaně se nepřevádějí tiše mezi verzemi pravidel. Budoucí změny
   definice vyžadují novou verzi a samostatnou implementaci.
-- Testy lokálně nespouštěny podle AGENTS.md; CI ověřuje uživatel.
+- Při opravě nahlášeného selhání validace XP byly lokálně spuštěny
+  `adventure_test.exs` a `xp_transaction_test.exs`: 14 testů prošlo proti
+  dočasnému PostgreSQL 17 v Dockeru. Oprava vytváří skutečné změny pro validaci
+  částky; rollback test ověřuje i nulový čas dokončení a prázdný důkaz.
+  Celou zbývající sadu a CI ověřuje uživatel.

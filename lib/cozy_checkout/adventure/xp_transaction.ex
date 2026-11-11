@@ -1,5 +1,6 @@
 defmodule CozyCheckout.Adventure.XpTransaction do
   use Ecto.Schema
+  import Ecto.Changeset
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "adventure_xp_transactions" do
@@ -13,5 +14,13 @@ defmodule CozyCheckout.Adventure.XpTransaction do
     field :reason, :string
     field :attribution, :string
     timestamps(type: :utc_datetime, updated_at: false)
+  end
+
+  def award_changeset(attrs) do
+    %__MODULE__{attribution: "self_selected"}
+    |> cast(attrs, [:profile_id, :quest_id, :award_key, :amount, :reason])
+    |> validate_required([:profile_id, :quest_id, :award_key, :amount, :reason])
+    |> validate_number(:amount, greater_than: 0)
+    |> check_constraint(:amount, name: :adventure_xp_sign)
   end
 end
