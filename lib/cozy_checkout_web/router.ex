@@ -76,6 +76,9 @@ defmodule CozyCheckoutWeb.Router do
       live "/incoming-documents/all", IncomingDocumentFormLive, :index
       live "/incoming-documents/:id", IncomingDocumentFormLive, :edit
       live "/", DashboardLive
+      live "/adventure", AdventureLive.Index, :index
+      live "/adventure/quests", AdventureLive.Index, :quests
+      live "/adventure/settings", AdventureLive.Index, :settings
       live "/billing/settings", BillingLive.Settings
       live "/billing/transfers", BillingLive.Transfers
       live "/billing/bank", BillingLive.Bank

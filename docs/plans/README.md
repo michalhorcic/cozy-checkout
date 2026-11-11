@@ -5,6 +5,14 @@ Tento adresář slouží pro uložené plány, ke kterým se lze vracet napří�
 
 ## Přehled plánů
 
+- [Cozy Adventure](2026-11-11-cozy-adventure.md)
+  — **etapy 1 a 2 implementovány v PR #112, čeká na CI**; samostatný herní context,
+  osobní profily a questy, společná XP, kampaně, read-only pobytové KPI,
+  achievementy a auditované opravy. [Návod](../features/ADVENTURE.md).
+  **Další etapa, zatím pouze návrh:** [Úkolovník a kronika sezóny](2026-11-12-adventure-todos-a-prehled-sezony.md)
+  — správa jednorázových a opakovaných úkolů, přiřazení, sezónní barové
+  a ubytovací metriky; bez změn aplikace v plánovací diskusi.
+
 - [Dvoufázové vytěžování a instrukce podle dodavatele](2026-11-05-vytezovani-podle-dodavatele.md)
   — **implementováno ve větvi, čeká na CI a pilot**; identifikace dodavatele,
   obecné vytěžení a samostatný dodavatelský dotaz se snapshotem instrukcí,

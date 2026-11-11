@@ -208,6 +208,8 @@ if chrome_executable = System.get_env("CHROME_EXECUTABLE") do
   config :cozy_checkout, :chrome_executable, chrome_executable
 end
 
+config :cozy_checkout, :adventure_enabled, System.get_env("ADVENTURE_ENABLED", "false") == "true"
+
 # Reporting has an explicit, independent target and is disabled by default.
 config :cozy_checkout, :economics,
   enabled: System.get_env("ECONOMICS_ENABLED", "false") == "true",
