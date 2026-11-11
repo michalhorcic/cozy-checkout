@@ -70,6 +70,29 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(XpTransaction, :count) == 1
   end
 
+  test "help is an optional overlay and completion does not require a note", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    {:ok, quest} = Adventure.activate_quest(p.id, "prepare_stay")
+    {:ok, view, _} = live(conn, "/admin/adventure")
+
+    assert has_element?(
+             view,
+             "dialog#adventure-help:not([open])[aria-labelledby=adventure-help-title]"
+           )
+
+    assert has_element?(view, "#adventure-help-open[aria-controls=adventure-help]")
+    refute has_element?(view, "#adventure-shell", "nikoli ověřená identita")
+    view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+    view |> element("#adventure-quest-#{quest.id} button") |> render_click()
+    refute has_element?(view, "#completion_note[required]")
+    refute has_element?(view, "#completion_note[minlength]")
+    view |> form("#adventure-completion", completion: %{note: ""}) |> render_submit()
+    assert Repo.get!(Quest, quest.id).status == "completed"
+    assert Repo.get!(Quest, quest.id).evidence["note"] == ""
+    assert has_element?(view, "#adventure-progress", "50 XP")
+  end
+
   test "switching profiles clears a pending completion and cannot reward another player", %{
     conn: conn
   } do

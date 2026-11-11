@@ -115,7 +115,7 @@ MVP používá ruční výběr aktivního profilu uvnitř existující admin PIN
 Typy `manual`, `metric`, `milestone`; scope `personal` nebo `shared`; frekvence `once`, `weekly`, `seasonal`; stavy `available`, `active`, `completed`, `expired`, `cancelled`. Nanejvýš 3 aktivní osobní questy na profil v MVP; společné questy odděleně. Ruční splnění vyžaduje potvrzení, audit aktéra a čas. Automatické questy jsou deterministické a vyhodnocované proti explicitně definovanému zdroji dat; změna zdroje je zaznamenána. Při opakování vzniká nová instance s unikátním obdobím, nikoliv nový bod za každý refresh. Neexistuje tlačítko „získej XP“ bez dokončení questů.
 
 První katalog (konfigurovatelný):
-- Ruční osobní: připravit další pobyt (50 XP), zkontrolovat otevřené zálohy (50), dokončit týdenní nákupní plán (100), zavést jedno provozní zlepšení s poznámkou (250).
+- Ruční osobní: připravit další pobyt (50 XP), zkontrolovat otevřené zálohy (50), dokončit týdenní nákupní plán (100), zavést jedno provozní zlepšení (250). Poznámka je podle následného zadání nepovinná u všech questů.
 - Automatické společné achievementy: první dokončený pobyt po aktivaci, 10 dokončených pobytů v kampani, dosažení nastaveného cíle obsazenosti uzavřeného období. Přesné stavy a počítání ověřit v kódu.
 - Automatické finanční achievementy odložit, dokud není dostupný úplný a potvrzený účetní snapshot.
 - Příklady strategických questů do budoucna: slabý termín obsazen s minimální marží, snížení odpadu, fond rekonstrukce; bez potřebných vstupů pouze návrh, nikdy automatické tvrzení splnění.
@@ -259,6 +259,7 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 | 2026-11-11 | Dávkový read-only SQL přepočet bez N+1 | Výslovně schváleno uživatelem |
 | 2026-11-11 | Completed pobyty s odjezdem v kampani po aktivaci; opravy odvolají milník a jednou kompenzují společná XP | Výslovně schváleno uživatelem |
 | 2026-11-11 | Etapy 1 a 2 ve stejném PR #112 | Výslovný pokyn uživatele |
+| 2026-11-11 | Hravá horská grafika, čistá obrazovka, vysvětlení v overlay nápovědě a nepovinné poznámky questů | Následné zadání uživatele |
 
 ## Otevřené otázky
 
@@ -280,6 +281,11 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 - Před zapnutím zvolit a v UI potvrdit skutečné období a konstantní kapacitu.
 - Aktivní kampaně se nepřevádějí tiše mezi verzemi pravidel. Budoucí změny
   definice vyžadují novou verzi a samostatnou implementaci.
+- Navazující úprava UI: vlastní ilustrace horské chaty, lokální Lucide SVG,
+  čistý tábor a karty questů, sbalený katalog/deník/audit, overlay Průvodce.
+  Poznámka ke splnění je nepovinná; aktér a čas auditu zůstávají povinné.
+  Ověřeno v Chromium na desktopu a šířkách 390/320 px: dialog, klávesnice,
+  návrat fokusu, dokončení bez poznámky i změna XP. Nové ExUnit testy pro CI.
 - Při opravě nahlášeného selhání validace XP byly lokálně spuštěny
   `adventure_test.exs` a `xp_transaction_test.exs`: 14 testů prošlo proti
   dočasnému PostgreSQL 17 v Dockeru. Oprava vytváří skutečné změny pro validaci

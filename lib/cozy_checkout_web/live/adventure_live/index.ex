@@ -3,6 +3,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   alias CozyCheckout.Adventure
   alias CozyCheckout.Adventure.{Campaign, Campaigns}
   import CozyCheckoutWeb.AdventureLive.CampaignComponents
+  import CozyCheckoutWeb.AdventureLive.GameComponents
 
   @impl true
   def mount(_, _, socket) do
@@ -93,7 +94,9 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp handle_game_event("cancel-completion", _, socket),
     do: {:noreply, assign(socket, completing: nil)}
 
-  defp handle_game_event("complete", %{"completion" => %{"note" => note}}, socket) do
+  defp handle_game_event("complete", params, socket) do
+    note = get_in(params, ["completion", "note"]) || ""
+
     if quest = socket.assigns.completing do
       result(
         socket,
@@ -115,7 +118,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     message =
       case reason do
         :active_limit -> "Můžeš mít nejvýše 3 aktivní osobní questy."
-        :evidence_required -> "Přidej poznámku o splnění (10–1000 znaků)."
+        :invalid_note -> "Poznámka může mít nejvýše 1000 znaků."
         :invalid_profile -> "Nejprve vyber herní profil."
         :confirmation_required -> "Před aktivací potvrď období, cíle a kapacitu."
         :past_campaign -> "Nelze aktivovat již skončené období."
@@ -163,152 +166,260 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     ~H"""
     <Layouts.app
       flash={@flash}
-      content_class="mx-auto w-full max-w-5xl space-y-6"
-      main_class="px-4 py-6 sm:px-6 lg:px-8"
+      content_class="mx-auto w-full max-w-7xl"
+      main_class="px-3 py-4 sm:px-6 sm:py-6 lg:px-8"
     >
-      <header class="space-y-2">
-        <p class="text-sm uppercase tracking-wide">Jindřichův dům · hobby hra</p>
-        <h1 class="text-3xl font-bold">Cozy Adventure</h1>
-        <p>
-          Malé kroky pro chatu, vlastní dobrodružství. Herní XP nejsou peníze ani provozní ukazatel.
-        </p>
-      </header>
-      <nav aria-label="Adventure" class="flex flex-wrap gap-2">
-        <.link navigate={~p"/admin/adventure"} class="btn btn-sm">Přehled</.link>
-        <.link navigate={~p"/admin/adventure/quests"} class="btn btn-sm">Questy</.link>
-        <.link navigate={~p"/admin/adventure/settings"} class="btn btn-sm">Nastavení a audit</.link>
-      </nav>
-      <p class="alert" role="note">
-        Výběr profilu je vlastní prohlášení, nikoli ověřená identita. Platí jen na této stránce do jejího opuštění. Veškeré akce chrání společný admin PIN.
-      </p>
-      <section :if={@data.profiles == []} class="rounded-xl border border-base-300 p-5 space-y-3">
-        <h2 class="text-xl font-semibold">Začít dobrodružství</h2>
-        <p>Založit herní profily Michal a Lucka. Provozní záznamy chaty se tím nemění.</p>
-        <button id="adventure-initialize" phx-click="initialize" class="btn btn-primary">Založit herní profily</button>
-      </section>
-      <.form
-        :if={@data.profiles != []}
-        for={@profile_form}
-        id="adventure-profile"
-        phx-change="profile"
-      >
-        <.input
-          field={@profile_form[:id]}
-          type="select"
-          label="Aktivní herní profil"
-          prompt="Vyber svůj profil"
-          options={Enum.map(@data.profiles, &{&1.display_name, &1.id})}
-        />
-      </.form>
-      <section
-        :if={@data.profile}
-        id="adventure-progress"
-        class="rounded-xl border border-base-300 p-5"
-      >
-        <h2 class="text-xl font-semibold">{@data.profile.display_name} · úroveň {@data.level}</h2>
-        <p>
-          {@data.total_xp} XP · další úroveň při {div(100 * @data.level * (@data.level + 1), 2)} XP
-        </p>
-      </section>
-      <section :if={@data.profile} class="space-y-4">
-        <h2 class="text-xl font-semibold">Aktivní osobní questy · nejvýše 3</h2>
-        <p :if={!Enum.any?(@data.quests, &(&1.status == "active"))}>Vyber quest z katalogu níže.</p>
-        <article
-          :for={quest <- Enum.filter(@data.quests, &(&1.status == "active"))}
-          id={"adventure-quest-#{quest.id}"}
-          class="rounded-xl border border-base-300 p-5 space-y-2"
-        >
-          <h3 class="font-semibold">
-            {quest.definition_snapshot["title"]} · {quest.definition_snapshot["xp"]} XP
-          </h3>
-          <p class="text-sm">Aktivní · období {quest.period_key}</p>
-          <button
-            phx-click="prepare-completion"
-            phx-value-id={quest.id}
-            class="btn btn-primary btn-sm"
-          >Potvrdit splnění</button>
-        </article>
-      </section>
-      <section :if={@completing} class="rounded-xl border border-primary p-5 space-y-3">
-        <h2 class="text-xl font-semibold">Potvrzení: {@completing.definition_snapshot["title"]}</h2>
-        <p>
-          Potvrzuji za profil {@data.profile.display_name}, že úkol je hotový. Do poznámky neuváděj osobní údaje hostů.
-        </p>
-        <.form
-          for={@completion_form}
-          id="adventure-completion"
-          phx-submit="complete"
-          class="space-y-3"
-        >
-          <.input
-            field={@completion_form[:note]}
-            type="textarea"
-            label="Co se podařilo dokončit?"
-            minlength="10"
-            maxlength="1000"
-            required
-          />
-          <button class="btn btn-primary" type="submit">Úkol je splněný</button>
-          <button class="btn btn-ghost" type="button" phx-click="cancel-completion">Zpět</button>
-        </.form>
-      </section>
-      <section :if={@data.profile} class="space-y-3">
-        <h2 class="text-xl font-semibold">Katalog questů</h2>
-        <p>
-          Týdenní šablony lze aktivovat jednou za kalendářní týden v Europe/Prague. Aktivní quest lze dokončit i později; odměna zůstává v jeho původním období.
-        </p>
-        <div class="grid gap-3 sm:grid-cols-2">
-          <article :for={quest <- @catalog} class="rounded-xl border border-base-300 p-5 space-y-3">
-            <h3 class="font-semibold">{quest.title}</h3>
-            <p>{quest.xp} XP · {if quest.cadence == "weekly", do: "Týdenní", else: "Jednorázový"}</p>
+      <div class="adventure">
+        <div id="adventure-shell" class="adventure-shell">
+          <header class="adventure-masthead">
+            <.link navigate={~p"/admin/adventure"} class="adventure-wordmark"><span class="adventure-mark"><.symbol name="mountain-snow" /></span><span>Cozy
+            <strong>Adventure</strong></span></.link>
+            <nav aria-label="Adventure" class="adventure-nav">
+              <.link navigate={~p"/admin/adventure"} aria-current={@live_action == :index && "page"}><.symbol name="trees" />
+              Tábor</.link>
+              <.link
+                navigate={~p"/admin/adventure/quests"}
+                aria-current={@live_action == :quests && "page"}
+              ><.symbol name="backpack" /> Questy</.link>
+              <.link
+                navigate={~p"/admin/adventure/settings"}
+                aria-current={@live_action == :settings && "page"}
+              ><.icon name="hero-adjustments-horizontal" class="size-4" /> Nastavení</.link>
+            </nav>
             <button
-              id={"activate-#{quest.code}"}
-              phx-click="activate"
-              phx-value-code={quest.code}
-              class="btn btn-outline btn-sm"
-            >Aktivovat quest</button>
-          </article>
+              id="adventure-help-open"
+              type="button"
+              class="adventure-help-button"
+              phx-click={open_help()}
+              aria-controls="adventure-help"
+              aria-expanded="false"
+            ><.symbol name="compass" /> <span>Průvodce</span></button>
+          </header>
+          <section class="adventure-hero" aria-labelledby="adventure-title">
+            <img
+              class="adventure-hero-art"
+              src={~p"/images/adventure/mountain-lodge.png"}
+              alt="Ilustrovaná horská chata mezi smrky a zelenými kopci"
+              width="1983"
+              height="793"
+              fetchpriority="high"
+            />
+            <div class="adventure-hero-shade"></div>
+            <div class="adventure-hero-copy">
+              <p class="adventure-eyebrow">Jindřichův dům · naše společná výprava</p><h1 id="adventure-title">
+                Malé kroky.<br />Velké dobrodružství.
+              </h1><p>Další příběh chaty píšeme spolu.</p>
+            </div>
+            <div class="adventure-lodge-level">
+              <span class="adventure-level-coin"><.symbol name="house" /></span><div>
+                <span class="adventure-eyebrow">Společná chata</span><strong>Úroveň {@game.level}</strong><span>{@game.total_xp} XP</span>
+              </div><progress
+                aria-label="Postup společné chaty k další úrovni"
+                value={level_progress(@game.total_xp, @game.level)}
+                max={100 * @game.level}
+              ></progress>
+            </div>
+            <span class="adventure-hero-caption"><.symbol name="trees" /> Doma na horách</span>
+          </section>
+          <section :if={@data.profiles == []} class="adventure-welcome">
+            <span class="adventure-emblem"><.symbol name="backpack" /></span><div>
+              <h2>Připravit batohy?</h2><p>Michal, Lucka a jedna společná chata.</p>
+            </div><button
+              id="adventure-initialize"
+              phx-click="initialize"
+              class="adventure-button adventure-button--primary"
+            >Začít dobrodružství <.icon name="hero-arrow-right" class="size-4" /></button>
+          </section>
+          <section :if={@data.profiles != []} class="adventure-player">
+            <span class="adventure-avatar">{if @data.profile,
+              do: String.first(@data.profile.display_name),
+              else: "?"}</span>
+            <.form for={@profile_form} id="adventure-profile" phx-change="profile">
+              <.input
+                field={@profile_form[:id]}
+                type="select"
+                label="Kdo dnes vyráží?"
+                prompt="Vyber profil"
+                options={Enum.map(@data.profiles, &{&1.display_name, &1.id})}
+              />
+            </.form>
+            <div :if={@data.profile} id="adventure-progress" class="adventure-player-progress">
+              <h2>{@data.profile.display_name} · úroveň {@data.level}</h2><div class="adventure-xp-line">
+                <span>{@data.total_xp} XP</span><span>další úroveň {level_floor(@data.level + 1)} XP</span>
+              </div><progress
+                aria-label="Postup osobního profilu k další úrovni"
+                value={level_progress(@data.total_xp, @data.level)}
+                max={100 * @data.level}
+              ></progress>
+            </div>
+            <span :if={!@data.profile} class="adventure-muted">Tvá výprava čeká.</span>
+          </section>
+          <div class={[
+            "adventure-content",
+            @live_action == :settings && "adventure-content--settings"
+          ]}>
+            <div :if={@live_action != :settings} class="adventure-quests-column">
+              <section class="adventure-panel">
+                <header class="adventure-section-heading">
+                  <div>
+                    <p class="adventure-eyebrow">Krok za krokem</p><h2>Tvoje výpravy</h2>
+                  </div><span class="adventure-count">{Enum.count(
+                    @data.quests,
+                    &(&1.status == "active")
+                  )} / 3</span>
+                </header>
+                <div
+                  :if={!@data.profile || !Enum.any?(@data.quests, &(&1.status == "active"))}
+                  class="adventure-empty"
+                >
+                  <.symbol name="backpack" /><h3>
+                    {if @data.profile, do: "Kam vyrazíš dnes?", else: "Každá výprava má svého hrdinu"}
+                  </h3><p>
+                    {if @data.profile,
+                      do: "Vyber si svůj další quest.",
+                      else: "Vyber profil a připrav si první quest."}
+                  </p>
+                </div>
+                <div class="adventure-active-list">
+                  <article
+                    :for={quest <- Enum.filter(@data.quests, &(&1.status == "active"))}
+                    id={"adventure-quest-#{quest.id}"}
+                    class="adventure-active-quest"
+                  >
+                    <span class="adventure-quest-token"><.symbol name={quest_symbol(quest.code)} /></span><div>
+                      <h3>{quest.definition_snapshot["title"]}</h3><span class="adventure-reward">+{quest.definition_snapshot[
+                        "xp"
+                      ]} XP</span>
+                    </div><button
+                      phx-click="prepare-completion"
+                      phx-value-id={quest.id}
+                      class="adventure-finish"
+                      aria-label={"Potvrdit splnění: #{quest.definition_snapshot["title"]}"}
+                    ><.symbol name="check" /> Hotovo</button>
+                  </article>
+                </div>
+                <details
+                  :if={@data.profile}
+                  id="adventure-catalog"
+                  class="adventure-catalog"
+                  open={@live_action == :quests || !Enum.any?(@data.quests, &(&1.status == "active"))}
+                >
+                  <summary>
+                    <span><.symbol name="compass" /> Najít další výpravu</span><.icon
+                      name="hero-plus"
+                      class="size-4"
+                    />
+                  </summary>
+                  <div class="adventure-catalog-grid">
+                    <article :for={quest <- @catalog} class="adventure-quest-card">
+                      <span class="adventure-quest-token"><.symbol name={quest_symbol(quest.code)} /></span><span class="adventure-cadence">{if quest.cadence ==
+                                                                                                                                                  "weekly",
+                                                                                                                                                do:
+                                                                                                                                                  "Týdenní",
+                                                                                                                                                else:
+                                                                                                                                                  "Jednorázový"}</span><h3>
+                        {quest.title}
+                      </h3><div>
+                        <span class="adventure-reward">+{quest.xp} XP</span><button
+                          id={"activate-#{quest.code}"}
+                          phx-click="activate"
+                          phx-value-code={quest.code}
+                          class="adventure-quest-start"
+                          aria-label={"Aktivovat: #{quest.title}"}
+                        >Vyrazit <.icon name="hero-arrow-up-right" class="size-4" /></button>
+                      </div>
+                    </article>
+                  </div>
+                </details>
+              </section>
+              <details :if={@data.profile} id="adventure-history" class="adventure-journal">
+                <summary>
+                  <span><.symbol name="notebook-pen" /> Deník dokončených výprav</span><.icon
+                    name="hero-chevron-down"
+                    class="size-4"
+                  />
+                </summary><div class="adventure-journal-entries">
+                  <p
+                    :if={!Enum.any?(@data.quests, &(&1.status == "completed"))}
+                    class="adventure-muted"
+                  >
+                    První zápis na tebe teprve čeká.
+                  </p><article :for={quest <- Enum.filter(@data.quests, &(&1.status == "completed"))}>
+                    <span class="adventure-completed-mark"><.symbol name="check" /></span><div>
+                      <h3>{quest.definition_snapshot["title"]}</h3><p class="adventure-muted">
+                        Splněno · {quest.completed_at} UTC
+                      </p><p :if={quest.evidence["note"] not in [nil, ""]} class="whitespace-pre-wrap">
+                        {quest.evidence["note"]}
+                      </p>
+                    </div><span class="adventure-reward">+{quest.definition_snapshot["xp"]} XP</span>
+                  </article>
+                </div>
+              </details>
+            </div>
+            <.campaigns
+              game={@game}
+              definitions={Campaigns.achievements()}
+              profile_selected={!is_nil(@data.profile)}
+              settings={@live_action == :settings}
+              campaign_form={@campaign_form}
+              editing_id={@editing_campaign_id}
+            />
+          </div>
+          <details :if={@live_action == :settings} class="adventure-journal">
+            <summary>
+              <span><.symbol name="notebook-pen" /> Osobní XP · audit</span><.icon
+                name="hero-chevron-down"
+                class="size-4"
+              />
+            </summary><p class="adventure-muted px-5">
+              Profil je vlastní výběr, nikoli ověřená identita. Modul: ADVENTURE_ENABLED=true.
+            </p><ul id="adventure-ledger" class="adventure-audit-list">
+              <li :for={entry <- @data.ledger}>
+                <strong>{entry.amount} XP</strong><span>{entry.reason}</span><small>{entry.inserted_at} UTC · {entry.attribution}</small>
+              </li>
+            </ul>
+          </details>
+          <footer class="adventure-footer">
+            <.symbol name="mountain-snow" /><span>Dobrodružství po našem.</span><button
+              type="button"
+              phx-click={open_help()}
+            >Pravidla a nápověda</button>
+          </footer>
         </div>
-      </section>
-      <section :if={@data.profile} class="space-y-3">
-        <h2 class="text-xl font-semibold">Historie splnění · posledních 100 questů</h2>
-        <article
-          :for={quest <- Enum.filter(@data.quests, &(&1.status == "completed"))}
-          class="rounded-xl border border-base-300 p-4"
+        <.help_overlay />
+        <.modal
+          :if={@completing}
+          id="adventure-completion-modal"
+          show
+          on_cancel={JS.push("cancel-completion")}
         >
-          <h3 class="font-semibold">{quest.definition_snapshot["title"]} · Splněno</h3>
-          <p>{quest.completed_at} UTC · {quest.evidence["attribution"]}</p>
-          <p class="whitespace-pre-wrap">{quest.evidence["note"]}</p>
-        </article>
-      </section>
-      <section :if={@live_action == :settings} class="rounded-xl border border-base-300 p-5 space-y-3">
-        <h2 class="text-xl font-semibold">Nastavení a audit</h2>
-        <p>
-          Modul je zapnutý konfigurací ADVENTURE_ENABLED=true. Vypnutí zachová herní historii a zablokuje další herní akce. Pobytová data se čtou pouze při ručním přepočtu.
-        </p>
-        <p>
-          Pravidla šablon: verze 1. Zápisy probíhají pouze do adventure_* tabulek. Opravy XP se ukládají samostatným kompenzačním záznamem.
-        </p>
-        <h3 class="font-semibold">Posledních 20 XP transakcí vybraného profilu</h3>
-        <ul id="adventure-ledger" class="space-y-2">
-          <li :for={entry <- @data.ledger}>
-            {entry.amount} XP · {entry.reason} · {entry.inserted_at} UTC · {entry.attribution}
-          </li>
-        </ul>
-      </section>
-      <.campaigns
-        game={@game}
-        definitions={Campaigns.achievements()}
-        profile_selected={!is_nil(@data.profile)}
-        settings={@live_action == :settings}
-        campaign_form={@campaign_form}
-        editing_id={@editing_campaign_id}
-      />
-      <section class="rounded-xl border border-base-300 p-5 space-y-3">
-        <h2 class="text-xl font-semibold">Další rozvoj chaty</h2>
-        <p>Obchod · Finance · Kuchyně · Provoz · Hosté: dosud nevyhodnoceno.</p>
-        <p>Rekonstrukce: neaktivní roadmapa, bez vykazování úspor či investičního fondu.</p>
-      </section>
+          <div class="adventure-completion-heading">
+            <span class="adventure-emblem"><.symbol name={quest_symbol(@completing.code)} /></span><p class="adventure-eyebrow">
+              Další krok za tebou
+            </p><h2 id="adventure-completion-modal-title">
+              {@completing.definition_snapshot["title"]}
+            </h2><p id="adventure-completion-modal-description">
+              Dokončit jako {@data.profile.display_name}?
+            </p><strong class="adventure-big-reward">+{@completing.definition_snapshot["xp"]} XP</strong>
+          </div>
+          <.form
+            for={@completion_form}
+            id="adventure-completion"
+            phx-submit="complete"
+            class="adventure-completion-form"
+          >
+            <details>
+              <summary>Přidat poznámku <span class="adventure-muted">nepovinné</span></summary><.input
+                field={@completion_form[:note]}
+                type="textarea"
+                label="Poznámka ke splnění"
+                maxlength="1000"
+              />
+            </details><button class="adventure-button adventure-button--primary" type="submit"><.symbol name="check" />
+            Potvrdit splnění</button>
+          </.form>
+        </.modal>
+      </div>
     </Layouts.app>
     """
   end

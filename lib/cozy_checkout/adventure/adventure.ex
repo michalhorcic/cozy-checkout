@@ -148,7 +148,7 @@ defmodule CozyCheckout.Adventure do
     end
   end
 
-  def complete_manual_quest(profile_id, quest_id, note) do
+  def complete_manual_quest(profile_id, quest_id, note \\ "") do
     with true <- enabled?(),
          {:ok, quest_id} <- Ecto.UUID.cast(quest_id) do
       # One Multi transaction, with a profile lock shared by every game mutation.
@@ -171,8 +171,8 @@ defmodule CozyCheckout.Adventure do
             quest.status == "completed" ->
               {:ok, quest}
 
-            not valid_note?(note) ->
-              {:error, :evidence_required}
+            not valid_completion_note?(note) ->
+              {:error, :invalid_note}
 
             true ->
               quest
@@ -180,7 +180,7 @@ defmodule CozyCheckout.Adventure do
                 status: "completed",
                 completed_at: now(),
                 evidence: %{
-                  "note" => String.trim(note),
+                  "note" => if(is_nil(note), do: "", else: String.trim(note)),
                   "actor_profile_id" => profile.id,
                   "attribution" => "self_selected",
                   "confirmed_at" => DateTime.to_iso8601(now())
@@ -261,6 +261,11 @@ defmodule CozyCheckout.Adventure do
       _ -> {:error, :invalid_profile}
     end
   end
+
+  defp valid_completion_note?(nil), do: true
+
+  defp valid_completion_note?(note),
+    do: is_binary(note) and String.length(String.trim(note)) <= 1000
 
   defp valid_note?(note), do: is_binary(note) and String.length(String.trim(note)) in 10..1000
   defp now, do: DateTime.utc_now() |> DateTime.truncate(:second)

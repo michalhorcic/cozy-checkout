@@ -63,7 +63,8 @@ defmodule CozyCheckout.AdventureTest do
     assert {:error, :not_found} =
              Adventure.complete_manual_quest(other.id, quest.id, "Dokončeno a ověřeno.")
 
-    assert {:error, :evidence_required} = Adventure.complete_manual_quest(p.id, quest.id, "")
+    assert {:error, :invalid_note} =
+             Adventure.complete_manual_quest(p.id, quest.id, String.duplicate("x", 1001))
 
     assert {:ok, completed} =
              Adventure.complete_manual_quest(p.id, quest.id, "Zlepšení bylo dokončeno.")
@@ -80,6 +81,26 @@ defmodule CozyCheckout.AdventureTest do
     assert {:ok, %{total_xp: 0}} = Adventure.dashboard(other.id)
     assert {:ok, same} = Adventure.activate_quest(p.id, "improvement")
     assert same.id == quest.id
+  end
+
+  test "completion accepts no note or a short note and still records the actor", %{profile: p} do
+    for {definition, note} <- Enum.zip(Adventure.catalog(), ["", nil, "  ", "OK"]) do
+      {:ok, quest} = Adventure.activate_quest(p.id, definition.code)
+
+      {:ok, completed} =
+        if note == "",
+          do: Adventure.complete_manual_quest(p.id, quest.id),
+          else: Adventure.complete_manual_quest(p.id, quest.id, note)
+
+      assert completed.status == "completed"
+      assert completed.completed_at
+      assert completed.evidence["actor_profile_id"] == p.id
+      assert completed.evidence["attribution"] == "self_selected"
+      assert completed.evidence["note"] == String.trim(note || "")
+      assert {:ok, _} = Adventure.complete_manual_quest(p.id, quest.id)
+    end
+
+    assert Repo.aggregate(XpTransaction, :count) == 4
   end
 
   test "award failure rolls back quest completion", %{profile: p} do

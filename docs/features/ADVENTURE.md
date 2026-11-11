@@ -19,10 +19,30 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
 4. Vyber Michala nebo Lucku. Jde o vlastní prohlášení, nikoli osobní přihlášení.
    Volba trvá pouze po dobu otevření LiveView; opuštění stránky či obnovení ji
    vymaže. Přepnutí profilu zruší rozpracované potvrzení questu.
-5. Aktivuj nejvýše tři osobní questy. Splnění potvrď samostatným formulářem
-   s poznámkou o 10–1000 znacích. Neuváděj osobní údaje hostů.
+5. Aktivuj nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
+   splnění. Poznámka je nepovinná (nejvýše 1000 znaků, bez minimální délky);
+   případně ji rozbal přes **Přidat poznámku**. Aktér, čas a odměna se auditují
+   i bez poznámky. Neuváděj osobní údaje hostů.
 6. Historii XP najdeš pod **Nastavení a audit**. Dashboard zobrazuje až 100
    questů (aktivní vždy před dokončenými) a posledních 20 XP transakcí.
+
+## Herní obrazovka a nápověda
+
+**Tábor** ukazuje ilustrovanou chatu v horách, osobní i společnou úroveň,
+aktivní questy a právě běžící kampaň. Katalog dalších questů a deník jsou
+rozbalovací; ve **Questech** je katalog otevřený. Starší kampaně, návrhy,
+zdrojové podklady a audit jsou v **Nastavení**, podrobnosti auditu sbalené.
+
+Pravidla, identita profilu, definice KPI a omezení jsou za tlačítkem
+**Průvodce** v překryvné nápovědě. Lze ji zavřít křížkem, Escape, kliknutím
+mimo panel nebo tlačítkem na konci. Dialog drží klávesnicový fokus uvnitř
+a po zavření jej vrací na původní ovládací prvek. Stručný stav úplnosti
+dat a případné upozornění na dílčí výsledky zůstávají u metrik viditelné.
+
+Ilustrace vznikla pro Cozy Adventure; horské a herní SVG ikony jsou z Lucide
+(ISC). Všechny soubory se načítají lokálně z `priv/static/images/adventure/`,
+licence a zdroje jsou v jeho `CREDITS.md` a `LUCIDE-LICENSE`. Stylování je
+izolované v `assets/css/adventure/`, dialogový hook v `assets/js/adventure/`.
 
 ## Osobní questy
 
@@ -160,7 +180,8 @@ Pro ruční kontrolu po CI:
 - [ ] Při vypnutém modulu chybí navigace a přímá herní URL přesměruje do adminu.
 - [ ] Bez PINu všechny herní URL vedou na přihlášení.
 - [ ] Založit profily, vybrat hráče a aktivovat tři questy; čtvrtý se odmítne.
-- [ ] Dokončit quest s poznámkou, ověřit odměnu a audit, opakovat aktivaci.
+- [ ] Dokončit quest bez poznámky i s krátkou poznámkou, ověřit odměnu a audit.
+- [ ] Otevřít Průvodce, ověřit Tab/Shift+Tab, Escape a návrat fokusu.
 - [ ] Přepnout profil a ověřit oddělenou historii a XP; obnovit stránku.
 - [ ] Vypnout modul a ověřit zachovaná herní data.
 - [ ] Založit návrh kampaně, upravit cíle, potvrdit období a kapacitu a aktivovat.
