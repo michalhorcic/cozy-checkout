@@ -421,6 +421,299 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(XpTransaction, :count) == 0
   end
 
+  test "open duty work loads lazily once and remains accessible without its source", %{conn: conn} do
+    {view, profile, _booking} = duty_view(conn)
+    snapshot = :sys.get_state(view.pid).socket.assigns.operation
+    issue = hd(snapshot.issues)
+
+    {:ok, quest} =
+      Tasks.create_from_duty(
+        profile.id,
+        snapshot,
+        Tasks.duty_key(issue),
+        %{"title" => "Stále otevřená práce"},
+        Ecto.UUID.generate()
+      )
+
+    assert is_nil(:sys.get_state(view.pid).socket.assigns.duty_follow_up)
+
+    :sys.replace_state(view.pid, fn state ->
+      %{
+        state
+        | socket:
+            Phoenix.Component.assign(state.socket,
+              operation: %{snapshot | issues: []},
+              duty_links: %{}
+            )
+      }
+    end)
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "world-panel", %{"panel" => "duty"})
+          render_click(view, "duty-tab", %{"tab" => "work"})
+        end,
+        view.pid
+      )
+
+    assert length(queries) == 1
+    assert hd(queries) =~ ~s(FROM "adventure_quests")
+    assert has_element?(view, "#adventure-duty-work-#{quest.id}", "Stále otevřená práce")
+
+    assert has_element?(
+             view,
+             "#adventure-duty-work-#{quest.id} [data-source-status=absent]",
+             "podnět není v přehledu"
+           )
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          for tab <- ~w(issues work issues work),
+              do: render_click(view, "duty-tab", %{"tab" => tab})
+
+          render_click(view, "world-panel", %{"panel" => "continue"})
+          render_click(view, "world-panel", %{"panel" => "duty"})
+          render(view)
+        end,
+        view.pid
+      )
+
+    assert queries == []
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "open-duty-quest", %{"id" => quest.id})
+        end,
+        view.pid
+      )
+
+    assert length(queries) == 1
+    assert has_element?(view, "#adventure-duty-detail-modal [data-source-status=absent]")
+    render_click(view, "close-duty-detail")
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          view
+          |> element("#adventure-duty-work-#{quest.id} button", "Historie podnětu")
+          |> render_click()
+        end,
+        view.pid
+      )
+
+    assert length(queries) == 1
+    assert has_element?(view, "#adventure-duty-history-modal", "Stále otevřená práce")
+    render_click(view, "close-duty-history")
+    render_click(view, "open-duty-quest", %{"id" => quest.id})
+    render_click(view, "start-task", %{"id" => quest.id})
+    assert has_element?(view, "#adventure-duty-work-#{quest.id}", "Práce: Rozpracováno")
+    render_click(view, "prepare-completion", %{"id" => quest.id})
+
+    render_submit(view, "complete", %{
+      "completion" => %{"actor_id" => profile.id, "note" => "Hotovo ručně"}
+    })
+
+    refute has_element?(view, "#adventure-duty-work-#{quest.id}")
+    assert Repo.get!(Quest, quest.id).status == "completed"
+    assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
+  test "open duty pagination is bounded and refresh reads only one Adventure batch", %{conn: conn} do
+    {view, profile, _booking} = duty_view(conn)
+    snapshot = :sys.get_state(view.pid).socket.assigns.operation
+    issue = hd(snapshot.issues)
+
+    for n <- 1..21 do
+      issue = %{issue | booking_id: Ecto.UUID.generate()}
+
+      {:ok, _} =
+        Tasks.create_from_duty(
+          profile.id,
+          %{snapshot | issues: [issue]},
+          Tasks.duty_key(issue),
+          %{"title" => "Práce #{n}"},
+          Ecto.UUID.generate()
+        )
+    end
+
+    render_click(view, "duty-tab", %{"tab" => "work"})
+    assert length(:sys.get_state(view.pid).socket.assigns.duty_follow_up.quests) == 20
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "duty-work-page", %{"direction" => "next"})
+        end,
+        view.pid
+      )
+
+    assert length(queries) == 1
+    assert length(:sys.get_state(view.pid).socket.assigns.duty_follow_up.quests) == 1
+    assert has_element?(view, "#adventure-duty-work", "Strana 2")
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "duty-work-page", %{"direction" => "next"})
+          render_click(view, "duty-work-page", %{"direction" => "junk"})
+          render_click(view, "open-duty-quest", %{"id" => Ecto.UUID.generate()})
+          render_click(view, "duty-history", %{"source" => Ecto.UUID.generate() <> ":details"})
+        end,
+        view.pid
+      )
+
+    assert queries == []
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn -> render_click(view, "refresh-duty-work") end,
+        view.pid
+      )
+
+    assert length(queries) == 1
+    assert hd(queries) =~ ~s(FROM "adventure_quests")
+    assert :sys.get_state(view.pid).socket.assigns.duty_follow_up.page == 0
+    render_click(view, "duty-work-page", %{"direction" => "next"})
+    render_click(view, "duty-work-page", %{"direction" => "previous"})
+    assert :sys.get_state(view.pid).socket.assigns.duty_follow_up.page == 0
+  end
+
+  test "open duty source status follows snapshot freshness without SQL or changing work", %{
+    conn: conn
+  } do
+    {view, profile, _booking} = duty_view(conn)
+    snapshot = :sys.get_state(view.pid).socket.assigns.operation
+    issue = hd(snapshot.issues)
+
+    {:ok, quest} =
+      Tasks.create_from_duty(
+        profile.id,
+        snapshot,
+        Tasks.duty_key(issue),
+        %{"title" => "Ověřit podklad"},
+        Ecto.UUID.generate()
+      )
+
+    render_click(view, "duty-tab", %{"tab" => "work"})
+
+    for {status, issues, loaded_at, expected} <- [
+          {:ready, List.duplicate(%{issue | booking_id: Ecto.UUID.generate()}, 4) ++ [issue],
+           snapshot.loaded_at, "present"},
+          {:ready, [%{issue | reason: "Změněný podklad"}], snapshot.loaded_at, "changed"},
+          {:ready, [], snapshot.loaded_at, "absent"},
+          {:ready, [issue], DateTime.add(snapshot.loaded_at, -901), "stale"},
+          {:error, [issue], snapshot.loaded_at, "unavailable"}
+        ] do
+      :sys.replace_state(view.pid, fn state ->
+        %{
+          state
+          | socket:
+              Phoenix.Component.assign(state.socket,
+                operation_state: status,
+                operation: %{snapshot | issues: issues, loaded_at: loaded_at}
+              )
+        }
+      end)
+
+      {_, queries} =
+        CozyCheckout.QueryRecorder.record(
+          fn -> render_click(view, "duty-tab", %{"tab" => "work"}) end,
+          view.pid
+        )
+
+      assert queries == []
+
+      assert has_element?(
+               view,
+               "#adventure-duty-work-#{quest.id} [data-source-status=#{expected}]"
+             )
+
+      assert Repo.get!(Quest, quest.id).status == "waiting"
+    end
+
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "manual operation refresh refreshes the loaded work once and cached hero switches keep it",
+       %{conn: conn} do
+    {view, profile, _booking} = duty_view(conn)
+
+    {_, [work_query]} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "duty-tab", %{"tab" => "work"})
+        end,
+        view.pid
+      )
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "refresh-operation")
+          render(view)
+        end,
+        view.pid
+      )
+
+    assert Enum.count(queries, &(&1 == work_query)) == 1
+    cached = :sys.get_state(view.pid).socket.assigns.duty_follow_up
+    render_click(view, "restore-profile", %{"id" => profile.id})
+    assert :sys.get_state(view.pid).socket.assigns.duty_follow_up == cached
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "cached work survives unavailable sources and shows a failed list refresh explicitly", %{
+    conn: conn
+  } do
+    {view, profile, _booking} = duty_view(conn)
+    snapshot = :sys.get_state(view.pid).socket.assigns.operation
+    issue = hd(snapshot.issues)
+
+    {:ok, quest} =
+      Tasks.create_from_duty(
+        profile.id,
+        snapshot,
+        Tasks.duty_key(issue),
+        %{"title" => "Práce bez zdroje"},
+        Ecto.UUID.generate()
+      )
+
+    render_click(view, "duty-tab", %{"tab" => "work"})
+
+    :sys.replace_state(view.pid, fn state ->
+      %{
+        state
+        | socket:
+            Phoenix.Component.assign(state.socket,
+              operation: nil,
+              operation_state: :error,
+              duty_follow_up_error: true
+            )
+      }
+    end)
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "world-panel", %{"panel" => "duty"})
+          render_click(view, "duty-tab", %{"tab" => "work"})
+        end,
+        view.pid
+      )
+
+    assert queries == []
+    assert has_element?(view, "#adventure-duty-work", "stav práce nemusí být aktuální")
+    assert has_element?(view, "#adventure-duty-work-#{quest.id} [data-source-status=unavailable]")
+    assert has_element?(view, "#adventure-duty-work button", "Obnovit práci")
+    render_click(view, "refresh-duty-work")
+    refute :sys.get_state(view.pid).socket.assigns.duty_follow_up_error
+    assert Repo.get!(Quest, quest.id).status == "waiting"
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
   defp duty_view(conn) do
     {:ok, _} = Adventure.initialize()
     profile = Repo.get_by!(Profile, slug: "michal")
