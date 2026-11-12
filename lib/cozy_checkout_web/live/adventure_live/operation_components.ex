@@ -3,7 +3,6 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   import CozyCheckoutWeb.AdventureLive.GameComponents, only: [symbol: 1]
   alias CozyCheckout.Adventure.Sources.Operation
   alias CozyCheckout.Adventure.{Quest, Tasks}
-  import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
 
   import CozyCheckoutWeb.AdventureLive.ProjectComponents,
     only: [format_project_date: 1]
@@ -551,11 +550,10 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
 
   attr :draft, :map, required: true
   attr :form, :any, required: true
-  attr :profiles, :list, required: true
-  attr :profile_query, :any, required: true
-  attr :profile_open, :boolean, required: true
   attr :checked_at, :any, required: true
   attr :state, :atom, required: true
+
+  attr :profile, :any, required: true
 
   def duty_draft(assigns) do
     xp = assigns.form[:xp].value
@@ -571,13 +569,15 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
       )
 
     ~H"""
-    <div class="space-y-4">
-      <h2 id="adventure-duty-modal-title" class="text-xl font-bold pr-8">
-        Nový quest
-      </h2>
-      <p id="adventure-duty-modal-description">
-        Ze služby dne do nabídky výprav.
-      </p>
+    <div class="adventure-duty-card space-y-4">
+      <header class="adventure-duty-card-hero">
+        <div class="adventure-duty-crest" aria-hidden="true"><.symbol name="compass" /></div>
+        <div>
+          <p class="adventure-eyebrow">Služba dne</p>
+          <h2 id="adventure-duty-modal-title" class="text-xl font-bold pr-8">Nová výprava</h2>
+          <p id="adventure-duty-modal-description">Malý krok pro naši chatu.</p>
+        </div>
+      </header>
       <div id="adventure-duty-source" class="flex flex-wrap items-center gap-3 text-sm">
         <span>Příjezd {short_date(@draft.issue.on)}</span>
         <.link href={~p"/admin/bookings/#{@draft.issue.booking_id}"} class="adventure-text-link">Pobyt</.link>
@@ -612,24 +612,27 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         class="grid gap-4"
       >
         <.input field={@form[:title]} label="Název questu" required maxlength="200" />
-        <.searchable_picker
-          field={@form[:assigned_profile_id]}
-          options={[
-            %{id: "", name: "Volný úkol", hint: "Bez přiřazení"}
-            | Enum.map(@profiles, &%{id: &1.id, name: &1.display_name, hint: ""})
-          ]}
-          label="Pro koho"
-          prompt="Volný úkol"
-          required={false}
-          index="duty-profile"
-          query={@profile_query}
-          open={@profile_open}
-          search_name="duty_profile_query"
-          search_event="duty-profile-search"
-          open_event="duty-profile-open"
-          close_event="duty-profile-close"
-          select_event="duty-profile-select"
-        />
+        <fieldset class="adventure-duty-choice">
+          <legend class="sr-only">Kdo vyrazí?</legend>
+          <label>
+            <input
+              type="radio"
+              name="duty[disposition]"
+              value="free"
+              checked={@form.params["disposition"] != "mine"}
+            />
+            <span><.symbol name="flag" /><strong>Pro všechny</strong><small>Kdo se přihlásí, ten vyrazí</small></span>
+          </label>
+          <label>
+            <input
+              type="radio"
+              name="duty[disposition]"
+              value="mine"
+              checked={@form.params["disposition"] == "mine"}
+            />
+            <span><.symbol name="backpack" /><strong>Pro mě</strong><small>{@profile.display_name} · rovnou vyrazit</small></span>
+          </label>
+        </fieldset>
         <.input
           field={@form[:size]}
           type="select"
@@ -647,12 +650,8 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           <summary>Další podrobnosti (nepovinné)</summary>
           <div class="grid gap-3 mt-3">
             <.input field={@form[:description]} type="textarea" label="Popis" maxlength="5000" />
-            <.input
-              field={@form[:scope]}
-              type="select"
-              label="Odměna pro"
-              options={[{"Splnitele", "personal"}, {"Společnou chatu", "shared"}]}
-            />
+            <input type="hidden" name="duty[scope]" value="personal" />
+
             <.input field={@form[:xp]} type="number" label="Vlastní XP" min="1" max="10000" />
             <.input field={@form[:due_on]} type="date" label="Termín" />
             <.input
@@ -673,7 +672,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           type="submit"
           class="adventure-button adventure-button--primary"
           phx-disable-with="Ukládám…"
-        >Vytvořit quest</button>
+        >{if @form.params["disposition"] == "mine", do: "Vytvořit a vyrazit", else: "Vyvěsit quest"}</button>
       </.form>
       <button type="button" phx-click="cancel-duty" class="adventure-button">Zpět</button>
     </div>
@@ -755,21 +754,43 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
 
   def duty_history(assigns) do
     ~H"""
-    <section class="space-y-4">
-      <h2 id="adventure-duty-history-modal-title" class="text-xl font-bold pr-8">Historie podnětu</h2>
-      <p id="adventure-duty-history-modal-description">
-        {if @history.issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"} · příjezd {date(
-          @history.issue.on
-        )}. Nejvýše 20 questů na stránce, včetně uzavřené a archivované práce.
+    <section class="adventure-duty-card space-y-4">
+      <header class="adventure-duty-card-hero">
+        <div class="adventure-duty-crest" aria-hidden="true"><.symbol name="notebook-pen" /></div>
+        <div>
+          <p class="adventure-eyebrow">Služba dne</p>
+          <h2 id="adventure-duty-history-modal-title" class="text-xl font-bold pr-8">
+            Kronika výprav
+          </h2>
+          <p id="adventure-duty-history-modal-description">Příjezd {short_date(@history.issue.on)}</p>
+        </div>
+      </header>
+      <p :if={@history.quests == []} class="adventure-duty-empty">
+        První stránka příběhu je ještě prázdná.
       </p>
-      <p :if={@history.quests == []}>Pro tento podnět zatím není žádný quest.</p>
       <article
         :for={quest <- @history.quests}
         id={"adventure-duty-history-#{quest.id}"}
-        class="border-t py-3"
+        class={[
+          "adventure-duty-history-entry",
+          quest.status == "completed" && "adventure-duty-history-entry--done"
+        ]}
       >
-        <h3>{quest.definition_snapshot["title"]}</h3>
-        <p>{duty_status(quest)}</p>
+        <div class="adventure-duty-history-marker" aria-hidden="true">
+          <.symbol name={if quest.status == "completed", do: "check", else: "flag"} />
+        </div>
+        <div class="adventure-duty-history-story">
+          <span class="adventure-duty-history-state">{duty_status(quest)}</span>
+          <h3>{quest.definition_snapshot["title"]}</h3>
+          <span class="adventure-duty-xp">{quest.definition_snapshot["xp"]} XP{if quest.scope ==
+                                                                                    "shared",
+                                                                                  do: " pro chatu"}</span>
+          <span class="adventure-duty-history-date">{short_date(
+            if quest.status == "completed",
+              do: quest.completed_at && Operation.today(quest.completed_at),
+              else: Operation.today(quest.inserted_at)
+          )}</span>
+        </div>
         <button
           type="button"
           phx-click="open-duty-quest"
@@ -777,7 +798,11 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           class="adventure-text-link"
         >Otevřít quest</button>
       </article>
-      <nav class="flex flex-wrap gap-3" aria-label="Stránky historie podnětu">
+      <nav
+        :if={@history.page > 0 || @history.more?}
+        class="flex flex-wrap gap-3"
+        aria-label="Stránky historie podnětu"
+      >
         <button
           :if={@history.page > 0}
           type="button"
@@ -794,7 +819,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           class="adventure-button"
         >Starší práce</button>
       </nav>
-      <button type="button" phx-click="close-duty-history" class="adventure-button">Zavřít historii</button>
+      <button type="button" phx-click="close-duty-history" class="adventure-button">Zpět</button>
     </section>
     """
   end

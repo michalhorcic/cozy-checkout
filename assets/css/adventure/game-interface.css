@@ -204,3 +204,40 @@
 @media (max-width: 900px) {
   .adventure-context--detail[data-dialog-open="true"] { visibility: hidden; pointer-events: none; }
 }
+
+/* Illustrated quest cards and a trail through earlier expeditions. */
+.adventure-duty-card { padding: 8px; color: #294536; }
+.adventure-duty-card-hero { position: relative; display: flex; align-items: center; gap: 18px; min-height: 132px; margin: -8px -8px 20px; padding: 22px; border-radius: 16px; overflow: hidden; background: linear-gradient(100deg, #edf2dc 35%, #edf2dce8 65%, #edf2dc55), url('/images/adventure/cabin-world.svg') right center / cover; }
+.adventure-duty-card-hero h2 { font: 700 clamp(22px, 4vw, 30px)/1.15 Georgia, serif; margin: 4px 0 7px; }
+.adventure-duty-card-hero p { font-size: 13px; }
+.adventure-duty-crest { flex-shrink: 0; display: grid; place-items: center; width: 64px; height: 72px; background: #365a42; color: #fff6d9; border: 3px solid #d3b66a; border-radius: 28px 28px 20px 20px; box-shadow: 0 4px 0 #1c362433; }
+.adventure-duty-crest .adventure-symbol { width: 38px; height: 38px; }
+.adventure-duty-choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.adventure-duty-choice label { position: relative; cursor: pointer; }
+.adventure-duty-choice input { position: absolute; top: 15px; right: 12px; accent-color: #365a42; }
+.adventure-duty-choice label > span { display: grid; gap: 5px; min-height: 120px; height: 100%; padding: 15px; border: 2px solid #dcd8bc; border-radius: 14px; background: #fcfaef; }
+.adventure-duty-choice label:has(input:checked) > span { border-color: #537b4e; background: #ecf2dc; box-shadow: 0 3px 0 #537b4e33; }
+.adventure-duty-choice label:has(input:focus-visible) > span { outline: 3px solid #ad8337; outline-offset: 3px; }
+.adventure-duty-choice small { font-size: 12px; line-height: 1.4; }
+.adventure-duty-choice .adventure-symbol { width: 26px; height: 26px; }
+.adventure-duty-history-entry { display: flex; align-items: center; gap: 14px; position: relative; padding: 16px 0; border-bottom: 1px solid #e5e0c9; }
+.adventure-duty-history-marker { flex-shrink: 0; display: grid; place-items: center; height: 44px; width: 44px; border: 2px solid #d8c994; border-radius: 50%; background: #faf3d9; }
+.adventure-duty-history-entry--done .adventure-duty-history-marker { border-color: #69865a; background: #e8efd9; }
+.adventure-duty-history-marker .adventure-symbol { width: 23px; height: 23px; }
+.adventure-duty-history-story { min-width: 0; flex: 1; }
+.adventure-duty-history-story h3 { font: 700 18px/1.3 Georgia, serif; overflow-wrap: anywhere; margin: 4px 0; }
+.adventure-duty-history-state, .adventure-duty-history-date { font-size: 12px; color: #64705c; }
+.adventure-duty-history-date { margin-left: 10px; }
+.adventure-duty-xp { font-size: 12px; font-weight: 700; color: #876515; }
+.adventure-duty-empty { text-align: center; padding: 24px; font-style: italic; }
+@media (max-width: 420px) {
+  .adventure-duty-card { padding: 0; }
+  .adventure-duty-card-hero { gap: 12px; margin: 0 0 16px; padding: 16px; }
+  .adventure-duty-crest { width: 46px; height: 58px; }
+  .adventure-duty-crest .adventure-symbol { width: 28px; height: 28px; }
+  .adventure-duty-choice { gap: 8px; }
+  .adventure-duty-choice label > span { padding: 12px; }
+  .adventure-duty-history-entry { flex-wrap: wrap; gap: 10px; }
+  .adventure-duty-history-entry > button { margin-left: 54px; }
+  .adventure-duty-history-story { flex: 1 1 calc(100% - 54px); }
+}

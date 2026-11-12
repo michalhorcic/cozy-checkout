@@ -287,12 +287,27 @@ provozních zdrojů. Živý Bar 5C je samostatná budoucí práce.
 
 ## Služba dne na quest (5A)
 
-Ze stávajícího podnětu Služby dne lze výslovně **Připravit quest**. Návrh používá
-poslední načtenou provozní projekci, nikoli nové ověření pobytu. Obsahuje
-upravitelný název, volitelné přiřazení a velikost; další nastavení jsou sbalená.
-Výchozí je malý osobní nepřiřazený quest kategorie Kuchyně za 50 XP, bez termínu.
-**Vytvořit quest** práci nezahájí, neobsadí osobní slot a neudělí XP.
-Zavření návrhu nic nezapisuje. Přijetí a splnění používají dosavadní tábor.
+Ze stávajícího podnětu Služby dne lze **Připravit quest**. Ilustrovaná karta
+nabízí dvě volby: **Pro všechny** vytvoří volný osobní quest k převzetí,
+**Pro mě** jej přiřadí aktuálnímu hrdinovi a rovnou zahájí. Nejde o společný
+quest s odměnou chatě. Název a velikost lze změnit; méně častá nastavení
+zůstávají v původních volitelných podrobnostech. Výchozí odměna je 50 XP,
+kategorie Kuchyně, bez termínu. Vytvoření ani zahájení neuděluje XP.
+
+Při volbě **Pro mě** proběhne vytvoření i zahájení v jediné transakci. Plné tři
+sloty vrátí celý zápis zpět a nechají návrh otevřený. Stejný request nezaloží
+kopii a existující cizí práci automaticky nepřevezme. Při úspěchu se dialogy
+zavřou a Chata ukáže novou aktivní výpravu v pokračování. Stejný návrat platí
+při ručním převzetí existujícího questu. U volného questu se nabídne jeho karta.
+Obnova provozní evidence ani její automatické změny se nespouštějí.
+
+Pro nové zahájení se používá původní profilový zámek `FOR NO KEY UPDATE`,
+zdrojový zámek a stejná kontrola slotů jako při běžném převzetí. Oproti volné
+tvorbě přibývá ověření přiřazení, zamčení questu a jediná agregace aktivních
+výprav; nikoli dotazy po jednotlivých questech. Návrat do Chaty obnoví běžnou
+herní projekci a vazby podnětů, bez nového provozního čtení. Historie používá
+původní stránkovaný dotaz, nově má podobu Kroniky výprav: odznak stavu, název,
+XP a krátké datum. Grafika využívá existující ilustraci chaty a herní ikony.
 
 Kartička questu ukazuje název, stav, XP a přiřazení, případně skutečný termín.
 Odkaz na pobyt má krátké datum příjezdu; u data z jiného roku zůstává i rok.

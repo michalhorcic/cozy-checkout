@@ -127,6 +127,42 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     end
   end
 
+  test "mine returns to the lodge focused on the newly active expedition", %{conn: conn} do
+    {view, actor, _booking} = duty_view(conn)
+    render_click(view, "world-panel", %{"panel" => "duty"})
+    render_click(view, "prepare-duty", %{"source" => duty_source(view)})
+    assert has_element?(view, ".adventure-duty-choice input[value=free][checked]")
+
+    view
+    |> form("#adventure-duty-form", duty: %{disposition: "mine", title: "Moje nová výprava"})
+    |> render_change()
+
+    assert has_element?(view, "#adventure-duty-form button", "Vytvořit a vyrazit")
+    view |> form("#adventure-duty-form") |> render_submit()
+    refute has_element?(view, "#adventure-duty-modal")
+    refute has_element?(view, "#adventure-duty-detail-modal")
+    quest = Repo.get_by!(Quest, assigned_profile_id: actor.id)
+    assert quest.status == "active"
+    assert has_element?(view, "#adventure-context[data-panel=continue]", "Moje nová výprava")
+    assert :sys.get_state(view.pid).socket.assigns.focus_quest_id == quest.id
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "full slots keep the illustrated draft and create no extra quest", %{conn: conn} do
+    {view, actor, _booking} = duty_view(conn)
+
+    for code <- ~w(prepare_stay review_deposits shopping_plan),
+        do: Adventure.activate_quest(actor.id, code)
+
+    render_click(view, "prepare-duty", %{"source" => duty_source(view)})
+    request = :sys.get_state(view.pid).socket.assigns.duty_draft.request_key
+    render_submit(view, "save-duty", %{"duty" => %{"title" => "Další", "disposition" => "mine"}})
+    assert has_element?(view, "#adventure-duty-modal")
+    assert has_element?(view, ".adventure-duty-choice input[value=mine][checked]")
+    refute Repo.get_by(Quest, source_request_key: request)
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
   test "duty drafts validate snapshot membership and cancel without any SELECT", %{conn: conn} do
     {view, _profile, booking} = duty_view(conn)
 
@@ -138,17 +174,15 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       refute has_element?(view, "#adventure-duty-modal")
       view |> element("#adventure-duty-0 button", "Připravit quest") |> render_click()
       assert has_element?(view, "#adventure-duty-modal [role=dialog][aria-modal=true]")
-      assert has_element?(view, "#adventure-duty-modal-title", "Nový quest")
+      assert has_element?(view, "#adventure-duty-modal-title", "Nová výprava")
       assert has_element?(view, "#adventure-duty-source", "Příjezd")
       refute has_element?(view, "#adventure-duty-source", "UTC")
       assert has_element?(view, "#duty_size option[value=small][selected]")
-      assert has_element?(view, "#duty_scope option[value=personal][selected]")
+      assert has_element?(view, "input[name='duty[scope]'][value=personal]")
       refute has_element?(view, "#duty_due_on[value]:not([value=''])")
       assert has_element?(view, "#adventure-duty-form details summary", "nepovinné")
       view |> form("#adventure-duty-form", duty: %{title: ""}) |> render_change()
       assert has_element?(view, "#adventure-duty-form")
-      render_click(view, "duty-profile-open")
-      render_click(view, "duty-profile-select", %{"id" => ""})
       view |> element("#adventure-duty-modal button", "Zpět") |> render_click()
       refute has_element?(view, "#adventure-duty-modal")
       assert :ets.info(queries, :size) == 0
@@ -373,7 +407,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
        %{
          conn: conn
        } do
-    {view, profile, _booking} = duty_view(conn)
+    {view, _profile, _booking} = duty_view(conn)
 
     :sys.replace_state(view.pid, fn state ->
       snapshot = %{
@@ -407,8 +441,6 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     draft = :sys.get_state(view.pid).socket.assigns.duty_draft
     assert draft.snapshot == snapshot
 
-    render_click(view, "duty-profile-select", %{"id" => profile.id})
-
     view
     |> form("#adventure-duty-form", duty: %{size: "medium", xp: 175})
     |> render_change()
@@ -429,7 +461,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     |> render_submit()
 
     quest = :sys.get_state(view.pid).socket.assigns.duty_detail
-    assert quest.assigned_profile_id == profile.id
+    assert quest.assigned_profile_id == nil
     assert quest.description == "Ověřit s kuchyní."
     assert quest.definition_snapshot["xp"] == 175
     assert quest.definition_snapshot["size"] == "medium"

@@ -49,9 +49,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          duty_form: nil,
          duty_detail: nil,
          camp_quest_id: params["quest_id"],
-         duty_history: nil,
-         duty_profile_query: nil,
-         duty_profile_open: false
+         duty_history: nil
        )
        |> assign(
          finding: false,
@@ -272,8 +270,6 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
            duty_draft: draft,
            duty_detail: nil,
            duty_history: nil,
-           duty_profile_query: nil,
-           duty_profile_open: false,
            duty_form:
              to_form(
                Tasks.change(%Quest{}, %{
@@ -302,13 +298,17 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp handle_game_event("cancel-duty", _, socket),
-    do: {:noreply, assign(socket, duty_draft: nil, duty_profile_open: false)}
+    do: {:noreply, assign(socket, duty_draft: nil)}
 
   defp handle_game_event("validate-duty", %{"duty" => attrs}, socket) do
     if socket.assigns.duty_draft do
       {:noreply,
        assign(socket,
-         duty_form: to_form(Tasks.change(%Quest{}, attrs), as: :duty, action: :validate)
+         duty_form:
+           to_form(Tasks.change(%Quest{}, duty_attributes(socket, attrs)),
+             as: :duty,
+             action: :validate
+           )
        )}
     else
       {:noreply, socket}
@@ -318,22 +318,44 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp handle_game_event("save-duty", %{"duty" => attrs}, socket) do
     case socket.assigns.duty_draft do
       %{confirmed: true} = draft ->
+        socket =
+          assign(socket,
+            duty_form: to_form(Tasks.change(%Quest{}, duty_attributes(socket, attrs)), as: :duty)
+          )
+
         case Tasks.create_from_duty(
                socket.assigns.selected_profile_id,
                draft.snapshot,
                draft.key,
-               attrs,
+               duty_attributes(socket, attrs),
                draft.request_key,
-               draft.previous_id
+               draft.previous_id,
+               start: attrs["disposition"] == "mine"
              ) do
           {:ok, quest} ->
-            {:noreply,
-             socket
-             |> assign(duty_draft: nil, duty_detail: quest, camp_quests: Tasks.camp_quests())
-             |> refresh_duty_links()
-             |> refresh_duty_follow_up()
-             |> clear_flash(:error)
-             |> put_flash(:info, "Quest je uložen. Provozní podklad se nezměnil.")}
+            socket =
+              socket
+              |> assign(duty_draft: nil, duty_detail: quest, camp_quests: Tasks.camp_quests())
+              |> refresh_duty_links()
+              |> refresh_duty_follow_up()
+              |> clear_flash(:error)
+
+            if attrs["disposition"] == "mine" && quest.status == "active" &&
+                 quest.assigned_profile_id == socket.assigns.selected_profile_id do
+              {:noreply,
+               socket
+               |> load()
+               |> assign(
+                 duty_detail: nil,
+                 duty_history: nil,
+                 game_view: "world",
+                 world_panel: "continue",
+                 focus_quest_id: quest.id
+               )
+               |> put_flash(:info, "Výprava začíná!")}
+            else
+              {:noreply, socket |> put_flash(:info, "Quest čeká na svého hrdinu.")}
+            end
 
           {:error, %Ecto.Changeset{} = changeset} ->
             {:noreply, assign(socket, duty_form: to_form(changeset, as: :duty))}
@@ -344,35 +366,6 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
       _ ->
         {:noreply, socket}
-    end
-  end
-
-  defp handle_game_event(
-         "duty-profile-search",
-         %{"duty_profile_query" => %{"duty-profile" => query}},
-         socket
-       ),
-       do: {:noreply, assign(socket, duty_profile_query: query, duty_profile_open: true)}
-
-  defp handle_game_event("duty-profile-open", _, socket),
-    do: {:noreply, assign(socket, duty_profile_open: true)}
-
-  defp handle_game_event("duty-profile-close", _, socket),
-    do: {:noreply, assign(socket, duty_profile_open: false)}
-
-  defp handle_game_event("duty-profile-select", %{"id" => id}, socket) do
-    if socket.assigns.duty_draft &&
-         (id == "" or Enum.any?(socket.assigns.data.profiles, &(&1.id == id))) do
-      attrs = Map.put(socket.assigns.duty_form.params, "assigned_profile_id", id)
-
-      {:noreply,
-       assign(socket,
-         duty_form: to_form(Tasks.change(%Quest{}, attrs), as: :duty),
-         duty_profile_query: nil,
-         duty_profile_open: false
-       )}
-    else
-      {:noreply, socket}
     end
   end
 
@@ -909,8 +902,24 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     end
   end
 
-  defp handle_game_event("start-task", %{"id" => id}, socket),
-    do: task_result(socket, Tasks.start(socket.assigns.selected_profile_id, id))
+  defp handle_game_event("start-task", %{"id" => id}, socket) do
+    case Tasks.start(socket.assigns.selected_profile_id, id) do
+      {:ok, quest} = outcome ->
+        socket =
+          assign(socket,
+            duty_detail: nil,
+            duty_history: nil,
+            world_panel: "continue",
+            game_view: "world",
+            focus_quest_id: quest.id
+          )
+
+        task_result(socket, outcome)
+
+      error ->
+        task_result(socket, error)
+    end
+  end
 
   defp handle_game_event("archive-task", %{"id" => id}, socket),
     do: task_result(socket, Tasks.archive(socket.assigns.selected_profile_id, id))
@@ -1247,6 +1256,22 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     if socket.assigns.duty_follow_up || socket.assigns.duty_follow_up_error,
       do: load_duty_follow_up(socket, 0),
       else: socket
+  end
+
+  defp duty_attributes(socket, attrs) do
+    case attrs["disposition"] do
+      "mine" ->
+        Map.merge(attrs, %{
+          "scope" => "personal",
+          "assigned_profile_id" => socket.assigns.selected_profile_id
+        })
+
+      "free" ->
+        Map.merge(attrs, %{"scope" => "personal", "assigned_profile_id" => nil})
+
+      _ ->
+        attrs
+    end
   end
 
   defp duty_open?(quest), do: quest.status in ["waiting", "active"] && is_nil(quest.archived_at)
@@ -1717,10 +1742,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
         <.modal :if={@duty_draft} id="adventure-duty-modal" show on_cancel={JS.push("cancel-duty")}>
           <.duty_draft
             draft={@duty_draft}
+            profile={@data.profile}
             form={@duty_form}
-            profiles={@data.profiles}
-            profile_query={@duty_profile_query}
-            profile_open={@duty_profile_open}
             checked_at={@operation_checked_at}
             state={@operation_state}
           />
