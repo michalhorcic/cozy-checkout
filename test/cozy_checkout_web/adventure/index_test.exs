@@ -55,9 +55,17 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       assert initial > 0
       assert initial <= 15
 
-      for area <- ["rooms", "kitchen", "bar", "treasury", "workshop", "reception"] do
+      areas = ["rooms", "kitchen", "bar", "treasury", "workshop", "reception"]
+      assert has_element?(view, "#adventure-area-reception[aria-pressed=true]")
+      assert has_element?(view, "#adventure-area-rooms[aria-pressed=false]")
+
+      for area <- areas do
         view |> element("#adventure-area-#{area}") |> render_click()
         assert has_element?(view, "#adventure-area-#{area}[aria-pressed=true]")
+
+        for other <- areas -- [area] do
+          assert has_element?(view, "#adventure-area-#{other}[aria-pressed=false]")
+        end
       end
 
       assert render(view) =~ "Kalendář, ne hlášení přítomnosti"
@@ -89,7 +97,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
           {"kitchen", "/admin/meal-planner"},
           {"bar", "/admin/bar-stock"},
           {"treasury", "/admin/billing"},
-          {"workshop", "/admin/adventure/quests"}
+          {"workshop", "/admin/adventure/quests?section=projects"}
         ] do
       render_click(view, "operation-area", %{"area" => area})
       assert has_element?(view, "#adventure-area-detail a[href='#{href}']")
@@ -146,7 +154,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: nil,
         checked_at: checked_at,
         state: :loading,
-        area: "kitchen"
+        area: "kitchen",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert loading =~ "Načítám společný provozní přehled"
@@ -157,7 +169,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: nil,
         checked_at: checked_at,
         state: :error,
-        area: "reception"
+        area: "reception",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert failed =~ "Provoz se nepodařilo načíst"
@@ -170,7 +186,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: snapshot,
         checked_at: checked_at,
         state: :ready,
-        area: "kitchen"
+        area: "kitchen",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert stale =~ "Starší údaje, obnov přehled"
@@ -180,7 +200,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: snapshot,
         checked_at: checked_at,
         state: :error,
-        area: "reception"
+        area: "reception",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert retained =~ "Poslední dostupné údaje níže nejsou čerstvé"
@@ -449,8 +473,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(Quest, :count) == 0
 
     view
-    |> form("#template-status-#{template.id}", %{state: %{status: "active", open_choice: "keep"}})
-    |> render_submit()
+    |> element("#template-#{template.id} button[phx-click=resume-template]")
+    |> render_click()
 
     view |> element("button[phx-click=generate-tasks]") |> render_click()
     task = Repo.one!(Quest)
@@ -458,8 +482,15 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     refute has_element?(view, "button[phx-click=start-task]")
 
     view
-    |> form("#template-status-#{template.id}", %{state: %{status: "paused", open_choice: "keep"}})
-    |> render_submit()
+    |> element("#template-#{template.id} button[phx-value-status=paused]")
+    |> render_click()
+
+    assert Repo.get!(TaskTemplate, template.id).status == "active"
+    refute has_element?(view, "#template-confirm-#{template.id} select")
+
+    view
+    |> element("#template-confirm-#{template.id} button[phx-value-choice=keep]")
+    |> render_click()
 
     assert Repo.get!(Quest, task.id).status == "waiting"
     assert has_element?(view, "#template-#{template.id}", "Pozastaveno")

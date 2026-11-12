@@ -8,11 +8,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   import CozyCheckoutWeb.AdventureLive.TaskComponents
   import CozyCheckoutWeb.AdventureLive.GameComponents
   import CozyCheckoutWeb.AdventureLive.OperationComponents
+  import CozyCheckoutWeb.AdventureLive.ProjectComponents, only: [projects: 1]
+  alias CozyCheckout.Adventure.Projects
+  alias CozyCheckoutWeb.AdventureLive.ProjectComponents
 
   @impl true
   def mount(params, _, socket) do
     section =
-      if params["section"] in ["tasks", "templates", "history"],
+      if params["section"] in ["tasks", "templates", "history", "projects"],
         do: params["section"],
         else: "tasks"
 
@@ -36,11 +39,30 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          quest_section: section,
          task_editor_open: false,
          template_editor_open: false,
+         template_view: "current",
+         template_page: 0,
+         template_history: [],
+         template_confirmation: nil,
+         world: %{counts: [], projects: []},
+         cabin_chronicle: nil,
+         cabin_page: 0,
          selected_campaign_id: nil,
          campaign_search: "",
          task_filters: if(section == "history", do: %{"status" => "completed"}, else: %{}),
          editing_task_id: nil,
          task_form: to_form(Tasks.change(%Quest{}), as: :task)
+       )
+       |> new_project()
+       |> assign(
+         selected_project_id: params["project_id"],
+         project_focus_id: params["project_id"],
+         project_history: [],
+         project_quest_results: [],
+         project_stage_editor: nil,
+         project_stage_form: to_form(Tasks.change(%Quest{}), as: :step),
+         project_acceptance_open: false,
+         project_editor_open: false,
+         project_search: String.slice(params["project_search"] || "", 0, 200)
        )
        |> new_template()
        |> new_campaign()
@@ -99,11 +121,247 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
        when area in ["reception", "rooms", "kitchen", "bar", "treasury", "workshop"],
        do: {:noreply, assign(socket, operation_area: area)}
 
+  defp handle_game_event("refresh-world", _, socket),
+    do: {:noreply, assign(socket, world: Projects.world(), cabin_chronicle: nil, cabin_page: 0)}
+
+  defp handle_game_event("cabin-chronicle", %{"direction" => direction}, socket) do
+    page =
+      case direction do
+        "next" -> socket.assigns.cabin_page + 1
+        "previous" -> max(socket.assigns.cabin_page - 1, 0)
+        _ -> 0
+      end
+
+    {:noreply, assign(socket, cabin_chronicle: Projects.chronicle(page), cabin_page: page)}
+  end
+
+  defp handle_game_event("close-cabin-chronicle", _, socket),
+    do: {:noreply, assign(socket, cabin_chronicle: nil, cabin_page: 0)}
+
+  defp handle_game_event("template-view", %{"view" => view}, socket)
+       when view in ["current", "archive"],
+       do:
+         {:noreply,
+          socket
+          |> new_template()
+          |> assign(template_view: view, template_page: 0, template_confirmation: nil)
+          |> load_templates()}
+
+  defp handle_game_event("template-page", %{"direction" => direction}, socket) do
+    page = max(socket.assigns.template_page + if(direction == "next", do: 1, else: -1), 0)
+
+    {:noreply,
+     socket |> assign(template_page: page, template_confirmation: nil) |> load_templates()}
+  end
+
+  defp handle_game_event("template-history", _, socket),
+    do: {:noreply, assign(socket, template_history: Templates.history())}
+
+  defp handle_game_event("confirm-template-status", %{"id" => id, "status" => status}, socket)
+       when status in ["paused", "archived"] do
+    if Enum.any?(socket.assigns.templates, &(&1.id == id and &1.status != "archived")) do
+      {:noreply, assign(socket, template_confirmation: %{id: id, status: status})}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("cancel-template-status", _, socket),
+    do: {:noreply, assign(socket, template_confirmation: nil)}
+
+  defp handle_game_event("apply-template-status", %{"choice" => choice}, socket) do
+    case socket.assigns.template_confirmation do
+      %{id: id, status: status} ->
+        outcome = Templates.set_status(socket.assigns.selected_profile_id, id, status, choice)
+
+        case outcome do
+          {:ok, _} ->
+            result(socket |> new_template() |> assign(template_confirmation: nil), outcome)
+
+          error ->
+            result(socket, error)
+        end
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
   defp handle_game_event("manage-section", %{"section" => section}, socket)
-       when section in ["tasks", "templates", "history"] do
+       when section in ["tasks", "templates", "history", "projects"] do
     filters = if section == "history", do: %{"status" => "completed"}, else: %{}
     {:noreply, socket |> assign(quest_section: section, task_filters: filters) |> load()}
   end
+
+  defp handle_game_event("new-project", _, socket), do: {:noreply, new_project(socket)}
+
+  defp handle_game_event("close-project-editor", _, socket),
+    do: {:noreply, assign(socket, project_editor_open: false)}
+
+  defp handle_game_event("project-stage-editor", %{"mode" => mode}, socket) do
+    {:noreply,
+     assign(socket,
+       project_stage_editor: if(mode == "close", do: nil, else: mode),
+       project_stage_form: to_form(Tasks.change(%Quest{}), as: :step),
+       project_quest_results: []
+     )}
+  end
+
+  defp handle_game_event("project-acceptance-editor", %{"open" => open}, socket),
+    do: {:noreply, assign(socket, project_acceptance_open: open == "true")}
+
+  defp handle_game_event("refresh-projects", _, socket), do: {:noreply, load_projects(socket)}
+
+  defp handle_game_event("filter-projects", %{"projects" => %{"query" => query}}, socket),
+    do:
+      {:noreply,
+       socket
+       |> assign(project_search: String.slice(query, 0, 200), project_focus_id: nil)
+       |> load_projects()}
+
+  defp handle_game_event("select-project", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.projects, &(&1.project.id == id)) do
+      {:noreply,
+       assign(socket,
+         selected_project_id: id,
+         project_history: Projects.history(id),
+         project_quest_results: [],
+         project_editor_open: false,
+         project_stage_editor: nil,
+         project_acceptance_open: false
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("edit-project", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.projects, &(&1.project.id == id)) do
+      %{project: project}
+      when project.status in ["idea", "ready"] and is_nil(project.archived_at) ->
+        attrs =
+          Map.new(Map.keys(ProjectComponents.defaults()), fn key ->
+            {key, Map.get(project, String.to_existing_atom(key))}
+          end)
+
+        {:noreply,
+         assign(socket,
+           editing_project_id: id,
+           project_editor_open: true,
+           project_form: to_form(attrs, as: :project)
+         )}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("save-project", %{"project" => attrs}, socket) do
+    outcome =
+      if socket.assigns.editing_project_id,
+        do:
+          Projects.update(
+            socket.assigns.selected_profile_id,
+            socket.assigns.editing_project_id,
+            attrs
+          ),
+        else: Projects.create(socket.assigns.selected_profile_id, attrs, attrs["request_key"])
+
+    case outcome do
+      {:ok, project} ->
+        project_result(
+          socket
+          |> assign(
+            selected_project_id: project.id,
+            project_focus_id:
+              if(socket.assigns.project_focus_id || socket.assigns.project_search != "",
+                do: project.id
+              ),
+            project_editor_open: false,
+            editing_project_id: nil
+          ),
+          outcome
+        )
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply,
+         assign(socket, project_form: to_form(%{changeset | action: :validate}, as: :project))}
+
+      error ->
+        project_result(socket, error)
+    end
+  end
+
+  defp handle_game_event("search-project-quests", %{"search" => %{"query" => query}}, socket),
+    do: {:noreply, assign(socket, project_quest_results: Projects.search_quests(query))}
+
+  defp handle_game_event("create-project-stage", %{"step" => attrs}, socket) do
+    case Projects.create_stage(
+           socket.assigns.selected_profile_id,
+           socket.assigns.selected_project_id,
+           attrs
+         ) do
+      {:error, %Ecto.Changeset{data: %Quest{}} = changeset} ->
+        {:noreply,
+         assign(socket, project_stage_form: to_form(%{changeset | action: :validate}, as: :step))}
+
+      outcome ->
+        project_result(socket, outcome)
+    end
+  end
+
+  defp handle_game_event("add-project-stage", %{"stage" => attrs}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.add_stage(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          attrs["quest_id"],
+          attrs["output"]
+        )
+      )
+
+  defp handle_game_event("remove-project-stage", %{"id" => id}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.remove_stage(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          id
+        )
+      )
+
+  defp handle_game_event("edit-project-stage", %{"stage" => attrs}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.update_stage(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          attrs["id"],
+          attrs["output"]
+        )
+      )
+
+  defp handle_game_event("project-status", %{"id" => id, "status" => status}, socket),
+    do:
+      project_result(socket, Projects.transition(socket.assigns.selected_profile_id, id, status))
+
+  defp handle_game_event("accept-project", %{"acceptance" => attrs}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.accept(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          attrs
+        )
+      )
+
+  defp handle_game_event("archive-project", %{"id" => id}, socket),
+    do: project_result(socket, Projects.archive(socket.assigns.selected_profile_id, id))
 
   defp handle_game_event("toggle-task-editor", _, socket),
     do: {:noreply, assign(socket, task_editor_open: !socket.assigns.task_editor_open)}
@@ -414,7 +672,16 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp handle_game_event(_, _, socket), do: {:noreply, socket}
 
   defp select_profile(socket, id) do
-    socket = socket |> assign(selected_profile_id: id, completing: nil, finding: false) |> load()
+    socket =
+      socket
+      |> assign(
+        selected_profile_id: id,
+        completing: nil,
+        finding: false,
+        template_confirmation: nil
+      )
+      |> load()
+
     selected_id = socket.assigns.data.profile && socket.assigns.data.profile.id
 
     socket
@@ -490,6 +757,13 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     {:ok, data} = Adventure.dashboard(socket.assigns.selected_profile_id)
     {:ok, game} = Campaigns.overview()
 
+    socket = socket |> load_projects() |> load_templates()
+
+    socket =
+      if socket.assigns.live_action == :index,
+        do: assign(socket, world: Projects.world()),
+        else: socket
+
     assign(socket,
       data: data,
       tasks:
@@ -501,8 +775,6 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           )
         ),
       camp_quests: Tasks.camp_quests(),
-      templates: Templates.list(),
-      template_history: Templates.history(),
       template_campaign_options:
         Enum.map(game.campaigns, &%{id: &1.id, name: &1.name, hint: &1.status}),
       filter_form: to_form(socket.assigns.task_filters, as: :filters),
@@ -511,6 +783,83 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
       completion_form:
         to_form(%{"note" => "", "actor_id" => data.profile && data.profile.id}, as: :completion)
     )
+  end
+
+  defp load_templates(socket) do
+    page =
+      if socket.assigns.live_action == :quests and socket.assigns.quest_section == "templates",
+        do: Templates.page(socket.assigns.template_view, socket.assigns.template_page),
+        else: %{templates: [], open: %{}, more?: false}
+
+    assign(socket,
+      templates: page.templates,
+      template_occurrences: page.open,
+      template_more: page.more?
+    )
+  end
+
+  defp new_project(socket),
+    do:
+      assign(socket,
+        editing_project_id: nil,
+        project_focus_id: nil,
+        project_editor_open: true,
+        project_form:
+          to_form(Map.put(ProjectComponents.defaults(), "request_key", Ecto.UUID.generate()),
+            as: :project
+          )
+      )
+
+  defp load_projects(socket) do
+    rows =
+      if socket.assigns.live_action == :quests and socket.assigns.quest_section == "projects",
+        do: Projects.list(socket.assigns.project_search, socket.assigns.project_focus_id),
+        else: []
+
+    history =
+      if Enum.any?(rows, &(&1.project.id == socket.assigns.selected_project_id)),
+        do: Projects.history(socket.assigns.selected_project_id),
+        else: []
+
+    assign(socket, projects: rows, project_history: history)
+  end
+
+  defp project_result(socket, {:ok, _}),
+    do:
+      {:noreply,
+       socket
+       |> assign(
+         project_editor_open: false,
+         project_stage_editor: nil,
+         project_acceptance_open: false,
+         project_quest_results: []
+       )
+       |> load_projects()
+       |> put_flash(:info, "Projekt uložen. Provozní data a XP se nezměnily.")}
+
+  defp project_result(socket, {:error, reason}) do
+    message =
+      case reason do
+        :unfinished_stages ->
+          "Nejprve dokonči všechny připojené questy v táboře. Projekt potřebuje alespoň jednu etapu."
+
+        :contributors_required ->
+          "Výslovně vyber platné přispěvatele."
+
+        :confirmation_required ->
+          "Převzetí musíš výslovně potvrdit."
+
+        :invalid_profile ->
+          "Vyber aktivního hrdinu."
+
+        :immutable_project ->
+          "Schválený nebo archivovaný projekt již nelze upravovat."
+
+        _ ->
+          "Projekt se nepodařilo uložit. Zkontroluj vstupy a povolený stav projektu."
+      end
+
+    {:noreply, put_flash(socket, :error, message)}
   end
 
   defp visible_offers(quests, profile_id, scope, search) do
@@ -526,7 +875,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp new_template(socket) do
-    draft = %TaskTemplate{starts_on: CozyCheckout.Adventure.Sources.Stays.today()}
+    draft = %TaskTemplate{starts_on: CozyCheckout.Adventure.Sources.Operation.today()}
 
     assign(socket,
       editing_template_id: nil,
@@ -704,6 +1053,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
                 {label, section, symbol} <- [
                   {"Jednorázové questy", "tasks", "notebook-pen"},
                   {"Opakované questy", "templates", "compass"},
+                  {"Projekty", "projects", "house"},
                   {"Historie", "history", "trophy"}
                 ]
               }
@@ -713,7 +1063,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             ><.symbol name={symbol} />{label}</button>
           </nav>
           <.task_board
-            :if={@live_action == :quests && @quest_section != "templates"}
+            :if={@live_action == :quests && @quest_section in ["tasks", "history"]}
             tasks={@tasks}
             profiles={@data.profiles}
             profile={@data.profile}
@@ -722,6 +1072,21 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             editing_id={@editing_task_id}
             editor_open={@task_editor_open}
             history={@quest_section == "history"}
+          />
+          <.projects
+            :if={@live_action == :quests && @quest_section == "projects"}
+            projects={@projects}
+            selected_id={@selected_project_id}
+            history={@project_history}
+            profiles={@data.profiles}
+            form={@project_form}
+            quest_results={@project_quest_results}
+            editing_id={@editing_project_id}
+            editor_open={@project_editor_open}
+            stage_editor={@project_stage_editor}
+            stage_form={@project_stage_form}
+            acceptance_open={@project_acceptance_open}
+            search={@project_search}
           />
           <.templates
             :if={@live_action == :quests && @quest_section == "templates"}
@@ -735,6 +1100,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             campaign_query={@template_campaign_query}
             campaign_open={@template_campaign_open}
             editor_open={@template_editor_open}
+            view={@template_view}
+            page={@template_page}
+            more={@template_more}
+            occurrences={@template_occurrences}
+            confirmation={@template_confirmation}
           />
           <.operation_world
             :if={@live_action == :index}
@@ -742,6 +1112,10 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             checked_at={@operation_checked_at}
             state={@operation_state}
             area={@operation_area}
+            world={@world}
+            chronicle={@cabin_chronicle}
+            chronicle_page={@cabin_page}
+            profiles={@data.profiles}
           />
           <div :if={@live_action == :index} class="adventure-camp-grid">
             <div class="adventure-quests-column">
