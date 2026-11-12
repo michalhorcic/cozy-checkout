@@ -7,39 +7,6 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
     """
   end
 
-  def world_map(assigns) do
-    ~H"""
-    <section id="adventure-world-map" class="adventure-panel adventure-world-map">
-      <header class="adventure-section-heading">
-        <div>
-          <p class="adventure-eyebrow">Za branami tábora</p><h2>Mapa chaty</h2>
-        </div><.symbol name="compass" />
-      </header>
-      <p class="adventure-muted">Vydej se do provozu. Tvá rozpracovaná výprava na tebe počká.</p>
-      <div class="adventure-map-places">
-        <.link href={~p"/admin/bookings/calendar"} class="adventure-place adventure-place--lodge"><span class="adventure-place-token"><.symbol name="house" /></span><strong>Recepce</strong><span>Rezervace a hosté</span><.icon
-          name="hero-arrow-up-right"
-          class="size-4"
-        /></.link>
-        <.link href={~p"/admin/meal-planner"} class="adventure-place adventure-place--kitchen"><span class="adventure-place-token"><.symbol name="utensils" /></span><strong>Kuchyně</strong><span>Jídla a nákupy</span><.icon
-          name="hero-arrow-up-right"
-          class="size-4"
-        /></.link>
-        <.link href={~p"/admin/bar-stock"} class="adventure-place adventure-place--bar"><span class="adventure-place-token"><.symbol name="backpack" /></span><strong>Bar</strong><span>Zásoby baru</span><.icon
-          name="hero-arrow-up-right"
-          class="size-4"
-        /></.link>
-        <.link href={~p"/admin/billing"} class="adventure-place adventure-place--treasury"><span class="adventure-place-token"><.symbol name="coins" /></span><strong>Pokladnice</strong><span>Doklady a platby</span><.icon
-          name="hero-arrow-up-right"
-          class="size-4"
-        /></.link>
-      </div>
-      <.link href={~p"/admin"} class="adventure-text-link adventure-world-exit">Celá aplikace
-      <.icon name="hero-arrow-right" class="size-4" /></.link>
-    </section>
-    """
-  end
-
   attr :name, :string, required: true
   attr :class, :string, default: ""
 

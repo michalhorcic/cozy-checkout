@@ -280,3 +280,43 @@ body:has(#adventure-help[open]) { overflow: hidden; }
 .adventure-data-status, .adventure-data-status > small { font-size: 10px; }
 .adventure-medal-card > strong { font-size: 11px; }
 .adventure-medal-card > .adventure-muted { font-size: 10px; }
+/* The same keyboard-accessible places become a linear village directory on mobile. */
+.adventure-operation { margin-block: 1.5rem; }
+.adventure-operation-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(16rem, 1fr); gap: 1.5rem; margin-block: 1rem; }
+.adventure-village { position: relative; isolation: isolate; min-height: 460px; border: 1px solid #b5b697; border-radius: 1rem; background: #e2e8d2; overflow: hidden; }
+.adventure-village-land { position: absolute; inset: 0; z-index: -1; background: linear-gradient(#edf1dc55, #dce3bcbb), url('/images/adventure/mountain-lodge.png') center / cover; }
+.adventure-village-land::before { content: ""; position: absolute; width: 130%; height: 2rem; background: #e6d1a6; transform: rotate(-18deg); top: 55%; left: -15%; border-block: 3px dashed #bbaa85; }
+.adventure-village-land span { position: absolute; top: .65rem; left: 1rem; font-family: Georgia, serif; font-style: italic; color: #4c624c; }
+.adventure-village-place { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .4rem; position: absolute; width: 28%; border: 1px solid #a39778; border-bottom: 5px solid #827258; border-radius: .6rem; padding: 1rem .5rem; background: #fff8e5f5; color: #354338; box-shadow: 0 8px 12px #35433820; cursor: pointer; text-align: center; min-width: 0; }
+.adventure-village-place .adventure-symbol { width: 2rem; height: 2rem; }
+.adventure-village-place strong { font-family: Georgia, serif; font-size: 1.15rem; }
+.adventure-village-place span:last-child { font-size: .78rem; line-height: 1.45; }
+.adventure-village-place[aria-pressed="true"] { background: #f8e7b8; border-color: #6c5331; outline: 2px solid #6c5331; outline-offset: 3px; }
+.adventure-village-place:focus-visible, .adventure-operation button:focus-visible, .adventure-operation a:focus-visible { outline: 3px solid #296b76; outline-offset: 4px; }
+.adventure-village-place--reception { left: 5%; top: 22%; }
+.adventure-village-place--rooms { left: 36%; top: 10%; }
+.adventure-village-place--kitchen { right: 5%; top: 24%; }
+.adventure-village-place--bar { left: 5%; bottom: 8%; }
+.adventure-village-place--treasury { left: 36%; bottom: 12%; }
+.adventure-village-place--workshop { right: 5%; bottom: 7%; }
+.adventure-area-detail { padding: 1.25rem; border-left: 3px solid #b9a67d; background: #faf4e6; border-radius: .25rem .75rem .75rem .25rem; min-width: 0; }
+.adventure-area-detail h3, .adventure-service-day h3 { font-family: Georgia, serif; font-size: 1.25rem; color: #374839; margin-bottom: .75rem; }
+.adventure-area-detail p { margin-block: .75rem; line-height: 1.65; }
+.adventure-area-detail .adventure-text-link { display: flex; margin-block: .8rem; }
+.adventure-operation-counts { display: grid; gap: .75rem; margin-block: 1rem; }
+.adventure-operation-counts > div { display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; border-bottom: 1px solid #d9cfb8; }
+.adventure-operation-counts dd { font-weight: 700; font-size: 1.25rem; }
+.adventure-operation-warning { color: #784516; background: #f9ebce; padding: .75rem; border-left: 3px solid #ab7132; }
+.adventure-service-day { border-top: 1px solid #cfc4ab; padding-top: 1rem; margin-block: 1.25rem; }
+.adventure-service-day ul { list-style: none; padding: 0; }
+.adventure-service-day li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-block: .75rem; border-bottom: 1px dashed #cfc4ab; }
+@media (max-width: 900px) {
+  .adventure-operation-layout { grid-template-columns: minmax(0, 1fr); }
+  .adventure-village { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; padding: 1rem; background: #e8e7d6; min-height: 0; }
+  .adventure-village-land { display: none; }
+  .adventure-village-place { position: static; width: auto; display: grid; grid-template-columns: 2rem minmax(0, 1fr); text-align: left; justify-items: start; padding: .8rem; gap: .25rem .75rem; }
+  .adventure-village-place .adventure-symbol { grid-row: span 2; }
+  .adventure-village-place--rooms { transform: none; }
+  .adventure-service-day li { flex-direction: column; align-items: start; }
+  .adventure-operation > .adventure-section-heading { flex-wrap: wrap; gap: .75rem; }
+}

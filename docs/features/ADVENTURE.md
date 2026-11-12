@@ -72,13 +72,73 @@ nikoliv pevné čtyři definice. Prázdná nástěnka odkazuje na knihu zadání
 **Přijmout výpravu** přesune osobní quest do slotu vybraného hrdiny;
 **Vyrazit společně** ho přesune do společných výprav. Po přijetí se nabídka zavře.
 
-Mapa chaty má portály **Recepce** (kalendář), **Kuchyně** (stravování),
-**Bar** (sklad baru) a **Pokladnice** (doklady/platby). Jde o odkazy do existující
-aplikace, které samy nemění provozní stav a nepotvrzují úkol. Po návratu
-zůstává výprava rozpracovaná. Kniha zadání neobsahuje duplikované výpravy,
+Mapa chaty má šest oblastí: **Recepce**, **Pokoje**, **Kuchyně**, **Bar**,
+**Pokladnice** a **Dílna**. Výběr oblasti otevře detail bez dalšího provozního
+dotazu; na mobilu je stejná mapa dostupným seznamem tlačítek. Detaily odkazují
+do existujících funkcí aplikace, samy nemění provozní stav a nepotvrzují úkol.
+Po návratu zůstává výprava rozpracovaná. Kniha zadání neobsahuje duplikované výpravy,
 katalog ani sezónní karty a nemá tlačítka k zahájení/splnění. Tábor odkazuje
 na část Historie v knize; ta uchovává i dokončené původní katalogové questy.
 Sezónní panel se jmenuje Kronika sezóny, aby se nepletl se společnými úkoly.
+
+### Živý tábor (4A)
+
+Recepce a Pokoje ukazují dnešní příjezdy a odjezdy **skupin** a počet osob podle
+kalendáře. Příjezd obsazenost zahrnuje, odjezd vylučuje. Nejde o fyzickou
+přítomnost, ověření čistoty ani připravenost pokoje. Kuchyně zobrazuje známé
+porce snídaní/obědů/večeří; při chybějících podkladech jsou to výslovně pouze
+minimální známé počty, ne celková potřeba. Porce nejsou uvařené jídlo.
+Zdrojové definice zůstávají stejné jako v Přehledu: kalendář pracuje s aktivními
+a budoucími rezervacemi, kuchyň zahrnuje i dokončené nesmazané, nestornované pobyty.
+
+**Služba dne** ukazuje nejvýše čtyři konkrétní podněty z Přehledu s důvodem,
+datem příjezdu skupiny a odkazem na pobyt. Zahrnuje probíhající pobyty a výhled
+do stejného dne následujícího měsíce (zkrácený na konec měsíce). Datum příjezdu
+není datum vzniku závady ani termín nového questu. Další podněty řeší plán jídel.
+Prázdný seznam neznamená, že je chata připravena.
+
+Mapa, služba i detaily sdílejí jedinou projekci `Dashboard.overview(today)`.
+Načte se jednou po připojení Tábora a pak pouze tlačítkem **Obnovit provoz**.
+Počáteční HTTP render, Questy, Nastavení, výběr oblasti/hrdiny a běžný render
+nový zdrojový přehled nenačítají. Žádný polling ani dotazy po oblastech.
+Vypnutý modul blokuje loader před SQL. Projekce žije jen v socketu, neukládá
+se do databáze a neobsahuje hostovská jména, kontakty ani načtené booking/guest
+struktury; podněty mají pouze ID pobytu, typ, důvod a datum.
+
+Schválený rozpočet je nejvýše **15 zdrojových SELECTů** na načtení:
+timeline rezervace/hosté/pokoje 4, kuchyň 8, obsazenost 1, porce 2, kapacita 0.
+Prázdné preloady mohou počet snížit. Jde o opakované, ale dávkové a omezené čtení
+bez N+1; počet nesmí růst s počtem skupin, receptů nebo oblastí. Zůstává běžná
+konzistence jednotlivých SELECTů, nikoli společný REPEATABLE READ snapshot;
+souběžná provozní editace může mezi zdroji krátkodobě vytvořit rozdíl. Ruční
+obnova znovu načte celý přehled, ne finanční kroniku.
+
+Pražský den se počítá v paměti podle současných pravidel EU (poslední neděle
+března/října v 01:00 UTC), aby dodatečný SQL dotaz na časové pásmo nespotřeboval
+rozpočet. Při změně zákonných pravidel je nutné výpočet aktualizovat. Čas načtení
+je zobrazen v UTC. Chyba ponechá poslední projekci označenou jako nečerstvou;
+bez předchozího výsledku jsou hodnoty neznámé, ne nulové. Stáří alespoň 15 minut
+nebo změna pražského dne označí údaje jako starší při dalším renderu. Bez pollingu
+se text sám po čase nepřekresluje, proto je vždy viditelný čas a ruční režim obnovy.
+
+Bar a Pokladnice odkazují na existující **Kroniku sezóny**, její datum přepočtu
+a původní sklad/fakturaci. Neprovádějí nové skladové ani finanční čtení. Částky
+jsou sezónní uložené snapshoty, ne živý stav či dostupný investiční rozpočet;
+**Obnovit provoz je nepřepočítává**. Dílna výslovně přiznává, že projekty zatím
+neexistují, a nabízí knihu běžných questů. Prohlížení a obnova neudělují XP,
+nezakládají questy ani nemění provozní data. Tři osobní sloty, společná práce,
+kronika, zapamatování hrdiny, admin PIN i feature flag zůstávají zachované.
+
+Ověření 4A: přidány regresní ExUnit/LiveView scénáře pro projekci, neúplnost,
+pražské dny/DST, dotazový strop na malé i velké sadě, zákaz obnovení při UI
+událostech, výslovnou obnovu, flag, stavy načítání/chyby a odkazy. Lokální
+testy nebyly spuštěny; výsledky CI ověří uživatel. Prošly formatter změněných
+Elixir souborů, kompilace s `--warnings-as-errors` a `MIX_ENV=test mix assets.build`.
+Použit Elixir 1.20.5 / Erlang 29.1.2 (ERTS 17.1.1), nikoli přesně připnutý
+Elixir 1.20.4-otp-29 / Erlang 29.1; shoda formatteru s CI není zaručena.
+První kompilace vypsala varování existujících závislostí; aplikace prošla.
+Ruční browserové ověření desktopu, 390/320 px a asistivních technologií nebylo
+provedeno. Žádná nová migrace, konfigurace ani projektový systém.
 
 Pravidla, identita profilu, definice KPI a omezení jsou za tlačítkem
 **Průvodce** v překryvné nápovědě. Lze ji zavřít křížkem, Escape, kliknutím
