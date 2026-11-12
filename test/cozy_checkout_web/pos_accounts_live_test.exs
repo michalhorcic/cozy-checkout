@@ -49,7 +49,7 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
 
     {:ok, view, html} = live(conn, "/pos")
     assert has_element?(view, "#pos-new-account", "Nový účet")
-    assert has_element?(view, "#pos-order-#{account.id}", "Novákovi")
+    assert has_element?(view, "button#pos-order-#{account.id}[type='button']", "Novákovi")
 
     assert has_element?(
              view,
@@ -80,6 +80,7 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
 
     view |> element("#pos-new-account") |> render_click()
     assert has_element?(view, "h3", "Nový účet")
+    assert has_element?(view, "#pos-quick-order-dialog[role='dialog'][aria-modal='true']")
     assert has_element?(view, "button[phx-click='create_quick_order'][disabled]")
 
     view |> form("#pos-stamp-form", account_stamp: "mushroom") |> render_change()
@@ -96,6 +97,9 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
 
     {:ok, detail, _} = live(conn, "/pos/orders/#{order.id}")
     assert has_element?(detail, "img[src='/images/account-stamps/mushroom.svg']")
+    assert has_element?(detail, "button[phx-value-category-id='all'][aria-pressed='true']")
+    assert has_element?(detail, "a[href='#pos-cart-summary']", "Zobrazit účet")
+    assert has_element?(detail, "#pos-cart-summary #delete-empty-order-button")
     refute render(detail) =~ "Standalone Order"
   end
 
@@ -117,7 +121,7 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
       view
       |> render()
       |> LazyHTML.from_document()
-      |> LazyHTML.query("div[id^='pos-order-']")
+      |> LazyHTML.query("button[id^='pos-order-']")
       |> LazyHTML.attribute("id")
 
     assert ids == Enum.map(Sales.list_open_orders(), &"pos-order-#{&1.id}")

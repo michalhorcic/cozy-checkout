@@ -33,8 +33,8 @@ defmodule CozyCheckoutWeb.DashboardLive do
       main_class="px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
       content_class="mx-auto max-w-7xl"
     >
-      <div id="operations-dashboard">
-        <header class="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <div id="operations-dashboard" class="dashboard-workspace">
+        <header class="dashboard-heading mb-7 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p class="mb-1 text-sm text-primary-400">Jindřichův dům · {date(@overview.today)}</p>
             <h1 class="text-3xl font-bold tracking-tight text-primary-500">Přehled provozu</h1>
@@ -52,7 +52,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
           :if={@overview.issues != [] || @economic_issues != []}
           id="dashboard-attention"
           aria-labelledby="attention-heading"
-          class="mb-7 overflow-hidden rounded-2xl border border-warning bg-white shadow-sm"
+          class="dashboard-attention mb-7 overflow-hidden rounded-2xl border border-warning bg-white shadow-sm"
         >
           <summary class="flex min-h-11 cursor-pointer items-center gap-3 px-6 py-4">
             <.icon name="hero-exclamation-triangle" class="h-5 w-5 text-warning" />
@@ -89,7 +89,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
           </div>
         </details>
 
-        <div class="mb-7 grid gap-3 sm:grid-cols-3">
+        <div class="dashboard-metrics mb-7 grid gap-3 sm:grid-cols-3">
           <.summary
             label="Dnešní příjezdy"
             value={@overview.arrivals}
@@ -110,17 +110,17 @@ defmodule CozyCheckoutWeb.DashboardLive do
           />
         </div>
 
-        <div class="mb-7 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+        <div class="dashboard-columns mb-7 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
           <.live_component
             module={CozyCheckoutWeb.BookingLive.TimelineComponent}
             id="dashboard-stays"
             initial_data={@overview.timeline}
           />
 
-          <div class="space-y-5">
+          <div class="dashboard-side-panels space-y-5">
             <section
               aria-labelledby="food-heading"
-              class="rounded-2xl border border-secondary-200 bg-white p-5 shadow-sm sm:p-6"
+              class="dashboard-panel rounded-2xl border border-secondary-200 bg-white p-5 shadow-sm sm:p-6"
             >
               <div class="mb-4 flex items-center gap-3">
                 <span class="rounded-xl bg-secondary-100 p-2.5"><.icon
@@ -174,7 +174,7 @@ defmodule CozyCheckoutWeb.DashboardLive do
             </section>
             <section
               aria-labelledby="bar-heading"
-              class="rounded-2xl border border-secondary-200 bg-white p-5 shadow-sm sm:p-6"
+              class="dashboard-panel rounded-2xl border border-secondary-200 bg-white p-5 shadow-sm sm:p-6"
             >
               <h2 id="bar-heading" class="mb-2 font-semibold text-primary-500">Barový sklad</h2>
               <p class="mb-4 text-sm leading-relaxed text-primary-400">
@@ -217,13 +217,13 @@ defmodule CozyCheckoutWeb.DashboardLive do
 
   defp summary(assigns) do
     ~H"""
-    <div class="flex items-start gap-4 rounded-xl border border-secondary-200 bg-white p-4 sm:p-5">
+    <div class="dashboard-metric flex items-start gap-4 rounded-xl border border-secondary-200 bg-white p-4 sm:p-5">
       <span class="rounded-lg bg-secondary-50 p-2"><.icon
         name={@icon}
         class="h-5 w-5 text-primary-400"
       /></span>
       <div>
-        <p class="text-sm text-primary-400">{@label}</p><p class="mt-1 text-3xl font-semibold tracking-tight text-primary-500">
+        <p class="text-sm text-primary-400">{@label}</p><p class="dashboard-metric-value mt-1 text-3xl font-semibold tracking-tight text-primary-500">
           {@value}
         </p><p class="mt-1 text-xs text-primary-400">{@detail}</p>
       </div>

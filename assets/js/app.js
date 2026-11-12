@@ -33,11 +33,30 @@ import {IncomingBatchUpload} from "./hooks/incoming_batch_upload"
 import {IncomingDocumentPreview} from "./incoming_document_preview"
 import {AdventureHelp} from "./adventure/help_dialog"
 import {AdventureHero} from "./adventure/hero_preference"
+import {DesignSwitcher} from "./design_theme"
 
 const csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 
+// LiveView also reads browser storage; keep it usable when privacy settings block it.
+function liveViewStorage(name) {
+  try {
+    const storage = window[name]
+    storage.setItem("cozy-storage-check", "1")
+    storage.removeItem("cozy-storage-check")
+    return storage
+  } catch (_) {
+    const values = new Map()
+    return {
+      getItem: key => values.get(key) ?? null,
+      setItem: (key, value) => values.set(key, String(value)),
+      removeItem: key => values.delete(key)
+    }
+  }
+}
+
 // Custom hooks
 const Hooks = {
+  DesignSwitcher,
   AdventureHelp,
   AdventureHero,
   IncomingActionBar,
@@ -225,6 +244,8 @@ const Hooks = {
 }
 
 const liveSocket = new LiveSocket("/live", Socket, {
+  localStorage: liveViewStorage("localStorage"),
+  sessionStorage: liveViewStorage("sessionStorage"),
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
   hooks: {...colocatedHooks, ...Hooks},
@@ -341,4 +362,3 @@ if (process.env.NODE_ENV === "development") {
     window.liveReloader = reloader
   })
 }
-
