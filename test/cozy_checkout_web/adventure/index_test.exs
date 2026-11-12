@@ -93,17 +93,25 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
   test "map details link to real tools and finance stays explicitly seasonal", %{conn: conn} do
     {:ok, view, _} = live(conn, "/admin/adventure")
 
-    for {area, href} <- [
-          {"kitchen", "/admin/meal-planner"},
-          {"bar", "/admin/bar-stock"},
-          {"treasury", "/admin/billing"},
-          {"workshop", "/admin/adventure/quests?section=projects"}
+    for {area, panel, href} <- [
+          {"kitchen", "#adventure-area-detail", "/admin/meal-planner"},
+          {"bar", "#adventure-bar-stock", "/admin/bar-stock"},
+          {"treasury", "#adventure-area-detail", "/admin/billing"},
+          {"workshop", "#adventure-area-detail", "/admin/adventure/quests?section=projects"}
         ] do
       render_click(view, "operation-area", %{"area" => area})
-      assert has_element?(view, "#adventure-area-detail a[href='#{href}']")
+      assert has_element?(view, "#{panel} a[href='#{href}']")
     end
 
     render_click(view, "operation-area", %{"area" => "bar"})
+
+    assert has_element?(
+             view,
+             "#adventure-area-detail a[href='/admin/adventure?view=chronicle']",
+             "Kronika baru"
+           )
+
+    render_click(view, "operation-area", %{"area" => "treasury"})
     assert has_element?(view, "#adventure-area-detail", "Obnova provozu je nepřepočítává")
     assert has_element?(view, "#adventure-area-detail a[href='/admin/adventure?view=chronicle']")
     {:ok, book, _} = live(conn, "/admin/adventure/quests")
@@ -263,7 +271,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     with_duty_queries(fn queries ->
       view |> element("#adventure-duty-0 button", "Připravit další řešení") |> render_click()
-      assert has_element?(view, "#adventure-duty-previous", "uzavřená práce")
+      assert has_element?(view, "#adventure-duty-previous", "Hotovo")
+      assert has_element?(view, "#adventure-duty-confirm-next", "Připravit další quest")
       assert has_element?(view, "#adventure-duty-previous", "Doplnit podklady")
       refute has_element?(view, "#adventure-duty-form")
 
@@ -378,15 +387,25 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       %{state | socket: socket}
     end)
 
+    snapshot = :sys.get_state(view.pid).socket.assigns.operation
     render_click(view, "prepare-duty", %{"source" => duty_source(view)})
-    assert has_element?(view, "#adventure-duty-source", "Poslední obnova selhala")
-    assert has_element?(view, "#adventure-duty-source", "UTC")
+
+    assert has_element?(
+             view,
+             "#adventure-duty-source [role=status]",
+             "Starší nebo neověřený podklad"
+           )
+
+    refute has_element?(view, "#adventure-duty-source", "UTC")
 
     assert has_element?(
              view,
              "#adventure-duty-source",
-             Calendar.strftime(CozyCheckout.Adventure.Sources.Operation.today(), "%d. %m. %Y")
+             Calendar.strftime(CozyCheckout.Adventure.Sources.Operation.today(), "%-d. %-m.")
            )
+
+    draft = :sys.get_state(view.pid).socket.assigns.duty_draft
+    assert draft.snapshot == snapshot
 
     render_click(view, "duty-profile-select", %{"id" => profile.id})
 
@@ -394,7 +413,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     |> form("#adventure-duty-form", duty: %{size: "medium", xp: 175})
     |> render_change()
 
-    assert has_element?(view, "#adventure-duty-reward", "175 XP pro skutečného splnitele")
+    assert has_element?(view, "#adventure-duty-reward", "175 XP")
 
     view
     |> form("#adventure-duty-form",
