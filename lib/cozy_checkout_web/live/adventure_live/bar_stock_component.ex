@@ -54,74 +54,105 @@ defmodule CozyCheckoutWeb.AdventureLive.BarStockComponent do
 
   @impl true
   def render(assigns) do
-    assigns = assign(assigns, :enabled, Adventure.enabled?())
+    assigns =
+      assigns
+      |> assign(:enabled, Adventure.enabled?())
+      |> assign(
+        :alerts,
+        if(assigns.snapshot,
+          do:
+            Enum.filter(
+              assigns.snapshot.products,
+              &(&1.status in [:out_of_stock, :low_stock, :unknown])
+            ),
+          else: []
+        )
+      )
 
     ~H"""
-    <section id={@id} aria-label="Živý sklad baru" aria-busy={@state == :loading}>
-      <h3>Evidovaný sklad baru</h3>
-      <p>Stav evidence není fyzická inventura. Bez automatické obnovy.</p>
-      <button
-        type="button"
-        id="adventure-bar-refresh"
-        phx-click="refresh"
-        phx-target={@myself}
-        disabled={@state == :loading || !@enabled}
-        class="adventure-text-link"
-      >Obnovit sklad baru</button>
-      <div role="status" aria-live="polite">
-        <p :if={@state == :loading}>Načítání skladu…</p>
-        <p :if={@state == :error}>
-          Sklad se nepodařilo načíst. Zobrazené údaje mohou být neaktuální.
-        </p>
-        <p :if={!@snapshot || !@enabled}>Aktuální stav není známý. Neznámý stav není nula.</p>
+    <section
+      id={@id}
+      class="adventure-area-detail"
+      aria-label="Zásoby baru"
+      aria-busy={@state == :loading}
+    >
+      <header class="flex items-center justify-between gap-3">
+        <h3>Zásoby baru</h3>
+        <button
+          type="button"
+          id="adventure-bar-refresh"
+          phx-click="refresh"
+          phx-target={@myself}
+          disabled={@state == :loading || !@enabled}
+          class="adventure-text-link"
+        >
+          <.icon name="hero-arrow-path" class="size-4" /> Obnovit
+        </button>
+      </header>
+      <div role="status" aria-live="polite" class="text-sm opacity-75">
+        <p :if={@state == :loading}>Nahlížíme do baru…</p>
+        <p :if={@state == :error}>Bar se teď neozývá. Zkus obnovit.</p>
+        <p :if={!@snapshot || !@enabled}>Zatím bez přehledu.</p>
         <p :if={@snapshot && @enabled}>
-          Načteno
-          <time datetime={DateTime.to_iso8601(@snapshot.loaded_at)}>{@snapshot.loaded_at} UTC</time>
-          <strong :if={BarStock.stale?(@snapshot, @now)}> · Zastaralé údaje (15 minut nebo více)</strong>
+          <time datetime={DateTime.to_iso8601(@snapshot.loaded_at)}>{age(@snapshot.loaded_at, @now)}</time>
+          <span :if={BarStock.stale?(@snapshot, @now)}> · Starší přehled</span>
         </p>
       </div>
       <div :if={@snapshot && @enabled}>
-        <dl class="adventure-operation-counts">
+        <dl class="grid grid-cols-3 gap-2 my-4 text-center">
           <div>
-            <dt>Sledované produkty</dt><dd>{@snapshot.tracked_count}</dd>
+            <dt class="text-sm">Dochází</dt><dd class="text-xl font-bold">
+              {count(@snapshot, :out_of_stock) + count(@snapshot, :low_stock)}
+            </dd>
           </div>
           <div>
-            <dt>Evidovaný stav ≤ 0</dt><dd>{count(@snapshot, :out_of_stock)}</dd>
+            <dt class="text-sm">Bez evidence</dt><dd class="text-xl font-bold">
+              {count(@snapshot, :unknown)}
+            </dd>
           </div>
           <div>
-            <dt>Na limitu nebo pod ním</dt><dd>{count(@snapshot, :low_stock)}</dd>
-          </div>
-          <div>
-            <dt>Bez skladových pohybů</dt><dd>{count(@snapshot, :unknown)}</dd>
-          </div>
-          <div>
-            <dt>Bez nastaveného limitu</dt><dd>
-              {Enum.count(@snapshot.products, &is_nil(&1.threshold))}
+            <dt class="text-sm">Sledujeme</dt><dd class="text-xl font-bold">
+              {@snapshot.tracked_count}
             </dd>
           </div>
         </dl>
-        <p :if={@snapshot.tracked_count == 0}>
-          Žádné sledované produkty. Dostupnost zásob není ověřena.
-        </p>
-        <ul class="max-h-80 overflow-y-auto break-words" aria-label="Upozornění skladu baru">
-          <li :for={product <- @snapshot.products} :if={product.status != :in_stock}>
-            <strong>{product.name}</strong>
-            · {label(product.status)} ·
-            <span :if={product.stock}>{format_number(product.stock)} {product.unit}</span>
-            <span :if={!product.stock}>Množství není evidováno</span>
-            <span :if={product.threshold}> · limit {format_number(product.threshold)} {product.unit}</span>
-            <span :if={!product.threshold}> · limit nenastaven</span>
+        <p :if={@snapshot.tracked_count == 0}>Bar čeká na první zásoby.</p>
+        <p :if={@snapshot.tracked_count > 0 && @alerts == []}>Žádné hlášené nedostatky.</p>
+        <ul
+          class="max-h-64 overflow-y-auto break-words space-y-3"
+          aria-label="Upozornění skladu baru"
+        >
+          <li :for={product <- @alerts} class="flex items-start justify-between gap-3">
+            <div>
+              <strong>{product.name}</strong><small class="block opacity-75">{label(product.status)}</small>
+            </div>
+            <span :if={product.stock} class="shrink-0">{quantity(product.stock)} {product.unit}</span>
           </li>
         </ul>
+        <p :if={Enum.any?(@snapshot.products, &is_nil(&1.threshold))} class="mt-3 text-sm opacity-75">
+          Bez limitu: {Enum.count(@snapshot.products, &is_nil(&1.threshold))}
+        </p>
       </div>
-      <.link href={~p"/admin/bar-stock"} class="adventure-text-link">Otevřít sklad baru</.link>
+      <.link href={~p"/admin/bar-stock"} class="adventure-text-link">Do skladu
+      <.icon name="hero-arrow-right" class="size-4" /></.link>
     </section>
     """
   end
 
+  defp age(loaded_at, now) do
+    minutes = max(div(DateTime.diff(now, loaded_at), 60), 0)
+
+    cond do
+      minutes == 0 -> "Právě načteno"
+      minutes < 60 -> "Před #{minutes} min"
+      minutes < 1440 -> "Před #{div(minutes, 60)} h"
+      true -> "Před #{div(minutes, 1440)} d"
+    end
+  end
+
+  defp quantity(value), do: value |> Decimal.normalize() |> format_number()
   defp count(snapshot, status), do: Enum.count(snapshot.products, &(&1.status == status))
   defp label(:unknown), do: "Chybí evidence"
-  defp label(:out_of_stock), do: "Evidovaný stav ≤ 0"
+  defp label(:out_of_stock), do: "Nulová nebo záporná zásoba"
   defp label(:low_stock), do: "Na limitu nebo pod ním"
-  defp label(:no_limit), do: "Limit nenastaven"
 end
