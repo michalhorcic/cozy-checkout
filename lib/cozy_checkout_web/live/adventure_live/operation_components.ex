@@ -127,9 +127,9 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           <div :if={@area == "workshop"}>
             <h3>Místo pro příští zlepšení</h3>
             <p>
-              Projektový systém zatím není zavedený. Údržbu nebo investiční práci lze ručně zadat jako běžný quest, bez evidence rozpočtu či automatického převzetí projektu.
+              Vlastní projekty propojují plánované zlepšení s existujícími questy. Rozpočet je jen plán; převzetí výsledku vždy výslovně potvrdí člověk, bez dalších XP.
             </p>
-            <.link navigate={~p"/admin/adventure/quests"} class="adventure-text-link">Otevřít knihu questů</.link>
+            <.link navigate={~p"/admin/adventure/quests?section=projects"} class="adventure-text-link">Otevřít knihu projektů</.link>
           </div>
           <p :if={!@snapshot && @area in ["reception", "rooms", "kitchen"]}>
             Provozní údaje zatím nejsou dostupné. Neznámý stav není nula.
@@ -184,5 +184,5 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
 
   defp summary("bar", _), do: "Sezónní kronika · ne živě"
   defp summary("treasury", _), do: "Sezónní kronika · ne živě"
-  defp summary("workshop", _), do: "Projekty zatím nezavedené"
+  defp summary("workshop", _), do: "Vlastní plány a etapy"
 end

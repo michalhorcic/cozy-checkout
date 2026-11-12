@@ -89,7 +89,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
           {"kitchen", "/admin/meal-planner"},
           {"bar", "/admin/bar-stock"},
           {"treasury", "/admin/billing"},
-          {"workshop", "/admin/adventure/quests"}
+          {"workshop", "/admin/adventure/quests?section=projects"}
         ] do
       render_click(view, "operation-area", %{"area" => area})
       assert has_element?(view, "#adventure-area-detail a[href='#{href}']")

@@ -1,6 +1,6 @@
 # Cozy Adventure – provoz a budování chaty
 
-- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, zapamatování hrdiny v PR #116; schválená 4A implementovaná v pracovní větvi, ověření a hranice v oddílu 13; 4B/4C zůstávají návrhy
+- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, zapamatování hrdiny v PR #116; 4A dodána, schválený obecný základ 4B implementován v pracovní větvi, předání v oddílu 14; 4C zůstává návrh
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: herní rozhraní nad provozem aplikace, správa questů, rozvoj chaty investičními projekty a kronika skutečných výsledků
@@ -37,7 +37,8 @@ Uživatel potvrdil:
 
 Další návrhy v tomto dokumentu jsou doporučený rozsah, nikoli už nasazené chování.
 Historický souhlas s implementací se týkal dokončených etap 3A/3B. Nový souhlas
-pro omezenou 4A a její dodávku zaznamenává oddíl 13; návrhy 4B/4C nejsou schválené.
+pro omezenou 4A a její dodávku zaznamenává oddíl 13. Následný souhlas s obecným
+základem 4B a jeho hranicemi zaznamenává oddíl 14; 4C zůstává návrh.
 
 > **Aktuální směr (12. 11. 2026 odpoledne):** Tábor je provozovaná a postupně
 > vylepšovaná chata, nikoli jen seznam úkolů a odkazů. Oddíl 12 rozpracovává
@@ -264,9 +265,9 @@ samostatnou schvalovací bránu. V plánování se žádný nový provozní dota
 2. **Hotovo 3B – sezónní přehled:** volitelné cíle, historické sezóny, rozšířené
    read-only adaptéry, oddělené inkaso a vyúčtování pobytů, kvalita po metrikách.
    Zahrnuje lůžkonoci, inkaso baru a platby/vyúčtování ubytování.
-3. **Návrh 4A – živý tábor:** převést vybraná data z Přehledu do oblastí
+3. **Hotovo 4A – živý tábor:** převést vybraná data z Přehledu do oblastí
    chaty a nabídnout jasné přechody do stávajících provozních funkcí.
-4. **Návrh 4B – investiční projekty:** dlouhodobé zlepšení chaty rozdělené na
+4. **Implementováno 4B – investiční projekty:** dlouhodobé zlepšení chaty rozdělené na
    skutečné questy, plánovaný rozpočet, návaznosti a ruční převzetí výsledku.
 5. **Návrh 4C – viditelný rozvoj:** dokončené projekty mění herní podobu chaty,
    kroniku zlepšení a nabídku dalších plánů; nemění provozní čísla.
@@ -567,8 +568,8 @@ investiční akce do questů. Provoz je pouze ke čtení; všechny skutečné zm
 zůstávají ve stávajících funkcích. To je potvrzený směr této aktualizace.
 
 Mapa a omezený provozní rozsah 4A byly následně výslovně schválené a implementované
-podle oddílu 13. Projekty s etapami, vizuální odemykání a ostatní rozšíření 4B/4C
-zůstávají doporučením, nikoli součástí této dodávky nebo schválením dalšího kódu.
+podle oddílu 13. Obecný základ projektů s etapami byl následně schválen podle
+oddílu 14. Vizuální odemykání a ostatní rozšíření 4C zůstávají doporučením.
 
 Implementační základ: 3A/3B jsou hotové v PR #113/#115. Oprava preference
 hrdiny `76ab72b` byla sloučena v PR #116: localStorage s cookie zálohou,
@@ -801,9 +802,10 @@ provozního zdroje; Bar/Pokladnice dál z dosavadní kroniky a odkazů, Dílna z
 bez předstírání existujícího projektového modulu. Nové skladové a ekonomické
 agregace i připravení questu z podnětu lze dodat zvlášť po ověření tohoto základu.
 
-**4B – první investiční projekt:** vlastní plán a etapy propojené s questy,
+**4B – investiční projekty:** vlastní plán a etapy propojené s questy,
 volitelný odhad a reference na podklady, přehled postupu a výslovné převzetí.
-Začít jedním reálným projektem, nepředělávat celou aplikaci na projektový systém.
+Následně schválený rozsah je obecný základ bez předem založené konkrétní investice
+(oddíl 14), nikoli přestavba celé aplikace na projektový systém.
 Pokročilé závislosti, alokace dokladů a součet skutečných nákladů nejsou podmínkou.
 
 **4C – rozvoj světa:** viditelné změny z dokončených projektů, kronika chaty,
@@ -893,3 +895,41 @@ ne současně mapou, kompletním projekťákem, novým přihlášením a účetn
 Neprovozovat klasické zápisy prostřednictvím herních akcí a nezaměňovat
 inkaso baru za statistiku prodeje. Stav cizích rozpracovaných souborů ověřit
 a zachovat; `rel/env.sh.eex` a `generated_images/` nejsou součástí této revize.
+
+## 14. Schválený obecný základ 4B (12. 11. 2026)
+
+Uživatel nyní výslovně schválil vlastní Adventure projekty s etapami navázanými
+na existující questy, volitelným rozpočtem pouze pro plánování a výslovným
+lidským převzetím. Žádná konkrétní investice se neseeduje. XP zůstávají pouze
+za existující questy; převzetí nedává další XP a nikdy neproběhne automaticky.
+Projekty jsou nezávislé na sezónách a uchovávají audit a historii. Bez účetnictví,
+součtu skutečných nákladů, nových provozních zdrojů nebo smyšlených příjmových bonusů.
+
+Samostatně schváleno konkrétní N+1 řešení: seznam projektů nejvýše 2 SELECTy
+(100 projektů a všechny etapy joinem na questy), vybraný audit +1 (50 událostí),
+výslovné hledání questu 1 (30 výsledků), převzetí nejvýše 4 SELECTy (aktér,
+zamčený projekt, etapy/questy dávkou, přispěvatelé dávkou). Render a přepnutí
+oblasti 0 dotazů, obnova po mutaci stejným loaderem. Žádný polling ani nový
+provozní zdroj. Tím je splněna samostatná schvalovací brána z AGENTS.md;
+nepokrývá jiné budoucí zdroje nebo N+1 loadery.
+
+Implementováno ve větvi `feat/adventure-projects` z aktuálního main `fc0842a`:
+vlastní schémata a context, migrace tří Adventure tabulek, kniha projektů na
+existující questové trase a odkaz z Dílny. Změny a převzetí používají transakce,
+zámky a neměnný číslovaný audit. Úpravy plánu a etap jsou před schválením;
+po něm lze realizovat, pozastavit, zrušit nebo výslovně převzít. Archiv zachová
+historii a XP. Podrobnosti a ruční checklist jsou v `docs/features/ADVENTURE.md`.
+
+Přidány kontextové/LiveView regrese, ponechané pro CI ověřované uživatelem.
+Lokální testy ani precommit se nespouštějí. Nezměněny instrukce, sdílený router,
+layouty, provozní moduly a zdroje. Cizí `rel/env.sh.eex` a `generated_images/`
+zůstávají nedotčené. Vizuální rozvoj 4C, účetnictví a pokročilé závislosti nejsou
+součástí této dodávky. Změny zůstávají bez commitu, pushe a PR dle aktuálního zadání.
+
+Ověření: prošel formatter změněných souborů, celoprojektové
+`MIX_ENV=test mix format --check-formatted`, kompilace s `--warnings-as-errors`,
+`MIX_ENV=test mix assets.build` a `git diff --check`. Lokální Elixir je 1.20.5
+/ OTP 29 (ERTS 17.1.1), zatímco piny jsou 1.20.4-otp-29 / Erlang 29.1;
+shoda formatteru s připnutým CI není zaručena. Migrace nebyla lokálně aplikována,
+ExUnit ani precommit se nespouštěly a browserové ověření desktopu, 390/320 px
+a klávesnice zůstává v ručním checklistu.

@@ -60,7 +60,7 @@ přechodu mezi hrou a provozními obrazovkami.
 | Obrazovka | Úloha |
 | --- | --- |
 | **Tábor** | Hrát: vybrat hrdinu, přijmout výpravu, pracovat na ní a potvrdit splnění. Tři osobní sloty, společné výpravy, mapa chaty a sezóna. |
-| **Questy** | Připravit zadání: části Jednorázové questy, Opakované questy a Historie. Vytváření, editace, termíny, přiřazení, odměny, opakování a archivace. |
+| **Questy** | Připravit zadání: části Jednorázové questy, Opakované questy, Projekty a Historie. Vytváření, editace, termíny, přiřazení, odměny, opakování a archivace. |
 | **Nastavení** | Sezóny, pravidla a audit. |
 
 **Najít další výpravu** v táboře otevře nástěnku s čekajícími vlastními úkoly
@@ -124,8 +124,8 @@ se text sám po čase nepřekresluje, proto je vždy viditelný čas a ruční r
 Bar a Pokladnice odkazují na existující **Kroniku sezóny**, její datum přepočtu
 a původní sklad/fakturaci. Neprovádějí nové skladové ani finanční čtení. Částky
 jsou sezónní uložené snapshoty, ne živý stav či dostupný investiční rozpočet;
-**Obnovit provoz je nepřepočítává**. Dílna výslovně přiznává, že projekty zatím
-neexistují, a nabízí knihu běžných questů. Prohlížení a obnova neudělují XP,
+**Obnovit provoz je nepřepočítává**. Dílna nabízí vlastní knihu projektů (4B).
+Prohlížení a obnova neudělují XP,
 nezakládají questy ani nemění provozní data. Tři osobní sloty, společná práce,
 kronika, zapamatování hrdiny, admin PIN i feature flag zůstávají zachované.
 
@@ -150,6 +150,84 @@ Ilustrace vznikla pro Cozy Adventure; horské a herní SVG ikony jsou z Lucide
 (ISC). Všechny soubory se načítají lokálně z `priv/static/images/adventure/`,
 licence a zdroje jsou v jeho `CREDITS.md` a `LUCIDE-LICENSE`. Stylování je
 izolované v `assets/css/adventure/`, dialogový hook v `assets/js/adventure/`.
+
+## Projekty a etapy (4B)
+
+Migrace `20261112150000_add_adventure_projects.exs` přidává pouze vlastní tabulky
+`adventure_projects`, `adventure_project_stages` a `adventure_project_events`.
+Nezakládá žádnou konkrétní investici. `down` je záměrně nevratné, aby rollback
+nesmazal historii převzetí; návrat starší aplikace je třeba posoudit zvlášť.
+Žádná nová konfigurace nebo změna routeru.
+
+Z **Dílny → Otevřít knihu projektů** nebo **Questy → Projekty** lze vytvořit
+vlastní plán. Stačí název; oblast, problém/přínos, odpovědný hrdina, termín,
+orientační rozpočet, měna (třípísmenný ISO kód), základ ceny a textová reference
+upřesňují plán. Reference se nepovažuje za ověřený doklad ani se automaticky
+neotevírá/nenačítá. Neuvádět osobní údaje hostů.
+
+- Rozpočet je nepovinný nezáporný odhad s nejvýše dvěma desetinnými místy,
+  nikoli skutečný náklad, hotovost, účetní alokace nebo rezervace peněz. Nezadaný
+  odhad není nula. Nic se nesčítá s finanční kronikou a nevzniká domnělý zisk.
+- Projekt postupuje **Nápad → Připraveno ke schválení → Schváleno → Realizace**.
+  Z připraveného plánu se lze vrátit k nápadu. Schválení je vědomé rozhodnutí
+  v herním plánu, ne objednávka, platba nebo souhlas dodavatele.
+- V nápadu a připraveném plánu lze editovat zadání a etapy. Po schválení jsou
+  uzamčené; lze pozastavit, obnovit schválený plán nebo zrušit. Projekt nemá
+  obecný graf závislostí ani automatický stav odvozený z questů.
+- Etapa propojí očekávaný výstup s existujícím spravovaným questem vyhledaným
+  podle názvu. Jednorázový quest připravit v dosavadní knize; lze použít i
+  konkrétní již existující výskyt opakování, nikoli automaticky další výskyty.
+  Stejný quest se do jednoho projektu nepřipojí dvakrát. Vazba nevytváří další
+  práci, nepřiděluje XP a nezabírá osobní slot. Quest se přijímá a plní v táboře.
+- Odpojení etapy uchová řádek, původní snapshot i audit; opětovné připojení
+  obnoví tutéž vazbu a její výstup. Výstup lze samostatně upravit před schválením.
+  Zobrazuje se počet dokončených etap, nikoli procento skutečně provedené stavby.
+- **Převzít bez dalších XP** je dostupné pouze v realizaci. Projekt musí mít
+  alespoň jednu etapu a všechny její questy musí být dokončené. Člověk navíc
+  výslovně zaškrtne převzetí a vybere skutečné přispěvatele; výsledek/reference
+  je nepovinný. Hotové questy samy převzetí nikdy neprovedou. Archivovaný
+  dokončený quest zůstává platnou historií; zrušený není splněná etapa.
+- Převzetí uloží aktéra, přispěvatele, čas, popis a dobové snapshoty etap a
+  questových důkazů. Jde o přiznaný self-report, ne technickou, bezpečnostní
+  nebo účetní kontrolu. Nepřidává XP, kapacitu, příjmy ani herní finanční bonus.
+- Převzaté projekty se nepřepisují ani neotevírají znovu. Převzatý nebo zrušený
+  projekt lze archivovat s historií. Nová sezóna nevytváří kopii, nevynuluje
+  etapy a nepřepisuje převzetí. Vizuální přestavba scény patří až do 4C.
+
+`Adventure.Projects` serializuje změny zámkem projektu; validuje aktivního aktéra
+a atomicky ukládá změnu a číslovaný audit. Unikátní request key chrání založení,
+unikátní vazba a pořadí etapy brání duplicitám. Převzetí zamyká všechny připojené
+questy jedním dávkovým čtením. Opakované převzetí vrací původní výsledek a
+nevytváří další událost ani odměnu. Auditní tabulka odmítá SQL UPDATE/DELETE.
+Zápisy zůstávají pouze v Adventure, bez provozních hooků, HTTP nebo nových zdrojů.
+Admin PIN, feature flag, zapamatovaný profil a původní questové XP zůstávají.
+
+### Schválené čtení projektů
+
+- Seznam/filtrování: nejvýše **2 SELECTy**, až 100 nejnovějších odpovídajících
+  projektů včetně archivu a všechny jejich neodpojené etapy jedním joinem na
+  questy. Starší projekt lze dohledat názvem. Profily se znovu nenačítají.
+- Výběr detailu: **1 SELECT** pro posledních 50 auditních událostí. Starší
+  události zůstávají v DB. Seznam a etapy se znovu nenačítají.
+- Hledání questu: **1 SELECT** na výslovně odeslané neprázdné hledání,
+  nejvýše 30 výsledků, žádný neomezený select.
+- Převzetí: nejvýše **4 SELECTy** v transakci (aktér, zamčený projekt,
+  všechny etapy/questy, přispěvatelé dávkou). Žádné čtení po jednotlivé etapě.
+- Po mutaci nebo **Obnovit projekty** stejný loader do 2 + 1 SELECTů.
+  Render a přepnutí oblasti 0 nových projektových dotazů; žádný polling ani
+  provozní zdroj. Provozní snapshot a sezónní kronika se tím neobnovují.
+
+Přidány kontextové a LiveView regrese pro validace, opakování, stavové přechody,
+archiv a audit, zachování questové historie/XP, lidské převzetí, dávkový rozpočet,
+čistě Adventure zápisy, feature flag, PIN a průchod knihou projektů. Lokální
+testy nebyly spuštěny; výsledky CI ověří uživatel. Ručně ověřit po migraci:
+
+- [ ] Založit plán bez rozpočtu, upravit ho a připojit skutečný quest s výstupem.
+- [ ] Odpojit a znovu připojit etapu, ověřit původní vazbu a audit.
+- [ ] Schválit plán, zahájit, pozastavit a obnovit realizaci.
+- [ ] Splnit quest v táboře, obnovit projekty a ověřit, že ještě není převzato.
+- [ ] Výslovně převzít s přispěvateli; opakování nepřidá XP ani další převzetí.
+- [ ] Archivovat, vyhledat historii a ověřit desktop, 390/320 px a klávesnici.
 
 ## Původní katalogové questy a zachovaná historie
 
@@ -471,7 +549,8 @@ Tím nelze opakovanými změnami pobytu získávat další XP.
 
 Změny definice vyžadují novou verzi pravidel a samostatnou implementaci;
 aktivní kampaň se nikdy tiše nepřevede na jinou definici. Finanční metriky
-jsou pouze v nové kronice `season_v1`; skill tree a rekonstrukce zůstávají další etapou.
+jsou pouze v nové kronice `season_v1`; osobní skill tree zůstává další etapou.
+Plánování zlepšení chaty nyní pokrývají vlastní projekty 4B bez investičního účetnictví.
 
 ## Ověření
 

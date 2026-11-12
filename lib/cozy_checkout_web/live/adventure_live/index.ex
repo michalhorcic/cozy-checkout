@@ -8,11 +8,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   import CozyCheckoutWeb.AdventureLive.TaskComponents
   import CozyCheckoutWeb.AdventureLive.GameComponents
   import CozyCheckoutWeb.AdventureLive.OperationComponents
+  import CozyCheckoutWeb.AdventureLive.ProjectComponents, only: [projects: 1]
+  alias CozyCheckout.Adventure.Projects
+  alias CozyCheckoutWeb.AdventureLive.ProjectComponents
 
   @impl true
   def mount(params, _, socket) do
     section =
-      if params["section"] in ["tasks", "templates", "history"],
+      if params["section"] in ["tasks", "templates", "history", "projects"],
         do: params["section"],
         else: "tasks"
 
@@ -41,6 +44,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          task_filters: if(section == "history", do: %{"status" => "completed"}, else: %{}),
          editing_task_id: nil,
          task_form: to_form(Tasks.change(%Quest{}), as: :task)
+       )
+       |> new_project()
+       |> assign(
+         selected_project_id: nil,
+         project_history: [],
+         project_quest_results: [],
+         project_editor_open: false,
+         project_search: ""
        )
        |> new_template()
        |> new_campaign()
@@ -100,10 +111,134 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
        do: {:noreply, assign(socket, operation_area: area)}
 
   defp handle_game_event("manage-section", %{"section" => section}, socket)
-       when section in ["tasks", "templates", "history"] do
+       when section in ["tasks", "templates", "history", "projects"] do
     filters = if section == "history", do: %{"status" => "completed"}, else: %{}
     {:noreply, socket |> assign(quest_section: section, task_filters: filters) |> load()}
   end
+
+  defp handle_game_event("new-project", _, socket), do: {:noreply, new_project(socket)}
+
+  defp handle_game_event("refresh-projects", _, socket), do: {:noreply, load_projects(socket)}
+
+  defp handle_game_event("filter-projects", %{"projects" => %{"query" => query}}, socket),
+    do:
+      {:noreply, socket |> assign(project_search: String.slice(query, 0, 200)) |> load_projects()}
+
+  defp handle_game_event("select-project", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.projects, &(&1.project.id == id)) do
+      {:noreply,
+       assign(socket,
+         selected_project_id: id,
+         project_history: Projects.history(id),
+         project_quest_results: []
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("edit-project", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.projects, &(&1.project.id == id)) do
+      %{project: project} when project.status in ["idea", "ready"] ->
+        attrs =
+          Map.new(Map.keys(ProjectComponents.defaults()), fn key ->
+            {key, Map.get(project, String.to_existing_atom(key))}
+          end)
+
+        {:noreply,
+         assign(socket,
+           editing_project_id: id,
+           project_editor_open: true,
+           project_form: to_form(attrs, as: :project)
+         )}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("save-project", %{"project" => attrs}, socket) do
+    outcome =
+      if socket.assigns.editing_project_id,
+        do:
+          Projects.update(
+            socket.assigns.selected_profile_id,
+            socket.assigns.editing_project_id,
+            attrs
+          ),
+        else: Projects.create(socket.assigns.selected_profile_id, attrs, attrs["request_key"])
+
+    case outcome do
+      {:ok, project} ->
+        project_result(
+          socket |> new_project() |> assign(selected_project_id: project.id),
+          outcome
+        )
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply,
+         assign(socket, project_form: to_form(%{changeset | action: :validate}, as: :project))}
+
+      error ->
+        project_result(socket, error)
+    end
+  end
+
+  defp handle_game_event("search-project-quests", %{"search" => %{"query" => query}}, socket),
+    do: {:noreply, assign(socket, project_quest_results: Projects.search_quests(query))}
+
+  defp handle_game_event("add-project-stage", %{"stage" => attrs}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.add_stage(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          attrs["quest_id"],
+          attrs["output"]
+        )
+      )
+
+  defp handle_game_event("remove-project-stage", %{"id" => id}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.remove_stage(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          id
+        )
+      )
+
+  defp handle_game_event("edit-project-stage", %{"stage" => attrs}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.update_stage(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          attrs["id"],
+          attrs["output"]
+        )
+      )
+
+  defp handle_game_event("project-status", %{"id" => id, "status" => status}, socket),
+    do:
+      project_result(socket, Projects.transition(socket.assigns.selected_profile_id, id, status))
+
+  defp handle_game_event("accept-project", %{"acceptance" => attrs}, socket),
+    do:
+      project_result(
+        socket,
+        Projects.accept(
+          socket.assigns.selected_profile_id,
+          socket.assigns.selected_project_id,
+          attrs
+        )
+      )
+
+  defp handle_game_event("archive-project", %{"id" => id}, socket),
+    do: project_result(socket, Projects.archive(socket.assigns.selected_profile_id, id))
 
   defp handle_game_event("toggle-task-editor", _, socket),
     do: {:noreply, assign(socket, task_editor_open: !socket.assigns.task_editor_open)}
@@ -490,6 +625,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     {:ok, data} = Adventure.dashboard(socket.assigns.selected_profile_id)
     {:ok, game} = Campaigns.overview()
 
+    socket = load_projects(socket)
+
     assign(socket,
       data: data,
       tasks:
@@ -511,6 +648,63 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
       completion_form:
         to_form(%{"note" => "", "actor_id" => data.profile && data.profile.id}, as: :completion)
     )
+  end
+
+  defp new_project(socket),
+    do:
+      assign(socket,
+        editing_project_id: nil,
+        project_editor_open: true,
+        project_form:
+          to_form(Map.put(ProjectComponents.defaults(), "request_key", Ecto.UUID.generate()),
+            as: :project
+          )
+      )
+
+  defp load_projects(socket) do
+    rows =
+      if socket.assigns.live_action == :quests and socket.assigns.quest_section == "projects",
+        do: Projects.list(socket.assigns.project_search),
+        else: []
+
+    history =
+      if Enum.any?(rows, &(&1.project.id == socket.assigns.selected_project_id)),
+        do: Projects.history(socket.assigns.selected_project_id),
+        else: []
+
+    assign(socket, projects: rows, project_history: history)
+  end
+
+  defp project_result(socket, {:ok, _}),
+    do:
+      {:noreply,
+       socket
+       |> load_projects()
+       |> put_flash(:info, "Projekt uložen. Provozní data a XP se nezměnily.")}
+
+  defp project_result(socket, {:error, reason}) do
+    message =
+      case reason do
+        :unfinished_stages ->
+          "Nejprve dokonči všechny připojené questy v táboře. Projekt potřebuje alespoň jednu etapu."
+
+        :contributors_required ->
+          "Výslovně vyber platné přispěvatele."
+
+        :confirmation_required ->
+          "Převzetí musíš výslovně potvrdit."
+
+        :invalid_profile ->
+          "Vyber aktivního hrdinu."
+
+        :immutable_project ->
+          "Schválený nebo archivovaný projekt již nelze upravovat."
+
+        _ ->
+          "Projekt se nepodařilo uložit. Zkontroluj vstupy a povolený stav projektu."
+      end
+
+    {:noreply, put_flash(socket, :error, message)}
   end
 
   defp visible_offers(quests, profile_id, scope, search) do
@@ -704,6 +898,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
                 {label, section, symbol} <- [
                   {"Jednorázové questy", "tasks", "notebook-pen"},
                   {"Opakované questy", "templates", "compass"},
+                  {"Projekty", "projects", "house"},
                   {"Historie", "history", "trophy"}
                 ]
               }
@@ -713,7 +908,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             ><.symbol name={symbol} />{label}</button>
           </nav>
           <.task_board
-            :if={@live_action == :quests && @quest_section != "templates"}
+            :if={@live_action == :quests && @quest_section in ["tasks", "history"]}
             tasks={@tasks}
             profiles={@data.profiles}
             profile={@data.profile}
@@ -722,6 +917,18 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             editing_id={@editing_task_id}
             editor_open={@task_editor_open}
             history={@quest_section == "history"}
+          />
+          <.projects
+            :if={@live_action == :quests && @quest_section == "projects"}
+            projects={@projects}
+            selected_id={@selected_project_id}
+            history={@project_history}
+            profiles={@data.profiles}
+            form={@project_form}
+            quest_results={@project_quest_results}
+            editing_id={@editing_project_id}
+            editor_open={@project_editor_open}
+            search={@project_search}
           />
           <.templates
             :if={@live_action == :quests && @quest_section == "templates"}
