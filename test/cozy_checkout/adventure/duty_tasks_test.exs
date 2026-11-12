@@ -30,6 +30,71 @@ defmodule CozyCheckout.Adventure.DutyTasksTest do
     }
   end
 
+  test "create and start pins the actor, is idempotent and never awards XP", %{
+    michal: actor,
+    lucka: other,
+    snapshot: snapshot,
+    key: key
+  } do
+    request = Ecto.UUID.generate()
+    attrs = %{"title" => "Moje výprava", "scope" => "shared", "assigned_profile_id" => other.id}
+
+    {{:ok, quest}, queries} =
+      QueryRecorder.record(fn ->
+        Tasks.create_from_duty(actor.id, snapshot, key, attrs, request, nil, start: true)
+      end)
+
+    assert Enum.count(queries, &Regex.match?(~r/^SELECT/i, &1)) == 7
+    refute Enum.any?(queries, &String.contains?(&1, "FROM \"bookings\""))
+
+    assert quest.status == "active"
+    assert quest.scope == "personal"
+    assert quest.assigned_profile_id == actor.id
+
+    assert {:ok, replay} =
+             Tasks.create_from_duty(actor.id, snapshot, key, attrs, request, nil, start: true)
+
+    assert replay.id == quest.id
+    assert Repo.aggregate(Quest, :count) == 1
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "full expedition slots roll back creation, preserving the request for a retry", %{
+    michal: actor,
+    snapshot: snapshot,
+    key: key
+  } do
+    for code <- ~w(prepare_stay review_deposits shopping_plan),
+        do: Adventure.activate_quest(actor.id, code)
+
+    request = Ecto.UUID.generate()
+
+    assert {:error, :active_limit} =
+             Tasks.create_from_duty(actor.id, snapshot, key, %{}, request, nil, start: true)
+
+    refute Repo.get_by(Quest, source_request_key: request)
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "mine cannot take over another request's existing open work", %{
+    michal: actor,
+    lucka: other,
+    snapshot: snapshot,
+    key: key
+  } do
+    assert {:ok, existing} =
+             Tasks.create_from_duty(other.id, snapshot, key, %{}, Ecto.UUID.generate())
+
+    assert {:ok, same} =
+             Tasks.create_from_duty(actor.id, snapshot, key, %{}, Ecto.UUID.generate(), nil,
+               start: true
+             )
+
+    assert same.id == existing.id
+    assert same.status == "waiting"
+    assert same.assigned_profile_id == nil
+  end
+
   test "only supported source kinds with UUID references have stable keys", %{issue: issue} do
     assert Tasks.duty_key(issue) == {issue.booking_id, "details"}
     assert Tasks.duty_key(%{issue | kind: :menu}) == {issue.booking_id, "menu"}

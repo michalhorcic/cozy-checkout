@@ -98,7 +98,16 @@ defmodule CozyCheckout.Adventure.Tasks do
   end
 
   @doc "Explicitly confirms work from a server-held projection; it never re-reads the operation."
-  def create_from_duty(actor_id, snapshot, key, attrs, request_key, previous_id \\ nil) do
+  def create_from_duty(
+        actor_id,
+        snapshot,
+        key,
+        attrs,
+        request_key,
+        previous_id \\ nil,
+        opts \\ []
+      ) do
+    start_now? = Keyword.get(opts, :start, false)
     # Exclude other actor mutations without blocking the assignee FK's KEY SHARE lock.
     action(
       actor_id,
@@ -117,55 +126,75 @@ defmodule CozyCheckout.Adventure.Tasks do
 
           replay = Repo.get_by(Quest, source_request_key: request_key)
 
-          cond do
-            replay && {replay.source_ref, replay.source_type} != key ->
-              Repo.rollback(:invalid_request)
+          quest =
+            cond do
+              replay && {replay.source_ref, replay.source_type} != key ->
+                Repo.rollback(:invalid_request)
 
-            replay ->
-              replay
+              replay ->
+                replay
 
-            true ->
-              latest =
-                Repo.one(
-                  from q in Quest,
-                    where:
-                      q.source_namespace == @duty_namespace and q.source_ref == ^id and
-                        q.source_type == ^type,
-                    order_by: [desc: q.source_attempt],
-                    limit: 1
-                )
+              true ->
+                latest =
+                  Repo.one(
+                    from q in Quest,
+                      where:
+                        q.source_namespace == @duty_namespace and q.source_ref == ^id and
+                          q.source_type == ^type,
+                      order_by: [desc: q.source_attempt],
+                      limit: 1
+                  )
 
-              cond do
-                latest && latest.status in ["waiting", "active"] && is_nil(latest.archived_at) ->
-                  latest
+                cond do
+                  latest && latest.status in ["waiting", "active"] && is_nil(latest.archived_at) ->
+                    latest
 
-                latest && previous_id != latest.id ->
-                  Repo.rollback(:history_confirmation_required)
+                  latest && previous_id != latest.id ->
+                    Repo.rollback(:history_confirmation_required)
 
-                is_nil(latest) && not is_nil(previous_id) ->
-                  Repo.rollback(:history_confirmation_required)
+                  is_nil(latest) && not is_nil(previous_id) ->
+                    Repo.rollback(:history_confirmation_required)
 
-                true ->
-                  source = %{
-                    source_namespace: @duty_namespace,
-                    source_ref: id,
-                    source_type: type,
-                    source_request_key: request_key,
-                    source_previous_id: latest && latest.id,
-                    source_attempt: if(latest, do: latest.source_attempt + 1, else: 1),
-                    source_context: %{
-                      "version" => 1,
-                      "reason" => issue.reason,
-                      "on" => issue.on && Date.to_iso8601(issue.on),
-                      "loaded_at" => DateTime.to_iso8601(snapshot.loaded_at),
-                      "today" => Date.to_iso8601(snapshot.today),
-                      "through" => Date.to_iso8601(snapshot.through)
+                  true ->
+                    source = %{
+                      source_namespace: @duty_namespace,
+                      source_ref: id,
+                      source_type: type,
+                      source_request_key: request_key,
+                      source_previous_id: latest && latest.id,
+                      source_attempt: if(latest, do: latest.source_attempt + 1, else: 1),
+                      source_context: %{
+                        "version" => 1,
+                        "reason" => issue.reason,
+                        "on" => issue.on && Date.to_iso8601(issue.on),
+                        "loaded_at" => DateTime.to_iso8601(snapshot.loaded_at),
+                        "today" => Date.to_iso8601(snapshot.today),
+                        "through" => Date.to_iso8601(snapshot.through)
+                      }
                     }
-                  }
 
-                  attrs = Map.merge(%{"title" => issue.reason, "category" => "Kuchyně"}, attrs)
-                  create_task!(actor, attrs, source)
-              end
+                    attrs = Map.merge(%{"title" => issue.reason, "category" => "Kuchyně"}, attrs)
+
+                    attrs =
+                      if start_now?,
+                        do:
+                          Map.merge(attrs, %{
+                            "scope" => "personal",
+                            "assigned_profile_id" => actor.id
+                          }),
+                        else: attrs
+
+                    create_task!(actor, attrs, source)
+                end
+            end
+
+          if start_now? && quest.source_request_key == request_key &&
+               quest.created_by_id == actor.id &&
+               quest.scope == "personal" && quest.assigned_profile_id == actor.id &&
+               quest.status == "waiting" && is_nil(quest.archived_at) do
+            start_task!(actor, task!(quest.id))
+          else
+            quest
           end
         else
           _ -> Repo.rollback(:invalid_request)
@@ -357,31 +386,31 @@ defmodule CozyCheckout.Adventure.Tasks do
   end
 
   def start(actor_id, id) do
-    action(actor_id, fn actor ->
-      task = task!(id)
+    action(actor_id, fn actor -> start_task!(actor, task!(id)) end)
+  end
 
-      cond do
-        task.status == "active" ->
-          task
+  defp start_task!(actor, task) do
+    cond do
+      task.status == "active" ->
+        task
 
-        task.status != "waiting" or not is_nil(task.archived_at) ->
-          Repo.rollback(:immutable_task)
+      task.status != "waiting" or not is_nil(task.archived_at) ->
+        Repo.rollback(:immutable_task)
 
-        true ->
-          if task.scope == "personal", do: ensure_slot!(actor.id)
+      true ->
+        if task.scope == "personal", do: ensure_slot!(actor.id)
 
-          update!(task,
-            status: "active",
-            assigned_profile_id: if(task.scope == "personal", do: actor.id),
-            evidence:
-              Map.merge(task.evidence, %{
-                "started_by_id" => actor.id,
-                "started_at" => DateTime.to_iso8601(now()),
-                "assignment_before_start" => task.assigned_profile_id
-              })
-          )
-      end
-    end)
+        update!(task,
+          status: "active",
+          assigned_profile_id: if(task.scope == "personal", do: actor.id),
+          evidence:
+            Map.merge(task.evidence, %{
+              "started_by_id" => actor.id,
+              "started_at" => DateTime.to_iso8601(now()),
+              "assignment_before_start" => task.assigned_profile_id
+            })
+        )
+    end
   end
 
   def complete(actor_id, id, attrs \\ %{}) do
