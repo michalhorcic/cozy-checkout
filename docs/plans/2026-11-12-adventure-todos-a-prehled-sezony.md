@@ -1,6 +1,6 @@
 # Cozy Adventure – provoz a budování chaty
 
-- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, zapamatování hrdiny v PR #116; 4A dodána, obecný základ 4B implementován v pracovní větvi; omezená schválená 4C a kompaktní opakování implementovány, předání v oddílu 15; následné schválené zjednodušení projektového UX popisuje oddíl 16
+- Stav: 3A/3B a preference hrdiny dodané, 4A až omezená 4C a zjednodušení projektů sloučené v main; schválená 5A implementovaná ve větvi `feat/adventure-duty-quests`, předání a limity ověření v oddílu 18; následuje samostatné schválení 5B a poté živého Baru
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: herní rozhraní nad provozem aplikace, správa questů, rozvoj chaty investičními projekty a kronika skutečných výsledků
@@ -1042,7 +1042,7 @@ se neopakují; stav implementace a ověření zachovávají oddíly 13–16.
 
 | Etapa | Výsledek | Stav |
 | --- | --- | --- |
-| 5A – Podnět na quest | Ze současné Služby dne ručně připravit a potvrdit skutečný quest bez duplicit | Produktová pravidla potvrzena, implementace čeká |
+| 5A – Podnět na quest | Ze současné Služby dne ručně připravit a potvrdit skutečný quest bez duplicit | Následně schválena a implementována, viz oddíl 18 |
 | 5B – Návazná práce | U podnětu rozlišit otevřenou práci a změnu či neověřitelnost zdroje | Navazující rozsah k potvrzení před implementací |
 | 5C – Živý Bar | Užitečný read-only stav baru a cesta do původních funkcí | Další priorita po Službě dne; konkrétní zdroje a rozsah neschválené |
 | Později – Příprava a péče | Dobrovolná příprava příjezdu a nabídka údržby převzatého zlepšení | Zásobník, ne součást 5A–5C |
@@ -1235,3 +1235,50 @@ Před každou dodávkou znovu ověřit aktuální větev, skutečný stav implem
 a čerstvý main; příprava tohoto plánu nepovoluje změnu větve, cherry-pick,
 commit nebo push. Rozpracované změny a cizí soubory zachovat. Tento zápis mění
 pouze plán, nikoli instrukce, provozní kód, schémata či konfiguraci.
+
+## 18. Schválení implementace 5A (12. 11. 2026)
+
+Po novém fetchi je skutečný základ `main = origin/main = 37c6b53`, merge PR #121.
+Commity `c4b4abf`, `67b6892` a `726eda3` jsou již jeho předky a neopakují se.
+Uživatel výslovně schválil předložené dávkové řešení a zahájení implementace 5A
+volbou **Schválit a implementovat**. Nová větev je `feat/adventure-duty-quests`.
+Tento souhlas se netýká 5B, živého Baru, nových provozních zdrojů ani lokálních
+testů.
+
+Schválený model ukládá zdrojovou identitu přímo na skutečný quest, bez druhé
+evidence otevřenosti. Namespace + pobyt + typ (`details`/`menu`) chrání částečný
+unikátní index pro nearchivované čekající/rozpracované questy. Chybějící a
+neaktuální menu jsou stejný typ. Vznik, vazba a dobový audit se ukládají atomicky;
+zdrojová metadata jsou neměnná. Nové řešení odkazuje na poslední uzavřený quest,
+má vlastní potvrzení a pořadí pokusu. Retry starého potvrzení vrací původní quest
+i po jeho uzavření. Žádné automatické uzavírání podle provozního podkladu.
+
+Schválený rozpočet: původních nejvýše 15 provozních SELECTů + 1 Adventure dávka
+pro všechny klíče projekce při načtení/obnově; návrh/render/oblast 0; potvrzení
+nejvýše 4 SELECTy, se zadaným přiřazením 5 (včetně aktéra a advisory zámku);
+po potvrzení cílená obnova nabídky a vazeb nejvýše 2. Celkem potvrzení s obnovou
+nejvýše 6/7, bez obecného loaderu Tábora. Explicitní historie 1 SELECT na stránku
+20 + lookahead, konkrétní quest nejvýše 1. N+1 čtení po kartě, pobytu nebo historii
+není povolené. Podrobnosti modelu a hranic jsou v `docs/features/ADVENTURE.md`.
+
+Rozsah pouze Adventure context/schéma/web/izolované styly/testy/dokumentace a
+migrace vlastní `adventure_quests`. Žádné sdílené části, instrukce, konfigurace,
+router nebo provozní mutace. Cizí `rel/env.sh.eex`, `.kilo/` a `generated_images/`
+zůstávají mimo změnu. Testy budou připravené pro CI, lokálně se nespouštějí.
+
+Implementován krátký návrh s konkrétní předchozí prací, skutečně zvolenou odměnou,
+serverově drženým request key a stabilním klíčem vyhledávaným ve společné projekci.
+Pořadí karet není identitou, takže obnova s přeuspořádáním nevybere jiný pobyt.
+Nová migrace `20261112160000` rozšiřuje pouze `adventure_quests`; neměnná zdrojová
+metadata chrání SQL trigger. Profilový zámek nové tvorby je `FOR NO KEY UPDATE`,
+aby neblokoval FK kontrolu přiřazení druhému souběžnému zadavateli. Dosavadní
+questové zámky a osobní limit zůstávají zachované, query rozpočet se nezvyšuje.
+
+Přidáno 25 regresí (17 kontextových, 2 souběhové, 6 LiveView), bez lokálního běhu.
+Prošly formátování změněných souborů i celoprojektová kontrola formatteru,
+kompilace s warnings-as-errors, sestavení assetů a `git diff --check`. Použit
+Elixir 1.20.5 / OTP 29, nikoli připnutý Elixir 1.20.4-otp-29 / Erlang 29.1.
+CI ověřuje uživatel, nebylo sledováno. Modul nové migrace prošel samostatnou
+kompilací bez startu aplikace; migrace nebyla lokálně aplikována.
+Ověření předchozí projektové migrace i browserový checklist zůstávají otevřené.
+Žádná nová konfigurace. Změny jsou připravené v pracovní větvi bez commitu/pushe.

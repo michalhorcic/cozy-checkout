@@ -2,7 +2,12 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   use CozyCheckoutWeb, :html
   import CozyCheckoutWeb.AdventureLive.GameComponents, only: [symbol: 1]
   alias CozyCheckout.Adventure.Sources.Operation
-  import CozyCheckoutWeb.AdventureLive.ProjectComponents, only: [format_project_date: 1]
+  alias CozyCheckout.Adventure.{Quest, Tasks}
+  import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
+
+  import CozyCheckoutWeb.AdventureLive.ProjectComponents,
+    only: [format_project_date: 1, audit_datetime: 1]
+
   import CozyCheckoutWeb.AdventureLive.TaskComponents, only: [profile_name: 2]
 
   attr :snapshot, :any, required: true
@@ -13,6 +18,8 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   attr :chronicle, :any, required: true
   attr :chronicle_page, :integer, required: true
   attr :profiles, :list, required: true
+  attr :duty_links, :map, default: %{}
+  attr :profile, :any, default: nil
 
   def operation_world(assigns) do
     assigns =
@@ -259,10 +266,18 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           Zdroj v tomto období nehlásí chybějící podklady ani problém menu. Není to potvrzení připravenosti chaty.
         </p>
         <ul>
-          <li :for={issue <- Enum.take(@snapshot.issues, 4)}>
+          <li
+            :for={{issue, index} <- @snapshot.issues |> Enum.take(4) |> Enum.with_index()}
+            id={"adventure-duty-#{index}"}
+          >
             <span><strong>{if issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"}</strong>
             · příjezd {date(issue.on)}<br />{issue.reason}</span>
             <.link href={~p"/admin/bookings/#{issue.booking_id}"} class="adventure-text-link">Otevřít pobyt</.link>
+            <.duty_actions
+              issue={issue}
+              link={@duty_links[Tasks.duty_key(issue)]}
+              profile={@profile}
+            />
           </li>
         </ul>
         <p :if={length(@snapshot.issues) > 4}>
@@ -271,11 +286,327 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         </p>
       </section>
       <p class="adventure-muted">
-        Pouze čtení. Prohlížení ani obnova nezakládají questy a neudělují XP.
+        Provoz pouze čteme. Prohlížení ani obnova nezakládají questy a neudělují XP.
+        Quest vznikne jen výslovným uložením návrhu; podklad upravíš v hlavní aplikaci.
         <.link href={~p"/admin"} class="adventure-text-link">Celá aplikace</.link>
       </p>
     </section>
     """
+  end
+
+  attr :issue, :map, required: true
+  attr :link, :any, required: true
+  attr :profile, :any, required: true
+
+  defp duty_actions(assigns) do
+    assigns = assign(assigns, :open, assigns.link && duty_open?(assigns.link.quest))
+
+    ~H"""
+    <div :if={Tasks.duty_key(@issue)} class="flex flex-wrap items-center gap-3">
+      <span :if={@link}>Quest: {duty_status(@link.quest)}</span>
+      <button
+        :if={@open}
+        type="button"
+        phx-click="open-duty-quest"
+        phx-value-id={@link.quest.id}
+        class="adventure-button"
+      >Otevřít quest</button>
+      <button
+        :if={!@open && @profile}
+        type="button"
+        phx-click="prepare-duty"
+        phx-value-source={duty_token(@issue)}
+        class="adventure-button"
+      >{if @link, do: "Připravit další řešení", else: "Připravit quest"}</button>
+      <span :if={!@open && !@profile} class="adventure-muted">Pro přípravu questu vyber hrdinu.</span>
+      <button
+        :if={@link}
+        type="button"
+        phx-click="duty-history"
+        phx-value-source={duty_token(@issue)}
+        class="adventure-text-link"
+      >Historie podnětu ({@link.count})</button>
+    </div>
+    """
+  end
+
+  attr :draft, :map, required: true
+  attr :form, :any, required: true
+  attr :profiles, :list, required: true
+  attr :profile_query, :any, required: true
+  attr :profile_open, :boolean, required: true
+  attr :checked_at, :any, required: true
+  attr :state, :atom, required: true
+
+  def duty_draft(assigns) do
+    xp = assigns.form[:xp].value
+
+    assigns =
+      assign(
+        assigns,
+        :reward,
+        if(xp in [nil, ""],
+          do: %{"small" => 50, "medium" => 100, "large" => 250}[assigns.form[:size].value],
+          else: xp
+        )
+      )
+
+    ~H"""
+    <div class="space-y-4">
+      <h2 id="adventure-duty-modal-title" class="text-xl font-bold pr-8">
+        Návrh questu ze služby dne
+      </h2>
+      <p id="adventure-duty-modal-description">
+        Vznikne čekající quest, nikoli zahájená práce. Bez termínu, pokud ho sám nedoplníš. Stav podkladu a stav questu jsou oddělené.
+      </p>
+      <div id="adventure-duty-source" class="adventure-muted">
+        <p>
+          {if @draft.issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"} · příjezd {date(
+            @draft.issue.on
+          )}
+        </p>
+        <p>{@draft.issue.reason}</p>
+        <p>
+          Podnět pro období {date(@draft.snapshot.today)} až {date(@draft.snapshot.through)} · načteno {Calendar.strftime(
+            @draft.snapshot.loaded_at,
+            "%d. %m. %Y %H:%M UTC"
+          )}.
+        </p>
+        <p>Datum příjezdu není termín questu ani den vzniku závady.</p>
+        <p
+          :if={Operation.stale?(@draft.snapshot, @checked_at) or @state != :ready}
+          role="status"
+          class="adventure-operation-warning"
+        >
+          Starší nebo neověřené údaje. {if @state == :error, do: "Poslední obnova selhala. "}Zavři návrh a ručně obnov provoz, pokud potřebuješ čerstvé podklady.
+        </p>
+        <.link href={~p"/admin/bookings/#{@draft.issue.booking_id}"} class="adventure-text-link">Otevřít původní pobyt</.link>
+      </div>
+      <div :if={@draft.previous_id} id="adventure-duty-previous" class="adventure-operation-warning">
+        <p>
+          Předchozí quest: <strong>{@draft.previous_quest.definition_snapshot["title"]}</strong>
+          · {duty_status(@draft.previous_quest)} · {@draft.previous_quest.definition_snapshot["xp"]} XP.
+        </p>
+        <p>
+          Pro tento pobyt a typ podnětu už existuje uzavřená práce. Přetrvávající podnět neznamená, že předchozí quest nebyl splněn. Další quest zahájí nové řešení a zachová historii.
+        </p>
+        <button
+          :if={!@draft.confirmed}
+          id="adventure-duty-confirm-next"
+          type="button"
+          phx-click="prepare-next-duty"
+          class="adventure-button"
+        >Výslovně připravit další quest</button>
+      </div>
+      <.form
+        :if={@draft.confirmed}
+        for={@form}
+        id="adventure-duty-form"
+        phx-change="validate-duty"
+        phx-submit="save-duty"
+        class="grid gap-4"
+      >
+        <.input field={@form[:title]} label="Název questu" required maxlength="200" />
+        <.searchable_picker
+          field={@form[:assigned_profile_id]}
+          options={[
+            %{id: "", name: "Volný úkol", hint: "Bez přiřazení"}
+            | Enum.map(@profiles, &%{id: &1.id, name: &1.display_name, hint: ""})
+          ]}
+          label="Přiřazení (nepovinné)"
+          prompt="Volný úkol"
+          required={false}
+          index="duty-profile"
+          query={@profile_query}
+          open={@profile_open}
+          search_name="duty_profile_query"
+          search_event="duty-profile-search"
+          open_event="duty-profile-open"
+          close_event="duty-profile-close"
+          select_event="duty-profile-select"
+        />
+        <.input
+          field={@form[:size]}
+          type="select"
+          label="Velikost"
+          options={[
+            {"Malý · 50 XP", "small"},
+            {"Střední · 100 XP", "medium"},
+            {"Velký · 250 XP", "large"}
+          ]}
+        />
+        <p id="adventure-duty-reward" class="adventure-muted">
+          Po uložení: Čeká · {@reward} XP pro {if @form[:scope].value == "shared",
+            do: "společnou chatu",
+            else: "skutečného splnitele"}. Bez automatického zahájení nebo udělení XP.
+        </p>
+        <details>
+          <summary>Další podrobnosti (nepovinné)</summary>
+          <div class="grid gap-3 mt-3">
+            <.input field={@form[:description]} type="textarea" label="Popis" maxlength="5000" />
+            <.input
+              field={@form[:scope]}
+              type="select"
+              label="Odměna pro"
+              options={[{"Splnitele", "personal"}, {"Společnou chatu", "shared"}]}
+            />
+            <.input field={@form[:xp]} type="number" label="Vlastní XP" min="1" max="10000" />
+            <.input field={@form[:due_on]} type="date" label="Termín" />
+            <.input
+              field={@form[:priority]}
+              type="select"
+              label="Priorita"
+              options={[{"Nízká", "low"}, {"Běžná", "normal"}, {"Vysoká", "high"}]}
+            />
+            <.input
+              field={@form[:category]}
+              type="select"
+              label="Kategorie"
+              options={Quest.categories()}
+            />
+          </div>
+        </details>
+        <button
+          type="submit"
+          class="adventure-button adventure-button--primary"
+          phx-disable-with="Ukládám…"
+        >Uložit čekající quest</button>
+      </.form>
+      <button type="button" phx-click="cancel-duty" class="adventure-button">Zpět bez uložení</button>
+    </div>
+    """
+  end
+
+  attr :quest, :any, required: true
+  attr :profiles, :list, required: true
+  attr :profile, :any, required: true
+
+  def duty_detail(assigns) do
+    ~H"""
+    <article id={"adventure-duty-quest-#{@quest.id}"} class="space-y-4 break-words">
+      <h2 id="adventure-duty-detail-modal-title" class="text-xl font-bold pr-8">
+        {@quest.definition_snapshot["title"]}
+      </h2>
+      <p id="adventure-duty-detail-modal-description">
+        Quest ze služby dne · {duty_status(@quest)}. Změna provozního podkladu tento quest automaticky nedokončí.
+      </p>
+      <p>
+        {profile_name(@profiles, @quest.assigned_profile_id || @quest.profile_id)} · {@quest.definition_snapshot[
+          "xp"
+        ]} XP · {if @quest.scope == "shared", do: "Společná chata", else: "Osobní odměna"}
+      </p>
+      <p :if={@quest.due_on}>Termín: {date(@quest.due_on)}</p>
+      <p :if={@quest.description not in [nil, ""]} class="whitespace-pre-wrap">
+        {@quest.description}
+      </p>
+      <div :if={@quest.source_namespace == "operation_v1"} class="adventure-muted">
+        <p>Původní podnět: {@quest.source_context["reason"]}</p>
+        <p>Příjezd {format_project_date(@quest.source_context["on"])} · nejde o termín questu.</p>
+        <details>
+          <summary>Původ podnětu</summary><p>
+            Načteno {audit_datetime(@quest.source_context["loaded_at"])} · historický podklad, nikoli živé ověření.
+          </p>
+        </details>
+        <.link href={~p"/admin/bookings/#{@quest.source_ref}"} class="adventure-text-link">Otevřít původní pobyt</.link>
+      </div>
+      <p :if={@quest.evidence["note"] not in [nil, ""]} class="whitespace-pre-wrap">
+        {@quest.evidence["note"]}
+      </p>
+      <div :if={@profile && duty_open?(@quest)} class="flex flex-wrap gap-3">
+        <button
+          :if={@quest.status == "waiting"}
+          type="button"
+          phx-click="start-task"
+          phx-value-id={@quest.id}
+          class="adventure-button adventure-button--primary"
+        >Přijmout a zahájit</button>
+        <button
+          :if={@quest.status == "active"}
+          type="button"
+          phx-click="prepare-completion"
+          phx-value-id={@quest.id}
+          class="adventure-button adventure-button--primary"
+        >Dokončit quest</button>
+        <button
+          type="button"
+          phx-click="archive-task"
+          phx-value-id={@quest.id}
+          data-confirm="Archivovat úkol? Otevřený úkol se zruší, historie zůstane."
+          class="adventure-button"
+        >Archivovat</button>
+      </div>
+      <button type="button" phx-click="close-duty-detail" class="adventure-button">Zavřít quest</button>
+    </article>
+    """
+  end
+
+  attr :history, :map, required: true
+
+  def duty_history(assigns) do
+    ~H"""
+    <section class="space-y-4">
+      <h2 id="adventure-duty-history-modal-title" class="text-xl font-bold pr-8">Historie podnětu</h2>
+      <p id="adventure-duty-history-modal-description">
+        {if @history.issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"} · příjezd {date(
+          @history.issue.on
+        )}. Nejvýše 20 questů na stránce, včetně uzavřené a archivované práce.
+      </p>
+      <p :if={@history.quests == []}>Pro tento podnět zatím není žádný quest.</p>
+      <article
+        :for={quest <- @history.quests}
+        id={"adventure-duty-history-#{quest.id}"}
+        class="border-t py-3"
+      >
+        <h3>{quest.definition_snapshot["title"]}</h3>
+        <p>{duty_status(quest)}</p>
+        <button
+          type="button"
+          phx-click="open-duty-quest"
+          phx-value-id={quest.id}
+          class="adventure-text-link"
+        >Otevřít quest</button>
+      </article>
+      <nav class="flex flex-wrap gap-3" aria-label="Stránky historie podnětu">
+        <button
+          :if={@history.page > 0}
+          type="button"
+          phx-click="duty-history-page"
+          phx-value-direction="previous"
+          class="adventure-button"
+        >Novější práce</button>
+        <span>Strana {@history.page + 1}</span>
+        <button
+          :if={@history.more?}
+          type="button"
+          phx-click="duty-history-page"
+          phx-value-direction="next"
+          class="adventure-button"
+        >Starší práce</button>
+      </nav>
+      <button type="button" phx-click="close-duty-history" class="adventure-button">Zavřít historii</button>
+    </section>
+    """
+  end
+
+  defp duty_open?(quest), do: quest.status in ["waiting", "active"] && is_nil(quest.archived_at)
+
+  defp duty_token(issue) do
+    case Tasks.duty_key(issue) do
+      {id, type} -> id <> ":" <> type
+      _ -> nil
+    end
+  end
+
+  defp duty_status(quest) do
+    label =
+      %{
+        "waiting" => "Čeká",
+        "active" => "Rozpracováno",
+        "completed" => "Hotovo",
+        "cancelled" => "Zrušeno"
+      }[quest.status]
+
+    if quest.archived_at, do: "#{label} · archiv", else: label
   end
 
   attr :project, :any, required: true

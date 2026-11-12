@@ -30,7 +30,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          operation: nil,
          operation_checked_at: DateTime.utc_now(),
          operation_state: :loading,
-         operation_area: "reception"
+         operation_area: "reception",
+         duty_links: %{},
+         duty_draft: nil,
+         duty_form: nil,
+         duty_detail: nil,
+         duty_history: nil,
+         duty_profile_query: nil,
+         duty_profile_open: false
        )
        |> assign(
          finding: false,
@@ -87,7 +94,15 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     if Adventure.enabled?() do
       case CozyCheckout.Adventure.Sources.Operation.load() do
         {:ok, snapshot} ->
-          {:noreply, assign(socket, operation: snapshot, operation_state: :ready)}
+          {:noreply,
+           socket
+           |> assign(
+             operation: snapshot,
+             operation_state: :ready,
+             duty_draft: nil,
+             duty_history: nil
+           )
+           |> refresh_duty_links()}
 
         {:error, _} ->
           {:noreply, assign(socket, operation_state: :error)}
@@ -120,6 +135,199 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp handle_game_event("operation-area", %{"area" => area}, socket)
        when area in ["reception", "rooms", "kitchen", "bar", "treasury", "workshop"],
        do: {:noreply, assign(socket, operation_area: area)}
+
+  defp handle_game_event("prepare-duty", params, socket) do
+    with issue when not is_nil(issue) <- duty_issue(socket, params["source"]),
+         key when not is_nil(key) <- Tasks.duty_key(issue),
+         %{id: _} <- socket.assigns.data.profile do
+      link = socket.assigns.duty_links[key]
+
+      if link && duty_open?(link.quest) do
+        {:noreply, assign(socket, duty_detail: link.quest, duty_draft: nil)}
+      else
+        draft = %{
+          key: key,
+          issue: issue,
+          snapshot: socket.assigns.operation,
+          request_key: Ecto.UUID.generate(),
+          previous_id: link && link.quest.id,
+          previous_quest: link && link.quest,
+          confirmed: is_nil(link)
+        }
+
+        {:noreply,
+         assign(socket,
+           duty_draft: draft,
+           duty_detail: nil,
+           duty_history: nil,
+           duty_profile_query: nil,
+           duty_profile_open: false,
+           duty_form:
+             to_form(
+               Tasks.change(%Quest{}, %{
+                 "title" => issue.reason,
+                 "category" => "Kuchyně",
+                 "scope" => "personal",
+                 "size" => "small"
+               }),
+               as: :duty
+             )
+         )}
+      end
+    else
+      _ -> result(socket, {:error, :invalid_duty_source})
+    end
+  end
+
+  defp handle_game_event("prepare-next-duty", _, socket) do
+    case socket.assigns.duty_draft do
+      %{previous_id: id} = draft when not is_nil(id) ->
+        {:noreply, assign(socket, duty_draft: %{draft | confirmed: true})}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("cancel-duty", _, socket),
+    do: {:noreply, assign(socket, duty_draft: nil, duty_profile_open: false)}
+
+  defp handle_game_event("validate-duty", %{"duty" => attrs}, socket) do
+    if socket.assigns.duty_draft do
+      {:noreply,
+       assign(socket,
+         duty_form: to_form(Tasks.change(%Quest{}, attrs), as: :duty, action: :validate)
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("save-duty", %{"duty" => attrs}, socket) do
+    case socket.assigns.duty_draft do
+      %{confirmed: true} = draft ->
+        case Tasks.create_from_duty(
+               socket.assigns.selected_profile_id,
+               draft.snapshot,
+               draft.key,
+               attrs,
+               draft.request_key,
+               draft.previous_id
+             ) do
+          {:ok, quest} ->
+            {:noreply,
+             socket
+             |> assign(duty_draft: nil, duty_detail: quest, camp_quests: Tasks.camp_quests())
+             |> refresh_duty_links()
+             |> clear_flash(:error)
+             |> put_flash(:info, "Quest je uložen. Provozní podklad se nezměnil.")}
+
+          {:error, %Ecto.Changeset{} = changeset} ->
+            {:noreply, assign(socket, duty_form: to_form(changeset, as: :duty))}
+
+          error ->
+            result(socket, error)
+        end
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event(
+         "duty-profile-search",
+         %{"duty_profile_query" => %{"duty-profile" => query}},
+         socket
+       ),
+       do: {:noreply, assign(socket, duty_profile_query: query, duty_profile_open: true)}
+
+  defp handle_game_event("duty-profile-open", _, socket),
+    do: {:noreply, assign(socket, duty_profile_open: true)}
+
+  defp handle_game_event("duty-profile-close", _, socket),
+    do: {:noreply, assign(socket, duty_profile_open: false)}
+
+  defp handle_game_event("duty-profile-select", %{"id" => id}, socket) do
+    if socket.assigns.duty_draft &&
+         (id == "" or Enum.any?(socket.assigns.data.profiles, &(&1.id == id))) do
+      attrs = Map.put(socket.assigns.duty_form.params, "assigned_profile_id", id)
+
+      {:noreply,
+       assign(socket,
+         duty_form: to_form(Tasks.change(%Quest{}, attrs), as: :duty),
+         duty_profile_query: nil,
+         duty_profile_open: false
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("open-duty-quest", %{"id" => id}, socket) do
+    known = Enum.any?(socket.assigns.duty_links, fn {_, link} -> link.quest.id == id end)
+    history = socket.assigns.duty_history
+
+    if known or (history && Enum.any?(history.quests, &(&1.id == id))) do
+      {:noreply,
+       assign(socket, duty_detail: Tasks.get_managed(id), duty_history: nil, duty_draft: nil)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("close-duty-detail", _, socket),
+    do: {:noreply, assign(socket, duty_detail: nil)}
+
+  defp handle_game_event("duty-history", params, socket) do
+    case duty_issue(socket, params["source"]) do
+      nil ->
+        {:noreply, socket}
+
+      issue ->
+        case Tasks.duty_key(issue) do
+          nil ->
+            {:noreply, socket}
+
+          key ->
+            history = Tasks.duty_history(key)
+
+            {:noreply,
+             assign(socket,
+               duty_history: Map.merge(history, %{key: key, issue: issue, page: 0}),
+               duty_detail: nil,
+               duty_draft: nil
+             )}
+        end
+    end
+  end
+
+  defp handle_game_event("duty-history-page", %{"direction" => direction}, socket) do
+    case socket.assigns.duty_history do
+      %{page: page} = history ->
+        next =
+          cond do
+            direction == "next" && history.more? -> page + 1
+            direction == "previous" -> max(page - 1, 0)
+            true -> page
+          end
+
+        if next == page do
+          {:noreply, socket}
+        else
+          {:noreply,
+           assign(socket,
+             duty_history:
+               Map.merge(history, Map.put(Tasks.duty_history(history.key, next), :page, next))
+           )}
+        end
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("close-duty-history", _, socket),
+    do: {:noreply, assign(socket, duty_history: nil)}
 
   defp handle_game_event("refresh-world", _, socket),
     do: {:noreply, assign(socket, world: Projects.world(), cabin_chronicle: nil, cabin_page: 0)}
@@ -535,10 +743,10 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp handle_game_event("start-task", %{"id" => id}, socket),
-    do: result(socket, Tasks.start(socket.assigns.selected_profile_id, id))
+    do: task_result(socket, Tasks.start(socket.assigns.selected_profile_id, id))
 
   defp handle_game_event("archive-task", %{"id" => id}, socket),
-    do: result(socket, Tasks.archive(socket.assigns.selected_profile_id, id))
+    do: task_result(socket, Tasks.archive(socket.assigns.selected_profile_id, id))
 
   defp handle_game_event("initialize", _, socket) do
     result(socket, Adventure.initialize())
@@ -635,7 +843,9 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
        do: {:noreply, assign(socket, :profile_storage_available, persistent)}
 
   defp handle_game_event("prepare-completion", %{"id" => id}, socket) do
-    quests = socket.assigns.data.quests ++ socket.assigns.camp_quests
+    quests =
+      socket.assigns.data.quests ++
+        socket.assigns.camp_quests ++ List.wrap(socket.assigns.duty_detail)
 
     quest =
       if socket.assigns.data.profile,
@@ -652,7 +862,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     note = get_in(params, ["completion", "note"]) || ""
 
     if quest = socket.assigns.completing do
-      result(
+      task_result(
         socket,
         if quest.managed do
           Tasks.complete(
@@ -678,7 +888,10 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
         selected_profile_id: id,
         completing: nil,
         finding: false,
-        template_confirmation: nil
+        template_confirmation: nil,
+        duty_draft: nil,
+        duty_detail: nil,
+        duty_history: nil
       )
       |> load()
 
@@ -701,6 +914,15 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp result(socket, {:error, reason}) do
     message =
       case reason do
+        :invalid_duty_source ->
+          "Podnět není v načteném přehledu. Obnov provoz a vyber podnět znovu."
+
+        :history_confirmation_required ->
+          "Předchozí práce se změnila. Zavři návrh, obnov provoz a výslovně připrav další quest."
+
+        :invalid_request ->
+          "Návrh už není platný. Zavři ho a připrav nový z podnětu."
+
         :immutable_template ->
           "Archivovanou šablonu nelze upravit."
 
@@ -752,6 +974,39 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
     {:noreply, socket |> clear_flash(:info) |> put_flash(:error, message)}
   end
+
+  defp duty_issue(socket, source) when is_binary(source) do
+    if snapshot = socket.assigns.operation do
+      Enum.find(snapshot.issues, fn issue ->
+        case Tasks.duty_key(issue) do
+          {id, type} -> source == id <> ":" <> type
+          _ -> false
+        end
+      end)
+    end
+  end
+
+  defp duty_issue(_, _), do: nil
+
+  defp duty_open?(quest), do: quest.status in ["waiting", "active"] && is_nil(quest.archived_at)
+
+  defp refresh_duty_links(socket) do
+    issues = if socket.assigns.operation, do: socket.assigns.operation.issues, else: []
+    assign(socket, duty_links: Tasks.duty_links(issues))
+  end
+
+  defp task_result(socket, {:ok, quest} = outcome) do
+    socket = refresh_duty_links(socket)
+
+    socket =
+      if socket.assigns.duty_detail && socket.assigns.duty_detail.id == quest.id,
+        do: assign(socket, duty_detail: quest),
+        else: socket
+
+    result(socket, outcome)
+  end
+
+  defp task_result(socket, error), do: result(socket, error)
 
   defp load(socket) do
     {:ok, data} = Adventure.dashboard(socket.assigns.selected_profile_id)
@@ -1116,6 +1371,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             chronicle={@cabin_chronicle}
             chronicle_page={@cabin_page}
             profiles={@data.profiles}
+            duty_links={@duty_links}
+            profile={@data.profile}
           />
           <div :if={@live_action == :index} class="adventure-camp-grid">
             <div class="adventure-quests-column">
@@ -1180,6 +1437,33 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           </footer>
         </div>
         <.help_overlay />
+        <.modal :if={@duty_draft} id="adventure-duty-modal" show on_cancel={JS.push("cancel-duty")}>
+          <.duty_draft
+            draft={@duty_draft}
+            form={@duty_form}
+            profiles={@data.profiles}
+            profile_query={@duty_profile_query}
+            profile_open={@duty_profile_open}
+            checked_at={@operation_checked_at}
+            state={@operation_state}
+          />
+        </.modal>
+        <.modal
+          :if={@duty_detail && !@completing}
+          id="adventure-duty-detail-modal"
+          show
+          on_cancel={JS.push("close-duty-detail")}
+        >
+          <.duty_detail quest={@duty_detail} profiles={@data.profiles} profile={@data.profile} />
+        </.modal>
+        <.modal
+          :if={@duty_history}
+          id="adventure-duty-history-modal"
+          show
+          on_cancel={JS.push("close-duty-history")}
+        >
+          <.duty_history history={@duty_history} />
+        </.modal>
         <.modal
           :if={@finding && @data.profile}
           id="adventure-picker-modal"

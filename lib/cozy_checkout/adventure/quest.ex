@@ -27,6 +27,13 @@ defmodule CozyCheckout.Adventure.Quest do
     field :definition_snapshot, :map
     field :evidence, :map, default: %{}
     field :completed_at, :utc_datetime
+    field :source_namespace, :string
+    field :source_ref, Ecto.UUID
+    field :source_type, :string
+    field :source_context, :map
+    field :source_request_key, Ecto.UUID
+    field :source_previous_id, Ecto.UUID
+    field :source_attempt, :integer
     timestamps(type: :utc_datetime)
   end
 

@@ -112,9 +112,373 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
   def operation_query(_, _, metadata, table) do
     if Regex.match?(
-         ~r/\b(?:FROM|JOIN)\s+"(?:bookings|guests|rooms|booking_rooms|booking_menus|booking_menu_items|recipes|booking_menu_item_supplements)"/,
+         ~r/\b(?:FROM|JOIN)\s+"(?:bookings|guests|rooms|booking_rooms|booking_menus|booking_menu_items|recipes|booking_menu_supplements)"/,
          metadata.query
        ) do
+      :ets.insert(table, {System.unique_integer([:monotonic]), metadata.query})
+    end
+  end
+
+  test "duty drafts validate snapshot membership and cancel without any SELECT", %{conn: conn} do
+    {view, _profile, booking} = duty_view(conn)
+
+    with_duty_queries(fn queries ->
+      render_click(view, "prepare-duty", %{"source" => "999", "booking_id" => booking.id})
+      refute has_element?(view, "#adventure-duty-modal")
+      render_click(view, "prepare-duty", %{"source" => "-1"})
+      render_click(view, "prepare-duty", %{"source" => "0junk"})
+      refute has_element?(view, "#adventure-duty-modal")
+      view |> element("#adventure-duty-0 button", "Připravit quest") |> render_click()
+      assert has_element?(view, "#adventure-duty-modal [role=dialog][aria-modal=true]")
+      assert has_element?(view, "#adventure-duty-modal-title", "Návrh questu")
+      assert has_element?(view, "#adventure-duty-source", "příjezd")
+      assert has_element?(view, "#adventure-duty-source", "Datum příjezdu není termín")
+      assert has_element?(view, "#duty_size option[value=small][selected]")
+      assert has_element?(view, "#duty_scope option[value=personal][selected]")
+      refute has_element?(view, "#duty_due_on[value]:not([value=''])")
+      assert has_element?(view, "#adventure-duty-form details summary", "nepovinné")
+      view |> form("#adventure-duty-form", duty: %{title: ""}) |> render_change()
+      assert has_element?(view, "#adventure-duty-form")
+      render_click(view, "duty-profile-open")
+      render_click(view, "duty-profile-select", %{"id" => ""})
+      view |> element("#adventure-duty-modal button", "Zpět bez uložení") |> render_click()
+      refute has_element?(view, "#adventure-duty-modal")
+      assert :ets.info(queries, :size) == 0
+    end)
+
+    assert Repo.aggregate(Quest, :count) == 0
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "an old card token resolves its own source after reordering and rejects removed sources",
+       %{conn: conn} do
+    {view, _profile, booking} = duty_view(conn)
+    source = duty_source(view)
+    snapshot = :sys.get_state(view.pid).socket.assigns.operation
+    other = %{hd(snapshot.issues) | booking_id: Ecto.UUID.generate(), reason: "Jiný podnět"}
+
+    :sys.replace_state(view.pid, fn state ->
+      socket =
+        Phoenix.Component.assign(state.socket,
+          operation: %{snapshot | issues: [other | snapshot.issues]}
+        )
+
+      %{state | socket: socket}
+    end)
+
+    with_duty_queries(fn queries ->
+      render_click(view, "prepare-duty", %{"source" => source, "booking_id" => other.booking_id})
+      assert :sys.get_state(view.pid).socket.assigns.duty_draft.issue.booking_id == booking.id
+      render_click(view, "cancel-duty")
+      assert :ets.info(queries, :size) == 0
+    end)
+
+    :sys.replace_state(view.pid, fn state ->
+      socket = Phoenix.Component.assign(state.socket, operation: %{snapshot | issues: [other]})
+      %{state | socket: socket}
+    end)
+
+    with_duty_queries(fn queries ->
+      render_click(view, "prepare-duty", %{"source" => source})
+      refute has_element?(view, "#adventure-duty-modal")
+      assert :ets.info(queries, :size) == 0
+    end)
+  end
+
+  test "duty creation uses server source and request with only the two UI refresh SELECTs", %{
+    conn: conn
+  } do
+    {view, _profile, booking} = duty_view(conn)
+    render_click(view, "prepare-duty", %{"source" => duty_source(view)})
+    draft = :sys.get_state(view.pid).socket.assigns.duty_draft
+    forged = Ecto.UUID.generate()
+
+    with_duty_queries(fn queries ->
+      render_submit(view, "save-duty", %{
+        "duty" => %{
+          "title" => "Ověřit porce před příjezdem",
+          "source_ref" => forged,
+          "source_type" => "menu",
+          "source_request_key" => forged,
+          "source_previous_id" => forged,
+          "status" => "active"
+        },
+        "source" => "999",
+        "booking_id" => forged,
+        "request_key" => forged,
+        "previous_id" => forged
+      })
+
+      # Context: profile lock, source lock, request replay, latest work. UI: camp + links.
+      assert :ets.info(queries, :size) == 6
+      statements = Enum.map(:ets.tab2list(queries), &elem(&1, 1))
+      refute Enum.any?(statements, &String.contains?(&1, "adventure_xp_transactions"))
+      refute Enum.any?(statements, &String.contains?(&1, "adventure_campaigns"))
+      refute Enum.any?(statements, &Regex.match?(~r/\b(?:FROM|JOIN)\s+"bookings"/, &1))
+      assert has_element?(view, "#adventure-duty-0", "Quest: Čeká")
+      refute has_element?(view, "#adventure-duty-0 button", "Připravit quest")
+      assert has_element?(view, "#adventure-duty-detail-modal", "Ověřit porce před příjezdem")
+      assert has_element?(view, "#adventure-duty-detail-modal", "50 XP")
+
+      :ets.delete_all_objects(queries)
+      render_submit(view, "save-duty", %{"duty" => %{"title" => "Duplicitní kliknutí"}})
+      assert :ets.info(queries, :size) == 0
+    end)
+
+    quest = Repo.get_by!(Quest, source_request_key: draft.request_key)
+    assert quest.source_ref == booking.id
+    assert quest.source_type == elem(draft.key, 1)
+    assert quest.source_previous_id == nil
+    assert quest.status == "waiting"
+    assert quest.scope == "personal"
+    assert quest.assigned_profile_id == nil
+    assert quest.due_on == nil
+    assert quest.definition_snapshot["size"] == "small"
+    assert quest.definition_snapshot["xp"] == 50
+    assert Repo.aggregate(Quest, :count) == 1
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "normal quest mutations refresh duty links and further work needs explicit confirmation",
+       %{
+         conn: conn
+       } do
+    {view, profile, _booking} = duty_view(conn)
+    render_click(view, "prepare-duty", %{"source" => duty_source(view)})
+    view |> form("#adventure-duty-form", duty: %{title: "Doplnit podklady"}) |> render_submit()
+    quest = :sys.get_state(view.pid).socket.assigns.duty_detail
+    assert_duty_refresh(fn -> render_click(view, "start-task", %{"id" => quest.id}) end)
+    assert has_element?(view, "#adventure-duty-0", "Quest: Rozpracováno")
+    refute has_element?(view, "#adventure-duty-0 button", "Připravit quest")
+    render_click(view, "prepare-completion", %{"id" => quest.id})
+
+    assert_duty_refresh(fn ->
+      view
+      |> form("#adventure-completion", completion: %{actor_id: profile.id})
+      |> render_submit()
+    end)
+
+    assert has_element?(view, "#adventure-duty-0", "Quest: Hotovo")
+    render_click(view, "close-duty-detail")
+
+    with_duty_queries(fn queries ->
+      view |> element("#adventure-duty-0 button", "Připravit další řešení") |> render_click()
+      assert has_element?(view, "#adventure-duty-previous", "uzavřená práce")
+      assert has_element?(view, "#adventure-duty-previous", "Doplnit podklady")
+      refute has_element?(view, "#adventure-duty-form")
+
+      render_submit(view, "save-duty", %{
+        "duty" => %{"title" => "Bez potvrzení"},
+        "previous_id" => quest.id
+      })
+
+      refute has_element?(view, "#adventure-duty-form")
+      render_click(view, "cancel-duty")
+      assert :ets.info(queries, :size) == 0
+      render_click(view, "prepare-duty", %{"source" => duty_source(view)})
+      view |> element("#adventure-duty-confirm-next") |> render_click()
+      assert has_element?(view, "#adventure-duty-form")
+      assert :ets.info(queries, :size) == 0
+    end)
+
+    render_submit(view, "save-duty", %{
+      "duty" => %{"title" => "Nové ověření po změně", "previous_id" => Ecto.UUID.generate()},
+      "previous_id" => Ecto.UUID.generate()
+    })
+
+    next = :sys.get_state(view.pid).socket.assigns.duty_detail
+    assert next.id != quest.id
+    assert next.source_previous_id == quest.id
+    assert has_element?(view, "#adventure-duty-0", "Quest: Čeká")
+    assert_duty_refresh(fn -> render_click(view, "archive-task", %{"id" => next.id}) end)
+    assert has_element?(view, "#adventure-duty-0", "Zrušeno · archiv")
+    assert Repo.aggregate(Quest, :count) == 2
+    assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
+  test "duty detail and explicit source history each use one bounded SELECT", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    profile = Repo.get_by!(Profile, slug: "michal")
+    today = CozyCheckout.Adventure.Sources.Operation.today()
+
+    CozyCheckout.AdventureFixtures.adventure_booking(%{
+      status: "upcoming",
+      check_in_date: today,
+      check_out_date: Date.add(today, 2),
+      meal_plan: nil
+    })
+
+    {:ok, snapshot} = CozyCheckout.Adventure.Sources.Operation.load()
+    key = Tasks.duty_key(hd(snapshot.issues))
+
+    latest =
+      Enum.reduce(1..21, nil, fn attempt, previous ->
+        {:ok, quest} =
+          Tasks.create_from_duty(
+            profile.id,
+            snapshot,
+            key,
+            %{"title" => "Pokus #{attempt}"},
+            Ecto.UUID.generate(),
+            previous && previous.id
+          )
+
+        {:ok, archived} = Tasks.archive(profile.id, quest.id)
+        archived
+      end)
+
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    first = hd(Tasks.duty_history(key, 1).quests)
+    assert has_element?(view, "#adventure-duty-0", "Historie podnětu (21)")
+
+    with_duty_queries(fn queries ->
+      render_click(view, "open-duty-quest", %{"id" => Ecto.UUID.generate()})
+      assert :ets.info(queries, :size) == 0
+      render_click(view, "open-duty-quest", %{"id" => latest.id})
+      assert :ets.info(queries, :size) == 1
+      assert has_element?(view, "#adventure-duty-detail-modal", "Pokus 21")
+      render_click(view, "close-duty-detail")
+      assert :ets.info(queries, :size) == 1
+      :ets.delete_all_objects(queries)
+
+      view |> element("#adventure-duty-0 button", "Historie podnětu") |> render_click()
+      assert :ets.info(queries, :size) == 1
+      assert length(:sys.get_state(view.pid).socket.assigns.duty_history.quests) == 20
+      assert has_element?(view, "#adventure-duty-history-modal", "Pokus 21")
+      refute has_element?(view, "#adventure-duty-history-#{first.id}")
+      :ets.delete_all_objects(queries)
+      view |> element("#adventure-duty-history-modal button", "Starší práce") |> render_click()
+      assert :ets.info(queries, :size) == 1
+      assert has_element?(view, "#adventure-duty-history-modal h3", "Pokus 1")
+      refute has_element?(view, "#adventure-duty-history-modal button", "Starší práce")
+      :ets.delete_all_objects(queries)
+      view |> element("#adventure-duty-history-modal button", "Novější práce") |> render_click()
+      assert :ets.info(queries, :size) == 1
+      :ets.delete_all_objects(queries)
+      render_click(view, "close-duty-history")
+      assert :ets.info(queries, :size) == 0
+    end)
+  end
+
+  test "draft retains Czech arrival and failed stale snapshot context with optional task details",
+       %{
+         conn: conn
+       } do
+    {view, profile, _booking} = duty_view(conn)
+
+    :sys.replace_state(view.pid, fn state ->
+      snapshot = %{
+        state.socket.assigns.operation
+        | loaded_at: DateTime.add(DateTime.utc_now(), -901)
+      }
+
+      socket =
+        Phoenix.Component.assign(state.socket, operation: snapshot, operation_state: :error)
+
+      %{state | socket: socket}
+    end)
+
+    render_click(view, "prepare-duty", %{"source" => duty_source(view)})
+    assert has_element?(view, "#adventure-duty-source", "Poslední obnova selhala")
+    assert has_element?(view, "#adventure-duty-source", "UTC")
+
+    assert has_element?(
+             view,
+             "#adventure-duty-source",
+             Calendar.strftime(CozyCheckout.Adventure.Sources.Operation.today(), "%d. %m. %Y")
+           )
+
+    render_click(view, "duty-profile-select", %{"id" => profile.id})
+
+    view
+    |> form("#adventure-duty-form", duty: %{size: "medium", xp: 175})
+    |> render_change()
+
+    assert has_element?(view, "#adventure-duty-reward", "175 XP pro skutečného splnitele")
+
+    view
+    |> form("#adventure-duty-form",
+      duty: %{
+        title: "Vlastní krátký název",
+        description: "Ověřit s kuchyní.",
+        size: "medium",
+        due_on: "2030-06-12",
+        priority: "high",
+        xp: 175
+      }
+    )
+    |> render_submit()
+
+    quest = :sys.get_state(view.pid).socket.assigns.duty_detail
+    assert quest.assigned_profile_id == profile.id
+    assert quest.description == "Ověřit s kuchyní."
+    assert quest.definition_snapshot["xp"] == 175
+    assert quest.definition_snapshot["size"] == "medium"
+    assert quest.priority == "high"
+    assert quest.due_on == ~D[2030-06-12]
+    assert quest.status == "waiting"
+    assert has_element?(view, "#adventure-operation-status", "Poslední dostupné údaje")
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  defp duty_view(conn) do
+    {:ok, _} = Adventure.initialize()
+    profile = Repo.get_by!(Profile, slug: "michal")
+    today = CozyCheckout.Adventure.Sources.Operation.today()
+
+    booking =
+      CozyCheckout.AdventureFixtures.adventure_booking(%{
+        status: "upcoming",
+        check_in_date: today,
+        check_out_date: Date.add(today, 2),
+        meal_plan: nil
+      })
+
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    assert has_element?(view, "#adventure-duty-0")
+    render_click(view, "restore-profile", %{"id" => profile.id})
+    {view, profile, booking}
+  end
+
+  defp duty_source(view) do
+    issue = hd(:sys.get_state(view.pid).socket.assigns.operation.issues)
+    {id, type} = Tasks.duty_key(issue)
+    id <> ":" <> type
+  end
+
+  defp assert_duty_refresh(fun) do
+    with_duty_queries(fn queries ->
+      fun.()
+      statements = Enum.map(:ets.tab2list(queries), &elem(&1, 1))
+      assert Enum.count(statements, &String.contains?(&1, "PARTITION BY")) == 1
+
+      refute Enum.any?(
+               statements,
+               &Regex.match?(
+                 ~r/\b(?:FROM|JOIN)\s+"(?:bookings|booking_menus|booking_menu_items|booking_menu_supplements)"/,
+                 &1
+               )
+             )
+    end)
+  end
+
+  defp with_duty_queries(fun) do
+    table = :ets.new(:duty_ui_selects, [:public, :ordered_set])
+    handler = {__MODULE__, make_ref()}
+
+    :ok =
+      :telemetry.attach(handler, [:cozy_checkout, :repo, :query], &__MODULE__.duty_query/4, table)
+
+    try do
+      fun.(table)
+    after
+      :telemetry.detach(handler)
+      :ets.delete(table)
+    end
+  end
+
+  def duty_query(_, _, metadata, table) do
+    if Regex.match?(~r/^\s*SELECT\b/i, metadata.query) do
       :ets.insert(table, {System.unique_integer([:monotonic]), metadata.query})
     end
   end
