@@ -1,6 +1,6 @@
 # Cozy Adventure: herní svět chaty a kratší cesta k hraní
 
-- Stav: schváleno uživatelem k implementaci; implementace v této větvi, CI ověřuje uživatel.
+- Stav: implementováno a sloučeno v PR #124; uživatel vyzkoušel základy a potvrdil srozumitelnost. Schválena navazující 5B, viz oddíl 19 provozní roadmapy. Výsledky CI ověřuje uživatel.
 - Vytvořeno: 2026-11-12
 - Základ auditu: `origin/main` `a16b150`, PR #122 a #123.
 - Navazuje na [funkci Adventure](../features/ADVENTURE.md) a [roadmapu provozu a budování](2026-11-12-adventure-todos-a-prehled-sezony.md).
@@ -150,3 +150,13 @@ scrollu, otevření všech šesti oblastí, mobilní návrat a zachování hlavn
 první obrazovce 390 × 844. Výtvarná změna nepřidává business logiku ani nové testy;
 lokální ExUnit se v této dodávce neopakuje. Předchozí cílený běh 47 testů je uveden
 výše, nové CI ověří uživatel.
+
+
+### Předání na 5B
+
+Po základním společném vyzkoušení uživatel potvrdil, že je rozhraní srozumitelné
+a základy fungují. Schválil pokračování 5B i konkrétní návrh záložky Otevřená
+práce, stránkování po 20 položkách a dávkového čtení. Rozsah a implementace
+navazují v [oddílu 19 roadmapy](2026-11-12-adventure-todos-a-prehled-sezony.md#19-schválení-a-implementace-5b-12-11-2026).
+Toto potvrzení základů nenahrazuje dosud neprovedené cílené kontroly přístupnosti
+ani měřenou desetisekundovou orientaci obou hráčů.

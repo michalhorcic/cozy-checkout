@@ -42,6 +42,9 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          operation_state: :loading,
          operation_area: "reception",
          duty_links: %{},
+         duty_tab: "issues",
+         duty_follow_up: nil,
+         duty_follow_up_error: false,
          duty_draft: nil,
          duty_form: nil,
          duty_detail: nil,
@@ -142,10 +145,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
              duty_draft: nil,
              duty_history: nil
            )
-           |> refresh_duty_links()}
+           |> refresh_duty_links()
+           |> refresh_duty_follow_up()}
 
         {:error, _} ->
-          {:noreply, assign(socket, operation_state: :error)}
+          {:noreply, socket |> assign(operation_state: :error) |> refresh_duty_follow_up()}
       end
     else
       {:noreply, redirect(socket, to: ~p"/admin")}
@@ -166,6 +170,38 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp handle_game_event("world-panel", %{"panel" => panel}, socket)
        when panel in ~w(continue duty),
        do: {:noreply, assign(socket, world_panel: panel)}
+
+  defp handle_game_event("duty-tab", %{"tab" => tab}, socket)
+       when tab in ~w(issues work) do
+    socket = assign(socket, duty_tab: tab)
+
+    socket =
+      if tab == "work" && is_nil(socket.assigns.duty_follow_up),
+        do: load_duty_follow_up(socket, 0),
+        else: socket
+
+    {:noreply, socket}
+  end
+
+  defp handle_game_event("duty-work-page", %{"direction" => direction}, socket) do
+    case socket.assigns.duty_follow_up do
+      %{page: page, more?: more?} ->
+        next =
+          cond do
+            direction == "next" && more? -> page + 1
+            direction == "previous" && page > 0 -> page - 1
+            true -> page
+          end
+
+        {:noreply, if(next != page, do: load_duty_follow_up(socket, next), else: socket)}
+
+      _ ->
+        {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("refresh-duty-work", _, socket),
+    do: {:noreply, load_duty_follow_up(socket, 0)}
 
   defp handle_game_event("focus-quest", %{"id" => id}, socket) do
     if Enum.any?(
@@ -295,6 +331,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
              socket
              |> assign(duty_draft: nil, duty_detail: quest, camp_quests: Tasks.camp_quests())
              |> refresh_duty_links()
+             |> refresh_duty_follow_up()
              |> clear_flash(:error)
              |> put_flash(:info, "Quest je uložen. Provozní podklad se nezměnil.")}
 
@@ -340,7 +377,10 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp handle_game_event("open-duty-quest", %{"id" => id}, socket) do
-    known = Enum.any?(socket.assigns.duty_links, fn {_, link} -> link.quest.id == id end)
+    known =
+      Enum.any?(socket.assigns.duty_links, fn {_, link} -> link.quest.id == id end) or
+        Enum.any?(duty_follow_up_quests(socket), &(&1.id == id))
+
     history = socket.assigns.duty_history
 
     if known or (history && Enum.any?(history.quests, &(&1.id == id))) do
@@ -355,7 +395,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     do: {:noreply, assign(socket, duty_detail: nil)}
 
   defp handle_game_event("duty-history", params, socket) do
-    case duty_issue(socket, params["source"]) do
+    case duty_history_issue(socket, params["source"]) do
       nil ->
         {:noreply, socket}
 
@@ -1164,6 +1204,51 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp duty_issue(_, _), do: nil
 
+  defp duty_follow_up_quests(socket),
+    do: if(socket.assigns.duty_follow_up, do: socket.assigns.duty_follow_up.quests, else: [])
+
+  defp duty_history_issue(socket, source) do
+    duty_issue(socket, source) ||
+      case Enum.find(
+             duty_follow_up_quests(socket),
+             &(source == &1.source_ref <> ":" <> &1.source_type)
+           ) do
+        nil ->
+          nil
+
+        quest ->
+          on =
+            case Date.from_iso8601(quest.source_context["on"] || "") do
+              {:ok, date} -> date
+              _ -> nil
+            end
+
+          %{
+            booking_id: quest.source_ref,
+            kind: if(quest.source_type == "details", do: :details, else: :menu),
+            on: on,
+            reason: quest.source_context["reason"]
+          }
+      end
+  end
+
+  defp load_duty_follow_up(socket, page) do
+    assign(socket,
+      duty_follow_up:
+        Map.merge(Tasks.duty_follow_up(page), %{page: page, loaded_at: DateTime.utc_now()}),
+      duty_follow_up_error: false
+    )
+  rescue
+    _error in [Postgrex.Error, DBConnection.ConnectionError] ->
+      assign(socket, duty_follow_up_error: true)
+  end
+
+  defp refresh_duty_follow_up(socket) do
+    if socket.assigns.duty_follow_up || socket.assigns.duty_follow_up_error,
+      do: load_duty_follow_up(socket, 0),
+      else: socket
+  end
+
   defp duty_open?(quest), do: quest.status in ["waiting", "active"] && is_nil(quest.archived_at)
 
   defp refresh_duty_links(socket) do
@@ -1172,7 +1257,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp task_result(socket, {:ok, quest} = outcome) do
-    socket = refresh_duty_links(socket)
+    socket = socket |> refresh_duty_links() |> refresh_duty_follow_up()
 
     socket =
       if socket.assigns.duty_detail && socket.assigns.duty_detail.id == quest.id,
@@ -1646,7 +1731,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           show
           on_cancel={JS.push("close-duty-detail")}
         >
-          <.duty_detail quest={@duty_detail} profiles={@data.profiles} profile={@data.profile} />
+          <.duty_detail
+            quest={@duty_detail}
+            profiles={@data.profiles}
+            profile={@data.profile}
+            snapshot={@operation}
+            state={@operation_state}
+            checked_at={@operation_checked_at}
+          />
         </.modal>
         <.modal
           :if={@duty_history}

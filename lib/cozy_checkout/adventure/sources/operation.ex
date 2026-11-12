@@ -51,6 +51,33 @@ defmodule CozyCheckout.Adventure.Sources.Operation do
     }
   end
 
+  @doc "Compares work with the entire retained projection; absence is never proof of resolution."
+  def duty_source_status(quest, snapshot, state, now \\ DateTime.utc_now()) do
+    cond do
+      is_nil(snapshot) or state != :ready ->
+        :unavailable
+
+      stale?(snapshot, now) ->
+        :stale
+
+      true ->
+        key = {quest.source_ref, quest.source_type}
+        issue = Enum.find(snapshot.issues, &(CozyCheckout.Adventure.Tasks.duty_key(&1) == key))
+
+        cond do
+          is_nil(issue) ->
+            :absent
+
+          quest.source_context["reason"] != issue.reason or
+              quest.source_context["on"] != (issue.on && Date.to_iso8601(issue.on)) ->
+            :changed
+
+          true ->
+            :present
+        end
+    end
+  end
+
   def stale?(snapshot, now \\ DateTime.utc_now()) do
     snapshot.today != today(now) or DateTime.diff(now, snapshot.loaded_at) >= 900
   end

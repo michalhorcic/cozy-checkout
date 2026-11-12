@@ -557,6 +557,122 @@ defmodule CozyCheckout.Adventure.DutyTasksTest do
     assert queries == []
   end
 
+  test "follow-up is one bounded query across heroes and independent of the current projection",
+       %{
+         michal: actor,
+         lucka: lucka
+       } do
+    quests =
+      for n <- 1..23 do
+        issue = %{issue() | booking_id: Ecto.UUID.generate()}
+
+        attrs =
+          if rem(n, 2) == 0,
+            do: %{"title" => "Work #{n}", "assigned_profile_id" => lucka.id},
+            else: %{"title" => "Work #{n}", "scope" => "shared"}
+
+        {:ok, quest} =
+          Tasks.create_from_duty(
+            actor.id,
+            snapshot([issue]),
+            Tasks.duty_key(issue),
+            attrs,
+            Ecto.UUID.generate()
+          )
+
+        quest
+      end
+
+    [done, archived | remaining] = quests
+    {:ok, _} = Tasks.start(actor.id, done.id)
+    {:ok, _} = Tasks.complete(actor.id, done.id, %{"contributors" => [actor.id]})
+    {:ok, _} = Tasks.archive(actor.id, archived.id)
+    {:ok, _ordinary} = Tasks.create(actor.id, %{"title" => "Not from duty"})
+
+    {first, queries} = QueryRecorder.record(fn -> Tasks.duty_follow_up() end)
+    assert length(first.quests) == 20
+    assert first.more?
+    assert length(selects(queries)) == 1
+    assert_adventure_only(queries)
+    {last, queries} = QueryRecorder.record(fn -> Tasks.duty_follow_up(1) end)
+    assert length(last.quests) == 1
+    refute last.more?
+    assert length(selects(queries)) == 1
+    assert_adventure_only(queries)
+    actual_ids = Enum.map(first.quests ++ last.quests, & &1.id)
+    assert MapSet.new(actual_ids) == MapSet.new(remaining, & &1.id)
+    assert length(Enum.uniq(actual_ids)) == 21
+    assert Enum.any?(first.quests, &(&1.assigned_profile_id == lucka.id))
+    assert Enum.any?(first.quests, &(&1.scope == "shared"))
+    assert Tasks.duty_follow_up() == first
+    assert Tasks.duty_follow_up(2) == %{quests: [], more?: false}
+    assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
+  test "follow-up rejects invalid pages and the disabled feature without SQL" do
+    for page <- [-1, "0", nil] do
+      assert {%{quests: [], more?: false}, []} =
+               QueryRecorder.record(fn -> Tasks.duty_follow_up(page) end)
+    end
+
+    Application.put_env(:cozy_checkout, :adventure_enabled, false)
+
+    assert {%{quests: [], more?: false}, []} =
+             QueryRecorder.record(fn -> Tasks.duty_follow_up() end)
+  end
+
+  test "source comparison is pure, uses the whole projection and never resolves absent work", %{
+    michal: actor,
+    snapshot: snapshot,
+    issue: issue,
+    key: key
+  } do
+    alias CozyCheckout.Adventure.Sources.Operation
+    {:ok, quest} = create(actor, snapshot, key)
+    now = snapshot.loaded_at
+    other = for _ <- 1..4, do: %{issue | booking_id: Ecto.UUID.generate()}
+    full = %{snapshot | issues: other ++ [issue]}
+
+    {statuses, queries} =
+      QueryRecorder.record(fn ->
+        [
+          Operation.duty_source_status(quest, full, :ready, now),
+          Operation.duty_source_status(
+            quest,
+            %{full | issues: [%{issue | reason: "Changed"}]},
+            :ready,
+            now
+          ),
+          Operation.duty_source_status(
+            quest,
+            %{full | issues: [%{issue | on: ~D[2027-01-01]}]},
+            :ready,
+            now
+          ),
+          Operation.duty_source_status(quest, %{full | issues: []}, :ready, now),
+          Operation.duty_source_status(quest, full, :ready, DateTime.add(now, 901)),
+          Operation.duty_source_status(quest, full, :error, now),
+          Operation.duty_source_status(quest, full, :loading, now),
+          Operation.duty_source_status(quest, nil, :error, now)
+        ]
+      end)
+
+    assert statuses == [
+             :present,
+             :changed,
+             :changed,
+             :absent,
+             :stale,
+             :unavailable,
+             :unavailable,
+             :unavailable
+           ]
+
+    assert queries == []
+    assert Repo.get!(Quest, quest.id).status == "waiting"
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
   defp issue do
     %{
       booking_id: Ecto.UUID.generate(),

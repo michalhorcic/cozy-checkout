@@ -146,6 +146,9 @@ defmodule CozyCheckoutWeb.AdventureLive.WorldComponents do
           phx-hook="AdventureContext"
           data-panel={@world_panel}
           data-view={@game_view}
+          data-dialog-open={
+            to_string(!!(@duty_draft || @duty_detail || @duty_history || @completing))
+          }
           class={["adventure-context", @world_panel != "continue" && "adventure-context--detail"]}
           aria-label="Vybraná práce nebo oblast"
           tabindex="-1"
@@ -179,6 +182,12 @@ defmodule CozyCheckoutWeb.AdventureLive.WorldComponents do
               snapshot={@operation}
               duty_links={@duty_links}
               profile={@data.profile}
+              profiles={@data.profiles}
+              duty_tab={@duty_tab}
+              duty_follow_up={@duty_follow_up}
+              duty_follow_up_error={@duty_follow_up_error}
+              state={@operation_state}
+              checked_at={@operation_checked_at}
             />
           </div>
         </aside>
