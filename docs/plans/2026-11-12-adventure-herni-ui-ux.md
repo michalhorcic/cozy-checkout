@@ -131,3 +131,22 @@ spuštěny soubory `test/cozy_checkout_web/adventure/index_test.exs` a
 Tento cílený běh nahrazuje předchozí omezení lokálního ověření pro tyto dva
 soubory; ostatní testovací sady zůstávají na CI. Bez nových dotazů, migrace,
 konfigurace nebo změny herních pravidel.
+
+
+### Jedna chata s odkrytým interiérem (12. 11. 2026)
+
+Uživatel následně vybral první ze tří výtvarných alternativ: jednu chatu jako
+otevřený domeček pro panenky. Dosavadní samostatné domky nahrazuje jediná budova
+se společnou střechou, průběžnými stropy a dvěma podlažími. Nahoře jsou pokoje,
+účetní koutek (Pokladnice) a pracovní stůl s nástěnkou projektů (Dílna); dole
+recepce, kuchyně a bar. Členění je stylizované, bez tvrzení o skutečné dispozici.
+
+Mění se lokální SVG, polohy HTML popisků, jejich pořadí pro klávesnici a alternativní
+text. Pět oblastí i projektové centrum, detail, seznam oblastí a dekorace převzatých
+výsledků používají stejné události i data. Žádné nové dotazy, pravidla ani migrace.
+
+Browserem ověřeny šířky 320/390/1440 px, popisky bez překryvu a vodorovného
+scrollu, otevření všech šesti oblastí, mobilní návrat a zachování hlavní akce na
+první obrazovce 390 × 844. Výtvarná změna nepřidává business logiku ani nové testy;
+lokální ExUnit se v této dodávce neopakuje. Předchozí cílený běh 47 testů je uveden
+výše, nové CI ověří uživatel.

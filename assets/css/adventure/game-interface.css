@@ -72,18 +72,18 @@
 .adventure-scene-column { min-width: 0; }
 .adventure-village { position: relative; isolation: isolate; width: 100%; aspect-ratio: 3 / 2; border-radius: 18px; overflow: hidden; border: 1px solid #aab89a; background: #b8c7a3; }
 .adventure-village-land { position: absolute; inset: 0; z-index: -1; width: 100%; height: 100%; object-fit: cover; }
-.adventure-village-place { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; min-height: 44px; width: 29%; color: #233f35; border: none; background: none; text-align: center; }
+.adventure-village-place { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; min-height: 44px; width: 25%; color: #233f35; border: none; background: none; text-align: center; }
 .adventure-place-label { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 6px 12px; border: 1px solid #a8986f; border-radius: 20px; background: #fff9e9f2; box-shadow: 0 3px 0 #64785e66; }
 .adventure-place-label strong { font: 700 16px/1.2 Georgia,serif; overflow-wrap: normal; }
 .adventure-place-label .adventure-symbol { width: 18px; height: 18px; }
 .adventure-place-summary { max-width: 100%; border-radius: 8px; padding: 3px 7px; background: #f6f6e9ee; font-size: 11px; line-height: 1.3; }
 .adventure-village-place:hover .adventure-place-label, .adventure-village-place[aria-pressed=true] .adventure-place-label { background: #f9e8b5; border-color: #776239; box-shadow: 0 3px 0 #7b673c; }
-.adventure-village-place--reception { left: 21%; top: 48%; }
-.adventure-village-place--rooms { left: 50%; top: 33%; }
-.adventure-village-place--kitchen { left: 80%; top: 48%; }
-.adventure-village-place--bar { left: 23%; top: 78%; }
-.adventure-village-place--treasury { left: 51%; top: 80%; }
-.adventure-village-place--workshop { left: 80%; top: 78%; }
+.adventure-village-place--reception { left: 26%; top: 74%; }
+.adventure-village-place--rooms { left: 50%; top: 45%; }
+.adventure-village-place--kitchen { left: 50%; top: 74%; }
+.adventure-village-place--bar { left: 76%; top: 74%; }
+.adventure-village-place--treasury { left: 26%; top: 45%; }
+.adventure-village-place--workshop { left: 76%; top: 45%; }
 .adventure-world-decoration { position: absolute; top: -38px; display: flex; gap: 4px; color: #f6d375; filter: drop-shadow(0 2px 1px #655337); }
 .adventure-world-decoration .adventure-symbol { width: 26px; height: 26px; }
 .adventure-scene-toolbar { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
@@ -162,15 +162,11 @@
   .adventure-world-grid, .adventure-quest-dock, .adventure-expeditions-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 14px; }
   .adventure-village { aspect-ratio: 1.6; }
   .adventure-village-land { object-fit: fill; }
-  .adventure-village-place { padding: 0; gap: 3px; width: 32%; }
-  .adventure-place-label { min-height: 44px; padding: 6px 9px; gap: 4px; }
+  .adventure-village-place { padding: 0; gap: 3px; width: 25%; }
+  .adventure-place-label { min-height: 44px; padding: 6px 7px; gap: 4px; }
   .adventure-place-label strong { font-size: 13px; }
   .adventure-place-label .adventure-symbol { display: none; }
   .adventure-place-summary { display: none; }
-  .adventure-village-place--reception { left: 20%; top: 46%; }
-  .adventure-village-place--kitchen { left: 81%; top: 46%; }
-  .adventure-village-place--rooms { top: 32%; }
-  .adventure-village-place--bar, .adventure-village-place--treasury, .adventure-village-place--workshop { top: 79%; }
   .adventure-world-decoration { top: -28px; }
   .adventure-world-decoration .adventure-symbol { width: 21px; height: 21px; }
   .adventure-scene-toolbar { margin-top: 8px; gap: 10px; }

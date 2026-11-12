@@ -134,7 +134,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
       <img
         class="adventure-village-land"
         src={~p"/images/adventure/cabin-world.svg"}
-        alt="Horská chata se zahradou a cestami mezi oblastmi"
+        alt="Jedna horská chata s odkrytým interiérem: pokoje a pracovní koutky v patře, recepce, kuchyně a bar v přízemí"
         width="1200"
         height="800"
         fetchpriority="high"
@@ -355,12 +355,12 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
 
   def places,
     do: [
-      {"reception", "Recepce", "house"},
-      {"rooms", "Pokoje", "mountain-snow"},
-      {"kitchen", "Kuchyně", "utensils"},
-      {"bar", "Bar", "backpack"},
       {"treasury", "Pokladnice", "coins"},
-      {"workshop", "Dílna", "wrench"}
+      {"rooms", "Pokoje", "mountain-snow"},
+      {"workshop", "Dílna", "wrench"},
+      {"reception", "Recepce", "house"},
+      {"kitchen", "Kuchyně", "utensils"},
+      {"bar", "Bar", "backpack"}
     ]
 
   attr :issue, :map, required: true

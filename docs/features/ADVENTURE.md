@@ -90,8 +90,11 @@ viditelné, ostatní filtry jsou pod **Filtry**. Správa neopakuje herní mapu.
 Mapa obsahuje Recepce, Pokoje, Kuchyně, Bar, Pokladnice a Dílnu. Dílna je
 vstup do společných projektů, není šestou vylepšovanou místností. Obecné projekty
 patří Celé chatě. Oblasti používají existující projekci a při výběru nedotazují
-provoz ani neudělují XP. Základní nová lokální SVG ilustrace je doplněna HTML
-ovládáním. První převzaté zlepšení oblasti přidá praporek, dvě a více také trofej.
+provoz ani neudělují XP. Lokální SVG ilustrace ukazuje **jednu chatu s odkrytým interiérem**: pokoje
+a účetní/projektové koutky v patře, recepci, kuchyni a bar v přízemí. Jde
+o stylizované herní členění, nikoli skutečný stavební půdorys. Popisky jsou HTML
+tlačítka u odpovídajících místností; tabulátor prochází horní a pak dolní řadu
+zleva doprava. Stejné kotvy platí na mobilu i počítači. První převzaté zlepšení oblasti přidá praporek, dvě a více také trofej.
 Přesný počet, skutečné výsledky a přispěvatelé zůstávají v detailu; archivovaný
 převzatý projekt se dál počítá. Dekorace není provozní stav ani finanční bonus.
 
