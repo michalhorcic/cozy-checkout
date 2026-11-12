@@ -18,7 +18,12 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     if Adventure.enabled?() do
       {:ok,
        socket
-       |> assign(page_title: "Cozy Adventure", selected_profile_id: nil, completing: nil)
+       |> assign(
+         page_title: "Cozy Adventure",
+         selected_profile_id: nil,
+         completing: nil,
+         profile_storage_available: nil
+       )
        |> assign(
          finding: false,
          picker_filter: "mine",
@@ -322,6 +327,10 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     {:noreply, select_profile(socket, id)}
   end
 
+  defp handle_game_event("profile-storage-status", %{"persistent" => persistent}, socket)
+       when is_boolean(persistent),
+       do: {:noreply, assign(socket, :profile_storage_available, persistent)}
+
   defp handle_game_event("prepare-completion", %{"id" => id}, socket) do
     quests = socket.assigns.data.quests ++ socket.assigns.camp_quests
 
@@ -365,7 +374,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
     socket
     |> assign(:selected_profile_id, selected_id)
-    |> push_event("adventure:hero-selected", %{id: selected_id || ""})
+    |> push_event("adventure:hero-selected", %{id: selected_id || "", requested_id: id})
   end
 
   defp result(socket, {:ok, _}) do
@@ -636,6 +645,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
               do: "Vyber hrdinu a vyraz.",
               else: "Vyber hrdinu pro správu zadání."}</span>
           </section>
+          <p
+            :if={@profile_storage_available == false}
+            id="adventure-profile-storage-warning"
+            class="adventure-muted"
+            role="status"
+          >
+            Prohlížeč blokuje zapamatování profilu. Výběr platí jen na této stránce; povol ukládání dat tohoto webu.
+          </p>
           <nav :if={@live_action == :quests} class="adventure-book-tabs" aria-label="Správa questů">
             <button
               :for={

@@ -86,18 +86,39 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     render_click(view, "restore-profile", %{"id" => p.id})
     assert has_element?(view, "#adventure-progress", "Michal · úroveň 1")
     profile_id = p.id
-    assert_push_event(view, "adventure:hero-selected", %{id: ^profile_id})
+
+    assert_push_event(view, "adventure:hero-selected", %{
+      id: ^profile_id,
+      requested_id: ^profile_id
+    })
 
     render_click(view, "restore-profile", %{"id" => "invalid-cookie"})
     refute has_element?(view, "#adventure-progress")
-    assert_push_event(view, "adventure:hero-selected", %{id: ""})
+    assert_push_event(view, "adventure:hero-selected", %{id: "", requested_id: "invalid-cookie"})
 
     p |> Ecto.Changeset.change(active: false) |> Repo.update!()
     render_click(view, "restore-profile", %{"id" => p.id})
     refute has_element?(view, "#adventure-progress")
-    assert_push_event(view, "adventure:hero-selected", %{id: ""})
+    assert_push_event(view, "adventure:hero-selected", %{id: "", requested_id: ^profile_id})
     assert Repo.aggregate(XpTransaction, :count) == 0
     assert Repo.aggregate(Quest, :count) == 0
+  end
+
+  test "blocked browser storage is visible without changing the selected hero", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    render_click(view, "restore-profile", %{"id" => p.id})
+    refute has_element?(view, "#adventure-profile-storage-warning")
+
+    render_click(view, "profile-storage-status", %{"persistent" => false})
+    assert has_element?(view, "#adventure-profile-storage-warning", "Prohlížeč blokuje")
+    assert has_element?(view, "#adventure-progress", "Michal")
+
+    render_click(view, "profile-storage-status", %{"persistent" => true})
+    refute has_element?(view, "#adventure-profile-storage-warning")
+    assert has_element?(view, "#adventure-progress", "Michal")
+    assert Repo.aggregate(XpTransaction, :count) == 0
   end
 
   test "help is an optional overlay and completion does not require a note", %{conn: conn} do
