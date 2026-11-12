@@ -123,7 +123,7 @@ defmodule CozyCheckout.Adventure.Tasks do
     action(actor_id, fn actor ->
       task = task!(id)
 
-      if task.status != "waiting" or task.archived_at or task.template_id,
+      if task.status != "waiting" or not is_nil(task.archived_at) or not is_nil(task.template_id),
         do: Repo.rollback(:immutable_task)
 
       save_definition(change(task, attrs), actor, :update)
@@ -138,7 +138,7 @@ defmodule CozyCheckout.Adventure.Tasks do
         task.status == "active" ->
           task
 
-        task.status != "waiting" or task.archived_at ->
+        task.status != "waiting" or not is_nil(task.archived_at) ->
           Repo.rollback(:immutable_task)
 
         true ->
@@ -166,7 +166,7 @@ defmodule CozyCheckout.Adventure.Tasks do
         task.status == "completed" ->
           task
 
-        task.status != "active" or task.archived_at ->
+        task.status != "active" or not is_nil(task.archived_at) ->
           Repo.rollback(:immutable_task)
 
         true ->

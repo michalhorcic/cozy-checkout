@@ -334,7 +334,9 @@ Opakované šablony mají další regresní testy pro sedm zmeškaných termín�
 verze a neměnné snapshoty, explicitní pozastavení, DST a přelom roku,
 hostovskou/kampaňovou působnost, jediný dávkový pobytový SELECT, návaznost
 katalogu, souběžné generování a flag, který zablokuje i SQL dotazy workeru.
-Tyto ExUnit testy jsou určené pro CI a lokálně nebyly spuštěny.
+Při opravě nahlášeného `BadBooleanError` prošlo lokálně všech 72 testů
+Adventure včetně LiveView a souběhů na izolovaném PostgreSQL 17. Kompletní
+repozitářovou sadu a výsledky CI dále ověřuje uživatel.
 
 - [ ] Založit a spustit denní šablonu, dvakrát obnovit, ověřit jediný čekající úkol bez XP.
 - [ ] Upravit šablonu a ověřit původní snapshot otevřeného úkolu i novou verzi budoucího.

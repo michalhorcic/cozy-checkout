@@ -6,7 +6,6 @@ defmodule CozyCheckout.Adventure.TemplatesTest do
 
   alias CozyCheckout.Adventure.{
     Campaigns,
-    Profile,
     Quest,
     TaskTemplate,
     TemplateVersion,

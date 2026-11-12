@@ -366,3 +366,14 @@ výskytu byl v Chromium ověřen i opakovaný přepočet téhož dne: žádná n
 instance ani duplicitní XP, další termín následující den. Agregace času
 uzavření používá explicitní UTC typ před převodem na pražský den; regresní
 scénáře zahrnují dokončení i zrušení.
+
+### Oprava nahlášených CI pádů (12. 11. 2026)
+
+`Tasks.update/3` řetězilo `or` s nullable `archived_at` a `template_id`;
+mezivýsledek `nil` vyvolal `BadBooleanError`. Podmínky nyní používají
+explicitní `not is_nil(...)`, stejně jako kontroly rozpracování a dokončení.
+Regrese ověřuje editovatelný čekající jednorázový úkol, blokovanou editaci
+výskytu šablony a archivované práce. Na žádost uživatele byly lokálně spuštěny
+`PGUSER=elixir PGPASSWORD='' mix test test/cozy_checkout/adventure test/cozy_checkout_web/adventure`:
+**72 testů prošlo** na izolovaném PostgreSQL 17. Prošla také kontrola
+formátování celého projektu. Kompletní sadu a CI ověřuje uživatel.

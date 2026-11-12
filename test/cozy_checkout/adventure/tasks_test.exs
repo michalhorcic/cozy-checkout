@@ -107,6 +107,9 @@ defmodule CozyCheckout.Adventure.TasksTest do
     {:ok, task} = Tasks.create(p.id, %{"title" => "Původní", "xp" => 75})
     assert {:ok, edited} = Tasks.update(p.id, task.id, %{"title" => "Nový název", "xp" => 90})
     assert edited.definition_snapshot["xp"] == 90
+    assert edited.definition_snapshot["title"] == "Nový název"
+    assert edited.archived_at == nil
+    assert edited.template_id == nil
     {:ok, _} = Tasks.start(p.id, task.id)
     assert {:error, :immutable_task} = Tasks.update(p.id, task.id, %{"xp" => 1000})
     {:ok, completed} = Tasks.complete(p.id, task.id, %{"note" => "OK"})
@@ -120,6 +123,9 @@ defmodule CozyCheckout.Adventure.TasksTest do
     assert [%{id: id}] = Tasks.list(p.id, %{"status" => "archived"})
     assert id == task.id
     assert {:error, :immutable_task} = Tasks.start(p.id, task.id)
+
+    assert {:error, :immutable_task} =
+             Tasks.update(p.id, task.id, %{"title" => "Archiv nepřepsat"})
   end
 
   test "failed award rolls back completion, including evidence", %{michal: p} do
