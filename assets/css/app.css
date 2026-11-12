@@ -2,8 +2,11 @@
    https://tailwindcss.com/docs/configuration */
 
 @import "tailwindcss" source(none);
+@import "./fonts.css";
 @import "./adventure/adventure.css";
 @import "./adventure/game-interface.css";
+@import "./noir.css";
+@import "./noir-workspaces.css";
 @source "../css";
 @source "../js";
 @source "../../lib/cozy_checkout_web";

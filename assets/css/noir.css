@@ -1,0 +1,447 @@
+/* Both designs remain light themes. State colors stay distinct from decoration. */
+/* Screen-only tokens leave existing paper layouts and typography unchanged. */
+@media screen {
+  :root {
+    --pos-brand-height: 64px;
+  }
+  .pos-order-workspace {
+    height: calc(100dvh - var(--pos-brand-height));
+  }
+  /* Share mobile geometry, not colors, so either design remains usable in POS. */
+  @media (max-width: 1023px) {
+    .pos-order-workspace {
+      height: auto;
+      min-height: calc(100dvh - var(--pos-brand-height));
+    }
+    .pos-order-columns {
+      display: block;
+      overflow: visible;
+    }
+    .pos-catalog,
+    .pos-products-scroll {
+      overflow: visible;
+    }
+    .pos-cart {
+      width: 100%;
+      border-left: 0;
+    }
+    .pos-order-header,
+    .pos-order-identity,
+    .pos-order-name {
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .pos-order-identity,
+    .pos-order-name,
+    .pos-order-total {
+      width: 100%;
+    }
+    .pos-order-name h1 {
+      min-width: 0;
+      flex: 1;
+      overflow-wrap: anywhere;
+    }
+    .pos-order-total {
+      text-align: left;
+    }
+  }
+  [data-theme="noir"] {
+    color-scheme: light;
+    --noir-charcoal: #171918;
+    --noir-slate: #5b605f;
+    --noir-chalk: #f3f2ee;
+    --noir-amber: #d6a366;
+    --color-base-100: #ffffff;
+    --color-base-200: var(--noir-chalk);
+    --color-base-300: #d6d8d2;
+    --color-base-content: var(--noir-charcoal);
+    --color-primary: var(--noir-charcoal);
+    --color-primary-content: #ffffff;
+    --color-secondary: #e4e5df;
+    --color-secondary-content: var(--noir-charcoal);
+    --color-accent: var(--noir-slate);
+    --color-accent-content: #ffffff;
+    --color-neutral: var(--noir-slate);
+    --color-neutral-content: #ffffff;
+    --color-primary-50: #f5f5f2;
+    --color-primary-100: #e6e8e3;
+    --color-primary-200: #c9cdc6;
+    --color-primary-300: #6b726b;
+    --color-primary-400: var(--noir-slate);
+    --color-primary-500: var(--noir-charcoal);
+    --color-primary-600: #101211;
+    --color-primary-700: #0d0f0e;
+    --color-primary-800: #090b0a;
+    --color-primary-900: #050706;
+    --color-secondary-50: var(--noir-chalk);
+    --color-secondary-100: #ecece6;
+    --color-secondary-200: #e0e2da;
+    --color-secondary-300: #c9cdc4;
+    --color-secondary-400: #959d91;
+    --color-secondary-500: #dce0d6;
+    --color-secondary-600: #9ca895;
+    --color-secondary-700: #66765d;
+    --color-secondary-800: #43543c;
+    --color-secondary-900: #2e3f28;
+    /* Tertiary is used for links AND filled buttons, so amber would fail contrast. */
+    --color-tertiary-50: #f0f1ed;
+    --color-tertiary-100: #e3e5df;
+    --color-tertiary-200: #ccd0c7;
+    --color-tertiary-300: #aeb5aa;
+    --color-tertiary-400: #747d72;
+    --color-tertiary-500: var(--noir-slate);
+    --color-tertiary-600: #454c47;
+    --color-tertiary-700: #343c36;
+    --color-tertiary-800: #242d26;
+    --color-tertiary-900: #171e19;
+    /* Accent-* utilities denote destructive actions, not the decorative accent. */
+    --color-accent-50: #fff5f1;
+    --color-accent-100: #fce6df;
+    --color-accent-200: #f4c6b9;
+    --color-accent-300: #e79d89;
+    --color-accent-400: #ca6953;
+    --color-accent-500: #a63e2c;
+    --color-accent-600: #8c3021;
+    --color-accent-700: #73261b;
+    --color-accent-800: #5c2019;
+    --color-accent-900: #451a16;
+    --color-success-light: #e9f1e8;
+    --color-success: #326445;
+    --color-success-dark: #285237;
+    --color-success-content: #ffffff;
+    --color-warning-light: #f8eddd;
+    --color-warning: var(--noir-amber);
+    --color-warning-dark: #795020;
+    --color-warning-content: var(--noir-charcoal);
+    --color-error-light: #fcebe5;
+    --color-error: #a63e2c;
+    --color-error-dark: #8c3021;
+    --color-error-content: #ffffff;
+    --color-info-light: #eaf0f2;
+    --color-info: #42616c;
+    --color-info-dark: #344e58;
+    --color-info-content: #ffffff;
+    --font-sans:
+      "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-serif: "Playfair Display", Georgia, serif;
+    --radius-selector: 0.375rem;
+    --radius-field: 0.375rem;
+    --radius-box: 0.5rem;
+    --border: 1px;
+    --depth: 0;
+    --noise: 0;
+  }
+
+  .design-switcher {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    padding: 2px;
+    border: 1px solid var(--color-secondary-300);
+    border-radius: 0.5rem;
+    background: white;
+    color: var(--color-primary-500);
+    font: 600 11px/1.25 var(--font-sans);
+  }
+  .design-switcher button {
+    min-height: 44px;
+    padding: 0.5rem 0.65rem;
+    border-radius: 0.3rem;
+    cursor: pointer;
+  }
+  .design-switcher button[aria-pressed="true"] {
+    background: var(--color-primary-500);
+    color: white;
+  }
+  .design-switcher button:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+  .brand-house,
+  .brand-section,
+  .sidebar-brand {
+    display: none;
+  }
+  .pos-brand-header {
+    height: var(--pos-brand-height);
+    display: flex;
+    align-items: center;
+    padding: 0.25rem 1rem;
+    background: white;
+    border-bottom: 1px solid var(--color-secondary-200);
+  }
+  .pos-brand-inner {
+    width: 100%;
+    max-width: 80rem;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .pos-brand-house {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  [data-theme="noir"] body {
+    background: var(--noir-chalk);
+    color: var(--noir-charcoal);
+    font-variant-numeric: tabular-nums;
+  }
+  [data-theme="noir"] :is(h2, h3, h4, h5, h6) {
+    font-family: var(--font-sans);
+    letter-spacing: -0.025em;
+  }
+  [data-theme="noir"] h1 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+  }
+  [data-theme="noir"] :is(input, select, textarea) {
+    accent-color: var(--noir-charcoal);
+  }
+  [data-theme="noir"] .text-warning {
+    color: var(--color-warning-dark);
+  }
+  [data-theme="noir"]
+    :is(button, a, summary, input, select, textarea):focus-visible {
+    outline: 2px solid var(--color-primary-400);
+    outline-offset: 3px;
+  }
+  [data-theme="noir"]
+    :is(.shadow, .shadow-sm, .shadow-md, .shadow-lg, .shadow-xl) {
+    --tw-shadow: 0 1px 3px rgb(23 25 24 / 0.04);
+  }
+  [data-theme="noir"] :is(.rounded-2xl, .rounded-xl) {
+    border-radius: 0.5rem;
+  }
+  [data-theme="noir"] table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Inverse variables keep existing shared navigation utilities readable. */
+  [data-theme="noir"] :is(#admin-sidebar, #food-sidebar) {
+    --color-primary-500: #f3f2ee;
+    --color-primary-400: #c3c8c3;
+    --color-secondary-50: #2a2e2b;
+    --color-secondary-100: #343b35;
+    --color-secondary-200: #3e4540;
+    --color-secondary-300: #59615a;
+    --color-tertiary-100: #373e38;
+    --color-tertiary-500: var(--noir-amber);
+    --color-tertiary-600: #e5bc89;
+    --color-tertiary-700: #e5bc89;
+    --color-tertiary-800: #ffffff;
+    background: var(--noir-charcoal);
+    border-color: #353b36;
+  }
+  [data-theme="noir"] :is(#admin-sidebar, #food-sidebar) img {
+    filter: brightness(0) invert(1);
+  }
+  [data-theme="noir"] .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1.25rem 0.25rem;
+    color: white;
+    font: 400 1.4rem/1 var(--font-serif);
+  }
+  [data-theme="noir"] :is(#admin-sidebar, #food-sidebar) [aria-current="page"] {
+    background: #373e38;
+    color: white;
+    box-shadow: inset 3px 0 var(--noir-amber);
+  }
+  [data-theme="noir"] :is(#admin-sidebar, #food-sidebar) :is(h3, summary) {
+    font-family: var(--font-sans);
+  }
+  [data-theme="noir"] :is(#admin-sidebar, #food-sidebar) :focus-visible {
+    outline-color: var(--noir-amber);
+  }
+
+  /* Static local scenery, with a solid fallback and no layout shift. */
+  [data-theme="noir"] :is(.brand-header, .pos-brand-header) {
+    --color-primary-500: #ffffff;
+    --color-primary-400: #f3f2ee;
+    --color-secondary-50: #363c36;
+    background-color: var(--noir-charcoal);
+    background-image:
+      linear-gradient(90deg, rgb(23 25 24 / 0.92), rgb(23 25 24 / 0.52)),
+      url("/images/cozy-noir-mountains.webp");
+    background-position: center 55%;
+    background-size: cover;
+    color: white;
+    border-color: #353b36;
+  }
+  [data-theme="noir"] .brand-header {
+    padding-block: 1.25rem;
+  }
+  [data-theme="noir"] .brand-header-inner {
+    min-height: 80px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  [data-theme="noir"] .brand-identity > img {
+    display: none;
+  }
+  [data-theme="noir"] .brand-house {
+    display: block;
+    font: 500 10px/1.5 var(--font-sans);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+  [data-theme="noir"] .brand-app {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 11px;
+    font-weight: 400;
+    color: #dadfd8;
+  }
+  [data-theme="noir"] .brand-section {
+    display: block;
+    margin-top: 0.25rem;
+    font: 600 clamp(1.6rem, 3vw, 2.4rem)/1.2 var(--font-serif);
+  }
+  [data-theme="noir"] .brand-header :focus-visible {
+    outline-color: white;
+  }
+  [data-theme="noir"] .design-switcher {
+    border-color: #d5d8d0;
+    color: var(--noir-charcoal);
+    background: #fff;
+  }
+  [data-theme="noir"] .design-switcher button[aria-pressed="true"] {
+    background: var(--noir-charcoal);
+  }
+  [data-theme="noir"] .design-switcher button:focus-visible {
+    outline-color: var(--noir-charcoal);
+  }
+  [data-theme="noir"] .pos-brand-header {
+    padding-block: 0.375rem;
+  }
+  [data-theme="noir"] .pos-brand-house {
+    font-size: 0.65rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  [data-theme="noir"] body:has(#food-layout) #admin-brand-header {
+    display: block;
+  }
+  [data-theme="noir"] .food-layout .btn {
+    color: white;
+  }
+
+  /* Adventure keeps the illustrated game world and meaningful gold/green rewards. */
+  [data-theme="noir"] .adventure {
+    --adv-ink: var(--noir-charcoal);
+    --adv-muted: var(--noir-slate);
+    --adv-forest: #344d3b;
+    --adv-paper: #ffffff;
+    --adv-line: #d9ddd4;
+    background: var(--noir-chalk);
+    border-radius: 0.5rem;
+    font-family: var(--font-sans);
+  }
+  [data-theme="noir"]
+    .adventure
+    :is(
+      .adventure-player,
+      .adventure-active-quest,
+      .adventure-quest-card,
+      .adventure-welcome,
+      .adventure-journal
+    ) {
+    background: white;
+    border-color: var(--adv-line);
+    border-radius: 0.5rem;
+  }
+  [data-theme="noir"] .adventure-panel {
+    border-radius: 0.5rem;
+    box-shadow: none;
+  }
+  [data-theme="noir"] .adventure-nav {
+    background: #e4e7df;
+    border-radius: 0.5rem;
+  }
+  [data-theme="noir"] .adventure-nav a {
+    color: var(--noir-slate);
+    border-radius: 0.375rem;
+  }
+  [data-theme="noir"] .adventure-nav a[aria-current="page"] {
+    color: white;
+    background: var(--noir-charcoal);
+    box-shadow: none;
+  }
+  [data-theme="noir"] .adventure :is(h2, h3, h4) {
+    font-family: var(--font-sans);
+  }
+  [data-theme="noir"] .adventure h1 {
+    font-family: var(--font-serif);
+  }
+  [data-theme="noir"] #bar-podium {
+    background: white;
+    border-color: var(--color-secondary-200);
+  }
+  [data-theme="noir"] #bar-podium > .border-dashed {
+    color: var(--noir-slate);
+    border-color: var(--color-secondary-300);
+  }
+  [data-theme="noir"]
+    .adventure
+    :is(
+      .adventure-footer,
+      .adventure-guide-body p,
+      .adventure-journal > summary
+    ) {
+    color: var(--noir-slate);
+  }
+
+  @media (max-width: 639px) {
+    [data-theme="noir"] :is(.brand-header, .pos-brand-header) {
+      background-image:
+        linear-gradient(90deg, rgb(23 25 24 / 0.94), rgb(23 25 24 / 0.6)),
+        url("/images/cozy-noir-mountains-mobile.webp");
+    }
+    [data-theme="noir"] .brand-header {
+      padding-block: 0.75rem;
+    }
+    [data-theme="noir"] .brand-header-inner {
+      min-height: 64px;
+      gap: 0.5rem;
+    }
+    [data-theme="noir"] .brand-header .brand-section {
+      font-size: 1.5rem;
+    }
+    [data-theme="noir"] .brand-header .brand-app {
+      display: none;
+    }
+    [data-theme="noir"] .brand-header .brand-header-inner > div {
+      width: 100%;
+      justify-content: space-between;
+      gap: 0.25rem;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    [data-theme="noir"] *,
+    [data-theme="noir"] *::before,
+    [data-theme="noir"] *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+@media print {
+  .design-switcher,
+  .brand-header,
+  .pos-brand-header {
+    display: none !important;
+  }
+  [data-theme="noir"] body {
+    background: white;
+    color: black;
+  }
+  [data-theme="noir"]
+    :is(#admin-sidebar, #food-sidebar, #admin-mobile-navigation) {
+    display: none !important;
+  }
+}

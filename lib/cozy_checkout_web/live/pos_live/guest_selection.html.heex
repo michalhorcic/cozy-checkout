@@ -1,9 +1,9 @@
 <Layouts.pos page_title={@page_title}>
-  <div class="min-h-screen bg-secondary-50 p-4">
+  <div class="pos-workspace pos-accounts min-h-screen bg-secondary-50 p-4">
     <header
       id="pos-welcome"
       aria-labelledby="pos-house-name"
-      class="relative mb-3 isolate overflow-hidden rounded-xl border border-secondary-200 bg-secondary-50"
+      class="pos-welcome relative mb-3 isolate overflow-hidden rounded-xl border border-secondary-200 bg-secondary-50"
     >
       <img
         src={~p"/images/rano-nad-udolim.webp"}
@@ -46,7 +46,7 @@
               aria-checked={to_string(@service_mode)}
               phx-click="toggle_service_mode"
               class={[
-                "relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
+                "pos-service-switch relative inline-flex h-7 w-14 items-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
                 (@service_mode && "bg-purple-600") || "bg-gray-300"
               ]}
             >
@@ -77,39 +77,40 @@
     <!-- Účty Section -->
     <div :if={@orders != []} class="mb-4">
       <h2 class="text-lg font-bold text-primary-500 mb-2">Účty</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        <div
+      <div class="pos-account-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+        <button
           :for={order <- @orders}
+          type="button"
           id={"pos-order-#{order.id}"}
           phx-click="select_order"
           phx-value-order-id={order.id}
           class={[
-            "bg-tertiary-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
+            "pos-account-tile text-left bg-tertiary-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
             "p-4 cursor-pointer active:scale-95 border-2 border-tertiary-200 hover:border-tertiary-400",
             "min-h-[120px] flex flex-col justify-between"
           ]}
         >
-          <div>
-            <div class="mb-3">
+          <span class="block">
+            <span class="mb-3 block">
               <.account_stamp stamp={AccountStamps.key(order)} />
-            </div>
-            <h2 class="text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
+            </span>
+            <span class="pos-account-name font-heading block text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
               {Sales.get_order_display_name(order)}
-            </h2>
-            <div class="text-xs text-primary-300">
+            </span>
+            <span class="block text-xs text-primary-300">
               Účet #{order.order_number}
-            </div>
-            <div :if={Map.has_key?(@bar_badges, order.id)} class="mt-2">
+            </span>
+            <span :if={Map.has_key?(@bar_badges, order.id)} class="mt-2 block">
               <.bar_badge entry={@bar_badges[order.id]} />
-            </div>
-          </div>
+            </span>
+          </span>
 
-          <div class="mt-2 pt-2 border-t border-tertiary-200">
-            <div class="text-sm font-semibold text-tertiary-700">
+          <span class="pos-account-total mt-2 block w-full pt-2 border-t border-tertiary-200">
+            <span class="text-sm font-semibold text-tertiary-700">
               {format_currency(order.total_amount)}
-            </div>
-          </div>
-        </div>
+            </span>
+          </span>
+        </button>
       </div>
     </div>
 
@@ -127,9 +128,21 @@
 
     <!-- Quick Order Modal -->
     <%= if @show_quick_order_modal do %>
-      <div class="fixed inset-0 bg-primary-900 bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-6 animate-in fade-in zoom-in duration-200">
-          <h3 class="text-3xl font-bold text-primary-500 mb-6">Nový účet</h3>
+      <div class="fixed inset-0 bg-primary-900/50 flex items-center justify-center z-50 p-4">
+        <.focus_wrap
+          id="pos-quick-order-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="pos-quick-order-title"
+          phx-mounted={JS.focus(to: "#pos-account-name")}
+          phx-remove={JS.focus(to: "#pos-new-account")}
+          phx-window-keydown="hide_quick_order_modal"
+          phx-key="escape"
+          class="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90dvh] overflow-y-auto p-6 animate-in fade-in zoom-in duration-200"
+        >
+          <h3 id="pos-quick-order-title" class="text-3xl font-bold text-primary-500 mb-6">
+            Nový účet
+          </h3>
 
           <div class="mb-8">
             <label
@@ -176,7 +189,7 @@
               Založit účet
             </button>
           </div>
-        </div>
+        </.focus_wrap>
       </div>
     <% end %>
   </div>

@@ -168,7 +168,7 @@ defmodule CozyCheckoutWeb.Layouts do
       >
         <.icon name="hero-arrow-left" class="h-4 w-4" />Zpět do administrace
       </.link>
-      <.admin_controls />
+      <.admin_controls theme_id={@id <> "-design"} />
     </nav>
     """
   end
@@ -202,6 +202,10 @@ defmodule CozyCheckoutWeb.Layouts do
         id="admin-sidebar"
         class="hidden h-dvh w-60 shrink-0 overflow-y-auto border-r border-secondary-200 bg-white lg:sticky lg:top-0 lg:block print:hidden"
       >
+        <.link id="admin-sidebar-brand" navigate={~p"/admin"} class="sidebar-brand">
+          <img src={~p"/images/cozy-knot.svg"} width="36" height="36" alt="" />
+          <span>cozy<br />checkout</span>
+        </.link>
         <p
           :if={!@billing_section}
           class="px-6 py-6 text-xs font-semibold uppercase tracking-wider text-primary-400"
@@ -217,7 +221,7 @@ defmodule CozyCheckoutWeb.Layouts do
         />
       </aside>
       <div id="admin-workspace" class="min-w-0 flex-1">
-        <.admin_header />
+        <.admin_header title={admin_title(@admin_path)} />
         <details
           id="admin-mobile-navigation"
           class="border-b border-secondary-200 bg-white lg:hidden print:hidden"
@@ -376,9 +380,12 @@ defmodule CozyCheckoutWeb.Layouts do
     """
   end
 
+  attr :theme_id, :string, default: "admin-design-switcher"
+
   def admin_controls(assigns) do
     ~H"""
     <div class="flex flex-wrap items-center gap-2 print:hidden">
+      <.theme_toggle id={@theme_id} />
       <.link
         navigate={~p"/pos"}
         class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
@@ -396,20 +403,37 @@ defmodule CozyCheckoutWeb.Layouts do
     """
   end
 
+  defp admin_title(path) when path in ["/admin", "/admin/"], do: "Přehled provozu"
+
+  defp admin_title(path) do
+    case Enum.find(CozyCheckoutWeb.AdminNavigation.primary(), fn {_, target, _} ->
+           CozyCheckoutWeb.AdminNavigation.active?(path, target)
+         end) do
+      {label, _, _} -> label
+      nil -> "Administrace"
+    end
+  end
+
+  attr :title, :string, default: "Administrace"
+
   def admin_header(assigns) do
     ~H"""
     <header
       id="admin-brand-header"
-      class="border-b border-secondary-200 bg-white px-4 py-0.5 sm:px-6 lg:px-8 print:hidden"
+      class="brand-header border-b border-secondary-200 bg-white px-4 py-0.5 sm:px-6 lg:px-8 print:hidden"
     >
-      <div class="mx-auto flex max-w-7xl items-center justify-between gap-3">
+      <div class="brand-header-inner mx-auto flex max-w-7xl items-center justify-between gap-3">
         <.link
           navigate={~p"/admin"}
-          class="inline-flex min-h-11 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-tertiary-500"
+          class="brand-identity inline-flex min-h-11 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-tertiary-500"
           aria-label="Cozy Checkout — administrace"
         >
           <img src={~p"/images/cozy-knot.svg"} alt="" width="24" height="24" class="shrink-0" />
-          <span class="text-sm font-semibold text-primary-500">Cozy Checkout</span>
+          <span>
+            <span class="brand-house">Jindřichův dům</span>
+            <span class="brand-app text-sm font-semibold text-primary-500">Cozy Checkout</span>
+            <span class="brand-section">{@title}</span>
+          </span>
         </.link>
         <.admin_controls />
       </div>
@@ -434,6 +458,12 @@ defmodule CozyCheckoutWeb.Layouts do
 
   def pos(assigns) do
     ~H"""
+    <header id="pos-brand-header" class="pos-brand-header print:hidden">
+      <div class="pos-brand-inner">
+        <span class="pos-brand-house">Jindřichův dům</span>
+        <.theme_toggle id="pos-design-switcher" />
+      </div>
+    </header>
     {render_slot(@inner_block)}
     """
   end
@@ -497,39 +527,30 @@ defmodule CozyCheckoutWeb.Layouts do
     """
   end
 
-  @doc """
-  Provides dark vs light theme toggle based on themes defined in app.css.
+  @doc "Switches the visual design locally, without changing application data."
+  attr :id, :string, required: true
 
-  See <head> in root.html.heex which applies the theme before page load.
-  """
   def theme_toggle(assigns) do
     ~H"""
-    <div class="card relative flex flex-row items-center border-2 border-base-300 bg-base-300 rounded-full">
-      <div class="absolute w-1/3 h-full rounded-full border-1 border-base-200 bg-base-100 brightness-200 left-0 [[data-theme=light]_&]:left-1/3 [[data-theme=dark]_&]:left-2/3 transition-[left]" />
-
+    <div
+      id={@id}
+      class="design-switcher"
+      role="group"
+      aria-label="Barevný design"
+      phx-hook="DesignSwitcher"
+    >
       <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="system"
-      >
-        <.icon name="hero-computer-desktop-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
+        type="button"
+        data-design-theme="light"
+        aria-pressed="false"
+        title="Původní šalvějový design"
+      >Původní</button>
       <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="light"
-      >
-        <.icon name="hero-sun-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
-
-      <button
-        class="flex p-2 cursor-pointer w-1/3"
-        phx-click={JS.dispatch("phx:set-theme")}
-        data-phx-theme="dark"
-      >
-        <.icon name="hero-moon-micro" class="size-4 opacity-75 hover:opacity-100" />
-      </button>
+        type="button"
+        data-design-theme="noir"
+        aria-pressed="true"
+        title="Cozy Noir: světlé plochy a uhlová navigace"
+      >Cozy Noir</button>
     </div>
     """
   end

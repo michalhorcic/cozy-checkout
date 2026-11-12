@@ -1,0 +1,18 @@
+Cozy Noir mountain headers
+
+Original: Hills in Mist
+Photographer: Martin Vorel
+Location: Horní Malá Úpa, Krkonoše, Czech Republic
+Published: 2020-03-21
+Source: https://libreshot.com/hills-in-mist/
+Original file: https://libreshot.com/wp-content/uploads/2020/03/hills-mist.jpg
+License information: https://libreshot.com/license-information/
+License: CC0 / Public Domain, as stated by the photographer on both pages.
+License deed: https://creativecommons.org/publicdomain/zero/1.0/
+Retrieved: 2026-11-12
+
+Local derivatives: cozy-noir-mountains.webp (1920 x 480) and
+cozy-noir-mountains-mobile.webp (800 x 300).
+Changes: monochrome conversion, center crop, resize, WebP compression,
+metadata removal. The interface adds a dark CSS overlay.
+No hotlinking. No photographs or frames from the inspiration video are used.
