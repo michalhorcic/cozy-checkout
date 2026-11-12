@@ -172,6 +172,8 @@ defmodule CozyCheckoutWeb.AdventureLive.WorldComponents do
               />
             </div>
             <Operation.area_detail
+              game={@game}
+              selected_campaign_id={@selected_campaign_id}
               area={@operation_area}
               snapshot={@operation}
               world={@world}

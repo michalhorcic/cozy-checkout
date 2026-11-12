@@ -107,13 +107,18 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     assert has_element?(
              view,
-             "#adventure-area-detail a[href='/admin/adventure?view=chronicle']",
+             "#adventure-area-detail a[href='/admin/adventure?view=chronicle&tab=seasons']",
              "Kronika baru"
            )
 
     render_click(view, "operation-area", %{"area" => "treasury"})
     assert has_element?(view, "#adventure-area-detail", "Obnova provozu je nepřepočítává")
-    assert has_element?(view, "#adventure-area-detail a[href='/admin/adventure?view=chronicle']")
+
+    assert has_element?(
+             view,
+             "#adventure-area-detail a[href='/admin/adventure?view=chronicle&tab=seasons']"
+           )
+
     {:ok, book, _} = live(conn, "/admin/adventure/quests")
     refute has_element?(book, "#adventure-world-map")
   end
@@ -1444,6 +1449,23 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     assert has_element?(camp, "#campaign-#{winter.id}")
     refute has_element?(camp, "#campaign-#{summer.id}")
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn -> render_click(camp, "operation-area", %{"area" => "treasury"}) end,
+        camp.pid
+      )
+
+    assert queries == []
+    assert has_element?(camp, "#adventure-treasury-summary", "Zimní kronika")
+    assert has_element?(camp, "#adventure-treasury-summary [data-metric='period_net_amount']")
+    assert has_element?(camp, "#adventure-treasury-summary [data-metric='received_amount']")
+
+    camp |> element("#adventure-area-detail a[data-phx-link='patch']") |> render_click()
+    assert_patch(camp, "/admin/adventure?view=chronicle&tab=seasons")
+    assert has_element?(camp, "button[phx-value-tab='seasons'][aria-pressed='true']")
+    assert has_element?(camp, "#campaign-#{winter.id}")
+    refute has_element?(camp, "#campaign-#{summer.id}")
     assert Repo.aggregate(Evaluation, :count) == 2
     assert Repo.aggregate(XpTransaction, :count) == 0
   end
@@ -1550,6 +1572,88 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     render_click(reconnected, "restore-profile", %{"id" => michal.id})
     refute has_element?(reconnected, "#adventure-success")
     assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
+  test "treasury shows the selected season income and preserves missing and partial data" do
+    summary = &CozyCheckoutWeb.AdventureLive.CampaignComponents.treasury_summary/1
+
+    active = %{
+      id: "active",
+      name: "Aktuální sezóna",
+      status: "active",
+      starts_on: ~D[2026-10-01],
+      ends_on: ~D[2026-12-31],
+      last_evaluation: nil
+    }
+
+    snapshot = %{
+      "as_of" => "2026-11-12T10:00:00Z",
+      "sources" => %{
+        "billing" => %{
+          "metrics" => %{"period_net_amount" => "12345.50"},
+          "metric_metadata" => %{"period_net_amount" => %{"completeness" => "partial"}}
+        },
+        "bar" => %{
+          "metrics" => %{"received_amount" => "0.00"},
+          "quality" => %{"completeness" => "complete"}
+        }
+      }
+    }
+
+    historical = %{
+      active
+      | id: "historical",
+        name: "Minulá sezóna",
+        status: "closed",
+        last_evaluation: %{snapshot: snapshot}
+    }
+
+    game = %{campaigns: [active, historical]}
+
+    pending = render_component(summary, game: game)
+    assert pending =~ "Aktuální sezóna"
+    assert pending =~ "Zatím nepřepočítáno"
+    refute pending =~ "data-metric"
+
+    html = render_component(summary, game: game, selected_id: historical.id)
+    assert html =~ "Minulá sezóna"
+    assert html =~ "2026-11-12T10:00:00Z"
+    assert html =~ CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.new("12345.50"))
+    assert html =~ CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.new("0.00"))
+    assert html =~ "Dílčí podklady"
+    assert html =~ "Inkaso baru bez servisu"
+    assert html =~ "Inkaso ubytování po vratkách"
+
+    missing = %{historical | last_evaluation: %{snapshot: %{snapshot | "sources" => %{}}}}
+    assert render_component(summary, game: %{campaigns: [missing]}) =~ "Nedostupné"
+    assert render_component(summary, game: %{campaigns: []}) =~ "Zatím není vybraná žádná sezóna"
+  end
+
+  test "financial area links open the season chronicle on direct navigation and patch", %{
+    conn: conn
+  } do
+    {:ok, _} = Adventure.initialize()
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    path = "/admin/adventure?view=chronicle&tab=seasons"
+
+    for area <- ~w(bar treasury) do
+      render_click(camp, "operation-area", %{"area" => area})
+      assert has_element?(camp, "#adventure-area-detail a[href='#{path}']")
+    end
+
+    {:ok, chronicle, _} = live(conn, path)
+    assert has_element?(chronicle, "button[phx-value-tab='seasons'][aria-pressed='true']")
+    assert has_element?(chronicle, "#adventure-season-disclosure[open]")
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn -> render_patch(camp, path) end,
+        camp.pid
+      )
+
+    assert queries == []
+    assert has_element?(camp, "button[phx-value-tab='seasons'][aria-pressed='true']")
+    assert has_element?(camp, "#adventure-season-disclosure[open]")
   end
 
   test "chronicle history is explicit and cached without refreshing operational sources", %{
