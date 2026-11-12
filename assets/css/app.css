@@ -3,6 +3,7 @@
 
 @import "tailwindcss" source(none);
 @import "./adventure/adventure.css";
+@import "./adventure/game-interface.css";
 @source "../css";
 @source "../js";
 @source "../../lib/cozy_checkout_web";

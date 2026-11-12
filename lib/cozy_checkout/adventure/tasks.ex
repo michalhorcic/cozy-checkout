@@ -13,18 +13,28 @@ defmodule CozyCheckout.Adventure.Tasks do
           _ -> nil
         end
 
-      query = from q in Quest, where: q.managed
+      query =
+        if filters["kind"] == "history",
+          do: from(q in Quest),
+          else: from(q in Quest, where: q.managed)
+
+      query =
+        if filters["kind"] == "one_off", do: where(query, [q], is_nil(q.template_id)), else: query
 
       query =
         case filters["scope"] do
           "mine" when is_binary(profile_id) ->
-            where(query, [q], q.assigned_profile_id == ^profile_id)
+            where(query, [q], q.assigned_profile_id == ^profile_id or q.profile_id == ^profile_id)
 
           "mine" ->
             where(query, [q], false)
 
           "free" ->
-            where(query, [q], q.scope == "personal" and is_nil(q.assigned_profile_id))
+            where(
+              query,
+              [q],
+              q.scope == "personal" and is_nil(q.assigned_profile_id) and is_nil(q.profile_id)
+            )
 
           "shared" ->
             where(query, [q], q.scope == "shared")
@@ -77,14 +87,31 @@ defmodule CozyCheckout.Adventure.Tasks do
             query
         end
 
-      Repo.all(
-        from q in query,
-          order_by: [asc_nulls_last: q.due_on, desc: q.inserted_at, desc: q.id],
-          limit: 100
-      )
+      query =
+        if filters["kind"] == "history",
+          do:
+            order_by(query, [q], desc_nulls_last: q.completed_at, desc: q.inserted_at, desc: q.id),
+          else: order_by(query, [q], asc_nulls_last: q.due_on, desc: q.inserted_at, desc: q.id)
+
+      Repo.all(limit(query, 100))
     else
       []
     end
+  end
+
+  @doc "One game-only batch for the camp's waiting offers and active shared expeditions."
+  def camp_quests do
+    if Adventure.enabled?(),
+      do:
+        Repo.all(
+          from q in Quest,
+            where:
+              q.managed and is_nil(q.archived_at) and
+                (q.status == "waiting" or (q.scope == "shared" and q.status == "active")),
+            order_by: [asc: q.status, asc_nulls_last: q.due_on, desc: q.inserted_at, desc: q.id],
+            limit: 100
+        ),
+      else: []
   end
 
   def change(%Quest{} = task, attrs \\ %{}) do

@@ -2,7 +2,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
   use CozyCheckoutWeb.ConnCase, async: false
   import Phoenix.LiveViewTest
   alias CozyCheckout.{Adventure, Repo}
-  alias CozyCheckout.Adventure.{Profile, Quest, XpTransaction}
+  alias CozyCheckout.Adventure.{Profile, Quest, Tasks, XpTransaction}
   alias CozyCheckoutWeb.AdminAuth
 
   setup %{conn: conn} do
@@ -51,8 +51,12 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     profile = Repo.get_by!(Profile, slug: "michal")
     view |> form("#adventure-profile", profile: %{id: profile.id}) |> render_change()
     assert has_element?(view, "#adventure-progress", "Michal · úroveň 1")
-    view |> element("#activate-improvement") |> render_click()
-    quest = Repo.one!(Quest)
+
+    {:ok, quest} =
+      Tasks.create(profile.id, %{"title" => "Zavést jedno provozní zlepšení", "xp" => 250})
+
+    view |> element("#adventure-find-quest") |> render_click()
+    view |> element("#pick-quest-#{quest.id} button") |> render_click()
     view |> element("#adventure-quest-#{quest.id} button") |> render_click()
     assert Repo.aggregate(XpTransaction, :count) == 0
 
@@ -62,7 +66,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     assert has_element?(view, "#adventure-progress", "250 XP")
     refute has_element?(view, "#adventure-quest-#{quest.id}")
-    assert render(view) =~ "Nový postup je zavedený."
+    {:ok, journal, _} = live(conn, "/admin/adventure/quests?section=history")
+    assert render(journal) =~ "Nový postup je zavedený."
     assert Repo.aggregate(XpTransaction, :count) == 1
     # Browser restoration is a separate hook event and cannot create another reward.
     {:ok, refreshed, _} = live(conn, "/admin/adventure")
@@ -142,7 +147,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(Profile, :count) == 0
   end
 
-  test "managed task board creates backlog and rewards the selected actual completer", %{
+  test "quest book authors work and camp chooses and rewards its actual completer", %{
     conn: conn
   } do
     alias CozyCheckout.Adventure.Tasks
@@ -161,8 +166,18 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     [task] = Tasks.list(michal.id)
     assert task.status == "waiting"
-    view |> element("#task-#{task.id} button", "Převzít a rozpracovat") |> render_click()
-    view |> element("#task-#{task.id} button", "Hotovo") |> render_click()
+    refute has_element?(view, "button[phx-click=start-task]")
+    refute has_element?(view, "#adventure-expeditions")
+    refute has_element?(view, ".adventure-hero")
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    camp |> form("#adventure-profile", profile: %{id: michal.id}) |> render_change()
+    refute has_element?(camp, "#adventure-task-form")
+    refute has_element?(camp, "#adventure-templates")
+    camp |> element("#adventure-find-quest") |> render_click()
+    assert has_element?(camp, "#pick-quest-#{task.id}", "Vyčistit kamna")
+    camp |> element("#pick-quest-#{task.id} button") |> render_click()
+    camp |> element("#adventure-quest-#{task.id} button") |> render_click()
+    view = camp
     assert has_element?(view, "#completion_actor_id")
 
     view
@@ -170,6 +185,9 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     |> render_submit()
 
     assert Repo.one!(XpTransaction).profile_id == lucka.id
+    {:ok, view, _} = live(conn, "/admin/adventure/quests")
+    view |> form("#adventure-profile", profile: %{id: michal.id}) |> render_change()
+    render_click(view, "manage-section", %{"section" => "history"})
     view |> form("#adventure-task-filters", filters: %{status: "completed"}) |> render_change()
     assert has_element?(view, "#task-#{task.id}", "Lucka")
     assert has_element?(view, "#adventure-progress", "0 XP")
@@ -181,12 +199,12 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     p = Repo.get_by!(Profile, slug: "michal")
     {:ok, task} = Tasks.create(p.id, %{"title" => "Opravit plot", "scope" => "shared"})
     {:ok, _} = Tasks.start(p.id, task.id)
-    {:ok, view, _} = live(conn, "/admin/adventure/quests")
+    {:ok, view, _} = live(conn, "/admin/adventure")
     # An event without a selected hero cannot open a completion modal.
-    render_click(view, "prepare-task-completion", %{"id" => task.id})
+    render_click(view, "prepare-completion", %{"id" => task.id})
     refute has_element?(view, "#adventure-completion")
     view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
-    view |> element("#task-#{task.id} button", "Hotovo") |> render_click()
+    view |> element("#adventure-quest-#{task.id} button", "Hotovo") |> render_click()
     view |> form("#adventure-completion", completion: %{actor_id: p.id}) |> render_submit()
     assert render(view) =~ "vyber alespoň jednoho přispěvatele"
 
@@ -195,6 +213,9 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     |> render_submit()
 
     assert Repo.one!(XpTransaction).recipient_type == "shared"
+    {:ok, view, _} = live(conn, "/admin/adventure/quests")
+    view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+    render_click(view, "manage-section", %{"section" => "history"})
     view |> form("#adventure-task-filters", filters: %{status: "completed"}) |> render_change()
     view |> element("#task-#{task.id} button", "Archivovat") |> render_click()
     view |> form("#adventure-task-filters", filters: %{status: "archived"}) |> render_change()
@@ -210,6 +231,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     p = Repo.get_by!(Profile, slug: "michal")
     {:ok, view, _} = live(conn, "/admin/adventure/quests")
     view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+    render_click(view, "manage-section", %{"section" => "templates"})
     today = CozyCheckout.Adventure.Sources.Stays.today()
 
     view
@@ -228,9 +250,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     view |> element("button[phx-click=generate-tasks]") |> render_click()
     task = Repo.one!(Quest)
-    assert has_element?(view, "#task-#{task.id}", "Každodenní úklid")
-    assert has_element?(view, "#task-#{task.id}", "původní termín")
-    refute has_element?(view, "#task-#{task.id} button[phx-click=edit-task]")
+    refute has_element?(view, "#adventure-task-board")
+    refute has_element?(view, "button[phx-click=start-task]")
 
     view
     |> form("#template-status-#{template.id}", %{state: %{status: "paused", open_choice: "keep"}})
@@ -241,6 +262,64 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     view |> element("button[phx-click=generate-tasks]") |> render_click()
     assert Repo.aggregate(Quest, :count) == 1
     assert Repo.aggregate(XpTransaction, :count) == 0
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    camp |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+    camp |> element("#adventure-find-quest") |> render_click()
+    assert has_element?(camp, "#pick-quest-#{task.id}", "Každodenní úklid")
+    camp |> element("#pick-quest-#{task.id} button") |> render_click()
+    assert has_element?(camp, "#adventure-quest-#{task.id}")
+  end
+
+  test "camp uses a game shell and links to operational areas without creating rewards", %{
+    conn: conn
+  } do
+    {:ok, _} = Adventure.initialize()
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    assert has_element?(camp, "#adventure-game-layout")
+    refute has_element?(camp, "#admin-sidebar")
+    assert has_element?(camp, "#adventure-world-map a[href='/admin/bookings/calendar']")
+    assert has_element?(camp, "#adventure-world-map a[href='/admin/meal-planner']")
+    assert has_element?(camp, "#adventure-world-map a[href='/admin/bar-stock']")
+    assert has_element?(camp, "#adventure-world-map a[href='/admin/billing']")
+    assert has_element?(camp, "#adventure-shared-expeditions")
+    refute has_element?(camp, "#activate-improvement")
+    assert Repo.aggregate(Quest, :count) == 0
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "quest picker separates mine and shared work and cannot exceed personal slots", %{
+    conn: conn
+  } do
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    other = Repo.get_by!(Profile, slug: "lucka")
+    {:ok, mine} = Tasks.create(p.id, %{"title" => "Moje práce"})
+
+    {:ok, theirs} =
+      Tasks.create(p.id, %{"title" => "Práce Lucky", "assigned_profile_id" => other.id})
+
+    {:ok, shared} = Tasks.create(p.id, %{"title" => "Společná práce", "scope" => "shared"})
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    camp |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+    camp |> element("#adventure-find-quest") |> render_click()
+    assert has_element?(camp, "#pick-quest-#{mine.id}")
+    refute has_element?(camp, "#pick-quest-#{theirs.id}")
+    refute has_element?(camp, "#pick-quest-#{shared.id}")
+    render_click(camp, "picker-filter", %{"scope" => "shared"})
+    assert has_element?(camp, "#pick-quest-#{shared.id}")
+    camp |> element("#pick-quest-#{shared.id} button") |> render_click()
+    assert has_element?(camp, "#adventure-shared-expeditions #adventure-quest-#{shared.id}")
+    assert {:ok, %{quests: []}} = Adventure.dashboard(p.id)
+
+    for code <- ["prepare_stay", "review_deposits", "shopping_plan"],
+        do: Adventure.activate_quest(p.id, code)
+
+    camp |> element("#adventure-find-quest") |> render_click()
+    render_click(camp, "picker-filter", %{"scope" => "all"})
+    assert has_element?(camp, "#pick-quest-#{mine.id} button[disabled]")
+    render_click(camp, "start-task", %{"id" => mine.id})
+    assert Repo.get!(Quest, mine.id).status == "waiting"
+    assert render(camp) =~ "nejvýše 3"
   end
 
   test "campaign draft requires confirmation and profile; recalculation is explicit", %{

@@ -8,17 +8,31 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
   attr :task_form, :any, required: true
   attr :filter_form, :any, required: true
   attr :editing_id, :any, required: true
+  attr :editor_open, :boolean, default: false
+  attr :history, :boolean, default: false
 
   def task_board(assigns) do
     ~H"""
-    <section id="adventure-task-board" class="adventure-panel p-4 sm:p-6 mb-6">
+    <section id="adventure-task-board" class="adventure-panel adventure-ledger-panel p-4 sm:p-6 mb-6">
       <header class="adventure-section-heading">
         <div>
-          <p class="adventure-eyebrow">Práce pro naši chatu</p><h2>Společný úkolovník</h2>
+          <p class="adventure-eyebrow">
+            {if @history, do: "Naše společná kronika", else: "Připrav další dobrodružství"}
+          </p><h2>{if @history, do: "Historie questů", else: "Jednorázové questy"}</h2>
         </div>
       </header>
-      <details :if={@profile} id="adventure-task-editor" open={@editing_id != nil} class="mb-6">
-        <summary>{if @editing_id, do: "Upravit úkol", else: "Přidat vlastní úkol"}</summary>
+      <p :if={!@history} class="adventure-muted mb-4">
+        Zadání a odměnu upravíš, dokud quest čeká. Výpravu přijmeš a dokončíš v táboře.
+      </p>
+      <details
+        :if={@profile && !@history}
+        id="adventure-task-editor"
+        open={@editor_open || @editing_id != nil}
+        class="mb-6"
+      >
+        <summary phx-click="toggle-task-editor">
+          {if @editing_id, do: "Upravit zadání questu", else: "Zapsat nový quest"}
+        </summary>
         <.form
           for={@task_form}
           id="adventure-task-form"
@@ -78,7 +92,7 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
             />
           </div>
           <div class="flex gap-3">
-            <button class="adventure-button adventure-button--primary" type="submit">Uložit úkol</button><button
+            <button class="adventure-button adventure-button--primary" type="submit">Uložit quest</button><button
               :if={@editing_id}
               type="button"
               phx-click="new-task"
@@ -143,7 +157,8 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
                                                                                                 else:
                                                                                                   profile_name(
                                                                                                     @profiles,
-                                                                                                    task.assigned_profile_id
+                                                                                                    task.assigned_profile_id ||
+                                                                                                      task.profile_id
                                                                                                   )} · {task.definition_snapshot[
             "xp"
           ]} XP
@@ -178,25 +193,13 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
         <p :if={task.evidence["note"] not in [nil, ""]} class="whitespace-pre-wrap">
           {task.evidence["note"]}
         </p>
-        <div :if={@profile && !task.archived_at} class="flex flex-wrap gap-3">
-          <button
-            :if={task.status == "waiting"}
-            phx-click="start-task"
-            phx-value-id={task.id}
-            class="adventure-button"
-          >{if task.scope == "shared", do: "Rozpracovat", else: "Převzít a rozpracovat"}</button>
+        <div :if={@profile && task.managed && !task.archived_at} class="flex flex-wrap gap-3">
           <button
             :if={task.status == "waiting" && !task.template_id}
             phx-click="edit-task"
             phx-value-id={task.id}
             class="adventure-button"
           >Upravit</button>
-          <button
-            :if={task.status == "active"}
-            phx-click="prepare-task-completion"
-            phx-value-id={task.id}
-            class="adventure-button adventure-button--primary"
-          >Hotovo</button>
           <button
             phx-click="archive-task"
             phx-value-id={task.id}

@@ -13,15 +13,18 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
   attr :campaign_options, :list, required: true
   attr :campaign_query, :any, default: nil
   attr :campaign_open, :boolean, default: false
-  attr :panel_open, :boolean, default: false
   attr :editor_open, :boolean, default: false
 
   def templates(assigns) do
     ~H"""
-    <details id="adventure-templates" open={@panel_open} class="adventure-panel p-4 sm:p-6 mb-6">
-      <summary phx-click="toggle-template-panel" class="font-bold">Opakované šablony</summary>
+    <section id="adventure-templates" class="adventure-panel adventure-ledger-panel p-4 sm:p-6 mb-6">
+      <header class="adventure-section-heading">
+        <div>
+          <p class="adventure-eyebrow">Dobrodružství, která se vracejí</p><h2>Opakované questy</h2>
+        </div>
+      </header>
       <p class="adventure-muted my-3">
-        Jedna otevřená práce, i když uteče několik termínů. Nové šablony začínají pozastavené.
+        Tady upravuješ šablony budoucích výprav. Každá nabídne jeden otevřený úkol; v táboře si ho vybereš. Nová šablona začíná pozastavená.
       </p>
       <div :if={@profile} class="flex flex-wrap gap-3 mb-4">
         <button phx-click="generate-tasks" class="adventure-button adventure-button--primary">Obnovit opakované úkoly</button>
@@ -144,7 +147,11 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
       <article
         :for={template <- @templates}
         id={"template-#{template.id}"}
-        class="border-t border-base-300 py-4 space-y-2 break-words"
+        class={[
+          "adventure-blueprint",
+          "border-t border-base-300 py-4 space-y-2 break-words",
+          template.status == "active" && "adventure-blueprint--active"
+        ]}
       >
         <h3 class="font-bold">{template.title}</h3>
         <p class="text-sm">
@@ -189,38 +196,47 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
           phx-value-id={template.id}
           class="adventure-button"
         >Upravit šablonu</button>
-        <.form
-          :if={@profile && template.status != "archived"}
-          for={%{}}
-          id={"template-status-#{template.id}"}
-          phx-submit="template-status"
-          class="grid gap-2 sm:grid-cols-3"
-        >
-          <input type="hidden" name="template_id" value={template.id} />
-          <.input
-            name="state[status]"
-            value=""
-            type="select"
-            label="Změnit provoz šablony"
-            prompt="Vyber akci"
-            required
-            options={[
-              {"Spustit / obnovit", "active"},
-              {"Pozastavit", "paused"},
-              {"Archivovat šablonu", "archived"}
-            ]}
-          />
-          <.input
-            name="state[open_choice]"
-            value=""
-            type="select"
-            label="Otevřený úkol"
-            prompt="Výslovně vyber"
-            required
-            options={[{"Ponechat (také při obnovení)", "keep"}, {"Zrušit a archivovat", "cancel"}]}
-          />
-          <button type="submit" class="adventure-button self-end">Použít změnu</button>
-        </.form>
+        <button
+          :if={@profile && template.status == "paused"}
+          type="button"
+          phx-click="resume-template"
+          phx-value-id={template.id}
+          class="adventure-button adventure-button--primary"
+        >Spustit šablonu</button>
+        <details :if={@profile && template.status != "archived"} class="adventure-template-controls">
+          <summary>Pozastavit nebo archivovat šablonu</summary>
+          <.form
+            for={%{}}
+            id={"template-status-#{template.id}"}
+            phx-submit="template-status"
+            class="grid gap-2 sm:grid-cols-3"
+          >
+            <input type="hidden" name="template_id" value={template.id} />
+            <.input
+              name="state[status]"
+              value=""
+              type="select"
+              label="Změnit provoz šablony"
+              prompt="Vyber akci"
+              required
+              options={[
+                {"Spustit / obnovit", "active"},
+                {"Pozastavit", "paused"},
+                {"Archivovat šablonu", "archived"}
+              ]}
+            />
+            <.input
+              name="state[open_choice]"
+              value=""
+              type="select"
+              label="Otevřený úkol"
+              prompt="Výslovně vyber"
+              required
+              options={[{"Ponechat (také při obnovení)", "keep"}, {"Zrušit a archivovat", "cancel"}]}
+            />
+            <button type="submit" class="adventure-button self-end">Použít změnu</button>
+          </.form>
+        </details>
       </article>
       <details :if={@history != []} class="mt-4">
         <summary>Historie změn šablon (posledních 50)</summary>
@@ -233,7 +249,7 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
           )} UTC
         </p>
       </details>
-    </details>
+    </section>
     """
   end
 

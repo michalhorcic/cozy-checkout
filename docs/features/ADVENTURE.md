@@ -24,7 +24,7 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
    herní data a historie zůstanou uložené. Hodinový Oban worker při vypnutí
    neprovádí herní ani provozní dotazy. Fronta `adventure` má souběh 1.
 3. Po přihlášení stávajícím admin PINem otevři **Další agenda → Cozy Adventure**
-   (`/admin/adventure`) a klikni na **Založit herní profily**. Opakování setupu
+   (`/admin/adventure`) a klikni na **Začít dobrodružství**. Opakování setupu
    nezduplikuje profily a nezmění již uložené profily.
 4. Vyber Michala nebo Lucku. Jde o vlastní prohlášení, nikoli osobní přihlášení.
    Prohlížeč si volbu pamatuje jeden rok v cookie `cozy_adventure_hero`,
@@ -32,7 +32,8 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
    přechodu mezi záložkami a po obnovení stránky. Vymazání výběru nebo cookies
    volbu odstraní. Neplatný nebo neaktivní profil se neobnoví. Přepnutí
    profilu zruší rozpracované potvrzení questu.
-5. Aktivuj nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
+5. V **Questech** připrav zadání. V **Táboře → Najít další výpravu** přijmi
+   nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
    splnění. Poznámka je nepovinná (nejvýše 1000 znaků, bez minimální délky);
    případně ji rozbal přes **Přidat poznámku**. Aktér, čas a odměna se auditují
    i bez poznámky. Neuváděj osobní údaje hostů.
@@ -41,10 +42,33 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
 
 ## Herní obrazovka a nápověda
 
-**Tábor** ukazuje ilustrovanou chatu v horách, osobní i společnou úroveň,
-aktivní questy a právě běžící kampaň. Katalog dalších questů a deník jsou
-rozbalovací; ve **Questech** je katalog otevřený. Starší kampaně, návrhy,
-zdrojové podklady a audit jsou v **Nastavení**, podrobnosti auditu sbalené.
+Adventure používá vlastní herní rám bez administračního sidebaru. Odkaz
+**Do aplikace** vede zpět do administrace; stávající PIN chrání všechny stránky
+i události stejně jako ostatní admin. Hrdina a práce zůstávají uložené při
+přechodu mezi hrou a provozními obrazovkami.
+
+| Obrazovka | Úloha |
+| --- | --- |
+| **Tábor** | Hrát: vybrat hrdinu, přijmout výpravu, pracovat na ní a potvrdit splnění. Tři osobní sloty, společné výpravy, mapa chaty a sezóna. |
+| **Questy** | Připravit zadání: části Jednorázové questy, Opakované questy a Historie. Vytváření, editace, termíny, přiřazení, odměny, opakování a archivace. |
+| **Nastavení** | Sezóny, pravidla a audit. |
+
+**Najít další výpravu** v táboře otevře nástěnku s čekajícími vlastními úkoly
+i splatnými výskyty opakovaných šablon. Při otevření se šablony výslovně
+obnoví stejným přepočtem jako v hodinovém workeru. Výběr má části **Pro mě**
+(vlastní a volné osobní úkoly), **Společné** a **Všechny**, plus hledání názvu.
+Nabídka čte jeden herní dávkový dotaz (nejvýše 100 otevřených položek),
+nikoliv pevné čtyři definice. Prázdná nástěnka odkazuje na knihu zadání.
+**Přijmout výpravu** přesune osobní quest do slotu vybraného hrdiny;
+**Vyrazit společně** ho přesune do společných výprav. Po přijetí se nabídka zavře.
+
+Mapa chaty má portály **Recepce** (kalendář), **Kuchyně** (stravování),
+**Bar** (sklad baru) a **Pokladnice** (doklady/platby). Jde o odkazy do existující
+aplikace, které samy nemění provozní stav a nepotvrzují úkol. Po návratu
+zůstává výprava rozpracovaná. Kniha zadání neobsahuje duplikované výpravy,
+katalog ani sezónní karty a nemá tlačítka k zahájení/splnění. Tábor odkazuje
+na část Historie v knize; ta uchovává i dokončené původní katalogové questy.
+Sezónní panel se jmenuje Kronika sezóny, aby se nepletl se společnými úkoly.
 
 Pravidla, identita profilu, definice KPI a omezení jsou za tlačítkem
 **Průvodce** v překryvné nápovědě. Lze ji zavřít křížkem, Escape, kliknutím
@@ -57,7 +81,7 @@ Ilustrace vznikla pro Cozy Adventure; horské a herní SVG ikony jsou z Lucide
 licence a zdroje jsou v jeho `CREDITS.md` a `LUCIDE-LICENSE`. Stylování je
 izolované v `assets/css/adventure/`, dialogový hook v `assets/js/adventure/`.
 
-## Osobní questy
+## Původní katalogové questy a zachovaná historie
 
 | Šablona | XP | Opakování |
 | --- | --- | --- |
@@ -83,13 +107,13 @@ skutečného stavu rezervace, zálohy či nákupního plánu.
 
 ## Vlastní jednorázové úkoly
 
-Ve **Questech → Společný úkolovník** může vybraný hrdina založit úkol pouhým
+Ve **Questech → Jednorázové questy** může vybraný hrdina založit úkol pouhým
 názvem. Volitelné jsou přiřazení, termín, priorita, kategorie a popis.
 Velikost dává výchozích 50 / 100 / 250 XP, vlastní odměnu lze zadat před
 rozpracováním (1–10 000 XP). Priorita neurčuje XP.
 
 - Úkol začíná ve stavu **Čeká**. Zásobník může mít více než tři položky.
-- **Převzít a rozpracovat** přiřadí osobní úkol právě vybranému hrdinovi.
+- V táboře **Najít další výpravu → Přijmout výpravu** přiřadí osobní úkol právě vybranému hrdinovi.
   Předchozí přiřazení a aktér převzetí zůstávají v auditu. Do tří osobních
   rozpracovaných se společně počítají vlastní i katalogové questy.
 - Při **Hotovo** vyber skutečného splnitele. Osobní odměnu získá tento
@@ -119,14 +143,14 @@ kompenzované odměny. Sezónní finanční přehled zůstává další etapou.
 
 ## Opakované šablony
 
-V **Questech → Opakované šablony** založ název, denní/týdenní opakování,
+V **Questech → Opakované questy** založ název, denní/týdenní opakování,
 vybrané dny týdne, platnost od, kategorii, přiřazení, velikost/XP a působnost.
 Změna velikosti předvyplní 50/100/250 XP; částku lze upravit. Nová šablona
 začíná pozastavená. Tlačítko **Přidat 7 doporučených šablon** založí jednou
 příklady z plánu (pokoje, úklid, jídelníček, nákup, vaření, společné prostory,
 bar). Jejich nastavení a spuštění určuje správce. Opakovaný klik zachová úpravy.
 
-**Spustit / obnovit** plánuje od dneška nebo pozdějšího data platnosti.
+**Spustit šablonu** (případně volba Spustit / obnovit) plánuje od dneška nebo pozdějšího data platnosti.
 Hodinový `Adventure.RecurrenceWorker` a ruční **Obnovit opakované úkoly**
 používají stejné transakční API `Adventure.Templates.generate/1`.
 Zobrazení stránky samo nic negeneruje. Přepočet řídí datum v Europe/Prague,
@@ -343,3 +367,7 @@ repozitářovou sadu a výsledky CI dále ověřuje uživatel.
 - [ ] Pozastavit s ponecháním, obnovit, poté archivovat se zrušením otevřeného úkolu.
 - [ ] Nastavit dny v týdnu a působnost kampaně/hostů včetně neznámých podkladů.
 - [ ] Ověřit původní quest dokončený ve stejném týdnu a zachování odměny po převodu.
+
+Ověření herního rozdělení: lokálně prošlo 76 testů Adventure včetně LiveView,
+cesty kniha → tábor → výběr → dokončení, osobních/společných slotů, mapy,
+vyřazení pevných nabídek a oddělení opakovaných výskytů od editace zadání.

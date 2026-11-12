@@ -2,27 +2,37 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Adventure
   alias CozyCheckout.Adventure.{Campaign, Campaigns, Quest, Tasks, TaskTemplate, Templates}
+  import CozyCheckoutWeb.AdventureLive.CampComponents
   import CozyCheckoutWeb.AdventureLive.CampaignComponents
   import CozyCheckoutWeb.AdventureLive.TemplateComponents
   import CozyCheckoutWeb.AdventureLive.TaskComponents
   import CozyCheckoutWeb.AdventureLive.GameComponents
 
   @impl true
-  def mount(_, _, socket) do
+  def mount(params, _, socket) do
+    section =
+      if params["section"] in ["tasks", "templates", "history"],
+        do: params["section"],
+        else: "tasks"
+
     if Adventure.enabled?() do
       {:ok,
        socket
        |> assign(page_title: "Cozy Adventure", selected_profile_id: nil, completing: nil)
        |> assign(
-         templates_open: false,
+         finding: false,
+         picker_filter: "mine",
+         picker_search: "",
+         quest_section: section,
+         task_editor_open: false,
          template_editor_open: false,
-         task_filters: %{},
+         task_filters: if(section == "history", do: %{"status" => "completed"}, else: %{}),
          editing_task_id: nil,
          task_form: to_form(Tasks.change(%Quest{}), as: :task)
        )
        |> new_template()
        |> new_campaign()
-       |> load()}
+       |> load(), layout: {CozyCheckoutWeb.AdventureLive.GameComponents, :shell}}
     else
       {:ok, redirect(socket, to: ~p"/admin")}
     end
@@ -37,8 +47,31 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     end
   end
 
-  defp handle_game_event("toggle-template-panel", _, socket),
-    do: {:noreply, assign(socket, templates_open: !socket.assigns.templates_open)}
+  defp handle_game_event("manage-section", %{"section" => section}, socket)
+       when section in ["tasks", "templates", "history"] do
+    filters = if section == "history", do: %{"status" => "completed"}, else: %{}
+    {:noreply, socket |> assign(quest_section: section, task_filters: filters) |> load()}
+  end
+
+  defp handle_game_event("toggle-task-editor", _, socket),
+    do: {:noreply, assign(socket, task_editor_open: !socket.assigns.task_editor_open)}
+
+  defp handle_game_event("find-quests", _, socket) do
+    case Templates.refresh(socket.assigns.selected_profile_id) do
+      {:ok, _} -> {:noreply, socket |> load() |> assign(finding: true)}
+      error -> result(socket, error)
+    end
+  end
+
+  defp handle_game_event("close-picker", _, socket),
+    do: {:noreply, assign(socket, finding: false)}
+
+  defp handle_game_event("picker-filter", %{"scope" => scope}, socket)
+       when scope in ["mine", "shared", "all"],
+       do: {:noreply, assign(socket, picker_filter: scope)}
+
+  defp handle_game_event("picker-search", %{"offer" => %{"search" => search}}, socket),
+    do: {:noreply, assign(socket, picker_search: String.slice(search, 0, 200))}
 
   defp handle_game_event("toggle-template-editor", _, socket),
     do: {:noreply, assign(socket, template_editor_open: !socket.assigns.template_editor_open)}
@@ -106,6 +139,13 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp handle_game_event("generate-tasks", _, socket),
     do: result(socket, Templates.refresh(socket.assigns.selected_profile_id))
+
+  defp handle_game_event("resume-template", %{"id" => id}, socket),
+    do:
+      result(
+        socket,
+        Templates.set_status(socket.assigns.selected_profile_id, id, "active", "keep")
+      )
 
   defp handle_game_event("template-status", %{"template_id" => id, "state" => state}, socket),
     do:
@@ -176,7 +216,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
       task ->
         {:noreply,
-         assign(socket, editing_task_id: id, task_form: to_form(Tasks.change(task), as: :task))}
+         assign(socket,
+           editing_task_id: id,
+           task_editor_open: true,
+           task_form: to_form(Tasks.change(task), as: :task)
+         )}
     end
   end
 
@@ -185,15 +229,6 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp handle_game_event("archive-task", %{"id" => id}, socket),
     do: result(socket, Tasks.archive(socket.assigns.selected_profile_id, id))
-
-  defp handle_game_event("prepare-task-completion", %{"id" => id}, socket) do
-    task =
-      if socket.assigns.data.profile,
-        do: Enum.find(socket.assigns.tasks, &(&1.id == id and &1.status == "active")),
-        else: nil
-
-    {:noreply, assign(socket, completing: task)}
-  end
 
   defp handle_game_event("initialize", _, socket) do
     result(socket, Adventure.initialize())
@@ -254,12 +289,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     {:noreply, select_profile(socket, id)}
   end
 
-  defp handle_game_event("activate", %{"code" => code}, socket) do
-    result(socket, Adventure.activate_quest(socket.assigns.selected_profile_id, code))
-  end
-
   defp handle_game_event("prepare-completion", %{"id" => id}, socket) do
-    quest = Enum.find(socket.assigns.data.quests, &(&1.id == id and &1.status == "active"))
+    quests = socket.assigns.data.quests ++ socket.assigns.camp_quests
+
+    quest =
+      if socket.assigns.data.profile,
+        do: Enum.find(quests, &(&1.id == id and &1.status == "active")),
+        else: nil
+
     {:noreply, assign(socket, completing: quest)}
   end
 
@@ -290,7 +327,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp handle_game_event(_, _, socket), do: {:noreply, socket}
 
   defp select_profile(socket, id) do
-    socket = socket |> assign(selected_profile_id: id, completing: nil) |> load()
+    socket = socket |> assign(selected_profile_id: id, completing: nil, finding: false) |> load()
     selected_id = socket.assigns.data.profile && socket.assigns.data.profile.id
 
     socket
@@ -301,7 +338,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp result(socket, {:ok, _}) do
     {:noreply,
      socket
-     |> assign(completing: nil)
+     |> assign(completing: nil, finding: false)
      |> load()
      |> clear_flash(:error)
      |> put_flash(:info, "Herní postup uložen.")}
@@ -359,18 +396,37 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
     assign(socket,
       data: data,
-      tasks: Tasks.list(data.profile && data.profile.id, socket.assigns.task_filters),
+      tasks:
+        Tasks.list(
+          data.profile && data.profile.id,
+          if(socket.assigns.quest_section == "history",
+            do: Map.put(socket.assigns.task_filters, "kind", "history"),
+            else: Map.put(socket.assigns.task_filters, "kind", "one_off")
+          )
+        ),
+      camp_quests: Tasks.camp_quests(),
       templates: Templates.list(),
       template_history: Templates.history(),
       template_campaign_options:
         Enum.map(game.campaigns, &%{id: &1.id, name: &1.name, hint: &1.status}),
       filter_form: to_form(socket.assigns.task_filters, as: :filters),
       game: game,
-      catalog: Adventure.catalog(),
       profile_form: to_form(%{"id" => data.profile && data.profile.id}, as: :profile),
       completion_form:
         to_form(%{"note" => "", "actor_id" => data.profile && data.profile.id}, as: :completion)
     )
+  end
+
+  defp visible_offers(quests, profile_id, scope, search) do
+    search = String.downcase(String.trim(search))
+
+    Enum.filter(quests, fn quest ->
+      quest.status == "waiting" and
+        (scope == "all" or (scope == "shared" and quest.scope == "shared") or
+           (scope == "mine" and quest.scope == "personal" and
+              quest.assigned_profile_id in [nil, profile_id])) and
+        String.contains?(String.downcase(quest.definition_snapshot["title"]), search)
+    end)
   end
 
   defp new_template(socket) do
@@ -387,7 +443,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp reset_task(socket) do
-    assign(socket, editing_task_id: nil, task_form: to_form(Tasks.change(%Quest{}), as: :task))
+    assign(socket,
+      editing_task_id: nil,
+      task_editor_open: false,
+      task_form: to_form(Tasks.change(%Quest{}), as: :task)
+    )
   end
 
   defp new_campaign(socket) do
@@ -412,8 +472,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     ~H"""
     <Layouts.app
       flash={@flash}
-      content_class="mx-auto w-full max-w-7xl"
-      main_class="px-3 py-4 sm:px-6 sm:py-6 lg:px-8"
+      content_class="adventure-frame"
+      main_class="adventure-main"
     >
       <div class="adventure">
         <div id="adventure-shell" class="adventure-shell" phx-hook="AdventureHero">
@@ -440,8 +500,16 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
               aria-controls="adventure-help"
               aria-expanded="false"
             ><.symbol name="compass" /> <span>Průvodce</span></button>
+            <.link href={~p"/admin"} class="adventure-exit" aria-label="Přejít do administrace"><.icon
+              name="hero-arrow-top-right-on-square"
+              class="size-4"
+            /><span>Do aplikace</span></.link>
           </header>
-          <section class="adventure-hero" aria-labelledby="adventure-title">
+          <section
+            :if={@live_action == :index}
+            class="adventure-hero"
+            aria-labelledby="adventure-title"
+          >
             <img
               class="adventure-hero-art"
               src={~p"/images/adventure/mountain-lodge.png"}
@@ -453,8 +521,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             <div class="adventure-hero-shade"></div>
             <div class="adventure-hero-copy">
               <p class="adventure-eyebrow">Jindřichův dům · naše společná výprava</p><h1 id="adventure-title">
-                Malé kroky.<br />Velké dobrodružství.
-              </h1><p>Další příběh chaty píšeme spolu.</p>
+                Vítej v táboře.<br />Chata čeká na hrdiny.
+              </h1><p>Vyber výpravu. Udělej další krok. Rozvíjej naši chatu.</p>
             </div>
             <div class="adventure-lodge-level">
               <span class="adventure-level-coin"><.symbol name="house" /></span><div>
@@ -466,6 +534,29 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
               ></progress>
             </div>
             <span class="adventure-hero-caption"><.symbol name="trees" /> Doma na horách</span>
+          </section>
+          <section :if={@live_action != :index} class="adventure-book-heading">
+            <span class="adventure-emblem"><.symbol name={
+              if @live_action == :quests, do: "notebook-pen", else: "compass"
+            } /></span>
+            <div>
+              <p class="adventure-eyebrow">
+                {if @live_action == :quests, do: "Kniha zadání", else: "Pravidla našeho světa"}
+              </p>
+              <h1>
+                {if @live_action == :quests,
+                  do: "Každá výprava má svůj příběh",
+                  else: "Nastavení dobrodružství"}
+              </h1>
+              <p>
+                {if @live_action == :quests,
+                  do: "Tady questy vytváříš a upravuješ. V táboře je vybíráš a plníš.",
+                  else: "Sezóny, pravidla a audit společného postupu."}
+              </p>
+            </div><.link
+              navigate={~p"/admin/adventure"}
+              class="adventure-button adventure-button--subtle"
+            ><.symbol name="trees" /> Zpět do tábora</.link>
           </section>
           <section :if={@data.profiles == []} class="adventure-welcome">
             <span class="adventure-emblem"><.symbol name="backpack" /></span><div>
@@ -484,7 +575,9 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
               <.input
                 field={@profile_form[:id]}
                 type="select"
-                label="Kdo dnes vyráží?"
+                label={
+                  if @live_action == :index, do: "Kdo dnes vyráží?", else: "Kdo zapisuje do knihy?"
+                }
                 prompt="Vyber profil"
                 options={Enum.map(@data.profiles, &{&1.display_name, &1.id})}
               />
@@ -498,19 +591,37 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
                 max={100 * @data.level}
               ></progress>
             </div>
-            <span :if={!@data.profile} class="adventure-muted">Tvá výprava čeká.</span>
+            <span :if={!@data.profile} class="adventure-muted">{if @live_action == :index,
+              do: "Vyber hrdinu a vyraz.",
+              else: "Vyber hrdinu pro správu zadání."}</span>
           </section>
+          <nav :if={@live_action == :quests} class="adventure-book-tabs" aria-label="Správa questů">
+            <button
+              :for={
+                {label, section, symbol} <- [
+                  {"Jednorázové questy", "tasks", "notebook-pen"},
+                  {"Opakované questy", "templates", "compass"},
+                  {"Historie", "history", "trophy"}
+                ]
+              }
+              phx-click="manage-section"
+              phx-value-section={section}
+              aria-pressed={@quest_section == section}
+            ><.symbol name={symbol} />{label}</button>
+          </nav>
           <.task_board
-            :if={@live_action == :quests}
+            :if={@live_action == :quests && @quest_section != "templates"}
             tasks={@tasks}
             profiles={@data.profiles}
             profile={@data.profile}
             task_form={@task_form}
             filter_form={@filter_form}
             editing_id={@editing_task_id}
+            editor_open={@task_editor_open}
+            history={@quest_section == "history"}
           />
           <.templates
-            :if={@live_action == :quests}
+            :if={@live_action == :quests && @quest_section == "templates"}
             templates={@templates}
             history={@template_history}
             profiles={@data.profiles}
@@ -520,116 +631,44 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             campaign_options={@template_campaign_options}
             campaign_query={@template_campaign_query}
             campaign_open={@template_campaign_open}
-            panel_open={@templates_open}
             editor_open={@template_editor_open}
           />
-          <div class={[
-            "adventure-content",
-            @live_action == :settings && "adventure-content--settings"
-          ]}>
-            <div :if={@live_action != :settings} class="adventure-quests-column">
-              <section class="adventure-panel">
-                <header class="adventure-section-heading">
-                  <div>
-                    <p class="adventure-eyebrow">Krok za krokem</p><h2>Tvoje výpravy</h2>
-                  </div><span class="adventure-count">{Enum.count(
-                    @data.quests,
-                    &(&1.status == "active")
-                  )} / 3</span>
-                </header>
-                <div
-                  :if={!@data.profile || !Enum.any?(@data.quests, &(&1.status == "active"))}
-                  class="adventure-empty"
-                >
-                  <.symbol name="backpack" /><h3>
-                    {if @data.profile, do: "Kam vyrazíš dnes?", else: "Každá výprava má svého hrdinu"}
-                  </h3><p>
-                    {if @data.profile,
-                      do: "Vyber si svůj další quest.",
-                      else: "Vyber profil a připrav si první quest."}
-                  </p>
-                </div>
-                <div class="adventure-active-list">
-                  <article
-                    :for={quest <- Enum.filter(@data.quests, &(&1.status == "active"))}
-                    id={"adventure-quest-#{quest.id}"}
-                    class="adventure-active-quest"
-                  >
-                    <span class="adventure-quest-token"><.symbol name={quest_symbol(quest.code)} /></span><div>
-                      <h3>{quest.definition_snapshot["title"]}</h3><span class="adventure-reward">+{quest.definition_snapshot[
-                        "xp"
-                      ]} XP</span>
-                    </div><button
-                      phx-click="prepare-completion"
-                      phx-value-id={quest.id}
-                      class="adventure-finish"
-                      aria-label={"Potvrdit splnění: #{quest.definition_snapshot["title"]}"}
-                    ><.symbol name="check" /> Hotovo</button>
-                  </article>
-                </div>
-                <details
-                  :if={@data.profile}
-                  id="adventure-catalog"
-                  class="adventure-catalog"
-                  open={@live_action == :quests || !Enum.any?(@data.quests, &(&1.status == "active"))}
-                >
-                  <summary>
-                    <span><.symbol name="compass" /> Najít další výpravu</span><.icon
-                      name="hero-plus"
-                      class="size-4"
-                    />
-                  </summary>
-                  <div class="adventure-catalog-grid">
-                    <article :for={quest <- @catalog} class="adventure-quest-card">
-                      <span class="adventure-quest-token"><.symbol name={quest_symbol(quest.code)} /></span><span class="adventure-cadence">{if quest.cadence ==
-                                                                                                                                                  "weekly",
-                                                                                                                                                do:
-                                                                                                                                                  "Týdenní",
-                                                                                                                                                else:
-                                                                                                                                                  "Jednorázový"}</span><h3>
-                        {quest.title}
-                      </h3><div>
-                        <span class="adventure-reward">+{quest.xp} XP</span><button
-                          id={"activate-#{quest.code}"}
-                          phx-click="activate"
-                          phx-value-code={quest.code}
-                          class="adventure-quest-start"
-                          aria-label={"Aktivovat: #{quest.title}"}
-                        >Vyrazit <.icon name="hero-arrow-up-right" class="size-4" /></button>
-                      </div>
-                    </article>
-                  </div>
-                </details>
-              </section>
-              <details :if={@data.profile} id="adventure-history" class="adventure-journal">
-                <summary>
-                  <span><.symbol name="notebook-pen" /> Deník dokončených výprav</span><.icon
-                    name="hero-chevron-down"
-                    class="size-4"
-                  />
-                </summary><div class="adventure-journal-entries">
-                  <p
-                    :if={!Enum.any?(@data.quests, &(&1.status == "completed"))}
-                    class="adventure-muted"
-                  >
-                    První zápis na tebe teprve čeká.
-                  </p><article :for={quest <- Enum.filter(@data.quests, &(&1.status == "completed"))}>
-                    <span class="adventure-completed-mark"><.symbol name="check" /></span><div>
-                      <h3>{quest.definition_snapshot["title"]}</h3><p class="adventure-muted">
-                        Splněno · {quest.completed_at} UTC
-                      </p><p :if={quest.evidence["note"] not in [nil, ""]} class="whitespace-pre-wrap">
-                        {quest.evidence["note"]}
-                      </p>
-                    </div><span class="adventure-reward">+{quest.definition_snapshot["xp"]} XP</span>
-                  </article>
-                </div>
-              </details>
+          <div :if={@live_action == :index} class="adventure-camp-grid">
+            <div class="adventure-quests-column">
+              <.expeditions quests={@data.quests} profile={@data.profile} />
+              <.expeditions
+                quests={Enum.filter(@camp_quests, &(&1.scope == "shared"))}
+                profile={@data.profile}
+                shared
+              />
+              <.link
+                :if={@data.profile}
+                navigate={~p"/admin/adventure/quests?section=history"}
+                id="adventure-history"
+                class="adventure-journal-link"
+              ><.symbol name="notebook-pen" /><span>Otevřít deník splněných questů</span><.icon
+                name="hero-arrow-right"
+                class="size-4"
+              /></.link>
             </div>
+            <aside class="adventure-camp-aside">
+              <.world_map />
+              <.campaigns
+                game={@game}
+                definitions={Campaigns.achievements()}
+                profile_selected={!is_nil(@data.profile)}
+                settings={false}
+                campaign_form={@campaign_form}
+                editing_id={@editing_campaign_id}
+              />
+            </aside>
+          </div>
+          <div :if={@live_action == :settings} class="adventure-content adventure-content--settings">
             <.campaigns
               game={@game}
               definitions={Campaigns.achievements()}
               profile_selected={!is_nil(@data.profile)}
-              settings={@live_action == :settings}
+              settings
               campaign_form={@campaign_form}
               editing_id={@editing_campaign_id}
             />
@@ -656,6 +695,21 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           </footer>
         </div>
         <.help_overlay />
+        <.modal
+          :if={@finding && @data.profile}
+          id="adventure-picker-modal"
+          show
+          on_cancel={JS.push("close-picker")}
+        >
+          <.quest_picker
+            quests={visible_offers(@camp_quests, @data.profile.id, @picker_filter, @picker_search)}
+            profiles={@data.profiles}
+            profile={@data.profile}
+            filter={@picker_filter}
+            search_form={to_form(%{"search" => @picker_search}, as: :offer)}
+            active_count={Enum.count(@data.quests, &(&1.status == "active"))}
+          />
+        </.modal>
         <.modal
           :if={@completing}
           id="adventure-completion-modal"

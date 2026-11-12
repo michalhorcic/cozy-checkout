@@ -171,6 +171,44 @@ defmodule CozyCheckout.Adventure.TasksTest do
     assert {:error, :disabled} = Tasks.archive(p.id, task.id)
   end
 
+  test "camp offers both authored tasks and recurring occurrences; book separates definitions", %{
+    michal: p
+  } do
+    alias CozyCheckout.Adventure.Templates
+    {:ok, one_off} = Tasks.create(p.id, %{"title" => "Jednorázové zadání"})
+    today = CozyCheckout.Adventure.Sources.Stays.today()
+
+    {:ok, template} =
+      Templates.create(p.id, %{
+        "title" => "Opakované zadání",
+        "starts_on" => Date.to_iso8601(today)
+      })
+
+    {:ok, _} = Templates.set_status(p.id, template.id, "active", "keep")
+    {:ok, _} = Templates.generate()
+    assert [%{id: id}] = Tasks.list(p.id, %{"kind" => "one_off"})
+    assert id == one_off.id
+    {offers, queries} = QueryRecorder.record(fn -> Tasks.camp_quests() end)
+    assert length(offers) == 2
+    assert length(queries) == 1
+    assert Enum.any?(offers, &(&1.template_id == template.id))
+    Application.put_env(:cozy_checkout, :adventure_enabled, false)
+    {[], queries} = QueryRecorder.record(fn -> Tasks.camp_quests() end)
+    assert queries == []
+  end
+
+  test "quest book history keeps legacy completions without mixing them into one-off authoring",
+       %{michal: p} do
+    {:ok, legacy} = Adventure.activate_quest(p.id, "improvement")
+    {:ok, _} = Adventure.complete_manual_quest(p.id, legacy.id)
+    assert Tasks.list(p.id, %{"kind" => "one_off", "status" => "completed"}) == []
+
+    assert [%{id: id, managed: false}] =
+             Tasks.list(p.id, %{"kind" => "history", "status" => "completed"})
+
+    assert id == legacy.id
+  end
+
   test "query count is constant and all writes stay in Adventure", %{michal: p} do
     {_, empty} = QueryRecorder.record(fn -> Tasks.list(p.id) end)
 

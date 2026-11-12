@@ -10,7 +10,9 @@
 > Pro další implementaci nahrazuje původní návrh pevného katalogu a povinných
 > rezervačních cílů: spravované osobní/společné todos, opakované šablony a
 > sezónní čísla včetně odděleného inkasa a vyúčtování pobytů.
-> Jde pouze o plán; níže zůstává audit a historie současné implementace.
+> Aktuální směr rozhraní doplňuje oddíl 10 navazujícího plánu: Tábor je
+> herní plocha pro výběr/plnění, Questy kniha zadání a mapa propojuje provoz
+> chaty. Níže zůstává audit a historie původní implementace.
 
 ## Problém a očekávaný výsledek
 
