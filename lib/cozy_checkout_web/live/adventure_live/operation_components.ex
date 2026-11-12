@@ -381,7 +381,8 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         <p>Plánované porce nejsou uvařené jídlo.</p>
         <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Otevřít plán jídel</.link>
       </div>
-      <div :if={@area in ["bar", "treasury"]}>
+      <a :if={@area == "bar"} href="/admin/adventure?view=chronicle" class="adventure-text-link">Kronika baru</a>
+      <div :if={@area == "treasury"}>
         <h3>Finance patří do kroniky</h3>
         <p>
           Sezónní inkaso a vyúčtování jsou uložené snapshoty, nikoli živý stav. Obnova provozu je nepřepočítává. Inkaso není zisk ani hodnota prodeje.
@@ -390,7 +391,6 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           href="/admin/adventure?view=chronicle"
           class="adventure-text-link"
         >Přejít na kroniku sezóny a datum přepočtu</a>
-        <.link :if={@area == "bar"} href={~p"/admin/bar-stock"} class="adventure-text-link">Otevřít sklad baru</.link>
         <.link :if={@area == "treasury"} href={~p"/admin/billing"} class="adventure-text-link">Otevřít doklady a platby</.link>
         <p>Tato finanční kronika neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
       </div>

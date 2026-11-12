@@ -50,6 +50,19 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
 6. Historii XP najdeš pod **Nastavení a audit**. Dashboard zobrazuje až 100
    questů (aktivní vždy před dokončenými) a posledních 20 XP transakcí.
 
+## Herní styl a množství informací
+
+Adventure je především HRA: má bavit, dávat základní přehled o dění na chatě
+a pomáhat plánovat práci. Není to další obrazovka hlavní aplikace.
+Při dalších úpravách zachovávat příjemný herní zážitek: krátké názvy, pár
+podstatných čísel, jasný další krok a co nejméně vysvětlujícího textu.
+Nadbytečný text škrtat, ne ho automaticky schovávat do dalších rozbalování.
+Ani rozbalovací prvky nemají zaplnit hru. Metodika a technická omezení patří
+především do dokumentace či Průvodce, podrobná provozní evidence do hlavní aplikace.
+Informaci o neznámém či starém stavu zachovat stručně, bez opakovaných poučení.
+Datum a čas zobrazovat lidsky a krátce (např. „Právě načteno“, „Před 5 min“), bez surových timestampů,
+sekund, mikrosekund a technických údajů v běžném herním pohledu.
+
 ## Herní obrazovka a nápověda
 
 Adventure používá vlastní herní rám bez administračního sidebaru. **Do aplikace**
@@ -894,7 +907,7 @@ vyřazení pevných nabídek a oddělení opakovaných výskytů od editace zad�
 
 Detail Baru má samostatný read-only přehled evidence skladu. Na připojení hry
 načte jedním agregovaným SELECTem nesmazané sledované produkty a součet jejich
-barových pohybů. Další čtení spouští pouze **Obnovit sklad baru**. Přepínání oblastí,
+barových pohybů. Další čtení spouští pouze **Obnovit** v detailu Baru. Přepínání oblastí,
 obnova provozu ani minutová kontrola stáří sklad znovu nenačítají. Sezónní kronika
 se touto akcí nepřepočítává.
 
@@ -907,7 +920,12 @@ Objemové jednotky ml/L/cl používají stejné uložení jako existující skla
 při chybějící jednotce v pcs podle původního skladu. Limity už jsou v zobrazované
 jednotce. Množství ani jednotky se mezi produkty nesčítají.
 
-Čas načtení je v UTC. Od 15 minut se zobrazí zastarání, kontrolované každou minutu
+Čas načtení se zobrazuje relativně („Právě načteno“, „Před 5 min“); úplný UTC čas
+zůstává jen ve strojovém atributu `datetime`. Hlavní přehled ukazuje tři stručné
+počty a nedostatky/chybějící evidenci; nenastavené limity připomíná krátký počet.
+Pro úplnou evidenci a nastavení slouží odkaz do původního skladu, bez dalšího
+rozbalování v Baru. Zbytečné desetinné nuly se nezobrazují.
+Od 15 minut se zobrazí zastarání, kontrolované každou minutu
 bez SQL. Při chybě zůstane poslední úspěšný přehled s upozorněním; bez něj je stav
 neznámý. Jde o evidenci, nikoli fyzickou inventuru. Panel nepíše do skladu,
 neotevírá účty, nevytváří questy ani XP. Odkaz vede do původního admin skladu

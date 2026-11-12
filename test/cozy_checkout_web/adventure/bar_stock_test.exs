@@ -35,7 +35,8 @@ defmodule CozyCheckoutWeb.AdventureBarStockLiveTest do
         CozyCheckout.Catalog.Product.changeset(%CozyCheckout.Catalog.Product{}, %{
           name: "Bar missing evidence",
           unit: "pcs",
-          track_bar_stock: true
+          track_bar_stock: true,
+          bar_stock_threshold: 10
         })
       )
 
@@ -62,8 +63,7 @@ defmodule CozyCheckoutWeb.AdventureBarStockLiveTest do
     assert has_element?(view, "#adventure-bar-stock", "Chybí evidence")
     assert :atomics.get(counter, 1) == 1
     view |> element("#adventure-bar-refresh") |> render_click()
-    # Stock movements are numeric(12, 3); the shared formatter preserves that scale.
-    assert has_element?(view, "#adventure-bar-stock ul li span", "5.000 pcs")
+    assert has_element?(view, "#adventure-bar-stock ul li span", "5 pcs")
     refute has_element?(view, "#adventure-bar-stock", "Chybí evidence")
     assert has_element?(view, "#adventure-bar-stock a[href='/admin/bar-stock']")
     assert :atomics.get(counter, 1) == 2
@@ -81,8 +81,8 @@ defmodule CozyCheckoutWeb.AdventureBarStockLiveTest do
           name: "Last evidence",
           stock: Decimal.new(2),
           unit: "pcs",
-          threshold: nil,
-          status: :no_limit
+          threshold: Decimal.new(3),
+          status: :low_stock
         }
       ]
     }
@@ -96,10 +96,16 @@ defmodule CozyCheckoutWeb.AdventureBarStockLiveTest do
         now: DateTime.add(loaded_at, 900)
       )
 
-    assert html =~ "Sklad se nepodařilo načíst"
+    assert html =~ "Bar se teď neozývá"
     assert html =~ "Last evidence"
-    assert html =~ "Zastaralé údaje"
+    assert html =~ "Starší přehled"
+    assert html =~ "Před 15 min"
     assert html =~ "2026-11-12T10:00:00Z"
+    document = LazyHTML.from_fragment(html)
+    text = LazyHTML.text(document)
+    refute text =~ "2026-11-12"
+    refute text =~ "UTC"
+    assert Enum.empty?(LazyHTML.query(document, "details"))
 
     empty =
       render_component(CozyCheckoutWeb.AdventureLive.BarStockComponent,
@@ -108,8 +114,8 @@ defmodule CozyCheckoutWeb.AdventureBarStockLiveTest do
         started: true
       )
 
-    assert empty =~ "Neznámý stav není nula"
-    refute empty =~ "Sledované produkty"
+    assert empty =~ "Zatím bez přehledu"
+    refute empty =~ "Sledujeme"
   end
 
   def bar_query(_, _, metadata, counter) do
