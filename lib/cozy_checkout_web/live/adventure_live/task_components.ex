@@ -41,12 +41,6 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
         >
           <.input field={@task_form[:title]} label="Název" required maxlength="200" />
           <.input
-            field={@task_form[:scope]}
-            type="select"
-            label="Odměna pro"
-            options={[{"Splnitele", "personal"}, {"Společnou chatu", "shared"}]}
-          />
-          <.input
             field={@task_form[:assigned_profile_id]}
             type="select"
             label="Přiřazení (osobní úkol)"
@@ -63,34 +57,49 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
               {"Velký · 250 XP", "large"}
             ]}
           />
-          <.input
-            field={@task_form[:xp]}
-            type="number"
-            label="Vlastní XP (nepovinné)"
-            min="1"
-            max="10000"
-          />
-          <.input field={@task_form[:due_on]} type="date" label="Termín (nepovinný)" />
-          <.input
-            field={@task_form[:priority]}
-            type="select"
-            label="Priorita"
-            options={[{"Nízká", "low"}, {"Běžná", "normal"}, {"Vysoká", "high"}]}
-          />
-          <.input
-            field={@task_form[:category]}
-            type="select"
-            label="Kategorie"
-            options={Quest.categories()}
-          />
-          <div class="sm:col-span-2">
-            <.input
-              field={@task_form[:description]}
-              type="textarea"
-              label="Popis (nepovinný)"
-              maxlength="5000"
-            />
-          </div>
+          <details
+            id="adventure-task-optional-fields"
+            open={@task_form.errors != []}
+            class="sm:col-span-2"
+          >
+            <summary>Další nastavení (nepovinné)</summary>
+            <div class="grid gap-3 mt-3 sm:grid-cols-2">
+              <.input
+                field={@task_form[:scope]}
+                type="select"
+                label="Odměna pro"
+                options={[{"Splnitele", "personal"}, {"Společnou chatu", "shared"}]}
+              />
+              <.input
+                field={@task_form[:xp]}
+                type="number"
+                label="Vlastní XP (nepovinné)"
+                min="1"
+                max="10000"
+              />
+              <.input field={@task_form[:due_on]} type="date" label="Termín (nepovinný)" />
+              <.input
+                field={@task_form[:priority]}
+                type="select"
+                label="Priorita"
+                options={[{"Nízká", "low"}, {"Běžná", "normal"}, {"Vysoká", "high"}]}
+              />
+              <.input
+                field={@task_form[:category]}
+                type="select"
+                label="Kategorie"
+                options={Quest.categories()}
+              />
+              <div class="sm:col-span-2">
+                <.input
+                  field={@task_form[:description]}
+                  type="textarea"
+                  label="Popis (nepovinný)"
+                  maxlength="5000"
+                />
+              </div>
+            </div>
+          </details>
           <div class="flex gap-3">
             <button class="adventure-button adventure-button--primary" type="submit">Uložit quest</button><button
               :if={@editing_id}
@@ -150,16 +159,18 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
       >
         <h3 class="font-bold">{task.definition_snapshot["title"]}</h3>
         <p class="text-sm">
-          {status_label(task.status)} · {task.category} · {priority_label(task.priority)} · {if task.scope ==
-                                                                                                  "shared",
-                                                                                                do:
-                                                                                                  "Společná chata",
-                                                                                                else:
-                                                                                                  profile_name(
-                                                                                                    @profiles,
-                                                                                                    task.assigned_profile_id ||
-                                                                                                      task.profile_id
-                                                                                                  )} · {task.definition_snapshot[
+          {status_label(task.status)} · {task.category}<span :if={task.priority != "normal"}> · {priority_label(
+            task.priority
+          )}</span>
+          · {if task.scope ==
+                  "shared",
+                do: "Společná chata",
+                else:
+                  profile_name(
+                    @profiles,
+                    task.assigned_profile_id ||
+                      task.profile_id
+                  )} · {task.definition_snapshot[
             "xp"
           ]} XP
         </p>
@@ -176,7 +187,10 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
             )} UTC)
           </p>
         </details>
-        <p :if={task.description != ""} class="whitespace-pre-wrap">{task.description}</p>
+        <details :if={task.description not in [nil, ""]}>
+          <summary>Popis questu</summary>
+          <p class="whitespace-pre-wrap">{task.description}</p>
+        </details>
         <p :if={task.status == "completed"} class="text-sm">
           Splnil/a {profile_name(@profiles, task.evidence["actor_profile_id"])} · {Calendar.strftime(
             task.completed_at,

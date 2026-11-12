@@ -72,14 +72,55 @@ nikoliv pevné čtyři definice. Prázdná nástěnka odkazuje na knihu zadání
 **Přijmout výpravu** přesune osobní quest do slotu vybraného hrdiny;
 **Vyrazit společně** ho přesune do společných výprav. Po přijetí se nabídka zavře.
 
-Mapa chaty má šest oblastí: **Recepce**, **Pokoje**, **Kuchyně**, **Bar**,
-**Pokladnice** a **Dílna**. Výběr oblasti otevře detail bez dalšího provozního
+Mapa chaty má pět oblastí: **Recepce**, **Pokoje**, **Kuchyně**, **Bar**,
+**Pokladnice** a centrum projektů **Dílna**. Dílna není další vylepšovanou
+místností; obecné projekty patří **Celé chatě**. Výběr oblasti otevře detail bez dalšího provozního
 dotazu; na mobilu je stejná mapa dostupným seznamem tlačítek. Detaily odkazují
 do existujících funkcí aplikace, samy nemění provozní stav a nepotvrzují úkol.
 Po návratu zůstává výprava rozpracovaná. Kniha zadání neobsahuje duplikované výpravy,
 katalog ani sezónní karty a nemá tlačítka k zahájení/splnění. Tábor odkazuje
 na část Historie v knize; ta uchovává i dokončené původní katalogové questy.
 Sezónní panel se jmenuje Kronika sezóny, aby se nepletl se společnými úkoly.
+
+### Zjednodušené rozhraní
+
+Tábor řadí obsah podle práce: osobní a společné výpravy, Služba dne, mapa.
+Úvodní ilustrace je nižší, opakovaná vysvětlení a nulové ukazatele rozvoje
+na mapě nejsou v hlavním pohledu. Rozvoj oblasti, Kronika chaty a finanční
+Kronika sezóny jsou sbalené; finanční odkaz z Baru/Pokladnice příslušnou
+kroniku otevře. Čas ruční obnovy, starší či neúplná data a finanční omezení
+zůstávají u souvisejících údajů. Pravidla jsou v Průvodci.
+Ruční rozbalení Kroniky sezóny přetrvá i při hledání a změně vybrané sezóny.
+
+Kniha má stručné přepínače **Questy / Opakování / Projekty / Historie**.
+Aktivní volba má kontrastní zelenou výplň a výslovné `aria-pressed="true"`;
+ostatní mají `false`. Totéž platí pro nabídku výprav. Nový quest zvýrazňuje
+název, přiřazení a velikost; další nastavení a popisy jsou rozbalitelné.
+Chyba formuláře otevře i volitelné položky, aby validace nezůstala skrytá.
+
+Dílna otevírá jedinou společnou knihu projektů. Uložený klíč `workshop`
+se v projektech a kronice zobrazuje jako **Celá chata**, bez migrace nebo
+přepisování historických snapshotů. Dílna nemá vlastní počty zlepšení ani
+rám rozvinuté oblasti. Odkaz z konkrétní oblasti předá `project_area` a
+předvyplní ji při založení projektu; nemění dosavadní projekty.
+
+Kniha odděluje rozpracované projekty od sbalené skupiny **Převzaté a archiv**.
+Po výběru se seznam sbalí a zůstane detail s návratem na seznam; první otevření
+detailu přesune fokus na jeho nadpis. Každý otevřený krok má vlastní odkaz
+do tábora s `quest_id`. Po výběru/obnovení hrdiny otevře přesně daný quest,
+nezahájí ho a nepřidělí XP. Používá dosavadní detail a akce přijetí/splnění.
+Tento výslovný přechod přidává nejvýše jeden Adventure SELECT na quest;
+neplatné UUID žádný. Sbalení seznamů, návrat na seznam, render a změna oblasti
+nepřidávají dotazy; seznamy a kroky zůstávají dávkové. Existující iterativní
+generování při otevření nabídky výprav nebylo v této UX úpravě měněno.
+
+Přidáno pět LiveView regresních scénářů pro aktivní přepínače, pořadí obsahu,
+sbalené podrobnosti a validační chyby, roli Dílny a předvyplnění oblasti,
+oddělení historie, návrat bez dotazů a přímý přechod na quest bez zahájení/XP.
+Lokální testy nebyly spuštěny; výsledky CI ověří uživatel. Prošly formátování
+celého projektu, kompilace s `--warnings-as-errors` a `MIX_ENV=test mix assets.build`
+na Elixiru 1.20.5 / OTP 29, nikoli přesně připnutém Elixiru 1.20.4-otp-29 /
+Erlangu 29.1. Browserové ověření desktopu, mobilu a fokusu nebylo provedeno.
 
 ### Živý tábor (4A)
 
@@ -248,7 +289,7 @@ nesmazal historii převzetí; návrat starší aplikace je třeba posoudit zvlá
 Žádná nová konfigurace nebo změna routeru.
 
 Z **Dílny → Otevřít knihu projektů** nebo **Questy → Projekty** lze vytvořit
-vlastní plán. Úvodní formulář má pouze název a oblast (výchozí Dílna); problém/přínos,
+vlastní plán. Úvodní formulář má pouze název a oblast (výchozí Celá chata); problém/přínos,
 odpovědný hrdina, nepovinný termín, orientační rozpočet, měna (třípísmenný ISO kód),
 základ ceny a textová reference jsou pod **Další podrobnosti**.
 Po úspěšném vytvoření i úpravě se editor zavře a zůstane detail uloženého projektu,
@@ -345,7 +386,8 @@ testy nebyly spuštěny; výsledky CI ověří uživatel. Ručně ověřit po mi
 
 ## Rozvoj světa a Kronika chaty (4C)
 
-Šest oblastí mapy rozlišuje plány, realizaci a počet **převzatých zlepšení**.
+Pět oblastí mapy rozlišuje plány, realizaci a počet **převzatých zlepšení**;
+Dílna je vstup do společné knihy projektů, ne šestá vylepšovaná oblast.
 Převzatá oblast dostává společný zlatý štítek a zelený rám, nikoli individuální
 ilustraci. Milník vzniká pouze z lidského převzetí projektu, ne dokončením
 questů, schválením plánu nebo návštěvou stránky. Zahrnuje také projekty převzaté

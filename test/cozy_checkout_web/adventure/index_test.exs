@@ -785,6 +785,68 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert has_element?(view, "#adventure-progress", "0 XP")
   end
 
+  test "management and picker controls expose exactly one active section", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    profile = Repo.get_by!(Profile, slug: "michal")
+    {:ok, view, _} = live(conn, "/admin/adventure/quests")
+
+    for section <- ~w(tasks templates projects history tasks) do
+      render_click(view, "manage-section", %{"section" => section})
+
+      assert has_element?(
+               view,
+               "#adventure-management-tabs button[phx-value-section='#{section}'][aria-pressed=true]"
+             )
+
+      for other <- ~w(tasks templates projects history) -- [section] do
+        assert has_element?(
+                 view,
+                 "#adventure-management-tabs button[phx-value-section='#{other}'][aria-pressed=false]"
+               )
+      end
+    end
+
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    render_click(camp, "restore-profile", %{"id" => profile.id})
+    render_click(camp, "find-quests")
+
+    for scope <- ~w(mine shared all) do
+      render_click(camp, "picker-filter", %{"scope" => scope})
+
+      assert has_element?(
+               camp,
+               "#adventure-quest-picker button[phx-value-scope='#{scope}'][aria-pressed=true]"
+             )
+    end
+  end
+
+  test "camp leads with active work and keeps chronicles and task options collapsed", %{
+    conn: conn
+  } do
+    {camp, profile, _booking} = duty_view(conn)
+    html = render(camp)
+    assert {work, _} = :binary.match(html, "id=\"adventure-expeditions\"")
+    assert {duty, _} = :binary.match(html, "id=\"adventure-service-day\"")
+    assert {map, _} = :binary.match(html, "class=\"adventure-operation-layout\"")
+    assert work < duty
+    assert duty < map
+    assert has_element?(camp, "#adventure-season-disclosure:not([open])")
+    assert has_element?(camp, "#adventure-season-disclosure[phx-mounted*='ignore_attrs']")
+    assert has_element?(camp, "#adventure-cabin-chronicle:not([open])")
+
+    assert has_element?(
+             camp,
+             "#adventure-area-detail details.adventure-world-development:not([open])"
+           )
+
+    {:ok, book, _} = live(conn, "/admin/adventure/quests")
+    render_click(book, "restore-profile", %{"id" => profile.id})
+    assert has_element?(book, "#adventure-task-optional-fields:not([open])")
+    render_click(book, "toggle-task-editor")
+    book |> form("#adventure-task-form", task: %{title: "Chybné XP", xp: "0"}) |> render_submit()
+    assert has_element?(book, "#adventure-task-optional-fields[open]")
+  end
+
   test "shared task completion requires contributors and archive keeps history", %{conn: conn} do
     alias CozyCheckout.Adventure.Tasks
     {:ok, _} = Adventure.initialize()

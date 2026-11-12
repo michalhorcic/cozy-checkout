@@ -35,6 +35,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          duty_draft: nil,
          duty_form: nil,
          duty_detail: nil,
+         camp_quest_id: params["quest_id"],
          duty_history: nil,
          duty_profile_query: nil,
          duty_profile_open: false
@@ -44,6 +45,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          picker_filter: "mine",
          picker_search: "",
          quest_section: section,
+         project_area:
+           if(params["project_area"] in CozyCheckout.Adventure.Project.areas(),
+             do: params["project_area"],
+             else: "workshop"
+           ),
          task_editor_open: false,
          template_editor_open: false,
          template_view: "current",
@@ -405,6 +411,17 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp handle_game_event("close-project-editor", _, socket),
     do: {:noreply, assign(socket, project_editor_open: false)}
+
+  defp handle_game_event("close-project-detail", _, socket),
+    do:
+      {:noreply,
+       assign(socket,
+         selected_project_id: nil,
+         project_history: [],
+         project_stage_editor: nil,
+         project_acceptance_open: false,
+         project_editor_open: false
+       )}
 
   defp handle_game_event("project-stage-editor", %{"mode" => mode}, socket) do
     {:noreply,
@@ -899,7 +916,20 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
     socket
     |> assign(:selected_profile_id, selected_id)
+    |> open_linked_quest()
     |> push_event("adventure:hero-selected", %{id: selected_id || "", requested_id: id})
+  end
+
+  defp open_linked_quest(socket) do
+    if socket.assigns.live_action == :index && socket.assigns.data.profile &&
+         socket.assigns.camp_quest_id do
+      assign(socket,
+        duty_detail: Tasks.get_managed(socket.assigns.camp_quest_id),
+        camp_quest_id: nil
+      )
+    else
+      socket
+    end
   end
 
   defp result(socket, {:ok, _}) do
@@ -1060,7 +1090,10 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
         project_focus_id: nil,
         project_editor_open: true,
         project_form:
-          to_form(Map.put(ProjectComponents.defaults(), "request_key", Ecto.UUID.generate()),
+          to_form(
+            ProjectComponents.defaults()
+            |> Map.put("area", socket.assigns.project_area)
+            |> Map.put("request_key", Ecto.UUID.generate()),
             as: :project
           )
       )
@@ -1090,7 +1123,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          project_quest_results: []
        )
        |> load_projects()
-       |> put_flash(:info, "Projekt uložen. Provozní data a XP se nezměnily.")}
+       |> put_flash(:info, "Projekt uložen.")}
 
   defp project_result(socket, {:error, reason}) do
     message =
@@ -1220,8 +1253,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             <div class="adventure-hero-shade"></div>
             <div class="adventure-hero-copy">
               <p class="adventure-eyebrow">Jindřichův dům · naše společná výprava</p><h1 id="adventure-title">
-                Vítej v táboře.<br />Chata čeká na hrdiny.
-              </h1><p>Vyber výpravu. Udělej další krok. Rozvíjej naši chatu.</p>
+                Naše chata.<br />Naše dobrodružství.
+              </h1>
             </div>
             <div class="adventure-lodge-level">
               <span class="adventure-level-coin"><.symbol name="house" /></span><div>
@@ -1244,13 +1277,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
               </p>
               <h1>
                 {if @live_action == :quests,
-                  do: "Každá výprava má svůj příběh",
+                  do: "Kniha questů",
                   else: "Nastavení dobrodružství"}
               </h1>
-              <p>
-                {if @live_action == :quests,
-                  do: "Tady questy vytváříš a upravuješ. V táboře je vybíráš a plníš.",
-                  else: "Sezóny, pravidla a audit společného postupu."}
+              <p :if={@live_action == :settings}>
+                Sezóny, pravidla a audit společného postupu.
               </p>
             </div><.link
               navigate={~p"/admin/adventure"}
@@ -1302,19 +1333,24 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           >
             Prohlížeč blokuje zapamatování profilu. Výběr platí jen na této stránce; povol ukládání dat tohoto webu.
           </p>
-          <nav :if={@live_action == :quests} class="adventure-book-tabs" aria-label="Správa questů">
+          <nav
+            :if={@live_action == :quests}
+            id="adventure-management-tabs"
+            class="adventure-book-tabs"
+            aria-label="Správa questů"
+          >
             <button
               :for={
                 {label, section, symbol} <- [
-                  {"Jednorázové questy", "tasks", "notebook-pen"},
-                  {"Opakované questy", "templates", "compass"},
+                  {"Questy", "tasks", "notebook-pen"},
+                  {"Opakování", "templates", "compass"},
                   {"Projekty", "projects", "house"},
                   {"Historie", "history", "trophy"}
                 ]
               }
               phx-click="manage-section"
               phx-value-section={section}
-              aria-pressed={@quest_section == section}
+              aria-pressed={to_string(@quest_section == section)}
             ><.symbol name={symbol} />{label}</button>
           </nav>
           <.task_board
@@ -1361,19 +1397,6 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             occurrences={@template_occurrences}
             confirmation={@template_confirmation}
           />
-          <.operation_world
-            :if={@live_action == :index}
-            snapshot={@operation}
-            checked_at={@operation_checked_at}
-            state={@operation_state}
-            area={@operation_area}
-            world={@world}
-            chronicle={@cabin_chronicle}
-            chronicle_page={@cabin_page}
-            profiles={@data.profiles}
-            duty_links={@duty_links}
-            profile={@data.profile}
-          />
           <div :if={@live_action == :index} class="adventure-camp-grid">
             <div class="adventure-quests-column">
               <.expeditions quests={@data.quests} profile={@data.profile} />
@@ -1392,7 +1415,33 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
                 class="size-4"
               /></.link>
             </div>
-            <aside class="adventure-camp-aside">
+          </div>
+          <.operation_world
+            :if={@live_action == :index}
+            snapshot={@operation}
+            checked_at={@operation_checked_at}
+            state={@operation_state}
+            area={@operation_area}
+            world={@world}
+            chronicle={@cabin_chronicle}
+            chronicle_page={@cabin_page}
+            profiles={@data.profiles}
+            duty_links={@duty_links}
+            profile={@data.profile}
+          />
+          <details
+            :if={@live_action == :index}
+            id="adventure-season-disclosure"
+            class="adventure-journal"
+            phx-mounted={JS.ignore_attributes("open")}
+          >
+            <summary>
+              <span><.symbol name="coins" />Kronika sezóny</span><.icon
+                name="hero-chevron-down"
+                class="size-4"
+              />
+            </summary>
+            <div class="adventure-season-content">
               <.campaigns
                 game={@game}
                 definitions={Campaigns.achievements()}
@@ -1403,8 +1452,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
                 selected_id={@selected_campaign_id}
                 search={@campaign_search}
               />
-            </aside>
-          </div>
+            </div>
+          </details>
           <div :if={@live_action == :settings} class="adventure-content adventure-content--settings">
             <.campaigns
               game={@game}

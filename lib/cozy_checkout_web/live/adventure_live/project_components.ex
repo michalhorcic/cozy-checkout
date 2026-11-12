@@ -18,9 +18,16 @@ defmodule CozyCheckoutWeb.AdventureLive.ProjectComponents do
   attr :acceptance_open, :boolean, required: true
 
   def projects(assigns) do
+    {current, closed} =
+      Enum.split_with(
+        assigns.projects,
+        &(!&1.project.archived_at && &1.project.status not in ["accepted", "cancelled"])
+      )
+
     assigns =
-      assign(
-        assigns,
+      assigns
+      |> assign(:groups, [{"Rozpracované", current}, {"Převzaté a archiv", closed}])
+      |> assign(
         :selected,
         Enum.find(assigns.projects, &(&1.project.id == assigns.selected_id))
       )
@@ -29,7 +36,7 @@ defmodule CozyCheckoutWeb.AdventureLive.ProjectComponents do
     <section id="adventure-projects" class="adventure-panel adventure-projects">
       <header class="adventure-section-heading flex-wrap">
         <div>
-          <p class="adventure-eyebrow">Dílna · zlepšení, která zůstávají</p><h2>Kniha projektů</h2>
+          <p class="adventure-eyebrow">Dílna · rozvoj celé chaty</p><h2>Projekty</h2>
         </div>
         <div class="adventure-project-tools">
           <button type="button" phx-click="refresh-projects" class="adventure-button">Obnovit</button>
@@ -122,71 +129,84 @@ defmodule CozyCheckoutWeb.AdventureLive.ProjectComponents do
         </.form>
       </section>
 
-      <.form
-        for={%{}}
-        as={:projects}
-        id="project-filter"
-        phx-submit="filter-projects"
-        class="adventure-project-search"
-      >
-        <.input
-          name="projects[query]"
-          value={@search}
-          label="Hledat projekt i v archivu"
-          maxlength="200"
-        />
-        <button class="adventure-button">Hledat</button>
-      </.form>
-      <div :if={@projects == []} class="adventure-empty">
-        <.symbol name="wrench" /><h3>
-          {if @search == "", do: "Místo pro další zlepšení", else: "Žádný odpovídající projekt"}
-        </h3>
-        <p>
-          {if @search == "",
-            do: "Začni názvem a oblastí chaty. Kroky přidáš potom.",
-            else: "Zkus jiný název nebo zruš hledání."}
-        </p>
-      </div>
-      <div class="adventure-project-list" aria-label="Projekty">
-        <button
-          :for={row <- @projects}
-          id={"project-#{row.project.id}"}
-          type="button"
-          phx-click="select-project"
-          phx-value-id={row.project.id}
-          aria-pressed={@selected_id == row.project.id}
-          aria-controls="project-detail"
-          class="adventure-project-card"
+      <details id="project-chooser" class="adventure-project-disclosure" open={!@selected}>
+        <summary>{if @selected, do: "Vybrat jiný projekt", else: "Přehled projektů"}</summary>
+        <.form
+          for={%{}}
+          as={:projects}
+          id="project-filter"
+          phx-submit="filter-projects"
+          class="adventure-project-search"
         >
-          <span class="adventure-project-card-top"><span>{area(row.project.area)}{if row.project.archived_at,
-            do: " · Archiv"}</span><span class={"adventure-project-status adventure-project-status--#{row.project.status}"}>{status(
-            row.project.status
-          )}</span></span>
-          <strong>{row.project.title}</strong>
-          <span class="adventure-project-card-bottom"><span>{progress(row.stages)}</span><span :if={
-            row.project.due_on
-          }>Do {format_project_date(row.project.due_on)}</span></span>
-        </button>
-      </div>
-      <p class="adventure-muted adventure-project-limit">
-        Nejvýše 100 nejnovějších shod. Starší projekt vyhledej názvem.
-      </p>
+          <.input
+            name="projects[query]"
+            value={@search}
+            label="Hledat projekt i v archivu"
+            maxlength="200"
+          />
+          <button class="adventure-button">Hledat</button>
+        </.form>
+        <div :if={@projects == []} class="adventure-empty">
+          <.symbol name="wrench" /><h3>
+            {if @search == "", do: "Místo pro další zlepšení", else: "Žádný odpovídající projekt"}
+          </h3>
+          <p>
+            {if @search == "",
+              do: "Začni názvem a oblastí chaty. Kroky přidáš potom.",
+              else: "Zkus jiný název nebo zruš hledání."}
+          </p>
+        </div>
+        <details
+          :for={{label, rows} <- @groups}
+          :if={rows != []}
+          class="adventure-project-group"
+          open={label == "Rozpracované" or @search != ""}
+        >
+          <summary>{label} <span class="adventure-count">{length(rows)}</span></summary>
+          <div class="adventure-project-list" aria-label={label}>
+            <button
+              :for={row <- rows}
+              id={"project-#{row.project.id}"}
+              type="button"
+              phx-click="select-project"
+              phx-value-id={row.project.id}
+              aria-pressed={to_string(@selected_id == row.project.id)}
+              aria-controls="project-detail"
+              class="adventure-project-card"
+            >
+              <span class="adventure-project-card-top"><span>{area(row.project.area)}{if row.project.archived_at,
+                do: " · Archiv"}</span><span class={"adventure-project-status adventure-project-status--#{row.project.status}"}>{status(
+                row.project.status
+              )}</span></span>
+              <strong>{row.project.title}</strong>
+              <span class="adventure-project-card-bottom"><span>{progress(row.stages)}</span><span :if={
+                row.project.due_on
+              }>Do {format_project_date(row.project.due_on)}</span></span>
+            </button>
+          </div>
+        </details>
+        <p :if={length(@projects) == 100} class="adventure-muted adventure-project-limit">
+          Nejvýše 100 nejnovějších shod. Starší projekt vyhledej názvem.
+        </p>
+      </details>
 
       <section
         :if={@selected}
         id="project-detail"
         class="adventure-project-detail"
         aria-labelledby="project-detail-title"
+        phx-mounted={JS.focus(to: "#project-detail-title")}
       >
         <header class="adventure-project-detail-heading">
           <div>
             <p class="adventure-eyebrow">
               {area(@selected.project.area)}{if @selected.project.archived_at, do: " · Archiv"}
-            </p><h3 id="project-detail-title">{@selected.project.title}</h3>
+            </p><h3 id="project-detail-title" tabindex="-1">{@selected.project.title}</h3>
           </div>
           <span class={"adventure-project-status adventure-project-status--#{@selected.project.status}"}>{status(
             @selected.project.status
           )}</span>
+          <button type="button" phx-click="close-project-detail" class="adventure-button">Zpět na seznam</button>
         </header>
         <ol class="adventure-project-path" aria-label="Postup projektu">
           <li aria-current={if @selected.project.status in ["idea", "ready"], do: "step"}>
@@ -301,6 +321,11 @@ defmodule CozyCheckoutWeb.AdventureLive.ProjectComponents do
               <p :if={quest.due_on} class="adventure-muted">
                 Termín questu: {format_project_date(quest.due_on)}
               </p>
+              <.link
+                :if={quest.status in ["waiting", "active"] && !quest.archived_at}
+                navigate={~p"/admin/adventure?#{%{quest_id: quest.id}}"}
+                class="adventure-button adventure-project-camp"
+              >{if quest.status == "waiting", do: "Přijmout v táboře", else: "Pokračovat v táboře"}</.link>
               <button
                 :if={editable?(@selected.project) && @stage_editor != stage.id}
                 type="button"
@@ -514,11 +539,6 @@ defmodule CozyCheckoutWeb.AdventureLive.ProjectComponents do
               </.form>
             </section>
           </div>
-          <.link
-            :if={@selected.stages != []}
-            navigate={~p"/admin/adventure"}
-            class="adventure-button adventure-project-camp"
-          ><.symbol name="compass" />Pokračovat s questy v táboře</.link>
         </section>
 
         <section :if={ready_to_accept?(@selected)} class="adventure-project-acceptance">
@@ -704,7 +724,7 @@ defmodule CozyCheckoutWeb.AdventureLive.ProjectComponents do
         "kitchen" => "Kuchyně",
         "bar" => "Bar",
         "treasury" => "Pokladnice",
-        "workshop" => "Dílna"
+        "workshop" => "Celá chata"
       }[key]
 
   defp status(key),

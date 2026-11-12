@@ -21,6 +21,9 @@
 .adventure-project-search > .fieldset { flex: 1; }
 .adventure-project-search > .adventure-button { border: 1px solid #c9d5c1; background: #eef2e7; }
 .adventure-project-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.adventure-project-group > summary { display: flex; align-items: center; gap: 10px; min-height: 44px; margin: 12px 0; font-weight: 650; }
+.adventure-project-group > summary::before { content: '+'; }
+.adventure-project-group[open] > summary::before { content: '-'; }
 .adventure-project-card { display: grid; gap: 14px; min-width: 0; padding: 16px; border: 1px solid #d8dfce; border-radius: 13px; text-align: left; background: #fffef9; transition: border-color .15s; }
 .adventure-project-card:hover { border-color: #829c74; }
 .adventure-project-card[aria-pressed=true] { background: #eef3e6; border-color: var(--adv-forest); box-shadow: inset 3px 0 var(--adv-forest); }

@@ -20,13 +20,16 @@
   background: #fffdf3; box-shadow: 0 2px 0 #b6bda7, inset 0 0 0 1px #fff;
 }
 .adventure-exit { display: inline-flex; gap: 6px; align-items: center; color: #697462; font-size: 10px; min-height: 44px; }
-.adventure-stage .adventure-hero { height: 345px; border: 1px solid #bca76c; box-shadow: inset 0 0 0 4px #fff7db44; }
-.adventure-stage .adventure-hero h1 { font-size: clamp(30px, 3.5vw, 48px); max-width: 500px; }
+.adventure-stage .adventure-hero { height: 240px; border: 1px solid #bca76c; box-shadow: inset 0 0 0 4px #fff7db44; }
+.adventure-stage .adventure-hero h1 { font-size: clamp(28px, 3vw, 36px); max-width: 500px; }
 .adventure-stage .adventure-player { background: #fffdf3; border-color: #d9d3bb; box-shadow: 0 3px 0 #e4dfcc; }
 .adventure-stage .adventure-avatar { width: 56px; height: 56px; border-color: #f8e9b4; outline: 2px solid #bc9b51; font-size: 28px; }
 .adventure-stage .adventure-player-progress { max-width: 460px; }
 .adventure-stage .adventure-panel { background: #fcfaf1; border: 1px solid #d8d1b8; box-shadow: 0 3px 0 #e4dfcc; }
-.adventure-camp-grid { display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr); gap: 24px; }
+.adventure-camp-grid > .adventure-quests-column { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; align-items: start; }
+.adventure-camp-grid .adventure-journal-link { grid-column: 1 / -1; }
+.adventure-season-content { padding: 0 16px 16px; }
+.adventure-season-content .adventure-campaigns-column { display: block; }
 .adventure-camp-aside { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .adventure-expedition-panel { position: relative; border-top: 4px solid #3e6350 !important; }
 .adventure-expedition-panel--shared { border-top-color: #ba9140 !important; }
@@ -66,7 +69,7 @@
 .adventure-book-tabs { display: flex; align-items: stretch; gap: 7px; padding: 5px; background: #e8e4d3; border: 1px solid #d8d2bb; border-radius: 12px; margin-bottom: 20px; }
 .adventure-book-tabs button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 9px 16px; flex: 1; color: #7b7e69; font-weight: 650; font-size: 12px; border-radius: 8px; }
 .adventure-book-tabs button .adventure-symbol { width: 18px; height: 18px; }
-.adventure-book-tabs button[aria-pressed='true'] { color: #37523d; background: #fffdf2; box-shadow: 0 2px 0 #c4c3a9; }
+.adventure-book-tabs button[aria-pressed='true'] { color: #fffdf2; background: #285646; box-shadow: 0 2px 0 #183c2f; }
 .adventure-ledger-panel { position: relative; background: linear-gradient(90deg,#ede6d3 0, #fcfaf1 22px) !important; padding-left: 30px !important; }
 .adventure-ledger-panel::before { content: ''; position: absolute; left: 14px; top: 18px; bottom: 18px; border-left: 1px solid #d2c6aa; pointer-events: none; }
 .adventure-ledger-panel .input, .adventure-ledger-panel .select, .adventure-ledger-panel .textarea { background: #fffdf6; border-color: #cfc8ae; }
@@ -90,7 +93,7 @@
 @media (max-width: 900px) {
   .adventure-main { padding: 16px; }
   .adventure-stage .adventure { padding: 0 20px; }
-  .adventure-camp-grid { gap: 18px; grid-template-columns: minmax(0,1fr); }
+  .adventure-camp-grid > .adventure-quests-column { grid-template-columns: minmax(0,1fr); }
   .adventure-camp-aside { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); align-items: start; }
   .adventure-book-heading { flex-wrap: wrap; padding: 22px; gap: 14px; }
   .adventure-book-heading > .adventure-button { margin-left: 0; }
@@ -101,8 +104,8 @@
   .adventure-stage .adventure-masthead { gap: 12px; padding: 16px 0; }
   .adventure-stage .adventure-nav a { padding: 9px; font-size: 11px; }
   .adventure-exit > span:last-child { display: none; }
-  .adventure-stage .adventure-hero { height: 340px; }
-  .adventure-stage .adventure-hero h1 { font-size: 32px; }
+  .adventure-stage .adventure-hero { height: 245px; }
+  .adventure-stage .adventure-hero h1 { font-size: 30px; }
   .adventure-stage .adventure-hero-copy { padding: 23px 20px; }
   .adventure-stage .adventure-avatar { width: 44px; height: 44px; font-size: 24px; }
   .adventure-slot-track { gap: 8px; padding: 10px; }

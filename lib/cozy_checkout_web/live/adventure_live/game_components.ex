@@ -58,6 +58,16 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
             </p>
           </section>
           <section>
+            <h3>Dílna a projekty</h3><p>
+              Dílna sdružuje všechny projekty, není další místností k vylepšování. Projekt patří konkrétní oblasti nebo celé chatě. Kroky projektu jsou běžné questy: od každého přejdeš přímo k přijetí a plnění v táboře. Dokončené kroky projekt automaticky nepřevezmou a převzetí nepřidává další XP.
+            </p>
+          </section>
+          <section>
+            <h3>Mapa a služba dne</h3><p>
+              Provoz se načte při vstupu do tábora a tlačítkem Obnovit provoz, bez automatické obnovy. Prohlížení ani obnova nevytvářejí questy a neudělují XP. Podnět převedeš na čekající quest výslovným uložením návrhu; jeho zmizení quest nesplní. Provozní podklady upravuj v hlavní aplikaci.
+            </p>
+          </section>
+          <section>
             <h3>XP a úrovně</h3><p>
               Osobní questy odměňují vybraný profil. Staré kampaně mají automatické milníky pro společnou chatu; nové sezónní kroniky žádné automatické XP nepřidělují. XP nejsou peníze ani provozní ukazatel. Další úroveň začíná při 100 × L × (L + 1) / 2 XP. Opakované potvrzení nevytváří novou odměnu.
             </p>
@@ -94,7 +104,7 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
             <h3>Hra zůstává hrou</h3><p>
               Herní akce zapisují pouze do vlastních tabulek Adventure. Provozní rezervace, platby a doklady se jen čtou při výslovném přepočtu. Hra nemění platby, účetnictví, rezervace ani zásoby a neposílá hostům zprávy. Poznámky nevyplňuj osobními údaji hostů.
             </p><p>
-              Srovnání sezón, náklady, zisk, rekonstrukce a automatické skilly zůstávají další cestou. Z neúplných podkladů nevykazujeme domnělé úspory.
+              Srovnání sezón, náklady, zisk a automatické skilly zůstávají další cestou. Z neúplných podkladů nevykazujeme domnělé úspory.
             </p>
           </section>
         </div>
