@@ -97,7 +97,7 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
           </section>
           <section>
             <h3>Kdo právě hraje?</h3><p>
-              Výběr profilu je vlastní prohlášení, nikoli ověřená identita. Prohlížeč si ho pamatuje rok v cookie této hry, i po obnovení stránky. Vymazáním výběru nebo cookies jej zapomene. Všechny stránky a akce dál chrání společný admin PIN. Automatické XP nikdy nepřipadnou člověku jen proto, že stiskl přepočet.
+              Výběr profilu je vlastní prohlášení, nikoli ověřená identita. Prohlížeč si ho pamatuje v místním úložišti, se zálohou v roční cookie, i po obnovení stránky nebo návratu do hry. Vymazáním výběru nebo všech dat tohoto webu jej zapomene. Volba platí pro stejnou adresu webu a stejný prohlížeč; IP adresa a doménové jméno mohou mít jiná uložená data. Pokud prohlížeč ukládání blokuje, hra tě upozorní. Všechny stránky a akce dál chrání společný admin PIN. Automatické XP nikdy nepřipadnou člověku jen proto, že stiskl přepočet.
             </p>
           </section>
           <section>

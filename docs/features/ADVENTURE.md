@@ -27,11 +27,21 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
    (`/admin/adventure`) a klikni na **Začít dobrodružství**. Opakování setupu
    nezduplikuje profily a nezmění již uložené profily.
 4. Vyber Michala nebo Lucku. Jde o vlastní prohlášení, nikoli osobní přihlášení.
-   Prohlížeč si volbu pamatuje jeden rok v cookie `cozy_adventure_hero`,
-   omezené na `/admin/adventure`. Po připojení hry se profil obnoví i při
-   přechodu mezi záložkami a po obnovení stránky. Vymazání výběru nebo cookies
-   volbu odstraní. Neplatný nebo neaktivní profil se neobnoví. Přepnutí
-   profilu zruší rozpracované potvrzení questu.
+   Prohlížeč si volbu pamatuje v `localStorage` pod klíčem `cozy_adventure_hero`.
+   Cookie stejného jména, omezená na `/admin/adventure`, slouží jako roční
+   záloha při nedostupném místním úložišti a k převzetí dřívější volby. Oba
+   zápisy jsou nezávislé a ověřují se zpětným čtením; selhání jednoho neblokuje
+   druhý. Funguje také přes HTTP v lokální síti, bez změny admin přihlášení.
+   Po připojení hry se profil obnoví při návratu, přechodu mezi záložkami,
+   obnovení stránky i opětovném připojení. Volba se ukládá už při změně selectu,
+   server dál ověřuje aktivní profil a neplatnou volbu vymaže. Opožděné potvrzení
+   dřívějšího obnovení nepřepíše novější ruční volbu. Vymazání výběru
+   uloží také prázdnou místní hodnotu, takže ho neobnoví stará neodstranitelná
+   cookie. Blokování obou úložišť zobrazí upozornění; výběr pak platí jen pro
+   aktuální stránku. Trvalost nelze zaručit v anonymním režimu či po smazání
+   dat webu. Úložiště patří konkrétnímu prohlížeči a originu: IP, jiné jméno,
+   port nebo protokol mohou znamenat jinou volbu. Neplatný nebo neaktivní
+   profil se neobnoví. Přepnutí profilu zruší rozpracované potvrzení questu.
 5. V **Questech** připrav zadání. V **Táboře → Najít další výpravu** přijmi
    nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
    splnění. Poznámka je nepovinná (nejvýše 1000 znaků, bez minimální délky);

@@ -5,37 +5,70 @@ const oneYear = 365 * 24 * 60 * 60
 // A browser preference, never an authentication or authorization token.
 export const AdventureHero = {
   mounted() {
-    this.preferenceHandler = this.handleEvent('adventure:hero-selected', ({id}) => {
+    this.preferenceHandler = this.handleEvent('adventure:hero-selected', ({id, requested_id: requestedId}) => {
+      // A late restore reply must not overwrite a more recent manual choice.
+      if (this.pendingHero !== undefined && requestedId !== this.pendingHero) return
+      this.pendingHero = undefined
       this.saveHero(id)
     })
+    this.selectionHandler = event => {
+      if (event.target.matches('#adventure-profile select')) {
+        this.pendingHero = event.target.value
+        this.saveHero(this.pendingHero)
+      }
+    }
+    this.el.addEventListener('change', this.selectionHandler)
     this.restoreHero()
   },
   reconnected() {
     this.restoreHero()
   },
   restoreHero() {
+    let id = null
+    try {
+      id = window.localStorage.getItem(cookieName)
+    } catch (_error) {
+      // Cookies remain a fallback when browser storage is blocked.
+    }
+    if (id === null) id = this.readCookie()
+    if (id !== null) this.pushEvent('restore-profile', {id}, () => {})
+  },
+  readCookie() {
     try {
       const cookie = document.cookie.split(';').map(value => value.trim())
         .find(value => value.startsWith(`${cookieName}=`))
-      if (cookie) {
-        const id = decodeURIComponent(cookie.slice(cookieName.length + 1))
-        this.pushEvent('restore-profile', {id}, () => {})
-      }
+      return cookie ? decodeURIComponent(cookie.slice(cookieName.length + 1)) : null
     } catch (_error) {
-      // Blocked cookies or a malformed preference must not break the game.
-      this.saveHero('')
+      return null
     }
   },
   saveHero(id) {
+    const value = id || ''
+    let storedLocally = false
+    let storedInCookie = false
+    try {
+      // An empty value prevents an old cookie from restoring a forgotten hero.
+      window.localStorage.setItem(cookieName, value)
+      storedLocally = window.localStorage.getItem(cookieName) === value
+    } catch (_error) {
+      // Try cookies independently of localStorage failures.
+    }
     try {
       const secure = window.location.protocol === 'https:' ? '; Secure' : ''
       const age = id ? oneYear : 0
-      document.cookie = `${cookieName}=${encodeURIComponent(id || '')}; Path=${cookiePath}; Max-Age=${age}; SameSite=Lax${secure}`
+      document.cookie = `${cookieName}=${encodeURIComponent(value)}; Path=${cookiePath}; Max-Age=${age}; SameSite=Lax${secure}`
+      storedInCookie = this.readCookie() === (value || null)
     } catch (_error) {
       // Selection still works for this page when cookies are unavailable.
     }
+    const persistent = storedLocally || storedInCookie
+    if (persistent !== this.storageAvailable) {
+      this.storageAvailable = persistent
+      this.pushEvent('profile-storage-status', {persistent}, () => {})
+    }
   },
   destroyed() {
+    this.el.removeEventListener('change', this.selectionHandler)
     this.removeHandleEvent(this.preferenceHandler)
   }
 }
