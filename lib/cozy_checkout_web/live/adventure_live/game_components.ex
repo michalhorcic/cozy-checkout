@@ -92,7 +92,7 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
           </section>
           <section>
             <h3>XP a úrovně</h3><p>
-              Osobní questy odměňují vybraný profil. Automatické milníky odměňují pouze společnou chatu. XP nejsou peníze ani provozní ukazatel. Další úroveň začíná při 100 × L × (L + 1) / 2 XP. Opakované potvrzení nevytváří novou odměnu.
+              Osobní questy odměňují vybraný profil. Staré kampaně mají automatické milníky pro společnou chatu; nové sezónní kroniky žádné automatické XP nepřidělují. XP nejsou peníze ani provozní ukazatel. Další úroveň začíná při 100 × L × (L + 1) / 2 XP. Opakované potvrzení nevytváří novou odměnu.
             </p>
           </section>
           <section>
@@ -101,26 +101,33 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
             </p>
           </section>
           <section>
-            <h3>Co dělá kampaň?</h3><p>
-              Kampaň je společná sezónní výprava chaty. Určuje období, za které sledujeme pobyty, lůžkonoci a obsazenost. Cíle ukazují postup; společné XP zatím dávají jen milníky za 1 a 10 pobytů. Přepočet spouštíš ručně tlačítkem nebo uzavřením kampaně, nic neběží na pozadí.
+            <h3>Kronika sezóny</h3><p>
+              Kronika je účetní list našeho herního světa: pobyty, uskutečněné lůžkonoci, inkaso a vyúčtování. Nové sezóny nepotřebují cíle. Kapacita je volitelná; bez ní není dostupná procentní obsazenost, ostatní metriky zůstávají. Kronika nikdy sama neodměňuje XP. Přepočet spouštíš výslovně tlačítkem nebo uzavřením, prohlížení jen čte uložené výsledky.
             </p><p>
-              Kampaň vzniká jako návrh. V Nastavení potvrď období, cíle a stálou kapacitu, teprve potom ji aktivuj. Současně může být aktivní jedna kampaň. Po aktivaci jsou pravidla uzamčená. Přepočítat lze i uzavřenou kampaň; její hranice realizace už se neposouvá.
+              Sezóna vzniká jako návrh v Nastavení. Potvrď období a aktivuj ji; současně může být aktivní jedna. Minulé období místo aktivace zapiš jako historickou uzavřenou sezónu. Nespustí opakované úkoly ani nepřidá zpětné XP. Po aktivaci či historickém zápisu jsou období a pravidla neměnné. Oprava uzavřené kroniky vyžaduje důvod a vytvoří novou verzi, původní zůstane v auditu. Jiné období znamená novou sezónu.
             </p><p>
               Realizované lůžkonoci zahrnují noci před dneškem ve stavech active/completed, budoucí rezervace noci od dneška ve stavech upcoming/active. Příjezd se počítá, odjezd ne; osoby zahrnují i děti a kojence. Zrušené a smazané pobyty jsou vyloučené. Kapacita je ručně potvrzená konstanta, nikoli historie pokojů.
             </p>
           </section>
           <section>
-            <h3>Milníky a kvalita podkladů</h3><p>
-              Milníky počítají completed pobyty s odjezdem v kampani, před dnešním pražským datem a po dni aktivace. První pobyt znamená 100 společných XP, deset pobytů 250 XP. Stav rezervace sám neověřuje skutečnou účast hostů.
+            <h3>Dva pohledy na peníze</h3><p>
+              Inkaso sleduje datum platby a refundace v období. Vyúčtování sleduje pobyty podle společného data odjezdu, celé i při přesahu sezóny; úhrady těchto pobytů jsou aktuální k přepočtu a mohou být mimo sezónu. Listopadová záloha 30 000 a lednový doplatek 70 000 znamenají zimní inkaso 70 000, ale vyúčtování lednového pobytu 100 000 a celkem uhrazeno 100 000. Zálohový a daňový doklad nejsou další platba.
+            </p><p>
+              Bar a ubytování ukazujeme odděleně a nesčítáme inkaso s vyúčtováním. Barové inkaso obsahuje aktuálně platné platby, servis je zvlášť; platba může zahrnovat spropitné. Nejde o tržbu za zboží, úplný bankovní audit ani zisk. Chybějící konečné faktury a nehotové rozdělení plátců označujeme jako dílčí podklady, ne nulu. Přeplatek jednoho plátce nesmaže dluh jiného. Smazání rezervace nevymaže její vydané doklady a platby z finanční historie.
+            </p>
+          </section>
+          <section>
+            <h3>Původní kampaně a kvalita podkladů</h3><p>
+              Původní kampaně s pravidly stays_v1 zůstávají beze změny včetně cílů a milníků. Jejich milníky počítají completed pobyty s odjezdem v kampani, před dnešním pražským datem a po dni aktivace. První pobyt znamená 100 společných XP, deset pobytů 250 XP. Stav rezervace sám neověřuje skutečnou účast hostů.
             </p><p>
               Neúplné nebo nekonzistentní podklady označujeme přímo u výsledků. Nedostupná hodnota není nula. Z neúplných podkladů se XP nepřiznávají ani neodebírají. Při opraveném stornu může být milník odvolán s jednorázovou kompenzací. Původní důkaz zůstává v auditu; odvolaný milník se ve stejné kampani znovu neodměňuje.
             </p>
           </section>
           <section>
             <h3>Hra zůstává hrou</h3><p>
-              Herní akce zapisují pouze do vlastních tabulek Adventure. Provozní rezervace se jen čtou při výslovném přepočtu. Hra nemění platby, účetnictví, rezervace ani zásoby a neposílá hostům zprávy. Poznámky nevyplňuj osobními údaji hostů.
+              Herní akce zapisují pouze do vlastních tabulek Adventure. Provozní rezervace, platby a doklady se jen čtou při výslovném přepočtu. Hra nemění platby, účetnictví, rezervace ani zásoby a neposílá hostům zprávy. Poznámky nevyplňuj osobními údaji hostů.
             </p><p>
-              Obchod, finance, kuchyně, provoz, hosté a rekonstrukce jsou zatím další cesta, bez automatických skillů a vykazování úspor.
+              Srovnání sezón, náklady, zisk, rekonstrukce a automatické skilly zůstávají další cestou. Z neúplných podkladů nevykazujeme domnělé úspory.
             </p>
           </section>
         </div>

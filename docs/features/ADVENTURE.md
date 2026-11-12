@@ -247,7 +247,89 @@ odměny a důvod o 10–1000 znacích. Přidá právě jednu zápornou transakci
 na původní odměnu, nepřepisuje ji a neotevře quest k dalšímu získání XP. Není to
 penalizace. Produkční obsluhu oprav lze později zpřístupnit ve chráněném UI.
 
-## Kampaně a provozní metriky
+## Sezónní kronika (`season_v1`)
+
+Nové sezóny v Nastavení používají samostatný režim `season_v1`. Cíle jsou
+volitelné a žádný přepočet, inkaso ani historický pobyt nepřiděluje automatické XP.
+Odměny pocházejí ze skutečných questů. Původní kampaně `stays_v1` a jejich
+historické odměny se nepřevádějí ani nekompenzují.
+
+Stačí název a období v Europe/Prague (oba krajní dny včetně). Kapacita je
+volitelná stálá hodnota; bez ní zůstávají ostatní metriky dostupné, procentní
+obsazenost je **nedostupná**, ne nula. Nová sezóna začíná návrhem. Aktuální či
+budoucí období lze po výslovném potvrzení aktivovat, současně nejvýše jedno.
+Minulé období lze místo aktivace zapsat jako rovnou uzavřenou historickou
+kroniku; neobsadí aktivní místo ani nespustí opakované questy. Zahrnuje celé
+zvolené historické období, i před zapnutím hry.
+
+Tábor zobrazuje šest stručných karet a rozbalovací účetní list. Přednost má
+aktivní sezóna, jinak poslední uzavřená; jinou lze vyhledat a vybrat v kronice.
+Questy zůstávají pouze knihou zadání. V Nastavení jsou návrhy, uzavření a audit
+verzí. Otevření stránky ani přepnutí sezóny nečte provozní zdroje a nepřepočítává
+výsledky; zobrazuje poslední uložený Adventure snapshot.
+
+### Dva peněžní pohledy
+
+| Pohled | Význam |
+| --- | --- |
+| Inkaso baru | Platné nezrušené záznamy `Sales.Payment` podle `payment_date`, bez servisních účtů v hlavní kartě; servis zvlášť v detailu |
+| Inkaso ubytování | `Billing.Payment` podle `paid_on`: přijaté platby minus refundace v období |
+| Vyúčtování pobytů sezóny | Pobyty podle společného data odjezdu rezervace v období; uložený hrubý konečný doklad plus jeho přímé podepsané opravy za všechny plátce |
+| Úhrady pobytů sezóny | Všechny evidované příjmy minus refundace účtů daných pobytů k datu přepočtu, i mimo sezónu |
+
+Inkaso se omezuje koncem sezóny a pražským datem přepočtu. Historické přepočty
+čtou aktuální evidenci s jasným `as_of`, nikoli tehdejší stav databáze. Barová
+platba může zahrnovat spropitné; u částečné úhrady je nelze přesně rozdělit od
+prodeje. Smazaná platba není doklad o refundaci. Servisní příslušnost je aktuální
+označení účtu, nikoli historická klasifikace. Platba nezmizí jen kvůli smazání
+účtu nebo rezervace. Nepoužívají se další kopie pohybů z ABRY.
+
+Listopadová záloha 30 000 CZK a lednový doplatek 70 000 CZK za lednový pobyt
+s konečným vyúčtováním 100 000 CZK znamenají zimní inkaso 70 000 CZK,
+vyúčtování 100 000 CZK a celkem uhrazeno 100 000 CZK. Zálohová výzva,
+daňový doklad přijaté zálohy a odpočet záloh ve snapshotu konečné faktury
+nejsou další platba ani další výnos. Refundace a oprava faktury jsou různé události.
+
+Pobyt přes hranici sezóny se peněžně zařadí celý podle odjezdu, zatímco
+lůžkonoci se rozdělují jednotlivými nocemi. Vydané finanční záznamy se zachovají
+i při pozdějším stornu/smazání rezervace či účtu. Vyúčtování čerpá pouze z vydaných
+konečných dokladů a jejich oprav, ne z mutable kalkulace nebo jejího legacy stavu.
+Zbývá a přeplatek se počítají jednotlivě po plátcích: přeplatek jednoho nesnižuje
+dluh jiného. Detail uvádí i skutečně evidované úhrady plátců bez konečné faktury.
+
+Chybějící konečný doklad není vyúčtování nula. Pokud známé doklady pokrývají jen
+část pobytů, součet je označený jako dílčí; bez konečných dokladů je hodnota
+nedostupná. Samostatně se evidují chybějící účty, nedokončené rozdělení plátců
+a osobní účty, bez odhadování jejich ceny. Inkaso zůstává známým údajem i při
+neúplných dokladech. Každá metrika uchovává zdroj, verzi definice, jednotku,
+období, `as_of` a vlastní stav úplnosti. Snapshoty obsahují jen agregace,
+nikoli údaje hostů. Inkaso, vyúčtování a lůžkonoci se nesčítají; zisk bez úplných
+nákladů se nevykazuje.
+
+### Verze a bezpečnost
+
+Výslovný přepočet ukládá nový neměnný snapshot, číslo verze, vazbu na předchozí
+verzi, aktéra a metadata sezóny. Po uzavření je pro další přepočet povinný důvod.
+Původní výsledky se nepřepisují. Období, kapacita a pravidla po aktivaci či
+historickém zápisu zůstávají neměnné; jiné období znamená novou sezónu.
+Audit ukazuje posledních 20 přepočtů, starší zůstávají uložené v DB.
+
+Přepočet pořizuje všechny zdroje v jednom REPEATABLE READ snapshotu, aby
+souběžná změna pobytu nevytvořila rozporné výsledky. Převzatá transakce musí
+mít REPEATABLE READ nebo SERIALIZABLE; slabší explicitní transakce vrátí
+`:snapshot_isolation_required`. Při konfliktu serializace se vlastní transakce
+opakuje nejvýše třikrát; převzatou transakci opakuje její volající.
+
+Pobytový adaptér a dva nové finanční adaptéry používají dávkové agregace;
+počet dotazů nezávisí na počtu pobytů, plátců, dokladů ani dnů. Platby a opravy
+se agregují před spojením, aby je řádky dokladů nenásobily. Žádné volání balance
+pro každý účet, externí HTTP, provozní zápisy, emaily či účetní hooky. Vypnutý
+Adventure modul blokuje i přepočet. Migrace mění pouze Adventure tabulky.
+
+Srovnání sezón, produktové žebříčky, přesné stáří dluhu po opravách, finanční
+náklady a zisk zůstávají mimo tuto etapu.
+
+## Původní kampaně (`stays_v1`)
 
 Kampaň je společná sezónní výprava chaty: vymezuje sledované období a ukazuje
 postup proti zvoleným cílům. Cíle pobytů, budoucích lůžkonocí a obsazenosti
@@ -256,8 +338,7 @@ za 1 a 10 způsobilých pobytů. Osobní questy fungují nezávisle na kampani.
 Údaje se neobnovují automaticky na pozadí; přepočet vyvolá tlačítko nebo
 uzavření kampaně. Herní kampaň nemění skutečné rezervace či účetnictví.
 
-V **Nastavení a auditu** založ návrh kampaně. Návrh lze upravovat. Výchozí
-zimní období 1. 12. 2026 – 31. 3. 2027 a kapacita 45 jsou pouze návrhy.
+Existující návrhy kampaní lze v **Nastavení a auditu** upravovat.
 Před aktivací vyber profil a výslovně zaškrtni potvrzení období, cílů a kapacity.
 Současně může běžet nejvýše jedna kampaň. Po aktivaci jsou období, kapacita,
 cíle a verze pravidel neměnné. Aktivovat nelze již skončené období.
@@ -319,8 +400,8 @@ Odvolaný milník je pro danou kampaň konečný; další splnění jej znovu ne
 Tím nelze opakovanými změnami pobytu získávat další XP.
 
 Změny definice vyžadují novou verzi pravidel a samostatnou implementaci;
-aktivní kampaň se nikdy tiše nepřevede na jinou definici. Obsazenostní
-achievement, skill tree, finanční metriky a rekonstrukce zůstávají další etapou.
+aktivní kampaň se nikdy tiše nepřevede na jinou definici. Finanční metriky
+jsou pouze v nové kronice `season_v1`; skill tree a rekonstrukce zůstávají další etapou.
 
 ## Ověření
 

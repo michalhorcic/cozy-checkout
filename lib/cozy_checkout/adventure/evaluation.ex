@@ -7,6 +7,10 @@ defmodule CozyCheckout.Adventure.Evaluation do
     belongs_to :actor, CozyCheckout.Adventure.Profile
     field :snapshot, :map
     field :as_of, :utc_datetime_usec
+    field :version, :integer
+    field :correction_reason, :string
+    field :campaign_metadata, :map
+    belongs_to :previous_evaluation, __MODULE__
     timestamps(type: :utc_datetime, updated_at: false)
   end
 end

@@ -1,6 +1,6 @@
 # Cozy Adventure – úkolovník a kronika sezóny
 
-- Stav: etapa 3A a herní rozdělení Tábor/Questy implementovány v PR #113; sezónní etapy 3B/3C navazují
+- Stav: etapa 3A a herní rozdělení Tábor/Questy implementovány v PR #113; etapa 3B implementována v navazující změně, 3C zůstává další etapou
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: správa questů, opakované šablony a sezónní přehled reálného provozu
@@ -475,3 +475,57 @@ Escape zavřel nástěnku a vrátil fokus na „Najít další výpravu“. Port
 barový sklad a po návratu se obnovil Michal i jeho dva obsazené sloty.
 Kniha neobsahovala táborové výpravy a tábor neobsahoval editační formuláře.
 Tato úprava nemá další migraci ani konfiguraci; mění rozhraní a herní čtení.
+
+## 11. Etapa 3B: sezónní kronika (12. 11. 2026)
+
+Pro novou branch a samostatné PR uživatel výslovně schválil celou etapu 3B,
+dávkové read-only agregace provozních tabulek bez N+1 a cílené lokální testy
+Adventure. Povolené změny zahrnují pouze Adventure context, herní komponenty
+a LiveView, Adventure testy, migraci vlastních herních tabulek a Adventure
+dokumentaci. Provozní moduly, sdílené styly/layouty, router a konfigurace jsou
+pouze referencí; rozpracované cizí změny zůstávají nedotčené.
+
+Potvrzená pravidla nové dodávky:
+
+- Nový režim `season_v1` nemá automatické XP. Cíle a kapacita jsou volitelné;
+  bez kapacity je pouze procentní obsazenost nedostupná. Staré `stays_v1`
+  kampaně zachovávají pravidla, UUID, snapshoty a odměny.
+- Historická sezóna se zapíše rovnou jako uzavřená, neobsadí jedno aktivní
+  místo a nespustí opakované questy. Přehled zahrne celé zvolené minulé období.
+- Barová hlavní karta ukazuje platné evidované platby bez servisních účtů;
+  servis a hotovost/QR jsou rozlišené v detailu. Platba může zahrnovat spropitné,
+  nejde o prodej zboží, audit všech bankovních pohybů ani zisk.
+- Inkaso ubytování podle dne platby/refundace je oddělené od vyúčtování
+  pobytů podle společného data odjezdu rezervace. Vydané konečné doklady
+  a jejich přímé podepsané opravy nezmizí s pozdějším stornem/smazáním pobytu.
+  Úhrady daných plátců jsou aktuální k přepočtu, včetně plateb mimo sezónu.
+- Chybějící konečné doklady, účty, nehotové rozdělení plátců a neznámé časové
+  zařazení se přiznávají jako neúplnost, nikoli nula. Osobní účty jsou zvlášť
+  bez odhadu ceny. Dluh a přeplatek se agregují po plátcích, ne vzájemným započtením.
+- Oprava uzavřené kroniky vyžaduje důvod a vytváří novou číslovanou verzi
+  s vazbou na předchozí, aktérem a snapshotem pravidel. Původní výsledek zůstane
+  zachován. Změna období vyžaduje novou sezónu.
+- Tábor má šest stručných metrik, výběr historické sezóny a rozbalovací účetní
+  list; Nastavení spravuje návrhy, uzavírání a audit. Questy se nerozšiřují
+  o další přehled. Render ani přepnutí sezóny neprovádí provozní přepočet.
+
+Nová migrace `20261112140000` se týká pouze Adventure tabulek a chrání
+neměnné číslované snapshoty a uzamčená pravidla. Adaptéry `Adventure.Sources.Bar`
+a `Adventure.Sources.Billing` agregují platby/doklady před spojením, každý
+jedním SQL příkazem. Metadata úplnosti a zdroje jsou samostatná pro každou
+metriku; herní snapshoty neobsahují údaje hostů. Žádné provozní zápisy, HTTP,
+emaily, skladové změny ani účetní synchronizace.
+
+Porovnání, produkty, náklady/zisk, přesné stáří dluhu po opravách a další
+rozšíření 3C nejsou součástí této dodávky. Podrobné definice a omezení jsou
+v [ADVENTURE.md](../features/ADVENTURE.md).
+
+Ověření dodávky: 118 cílených Adventure testů prošlo na izolované PostgreSQL 17
+databázi, včetně migrace, finančních regresí, čistě herních zápisů a souběžné
+změny pobytu mezi zdrojovými agregacemi. Přepočet používá konzistentní
+REPEATABLE READ snapshot, ne několik stavů READ COMMITTED. Prošel projektový
+formatter, kompilace s `--warnings-as-errors` a sestavení assetů. V Chrome
+byl proklikán historický zápis, oprava do nové verze a Tábor na šířkách
+1440/390/320 px, bez horizontálního přesahu a JS výjimek. Použit Elixir 1.20.4;
+lokální Erlang je 29.1.2, nikoli přesně připnutý 29.1. Celá testovací sada
+nebyla spouštěna; výsledky GitHub CI ověří uživatel.
