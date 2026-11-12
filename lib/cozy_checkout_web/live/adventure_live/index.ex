@@ -7,6 +7,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   import CozyCheckoutWeb.AdventureLive.TemplateComponents
   import CozyCheckoutWeb.AdventureLive.TaskComponents
   import CozyCheckoutWeb.AdventureLive.GameComponents
+  import CozyCheckoutWeb.AdventureLive.OperationComponents
 
   @impl true
   def mount(params, _, socket) do
@@ -22,7 +23,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          page_title: "Cozy Adventure",
          selected_profile_id: nil,
          completing: nil,
-         profile_storage_available: nil
+         profile_storage_available: nil,
+         operation: nil,
+         operation_checked_at: DateTime.utc_now(),
+         operation_state: :loading,
+         operation_area: "reception"
        )
        |> assign(
          finding: false,
@@ -39,20 +44,60 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
        )
        |> new_template()
        |> new_campaign()
-       |> load(), layout: {CozyCheckoutWeb.AdventureLive.GameComponents, :shell}}
+       |> load()
+       |> schedule_operation(), layout: {CozyCheckoutWeb.AdventureLive.GameComponents, :shell}}
     else
       {:ok, redirect(socket, to: ~p"/admin")}
     end
   end
 
+  defp schedule_operation(socket) do
+    if connected?(socket) and socket.assigns.live_action == :index,
+      do: send(self(), :load_operation)
+
+    socket
+  end
+
+  @impl true
+  def handle_info(:load_operation, socket) do
+    socket = assign(socket, operation_checked_at: DateTime.utc_now())
+
+    if Adventure.enabled?() do
+      case CozyCheckout.Adventure.Sources.Operation.load() do
+        {:ok, snapshot} ->
+          {:noreply, assign(socket, operation: snapshot, operation_state: :ready)}
+
+        {:error, _} ->
+          {:noreply, assign(socket, operation_state: :error)}
+      end
+    else
+      {:noreply, redirect(socket, to: ~p"/admin")}
+    end
+  end
+
   @impl true
   def handle_event(event, params, socket) do
+    socket = assign(socket, operation_checked_at: DateTime.utc_now())
+
     if Adventure.enabled?() do
       handle_game_event(event, params, socket)
     else
       {:noreply, redirect(socket, to: ~p"/admin")}
     end
   end
+
+  defp handle_game_event("refresh-operation", _, socket) do
+    if socket.assigns.operation_state == :loading do
+      {:noreply, socket}
+    else
+      send(self(), :load_operation)
+      {:noreply, assign(socket, operation_state: :loading)}
+    end
+  end
+
+  defp handle_game_event("operation-area", %{"area" => area}, socket)
+       when area in ["reception", "rooms", "kitchen", "bar", "treasury", "workshop"],
+       do: {:noreply, assign(socket, operation_area: area)}
 
   defp handle_game_event("manage-section", %{"section" => section}, socket)
        when section in ["tasks", "templates", "history"] do
@@ -691,6 +736,13 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             campaign_open={@template_campaign_open}
             editor_open={@template_editor_open}
           />
+          <.operation_world
+            :if={@live_action == :index}
+            snapshot={@operation}
+            checked_at={@operation_checked_at}
+            state={@operation_state}
+            area={@operation_area}
+          />
           <div :if={@live_action == :index} class="adventure-camp-grid">
             <div class="adventure-quests-column">
               <.expeditions quests={@data.quests} profile={@data.profile} />
@@ -710,7 +762,6 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
               /></.link>
             </div>
             <aside class="adventure-camp-aside">
-              <.world_map />
               <.campaigns
                 game={@game}
                 definitions={Campaigns.achievements()}

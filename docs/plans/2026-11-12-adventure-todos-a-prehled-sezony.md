@@ -1,6 +1,6 @@
 # Cozy Adventure – provoz a budování chaty
 
-- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, spolehlivější zapamatování hrdiny v PR #116; další směr je budovatelská strategie podle oddílu 12, zatím pouze plán
+- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, zapamatování hrdiny v PR #116; schválená 4A implementovaná v pracovní větvi, ověření a hranice v oddílu 13; 4B/4C zůstávají návrhy
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: herní rozhraní nad provozem aplikace, správa questů, rozvoj chaty investičními projekty a kronika skutečných výsledků
@@ -36,8 +36,8 @@ Uživatel potvrdil:
   Adventure zapisuje jen vlastní herní a plánovací stav.
 
 Další návrhy v tomto dokumentu jsou doporučený rozsah, nikoli už nasazené chování.
-Historický souhlas s implementací se týkal dokončených etap 3A/3B, nikoli
-nových návrhů 4A–4C; ty vyžadují vlastní potvrzení rozsahu před kódem.
+Historický souhlas s implementací se týkal dokončených etap 3A/3B. Nový souhlas
+pro omezenou 4A a její dodávku zaznamenává oddíl 13; návrhy 4B/4C nejsou schválené.
 
 > **Aktuální směr (12. 11. 2026 odpoledne):** Tábor je provozovaná a postupně
 > vylepšovaná chata, nikoli jen seznam úkolů a odkazů. Oddíl 12 rozpracovává
@@ -566,10 +566,9 @@ rozhraní nad celou aplikací, vidět ve hře část současného Přehledu a za
 investiční akce do questů. Provoz je pouze ke čtení; všechny skutečné změny
 zůstávají ve stávajících funkcích. To je potvrzený směr této aktualizace.
 
-Následující mapa, projekty s etapami, vizuální odemykání a pořadí 4A–4C jsou
-doporučený návrh, nikoli již schválený detail implementace. Otázky o podobě mapy,
-hloubce projektů a prioritních datech zůstaly bez odpovědi; nevyvozovat z toho
-souhlas. Teď se mění pouze tento plán, žádné herní ani provozní chování.
+Mapa a omezený provozní rozsah 4A byly následně výslovně schválené a implementované
+podle oddílu 13. Projekty s etapami, vizuální odemykání a ostatní rozšíření 4B/4C
+zůstávají doporučením, nikoli součástí této dodávky nebo schválením dalšího kódu.
 
 Implementační základ: 3A/3B jsou hotové v PR #113/#115. Oprava preference
 hrdiny `76ab72b` byla sloučena v PR #116: localStorage s cookie zálohou,
@@ -835,12 +834,47 @@ Akceptace pro nové dodávky:
 - Ověřit původní role Tábora/Questů, admin PIN, obnovu profilu, 390/320 px
   a přístupnost. Testy a CI podle AGENTS.md; plán sám nové testy nenahrazuje.
 
-## 13. Předání do dalšího vlákna
+## 13. Dodaná etapa 4A a předání (12. 11. 2026)
+
+Uživatel výslovně schválil 2D mapu se živým provozem a jediný sdílený read-only
+`Dashboard.overview(today Prague)` s rozpočtem nejvýše 15 SELECTů na připojení
+Tábora a ruční obnovu. Zdrojový audit: timeline 4, kuchyň 8, obsazenost 1,
+porce 2, konstantní kapacita 0; žádné N+1, polling ani zdrojové dotazy z renderu,
+výběru oblasti či běžných UI událostí. Schválení zahrnuje opětovné použití
+tohoto omezeného dávkového zdroje, nikoli nové skladové/ekonomické adaptéry.
+
+Implementováno ve větvi `feat/adventure-live-camp`, bez commitu/pushe:
+
+- Šest oblastí ve 2D scéně, na mobilu stejná tlačítka jako seznam, ovládání
+  klávesnicí a detail oblasti se skutečnými provozními odkazy.
+- Recepce/Pokoje: příjezdy/odjezdy skupin a kalendářová obsazenost. Kuchyně:
+  známé porce a neúplnost; stručná služba dne s datovanými podněty menu/podkladů.
+- Jedna projekce pouze v socketu bez hostovských osobních údajů; načítání,
+  chyba, stáří a ruční obnova. Pražský den bez SQL podle současných EU pravidel
+  DST; čas načtení UTC. Zdroje mají konzistenci jednotlivých SELECTů, nikoli
+  společný transakční snapshot. Podrobné limity jsou v `ADVENTURE.md`.
+- Bar/Pokladnice pouze odkazy a stávající sezónní kronika, výslovně ne živé
+  finance; provozní obnova kroniku nepřepočítává. Dílna bez projektového systému.
+- Zachované tři osobní sloty, společná práce, kronika, preference hrdiny,
+  admin PIN a flag. Žádné automatické questy, XP za prohlížení ani provozní zápisy.
+
+Přidány regresní scénáře datové sémantiky, malého/velkého query rozpočtu,
+obnovy a její absence při UI akcích, navigace, flagu a stavů. Existující
+regrese PINu a profilu zůstávají. **Lokální testy nebyly spuštěny**, CI ověří
+uživatel. Prošly formatter změněných Elixir souborů, kompilace s warnings-as-errors
+a build assetů. Použit Elixir 1.20.5 / Erlang 29.1.2 (ERTS 17.1.1), odlišný od pinů
+1.20.4-otp-29 / 29.1; formatter není potvrzený na připnutém toolchainu.
+Browserové ověření 390/320 px, klávesnice a asistivních technologií zbývá.
+Žádné migrace ani konfigurace; cizí `rel/env.sh.eex` a `generated_images/`
+zůstávají nedotčené. Úplný seznam změn a validační limity předává finální výsledek.
+
+### Historický předávací checklist před schválením 4A
 
 Přečíst tento plán (hlavně oddíl 12), `docs/features/ADVENTURE.md` a aktuální
 `AGENTS.md`. Ověřit čerstvý main; 3A/3B a preference hrdiny jsou již implementované,
 nezačínat je znovu. Staré formulace „rekonstrukce později“ nezaměňovat za zákaz
-projektů podle nového směru. Současné zadání je plánovací, nespouští etapu 4A.
+projektů podle nového směru. Následující otázky jsou historické; schválená 4A
+je vymezená výše, otázky k projektům vyžadují nové rozhodnutí.
 
 Před implementací krátce potvrdit:
 

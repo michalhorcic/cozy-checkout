@@ -33,6 +33,185 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     end
   end
 
+  test "operational map shares one mount snapshot and refreshes only explicitly", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    table = :ets.new(:operation_source_queries, [:public, :ordered_set])
+    handler = {__MODULE__, make_ref()}
+
+    :ok =
+      :telemetry.attach(
+        handler,
+        [:cozy_checkout, :repo, :query],
+        &__MODULE__.operation_query/4,
+        table
+      )
+
+    try do
+      assert get(conn, "/admin/adventure").status == 200
+      assert :ets.info(table, :size) == 0
+      {:ok, view, _} = live(conn, "/admin/adventure")
+      assert has_element?(view, "#adventure-operation-status", "Bez automatické obnovy")
+      initial = :ets.info(table, :size)
+      assert initial > 0
+      assert initial <= 15
+
+      for area <- ["rooms", "kitchen", "bar", "treasury", "workshop", "reception"] do
+        view |> element("#adventure-area-#{area}") |> render_click()
+        assert has_element?(view, "#adventure-area-#{area}[aria-pressed=true]")
+      end
+
+      assert render(view) =~ "Kalendář, ne hlášení přítomnosti"
+      render_click(view, "restore-profile", %{"id" => Repo.get_by!(Profile, slug: "michal").id})
+      render_click(view, "picker-filter", %{"scope" => "all"})
+      assert :ets.info(table, :size) == initial
+      assert has_element?(view, "#adventure-area-detail a[href='/admin/bookings/calendar']")
+
+      view |> element("#adventure-operation-refresh") |> render_click()
+      assert has_element?(view, "#adventure-operation-status", "Bez automatické obnovy")
+      assert :ets.info(table, :size) == 2 * initial
+      assert Repo.aggregate(XpTransaction, :count) == 0
+
+      before_disable = :ets.info(table, :size)
+      Application.put_env(:cozy_checkout, :adventure_enabled, false)
+      render_click(view, "refresh-operation")
+      assert_redirect(view, "/admin")
+      assert :ets.info(table, :size) == before_disable
+    after
+      :telemetry.detach(handler)
+      :ets.delete(table)
+    end
+  end
+
+  test "map details link to real tools and finance stays explicitly seasonal", %{conn: conn} do
+    {:ok, view, _} = live(conn, "/admin/adventure")
+
+    for {area, href} <- [
+          {"kitchen", "/admin/meal-planner"},
+          {"bar", "/admin/bar-stock"},
+          {"treasury", "/admin/billing"},
+          {"workshop", "/admin/adventure/quests"}
+        ] do
+      render_click(view, "operation-area", %{"area" => area})
+      assert has_element?(view, "#adventure-area-detail a[href='#{href}']")
+    end
+
+    render_click(view, "operation-area", %{"area" => "bar"})
+    assert has_element?(view, "#adventure-area-detail", "Obnova provozu je nepřepočítává")
+    assert has_element?(view, "#adventure-area-detail a[href='#adventure-shared']")
+    {:ok, book, _} = live(conn, "/admin/adventure/quests")
+    refute has_element?(book, "#adventure-world-map")
+  end
+
+  def operation_query(_, _, metadata, table) do
+    if Regex.match?(
+         ~r/\b(?:FROM|JOIN)\s+"(?:bookings|guests|rooms|booking_rooms|booking_menus|booking_menu_items|recipes|booking_menu_item_supplements)"/,
+         metadata.query
+       ) do
+      :ets.insert(table, {System.unique_integer([:monotonic]), metadata.query})
+    end
+  end
+
+  test "manual refresh replaces the retained operation without making quests or rewards", %{
+    conn: conn
+  } do
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    assert has_element?(view, "#adventure-area-reception", "0 příjezdů")
+    today = CozyCheckout.Adventure.Sources.Operation.today()
+
+    booking =
+      CozyCheckout.AdventureFixtures.adventure_booking(%{
+        status: "upcoming",
+        check_in_date: today,
+        check_out_date: Date.add(today, 2),
+        meal_plan: nil
+      })
+
+    render_click(view, "operation-area", %{"area" => "kitchen"})
+    assert has_element?(view, "#adventure-area-reception", "0 příjezdů")
+    view |> element("#adventure-operation-refresh") |> render_click()
+    assert has_element?(view, "#adventure-area-reception", "1 příjezdů")
+    assert has_element?(view, "#adventure-area-detail", "Neúplné podklady")
+    assert has_element?(view, "#adventure-service-day a[href='/admin/bookings/#{booking.id}']")
+    refute render(view) =~ "Soukromé jméno hosta"
+    assert Repo.aggregate(Quest, :count) == 0
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "operation exposes loading, unavailable and stale states without false zero claims" do
+    component = &CozyCheckoutWeb.AdventureLive.OperationComponents.operation_world/1
+    checked_at = DateTime.utc_now()
+
+    loading =
+      render_component(component,
+        snapshot: nil,
+        checked_at: checked_at,
+        state: :loading,
+        area: "kitchen"
+      )
+
+    assert loading =~ "Načítám společný provozní přehled"
+    assert loading =~ "Neznámý stav není nula"
+
+    failed =
+      render_component(component,
+        snapshot: nil,
+        checked_at: checked_at,
+        state: :error,
+        area: "reception"
+      )
+
+    assert failed =~ "Provoz se nepodařilo načíst"
+    refute failed =~ "0 /"
+    {:ok, snapshot} = CozyCheckout.Adventure.Sources.Operation.load()
+    snapshot = %{snapshot | loaded_at: DateTime.add(checked_at, -901)}
+
+    stale =
+      render_component(component,
+        snapshot: snapshot,
+        checked_at: checked_at,
+        state: :ready,
+        area: "kitchen"
+      )
+
+    assert stale =~ "Starší údaje, obnov přehled"
+
+    retained =
+      render_component(component,
+        snapshot: snapshot,
+        checked_at: checked_at,
+        state: :error,
+        area: "reception"
+      )
+
+    assert retained =~ "Poslední dostupné údaje níže nejsou čerstvé"
+  end
+
+  test "unrelated event updates freshness even when the operation inputs otherwise stay unchanged",
+       %{conn: conn} do
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    assert has_element?(view, "#adventure-operation-status", "Bez automatické obnovy")
+    refute has_element?(view, "#adventure-operation-status strong", "Starší údaje")
+
+    # Simulate time passing without marking the operation assign as changed.
+    :sys.replace_state(view.pid, fn state ->
+      snapshot = %{
+        state.socket.assigns.operation
+        | loaded_at: DateTime.add(DateTime.utc_now(), -901)
+      }
+
+      socket = %{state.socket | assigns: %{state.socket.assigns | operation: snapshot}}
+      %{state | socket: socket}
+    end)
+
+    aged_snapshot = :sys.get_state(view.pid).socket.assigns.operation
+    previous_check = :sys.get_state(view.pid).socket.assigns.operation_checked_at
+    render_click(view, "close-picker")
+    assert has_element?(view, "#adventure-operation-status strong", "Starší údaje, obnov přehled")
+    assigns = :sys.get_state(view.pid).socket.assigns
+    assert assigns.operation == aged_snapshot
+    assert DateTime.compare(assigns.operation_checked_at, previous_check) == :gt
+  end
+
   test "disabled routes redirect and navigation hides the game", %{conn: conn} do
     Application.put_env(:cozy_checkout, :adventure_enabled, false)
 
@@ -303,9 +482,16 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert has_element?(camp, "#adventure-game-layout")
     refute has_element?(camp, "#admin-sidebar")
     assert has_element?(camp, "#adventure-world-map a[href='/admin/bookings/calendar']")
-    assert has_element?(camp, "#adventure-world-map a[href='/admin/meal-planner']")
-    assert has_element?(camp, "#adventure-world-map a[href='/admin/bar-stock']")
-    assert has_element?(camp, "#adventure-world-map a[href='/admin/billing']")
+
+    for {area, path} <- [
+          {"kitchen", "/admin/meal-planner"},
+          {"bar", "/admin/bar-stock"},
+          {"treasury", "/admin/billing"}
+        ] do
+      render_click(camp, "operation-area", %{"area" => area})
+      assert has_element?(camp, "#adventure-world-map a[href='#{path}']")
+    end
+
     assert has_element?(camp, "#adventure-shared-expeditions")
     refute has_element?(camp, "#activate-improvement")
     assert Repo.aggregate(Quest, :count) == 0
