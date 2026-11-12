@@ -62,7 +62,8 @@ defmodule CozyCheckoutWeb.AdventureBarStockLiveTest do
     assert has_element?(view, "#adventure-bar-stock", "Chybí evidence")
     assert :atomics.get(counter, 1) == 1
     view |> element("#adventure-bar-refresh") |> render_click()
-    assert has_element?(view, "#adventure-bar-stock", "5 pcs")
+    # Stock movements are numeric(12, 3); the shared formatter preserves that scale.
+    assert has_element?(view, "#adventure-bar-stock ul li span", "5.000 pcs")
     refute has_element?(view, "#adventure-bar-stock", "Chybí evidence")
     assert has_element?(view, "#adventure-bar-stock a[href='/admin/bar-stock']")
     assert :atomics.get(counter, 1) == 2

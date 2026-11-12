@@ -17,7 +17,7 @@ defmodule CozyCheckout.Adventure.BarStockTest do
     product("Empty", [2, -2], "pcs", 2)
     product("Negative", [-1], "pcs", 0)
     product("At limit", [1000, 1000], "ml", 2)
-    product("Above", [3000], "cl", 2)
+    product("Above", [3000], "L", 2)
     product("No limit", [4], "pcs", 0)
     hidden = product("Deleted", [1], "pcs", 2)
 
@@ -49,6 +49,8 @@ defmodule CozyCheckout.Adventure.BarStockTest do
       assert Decimal.equal?(products["At limit"].stock, 2)
       assert products["At limit"].unit == "L"
       assert products["Above"].status == :in_stock
+      assert Decimal.equal?(products["Above"].stock, 3)
+      assert products["Above"].unit == "L"
       assert products["No limit"].status == :no_limit
       assert products["No limit"].threshold == nil
 
