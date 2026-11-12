@@ -1,0 +1,275 @@
+defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
+  use CozyCheckoutWeb, :html
+  import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
+  import CozyCheckoutWeb.AdventureLive.TaskComponents, only: [profile_name: 2]
+  alias CozyCheckout.Adventure.Quest
+
+  attr :templates, :list, required: true
+  attr :history, :list, required: true
+  attr :profiles, :list, required: true
+  attr :profile, :any, required: true
+  attr :form, :any, required: true
+  attr :editing_id, :any, required: true
+  attr :campaign_options, :list, required: true
+  attr :campaign_query, :any, default: nil
+  attr :campaign_open, :boolean, default: false
+  attr :panel_open, :boolean, default: false
+  attr :editor_open, :boolean, default: false
+
+  def templates(assigns) do
+    ~H"""
+    <details id="adventure-templates" open={@panel_open} class="adventure-panel p-4 sm:p-6 mb-6">
+      <summary phx-click="toggle-template-panel" class="font-bold">Opakované šablony</summary>
+      <p class="adventure-muted my-3">
+        Jedna otevřená práce, i když uteče několik termínů. Nové šablony začínají pozastavené.
+      </p>
+      <div :if={@profile} class="flex flex-wrap gap-3 mb-4">
+        <button phx-click="generate-tasks" class="adventure-button adventure-button--primary">Obnovit opakované úkoly</button>
+        <button phx-click="example-templates" class="adventure-button">Přidat 7 doporučených šablon</button>
+      </div>
+      <details
+        :if={@profile}
+        id="adventure-template-editor"
+        open={@editor_open}
+        class="my-4"
+      >
+        <summary phx-click="toggle-template-editor">
+          {if @editing_id, do: "Upravit šablonu", else: "Nová opakovaná šablona"}
+        </summary>
+        <.form
+          for={@form}
+          id="adventure-template-form"
+          phx-change="template-change"
+          phx-submit="save-template"
+          class="grid gap-3 sm:grid-cols-2 mt-4"
+        >
+          <.input field={@form[:title]} label="Název šablony" required maxlength="200" />
+          <.input
+            field={@form[:cadence]}
+            type="select"
+            label="Opakování"
+            options={[{"Denně", "daily"}, {"Týdně", "weekly"}, {"Jednou (původní katalog)", "once"}]}
+          />
+          <fieldset :if={@form[:cadence].value == "weekly"} class="sm:col-span-2">
+            <legend>Dny v týdnu</legend>
+            <input type="hidden" name="template[weekdays][]" value="" />
+            <label
+              :for={{label, day} <- Enum.with_index(["Po", "Út", "St", "Čt", "Pá", "So", "Ne"], 1)}
+              class="inline-flex items-center gap-1 mr-3 my-2"
+            >
+              <input
+                type="checkbox"
+                name="template[weekdays][]"
+                value={day}
+                checked={to_string(day) in Enum.map(@form[:weekdays].value || [], &to_string/1)}
+                class="checkbox checkbox-sm"
+              />{label}
+            </label>
+            <p :for={error <- @form[:weekdays].errors} class="text-error">{translate_error(error)}</p>
+          </fieldset>
+          <.input field={@form[:starts_on]} type="date" label="Platí od" required />
+          <.input
+            field={@form[:applicability]}
+            type="select"
+            label="Působnost"
+            options={[
+              {"Vždy", "always"},
+              {"Během vybrané kampaně", "campaign"},
+              {"Jen když jsou hosté", "guests"}
+            ]}
+          />
+          <.searchable_picker
+            :if={@form[:applicability].value == "campaign"}
+            field={@form[:campaign_id]}
+            options={@campaign_options}
+            label="Kampaň"
+            index="campaign"
+            query={@campaign_query}
+            open={@campaign_open}
+            search_name="template_campaign_query"
+            search_event="template-campaign-search"
+            open_event="template-campaign-open"
+            close_event="template-campaign-close"
+            select_event="template-campaign-select"
+          />
+          <.input
+            field={@form[:scope]}
+            type="select"
+            label="Odměna pro"
+            options={[{"Splnitele", "personal"}, {"Společnou chatu", "shared"}]}
+          />
+          <.input
+            field={@form[:assigned_profile_id]}
+            type="select"
+            label="Výchozí přiřazení osobního úkolu"
+            prompt="Volný úkol"
+            options={Enum.map(@profiles, &{&1.display_name, &1.id})}
+          />
+          <.input
+            field={@form[:size]}
+            type="select"
+            label="Velikost"
+            options={[
+              {"Malý · 50 XP", "small"},
+              {"Střední · 100 XP", "medium"},
+              {"Velký · 250 XP", "large"}
+            ]}
+          />
+          <.input field={@form[:xp]} type="number" label="XP" min="1" max="10000" />
+          <.input
+            field={@form[:category]}
+            type="select"
+            label="Kategorie"
+            options={Quest.categories()}
+          />
+          <.input
+            field={@form[:priority]}
+            type="select"
+            label="Priorita"
+            options={[{"Nízká", "low"}, {"Běžná", "normal"}, {"Vysoká", "high"}]}
+          />
+          <div class="sm:col-span-2">
+            <.input field={@form[:description]} type="textarea" label="Popis" maxlength="5000" />
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button type="submit" class="adventure-button adventure-button--primary">Uložit šablonu</button><button
+              :if={@editing_id}
+              type="button"
+              phx-click="new-template"
+              class="adventure-button"
+            >Nová šablona</button>
+          </div>
+        </.form>
+      </details>
+      <article
+        :for={template <- @templates}
+        id={"template-#{template.id}"}
+        class="border-t border-base-300 py-4 space-y-2 break-words"
+      >
+        <h3 class="font-bold">{template.title}</h3>
+        <p class="text-sm">
+          {status_label(template.status)} · {cadence_label(template.cadence)} · {if template.scope ==
+                                                                                      "shared",
+                                                                                    do:
+                                                                                      "Společná chata",
+                                                                                    else:
+                                                                                      profile_name(
+                                                                                        @profiles,
+                                                                                        template.assigned_profile_id
+                                                                                      )} · {template.xp} XP · verze {template.version}
+        </p>
+        <p class="text-sm">
+          {applicability_label(template.applicability)} · od {Calendar.strftime(
+            template.starts_on,
+            "%d. %m. %Y"
+          )}
+        </p>
+        <p :if={template.cadence == "weekly"} class="text-sm">
+          Dny: {Enum.map_join(
+            template.weekdays,
+            ", ",
+            &Enum.at(["Po", "Út", "St", "Čt", "Pá", "So", "Ne"], &1 - 1)
+          )}
+        </p>
+        <p :if={template.next_due_on && template.status == "active"} class="text-sm">
+          Další plánovaný termín: {Calendar.strftime(template.next_due_on, "%d. %m. %Y")}
+        </p>
+        <p :if={template.last_check["state"]} class="text-sm">
+          Kontrola {template.last_check["day"]}: {check_label(template.last_check["state"])}
+        </p>
+        <p :if={template.last_check["result"]} class="text-sm">
+          {result_label(template.last_check["result"])}
+        </p>
+        <p :if={template.last_check["state"] == "unknown"} class="text-sm">
+          Podmínku nelze ověřit. Potřebnou práci můžeš přidat jako vlastní jednorázový úkol.
+        </p>
+        <button
+          :if={@profile && template.status != "archived"}
+          phx-click="edit-template"
+          phx-value-id={template.id}
+          class="adventure-button"
+        >Upravit šablonu</button>
+        <.form
+          :if={@profile && template.status != "archived"}
+          for={%{}}
+          id={"template-status-#{template.id}"}
+          phx-submit="template-status"
+          class="grid gap-2 sm:grid-cols-3"
+        >
+          <input type="hidden" name="template_id" value={template.id} />
+          <.input
+            name="state[status]"
+            value=""
+            type="select"
+            label="Změnit provoz šablony"
+            prompt="Vyber akci"
+            required
+            options={[
+              {"Spustit / obnovit", "active"},
+              {"Pozastavit", "paused"},
+              {"Archivovat šablonu", "archived"}
+            ]}
+          />
+          <.input
+            name="state[open_choice]"
+            value=""
+            type="select"
+            label="Otevřený úkol"
+            prompt="Výslovně vyber"
+            required
+            options={[{"Ponechat (také při obnovení)", "keep"}, {"Zrušit a archivovat", "cancel"}]}
+          />
+          <button type="submit" class="adventure-button self-end">Použít změnu</button>
+        </.form>
+      </article>
+      <details :if={@history != []} class="mt-4">
+        <summary>Historie změn šablon (posledních 50)</summary>
+        <p :for={version <- @history} class="text-sm py-2 border-t border-base-300">
+          {version.definition["title"]} · verze {version.version} · {if version.actor_id,
+            do: profile_name(@profiles, version.actor_id),
+            else: "Systém"} · {Calendar.strftime(
+            version.inserted_at,
+            "%d. %m. %Y %H:%M"
+          )} UTC
+        </p>
+      </details>
+    </details>
+    """
+  end
+
+  defp result_label(value),
+    do:
+      %{
+        "created" => "Nový úkol připraven.",
+        "rolled" => "Otevřený úkol zachován, termín zkontrolován.",
+        "already_recorded" => "Původní termín už je uzavřený.",
+        "already_closed" =>
+          "Práce už byla tento den uzavřena; další výskyt až v příštím termínu.",
+        "already_generated" => "Tento termín už má evidovaný výskyt.",
+        "skipped" => "V tomto termínu nevznikl nový úkol."
+      }[value] || value
+
+  defp status_label(status),
+    do: %{"paused" => "Pozastaveno", "active" => "Spuštěno", "archived" => "Archivováno"}[status]
+
+  defp cadence_label(cadence),
+    do: %{"daily" => "Denně", "weekly" => "Týdně", "once" => "Jednou"}[cadence]
+
+  defp applicability_label(value),
+    do:
+      %{
+        "always" => "Vždy",
+        "campaign" => "V období vybrané aktivní kampaně",
+        "guests" => "Jen když jsou hosté"
+      }[value]
+
+  defp check_label(value),
+    do:
+      %{
+        "eligible" => "Podmínka splněna",
+        "present" => "Hosté přítomni",
+        "empty" => "Bez hostů",
+        "unknown" => "Přítomnost hostů neznámá",
+        "outside_campaign" => "Mimo vybranou aktivní kampaň"
+      }[value] || value
+end

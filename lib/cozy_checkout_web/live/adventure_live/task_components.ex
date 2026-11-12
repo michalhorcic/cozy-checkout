@@ -151,6 +151,16 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
         <p :if={task.due_on} class="text-sm">
           Termín: {Calendar.strftime(task.due_on, "%d. %m. %Y")}
         </p>
+        <details :if={task.first_due_on} class="text-sm">
+          <summary>
+            Opakovaný úkol · původní termín {Calendar.strftime(task.first_due_on, "%d. %m. %Y")}
+          </summary>
+          <p :for={shift <- task.schedule_history["shifts"] || []}>
+            Posun {due_label(shift["from"])} → {due_label(shift["to"])} (zapsáno {recorded_label(
+              shift["observed_at"]
+            )} UTC)
+          </p>
+        </details>
         <p :if={task.description != ""} class="whitespace-pre-wrap">{task.description}</p>
         <p :if={task.status == "completed"} class="text-sm">
           Splnil/a {profile_name(@profiles, task.evidence["actor_profile_id"])} · {Calendar.strftime(
@@ -176,7 +186,7 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
             class="adventure-button"
           >{if task.scope == "shared", do: "Rozpracovat", else: "Převzít a rozpracovat"}</button>
           <button
-            :if={task.status == "waiting"}
+            :if={task.status == "waiting" && !task.template_id}
             phx-click="edit-task"
             phx-value-id={task.id}
             class="adventure-button"
@@ -208,6 +218,20 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
     case Enum.find(profiles, &(&1.id == id)) do
       nil -> "Neaktivní hrdina"
       profile -> profile.display_name
+    end
+  end
+
+  defp due_label(value) do
+    case Date.from_iso8601(value) do
+      {:ok, day} -> Calendar.strftime(day, "%d. %m. %Y")
+      _ -> value
+    end
+  end
+
+  defp recorded_label(value) do
+    case DateTime.from_iso8601(value) do
+      {:ok, at, _} -> Calendar.strftime(at, "%d. %m. %Y %H:%M")
+      _ -> value
     end
   end
 

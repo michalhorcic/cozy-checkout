@@ -1,6 +1,6 @@
 # Cozy Adventure – úkolovník a kronika sezóny
 
-- Stav: první část etapy 3A implementována ve feature větvi; opakování a etapy 3B/3C čekají
+- Stav: etapa 3A implementována v PR #113; etapy 3B/3C čekají na další práci a CI ověřuje uživatel
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: správa questů, opakované šablony a sezónní přehled reálného provozu
@@ -303,9 +303,66 @@ proklikán přechod založení → rozpracování → dokončení jiným splnite
 přispěvateli (+250 pouze chatě), editace i archivace. Šířky 390/320 px
 neměly vodorovný přesah. Souběhové ExUnit scénáře zůstávají pro CI.
 
-Zbývá z etapy 3A: spravované denní/týdenní šablony, kontinuita původních
-čtyř definic při převodu na šablony, působnost, generování bez hromadění,
-pozastavení a historie termínů. Nové sezónní režimy a finanční adaptéry
-(etapa 3B) zůstávají beze změn. Před jejich implementací je třeba dle
-AGENTS.md schválit nové dávkové čtení provozních zdrojů. Dosavadní kampaně
-a jejich milníky se touto dodávkou nemění.
+Tato první dodávka byla následně ve stejném PR doplněna o opakování níže.
+Nové sezónní režimy a finanční adaptéry (etapa 3B) zůstávají další prací.
+Před jejich implementací je třeba dle AGENTS.md schválit nové dávkové čtení
+provozních zdrojů; souhlas pro působnost podle hostů se týká jen adaptéru
+`Adventure.Sources.Guests`. Dosavadní kampaně a jejich milníky se nemění.
+
+## 9. Dokončení etapy 3A ve stejném PR #113 (12. 11. 2026)
+
+Uživatel výslovně zadal další krok ve stejném PR a schválil jeden dávkový
+SELECT nad rezervacemi pro všechny splatné hostovské šablony dohromady.
+Implementováno:
+
+- Správa denních/týdenních šablon, dny týdne, výchozí přiřazení, velikost/XP,
+  popis, kategorie, priorita a působnost. Nová šablona je pozastavená;
+  sedm doporučených příkladů lze založit opakovatelnou akcí bez duplikací.
+- Verzování každé editace i stavové změny, audit aktéra a snapshot budoucího
+  výskytu. Otevřenému zůstává zadání i odměna, posouvá se jen termín.
+- Jeden otevřený výskyt vynucený partial unique indexem, unikátní klíč termínu,
+  template/quest locks a `SKIP LOCKED` při generování. První termín a historie
+  posunů jsou viditelné; dokončení ani XP nevznikají automaticky.
+- Hodinový Oban worker ve frontě `adventure` a ruční obnova sdílejí stejný
+  přepočet podle místních dnů Europe/Prague. Vypnutý modul blokuje i SQL dotazy
+  workeru. Samotný render negeneruje práci. Oban používá infrastrukturní
+  tabulky jobů; doménové zápisy zůstávají pouze v Adventure.
+- Pozastavení/archivace vyžadují výslovné rozhodnutí ponechat, nebo zrušit
+  otevřenou práci. Ponechanou lze dokončit později. Nový výskyt se negeneruje
+  za místní den, kdy byla předchozí práce dokončena/zrušena.
+- Působnost vždy / vybraná aktivní kampaň v období / prokazatelně přítomní
+  hosté. Hostovský adaptér má jeden agregovaný SELECT za celý přepočet,
+  nemění statusy a neukládá údaje hostů. Neznámé podklady nejsou prázdná chata.
+  Dnešní neověřená či prázdná podmínka se během dne znovu kontroluje;
+  minulá přítomnost se zpětně nedomýšlí a otevřené úkoly se odjezdem neuzavřou.
+- Migrace `20261112130000` zakládá původní čtyři definice jako pozastavené
+  šablony na hrdinu. Nezmění legacy UUID, snapshoty, vlastnictví ani odměny;
+  generování převezme otevřenou instanci a respektuje již uzavřený týden.
+  Původní frekvence a jeden týdenní den zůstávají u těchto definic omezené
+  kvůli kontinuitě period keys; pro novou frekvenci se zakládá nová šablona.
+  Změna příjemce nepředefinuje historické `profile_id`.
+
+Podrobný návod, definice přítomnosti a omezení jsou v
+[ADVENTURE.md](../features/ADVENTURE.md). Přidané ExUnit/LiveView scénáře
+pokrývají sedm zmeškaných dnů, DST a přelom roku, verze, další termín po
+skutečném splnění, působnost a její neznámé údaje, explicitní pozastavení,
+legacy kontinuitu, souběhy a zápisy pouze do Adventure. Lokální ExUnit
+sada nebyla spuštěna dle AGENTS.md; výsledky CI ověřuje uživatel.
+
+Ověření této navazující změny: kompilace s warnings-as-errors, sestavení
+assetů a formátování celého projektu prošly na připnutém toolchainu. Migrace
+se aplikovala na izolovaný PostgreSQL 17 s existujícími herními daty.
+V Chromium byly proklikány založení, přepočet velikosti na XP, spuštění,
+opakovaná obnova, pozastavení s ponecháním a sedm doporučených šablon.
+Hostovské šablony bez hostů nevytvořily práci, po vložení aktivního testovacího
+pobytu vznikly dva výskyty s jediným společným SELECTem; ověřen i vyhledávací
+výběr kampaně a týdenní dny. Simulace sedmi zmeškaných dnů zachovala jeden
+úkol s původním termínem a historií posunu. Generování nepřidalo XP.
+Desktop a šířky 390/320 px byly bez vodorovného přesahu. ExUnit sada zůstává
+pro CI podle výše uvedených pravidel.
+
+Po skutečném dokončení opakovaného úkolu a po archivaci jiného otevřeného
+výskytu byl v Chromium ověřen i opakovaný přepočet téhož dne: žádná nová
+instance ani duplicitní XP, další termín následující den. Agregace času
+uzavření používá explicitní UTC typ před převodem na pražský den; regresní
+scénáře zahrnují dokončení i zrušení.

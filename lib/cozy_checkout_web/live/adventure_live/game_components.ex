@@ -48,7 +48,7 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
             <h3>Vlastní úkoly</h3><p>
               V Questech přidej práci do společného úkolovníku. Stačí název; termín, popis a poznámka jsou nepovinné. Velikost předvyplní 50, 100 nebo 250 XP. Přiřazení samo nezabírá slot. Převzetí a rozpracování osobního úkolu ho přiřadí právě vybranému hrdinovi a počítá se do společného limitu tří výprav včetně katalogu.
             </p><p>
-              Při dokončení zvol skutečného splnitele, který dostane osobní XP. U společného úkolu výslovně vyber přispěvatele; jednu odměnu dostane jen chata. Zadání lze upravit pouze ve stavu Čeká. Archivace otevřenou práci zruší, historii ani již udělená XP nesmaže. Termín není penalizace. Spravované opakování zatím není dostupné.
+              Při dokončení zvol skutečného splnitele, který dostane osobní XP. U společného úkolu výslovně vyber přispěvatele; jednu odměnu dostane jen chata. Zadání lze upravit pouze ve stavu Čeká. Archivace otevřenou práci zruší, historii ani již udělená XP nesmaže. Termín není penalizace. Opakované šablony spravuj v Questech. Nová šablona je pozastavená; po spuštění se úkoly obnovují hodinově nebo ručně. Zmeškané termíny se nehromadí: jedna otevřená položka dostane nový termín a uchová historii. Při pozastavení výslovně vyber, co s otevřeným úkolem. Podmínka hostů může být neznámá, pak lze přidat vlastní úkol. Změny šablony platí pro budoucí výskyty.
             </p>
           </section>
           <section>

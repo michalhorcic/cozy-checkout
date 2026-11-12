@@ -3,7 +3,16 @@ defmodule CozyCheckout.Adventure.TaskConcurrencyTest do
   import Ecto.Query
   alias Ecto.Adapters.SQL.Sandbox
   alias CozyCheckout.{Adventure, Repo}
-  alias CozyCheckout.Adventure.{Profile, Quest, Tasks, XpTransaction}
+
+  alias CozyCheckout.Adventure.{
+    Profile,
+    Quest,
+    Tasks,
+    Templates,
+    TaskTemplate,
+    TemplateVersion,
+    XpTransaction
+  }
 
   setup do
     previous = Application.get_env(:cozy_checkout, :adventure_enabled, false)
@@ -28,6 +37,9 @@ defmodule CozyCheckout.Adventure.TaskConcurrencyTest do
 
         Repo.delete_all(from x in XpTransaction, where: x.quest_id in subquery(quests))
         Repo.delete_all(from q in Quest, where: q.id in subquery(quests))
+        templates = from t in TaskTemplate, where: t.created_by_id in ^ids, select: t.id
+        Repo.delete_all(from v in TemplateVersion, where: v.template_id in subquery(templates))
+        Repo.delete_all(from t in TaskTemplate, where: t.id in subquery(templates))
         Repo.delete_all(from p in Profile, where: p.id in ^ids)
       end)
 
@@ -82,6 +94,40 @@ defmodule CozyCheckout.Adventure.TaskConcurrencyTest do
 
     assert Enum.count(results, &match?({:ok, _}, &1)) == 1
     assert Enum.count(results, &(&1 == {:error, :active_limit})) == 1
+  end
+
+  test "parallel refreshes create one occurrence and append one due shift", %{profiles: [p, _]} do
+    day = Sandbox.unboxed_run(Repo, fn -> CozyCheckout.Adventure.Sources.Stays.today() end)
+
+    template =
+      Sandbox.unboxed_run(Repo, fn ->
+        {:ok, t} =
+          Templates.create(p.id, %{
+            "title" => "Souběžná šablona",
+            "starts_on" => Date.to_iso8601(day)
+          })
+
+        {:ok, t} = Templates.set_status(p.id, t.id, "active", "keep")
+        t
+      end)
+
+    at = DateTime.new!(day, ~T[12:00:00], "Etc/UTC")
+    results = race([fn -> Templates.generate(at) end, fn -> Templates.generate(at) end])
+    assert Enum.all?(results, &match?({:ok, _}, &1))
+    later = DateTime.new!(Date.add(day, 7), ~T[12:00:00], "Etc/UTC")
+
+    assert Enum.all?(
+             race([fn -> Templates.generate(later) end, fn -> Templates.generate(later) end]),
+             &match?({:ok, _}, &1)
+           )
+
+    Sandbox.unboxed_run(Repo, fn ->
+      task = Repo.one!(from q in Quest, where: q.template_id == ^template.id)
+      assert task.first_due_on == day
+      assert task.due_on == Date.add(day, 7)
+      assert length(task.schedule_history["shifts"]) == 1
+      assert Repo.aggregate(from(x in XpTransaction, where: x.quest_id == ^task.id), :count) == 0
+    end)
   end
 
   defp race(functions) do

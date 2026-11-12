@@ -23,6 +23,7 @@ defmodule CozyCheckout.Adventure do
           )
         end
 
+        CozyCheckout.Adventure.Templates.seed_legacy(list_profiles())
         :ok
       end)
     else
@@ -123,9 +124,18 @@ defmodule CozyCheckout.Adventure do
          %{} = definition <- Catalog.fetch(code) do
       mutate(profile_id, fn profile ->
         period = if definition.cadence == "weekly", do: weekly_period(), else: "once"
-        existing = Repo.get_by(Quest, profile_id: profile.id, code: code, period_key: period)
+
+        existing =
+          CozyCheckout.Adventure.Templates.legacy_instance(profile.id, code, period) ||
+            Repo.get_by(Quest, profile_id: profile.id, code: code, period_key: period)
 
         cond do
+          existing && existing.managed && existing.status == "waiting" ->
+            case CozyCheckout.Adventure.Tasks.start(profile.id, existing.id) do
+              {:ok, task} -> task
+              {:error, reason} -> Repo.rollback(reason)
+            end
+
           existing ->
             existing
 
@@ -181,6 +191,9 @@ defmodule CozyCheckout.Adventure do
 
             quest.status == "completed" ->
               {:ok, quest}
+
+            quest.status != "active" ->
+              {:error, :immutable_task}
 
             not valid_completion_note?(note) ->
               {:error, :invalid_note}

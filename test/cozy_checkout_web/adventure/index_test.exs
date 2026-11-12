@@ -202,6 +202,47 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(XpTransaction, :count) == 1
   end
 
+  test "recurring templates are managed from quests and pause explicitly retains the task", %{
+    conn: conn
+  } do
+    alias CozyCheckout.Adventure.TaskTemplate
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    {:ok, view, _} = live(conn, "/admin/adventure/quests")
+    view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+    today = CozyCheckout.Adventure.Sources.Stays.today()
+
+    view
+    |> form("#adventure-template-form",
+      template: %{title: "Každodenní úklid", starts_on: Date.to_iso8601(today), cadence: "daily"}
+    )
+    |> render_submit()
+
+    template = Repo.get_by!(TaskTemplate, title: "Každodenní úklid")
+    assert template.status == "paused"
+    assert Repo.aggregate(Quest, :count) == 0
+
+    view
+    |> form("#template-status-#{template.id}", %{state: %{status: "active", open_choice: "keep"}})
+    |> render_submit()
+
+    view |> element("button[phx-click=generate-tasks]") |> render_click()
+    task = Repo.one!(Quest)
+    assert has_element?(view, "#task-#{task.id}", "Každodenní úklid")
+    assert has_element?(view, "#task-#{task.id}", "původní termín")
+    refute has_element?(view, "#task-#{task.id} button[phx-click=edit-task]")
+
+    view
+    |> form("#template-status-#{template.id}", %{state: %{status: "paused", open_choice: "keep"}})
+    |> render_submit()
+
+    assert Repo.get!(Quest, task.id).status == "waiting"
+    assert has_element?(view, "#template-#{template.id}", "Pozastaveno")
+    view |> element("button[phx-click=generate-tasks]") |> render_click()
+    assert Repo.aggregate(Quest, :count) == 1
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
   test "campaign draft requires confirmation and profile; recalculation is explicit", %{
     conn: conn
   } do

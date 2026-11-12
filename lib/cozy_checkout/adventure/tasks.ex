@@ -1,5 +1,5 @@
 defmodule CozyCheckout.Adventure.Tasks do
-  @moduledoc "Managed one-off tasks. Assignment, completion actor and XP recipient are separate."
+  @moduledoc "Managed tasks. Assignment, completion actor and XP recipient are separate."
   import Ecto.Query
   alias Ecto.Changeset
   alias CozyCheckout.{Adventure, Repo}
@@ -122,7 +122,10 @@ defmodule CozyCheckout.Adventure.Tasks do
   def update(actor_id, id, attrs) do
     action(actor_id, fn actor ->
       task = task!(id)
-      if task.status != "waiting" or task.archived_at, do: Repo.rollback(:immutable_task)
+
+      if task.status != "waiting" or task.archived_at or task.template_id,
+        do: Repo.rollback(:immutable_task)
+
       save_definition(change(task, attrs), actor, :update)
     end)
   end

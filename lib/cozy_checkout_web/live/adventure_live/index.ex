@@ -1,8 +1,9 @@
 defmodule CozyCheckoutWeb.AdventureLive.Index do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Adventure
-  alias CozyCheckout.Adventure.{Campaign, Campaigns, Quest, Tasks}
+  alias CozyCheckout.Adventure.{Campaign, Campaigns, Quest, Tasks, TaskTemplate, Templates}
   import CozyCheckoutWeb.AdventureLive.CampaignComponents
+  import CozyCheckoutWeb.AdventureLive.TemplateComponents
   import CozyCheckoutWeb.AdventureLive.TaskComponents
   import CozyCheckoutWeb.AdventureLive.GameComponents
 
@@ -13,10 +14,13 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
        socket
        |> assign(page_title: "Cozy Adventure", selected_profile_id: nil, completing: nil)
        |> assign(
+         templates_open: false,
+         template_editor_open: false,
          task_filters: %{},
          editing_task_id: nil,
          task_form: to_form(Tasks.change(%Quest{}), as: :task)
        )
+       |> new_template()
        |> new_campaign()
        |> load()}
     else
@@ -31,6 +35,114 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     else
       {:noreply, redirect(socket, to: ~p"/admin")}
     end
+  end
+
+  defp handle_game_event("toggle-template-panel", _, socket),
+    do: {:noreply, assign(socket, templates_open: !socket.assigns.templates_open)}
+
+  defp handle_game_event("toggle-template-editor", _, socket),
+    do: {:noreply, assign(socket, template_editor_open: !socket.assigns.template_editor_open)}
+
+  defp handle_game_event("template-change", %{"template" => attrs} = params, socket) do
+    attrs =
+      if params["_target"] == ["template", "size"],
+        do:
+          Map.put(attrs, "xp", %{"small" => 50, "medium" => 100, "large" => 250}[attrs["size"]]),
+        else: attrs
+
+    {:noreply,
+     assign(socket,
+       template_form:
+         to_form(Templates.change(socket.assigns.template_draft, attrs), as: :template)
+     )}
+  end
+
+  defp handle_game_event("save-template", %{"template" => attrs}, socket) do
+    outcome =
+      if socket.assigns.editing_template_id,
+        do:
+          Templates.update(
+            socket.assigns.selected_profile_id,
+            socket.assigns.editing_template_id,
+            attrs
+          ),
+        else: Templates.create(socket.assigns.selected_profile_id, attrs)
+
+    case outcome do
+      {:ok, _} ->
+        result(new_template(socket), outcome)
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        {:noreply, assign(socket, template_form: to_form(changeset, as: :template))}
+
+      error ->
+        result(socket, error)
+    end
+  end
+
+  defp handle_game_event("edit-template", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.templates, &(&1.id == id and &1.status != "archived")) do
+      nil ->
+        result(socket, {:error, :not_found})
+
+      template ->
+        {:noreply,
+         assign(socket,
+           editing_template_id: id,
+           template_editor_open: true,
+           template_draft: template,
+           template_form: to_form(Templates.change(template), as: :template),
+           template_campaign_query: nil,
+           template_campaign_open: false
+         )}
+    end
+  end
+
+  defp handle_game_event("new-template", _, socket),
+    do: {:noreply, new_template(socket) |> assign(template_editor_open: true)}
+
+  defp handle_game_event("example-templates", _, socket),
+    do: result(socket, Templates.add_examples(socket.assigns.selected_profile_id))
+
+  defp handle_game_event("generate-tasks", _, socket),
+    do: result(socket, Templates.refresh(socket.assigns.selected_profile_id))
+
+  defp handle_game_event("template-status", %{"template_id" => id, "state" => state}, socket),
+    do:
+      result(
+        new_template(socket),
+        Templates.set_status(
+          socket.assigns.selected_profile_id,
+          id,
+          state["status"],
+          state["open_choice"]
+        )
+      )
+
+  defp handle_game_event(
+         "template-campaign-search",
+         %{"template_campaign_query" => %{"campaign" => query}},
+         socket
+       ),
+       do:
+         {:noreply, assign(socket, template_campaign_query: query, template_campaign_open: true)}
+
+  defp handle_game_event("template-campaign-open", _, socket),
+    do: {:noreply, assign(socket, template_campaign_open: true)}
+
+  defp handle_game_event("template-campaign-close", _, socket),
+    do: {:noreply, assign(socket, template_campaign_open: false)}
+
+  defp handle_game_event("template-campaign-select", %{"id" => id}, socket) do
+    attrs = Map.put(socket.assigns.template_form.params, "campaign_id", id)
+
+    {:noreply,
+     assign(socket,
+       template_form:
+         to_form(Templates.change(socket.assigns.template_draft, attrs), as: :template),
+       template_campaign_query: nil,
+       template_campaign_open: false
+     )}
   end
 
   defp handle_game_event("save-task", %{"task" => attrs}, socket) do
@@ -198,17 +310,44 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   defp result(socket, {:error, reason}) do
     message =
       case reason do
-        :immutable_task -> "Upravovat lze jen čekající úkol. Splnění vyžaduje rozpracovaný úkol."
-        :contributors_required -> "U společného úkolu vyber alespoň jednoho přispěvatele."
-        :active_limit -> "Můžeš mít nejvýše 3 aktivní osobní questy."
-        :invalid_note -> "Poznámka může mít nejvýše 1000 znaků."
-        :invalid_profile -> "Nejprve vyber herní profil."
-        :confirmation_required -> "Před aktivací potvrď období, cíle a kapacitu."
-        :past_campaign -> "Nelze aktivovat již skončené období."
-        :immutable_campaign -> "Po aktivaci nelze období a pravidla měnit."
-        :inactive_campaign -> "Nejprve aktivuj kampaň."
-        %Ecto.Changeset{} -> "Zkontroluj zadané údaje a aktuální stav úkolu nebo kampaně."
-        _ -> "Akci nelze dokončit. Obnov stránku a zkontroluj výběr profilu."
+        :immutable_template ->
+          "Archivovanou šablonu nelze upravit."
+
+        :open_choice_required ->
+          "Výslovně vyber, zda otevřený úkol ponechat, nebo zrušit. Při obnovení ho ponech."
+
+        :immutable_task ->
+          "Upravovat lze jen čekající úkol. Splnění vyžaduje rozpracovaný úkol."
+
+        :contributors_required ->
+          "U společného úkolu vyber alespoň jednoho přispěvatele."
+
+        :active_limit ->
+          "Můžeš mít nejvýše 3 aktivní osobní questy."
+
+        :invalid_note ->
+          "Poznámka může mít nejvýše 1000 znaků."
+
+        :invalid_profile ->
+          "Nejprve vyber herní profil."
+
+        :confirmation_required ->
+          "Před aktivací potvrď období, cíle a kapacitu."
+
+        :past_campaign ->
+          "Nelze aktivovat již skončené období."
+
+        :immutable_campaign ->
+          "Po aktivaci nelze období a pravidla měnit."
+
+        :inactive_campaign ->
+          "Nejprve aktivuj kampaň."
+
+        %Ecto.Changeset{} ->
+          "Zkontroluj zadané údaje a aktuální stav úkolu nebo kampaně."
+
+        _ ->
+          "Akci nelze dokončit. Obnov stránku a zkontroluj výběr profilu."
       end
 
     {:noreply, socket |> clear_flash(:info) |> put_flash(:error, message)}
@@ -221,12 +360,29 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     assign(socket,
       data: data,
       tasks: Tasks.list(data.profile && data.profile.id, socket.assigns.task_filters),
+      templates: Templates.list(),
+      template_history: Templates.history(),
+      template_campaign_options:
+        Enum.map(game.campaigns, &%{id: &1.id, name: &1.name, hint: &1.status}),
       filter_form: to_form(socket.assigns.task_filters, as: :filters),
       game: game,
       catalog: Adventure.catalog(),
       profile_form: to_form(%{"id" => data.profile && data.profile.id}, as: :profile),
       completion_form:
         to_form(%{"note" => "", "actor_id" => data.profile && data.profile.id}, as: :completion)
+    )
+  end
+
+  defp new_template(socket) do
+    draft = %TaskTemplate{starts_on: CozyCheckout.Adventure.Sources.Stays.today()}
+
+    assign(socket,
+      editing_template_id: nil,
+      template_editor_open: false,
+      template_draft: draft,
+      template_form: to_form(Templates.change(draft), as: :template),
+      template_campaign_query: nil,
+      template_campaign_open: false
     )
   end
 
@@ -352,6 +508,20 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             task_form={@task_form}
             filter_form={@filter_form}
             editing_id={@editing_task_id}
+          />
+          <.templates
+            :if={@live_action == :quests}
+            templates={@templates}
+            history={@template_history}
+            profiles={@data.profiles}
+            profile={@data.profile}
+            form={@template_form}
+            editing_id={@editing_template_id}
+            campaign_options={@template_campaign_options}
+            campaign_query={@template_campaign_query}
+            campaign_open={@template_campaign_open}
+            panel_open={@templates_open}
+            editor_open={@template_editor_open}
           />
           <div class={[
             "adventure-content",

@@ -81,7 +81,8 @@ config :cozy_checkout, Oban,
     booking_emails: 5,
     billing: 2,
     incoming_extraction: 2,
-    economics_sync: 1
+    economics_sync: 1,
+    adventure: 1
   ],
   plugins: [
     {Oban.Plugins.Cron,
@@ -90,7 +91,8 @@ config :cozy_checkout, Oban,
        {"* * * * *", CozyCheckout.Workers.IncomingBatchReconcileWorker},
        {"0 * * * *", CozyCheckout.Workers.AbraBankDownloadWorker},
        {"*/15 * * * *", CozyCheckout.Workers.AbraBankWorker},
-       {"0 4 * * *", CozyCheckout.Economics.SyncWorker}
+       {"0 4 * * *", CozyCheckout.Economics.SyncWorker},
+       {"0 * * * *", CozyCheckout.Adventure.RecurrenceWorker}
      ]}
   ]
 

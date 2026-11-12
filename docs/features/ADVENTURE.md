@@ -1,23 +1,28 @@
 # Cozy Adventure
 
 Volitelná hobby hra pro Michala a Lucku. Obsahuje osobní ruční questy, osobní
-i společná XP, kampaně, dva automatické pobytové achievementy a audit přepočtů.
+i společná XP, vlastní úkoly a opakované šablony, kampaně, dva automatické
+pobytové achievementy a audit přepočtů.
 Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních tabulek.
 
 ## Zapnutí a používání
 
 1. Nasaď migrace `20261111120000_create_adventure_foundation.exs` a
    `20261111130000_add_adventure_campaigns.exs` a
-   `20261112120000_add_adventure_tasks.exs` standardním postupem aplikace.
-   Přidávají celkem šest tabulek s prefixem `adventure_`; druhá rozšiřuje
+   `20261112120000_add_adventure_tasks.exs` a
+   `20261112130000_add_adventure_task_templates.exs` standardním postupem aplikace.
+   Přidávají celkem osm tabulek s prefixem `adventure_`; druhá rozšiřuje
    pouze herní XP ledger o společného příjemce a vazbu na achievement.
    Třetí přidává pole vlastních úkolů a povoluje společnou questovou odměnu;
    nepřepisuje UUID, snapshoty ani odměny dosavadních questů. Je záměrně
    nevratná přes `ecto.rollback`, aby nemazala novou historii. Návrat staré
    aplikace po založení nových úkolů vyžaduje samostatné posouzení kompatibility.
+   Čtvrtá přidává šablony, verze a vazbu výskytů; původní definice zakládá
+   pozastavené, bez přepsání starých instancí. Také uchovává historii nevratným `down`.
 2. Nastav `ADVENTURE_ENABLED=true` a restartuj aplikaci. Výchozí hodnota je
    `false`. Vypnutí skryje odkaz v administraci a zablokuje herní stránky i akce;
-   herní data a historie zůstanou uložené. Nevznikají žádné background joby.
+   herní data a historie zůstanou uložené. Hodinový Oban worker při vypnutí
+   neprovádí herní ani provozní dotazy. Fronta `adventure` má souběh 1.
 3. Po přihlášení stávajícím admin PINem otevři **Další agenda → Cozy Adventure**
    (`/admin/adventure`) a klikni na **Založit herní profily**. Opakování setupu
    nezduplikuje profily a nezmění již uložené profily.
@@ -108,16 +113,92 @@ u katalogových questů; nové úkoly používají `assigned_profile_id`, `creat
 a aktéra v důkazu. Historii splněných osobních úkolů vidí skutečný splnitel
 v deníku; společná historie je ve společném úkolovníku.
 
-Spravované opakované šablony, jejich působnost a sezónní finanční přehled
-nejsou součástí této dodávky. Čtyři původní katalogové definice nadále fungují
-beze změny UUID a klíčů odměn. Znovuotevření dokončeného úkolu je odložené
-spolu s pravidly obnovení kompenzované odměny.
+Čtyři původní katalogové definice nadále fungují beze změny UUID a klíčů
+odměn. Znovuotevření dokončeného úkolu je odložené spolu s pravidly obnovení
+kompenzované odměny. Sezónní finanční přehled zůstává další etapou.
+
+## Opakované šablony
+
+V **Questech → Opakované šablony** založ název, denní/týdenní opakování,
+vybrané dny týdne, platnost od, kategorii, přiřazení, velikost/XP a působnost.
+Změna velikosti předvyplní 50/100/250 XP; částku lze upravit. Nová šablona
+začíná pozastavená. Tlačítko **Přidat 7 doporučených šablon** založí jednou
+příklady z plánu (pokoje, úklid, jídelníček, nákup, vaření, společné prostory,
+bar). Jejich nastavení a spuštění určuje správce. Opakovaný klik zachová úpravy.
+
+**Spustit / obnovit** plánuje od dneška nebo pozdějšího data platnosti.
+Hodinový `Adventure.RecurrenceWorker` a ruční **Obnovit opakované úkoly**
+používají stejné transakční API `Adventure.Templates.generate/1`.
+Zobrazení stránky samo nic negeneruje. Přepočet řídí datum v Europe/Prague,
+nikoliv délka dne v sekundách; opakovaná hodina při zimním čase nevytvoří
+nový výskyt. Nový výskyt je čekající úkol, do osobních slotů vstupuje až
+výslovným převzetím a rozpracováním.
+
+- Na šablonu je nejvýše jeden otevřený výskyt. Sedm zmeškaných denních termínů
+  vytvoří jednu položku; existující otevřenou položku posune na aktuální termín.
+  Původní termín a zaznamenané posuny jsou rozbalitelné u úkolu. Za zmeškání
+  nejsou XP ani penalizace; nic se samo nedokončí.
+- Po dokončení nebo zrušení se další úkol nabízí nejdříve v následujícím
+  plánovaném termínu, který je po místním dni uzavření. Opožděný job, změna
+  šablony ani obnovení nevyrobí druhou práci za dnes již uzavřený termín.
+- Pozastavení/archivace vyžaduje výslovně **Ponechat**, nebo **Zrušit a
+  archivovat** otevřený výskyt. Ponechaný lze dokončit i při pozastavené či
+  archivované šabloně. Archivovanou šablonu nelze obnovit; historie zůstává.
+- Editace a stavové změny ukládají novou verzi s aktérem. Budoucí výskyt
+  dostane aktuální snapshot. Již otevřenému se mění jen termín při posunu,
+  jeho zadání, přiřazení a odměna se neupravují. Posuny termínu řídí aktuální
+  kalendář a působnost šablony. Editace výskytu samotného
+  je blokovaná. Posledních 50 verzí je v historii šablon; všechny zůstávají v DB.
+- Template lock a `FOR UPDATE SKIP LOCKED` serializují generování a správu,
+  partial unique index vynucuje jeden otevřený výskyt a další unique index
+  brání opakovanému založení téhož termínu. Dokončení dále chrání quest lock
+  a původní XP ledger. Oban používá vlastní infrastrukturní tabulky pro joby;
+  doménové zápisy zůstávají v `adventure_*`.
+
+### Působnost
+
+| Volba | Pravidlo |
+| --- | --- |
+| Vždy | Podle kalendáře i bez hostů a mimo kampaně |
+| Během vybrané kampaně | Jen aktivní kampaň a aktuální den i termín uvnitř jejího období |
+| Jen když jsou hosté | Pouze aktuální plánovaný den a prokazatelný `active` pobyt s kladným známým počtem osob; příjezd zahrnutý, odjezd vyloučený |
+
+`Adventure.Sources.Guests` provádí jeden read-only agregovaný SELECT nad
+`bookings` pro všechny splatné hostovské šablony. Nekontroluje pobyty po jednom,
+nepřipojuje hosty/pokoje a nemění statusy rezervací. Budoucí rezervace není
+přítomný host. Rezervace, která už měla začít, ale má stále `upcoming`,
+neplatná data, chybějící počty nebo zastaralý aktivní pobyt znamenají
+**neznámou** přítomnost, pokud jiný platný aktivní pobyt hosty nepotvrdí.
+Zrušené a smazané pobyty se nezahrnují; den odjezdu není obsazený.
+
+Při neznámém/prázdném stavu se dnešní termín nezahodí: hodinový worker nebo
+ruční obnova ho během dne znovu ověří. Neověřitelná podmínka je vidět u
+šablony a práci lze ručně přidat jako vlastní úkol. Minulou přítomnost hostů
+z aktuálního statusu nedomýšlíme; vynechaný hostovský den se zpětně negeneruje.
+Odjezd hostů, uzavření kampaně ani nesplněná podmínka otevřený úkol neuzavřou.
+Přepočty ukládají jen stav podmínky, místní datum a čas, bez údajů hostů.
+
+### Návaznost původního katalogu
+
+Migrace a opakovatelná inicializace zakládají čtyři pozastavené šablony na
+každého hrdinu se stabilním seed klíčem. Původní `profile_id`, quest UUID,
+definition snapshot a award key se nemění. Při spuštění šablona převezme
+existující rozpracovaný katalogový quest, místo aby založila kopii. Pokud
+existuje více starých rozpracovaných týdnů, zachovají se a nevznikne nová
+instance, dokud nejsou uzavřené. Již dokončený/zrušený týden se nepřidělí znovu.
+Ruční katalogová aktivace sdílí zámek a kontroluje i výskyty šablony.
+
+Původní weekly/once frekvence zůstává u převedených definic neměnná a týdenní
+má jeden vybraný den. Pro jinou frekvenci založ novou šablonu. Tím se zachová
+původní period key a nelze získat další odměnu výměnou identity definice.
+Název, odměnu, přiřazení, působnost a další budoucí nastavení upravit lze.
 
 ## Oddělení od provozu
 
 - Veškerá logika a schémata jsou v `lib/cozy_checkout/adventure/`, webová vrstva
   v `lib/cozy_checkout_web/live/adventure_live/`, testy ve vlastních adresářích.
-- Context `CozyCheckout.Adventure` a jeho modul `Adventure.Campaigns` zapisují
+- Context `CozyCheckout.Adventure` a moduly `Adventure.Campaigns`, `Adventure.Tasks`
+  a `Adventure.Templates` zapisují
   pouze do tabulek `adventure_*`. Neobsahují cizí provozní FK,
   nevolá provozní mutace, neposílá emaily a nevytváří doklady či účetní operace.
 - Jediné integrační body jsou admin router, podmíněný odkaz v navigaci
@@ -190,7 +271,8 @@ Uzavření kampaně provede poslední přepočet a uzamkne datum hranice realiza
 Další přepočet oprav je možný i potom. Čte aktuální verze rezervací se stejnou
 uzamčenou hranicí; nepředstírá historický provozní snapshot k okamžiku uzavření.
 Posledních 50 kampaní a posledních 20 přepočtů je dostupných v administraci;
-starší auditní záznamy zůstávají v DB. Žádný Oban job ani event hook nevzniká.
+starší auditní záznamy zůstávají v DB. Kampaně nemají vlastní job ani event hook;
+hodinový worker obnovuje pouze opakované úkoly.
 
 ## Automatické achievementy a společná XP
 
@@ -247,3 +329,15 @@ Pro ruční kontrolu po CI:
 - [ ] Dokončit společný úkol s explicitními přispěvateli a ověřit jedinou odměnu chatě.
 - [ ] Upravit čekající práci, archivovat rozpracovanou i dokončenou a ověřit historii.
 - [ ] Ověřit hledání, moje/volné/společné, termín, kategorii a archiv.
+
+Opakované šablony mají další regresní testy pro sedm zmeškaných termínů,
+verze a neměnné snapshoty, explicitní pozastavení, DST a přelom roku,
+hostovskou/kampaňovou působnost, jediný dávkový pobytový SELECT, návaznost
+katalogu, souběžné generování a flag, který zablokuje i SQL dotazy workeru.
+Tyto ExUnit testy jsou určené pro CI a lokálně nebyly spuštěny.
+
+- [ ] Založit a spustit denní šablonu, dvakrát obnovit, ověřit jediný čekající úkol bez XP.
+- [ ] Upravit šablonu a ověřit původní snapshot otevřeného úkolu i novou verzi budoucího.
+- [ ] Pozastavit s ponecháním, obnovit, poté archivovat se zrušením otevřeného úkolu.
+- [ ] Nastavit dny v týdnu a působnost kampaně/hostů včetně neznámých podkladů.
+- [ ] Ověřit původní quest dokončený ve stejném týdnu a zachování odměny po převodu.
