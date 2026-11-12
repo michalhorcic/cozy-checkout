@@ -140,6 +140,152 @@ defmodule CozyCheckout.Adventure.ProjectsTest do
     assert Repo.get!(Project, project.id).acceptance == %{}
   end
 
+  test "one explicit approval starts a draft and locks its plan and stages", %{actor: actor} do
+    p = project(actor)
+    {:ok, q} = Tasks.create(actor.id, %{"title" => "První krok"})
+    {:ok, _} = Projects.add_stage(actor.id, p.id, q.id, nil)
+    stage = Repo.get_by!(ProjectStage, project_id: p.id)
+    assert stage.output == "První krok"
+    assert {:ok, active} = Projects.transition(actor.id, p.id, "active")
+    assert active.status == "active"
+    assert Enum.map(Projects.history(p.id), & &1.snapshot["status"]) == ["active", "idea", "idea"]
+    assert Repo.get!(Quest, q.id).status == "waiting"
+
+    for target <- ["active", "paused"] do
+      assert {:ok, _} = Projects.transition(actor.id, p.id, target)
+      assert {:error, :immutable_project} = Projects.update(actor.id, p.id, %{"title" => "Jiné"})
+
+      assert {:error, :immutable_project} =
+               Projects.update_stage(actor.id, p.id, stage.id, "Jiné")
+
+      assert {:error, :immutable_project} = Projects.remove_stage(actor.id, p.id, stage.id)
+
+      assert {:error, :immutable_project} =
+               Projects.create_stage(actor.id, p.id, %{"title" => "Navíc"})
+    end
+
+    assert {:ok, resumed} = Projects.transition(actor.id, p.id, "active")
+    assert resumed.status == "active"
+    assert Repo.aggregate(Quest, :count) == 1
+    assert Repo.aggregate(XpTransaction, :count) == 0
+    assert {:error, :invalid_transition} = Projects.transition(actor.id, p.id, "idea")
+  end
+
+  test "historic ready and approved states and their audit remain usable", %{actor: actor} do
+    for legacy <- ["ready", "approved"] do
+      p = project(actor, "Historický #{legacy}")
+      {:ok, _} = Projects.transition(actor.id, p.id, "ready")
+      if legacy == "approved", do: Projects.transition(actor.id, p.id, "approved")
+      assert Repo.get!(Project, p.id).status == legacy
+      assert {:ok, %{status: "active"}} = Projects.transition(actor.id, p.id, "active")
+      assert Enum.any?(Projects.history(p.id), &(&1.snapshot["status"] == legacy))
+    end
+  end
+
+  test "inline steps use genuine waiting Tasks, optional settings and one quest reward", %{
+    actor: actor,
+    other: other
+  } do
+    p = project(actor)
+    assert {:ok, _} = Projects.create_stage(actor.id, p.id, %{"title" => "  Nová práce  "})
+    assert [%{stages: [{stage, q}]}] = Projects.list()
+    assert stage.output == "Nová práce"
+    assert stage.quest_snapshot == q.definition_snapshot
+    assert q.managed
+    assert q.status == "waiting"
+    assert q.created_by_id == actor.id
+    assert q.assigned_profile_id == nil
+    assert q.due_on == nil
+    assert q.definition_snapshot["xp"] == 50
+
+    assert {:ok, _} =
+             Projects.create_stage(actor.id, p.id, %{
+               "title" => "Společná práce",
+               "scope" => "shared",
+               "assigned_profile_id" => other.id,
+               "size" => "large",
+               "xp" => "125",
+               "category" => "Údržba",
+               "priority" => "high",
+               "due_on" => "2026-11-12",
+               "output" => "Funkční výsledek"
+             })
+
+    shared = Repo.one!(from q in Quest, where: q.scope == "shared")
+    assert shared.assigned_profile_id == nil
+    assert shared.definition_snapshot["xp"] == 125
+    assert shared.category == "Údržba"
+    assert shared.priority == "high"
+    assert shared.due_on == ~D[2026-11-12]
+    assert Repo.get_by!(ProjectStage, quest_id: shared.id).output == "Funkční výsledek"
+    assert Repo.aggregate(XpTransaction, :count) == 0
+    {:ok, _} = Tasks.start(actor.id, shared.id)
+    {:ok, _} = Tasks.complete(actor.id, shared.id, %{"contributors" => [actor.id, other.id]})
+    assert [%{amount: 125, recipient_type: "shared"}] = Repo.all(XpTransaction)
+  end
+
+  test "inline creation rolls back quest, stage and audit on validation failures", %{actor: actor} do
+    p = project(actor)
+
+    for attrs <- [
+          %{"title" => ""},
+          %{"title" => "X", "xp" => "0"},
+          %{"title" => "X", "due_on" => "invalid"},
+          %{"title" => "X", "scope" => "invalid"},
+          %{"title" => "X", "output" => String.duplicate("x", 2001)}
+        ] do
+      assert {:error, %Ecto.Changeset{}} = Projects.create_stage(actor.id, p.id, attrs)
+      assert Repo.aggregate(Quest, :count) == 0
+      assert Repo.aggregate(ProjectStage, :count) == 0
+      assert [%{action: "created"}] = Projects.history(p.id)
+    end
+
+    assert {:error, :invalid_profile} =
+             Projects.create_stage(actor.id, p.id, %{
+               "title" => "X",
+               "assigned_profile_id" => Ecto.UUID.generate()
+             })
+
+    assert {:error, :not_found} = Projects.create_stage(actor.id, "bad", %{"title" => "X"})
+    assert Repo.aggregate(Quest, :count) == 0
+    assert {:ok, _} = Projects.create_stage(actor.id, p.id, %{"title" => "Po chybě"})
+    assert Repo.aggregate(Quest, :count) == 1
+  end
+
+  test "inline mutation SELECT count stays bounded as stages grow and writes only Adventure", %{
+    actor: actor
+  } do
+    p = project(actor)
+
+    for i <- 1..8 do
+      {{:ok, _}, queries} =
+        QueryRecorder.record(fn ->
+          Projects.create_stage(actor.id, p.id, %{"title" => "Krok #{i}"})
+        end)
+
+      assert length(selects(queries)) == 7
+      writes = Enum.filter(queries, &Regex.match?(~r/^(INSERT INTO|UPDATE|DELETE FROM)/, &1))
+
+      assert Enum.all?(
+               writes,
+               &Regex.match?(~r/^(INSERT INTO|UPDATE|DELETE FROM) "adventure_/, &1)
+             )
+    end
+
+    {{:ok, _}, assigned_queries} =
+      QueryRecorder.record(fn ->
+        Projects.create_stage(actor.id, p.id, %{
+          "title" => "Přiřazený krok",
+          "assigned_profile_id" => actor.id
+        })
+      end)
+
+    assert length(selects(assigned_queries)) == 8
+    assert Repo.aggregate(Quest, :count) == 9
+    assert Repo.aggregate(ProjectStage, :count) == 9
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
   test "acceptance is human, atomic, idempotent and adds no XP; independent of seasons", %{
     actor: actor,
     other: other
@@ -222,6 +368,9 @@ defmodule CozyCheckout.Adventure.ProjectsTest do
       assert same.id == saved.id
       assert same.acceptance == saved.acceptance
       assert same_quest.id == quest.id
+      assert Projects.world().counts == [{"workshop", "accepted", 1}]
+      assert [chronicle_entry] = Projects.chronicle()
+      assert chronicle_entry.acceptance == accepted.acceptance
     end
 
     assert Enum.count(Projects.history(project.id), &(&1.action == "accepted")) == 1
@@ -339,6 +488,8 @@ defmodule CozyCheckout.Adventure.ProjectsTest do
         assert Projects.list() == []
         assert Projects.history(p.id) == []
         assert Projects.search_quests("Quest") == []
+        assert Projects.world() == %{counts: [], projects: []}
+        assert Projects.chronicle() == []
 
         assert {:error, :disabled} =
                  Projects.create(actor.id, %{"title" => "X"}, Ecto.UUID.generate())
@@ -348,6 +499,7 @@ defmodule CozyCheckout.Adventure.ProjectsTest do
         assert {:error, :disabled} = Projects.accept(actor.id, p.id, %{})
         assert {:error, :disabled} = Projects.archive(actor.id, p.id)
         assert {:error, :disabled} = Projects.add_stage(actor.id, p.id, Ecto.UUID.generate(), "X")
+        assert {:error, :disabled} = Projects.create_stage(actor.id, p.id, %{"title" => "X"})
         assert {:error, :disabled} = Projects.remove_stage(actor.id, p.id, Ecto.UUID.generate())
 
         assert {:error, :disabled} =
@@ -355,6 +507,88 @@ defmodule CozyCheckout.Adventure.ProjectsTest do
       end)
 
     assert queries == []
+  end
+
+  test "world milestones come only from human acceptance and survive archive and seasons", %{
+    actor: actor
+  } do
+    {%{counts: [], projects: []}, empty_queries} = QueryRecorder.record(&Projects.world/0)
+    assert length(selects(empty_queries)) == 2
+    {p, quest} = prepared(actor)
+    {:ok, _} = Tasks.start(actor.id, quest.id)
+    {:ok, _} = Tasks.complete(actor.id, quest.id)
+    assert Projects.world().counts == [{"workshop", "active", 1}]
+    assert Projects.chronicle() == []
+
+    {:ok, accepted} =
+      Projects.accept(actor.id, p.id, %{
+        "confirmed" => "true",
+        "contributors" => [actor.id],
+        "result" => "Trvalý výsledek"
+      })
+
+    awards = Repo.all(XpTransaction)
+    {:ok, _} = Projects.archive(actor.id, p.id)
+    {world, queries} = QueryRecorder.record(&Projects.world/0)
+    assert world.counts == [{"workshop", "accepted", 1}]
+    assert [saved] = world.projects
+    assert saved.archived_at
+    assert saved.acceptance == accepted.acceptance
+    assert length(selects(queries)) == 2
+    assert Enum.all?(queries, &String.starts_with?(&1, "SELECT"))
+    assert [entry] = Projects.chronicle()
+    assert entry.acceptance["result"] == "Trvalý výsledek"
+    assert Repo.all(XpTransaction) == awards
+  end
+
+  test "world aggregate is complete beyond bounded projects; chronicle pages include old archived outcomes",
+       %{actor: actor} do
+    old = DateTime.utc_now() |> DateTime.truncate(:second) |> DateTime.add(-86_400)
+
+    for i <- 1..22 do
+      Repo.insert!(%Project{
+        title: "Historický výsledek #{i}",
+        area: Enum.at(Project.areas(), rem(i, 6)),
+        request_key: Ecto.UUID.generate(),
+        status: "accepted",
+        acceptance: %{
+          "confirmed_at" => DateTime.to_iso8601(DateTime.add(old, i)),
+          "actor_id" => actor.id,
+          "contributors" => [actor.id],
+          "result" => "Převzato #{i}"
+        },
+        archived_at: old,
+        inserted_at: old,
+        updated_at: old
+      })
+    end
+
+    for i <- 1..101, do: project(actor, "Novější plán #{i}")
+    {world, queries} = QueryRecorder.record(&Projects.world/0)
+    assert length(selects(queries)) == 2
+    assert length(world.projects) == 100
+    assert Enum.all?(world.projects, &(&1.status == "idea"))
+
+    assert world.counts
+           |> Enum.filter(&(elem(&1, 1) == "accepted"))
+           |> Enum.map(&elem(&1, 2))
+           |> Enum.sum() == 22
+
+    {first, first_queries} = QueryRecorder.record(fn -> Projects.chronicle(0) end)
+    {second, second_queries} = QueryRecorder.record(fn -> Projects.chronicle(1) end)
+    assert length(first) == 21
+    assert length(second) == 2
+    assert length(selects(first_queries)) == 1
+    assert length(selects(second_queries)) == 1
+
+    assert MapSet.disjoint?(
+             MapSet.new(Enum.take(first, 20), & &1.id),
+             MapSet.new(second, & &1.id)
+           )
+
+    assert Enum.all?(first ++ second, & &1.archived_at)
+    assert [%{project: focused}] = Projects.list("", List.last(second).id)
+    assert focused.id == List.last(second).id
   end
 
   defp project(actor, title \\ "Dlouhodobý plán") do

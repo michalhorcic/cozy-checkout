@@ -3,16 +3,59 @@ defmodule CozyCheckout.Adventure.Projects do
   import Ecto.Query
   alias Ecto.Changeset
   alias CozyCheckout.{Adventure, Repo}
-  alias CozyCheckout.Adventure.{Profile, Project, ProjectEvent, ProjectStage, Quest}
+  alias CozyCheckout.Adventure.{Profile, Project, ProjectEvent, ProjectStage, Quest, Tasks}
 
-  def list(search \\ "") when is_binary(search) do
+  def world do
     if Adventure.enabled?() do
-      search = String.slice(String.trim(search), 0, 200)
+      counts =
+        Repo.all(
+          from p in Project,
+            where: is_nil(p.archived_at) or p.status == "accepted",
+            group_by: [p.area, p.status],
+            select: {p.area, p.status, count(p.id)}
+        )
 
       projects =
         Repo.all(
           from p in Project,
-            where: fragment("strpos(lower(?), lower(?)) > 0", p.title, ^search),
+            where: is_nil(p.archived_at) or p.status == "accepted",
+            order_by: [desc: p.updated_at, desc: p.id],
+            limit: 100
+        )
+
+      %{counts: counts, projects: projects}
+    else
+      %{counts: [], projects: []}
+    end
+  end
+
+  def chronicle(page \\ 0) when is_integer(page) and page >= 0 do
+    if Adventure.enabled?() do
+      Repo.all(
+        from p in Project,
+          where: p.status == "accepted",
+          order_by: [desc: fragment("?->>'confirmed_at'", p.acceptance), desc: p.id],
+          offset: ^(page * 20),
+          limit: 21
+      )
+    else
+      []
+    end
+  end
+
+  def list(search \\ "", focus_id \\ nil) when is_binary(search) do
+    if Adventure.enabled?() do
+      search = String.slice(String.trim(search), 0, 200)
+
+      filter =
+        if valid_id?(focus_id),
+          do: dynamic([p], p.id == ^focus_id),
+          else: dynamic([p], fragment("strpos(lower(?), lower(?)) > 0", p.title, ^search))
+
+      projects =
+        Repo.all(
+          from p in Project,
+            where: ^filter,
             order_by: [desc: p.inserted_at, desc: p.id],
             limit: 100
         )
@@ -117,6 +160,11 @@ defmodule CozyCheckout.Adventure.Projects do
 
           unless quest, do: Repo.rollback(:not_found)
 
+          output =
+            if is_nil(output) or (is_binary(output) and String.trim(output) == ""),
+              do: quest.definition_snapshot["title"],
+              else: output
+
           stage =
             %ProjectStage{
               project_id: project.id,
@@ -146,6 +194,21 @@ defmodule CozyCheckout.Adventure.Projects do
 
         _ ->
           project
+      end
+    end)
+  end
+
+  def create_stage(actor_id, id, attrs) do
+    action(actor_id, fn actor ->
+      project = locked!(id)
+      editable!(project)
+
+      # Reuse Tasks validation and snapshots inside the same database transaction.
+      with {:ok, quest} <- Tasks.create(actor.id, attrs),
+           {:ok, updated} <- add_stage(actor.id, project.id, quest.id, attrs["output"]) do
+        updated
+      else
+        {:error, reason} -> Repo.rollback(reason)
       end
     end)
   end
@@ -216,11 +279,11 @@ defmodule CozyCheckout.Adventure.Projects do
       project = locked!(id)
 
       allowed = %{
-        "idea" => ["ready", "cancelled"],
-        "ready" => ["idea", "approved", "cancelled"],
+        "idea" => ["active", "ready", "cancelled"],
+        "ready" => ["active", "idea", "approved", "cancelled"],
         "approved" => ["active", "paused", "cancelled"],
         "active" => ["paused", "cancelled"],
-        "paused" => ["approved", "cancelled"]
+        "paused" => ["active", "approved", "cancelled"]
       }
 
       cond do

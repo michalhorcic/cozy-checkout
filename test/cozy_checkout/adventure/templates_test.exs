@@ -26,6 +26,47 @@ defmodule CozyCheckout.Adventure.TemplatesTest do
 
   defp at(day), do: DateTime.new!(day, ~T[12:00:00], "Etc/UTC")
 
+  test "compact pages batch open work and hide irreversible archives with two selects", %{
+    p: p,
+    today: day
+  } do
+    template = active(p, day)
+    {:ok, _} = Templates.generate(at(day))
+    {:ok, _} = Templates.set_status(p.id, template.id, "archived", "keep")
+    {current, current_queries} = QueryRecorder.record(fn -> Templates.page() end)
+    refute Enum.any?(current.templates, &(&1.id == template.id))
+    assert length(Enum.filter(current_queries, &String.starts_with?(&1, "SELECT"))) == 2
+    {archive, archive_queries} = QueryRecorder.record(fn -> Templates.page("archive") end)
+    assert [saved] = archive.templates
+    assert saved.id == template.id
+    assert [%{status: "waiting"}] = archive.open[template.id]
+    assert length(Enum.filter(archive_queries, &String.starts_with?(&1, "SELECT"))) == 2
+
+    assert {:error, :immutable_template} =
+             Templates.set_status(p.id, template.id, "active", "keep")
+
+    for i <- 1..33,
+        do:
+          Templates.create(p.id, %{"title" => "Šablona #{i}", "starts_on" => Date.to_iso8601(day)})
+
+    {many, many_queries} = QueryRecorder.record(fn -> Templates.page() end)
+    assert length(many.templates) == 30
+    assert many.more?
+    assert length(Enum.filter(many_queries, &String.starts_with?(&1, "SELECT"))) == 2
+    next = Templates.page("current", 1)
+
+    assert MapSet.disjoint?(
+             MapSet.new(many.templates, & &1.id),
+             MapSet.new(next.templates, & &1.id)
+           )
+
+    assert Enum.all?(many_queries ++ archive_queries, &String.starts_with?(&1, "SELECT"))
+    Application.put_env(:cozy_checkout, :adventure_enabled, false)
+
+    assert {%{templates: [], open: %{}, more?: false}, []} =
+             QueryRecorder.record(fn -> Templates.page() end)
+  end
+
   defp active(p, day, attrs \\ %{}) do
     {:ok, template} =
       Templates.create(

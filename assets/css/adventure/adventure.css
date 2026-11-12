@@ -1,3 +1,5 @@
+@import "./projects.css";
+
 /* Cozy Adventure: all presentation is scoped to the isolated game. */
 .adventure {
   --adv-ink: #233f35; --adv-muted: #6d7a6c; --adv-forest: #285646;
@@ -310,12 +312,29 @@ body:has(#adventure-help[open]) { overflow: hidden; }
 .adventure-service-day { border-top: 1px solid #cfc4ab; padding-top: 1rem; margin-block: 1.25rem; }
 .adventure-service-day ul { list-style: none; padding: 0; }
 .adventure-service-day li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-block: .75rem; border-bottom: 1px dashed #cfc4ab; }
+.adventure-village { min-height: 660px; }
+.adventure-village-place { overflow-wrap: anywhere; }
+.adventure-village-place > span { font-size: .78rem; line-height: 1.45; }
+.adventure-village-place--developed { border-bottom-color: #46724a; box-shadow: 0 0 0 3px #bdca9b, 0 8px 12px #35433820; }
+.adventure-world-milestone { border: 1px solid #bba264; border-radius: .3rem; padding: .2rem .4rem; background: #f6e8b9; font-weight: 700; }
+.adventure-world-plans { color: #5c6251; }
+.adventure-world-development, .adventure-cabin-chronicle { border-top: 1px solid #cfc4ab; margin-top: 1rem; padding-top: 1rem; }
+.adventure-cabin-chronicle h3 { font-family: Georgia, serif; font-size: 1.35rem; }
+.adventure-cabin-chronicle > p { margin-block: .75rem; }
+.adventure-world-project { padding-block: .8rem; border-bottom: 1px dashed #cfc4ab; overflow-wrap: anywhere; }
+.adventure-accepted-outcome { border-left: 3px solid #8caa75; padding-left: .75rem; margin-top: .5rem; }
+.adventure-accepted-outcome p { margin-block: .4rem; font-size: .875rem; }
+.adventure-template-details { font-size: .875rem; }
+.adventure-template-confirm { padding: 1rem; border: 1px solid #bba264; background: #fff3d4; border-radius: .5rem; }
+.adventure-template-confirm .adventure-button { margin: .5rem .25rem 0 0; white-space: normal; }
+.adventure-cabin-chronicle .adventure-section-heading { flex-wrap: wrap; gap: .75rem; }
 @media (max-width: 900px) {
   .adventure-operation-layout { grid-template-columns: minmax(0, 1fr); }
   .adventure-village { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; padding: 1rem; background: #e8e7d6; min-height: 0; }
   .adventure-village-land { display: none; }
   .adventure-village-place { position: static; width: auto; display: grid; grid-template-columns: 2rem minmax(0, 1fr); text-align: left; justify-items: start; padding: .8rem; gap: .25rem .75rem; }
   .adventure-village-place .adventure-symbol { grid-row: span 2; }
+  .adventure-village-place > span { grid-column: 2; }
   .adventure-village-place--rooms { transform: none; }
   .adventure-service-day li { flex-direction: column; align-items: start; }
   .adventure-operation > .adventure-section-heading { flex-wrap: wrap; gap: .75rem; }

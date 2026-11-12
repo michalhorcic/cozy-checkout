@@ -14,6 +14,11 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
   attr :campaign_query, :any, default: nil
   attr :campaign_open, :boolean, default: false
   attr :editor_open, :boolean, default: false
+  attr :view, :string, required: true
+  attr :page, :integer, required: true
+  attr :more, :boolean, required: true
+  attr :occurrences, :map, required: true
+  attr :confirmation, :any, required: true
 
   def templates(assigns) do
     ~H"""
@@ -26,6 +31,21 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
       <p class="adventure-muted my-3">
         Tady upravuješ šablony budoucích výprav. Každá nabídne jeden otevřený úkol; v táboře si ho vybereš. Nová šablona začíná pozastavená.
       </p>
+      <nav class="flex flex-wrap gap-3 my-3" aria-label="Zobrazení šablon">
+        <button
+          :if={@view == "archive"}
+          phx-click="template-view"
+          phx-value-view="current"
+          class="adventure-text-link"
+        >Aktivní a pozastavené</button>
+        <button
+          :if={@view == "current"}
+          phx-click="template-view"
+          phx-value-view="archive"
+          class="adventure-text-link"
+        >Otevřít archiv šablon</button>
+        <strong :if={@view == "archive"}>Archiv šablon · nevratné</strong>
+      </nav>
       <div :if={@profile} class="flex flex-wrap gap-3 mb-4">
         <button phx-click="generate-tasks" class="adventure-button adventure-button--primary">Obnovit opakované úkoly</button>
         <button phx-click="example-templates" class="adventure-button">Přidat 7 doporučených šablon</button>
@@ -165,27 +185,38 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
                                                                                         template.assigned_profile_id
                                                                                       )} · {template.xp} XP · verze {template.version}
         </p>
-        <p class="text-sm">
-          {applicability_label(template.applicability)} · od {Calendar.strftime(
-            template.starts_on,
-            "%d. %m. %Y"
-          )}
-        </p>
-        <p :if={template.cadence == "weekly"} class="text-sm">
-          Dny: {Enum.map_join(
-            template.weekdays,
-            ", ",
-            &Enum.at(["Po", "Út", "St", "Čt", "Pá", "So", "Ne"], &1 - 1)
-          )}
-        </p>
+        <details class="adventure-template-details">
+          <summary>
+            Podrobnosti · {length(Map.get(@occurrences, template.id, []))} otevřených úkolů
+          </summary>
+          <p class="text-sm">
+            {applicability_label(template.applicability)} · od {Calendar.strftime(
+              template.starts_on,
+              "%d. %m. %Y"
+            )}
+          </p>
+          <p :if={template.description != ""} class="text-sm">{template.description}</p>
+          <p :for={quest <- Map.get(@occurrences, template.id, [])} class="text-sm">
+            {quest.definition_snapshot["title"]} · termín {if quest.due_on,
+              do: Calendar.strftime(quest.due_on, "%d. %m. %Y"),
+              else: "neurčen"}
+          </p>
+          <p :if={template.cadence == "weekly"} class="text-sm">
+            Dny: {Enum.map_join(
+              template.weekdays,
+              ", ",
+              &Enum.at(["Po", "Út", "St", "Čt", "Pá", "So", "Ne"], &1 - 1)
+            )}
+          </p>
+          <p :if={template.last_check["state"]} class="text-sm">
+            Kontrola {template.last_check["day"]}: {check_label(template.last_check["state"])}
+          </p>
+          <p :if={template.last_check["result"]} class="text-sm">
+            {result_label(template.last_check["result"])}
+          </p>
+        </details>
         <p :if={template.next_due_on && template.status == "active"} class="text-sm">
           Další plánovaný termín: {Calendar.strftime(template.next_due_on, "%d. %m. %Y")}
-        </p>
-        <p :if={template.last_check["state"]} class="text-sm">
-          Kontrola {template.last_check["day"]}: {check_label(template.last_check["state"])}
-        </p>
-        <p :if={template.last_check["result"]} class="text-sm">
-          {result_label(template.last_check["result"])}
         </p>
         <p :if={template.last_check["state"] == "unknown"} class="text-sm">
           Podmínku nelze ověřit. Potřebnou práci můžeš přidat jako vlastní jednorázový úkol.
@@ -195,49 +226,67 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
           phx-click="edit-template"
           phx-value-id={template.id}
           class="adventure-button"
-        >Upravit šablonu</button>
+        ><.icon name="hero-pencil-square" class="size-4" /> Upravit</button>
         <button
           :if={@profile && template.status == "paused"}
           type="button"
           phx-click="resume-template"
           phx-value-id={template.id}
           class="adventure-button adventure-button--primary"
-        >Spustit šablonu</button>
-        <details :if={@profile && template.status != "archived"} class="adventure-template-controls">
-          <summary>Pozastavit nebo archivovat šablonu</summary>
-          <.form
-            for={%{}}
-            id={"template-status-#{template.id}"}
-            phx-submit="template-status"
-            class="grid gap-2 sm:grid-cols-3"
-          >
-            <input type="hidden" name="template_id" value={template.id} />
-            <.input
-              name="state[status]"
-              value=""
-              type="select"
-              label="Změnit provoz šablony"
-              prompt="Vyber akci"
-              required
-              options={[
-                {"Spustit / obnovit", "active"},
-                {"Pozastavit", "paused"},
-                {"Archivovat šablonu", "archived"}
-              ]}
-            />
-            <.input
-              name="state[open_choice]"
-              value=""
-              type="select"
-              label="Otevřený úkol"
-              prompt="Výslovně vyber"
-              required
-              options={[{"Ponechat (také při obnovení)", "keep"}, {"Zrušit a archivovat", "cancel"}]}
-            />
-            <button type="submit" class="adventure-button self-end">Použít změnu</button>
-          </.form>
-        </details>
+        ><.icon name="hero-play" class="size-4" /> Spustit / obnovit</button>
+        <button
+          :if={@profile && template.status == "active"}
+          phx-click="confirm-template-status"
+          phx-value-id={template.id}
+          phx-value-status="paused"
+          class="adventure-button"
+        ><.icon name="hero-pause" class="size-4" /> Pozastavit</button>
+        <button
+          :if={@profile && template.status != "archived"}
+          phx-click="confirm-template-status"
+          phx-value-id={template.id}
+          phx-value-status="archived"
+          class="adventure-button"
+        ><.icon name="hero-archive-box" class="size-4" /> Archivovat</button>
+        <section
+          :if={@confirmation && @confirmation.id == template.id}
+          id={"template-confirm-#{template.id}"}
+          class="adventure-template-confirm"
+          aria-label="Potvrzení změny šablony"
+        >
+          <h4>
+            {if @confirmation.status == "paused",
+              do: "Pozastavit šablonu",
+              else: "Nevratně archivovat šablonu"}?
+          </h4>
+          <p>
+            Budoucí generování se zastaví. Výslovně rozhodni o otevřené práci. {if @confirmation.status ==
+                                                                                     "archived",
+                                                                                   do:
+                                                                                     "Archivovanou šablonu nelze obnovit."}
+          </p>
+          <button phx-click="apply-template-status" phx-value-choice="keep" class="adventure-button">Potvrdit · ponechat otevřený úkol</button>
+          <button phx-click="apply-template-status" phx-value-choice="cancel" class="adventure-button">Potvrdit · zrušit a archivovat otevřený úkol</button>
+          <button phx-click="cancel-template-status" class="adventure-button">Zpět</button>
+        </section>
       </article>
+      <p :if={@templates == []}>V tomto zobrazení nejsou další šablony.</p>
+      <nav class="flex flex-wrap gap-3 my-3" aria-label="Stránky šablon">
+        <button
+          :if={@page > 0}
+          phx-click="template-page"
+          phx-value-direction="previous"
+          class="adventure-button"
+        >Předchozí</button>
+        <span>Strana {@page + 1} · nejvýše 30 šablon</span>
+        <button
+          :if={@more}
+          phx-click="template-page"
+          phx-value-direction="next"
+          class="adventure-button"
+        >Další</button>
+      </nav>
+      <button phx-click="template-history" class="adventure-text-link">Načíst historii změn šablon</button>
       <details :if={@history != []} class="mt-4">
         <summary>Historie změn šablon (posledních 50)</summary>
         <p :for={version <- @history} class="text-sm py-2 border-t border-base-300">

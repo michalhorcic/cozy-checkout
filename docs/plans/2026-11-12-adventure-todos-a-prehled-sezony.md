@@ -1,6 +1,6 @@
 # Cozy Adventure – provoz a budování chaty
 
-- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, zapamatování hrdiny v PR #116; 4A dodána, schválený obecný základ 4B implementován v pracovní větvi, předání v oddílu 14; 4C zůstává návrh
+- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, zapamatování hrdiny v PR #116; 4A dodána, obecný základ 4B implementován v pracovní větvi; omezená schválená 4C a kompaktní opakování implementovány, předání v oddílu 15; následné schválené zjednodušení projektového UX popisuje oddíl 16
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: herní rozhraní nad provozem aplikace, správa questů, rozvoj chaty investičními projekty a kronika skutečných výsledků
@@ -38,7 +38,7 @@ Uživatel potvrdil:
 Další návrhy v tomto dokumentu jsou doporučený rozsah, nikoli už nasazené chování.
 Historický souhlas s implementací se týkal dokončených etap 3A/3B. Nový souhlas
 pro omezenou 4A a její dodávku zaznamenává oddíl 13. Následný souhlas s obecným
-základem 4B a jeho hranicemi zaznamenává oddíl 14; 4C zůstává návrh.
+základem 4B a jeho hranicemi zaznamenává oddíl 14; následné schválení omezené 4C zaznamenává oddíl 15.
 
 > **Aktuální směr (12. 11. 2026 odpoledne):** Tábor je provozovaná a postupně
 > vylepšovaná chata, nikoli jen seznam úkolů a odkazů. Oddíl 12 rozpracovává
@@ -269,12 +269,18 @@ samostatnou schvalovací bránu. V plánování se žádný nový provozní dota
    chaty a nabídnout jasné přechody do stávajících provozních funkcí.
 4. **Implementováno 4B – investiční projekty:** dlouhodobé zlepšení chaty rozdělené na
    skutečné questy, plánovaný rozpočet, návaznosti a ruční převzetí výsledku.
-5. **Návrh 4C – viditelný rozvoj:** dokončené projekty mění herní podobu chaty,
-   kroniku zlepšení a nabídku dalších plánů; nemění provozní čísla.
-6. **Původní 3C – porovnání a další ukazatele:** srovnatelné sezóny, poměry,
+5. **Implementována omezená 4C – viditelný rozvoj:** lidsky převzaté projekty
+   přidávají obecný milník oblasti a trvalou Kroniku chaty; nemění provozní čísla.
+6. **Plán 5A/5B – Služba dne:** ruční návrh skutečného questu z existujícího
+   podnětu, ochrana proti duplicitám a návazná práce bez automatického splnění.
+   Potvrzená produktová pravidla a schvalovací brány jsou v oddílu 17.
+7. **Další priorita 5C – živý Bar:** omezený read-only stav a původní provozní
+   odkazy; konkrétní rozsah, zdroje a dávkové čtení ještě vyžadují schválení.
+8. **Původní 3C – porovnání a další ukazatele:** srovnatelné sezóny, poměry,
    produkty a případně úkoly před příjezdem. Zůstává v zásobníku, není automaticky
    další implementací před herním provozem a investicemi.
-7. **Později:** osobní skill tree, klasické osobní přihlášení, úplné účetní
+9. **Později:** příprava příjezdů a údržba po výslovném výběru, osobní skill tree,
+   klasické osobní přihlášení, úplné účetní
    náklady/zisk, evidence majetku a odpisy. Plánování rekonstrukce může být
    projektem 4B; plné investiční účetnictví se tím nezavádí.
 
@@ -569,7 +575,7 @@ zůstávají ve stávajících funkcích. To je potvrzený směr této aktualiza
 
 Mapa a omezený provozní rozsah 4A byly následně výslovně schválené a implementované
 podle oddílu 13. Obecný základ projektů s etapami byl následně schválen podle
-oddílu 14. Vizuální odemykání a ostatní rozšíření 4C zůstávají doporučením.
+oddílu 14. Omezená 4C byla následně schválena podle oddílu 15; ostatní rozšíření zůstávají doporučením.
 
 Implementační základ: 3A/3B jsou hotové v PR #113/#115. Oprava preference
 hrdiny `76ab72b` byla sloučena v PR #116: localStorage s cookie zálohou,
@@ -933,3 +939,299 @@ Ověření: prošel formatter změněných souborů, celoprojektové
 shoda formatteru s připnutým CI není zaručena. Migrace nebyla lokálně aplikována,
 ExUnit ani precommit se nespouštěly a browserové ověření desktopu, 390/320 px
 a klávesnice zůstává v ručním checklistu.
+
+## 15. Schválená omezená 4C a kompaktní opakování (12. 11. 2026)
+
+Uživatel výslovně schválil obecné vizuální milníky šesti oblastí a trvalou
+Kroniku chaty z lidsky převzatých projektů, včetně dřívějších a archivovaných.
+Archivace nesmí odstranit milník. Výsledky se zobrazují napříč sezónami,
+odděleně od finanční kroniky. Bez dalších XP, bonusů, automatické údržby,
+stromu rozvoje nebo individuálních ilustrací.
+
+Samostatně schválena kompaktní správa opakování: výchozí aktivní/pozastavené,
+archiv jen výslovným odkazem, krátká tlačítka s ikonou místo stavových selectů,
+sbalené podrobnosti a viditelná neznámá podmínka. Pozastavení/archivace vyžadují
+dvě explicitní volby ponechat nebo zrušit/archivovat otevřenou práci plus Zpět.
+Žádná předvybraná volba; nevratná archivace a serverové validace se nemění.
+
+Schválení N+1: rozvoj nejvýše 2 Adventure SELECTy (úplný agregát všech oblastí
+a 100 projektů s převzetím), starší kronika pouze explicitně po 20 výsledcích
+s jedním lookahead řádkem, 1 SELECT na stránku. Opakování nejvýše 2 SELECTy
+(30 šablon + lookahead, otevřené výskyty dávkou), historie +1 pouze explicitně.
+Render, přepnutí oblasti a rozbalení podrobností 0 dotazů; žádný polling nebo
+nový provozní zdroj. Provozní rozpočet 15 SELECTů zůstává zachován.
+
+Implementováno na existující `feat/adventure-projects`, navazuje na již
+commitnutou a pushnutou 4B `c4b4abf`; čerstvě ověřený main je `fc0842a`.
+Nové změny zůstávají bez commitu/pushe dle zadání. Používají stávající přijetí
+projektu bez migrace; přímé odkazy otevírají i starší archivovaný detail.
+Rozsah pouze Adventure context/web/CSS/testy/dokumentace. Instrukce, sdílené
+moduly, router a konfigurace se nemění. Cizí `rel/env.sh.eex` a neversionovaný
+`generated_images/` zůstávají nedotčené.
+
+Přidány regrese pro archivované a starší milníky, stránkování, dávkové stropy,
+explicitní volby otevřené práce, neznámý stav, přímý detail a lazy historii.
+Lokální testy ani precommit se nespouštějí, CI ověří uživatel. Ručně zbývá
+ověřit desktop/390/320 px, klávesnici, otevření starších výsledků, zachování
+milníku po archivaci a obě volby potvrzení opakované šablony.
+
+Ověření 4C: prošel formatter změněných souborů, celoprojektové
+`MIX_ENV=test mix format --check-formatted`, `MIX_ENV=test mix compile --warnings-as-errors`,
+`MIX_ENV=test mix assets.build` a `git diff --check`. Instalovaný Elixir je
+1.20.5 / OTP 29 (ERTS 17.1.1), piny jsou 1.20.4-otp-29 / Erlang 29.1;
+shoda formatteru s připnutým CI tedy není potvrzená. ExUnit ani browserové
+ověření nebylo spuštěno; query rozpočty mají přidané regrese pro CI.
+
+## 16. Schválené zjednodušení projektů (12. 11. 2026)
+
+Uživatel výslovně schválil běžný postup **Návrh → Realizace → Převzato**:
+jedno tlačítko **Schválit a zahájit**, potom uzamčený plán i kroky; pozastavený
+projekt se vrací přímo do realizace. Starší stavy `ready` a `approved` i audit
+zůstávají, bez přepisu dat. Převzetí je nadále výslovné lidské potvrzení s výběrem
+přispěvatelů, bez dalších XP a bez automatického dokončení projektu.
+
+Schválený **Nový krok** vyžaduje pouze název. V jedné transakci přes existující
+`Tasks` vytvoří skutečný čekající quest a připojí etapu; ne druhý úkolový model,
+automatické zahájení nebo další odměnu. Očekávaný výstup přebírá název questu,
+lze jej upřesnit. Alternativa vyhledá a připojí existující quest. Další nastavení
+používají dosavadní validace a odměny; žádné nové provozní zdroje.
+
+Implementace na stávající `feat/adventure-projects` zachovává rozpracovanou 4C
+a kompaktní opakování. Projektové karty mají zřetelný stav, oblast a postup;
+detail odděluje plán, kroky, další akci, převzetí a sbalený audit. Založení má
+název a oblast, ostatní pole jsou nepovinná za rozbalením. Editory se otevírají
+na vyžádání a po úspěchu zavírají. Formulář převzetí se ukáže až po dokončení
+všech kroků a kliknutí na převzetí. Prázdná metadata se nevypisují, pravidla jsou
+v nápovědě. Vlastní izolované CSS zachovává papír/les/zlato, ovládání má dotykové
+rozměry, formuláře a karty se skládají i pro 390/320 px.
+
+Data zůstávají nepovinná, bez změny schématu. Zobrazení **12. 11. 2026** sdílí
+projekt i převzaté výsledky mapy a Kroniky chaty; přesné časy jsou pouze v
+rozbaleném auditu s výslovným UTC. Formátování je čistě v paměti, datumový input
+zůstává nativní a lokalizovaný prohlížečem.
+
+Schválené čtecí rozpočty se nemění: projekty 2 + vybraný audit 1, hledání questu
+1, převzetí 4, svět 2, šablony 2. Žádné čtení po položce. Inline mutace skládá
+existující omezené rutiny (7 SELECTů, nejvýše 8 se zadaným osobním přiřazením),
+počet nezávisí na počtu kroků. Otevření/zavření editorů 0 SELECTů. Chyba vrátí
+quest, vazbu i audit atomicky. Regrese pokrývají tyto hranice, zamčení,
+historické stavy, česká data, nulové XP při založení a starý archivovaný deep link.
+
+Bez nové migrace, konfigurace, commitu nebo pushe. `rel/env.sh.eex`,
+`generated_images/`, instrukce a sdílené moduly nebyly upravovány.
+Lokální ExUnit ani precommit se nespouštějí, CI ověří uživatel. Ruční browserové
+ověření desktopu/390/320 px a klávesnice zůstává k provedení. Lokální toolchain
+je Elixir 1.20.5 / OTP 29 (ERTS 17.1.1), nikoli piny 1.20.4-otp-29 / Erlang 29.1;
+shoda formatteru s CI proto není potvrzená.
+
+Ověření této úpravy: prošel formatter změněných Elixir/HEEx souborů,
+celoprojektové `MIX_ENV=test mix format --check-formatted`,
+`MIX_ENV=test mix compile --warnings-as-errors`, `MIX_ENV=test mix assets.build`
+a `git diff --check`. Query limity a rollback mají doplněné testy pro CI,
+nikoli lokálně změřené výsledky běhu testů.
+
+## 17. Další etapy: Služba dne a živý Bar (12. 11. 2026)
+
+Tato revize rozepisuje další práci, nikoli další implementaci. Uživatel potvrdil
+produktová pravidla Služby dne níže a po jejím propojení upřednostnil živý Bar
+před přípravou příjezdů a údržbou. Souhlas se zápisem plánu není souhlasem
+s implementací, novými zdroji ani novým SQL rozpočtem. Etapy 3A až omezená 4C
+se neopakují; stav implementace a ověření zachovávají oddíly 13–16.
+
+### 17.1 Pořadí a hranice dodávek
+
+| Etapa | Výsledek | Stav |
+| --- | --- | --- |
+| 5A – Podnět na quest | Ze současné Služby dne ručně připravit a potvrdit skutečný quest bez duplicit | Produktová pravidla potvrzena, implementace čeká |
+| 5B – Návazná práce | U podnětu rozlišit otevřenou práci a změnu či neověřitelnost zdroje | Navazující rozsah k potvrzení před implementací |
+| 5C – Živý Bar | Užitečný read-only stav baru a cesta do původních funkcí | Další priorita po Službě dne; konkrétní zdroje a rozsah neschválené |
+| Později – Příprava a péče | Dobrovolná příprava příjezdu a nabídka údržby převzatého zlepšení | Zásobník, ne součást 5A–5C |
+| Samostatně – Analytika 3C | Porovnání sezón, poměry a produktové přehledy | Zásobník, nezaměňovat s rozvojem světa 4C |
+
+Nejprve dokončit ověření existující dodávky: uživatel ověří CI, ručně projít
+desktop/390/320 px a klávesnici, projekty a jejich převzetí, archivaci bez ztráty
+milníku i obě volby pozastavení opakovaných šablon. Zbývá ověření projektové
+migrace a přesně připnutého toolchainu. Tento plán netvrdí, že tyto kontroly
+již proběhly, ani nepovoluje lokální testy.
+
+### 17.2 5A: z konkrétního podnětu skutečné zadání
+
+**Cíl:** dokončit každodenní smyčku „vidím problém → připravím quest → člověk
+udělá práci → člověk potvrdí splnění“. Nezavádět další dashboard ani samostatný
+úkolovník Služby dne. Použít existující questy, atribuci, osobní sloty a XP.
+
+Potvrzený první rozsah tvoří pouze existující podněty společné projekce
+`Operation`: neúplné/chybějící podklady stravování a problémy jídelníčku.
+Přesné typy před implementací ověřit proti `Dashboard.overview/1`; nevymýšlet
+nový zdroj nebo vlastní odlišnou definici problému. Příjezdy a odjezdy zůstávají
+informací, nikoli důkazem potřeby úklidu či technické nepřipravenosti.
+
+Navržená kompaktní položka služby:
+
+- Stručný důvod a oblast; datum příjezdu pouze jako označený kontext v českém
+  formátu. Není to datum zjištění problému ani automatický termín práce.
+- **Otevřít podklad** vede do stávajícího pobytu či menu; žádná kopie provozního
+  formuláře v Adventure.
+- **Připravit quest** otevře krátký předvyplněný návrh, nic ještě nezapisuje.
+- Pokud existuje otevřená práce, místo zakládání nabídnout **Otevřít quest**
+  s českým stavem. Samotné prohlížení či kliknutí na podklad nic nesplní.
+
+Potvrzený návrh questu:
+
+- Předvyplněný upravitelný název, oblast a stabilní odkaz na podklad.
+- Přiřazení a velikost jsou volitelné; další nastavení schovat do podrobností.
+  Použít stávající výchozí pravidla `Tasks`, nikoli odměnu podle závažnosti
+  systémové výstrahy. Před potvrzením je zřejmé, jaký quest a odměna vzniknou.
+- Výchozí stav **Čeká**, bez povinného termínu. Vytvoření nic automaticky
+  nerozpracuje ani nezabere osobní slot. Přijetí a splnění probíhá v táboře.
+- Zpět/zavření návrhu nemění data. Po úspěchu stručné potvrzení a odkaz na quest,
+  ne další povinný průvodce nebo automatický přesun do provozu.
+
+### 17.3 Identita podnětu, souběhy a historie
+
+Uživatel potvrdil **nejvýše jeden otevřený quest pro stejný pobyt a typ problému**.
+Identita zahrnuje zdrojový namespace, stabilní ID pobytu a stabilní typ podnětu.
+Nezahrnuje text důvodu, pořadí položky, aktuální profil, sezónu ani datum příjezdu.
+Posun pobytu nebo změna formulace proto nevytvoří druhé otevřené zadání.
+
+Technický návrh musí před implementací vyřešit:
+
+- Vazbu podnětu na skutečný quest pouze ve vlastních Adventure datech, se
+  zdrojovou referencí, verzí definice a minimálním dobovým kontextem. Žádné
+  kopie booking/guest struktur, jména hostů, kontakty či obsah dokladů.
+- Databázovou ochranu jednoho otevřeného zadání a atomické založení questu,
+  vazby i auditu. Dvojklik, retry a dva hrdinové současně vrátí tutéž otevřenou
+  práci, nevytvoří druhý quest ani XP. Pouhá kontrola seznamu v socketu nestačí.
+- Souhru vazby s dokončením a archivací přes stávající `Tasks`, aby otevřenost
+  nezůstávala zastaralá. Konkrétní model, constraint a pořadí zámků navrhnout
+  po kontrole aktuálních schémat; tento plán nepředepisuje neověřenou migraci.
+- Uchování historického zadání po změně nebo zániku podkladu. Žádná kaskáda
+  z provozního smazání nesmí zničit quest, důkaz, vazbu nebo XP.
+
+Zmizelý podnět **sám nesplní ani nezruší quest**. Dokončení potvrzuje člověk
+podle běžných pravidel, ne přepočet zdroje. Hotový quest zároveň není důkazem,
+že je současný provozní podklad v pořádku.
+
+Po dokončení nebo zrušení se nový quest nikdy nevytvoří obnovou. Pokud problém
+přetrvává nebo se vrátí, lze vědomě zvolit **Připravit další řešení**, nejprve
+uvidět předchozí práci a potvrdit nové zadání. Původní historie a odměna zůstávají,
+nejde o automatické znovuotevření ani opětovné odměnění téhož questu. Při souběhu
+tohoto nového pokusu opět platí nejvýše jedna otevřená práce.
+
+### 17.4 5B: návazná práce a pravdivý stav zdroje
+
+V první 5A musí být vidět již existující otevřený quest, aby se nezakládaly
+duplicity. Samostatná 5B rozvine orientaci v návazné práci, nikoli další seznam
+pro plnění nebo nový stavový automat questů.
+
+Navržené oddělené informace:
+
+- **Práce:** čeká / rozpracováno / dokončeno / zrušeno podle Adventure.
+- **Podklad:** podnět potvrzený posledním načtením / podklad se změnil /
+  nelze ověřit nebo je zastaralý. Vždy respektovat čas a rozsah poslední obnovy.
+- Chybějící položka v omezeném výhledu není důkaz vyřešení. Pobyt mohl změnit
+  termín, vypadnout z okna, být smazán nebo zdroj selhal. Nápis „podnět již není
+  v aktuálním přehledu“ není potvrzení „vyřešeno“.
+- Seznam nejvýše čtyř viditelných podnětů není úplný zdroj pro porovnání.
+  Pro vztahy použít celou dostupnou projekci v jejím doloženém rozsahu; pokud
+  nestačí pro ověření absence, výsledek přiznat jako neověřitelný.
+
+Navrhnout krátký přístup k otevřené práci i poté, co podnět zmizí z hlavní čtveřice,
+bez zaplnění Tábora historií. Počet položek, stránkování a umístění tohoto
+souhrnu odsouhlasit před implementací 5B. Přijetí/splnění nadále patří do tábora,
+úpravy do knihy questů. Zdrojový stav a lidská práce se neslévají do jedné fajfky.
+
+### 17.5 Výkon, obnova a oprávnění Služby dne
+
+Nové N+1 riziko je čtení vazby/questu nebo pobytu pro každý podnět. Doporučený
+směr je **jedno dávkové Adventure čtení pro všechny klíče společné projekce**,
+případně samostatný omezený loader návazné práce; žádné dotazy po kartách,
+pobytech či jednotlivých dnech. Jde o návrh, nikoli schválený query rozpočet.
+
+Před kódováním předložit konkrétní počet SELECTů pro načtení, ruční obnovu,
+otevření návrhu, potvrzení a historii, včetně validačních čtení a souběhů.
+Nové provozní čtení není součástí schváleného rozsahu 5A. Dosavadní společné
+`Dashboard.overview(today Prague)` má stále nejvýše 15 provozních SELECTů;
+nevolat jej z každé karty, při otevření návrhu ani pro kontrolu duplicity.
+
+- Render a přepnutí oblasti neprovádí nové zdrojové dotazy; žádný polling.
+- **Obnovit provoz** obnovuje provozní projekci a dávkovou informaci o vazbách,
+  nikoli finanční kroniku; přesné složení loaderu schválit před implementací.
+- Návrh vychází z poslední známé projekce a uvádí její stáří. Starý či chybující
+  zdroj nesmí působit jako právě ověřený; quest je stále ručně potvrzená práce.
+- Server nevěří libovolnému ID, typu či URL z klienta. Ověřit původ podnětu,
+  povolené typy a bezpečně sestavit interní odkaz; změnu mezi návrhem a zápisem
+  nepřekrýt tvrzením o čerstvém ověření. Konkrétní validaci navrhnout bez N+1.
+- Stávající admin PIN, aktivní self-report profil a feature flag chrání čtení
+  i mutace. Vypnutí modulu blokuje nové čtení i zápisy podle dnešních pravidel.
+- Pouze vlastní Adventure data. Nutnou výjimku ve sdílených částech nejprve
+  předložit; žádné provozní mutace, HTTP, emaily, skladové či účetní vedlejší efekty.
+
+### 17.6 Akceptace 5A a 5B
+
+- Z existujícího podnětu otevřít krátký návrh, zrušit jej bez zápisu, poté založit
+  jeden čekající quest bez termínu a bez obsazení osobního slotu.
+- Název, přiřazení a velikost odpovídají potvrzenému návrhu; odkaz vede na správný
+  podklad. Datum příjezdu je česky a jasně oddělené od volitelného termínu práce.
+- Dvojklik, retry, souběžné založení a stejný podnět po změně textu/příjezdu
+  zachovají jediný otevřený quest; ověřit i rollback celé mutace.
+- Existující quest lze dohledat a přijmout/splnit běžným způsobem. XP získá
+  skutečný splnitel nebo chata podle dosavadního typu, právě jednou za quest.
+- Změna menu, zmizení podnětu, posun mimo výhled, zrušení pobytu nebo chyba
+  načítání quest samy nesplní, nezruší ani neodmění. Neúplnost není úspěch.
+- Přetrvávající problém po uzavření nabídne jen explicitní další řešení
+  s historií; opakovaná obnova nevytvoří další práci.
+- Porovnat malé a velké množství podnětů: konstantní schválený query rozpočet,
+  žádné čtení po položce a žádné SQL z renderu nebo změny oblasti.
+- Ověřit pouze Adventure doménové zápisy, absenci provozních hooků/HTTP,
+  feature flag a PIN; zachovat soukromí projekce a historii starých questů.
+- Přidat kontextové a LiveView regrese; běh testů ponechat CI podle AGENTS.md,
+  pokud uživatel výslovně neschválí lokální běh. Ručně ověřit desktop/390/320 px,
+  fokus návrhu, návrat po zavření a ovládání klávesnicí.
+
+### 17.7 5C: živý Bar jako další priorita
+
+Uživatel upřednostnil Bar po Službě dne. Nejde zatím o schválení konkrétních
+metrik ani libovolného skladového čtení. Před implementací ověřit a předložit:
+
+1. První užitečný rozsah: evidované zásoby a existující limity/upozornění;
+   otevřené účty případně jako samostatná následující dodávka. Vybrat několik
+   konkrétních údajů, ne kopii skladového či prodejního dashboardu.
+2. Přesný význam a úplnost množství, jednotek a limitů. Chybějící limit není
+   důkaz dostatečné zásoby; stav evidence není fyzická inventura. Nepřidávat
+   domnělé nulové zásoby nebo automatické doporučené nákupy.
+3. Dávkový read-only adaptér s konkrétním query rozpočtem ke schválení.
+   `Inventory.list_bar_stock_products/0` a `get_stock_overview/0` mají známé
+   dotazy po produktu; nepoužít je přímo jako loader mapy a neopravovat kvůli
+   tomu svévolně provozní modul mimo Adventure.
+4. Ruční obnovu, stáří a chybové stavy, soukromí otevřených účtů a dostupné
+   odkazy do původního skladu/účtů. Žádné zásahy do veřejného POS nebo sdílených
+   layoutů bez samostatně schválené výjimky.
+
+Živé skladové počty nebudou přejmenováním finanční kroniky. **Inkaso baru bez
+servisu** zůstává verzovaným sezónním snapshotem podle `payment_date`, nikoli
+aktuálním prodejem, hotovostí na investice nebo ziskem. Obnova baru sama
+nepřepočítá kroniku. Zobrazení stavu nic neobjedná, neodečte ze skladu,
+neuzavře účet, nezaloží platbu ani automaticky nevytvoří quest či XP.
+
+Případné **Připravit quest** ze skladového upozornění využije vzor 5A až po
+samostatném určení identity podnětu a opakování. Klíč pobyt + typ z kuchyně
+nelze bez rozhodnutí přenést na produkt, sklad nebo inventurní období.
+
+### 17.8 Zásobník po prioritních dodávkách
+
+- **Příprava příjezdu:** člověkem vybrané kroky, ne automatický úklid za každý
+  pobyt. Předem určit překryvy skupin, termíny, duplicity a vazbu na dnešní
+  opakované šablony, aby stejná práce nevznikala dvakrát.
+- **Údržba převzatého zlepšení:** po převzetí pouze nabídnout člověku založení
+  nebo připojení šablony. Žádná automatická aktivace ani smyšlený servisní interval.
+- **Další rozvoj světa:** nepovinné vzory projektů, konkrétní ilustrace a fotografie
+  před/po až podle reálné potřeby. Milník nikdy nezvyšuje účetní či fyzickou kapacitu.
+- **Ekonomika a 3C:** další lokální upozornění, srovnatelné sezóny a produktové
+  ukazatele samostatně po definici zdrojů a úplnosti. Skutečné náklady, alokace
+  dokladů a zisk nejsou součástí Služby dne ani živého Baru.
+
+Před každou dodávkou znovu ověřit aktuální větev, skutečný stav implementace
+a čerstvý main; příprava tohoto plánu nepovoluje změnu větve, cherry-pick,
+commit nebo push. Rozpracované změny a cizí soubory zachovat. Tento zápis mění
+pouze plán, nikoli instrukce, provozní kód, schémata či konfiguraci.

@@ -31,6 +31,38 @@ defmodule CozyCheckout.Adventure.Templates do
       else: []
   end
 
+  def page(view \\ "current", page \\ 0)
+      when view in ["current", "archive"] and is_integer(page) and page >= 0 do
+    if Adventure.enabled?() do
+      statuses = if view == "archive", do: ["archived"], else: ["active", "paused"]
+
+      templates =
+        Repo.all(
+          from t in TaskTemplate,
+            where: t.status in ^statuses,
+            order_by: [asc: t.title, asc: t.id],
+            offset: ^(page * 30),
+            limit: 31
+        )
+
+      ids = templates |> Enum.take(30) |> Enum.map(& &1.id)
+
+      open =
+        Repo.all(
+          from q in Quest,
+            where:
+              q.template_id in ^ids and q.status in ["waiting", "active"] and
+                is_nil(q.archived_at),
+            select: {q.template_id, q}
+        )
+        |> Enum.group_by(&elem(&1, 0), &elem(&1, 1))
+
+      %{templates: Enum.take(templates, 30), open: open, more?: length(templates) > 30}
+    else
+      %{templates: [], open: %{}, more?: false}
+    end
+  end
+
   def history do
     if Adventure.enabled?(),
       do:

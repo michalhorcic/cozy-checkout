@@ -449,8 +449,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(Quest, :count) == 0
 
     view
-    |> form("#template-status-#{template.id}", %{state: %{status: "active", open_choice: "keep"}})
-    |> render_submit()
+    |> element("#template-#{template.id} button[phx-click=resume-template]")
+    |> render_click()
 
     view |> element("button[phx-click=generate-tasks]") |> render_click()
     task = Repo.one!(Quest)
@@ -458,8 +458,15 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     refute has_element?(view, "button[phx-click=start-task]")
 
     view
-    |> form("#template-status-#{template.id}", %{state: %{status: "paused", open_choice: "keep"}})
-    |> render_submit()
+    |> element("#template-#{template.id} button[phx-value-status=paused]")
+    |> render_click()
+
+    assert Repo.get!(TaskTemplate, template.id).status == "active"
+    refute has_element?(view, "#template-confirm-#{template.id} select")
+
+    view
+    |> element("#template-confirm-#{template.id} button[phx-value-choice=keep]")
+    |> render_click()
 
     assert Repo.get!(Quest, task.id).status == "waiting"
     assert has_element?(view, "#template-#{template.id}", "Pozastaveno")
