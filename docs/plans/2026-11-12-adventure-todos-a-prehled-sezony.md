@@ -1,6 +1,6 @@
 # Cozy Adventure – úkolovník a kronika sezóny
 
-- Stav: návrh další implementace; pouze plán, bez změn aplikace
+- Stav: etapa 3A a herní rozdělení Tábor/Questy implementovány v PR #113; sezónní etapy 3B/3C navazují
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: správa questů, opakované šablony a sezónní přehled reálného provozu
@@ -27,7 +27,12 @@ Uživatel potvrdil:
 - Poznámka u splnění zůstává nepovinná, hrdina zapamatovaný v prohlížeči.
 
 Další návrhy v tomto dokumentu jsou doporučený rozsah, nikoli už nasazené chování.
-Tento plán nepovoluje zahájení implementace bez dalšího pokynu uživatele.
+Implementaci uživatel následně zahájil výslovným pokynem pokračovat podle obou plánů.
+
+> **Aktuální směr rozhraní (12. 11. 2026):** hra je hlavní rozhraní pro todos
+> a rozcestník do provozu chaty. Tábor slouží k hraní, Questy ke správě zadání.
+> Potvrzená rozhodnutí a pravidla dalších iterací jsou v oddílu 10; nahrazují
+> starší návrhy, které duplikují výběr či plnění na obou stránkách.
 
 ## 1. Úkoly: seznam práce a tři rozpracované výpravy
 
@@ -276,3 +281,197 @@ Každou dodávku lze ověřit samostatně. Nezačínat automatizací plateb či 
   a přiznaná self-report identita zůstanou zachované. Bez přístupu z veřejného POS.
 - Nové testy podle AGENTS.md, CI a následný ruční checklist. Tento dokument
   zatím nepředstavuje implementaci ani výsledek nových testů.
+
+## 8. První dodávka etapy 3A (12. 11. 2026)
+
+Implementováno: vlastní jednorázové úkoly, přiřazení a převzetí, velikost/XP,
+termín, priorita, kategorie a popis; zásobník, společný limit tří rozpracovaných
+s původním katalogem; skutečný splnitel, explicitní přispěvatelé a jediná
+společná odměna; editace před rozpracováním, archivace a filtrovaná historie.
+Správa je v Questech, hlavní tábor ukazuje jen osobní rozpracované výpravy.
+
+Migrace `20261112120000` rozšiřuje stávající herní tabulky bez přepsání
+legacy UUID, snapshotů, `profile_id` nebo award keys. Nové přiřazení a zadavatel
+mají vlastní FK, splnitel a přispěvatelé jsou v důkazu. Transakční profilový
+zámek chrání limit a questový zámek jednu odměnu napříč různými splniteli.
+Archivace neotevírá možnost opakovaného získání odměny. Migrace má záměrně
+nevratné `down`, protože odstranění polí by zničilo novou historii.
+
+Nové ExUnit/LiveView testy připravené pro CI: limit napříč katalogem a úkoly,
+atribuce, společné odměny, souběhy na samostatných spojeních, rollback,
+filtry, validace, archivace, flag a zápisy pouze do Adventure. Lokální
+ExUnit testy nebyly spuštěny; CI ověřuje uživatel. Prošla kompilace
+`MIX_ENV=test mix compile --warnings-as-errors`, sestavení assetů, formátování
+celého projektu a migrace na prázdném PostgreSQL 17. V Chromium byl ručně
+proklikán přechod založení → rozpracování → dokončení jiným splnitelem
+(Michalovo přiřazení, Lucka +100 XP) a společné dokončení s povinnými
+přispěvateli (+250 pouze chatě), editace i archivace. Šířky 390/320 px
+neměly vodorovný přesah. Souběhové ExUnit scénáře zůstávají pro CI.
+
+Tato první dodávka byla následně ve stejném PR doplněna o opakování níže.
+Nové sezónní režimy a finanční adaptéry (etapa 3B) zůstávají další prací.
+Před jejich implementací je třeba dle AGENTS.md schválit nové dávkové čtení
+provozních zdrojů; souhlas pro působnost podle hostů se týká jen adaptéru
+`Adventure.Sources.Guests`. Dosavadní kampaně a jejich milníky se nemění.
+
+## 9. Dokončení etapy 3A ve stejném PR #113 (12. 11. 2026)
+
+Uživatel výslovně zadal další krok ve stejném PR a schválil jeden dávkový
+SELECT nad rezervacemi pro všechny splatné hostovské šablony dohromady.
+Implementováno:
+
+- Správa denních/týdenních šablon, dny týdne, výchozí přiřazení, velikost/XP,
+  popis, kategorie, priorita a působnost. Nová šablona je pozastavená;
+  sedm doporučených příkladů lze založit opakovatelnou akcí bez duplikací.
+- Verzování každé editace i stavové změny, audit aktéra a snapshot budoucího
+  výskytu. Otevřenému zůstává zadání i odměna, posouvá se jen termín.
+- Jeden otevřený výskyt vynucený partial unique indexem, unikátní klíč termínu,
+  template/quest locks a `SKIP LOCKED` při generování. První termín a historie
+  posunů jsou viditelné; dokončení ani XP nevznikají automaticky.
+- Hodinový Oban worker ve frontě `adventure` a ruční obnova sdílejí stejný
+  přepočet podle místních dnů Europe/Prague. Vypnutý modul blokuje i SQL dotazy
+  workeru. Samotný render negeneruje práci. Oban používá infrastrukturní
+  tabulky jobů; doménové zápisy zůstávají pouze v Adventure.
+- Pozastavení/archivace vyžadují výslovné rozhodnutí ponechat, nebo zrušit
+  otevřenou práci. Ponechanou lze dokončit později. Nový výskyt se negeneruje
+  za místní den, kdy byla předchozí práce dokončena/zrušena.
+- Působnost vždy / vybraná aktivní kampaň v období / prokazatelně přítomní
+  hosté. Hostovský adaptér má jeden agregovaný SELECT za celý přepočet,
+  nemění statusy a neukládá údaje hostů. Neznámé podklady nejsou prázdná chata.
+  Dnešní neověřená či prázdná podmínka se během dne znovu kontroluje;
+  minulá přítomnost se zpětně nedomýšlí a otevřené úkoly se odjezdem neuzavřou.
+- Migrace `20261112130000` zakládá původní čtyři definice jako pozastavené
+  šablony na hrdinu. Nezmění legacy UUID, snapshoty, vlastnictví ani odměny;
+  generování převezme otevřenou instanci a respektuje již uzavřený týden.
+  Původní frekvence a jeden týdenní den zůstávají u těchto definic omezené
+  kvůli kontinuitě period keys; pro novou frekvenci se zakládá nová šablona.
+  Změna příjemce nepředefinuje historické `profile_id`.
+
+Podrobný návod, definice přítomnosti a omezení jsou v
+[ADVENTURE.md](../features/ADVENTURE.md). Přidané ExUnit/LiveView scénáře
+pokrývají sedm zmeškaných dnů, DST a přelom roku, verze, další termín po
+skutečném splnění, působnost a její neznámé údaje, explicitní pozastavení,
+legacy kontinuitu, souběhy a zápisy pouze do Adventure. Lokální ExUnit
+sada nebyla spuštěna dle AGENTS.md; výsledky CI ověřuje uživatel.
+
+Ověření této navazující změny: kompilace s warnings-as-errors, sestavení
+assetů a formátování celého projektu prošly na připnutém toolchainu. Migrace
+se aplikovala na izolovaný PostgreSQL 17 s existujícími herními daty.
+V Chromium byly proklikány založení, přepočet velikosti na XP, spuštění,
+opakovaná obnova, pozastavení s ponecháním a sedm doporučených šablon.
+Hostovské šablony bez hostů nevytvořily práci, po vložení aktivního testovacího
+pobytu vznikly dva výskyty s jediným společným SELECTem; ověřen i vyhledávací
+výběr kampaně a týdenní dny. Simulace sedmi zmeškaných dnů zachovala jeden
+úkol s původním termínem a historií posunu. Generování nepřidalo XP.
+Desktop a šířky 390/320 px byly bez vodorovného přesahu. ExUnit sada zůstává
+pro CI podle výše uvedených pravidel.
+
+Po skutečném dokončení opakovaného úkolu a po archivaci jiného otevřeného
+výskytu byl v Chromium ověřen i opakovaný přepočet téhož dne: žádná nová
+instance ani duplicitní XP, další termín následující den. Agregace času
+uzavření používá explicitní UTC typ před převodem na pražský den; regresní
+scénáře zahrnují dokončení i zrušení.
+
+### Oprava nahlášených CI pádů (12. 11. 2026)
+
+`Tasks.update/3` řetězilo `or` s nullable `archived_at` a `template_id`;
+mezivýsledek `nil` vyvolal `BadBooleanError`. Podmínky nyní používají
+explicitní `not is_nil(...)`, stejně jako kontroly rozpracování a dokončení.
+Regrese ověřuje editovatelný čekající jednorázový úkol, blokovanou editaci
+výskytu šablony a archivované práce. Na žádost uživatele byly lokálně spuštěny
+`PGUSER=elixir PGPASSWORD='' mix test test/cozy_checkout/adventure test/cozy_checkout_web/adventure`:
+**72 testů prošlo** na izolovaném PostgreSQL 17. Prošla také kontrola
+formátování celého projektu. Kompletní sadu a CI ověřuje uživatel.
+
+## 10. Herní interface: tábor, kniha questů a svět chaty (12. 11. 2026)
+
+Uživatel požaduje rozhraní, které působí jako hra a skrze skutečné úkoly
+pomáhá spravovat chatu. Nestačí přidat XP k administračním kartám. Herní
+rozhraní má být každodenní místo pro výběr práce, její plnění, společný postup
+chaty a přechody do ostatních částí aplikace. Tuto prioritu zachovat i v dalších
+iteracích; nepřidávat stejné funkce na více herních obrazovek bez jasné role.
+
+Potvrzeno uživatelem: v táboře jsou osobní i společné výpravy. Pro přechod
+do aplikace chce herní rozcestník na rezervace, kuchyň, bar a finance.
+
+### Jednoznačné role obrazovek
+
+| Obrazovka | Co se zde dělá | Herní podoba |
+| --- | --- | --- |
+| Tábor | Vybrat hrdinu, najít výpravu, přijmout ji, pracovat na ní a potvrdit splnění; společné výpravy odděleně od tří osobních slotů | Domovská scéna chaty, portrét/XP hrdiny, sloty vybavení, aktivní výpravy, mapa světa a společná sezóna |
+| Questy | Vytvářet a upravovat zadání, přiřazení, odměny a termíny; spravovat opakování, pozastavení a archiv; číst historii | Kniha zadání se samostatnými částmi Jednorázové questy / Opakované questy / Historie |
+| Nastavení | Sezóny, pravidla a audit | Zázemí hry, bez duplikace plnění úkolů |
+
+**Tábor je herní plocha.** „Najít další výpravu“ otevře nástěnku skutečných
+čekajících zadání z knihy questů: vlastní jednorázové úkoly i aktuální výskyty
+spravovaného opakování. Při otevření se výslovně obnoví splatné šablony,
+bez udělení XP. Pevný katalog čtyř nabídek v UI se odstraní; původní API,
+instance a odměny zůstávají kvůli historii kompatibilní. Když nic nečeká,
+nabídka vede do knihy zadání, nevytváří fiktivní práci.
+
+Osobní výběr přednostně ukazuje úkoly pro aktuálního hrdinu a volné úkoly.
+Nabídka má také Společné a Všechny plus hledání. Přijetí osobního questu
+přiřadí práci aktuálnímu hrdinovi a zabere jeden ze tří slotů. Společné mají
+vlastní sekci a neobsazují osobní sloty; stále dávají jednu odměnu chatě
+s explicitními přispěvateli. Skutečný splnitel se dál volí při potvrzení.
+
+**Questy jsou kniha zadání.** Neobsahují druhou kopii tábora, aktivních výprav,
+sezónních karet nebo tlačítek pro zahájení a splnění. Jednorázová část upravuje
+jednorázová zadání; opakovaná část upravuje šablony, nikoliv neměnné snapshoty
+jednotlivých výskytů. Historie zahrnuje i opakované a společné úkoly. Role
+editace vs. hraní je vysvětlená přímo v nadpisu stránky. Úpravy zadání a odměny
+zůstávají před rozpracováním, změny šablon pro budoucí výskyty.
+
+### Vzhled a navigace jako hra
+
+- Vlastní herní rám kolem Adventure, ilustrovaná domovská scéna a čitelný HUD.
+  Běžný administrační sidebar hru neobklopuje; existující admin PIN a jeho
+  kontrola všech LiveView událostí zůstávají zachované. Viditelný vstup
+  „Do aplikace“ umožní kdykoliv opustit herní prostor.
+- Osobní výpravy představovat třemi viditelnými sloty a kartami přijatých
+  questů. Nabídka má podobu nástěnky/svitků s názvem, odměnou, přiřazením,
+  termínem a jasnou akcí přijetí. Hlavní obrazovku nezahltit formuláři.
+- Správu pojmout jako knihu, s odlišeným záhlavím, částmi a kartami zadání.
+  Vstupy a složité operace patří sem, nikoliv do aktivních výprav.
+- Mapa chaty má čtyři pojmenované cíle: Recepce → kalendář rezervací,
+  Kuchyně → stravovací plán, Bar → barový sklad, Pokladnice → doklady/platby.
+  Odkazy skutečně otevřou existující části aplikace. Přechod sám nikdy
+  nesplní quest, nevystaví doklad ani nezmění sklad. Po návratu zůstává
+  práce uložená a hrdina se obnoví z herní cookie.
+- Udržet světlé horské téma, materiály papíru/dřeva, konzistentní ikonografii,
+  responzivitu, ovládání klávesnicí a možnost omezení pohybu. Herní podoba
+  nesmí zhoršit čitelnost, orientaci ani dostupnost hlavních akcí na mobilu.
+
+### Další iterace
+
+Sezónní kroniku, rozvoj chaty a další oblasti navrhovat jako části herního
+světa. Herní motivace vychází ze skutečných todos a ověřeného stavu provozu;
+nezavádět fiktivní finanční výsledky, automatické splnění za pouhou návštěvu
+stránky ani další kopie úkolovníku. Toto zadání nyní zahrnuje mapu oblastí;
+konkrétní provozní odkazy na jednotlivých questech lze řešit samostatně podle
+potřeby. Následný sezónní přehled z etapy 3B má tento herní rám respektovat.
+
+### Akceptace této změny
+
+- Vytvořit nebo upravit jednorázový quest v knize, přejít do tábora a najít
+  stejné zadání přes „Najít další výpravu“, přijmout ho a potvrdit splnění.
+- Spustit opakovanou šablonu v knize a vybírat její splatný výskyt ve stejné
+  herní nabídce. Pozastavení s ponecháním zachová již otevřenou práci.
+- Kniha nemá výpravy ani tlačítka pro zahájení/splnění; tábor nemá editační
+  formuláře ani druhý katalog. Obě stránky mají odlišné hlavní nadpisy.
+- Společná výprava je v táboře vidět a její přijetí neubere osobní slot.
+- Mapa otevře skutečnou provozní stránku a návrat zachová hrdinu i práci.
+- Ověřit desktop, 390/320 px, hledání, klávesnici a zavření nástěnky s návratem
+  fokusu. Prohlížení nepřiděluje XP a počet dotazů nezávisí na počtu pobytů.
+
+Ověření herního rozdělení: na připnutém Elixir/OTP prošlo **76 lokálních
+ExUnit testů** Adventure včetně LiveView a souběhů; testy ověřují oddělené
+role stránek, nabídku vlastních i opakovaných úkolů, osobní limit, společné
+výpravy, historické původní questy a herní navigaci. Prošly kompilace,
+sestavení assetů, formátování celého projektu a `git diff --check`.
+V Chromium byla proklikána tvorba a editace zadání v knize, nabídka skutečného
+questu v táboře, osobní i společné přijetí, hledání, desktop a 390/320 px.
+Escape zavřel nástěnku a vrátil fokus na „Najít další výpravu“. Portál otevřel
+barový sklad a po návratu se obnovil Michal i jeho dva obsazené sloty.
+Kniha neobsahovala táborové výpravy a tábor neobsahoval editační formuláře.
+Tato úprava nemá další migraci ani konfiguraci; mění rozhraní a herní čtení.

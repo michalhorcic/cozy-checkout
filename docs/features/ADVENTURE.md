@@ -1,20 +1,30 @@
 # Cozy Adventure
 
 Volitelná hobby hra pro Michala a Lucku. Obsahuje osobní ruční questy, osobní
-i společná XP, kampaně, dva automatické pobytové achievementy a audit přepočtů.
+i společná XP, vlastní úkoly a opakované šablony, kampaně, dva automatické
+pobytové achievementy a audit přepočtů.
 Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních tabulek.
 
 ## Zapnutí a používání
 
 1. Nasaď migrace `20261111120000_create_adventure_foundation.exs` a
-   `20261111130000_add_adventure_campaigns.exs` standardním postupem aplikace.
-   Přidávají celkem šest tabulek s prefixem `adventure_`; druhá rozšiřuje
+   `20261111130000_add_adventure_campaigns.exs` a
+   `20261112120000_add_adventure_tasks.exs` a
+   `20261112130000_add_adventure_task_templates.exs` standardním postupem aplikace.
+   Přidávají celkem osm tabulek s prefixem `adventure_`; druhá rozšiřuje
    pouze herní XP ledger o společného příjemce a vazbu na achievement.
+   Třetí přidává pole vlastních úkolů a povoluje společnou questovou odměnu;
+   nepřepisuje UUID, snapshoty ani odměny dosavadních questů. Je záměrně
+   nevratná přes `ecto.rollback`, aby nemazala novou historii. Návrat staré
+   aplikace po založení nových úkolů vyžaduje samostatné posouzení kompatibility.
+   Čtvrtá přidává šablony, verze a vazbu výskytů; původní definice zakládá
+   pozastavené, bez přepsání starých instancí. Také uchovává historii nevratným `down`.
 2. Nastav `ADVENTURE_ENABLED=true` a restartuj aplikaci. Výchozí hodnota je
    `false`. Vypnutí skryje odkaz v administraci a zablokuje herní stránky i akce;
-   herní data a historie zůstanou uložené. Nevznikají žádné background joby.
+   herní data a historie zůstanou uložené. Hodinový Oban worker při vypnutí
+   neprovádí herní ani provozní dotazy. Fronta `adventure` má souběh 1.
 3. Po přihlášení stávajícím admin PINem otevři **Další agenda → Cozy Adventure**
-   (`/admin/adventure`) a klikni na **Založit herní profily**. Opakování setupu
+   (`/admin/adventure`) a klikni na **Začít dobrodružství**. Opakování setupu
    nezduplikuje profily a nezmění již uložené profily.
 4. Vyber Michala nebo Lucku. Jde o vlastní prohlášení, nikoli osobní přihlášení.
    Prohlížeč si volbu pamatuje jeden rok v cookie `cozy_adventure_hero`,
@@ -22,7 +32,8 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
    přechodu mezi záložkami a po obnovení stránky. Vymazání výběru nebo cookies
    volbu odstraní. Neplatný nebo neaktivní profil se neobnoví. Přepnutí
    profilu zruší rozpracované potvrzení questu.
-5. Aktivuj nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
+5. V **Questech** připrav zadání. V **Táboře → Najít další výpravu** přijmi
+   nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
    splnění. Poznámka je nepovinná (nejvýše 1000 znaků, bez minimální délky);
    případně ji rozbal přes **Přidat poznámku**. Aktér, čas a odměna se auditují
    i bez poznámky. Neuváděj osobní údaje hostů.
@@ -31,10 +42,33 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
 
 ## Herní obrazovka a nápověda
 
-**Tábor** ukazuje ilustrovanou chatu v horách, osobní i společnou úroveň,
-aktivní questy a právě běžící kampaň. Katalog dalších questů a deník jsou
-rozbalovací; ve **Questech** je katalog otevřený. Starší kampaně, návrhy,
-zdrojové podklady a audit jsou v **Nastavení**, podrobnosti auditu sbalené.
+Adventure používá vlastní herní rám bez administračního sidebaru. Odkaz
+**Do aplikace** vede zpět do administrace; stávající PIN chrání všechny stránky
+i události stejně jako ostatní admin. Hrdina a práce zůstávají uložené při
+přechodu mezi hrou a provozními obrazovkami.
+
+| Obrazovka | Úloha |
+| --- | --- |
+| **Tábor** | Hrát: vybrat hrdinu, přijmout výpravu, pracovat na ní a potvrdit splnění. Tři osobní sloty, společné výpravy, mapa chaty a sezóna. |
+| **Questy** | Připravit zadání: části Jednorázové questy, Opakované questy a Historie. Vytváření, editace, termíny, přiřazení, odměny, opakování a archivace. |
+| **Nastavení** | Sezóny, pravidla a audit. |
+
+**Najít další výpravu** v táboře otevře nástěnku s čekajícími vlastními úkoly
+i splatnými výskyty opakovaných šablon. Při otevření se šablony výslovně
+obnoví stejným přepočtem jako v hodinovém workeru. Výběr má části **Pro mě**
+(vlastní a volné osobní úkoly), **Společné** a **Všechny**, plus hledání názvu.
+Nabídka čte jeden herní dávkový dotaz (nejvýše 100 otevřených položek),
+nikoliv pevné čtyři definice. Prázdná nástěnka odkazuje na knihu zadání.
+**Přijmout výpravu** přesune osobní quest do slotu vybraného hrdiny;
+**Vyrazit společně** ho přesune do společných výprav. Po přijetí se nabídka zavře.
+
+Mapa chaty má portály **Recepce** (kalendář), **Kuchyně** (stravování),
+**Bar** (sklad baru) a **Pokladnice** (doklady/platby). Jde o odkazy do existující
+aplikace, které samy nemění provozní stav a nepotvrzují úkol. Po návratu
+zůstává výprava rozpracovaná. Kniha zadání neobsahuje duplikované výpravy,
+katalog ani sezónní karty a nemá tlačítka k zahájení/splnění. Tábor odkazuje
+na část Historie v knize; ta uchovává i dokončené původní katalogové questy.
+Sezónní panel se jmenuje Kronika sezóny, aby se nepletl se společnými úkoly.
 
 Pravidla, identita profilu, definice KPI a omezení jsou za tlačítkem
 **Průvodce** v překryvné nápovědě. Lze ji zavřít křížkem, Escape, kliknutím
@@ -47,7 +81,7 @@ Ilustrace vznikla pro Cozy Adventure; horské a herní SVG ikony jsou z Lucide
 licence a zdroje jsou v jeho `CREDITS.md` a `LUCIDE-LICENSE`. Stylování je
 izolované v `assets/css/adventure/`, dialogový hook v `assets/js/adventure/`.
 
-## Osobní questy
+## Původní katalogové questy a zachovaná historie
 
 | Šablona | XP | Opakování |
 | --- | --- | --- |
@@ -71,11 +105,124 @@ se samostatně. XP nejsou Kč, provozní KPI, odměna zaměstnance ani účetní
 Poznámka a potvrzení představují ruční prohlášení o úkolu, nikoli kontrolu
 skutečného stavu rezervace, zálohy či nákupního plánu.
 
+## Vlastní jednorázové úkoly
+
+Ve **Questech → Jednorázové questy** může vybraný hrdina založit úkol pouhým
+názvem. Volitelné jsou přiřazení, termín, priorita, kategorie a popis.
+Velikost dává výchozích 50 / 100 / 250 XP, vlastní odměnu lze zadat před
+rozpracováním (1–10 000 XP). Priorita neurčuje XP.
+
+- Úkol začíná ve stavu **Čeká**. Zásobník může mít více než tři položky.
+- V táboře **Najít další výpravu → Přijmout výpravu** přiřadí osobní úkol právě vybranému hrdinovi.
+  Předchozí přiřazení a aktér převzetí zůstávají v auditu. Do tří osobních
+  rozpracovaných se společně počítají vlastní i katalogové questy.
+- Při **Hotovo** vyber skutečného splnitele. Osobní odměnu získá tento
+  hrdina, i když byl úkol přiřazen druhému. Přiřazení ani historické
+  `profile_id` se nepředefinují na příjemce odměny.
+- Společný úkol vyžaduje výslovně vybrané přispěvatele a udělí jednu
+  odměnu chatě. Nevytváří osobní kopie XP ani nezabírá osobní slot.
+- Zadání lze upravovat pouze ve stavu **Čeká**. Po rozpracování zůstává
+  snapshot odměny neměnný. Dokončení, důkaz a ledger jsou v jedné transakci,
+  zamčený profil hlídá osobní limit a zamčený úkol souběžná dokončení.
+- **Archivovat** otevřený úkol zruší a uvolní slot. Dokončenému zachová
+  stav, čas, důkaz i XP; v obou případech uloží aktéra a čas archivace.
+  Obnovení a opětovné dokončení archivované práce není dostupné.
+- Filtry umožňují moje / volné / společné / všechny, stav a archiv, kategorii,
+  termín a hledání názvu. Seznam ukazuje nejvýše 100 výsledků; pro starší práci
+  upřesni výběr. Zmeškaný termín nepřiděluje penalizaci.
+
+Vlastní úkoly mají samostatný `Adventure.Tasks`, používají stávající quest
+instance a XP ledger. Sloupec `profile_id` zůstává původním vlastníkem pouze
+u katalogových questů; nové úkoly používají `assigned_profile_id`, `created_by_id`
+a aktéra v důkazu. Historii splněných osobních úkolů vidí skutečný splnitel
+v deníku; společná historie je ve společném úkolovníku.
+
+Čtyři původní katalogové definice nadále fungují beze změny UUID a klíčů
+odměn. Znovuotevření dokončeného úkolu je odložené spolu s pravidly obnovení
+kompenzované odměny. Sezónní finanční přehled zůstává další etapou.
+
+## Opakované šablony
+
+V **Questech → Opakované questy** založ název, denní/týdenní opakování,
+vybrané dny týdne, platnost od, kategorii, přiřazení, velikost/XP a působnost.
+Změna velikosti předvyplní 50/100/250 XP; částku lze upravit. Nová šablona
+začíná pozastavená. Tlačítko **Přidat 7 doporučených šablon** založí jednou
+příklady z plánu (pokoje, úklid, jídelníček, nákup, vaření, společné prostory,
+bar). Jejich nastavení a spuštění určuje správce. Opakovaný klik zachová úpravy.
+
+**Spustit šablonu** (případně volba Spustit / obnovit) plánuje od dneška nebo pozdějšího data platnosti.
+Hodinový `Adventure.RecurrenceWorker` a ruční **Obnovit opakované úkoly**
+používají stejné transakční API `Adventure.Templates.generate/1`.
+Zobrazení stránky samo nic negeneruje. Přepočet řídí datum v Europe/Prague,
+nikoliv délka dne v sekundách; opakovaná hodina při zimním čase nevytvoří
+nový výskyt. Nový výskyt je čekající úkol, do osobních slotů vstupuje až
+výslovným převzetím a rozpracováním.
+
+- Na šablonu je nejvýše jeden otevřený výskyt. Sedm zmeškaných denních termínů
+  vytvoří jednu položku; existující otevřenou položku posune na aktuální termín.
+  Původní termín a zaznamenané posuny jsou rozbalitelné u úkolu. Za zmeškání
+  nejsou XP ani penalizace; nic se samo nedokončí.
+- Po dokončení nebo zrušení se další úkol nabízí nejdříve v následujícím
+  plánovaném termínu, který je po místním dni uzavření. Opožděný job, změna
+  šablony ani obnovení nevyrobí druhou práci za dnes již uzavřený termín.
+- Pozastavení/archivace vyžaduje výslovně **Ponechat**, nebo **Zrušit a
+  archivovat** otevřený výskyt. Ponechaný lze dokončit i při pozastavené či
+  archivované šabloně. Archivovanou šablonu nelze obnovit; historie zůstává.
+- Editace a stavové změny ukládají novou verzi s aktérem. Budoucí výskyt
+  dostane aktuální snapshot. Již otevřenému se mění jen termín při posunu,
+  jeho zadání, přiřazení a odměna se neupravují. Posuny termínu řídí aktuální
+  kalendář a působnost šablony. Editace výskytu samotného
+  je blokovaná. Posledních 50 verzí je v historii šablon; všechny zůstávají v DB.
+- Template lock a `FOR UPDATE SKIP LOCKED` serializují generování a správu,
+  partial unique index vynucuje jeden otevřený výskyt a další unique index
+  brání opakovanému založení téhož termínu. Dokončení dále chrání quest lock
+  a původní XP ledger. Oban používá vlastní infrastrukturní tabulky pro joby;
+  doménové zápisy zůstávají v `adventure_*`.
+
+### Působnost
+
+| Volba | Pravidlo |
+| --- | --- |
+| Vždy | Podle kalendáře i bez hostů a mimo kampaně |
+| Během vybrané kampaně | Jen aktivní kampaň a aktuální den i termín uvnitř jejího období |
+| Jen když jsou hosté | Pouze aktuální plánovaný den a prokazatelný `active` pobyt s kladným známým počtem osob; příjezd zahrnutý, odjezd vyloučený |
+
+`Adventure.Sources.Guests` provádí jeden read-only agregovaný SELECT nad
+`bookings` pro všechny splatné hostovské šablony. Nekontroluje pobyty po jednom,
+nepřipojuje hosty/pokoje a nemění statusy rezervací. Budoucí rezervace není
+přítomný host. Rezervace, která už měla začít, ale má stále `upcoming`,
+neplatná data, chybějící počty nebo zastaralý aktivní pobyt znamenají
+**neznámou** přítomnost, pokud jiný platný aktivní pobyt hosty nepotvrdí.
+Zrušené a smazané pobyty se nezahrnují; den odjezdu není obsazený.
+
+Při neznámém/prázdném stavu se dnešní termín nezahodí: hodinový worker nebo
+ruční obnova ho během dne znovu ověří. Neověřitelná podmínka je vidět u
+šablony a práci lze ručně přidat jako vlastní úkol. Minulou přítomnost hostů
+z aktuálního statusu nedomýšlíme; vynechaný hostovský den se zpětně negeneruje.
+Odjezd hostů, uzavření kampaně ani nesplněná podmínka otevřený úkol neuzavřou.
+Přepočty ukládají jen stav podmínky, místní datum a čas, bez údajů hostů.
+
+### Návaznost původního katalogu
+
+Migrace a opakovatelná inicializace zakládají čtyři pozastavené šablony na
+každého hrdinu se stabilním seed klíčem. Původní `profile_id`, quest UUID,
+definition snapshot a award key se nemění. Při spuštění šablona převezme
+existující rozpracovaný katalogový quest, místo aby založila kopii. Pokud
+existuje více starých rozpracovaných týdnů, zachovají se a nevznikne nová
+instance, dokud nejsou uzavřené. Již dokončený/zrušený týden se nepřidělí znovu.
+Ruční katalogová aktivace sdílí zámek a kontroluje i výskyty šablony.
+
+Původní weekly/once frekvence zůstává u převedených definic neměnná a týdenní
+má jeden vybraný den. Pro jinou frekvenci založ novou šablonu. Tím se zachová
+původní period key a nelze získat další odměnu výměnou identity definice.
+Název, odměnu, přiřazení, působnost a další budoucí nastavení upravit lze.
+
 ## Oddělení od provozu
 
 - Veškerá logika a schémata jsou v `lib/cozy_checkout/adventure/`, webová vrstva
   v `lib/cozy_checkout_web/live/adventure_live/`, testy ve vlastních adresářích.
-- Context `CozyCheckout.Adventure` a jeho modul `Adventure.Campaigns` zapisují
+- Context `CozyCheckout.Adventure` a moduly `Adventure.Campaigns`, `Adventure.Tasks`
+  a `Adventure.Templates` zapisují
   pouze do tabulek `adventure_*`. Neobsahují cizí provozní FK,
   nevolá provozní mutace, neposílá emaily a nevytváří doklady či účetní operace.
 - Jediné integrační body jsou admin router, podmíněný odkaz v navigaci
@@ -92,7 +239,7 @@ skutečného stavu rezervace, zálohy či nákupního plánu.
 
 Aktivace, dokončení a opravy zamykají řádek herního profilu. Limit tří aktivních
 questů proto platí i při souběžných požadavcích. Dokončení, důkaz a XP se zapisují
-v jedné `Ecto.Multi` transakci. Unikátní `award_key` brání duplicitním odměnám.
+v jedné DB transakci (`Ecto.Multi` u původního katalogu). Unikátní `award_key` brání duplicitním odměnám.
 
 `Adventure.reverse_award(profile_id, award_id, reason)` je opravné doménové API
 pro chybně přiznané XP, zatím bez UI. Vyžaduje aktivní modul, vlastní profil
@@ -148,7 +295,8 @@ Uzavření kampaně provede poslední přepočet a uzamkne datum hranice realiza
 Další přepočet oprav je možný i potom. Čte aktuální verze rezervací se stejnou
 uzamčenou hranicí; nepředstírá historický provozní snapshot k okamžiku uzavření.
 Posledních 50 kampaní a posledních 20 přepočtů je dostupných v administraci;
-starší auditní záznamy zůstávají v DB. Žádný Oban job ani event hook nevzniká.
+starší auditní záznamy zůstávají v DB. Kampaně nemají vlastní job ani event hook;
+hodinový worker obnovuje pouze opakované úkoly.
 
 ## Automatické achievementy a společná XP
 
@@ -200,3 +348,26 @@ Pro ruční kontrolu po CI:
 - [ ] Ověřit oddělení společných a osobních XP a audit přepočtů.
 - [ ] Na testovacích datech ověřit storno, jednorázovou kompenzaci a uzavření.
 - [ ] Ověřit mobilní šířku, tabulátor a čitelné textové stavy.
+- [ ] Vytvořit pět vlastních úkolů, rozpracovat tři spolu s katalogem a ověřit limit.
+- [ ] Dokončit Michalův úkol jako Lucka a ověřit osobní XP i historii.
+- [ ] Dokončit společný úkol s explicitními přispěvateli a ověřit jedinou odměnu chatě.
+- [ ] Upravit čekající práci, archivovat rozpracovanou i dokončenou a ověřit historii.
+- [ ] Ověřit hledání, moje/volné/společné, termín, kategorii a archiv.
+
+Opakované šablony mají další regresní testy pro sedm zmeškaných termínů,
+verze a neměnné snapshoty, explicitní pozastavení, DST a přelom roku,
+hostovskou/kampaňovou působnost, jediný dávkový pobytový SELECT, návaznost
+katalogu, souběžné generování a flag, který zablokuje i SQL dotazy workeru.
+Při opravě nahlášeného `BadBooleanError` prošlo lokálně všech 72 testů
+Adventure včetně LiveView a souběhů na izolovaném PostgreSQL 17. Kompletní
+repozitářovou sadu a výsledky CI dále ověřuje uživatel.
+
+- [ ] Založit a spustit denní šablonu, dvakrát obnovit, ověřit jediný čekající úkol bez XP.
+- [ ] Upravit šablonu a ověřit původní snapshot otevřeného úkolu i novou verzi budoucího.
+- [ ] Pozastavit s ponecháním, obnovit, poté archivovat se zrušením otevřeného úkolu.
+- [ ] Nastavit dny v týdnu a působnost kampaně/hostů včetně neznámých podkladů.
+- [ ] Ověřit původní quest dokončený ve stejném týdnu a zachování odměny po převodu.
+
+Ověření herního rozdělení: lokálně prošlo 76 testů Adventure včetně LiveView,
+cesty kniha → tábor → výběr → dokončení, osobních/společných slotů, mapy,
+vyřazení pevných nabídek a oddělení opakovaných výskytů od editace zadání.

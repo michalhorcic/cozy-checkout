@@ -10,7 +10,9 @@
 > Pro další implementaci nahrazuje původní návrh pevného katalogu a povinných
 > rezervačních cílů: spravované osobní/společné todos, opakované šablony a
 > sezónní čísla včetně odděleného inkasa a vyúčtování pobytů.
-> Jde pouze o plán; níže zůstává audit a historie současné implementace.
+> Aktuální směr rozhraní doplňuje oddíl 10 navazujícího plánu: Tábor je
+> herní plocha pro výběr/plnění, Questy kniha zadání a mapa propojuje provoz
+> chaty. Níže zůstává audit a historie původní implementace.
 
 ## Problém a očekávaný výsledek
 
@@ -283,7 +285,7 @@ Feature flag default OFF, migrovat bez přepsání stávajících dat; zapnout a
 
 1. Vyřešeno: výběr osobního profilu bez dalšího PINu je pro MVP dostačující, s jasným upozorněním na self-report.
 2. Konkrétní zimní období potvrzuje správce v UI před aktivací; výchozí 1. 12.–31. 3. je návrh.
-3. Vlastní questy jsou nově prioritou další etapy; současný kód stále používá pevné šablony. Rozhodnutí pro další verzi jsou v navazujícím plánu.
+3. Etapa 3A v PR #113 přidává vlastní jednorázové úkoly a spravované opakované šablony, působnost a generování bez hromadění; původní instance a odměny zůstávají zachované. Další postup sezónního přehledu popisuje navazující plán.
 4. Vyřešeno: při úplných opravených podkladech milník revoked a jednorázová kompenzace; původní důkaz zachován.
 5. Dodáno: chata má vlastní společný XP level, oddělený od osobních profilů.
 6. Vyřešeno pro MVP: completed + datum odjezdu dle pravidel výše, kapacita jako explicitní potvrzená konstanta kampaně.

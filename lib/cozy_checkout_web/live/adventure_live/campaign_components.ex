@@ -23,7 +23,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
       <section class="adventure-panel adventure-season-panel">
         <header class="adventure-section-heading">
           <div>
-            <p class="adventure-eyebrow">Táhneme za jeden provaz</p><h2>Společná výprava</h2>
+            <p class="adventure-eyebrow">Táhneme za jeden provaz</p><h2>Kronika sezóny</h2>
           </div><span class="adventure-flag"><.symbol name="flag" /></span>
         </header>
         <div :if={@visible_campaigns == []} class="adventure-empty adventure-empty--season">

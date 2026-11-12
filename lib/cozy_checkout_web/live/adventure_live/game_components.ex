@@ -1,6 +1,45 @@
 defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
   use CozyCheckoutWeb, :html
 
+  def shell(assigns) do
+    ~H"""
+    <div id="adventure-game-layout" class="adventure-stage">{@inner_content}</div>
+    """
+  end
+
+  def world_map(assigns) do
+    ~H"""
+    <section id="adventure-world-map" class="adventure-panel adventure-world-map">
+      <header class="adventure-section-heading">
+        <div>
+          <p class="adventure-eyebrow">Za branami tábora</p><h2>Mapa chaty</h2>
+        </div><.symbol name="compass" />
+      </header>
+      <p class="adventure-muted">Vydej se do provozu. Tvá rozpracovaná výprava na tebe počká.</p>
+      <div class="adventure-map-places">
+        <.link href={~p"/admin/bookings/calendar"} class="adventure-place adventure-place--lodge"><span class="adventure-place-token"><.symbol name="house" /></span><strong>Recepce</strong><span>Rezervace a hosté</span><.icon
+          name="hero-arrow-up-right"
+          class="size-4"
+        /></.link>
+        <.link href={~p"/admin/meal-planner"} class="adventure-place adventure-place--kitchen"><span class="adventure-place-token"><.symbol name="utensils" /></span><strong>Kuchyně</strong><span>Jídla a nákupy</span><.icon
+          name="hero-arrow-up-right"
+          class="size-4"
+        /></.link>
+        <.link href={~p"/admin/bar-stock"} class="adventure-place adventure-place--bar"><span class="adventure-place-token"><.symbol name="backpack" /></span><strong>Bar</strong><span>Zásoby baru</span><.icon
+          name="hero-arrow-up-right"
+          class="size-4"
+        /></.link>
+        <.link href={~p"/admin/billing"} class="adventure-place adventure-place--treasury"><span class="adventure-place-token"><.symbol name="coins" /></span><strong>Pokladnice</strong><span>Doklady a platby</span><.icon
+          name="hero-arrow-up-right"
+          class="size-4"
+        /></.link>
+      </div>
+      <.link href={~p"/admin"} class="adventure-text-link adventure-world-exit">Celá aplikace
+      <.icon name="hero-arrow-right" class="size-4" /></.link>
+    </section>
+    """
+  end
+
   attr :name, :string, required: true
   attr :class, :string, default: ""
 
@@ -41,7 +80,14 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
         <div class="adventure-guide-body">
           <section>
             <h3>Tvoje výpravy</h3><p>
-              Vyber svůj profil, aktivuj až tři questy a po splnění je potvrď. Poznámka je nepovinná. Týdenní quest se opakuje jednou za kalendářní týden v Europe/Prague; rozpracovaný quest můžeš dokončit i později. Verze a odměna zůstávají podle okamžiku aktivace.
+              Tábor je tvoje herní obrazovka: vyber hrdinu, otevři „Najít další výpravu“, přijmi až tři osobní questy a po splnění je potvrď. Společné výpravy mají vlastní místo a jednu odměnu chatě. Poznámka je nepovinná. Opakované questy se řídí dny nastavenými v knize podle Europe/Prague. Rozpracovanou výpravu můžeš dokončit i později; její zadání a odměna zůstávají zachované.
+            </p>
+          </section>
+          <section>
+            <h3>Vlastní úkoly</h3><p>
+              Questy jsou kniha zadání: tady práci vytváříš a upravuješ, samotný výběr a plnění patří do tábora. Přepínače oddělují jednorázové questy, opakované šablony a historii. Stačí název; termín, popis a poznámka jsou nepovinné. Velikost předvyplní 50, 100 nebo 250 XP. Přiřazení samo nezabírá slot. Přijetí osobní výpravy v táboře ji přiřadí právě vybranému hrdinovi a počítá se do společného limitu tří osobních výprav.
+            </p><p>
+              Při dokončení zvol skutečného splnitele, který dostane osobní XP. U společného úkolu výslovně vyber přispěvatele; jednu odměnu dostane jen chata. Zadání lze upravit pouze ve stavu Čeká. Archivace otevřenou práci zruší, historii ani již udělená XP nesmaže. Termín není penalizace. Opakované šablony spravuj v Questech. Nová šablona je pozastavená; po spuštění se úkoly obnovují hodinově nebo ručně. Zmeškané termíny se nehromadí: jedna otevřená položka dostane nový termín a uchová historii. Při pozastavení výslovně vyber, co s otevřeným úkolem. Podmínka hostů může být neznámá, pak lze přidat vlastní úkol. Změny šablony platí pro budoucí výskyty.
             </p>
           </section>
           <section>

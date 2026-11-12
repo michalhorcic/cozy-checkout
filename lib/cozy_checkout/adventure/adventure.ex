@@ -23,6 +23,7 @@ defmodule CozyCheckout.Adventure do
           )
         end
 
+        CozyCheckout.Adventure.Templates.seed_legacy(list_profiles())
         :ok
       end)
     else
@@ -46,7 +47,12 @@ defmodule CozyCheckout.Adventure do
           do:
             Repo.all(
               from q in Quest,
-                where: q.profile_id == ^profile.id,
+                where:
+                  (not q.managed and q.profile_id == ^profile.id) or
+                    (q.managed and q.scope == "personal" and
+                       ((q.status == "active" and q.assigned_profile_id == ^profile.id) or
+                          (q.status == "completed" and
+                             fragment("?->>'actor_profile_id'", q.evidence) == ^profile.id))),
                 order_by: [asc: q.status, desc: q.inserted_at, desc: q.id],
                 limit: 100
             ),
@@ -118,14 +124,29 @@ defmodule CozyCheckout.Adventure do
          %{} = definition <- Catalog.fetch(code) do
       mutate(profile_id, fn profile ->
         period = if definition.cadence == "weekly", do: weekly_period(), else: "once"
-        existing = Repo.get_by(Quest, profile_id: profile.id, code: code, period_key: period)
+
+        existing =
+          CozyCheckout.Adventure.Templates.legacy_instance(profile.id, code, period) ||
+            Repo.get_by(Quest, profile_id: profile.id, code: code, period_key: period)
 
         cond do
+          existing && existing.managed && existing.status == "waiting" ->
+            case CozyCheckout.Adventure.Tasks.start(profile.id, existing.id) do
+              {:ok, task} -> task
+              {:error, reason} -> Repo.rollback(reason)
+            end
+
           existing ->
             existing
 
           Repo.aggregate(
-            from(q in Quest, where: q.profile_id == ^profile.id and q.status == "active"),
+            from(q in Quest,
+              where:
+                q.status == "active" and
+                    ((not q.managed and q.profile_id == ^profile.id) or
+                       (q.managed and q.scope == "personal" and
+                          q.assigned_profile_id == ^profile.id))
+            ),
             :count
           ) >= 3 ->
             Repo.rollback(:active_limit)
@@ -170,6 +191,9 @@ defmodule CozyCheckout.Adventure do
 
             quest.status == "completed" ->
               {:ok, quest}
+
+            quest.status != "active" ->
+              {:error, :immutable_task}
 
             not valid_completion_note?(note) ->
               {:error, :invalid_note}
