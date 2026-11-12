@@ -43,6 +43,45 @@ defmodule CozyCheckoutWeb.ApplicationIdentityLiveTest do
     refute has_element?(login, "#admin-brand-header")
   end
 
+  test "header offers the game only when enabled and never on public screens", %{conn: conn} do
+    previous = Application.get_env(:cozy_checkout, :adventure_enabled)
+
+    on_exit(fn ->
+      if is_nil(previous),
+        do: Application.delete_env(:cozy_checkout, :adventure_enabled),
+        else: Application.put_env(:cozy_checkout, :adventure_enabled, previous)
+    end)
+
+    Application.put_env(:cozy_checkout, :adventure_enabled, true)
+
+    authenticated =
+      Plug.Test.init_test_session(conn, %{AdminAuth.session_key() => System.system_time(:second)})
+
+    for path <- [~p"/admin", ~p"/admin/recipes"] do
+      {:ok, view, _} = live(authenticated, path)
+
+      assert has_element?(
+               view,
+               "#admin-brand-header #admin-adventure-entry[href='/admin/adventure']",
+               "Do hry"
+             )
+    end
+
+    {:ok, admin, _} = live(authenticated, ~p"/admin")
+    result = admin |> element("#admin-adventure-entry") |> render_click()
+    {:ok, game, _} = follow_redirect(result, authenticated, ~p"/admin/adventure")
+    assert has_element?(game, "#adventure-game-layout")
+
+    {:ok, pos, _} = live(conn, ~p"/pos")
+    refute has_element?(pos, "#admin-adventure-entry")
+    {:ok, login, _} = live(conn, ~p"/admin/login")
+    refute has_element?(login, "#admin-adventure-entry")
+
+    Application.put_env(:cozy_checkout, :adventure_enabled, false)
+    {:ok, disabled, _} = live(authenticated, ~p"/admin")
+    refute has_element?(disabled, "#admin-adventure-entry")
+  end
+
   test "authenticated navigation retains the admin layout across food and ordinary screens", %{
     conn: conn
   } do

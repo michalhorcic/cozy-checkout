@@ -384,6 +384,15 @@ defmodule CozyCheckoutWeb.Layouts do
     <div class="admin-controls flex flex-wrap items-center gap-2 print:hidden">
       <.theme_toggle id="admin-design-switcher" />
       <.link
+        :if={CozyCheckout.Adventure.enabled?()}
+        id="admin-adventure-entry"
+        navigate={~p"/admin/adventure"}
+        title="Do hry Cozy Adventure"
+        class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
+      >
+        <.icon name="hero-sparkles" class="h-4 w-4" /><span class="admin-control-label">Do hry</span>
+      </.link>
+      <.link
         navigate={~p"/pos"}
         class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
       >
