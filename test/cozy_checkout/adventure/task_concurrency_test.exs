@@ -130,6 +130,142 @@ defmodule CozyCheckout.Adventure.TaskConcurrencyTest do
     end)
   end
 
+  test "different actors creating the same duty source share one open quest without XP", %{
+    profiles: [first, second]
+  } do
+    booking_id = Ecto.UUID.generate()
+    key = {booking_id, "details"}
+
+    snapshot = %{
+      issues: [
+        %{booking_id: booking_id, kind: :details, reason: "Confirm meals", on: ~D[2026-11-14]}
+      ],
+      loaded_at: ~U[2026-11-12 12:00:00Z],
+      today: ~D[2026-11-12],
+      through: ~D[2026-11-19]
+    }
+
+    results =
+      race(
+        for actor <- [first, second],
+            do: fn ->
+              Tasks.create_from_duty(actor.id, snapshot, key, %{}, Ecto.UUID.generate())
+            end
+      )
+
+    assert [{:ok, a}, {:ok, b}] = results
+    assert a.id == b.id
+    assert a.status == "waiting"
+
+    Sandbox.unboxed_run(Repo, fn ->
+      assert Repo.aggregate(from(q in Quest, where: q.source_ref == ^booking_id), :count) == 1
+      assert Repo.aggregate(from(x in XpTransaction, where: x.quest_id == ^a.id), :count) == 0
+    end)
+  end
+
+  test "same duty source with cross-assignment cannot deadlock on the other actor profile", %{
+    profiles: [first, second]
+  } do
+    booking_id = Ecto.UUID.generate()
+    key = {booking_id, "menu"}
+
+    snapshot = %{
+      issues: [%{booking_id: booking_id, kind: :menu, reason: "Confirm menu", on: ~D[2026-11-14]}],
+      loaded_at: ~U[2026-11-12 12:00:00Z],
+      today: ~D[2026-11-12],
+      through: ~D[2026-11-19]
+    }
+
+    parent = self()
+    ref = make_ref()
+
+    creator =
+      Task.async(fn ->
+        with_query_hook(
+          fn ->
+            Sandbox.unboxed_run(Repo, fn ->
+              Tasks.create_from_duty(
+                first.id,
+                snapshot,
+                key,
+                %{"assigned_profile_id" => second.id},
+                Ecto.UUID.generate()
+              )
+            end)
+          end,
+          fn query ->
+            if query =~ "pg_advisory_xact_lock" do
+              send(parent, {ref, :source_locked})
+
+              receive do
+                {^ref, :continue} -> :ok
+              after
+                5000 -> flunk("Creator was not released")
+              end
+            end
+          end
+        )
+      end)
+
+    assert_receive {^ref, :source_locked}, 5000
+
+    contender =
+      Task.async(fn ->
+        with_query_hook(
+          fn ->
+            Sandbox.unboxed_run(Repo, fn ->
+              Tasks.create_from_duty(
+                second.id,
+                snapshot,
+                key,
+                %{"assigned_profile_id" => first.id},
+                Ecto.UUID.generate()
+              )
+            end)
+          end,
+          fn query ->
+            if query =~ ~s("adventure_profiles") and query =~ "FOR " do
+              send(parent, {ref, :assignee_locked})
+            end
+          end
+        )
+      end)
+
+    # Both actors hold their profile locks before the creator checks the assignee FK.
+    # FOR UPDATE here would deadlock with the contender waiting on the source lock.
+    assert_receive {^ref, :assignee_locked}, 5000
+    send(creator.pid, {ref, :continue})
+    assert {:ok, a} = Task.await(creator, 15_000)
+    assert {:ok, b} = Task.await(contender, 15_000)
+    assert a.id == b.id
+    assert a.assigned_profile_id in [first.id, second.id]
+
+    Sandbox.unboxed_run(Repo, fn ->
+      assert Repo.aggregate(from(q in Quest, where: q.source_ref == ^booking_id), :count) == 1
+      assert Repo.aggregate(from(x in XpTransaction, where: x.quest_id == ^a.id), :count) == 0
+    end)
+  end
+
+  defp with_query_hook(fun, hook) do
+    id = {__MODULE__, make_ref()}
+
+    :ok =
+      :telemetry.attach(
+        id,
+        [:cozy_checkout, :repo, :query],
+        fn _, _, metadata, {caller, callback} ->
+          if self() == caller, do: callback.(metadata.query)
+        end,
+        {self(), hook}
+      )
+
+    try do
+      fun.()
+    after
+      :telemetry.detach(id)
+    end
+  end
+
   defp race(functions) do
     parent = self()
 

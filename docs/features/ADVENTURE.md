@@ -151,6 +151,94 @@ Ilustrace vznikla pro Cozy Adventure; horské a herní SVG ikony jsou z Lucide
 licence a zdroje jsou v jeho `CREDITS.md` a `LUCIDE-LICENSE`. Stylování je
 izolované v `assets/css/adventure/`, dialogový hook v `assets/js/adventure/`.
 
+## Služba dne na quest (5A)
+
+Ze stávajícího podnětu Služby dne lze výslovně **Připravit quest**. Návrh používá
+poslední načtenou provozní projekci, nikoli nové ověření pobytu. Obsahuje
+upravitelný název, volitelné přiřazení a velikost; další nastavení jsou sbalená.
+Výchozí je malý osobní nepřiřazený quest kategorie Kuchyně za 50 XP, bez termínu.
+**Vytvořit čekající quest** práci nezahájí, neobsadí osobní slot a neudělí XP.
+Zavření návrhu nic nezapisuje. Přijetí a splnění používají dosavadní tábor.
+
+Podnět má původní odkaz do aplikace, české datum příjezdu jako kontext a čas
+načtení zdroje; příjezd není termín práce. Zachovává se upozornění na starší
+nebo chybující zdroj. Obnova zdroje questy nikdy nesplní ani nezruší. Zmizelý
+podnět není důkaz vyřešení a existující quest zůstává v běžné evidenci práce.
+
+Identita je namespace `operation_v1`, UUID pobytu a typ `details` nebo `menu`.
+Chybějící a neaktuální jídelníček sdílejí typ `menu`. Změna důvodu, termínu
+příjezdu, hrdiny nebo sezóny proto nevytvoří jinou otevřenou práci. Existující
+otevřený quest se nabídne místo nového zadání. Po uzavření se další práce
+připravuje jen výslovně, s upozorněním na předchozí řešení a potvrzením nového.
+Historie podnětu se otevírá na vyžádání po 20 záznamech.
+
+Migrace `20261112160000_add_adventure_duty_quests.exs` rozšiřuje pouze
+`adventure_quests`. Zdrojová pole a dobový kontext jsou součástí stejného
+atomického INSERTu jako quest. Uchovají typ, referenci, verzi, důvod, příjezd,
+rozsah a čas načtení; neukládají booking/guest struktury ani osobní údaje hostů.
+Zdroj nemá FK do provozních tabulek. Audit vzniku tvoří neměnná zdrojová metadata,
+aktér založení a čas; SQL trigger brání dodatečnému přepsání zdrojových polí.
+Pořadí jednotlivých řešení určuje `source_attempt`, nikoli náhodné UUID nebo
+čas zaokrouhlený na sekundy. Předchozí řešení je vlastní Adventure reference.
+`down` je záměrně nevratné kvůli zachování historie.
+
+Částečný unikátní index chrání jednu nearchivovanou práci ve stavech čeká nebo
+rozpracováno. Otevřenost se nepřepisuje do druhé tabulky: dokončení/archivace
+přímo mění quest a tím i účast v indexu. Založení zamyká nejprve aktivní profil,
+režimem `FOR NO KEY UPDATE`, pak transakční advisory zámek zdrojové identity.
+Profilový zámek tak serializuje akce hrdiny, ale neblokuje FK kontrolu přiřazení
+druhému souběžnému zadavateli. Ostatní questové mutace tento
+zdrojový zámek neberou. Dvojklik a souběh vracejí otevřenou práci. Idempotentní
+klíč potvrzení vrátí původní quest i po uzavření. Nové řešení vyžaduje potvrzení
+posledního uzavřeného zadání; zastaralé potvrzení se odmítne. Platí dosavadní
+pravidla skutečného splnitele a jediného XP udělení za quest.
+
+### Schválené čtení 5A
+
+| Akce | Provozní SELECTy | Adventure SELECTy přidané 5A |
+| --- | --- | --- |
+| Připojení Tábora / Obnovit provoz | Nejvýše 15, původní loader | Nejvýše 1 dávka vazeb |
+| Render, výběr oblasti, otevření/změna/zavření návrhu | 0 | 0 |
+| Potvrzení návrhu včetně validací a zámku | 0 | Nejvýše 4, s přiřazením 5 |
+| Cílená obnova po potvrzení | 0 | Nejvýše 2: nabídka questů a vazby |
+| Historie podnětu | 0 | 1 na stránku, 20 + jeden řádek pro další stránku |
+| Otevření konkrétního questu | 0 | Nejvýše 1 |
+
+Dávka pracuje se všemi klíči celé projekce, ne jen se čtyřmi viditelnými kartami,
+a vrací otevřené nebo poslední zadání včetně počtu historických řešení. Prázdná
+projekce nepotřebuje SQL. Žádné dotazy po pobytu, kartě nebo historii jednotlivé
+karty při renderu. Čtyři čtení potvrzení jsou aktivní aktér, advisory zámek,
+idempotentní požadavek a otevřená/poslední práce. Volitelné přiřazení přidává
+ověření aktivního profilu. Celé potvrzení s obnovou má strop 6, resp. 7 SELECTů;
+nevolá obecný loader celého Tábora. Transakční příkazy a zápisy nejsou SELECTy,
+zámkový SELECT se do rozpočtu počítá. Dosavadní herní loadery jsou samostatné.
+
+Server vybírá podnět ze své projekce a drží zdrojový klíč, potvrzení historie
+i request key; nepřebírá identitu nebo URL z formuláře. Odkazy skládá interně.
+Zůstávají admin PIN, aktivní self-report profil a feature flag. Bez nových
+provozních zdrojů, hooků, HTTP, emailů, změn skladu či financí, konfigurace,
+routeru nebo sdílených komponent. Souhrn návazné práce 5B a živý Bar 5C nejsou
+součástí této dodávky.
+
+Ověření 5A: přidáno 17 kontextových testů, dvě regrese na samostatných databázových
+spojeních (včetně deterministického souběhu s přiřazením druhému zadavateli) a
+šest LiveView scénářů. Opraven filtr Adventure LiveView telemetrie na skutečný
+název tabulky `booking_menu_supplements`, aby neztrácel jeden zdrojový SELECT.
+**Lokální testy nebyly spuštěny**, CI ověří uživatel; query stropy jsou tedy
+testová očekávání, nikoli výsledky lokálního běhu. Prošly celoprojektové
+`MIX_ENV=test mix format --check-formatted`, kompilace s `--warnings-as-errors`,
+`MIX_ENV=test mix assets.build` a `git diff --check`. Použit Elixir 1.20.5 / OTP 29,
+nikoli připnutý Elixir 1.20.4-otp-29 / Erlang 29.1; přesná shoda s CI neověřena.
+Modul nové migrace prošel samostatnou kompilací bez startu aplikace, migrace
+nebyla lokálně aplikována. Browserové ověření zůstává neprovedené:
+
+- [ ] Otevřít a zavřít návrh bez zápisu, zkontrolovat fokus a Escape.
+- [ ] Založit čekající quest bez termínu, vybrat jinou velikost a vlastní XP.
+- [ ] Z druhého prohlížeče potvrdit tentýž podnět, ověřit jednu otevřenou práci.
+- [ ] Splnit quest běžným způsobem, otevřít historii a výslovně připravit další řešení.
+- [ ] Změnit podklad v původní aplikaci, obnovit provoz a ověřit nezměněný quest.
+- [ ] Ověřit neúspěšnou obnovu, starší podklad, desktop/390/320 px a klávesnici.
+
 ## Projekty a etapy (4B)
 
 Migrace `20261112150000_add_adventure_projects.exs` přidává pouze vlastní tabulky

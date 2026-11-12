@@ -5,6 +5,174 @@ defmodule CozyCheckout.Adventure.Tasks do
   alias CozyCheckout.{Adventure, Repo}
   alias CozyCheckout.Adventure.{Profile, Quest, XpTransaction}
 
+  @duty_namespace "operation_v1"
+
+  def duty_key(%{booking_id: booking_id, kind: kind})
+      when kind in [:details, :menu, "details", "menu"] do
+    case Ecto.UUID.cast(booking_id) do
+      {:ok, id} -> {id, to_string(kind)}
+      _ -> nil
+    end
+  end
+
+  def duty_key(_), do: nil
+
+  @doc "One Adventure batch for the whole sanitized operation projection, not only its four cards."
+  def duty_links(issues) do
+    keys = issues |> Enum.map(&duty_key/1) |> Enum.reject(&is_nil/1) |> Enum.uniq()
+
+    if Adventure.enabled?() and keys != [] do
+      predicate =
+        Enum.reduce(keys, dynamic(false), fn {id, type}, acc ->
+          dynamic([q], ^acc or (q.source_ref == ^id and q.source_type == ^type))
+        end)
+
+      Repo.all(
+        from q in Quest,
+          where: q.source_namespace == @duty_namespace,
+          where: ^predicate,
+          windows: [source: [partition_by: [q.source_ref, q.source_type]]],
+          distinct: [q.source_ref, q.source_type],
+          order_by: [
+            asc: q.source_ref,
+            asc: q.source_type,
+            desc: fragment("? IN ('waiting', 'active') AND ? IS NULL", q.status, q.archived_at),
+            desc: q.source_attempt
+          ],
+          select: {q, over(count(q.id), :source)}
+      )
+      |> Map.new(fn {quest, count} ->
+        {{quest.source_ref, quest.source_type}, %{quest: quest, count: count}}
+      end)
+    else
+      %{}
+    end
+  end
+
+  def duty_history(key, page \\ 0) do
+    if Adventure.enabled?() and valid_duty_key?(key) and is_integer(page) and page >= 0 do
+      {id, type} = key
+
+      quests =
+        Repo.all(
+          from q in Quest,
+            where:
+              q.source_namespace == @duty_namespace and q.source_ref == ^id and
+                q.source_type == ^type,
+            order_by: [desc: q.source_attempt],
+            offset: ^(page * 20),
+            limit: 21
+        )
+
+      %{quests: Enum.take(quests, 20), more?: length(quests) > 20}
+    else
+      %{quests: [], more?: false}
+    end
+  end
+
+  def get_managed(id) do
+    with true <- Adventure.enabled?(), {:ok, id} <- Ecto.UUID.cast(id) do
+      Repo.one(from q in Quest, where: q.id == ^id and q.managed)
+    else
+      _ -> nil
+    end
+  end
+
+  @doc "Explicitly confirms work from a server-held projection; it never re-reads the operation."
+  def create_from_duty(actor_id, snapshot, key, attrs, request_key, previous_id \\ nil) do
+    # Exclude other actor mutations without blocking the assignee FK's KEY SHARE lock.
+    action(
+      actor_id,
+      fn actor ->
+        issue = duty_issue!(snapshot, key)
+
+        with {:ok, request_key} <- Ecto.UUID.cast(request_key),
+             true <- is_nil(previous_id) or match?({:ok, _}, Ecto.UUID.cast(previous_id)),
+             true <- is_map(attrs) do
+          {id, type} = key
+
+          # Only creators take this source lock; completion keeps its profile -> quest order.
+          Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
+            Enum.join([@duty_namespace, id, type], ":")
+          ])
+
+          replay = Repo.get_by(Quest, source_request_key: request_key)
+
+          cond do
+            replay && {replay.source_ref, replay.source_type} != key ->
+              Repo.rollback(:invalid_request)
+
+            replay ->
+              replay
+
+            true ->
+              latest =
+                Repo.one(
+                  from q in Quest,
+                    where:
+                      q.source_namespace == @duty_namespace and q.source_ref == ^id and
+                        q.source_type == ^type,
+                    order_by: [desc: q.source_attempt],
+                    limit: 1
+                )
+
+              cond do
+                latest && latest.status in ["waiting", "active"] && is_nil(latest.archived_at) ->
+                  latest
+
+                latest && previous_id != latest.id ->
+                  Repo.rollback(:history_confirmation_required)
+
+                is_nil(latest) && not is_nil(previous_id) ->
+                  Repo.rollback(:history_confirmation_required)
+
+                true ->
+                  source = %{
+                    source_namespace: @duty_namespace,
+                    source_ref: id,
+                    source_type: type,
+                    source_request_key: request_key,
+                    source_previous_id: latest && latest.id,
+                    source_attempt: if(latest, do: latest.source_attempt + 1, else: 1),
+                    source_context: %{
+                      "version" => 1,
+                      "reason" => issue.reason,
+                      "on" => issue.on && Date.to_iso8601(issue.on),
+                      "loaded_at" => DateTime.to_iso8601(snapshot.loaded_at),
+                      "today" => Date.to_iso8601(snapshot.today),
+                      "through" => Date.to_iso8601(snapshot.through)
+                    }
+                  }
+
+                  attrs = Map.merge(%{"title" => issue.reason, "category" => "Kuchyně"}, attrs)
+                  create_task!(actor, attrs, source)
+              end
+          end
+        else
+          _ -> Repo.rollback(:invalid_request)
+        end
+      end,
+      "FOR NO KEY UPDATE"
+    )
+  end
+
+  defp valid_duty_key?({id, type}) when type in ["details", "menu"],
+    do: match?({:ok, _}, Ecto.UUID.cast(id))
+
+  defp valid_duty_key?(_), do: false
+
+  defp duty_issue!(snapshot, key) do
+    with true <- valid_duty_key?(key),
+         %{issues: issues, loaded_at: %DateTime{}, today: %Date{}, through: %Date{}} <- snapshot,
+         true <- is_list(issues),
+         %{reason: reason, on: on} = issue <- Enum.find(issues, &(duty_key(&1) == key)),
+         true <- is_binary(reason) and (is_nil(on) or is_struct(on, Date)) do
+      issue
+    else
+      _ -> Repo.rollback(:invalid_duty_source)
+    end
+  end
+
   def list(profile_id, filters \\ %{}) do
     if Adventure.enabled?() do
       profile_id =
@@ -129,21 +297,33 @@ defmodule CozyCheckout.Adventure.Tasks do
 
   def create(actor_id, attrs) do
     action(actor_id, fn actor ->
-      changeset =
-        change(
-          %Quest{
-            managed: true,
-            status: "waiting",
-            created_by_id: actor.id,
-            code: "task:" <> Ecto.UUID.generate(),
-            version: 1,
-            period_key: "once"
-          },
-          attrs
-        )
-
-      save_definition(changeset, actor, :insert)
+      create_task!(actor, attrs)
     end)
+  end
+
+  defp create_task!(actor, attrs, source \\ %{}) do
+    task =
+      struct!(
+        %Quest{
+          managed: true,
+          status: "waiting",
+          created_by_id: actor.id,
+          code: "task:" <> Ecto.UUID.generate(),
+          version: 1,
+          period_key: "once"
+        },
+        source
+      )
+
+    changeset =
+      task
+      |> change(attrs)
+      |> Changeset.unique_constraint(:source_ref, name: :adventure_duty_open_work)
+      |> Changeset.unique_constraint(:source_request_key)
+      |> Changeset.unique_constraint(:source_attempt, name: :adventure_duty_attempt)
+      |> Changeset.check_constraint(:source_namespace, name: :adventure_duty_source)
+
+    save_definition(changeset, actor, :insert)
   end
 
   def update(actor_id, id, attrs) do
@@ -332,13 +512,21 @@ defmodule CozyCheckout.Adventure.Tasks do
 
   # The same profile lock as the legacy catalog serializes the personal slot limit.
   # The quest lock serializes completion by different actors and shared rewards.
-  defp action(actor_id, fun) do
+  defp action(actor_id, fun, profile_lock \\ "FOR UPDATE") do
     if Adventure.enabled?() do
       Repo.transaction(fn ->
-        with {:ok, id} <- Ecto.UUID.cast(actor_id),
-             %Profile{} = actor <-
-               Repo.one(from p in Profile, where: p.id == ^id and p.active, lock: "FOR UPDATE") do
-          fun.(actor)
+        with {:ok, id} <- Ecto.UUID.cast(actor_id) do
+          query = from p in Profile, where: p.id == ^id and p.active
+
+          query =
+            if profile_lock == "FOR NO KEY UPDATE",
+              do: lock(query, "FOR NO KEY UPDATE"),
+              else: lock(query, "FOR UPDATE")
+
+          case Repo.one(query) do
+            %Profile{} = actor -> fun.(actor)
+            _ -> Repo.rollback(:invalid_profile)
+          end
         else
           _ -> Repo.rollback(:invalid_profile)
         end
