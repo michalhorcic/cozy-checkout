@@ -24,7 +24,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
     assigns =
       assigns
       |> assign(:visible_campaigns, visible)
-      |> assign(:today, CozyCheckout.Adventure.Sources.Stays.today())
+      |> assign(:today, CozyCheckout.Adventure.Sources.Operation.today())
       |> assign(
         :season_options,
         Enum.filter(

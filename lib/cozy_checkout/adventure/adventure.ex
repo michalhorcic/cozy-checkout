@@ -211,6 +211,10 @@ defmodule CozyCheckout.Adventure do
                 }
               )
               |> Repo.update()
+              |> case do
+                {:ok, completed} -> {:ok, %{completed | newly_completed: true}}
+                error -> error
+              end
           end
         end)
         |> Multi.run(:award, fn _, %{quest: quest} ->

@@ -13,6 +13,7 @@ defmodule CozyCheckout.Adventure.Quest do
     belongs_to :template, CozyCheckout.Adventure.TaskTemplate
     field :first_due_on, :date
     field :schedule_history, :map, default: %{}
+    field :newly_completed, :boolean, virtual: true, default: false
     field :managed, :boolean, default: false
     field :scope, :string, default: "personal"
     field :due_on, :date

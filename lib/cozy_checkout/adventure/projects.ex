@@ -367,6 +367,7 @@ defmodule CozyCheckout.Adventure.Projects do
           |> Changeset.change(status: "accepted", acceptance: acceptance)
           |> save!(:update)
           |> record!(actor.id, "accepted")
+          |> Map.put(:newly_accepted, true)
       end
     end)
   end

@@ -222,24 +222,33 @@ defmodule CozyCheckoutWeb.AdventureLive.ProjectComponents do
         <p :if={present?(@selected.project.purpose)} class="adventure-project-copy">
           {@selected.project.purpose}
         </p>
-        <dl class="adventure-project-meta">
-          <div :if={@selected.project.owner_id}>
-            <dt>Odpovědnost</dt><dd>{profile(@profiles, @selected.project.owner_id)}</dd>
-          </div>
-          <div :if={@selected.project.due_on}>
-            <dt>Plánovaný termín</dt><dd>{format_project_date(@selected.project.due_on)}</dd>
-          </div>
-          <div :if={@selected.project.budget}>
-            <dt>Odhad, ne skutečné náklady</dt><dd>
-              {CurrencyHelper.format_number(@selected.project.budget)} {@selected.project.currency} · {basis(
-                @selected.project.price_basis
-              )}
-            </dd>
-          </div>
-          <div :if={present?(@selected.project.reference)}>
-            <dt>Podklady</dt><dd>{@selected.project.reference}</dd>
-          </div>
-        </dl>
+        <details
+          :if={
+            @selected.project.owner_id || @selected.project.due_on || @selected.project.budget ||
+              present?(@selected.project.reference)
+          }
+          class="adventure-project-disclosure"
+        >
+          <summary>Podrobnosti plánu</summary>
+          <dl class="adventure-project-meta">
+            <div :if={@selected.project.owner_id}>
+              <dt>Odpovědnost</dt><dd>{profile(@profiles, @selected.project.owner_id)}</dd>
+            </div>
+            <div :if={@selected.project.due_on}>
+              <dt>Plánovaný termín</dt><dd>{format_project_date(@selected.project.due_on)}</dd>
+            </div>
+            <div :if={@selected.project.budget}>
+              <dt>Odhad, ne skutečné náklady</dt><dd>
+                {CurrencyHelper.format_number(@selected.project.budget)} {@selected.project.currency} · {basis(
+                  @selected.project.price_basis
+                )}
+              </dd>
+            </div>
+            <div :if={present?(@selected.project.reference)}>
+              <dt>Podklady</dt><dd>{@selected.project.reference}</dd>
+            </div>
+          </dl>
+        </details>
         <div :if={!@selected.project.archived_at} class="adventure-project-next">
           <div class="adventure-project-tools">
             <button

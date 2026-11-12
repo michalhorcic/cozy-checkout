@@ -56,7 +56,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       assert initial <= 15
 
       areas = ["rooms", "kitchen", "bar", "treasury", "workshop", "reception"]
-      assert has_element?(view, "#adventure-area-reception[aria-pressed=true]")
+      assert has_element?(view, "#adventure-area-reception[aria-pressed=false]")
       assert has_element?(view, "#adventure-area-rooms[aria-pressed=false]")
 
       for area <- areas do
@@ -105,7 +105,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     render_click(view, "operation-area", %{"area" => "bar"})
     assert has_element?(view, "#adventure-area-detail", "Obnova provozu je nepřepočítává")
-    assert has_element?(view, "#adventure-area-detail a[href='#adventure-shared']")
+    assert has_element?(view, "#adventure-area-detail a[href='/admin/adventure?view=chronicle']")
     {:ok, book, _} = live(conn, "/admin/adventure/quests")
     refute has_element?(book, "#adventure-world-map")
   end
@@ -621,14 +621,15 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     view |> element("#adventure-initialize") |> render_click()
     profile = Repo.get_by!(Profile, slug: "michal")
     view |> form("#adventure-profile", profile: %{id: profile.id}) |> render_change()
-    assert has_element?(view, "#adventure-progress", "Michal · úroveň 1")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Úroveň 1")
 
     {:ok, quest} =
       Tasks.create(profile.id, %{"title" => "Zavést jedno provozní zlepšení", "xp" => 250})
 
     view |> element("#adventure-find-quest") |> render_click()
     view |> element("#pick-quest-#{quest.id} button") |> render_click()
-    view |> element("#adventure-quest-#{quest.id} button") |> render_click()
+    view |> element("#expedition-quest-#{quest.id} button") |> render_click()
     assert Repo.aggregate(XpTransaction, :count) == 0
 
     view
@@ -651,7 +652,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     p = Repo.get_by!(Profile, slug: "michal")
     {:ok, view, _} = live(conn, "/admin/adventure")
     render_click(view, "restore-profile", %{"id" => p.id})
-    assert has_element?(view, "#adventure-progress", "Michal · úroveň 1")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Úroveň 1")
     profile_id = p.id
 
     assert_push_event(view, "adventure:hero-selected", %{
@@ -680,11 +682,13 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     render_click(view, "profile-storage-status", %{"persistent" => false})
     assert has_element?(view, "#adventure-profile-storage-warning", "Prohlížeč blokuje")
-    assert has_element?(view, "#adventure-progress", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-progress", "0 XP")
 
     render_click(view, "profile-storage-status", %{"persistent" => true})
     refute has_element?(view, "#adventure-profile-storage-warning")
-    assert has_element?(view, "#adventure-progress", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-progress", "0 XP")
     assert Repo.aggregate(XpTransaction, :count) == 0
   end
 
@@ -702,7 +706,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert has_element?(view, "#adventure-help-open[aria-controls=adventure-help]")
     refute has_element?(view, "#adventure-shell", "nikoli ověřená identita")
     view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
-    view |> element("#adventure-quest-#{quest.id} button") |> render_click()
+    view |> element("#expedition-quest-#{quest.id} button") |> render_click()
     refute has_element?(view, "#completion_note[required]")
     refute has_element?(view, "#completion_note[minlength]")
     view |> form("#adventure-completion", completion: %{note: ""}) |> render_submit()
@@ -720,7 +724,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     {:ok, quest} = Adventure.activate_quest(michal.id, "improvement")
     {:ok, view, _} = live(conn, "/admin/adventure")
     view |> form("#adventure-profile", profile: %{id: michal.id}) |> render_change()
-    view |> element("#adventure-quest-#{quest.id} button") |> render_click()
+    view |> element("#expedition-quest-#{quest.id} button") |> render_click()
     view |> form("#adventure-profile", profile: %{id: lucka.id}) |> render_change()
     refute has_element?(view, "#adventure-completion")
 
@@ -768,7 +772,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     camp |> element("#adventure-find-quest") |> render_click()
     assert has_element?(camp, "#pick-quest-#{task.id}", "Vyčistit kamna")
     camp |> element("#pick-quest-#{task.id} button") |> render_click()
-    camp |> element("#adventure-quest-#{task.id} button") |> render_click()
+    camp |> element("#expedition-quest-#{task.id} button") |> render_click()
     view = camp
     assert has_element?(view, "#completion_actor_id")
 
@@ -820,24 +824,21 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     end
   end
 
-  test "camp leads with active work and keeps chronicles and task options collapsed", %{
-    conn: conn
-  } do
+  test "camp leads with the world and keeps secondary work in contextual views", %{conn: conn} do
     {camp, profile, _booking} = duty_view(conn)
     html = render(camp)
-    assert {work, _} = :binary.match(html, "id=\"adventure-expeditions\"")
-    assert {duty, _} = :binary.match(html, "id=\"adventure-service-day\"")
-    assert {map, _} = :binary.match(html, "class=\"adventure-operation-layout\"")
-    assert work < duty
-    assert duty < map
+    assert {scene, _} = :binary.match(html, "class=\"adventure-village\"")
+    assert {work, _} = :binary.match(html, "class=\"adventure-quest-dock\"")
+    assert scene < work
+    refute has_element?(camp, ".adventure-hero")
+    assert has_element?(camp, "#adventure-context[data-panel=continue]")
+    assert has_element?(camp, "#adventure-expeditions-view[hidden]")
+    assert has_element?(camp, "#adventure-chronicle-view[hidden]")
     assert has_element?(camp, "#adventure-season-disclosure:not([open])")
-    assert has_element?(camp, "#adventure-season-disclosure[phx-mounted*='ignore_attrs']")
-    assert has_element?(camp, "#adventure-cabin-chronicle:not([open])")
-
-    assert has_element?(
-             camp,
-             "#adventure-area-detail details.adventure-world-development:not([open])"
-           )
+    render_click(camp, "world-panel", %{"panel" => "duty"})
+    assert has_element?(camp, "#adventure-context[data-panel=duty]")
+    render_click(camp, "world-panel", %{"panel" => "continue"})
+    assert has_element?(camp, "#adventure-context[data-panel=continue]")
 
     {:ok, book, _} = live(conn, "/admin/adventure/quests")
     render_click(book, "restore-profile", %{"id" => profile.id})
@@ -858,7 +859,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     render_click(view, "prepare-completion", %{"id" => task.id})
     refute has_element?(view, "#adventure-completion")
     view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
-    view |> element("#adventure-quest-#{task.id} button", "Hotovo") |> render_click()
+    view |> element("#expedition-quest-#{task.id} button", "Hotovo") |> render_click()
     view |> form("#adventure-completion", completion: %{actor_id: p.id}) |> render_submit()
     assert render(view) =~ "vyber alespoň jednoho přispěvatele"
 
@@ -976,7 +977,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     render_click(camp, "picker-filter", %{"scope" => "shared"})
     assert has_element?(camp, "#pick-quest-#{shared.id}")
     camp |> element("#pick-quest-#{shared.id} button") |> render_click()
-    assert has_element?(camp, "#adventure-shared-expeditions #adventure-quest-#{shared.id}")
+    assert has_element?(camp, "#adventure-shared-list #expedition-quest-#{shared.id}")
     assert {:ok, %{quests: []}} = Adventure.dashboard(p.id)
 
     for code <- ["prepare_stay", "review_deposits", "shopping_plan"],
@@ -1161,5 +1162,146 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     end
 
     assert date_queries.(many_queries) == date_queries.(single_queries)
+  end
+
+  test "game navigation preserves the operational snapshot and cached views add no SELECTs", %{
+    conn: conn
+  } do
+    {:ok, _} = Adventure.initialize()
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    render(view)
+    snapshot = :sys.get_state(view.pid).socket.assigns.operation
+
+    render_patch(view, "/admin/adventure?view=development")
+    assert has_element?(view, "#adventure-projects")
+    assert :sys.get_state(view.pid).socket.assigns.projects_loaded
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          for page <- ~w(expeditions chronicle world development world) do
+            render_patch(view, "/admin/adventure?view=#{page}")
+
+            assert has_element?(
+                     view,
+                     ".adventure-game-nav a[aria-current=page][href='/admin/adventure?view=#{page}']"
+                   )
+          end
+
+          render_click(view, "operation-area", %{"area" => "kitchen"})
+          render_click(view, "world-panel", %{"panel" => "duty"})
+          render_click(view, "world-panel", %{"panel" => "continue"})
+        end,
+        view.pid
+      )
+
+    assert queries == []
+    assert :sys.get_state(view.pid).socket.assigns.operation == snapshot
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "invalid view defaults to the world and direct development links retain authoring", %{
+    conn: conn
+  } do
+    {:ok, _} = Adventure.initialize()
+    {:ok, view, _} = live(conn, "/admin/adventure?view=unknown")
+    assert has_element?(view, ".adventure-game-nav a[aria-current=page]", "Chata")
+    render_patch(view, "/admin/adventure?view=development")
+    assert has_element?(view, "#adventure-projects")
+    assert has_element?(view, "#adventure-world-map")
+
+    assert has_element?(
+             view,
+             "#adventure-world-map .adventure-village-land[src$='cabin-world.svg']"
+           )
+  end
+
+  test "completion celebrates the actual recipient once and never on reconnect or replay", %{
+    conn: conn
+  } do
+    alias CozyCheckout.Adventure.Tasks
+    {:ok, _} = Adventure.initialize()
+    michal = Repo.get_by!(Profile, slug: "michal")
+    lucka = Repo.get_by!(Profile, slug: "lucka")
+    {:ok, quest} = Tasks.create(michal.id, %{"title" => "Nový výsledek", "size" => "medium"})
+    {:ok, _} = Tasks.start(michal.id, quest.id)
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    render_click(view, "restore-profile", %{"id" => michal.id})
+    render_click(view, "prepare-completion", %{"id" => quest.id})
+    view |> form("#adventure-completion", completion: %{actor_id: lucka.id}) |> render_submit()
+    assert has_element?(view, "#adventure-success", "+100 XP · Lucka")
+    assert has_element?(view, "#adventure-success", "Nový výsledek")
+    render_click(view, "dismiss-success")
+    render_submit(view, "complete", %{"completion" => %{"actor_id" => lucka.id}})
+    refute has_element?(view, "#adventure-success")
+    {:ok, reconnected, _} = live(conn, "/admin/adventure")
+    render_click(reconnected, "restore-profile", %{"id" => michal.id})
+    refute has_element?(reconnected, "#adventure-success")
+    assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
+  test "chronicle history is explicit and cached without refreshing operational sources", %{
+    conn: conn
+  } do
+    {:ok, _} = Adventure.initialize()
+    {:ok, view, _} = live(conn, "/admin/adventure?view=chronicle")
+    render(view)
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn ->
+          render_click(view, "chronicle-tab", %{"tab" => "quests"})
+          render_click(view, "chronicle-tab", %{"tab" => "seasons"})
+          render_click(view, "chronicle-tab", %{"tab" => "quests"})
+        end,
+        view.pid
+      )
+
+    assert length(queries) == 1
+    assert hd(queries) =~ "adventure_quests"
+  end
+
+  test "world decoration has zero, one and two-result stages and never develops the workshop" do
+    village = &CozyCheckoutWeb.AdventureLive.OperationComponents.village/1
+    base = %{snapshot: nil, area: nil, world: %{counts: [], projects: []}}
+    plain = render_component(village, base)
+    refute plain =~ "adventure-world-decoration"
+
+    first = render_component(village, put_in(base, [:world, :counts], [{"rooms", "accepted", 1}]))
+    assert first =~ "adventure-symbol--flag"
+    refute first =~ "adventure-symbol--trophy"
+
+    developed =
+      render_component(
+        village,
+        put_in(base, [:world, :counts], [{"rooms", "accepted", 3}, {"workshop", "accepted", 8}])
+      )
+
+    assert developed =~ "adventure-symbol--trophy"
+    assert developed =~ "3 převzatých zlepšení"
+    refute developed =~ "8 převzatých zlepšení"
+  end
+
+  test "quest offers render once as a camp modal or inline in expeditions", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    profile = Repo.get_by!(Profile, slug: "michal")
+    {:ok, quest} = Tasks.create(profile.id, %{"title" => "Jedna nabídka"})
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    render_click(view, "restore-profile", %{"id" => profile.id})
+    render_click(view, "find-quests")
+    assert has_element?(view, "#adventure-picker-modal #pick-quest-#{quest.id}")
+    refute has_element?(view, "#adventure-expeditions-view #adventure-quest-picker")
+
+    render_click(view, "close-picker")
+    refute has_element?(view, "#adventure-quest-picker")
+    render_patch(view, "/admin/adventure?view=expeditions")
+    render_click(view, "find-quests")
+    assert has_element?(view, "#adventure-expeditions-view #pick-quest-#{quest.id}")
+    refute has_element?(view, "#adventure-picker-modal")
+    render_patch(view, "/admin/adventure?view=world")
+    refute has_element?(view, "#adventure-quest-picker")
+    render_click(view, "find-quests")
+    assert has_element?(view, "#adventure-picker-modal #pick-quest-#{quest.id}")
+    refute has_element?(view, "#adventure-expeditions-view #adventure-quest-picker")
   end
 end

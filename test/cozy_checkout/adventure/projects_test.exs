@@ -339,6 +339,8 @@ defmodule CozyCheckout.Adventure.ProjectsTest do
     assert {:ok, replay} =
              Projects.accept(other.id, project.id, %{"confirmed" => "true", "result" => "Rewrite"})
 
+    assert accepted.newly_accepted
+    refute replay.newly_accepted
     assert replay.acceptance == accepted.acceptance
     assert Repo.all(XpTransaction) == awards
     assert {:error, :invalid_transition} = Projects.transition(actor.id, project.id, "active")

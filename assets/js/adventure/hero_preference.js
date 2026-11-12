@@ -10,6 +10,9 @@ export const AdventureHero = {
       if (this.pendingHero !== undefined && requestedId !== this.pendingHero) return
       this.pendingHero = undefined
       this.saveHero(id)
+      // Close only after the server accepts a hero; clearing/invalidating reopens the choice.
+      const switcher = this.el.querySelector?.('#adventure-hero-switcher')
+      if (switcher) switcher.open = !id
     })
     this.selectionHandler = event => {
       if (event.target.matches('#adventure-profile select')) {

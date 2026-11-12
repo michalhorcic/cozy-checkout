@@ -47,19 +47,19 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
         <div class="adventure-guide-body">
           <section>
             <h3>Tvoje výpravy</h3><p>
-              Tábor je tvoje herní obrazovka: vyber hrdinu, otevři „Najít další výpravu“, přijmi až tři osobní questy a po splnění je potvrď. Společné výpravy mají vlastní místo a jednu odměnu chatě. Poznámka je nepovinná. Opakované questy se řídí dny nastavenými v knize podle Europe/Prague. Rozpracovanou výpravu můžeš dokončit i později; její zadání a odměna zůstávají zachované.
+              Chata je náš společný herní svět. Hrdinu vyber u avatara, výpravu na nástěnce. Přijmi až tři osobní questy a po skutečném splnění je potvrď. Společné výpravy mají vlastní místo a jednu odměnu chatě. Poznámka je nepovinná. Opakované questy se řídí dny nastavenými v knize podle Europe/Prague. Rozpracovanou výpravu můžeš dokončit i později; její zadání a odměna zůstávají zachované.
             </p>
           </section>
           <section>
             <h3>Vlastní úkoly</h3><p>
-              Questy jsou kniha zadání: tady práci vytváříš a upravuješ, samotný výběr a plnění patří do tábora. Přepínače oddělují jednorázové questy, opakované šablony a historii. Stačí název; termín, popis a poznámka jsou nepovinné. Velikost předvyplní 50, 100 nebo 250 XP. Přiřazení samo nezabírá slot. Přijetí osobní výpravy v táboře ji přiřadí právě vybranému hrdinovi a počítá se do společného limitu tří osobních výprav.
+              Výpravy slouží k hraní; přes Spravovat zadání otevřeš knihu pro vytváření a úpravy. Přepínače oddělují jednorázové questy, opakované šablony a historii. Stačí název; termín, popis a poznámka jsou nepovinné. Velikost předvyplní 50, 100 nebo 250 XP. Přiřazení samo nezabírá slot. Přijetí osobní výpravy v táboře ji přiřadí právě vybranému hrdinovi a počítá se do společného limitu tří osobních výprav.
             </p><p>
-              Při dokončení zvol skutečného splnitele, který dostane osobní XP. U společného úkolu výslovně vyber přispěvatele; jednu odměnu dostane jen chata. Zadání lze upravit pouze ve stavu Čeká. Archivace otevřenou práci zruší, historii ani již udělená XP nesmaže. Termín není penalizace. Opakované šablony spravuj v Questech. Nová šablona je pozastavená; po spuštění se úkoly obnovují hodinově nebo ručně. Zmeškané termíny se nehromadí: jedna otevřená položka dostane nový termín a uchová historii. Při pozastavení výslovně vyber, co s otevřeným úkolem. Podmínka hostů může být neznámá, pak lze přidat vlastní úkol. Změny šablony platí pro budoucí výskyty.
+              Při dokončení zvol skutečného splnitele, který dostane osobní XP. U společného úkolu výslovně vyber přispěvatele; jednu odměnu dostane jen chata. Zadání lze upravit pouze ve stavu Čeká. Archivace otevřenou práci zruší, historii ani již udělená XP nesmaže. Termín není penalizace. Opakované šablony spravuj přes Výpravy → Spravovat zadání. Nová šablona je pozastavená; po spuštění se úkoly obnovují hodinově nebo ručně. Zmeškané termíny se nehromadí: jedna otevřená položka dostane nový termín a uchová historii. Při pozastavení výslovně vyber, co s otevřeným úkolem. Podmínka hostů může být neznámá, pak lze přidat vlastní úkol. Změny šablony platí pro budoucí výskyty.
             </p>
           </section>
           <section>
             <h3>Dílna a projekty</h3><p>
-              Dílna sdružuje všechny projekty, není další místností k vylepšování. Projekt patří konkrétní oblasti nebo celé chatě. Kroky projektu jsou běžné questy: od každého přejdeš přímo k přijetí a plnění v táboře. Dokončené kroky projekt automaticky nepřevezmou a převzetí nepřidává další XP.
+              Dílna sdružuje všechny projekty, není další místností k vylepšování. Projekt patří konkrétní oblasti nebo celé chatě. Kroky projektu jsou běžné questy: od každého přejdeš přímo k přijetí a plnění ve hře. Dokončené kroky projekt automaticky nepřevezmou a převzetí nepřidává další XP.
             </p>
           </section>
           <section>
@@ -69,7 +69,7 @@ defmodule CozyCheckoutWeb.AdventureLive.GameComponents do
           </section>
           <section>
             <h3>XP a úrovně</h3><p>
-              Osobní questy odměňují vybraný profil. Staré kampaně mají automatické milníky pro společnou chatu; nové sezónní kroniky žádné automatické XP nepřidělují. XP nejsou peníze ani provozní ukazatel. Další úroveň začíná při 100 × L × (L + 1) / 2 XP. Opakované potvrzení nevytváří novou odměnu.
+              Osobní questy odměňují skutečného splnitele zvoleného při potvrzení. Staré kampaně mají automatické milníky pro společnou chatu; nové sezónní kroniky žádné automatické XP nepřidělují. XP nejsou peníze ani provozní ukazatel. Další úroveň začíná při 100 × L × (L + 1) / 2 XP. Opakované potvrzení nevytváří novou odměnu.
             </p>
           </section>
           <section>

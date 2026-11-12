@@ -73,8 +73,13 @@ defmodule CozyCheckout.AdventureTest do
     assert completed.evidence["actor_profile_id"] == p.id
     assert completed.evidence["attribution"] == "self_selected"
 
-    assert {:ok, ^completed} =
+    assert completed.newly_completed
+
+    assert {:ok, replay} =
              Adventure.complete_manual_quest(p.id, quest.id, "Jiná poznámka nezmění historii.")
+
+    refute replay.newly_completed
+    assert %{completed | newly_completed: false} == replay
 
     assert Repo.aggregate(XpTransaction, :count) == 1
     assert {:ok, %{total_xp: 250, level: 2}} = Adventure.dashboard(p.id)

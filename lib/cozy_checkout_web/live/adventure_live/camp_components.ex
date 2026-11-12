@@ -7,12 +7,14 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
   attr :profile, :any, required: true
   attr :shared, :boolean, default: false
 
+  attr :id, :string, default: nil
+
   def expeditions(assigns) do
     assigns = assign(assigns, :active, Enum.filter(assigns.quests, &(&1.status == "active")))
 
     ~H"""
     <section
-      id={if @shared, do: "adventure-shared-expeditions", else: "adventure-expeditions"}
+      id={@id || if @shared, do: "adventure-shared-expeditions", else: "adventure-expeditions"}
       class={[
         "adventure-panel",
         "adventure-expedition-panel",
@@ -45,7 +47,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
       <div class="adventure-active-list">
         <article
           :for={quest <- @active}
-          id={"adventure-quest-#{quest.id}"}
+          id={"expedition-quest-#{quest.id}"}
           class="adventure-active-quest"
         >
           <span class="adventure-quest-token"><.symbol name={quest_symbol(quest.code)} /></span>
@@ -75,8 +77,8 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
       </div>
       <button
         :if={!@shared}
-        id="adventure-find-quest"
-        phx-click={JS.push_focus(to: "#adventure-find-quest") |> JS.push("find-quests")}
+        id="adventure-find-expedition"
+        phx-click={JS.push_focus(to: "#adventure-find-expedition") |> JS.push("find-quests")}
         disabled={!@profile}
         class="adventure-button adventure-button--primary adventure-find-button"
       ><.symbol name="compass" /> Najít další výpravu <.icon name="hero-arrow-right" class="size-4" /></button>

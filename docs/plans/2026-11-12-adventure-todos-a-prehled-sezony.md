@@ -1,6 +1,6 @@
 # Cozy Adventure – provoz a budování chaty
 
-- Stav: 3A/3B a preference hrdiny dodané, 4A až omezená 4C a zjednodušení projektů sloučené v main; schválená 5A implementovaná ve větvi `feat/adventure-duty-quests`, předání a limity ověření v oddílu 18; následuje samostatné schválení 5B a poté živého Baru
+- Stav: 3A/3B, preference hrdiny, 4A–4C, 5A (PR #122) a zjednodušení UX (PR #123) sloučené v main. Před 5B/5C má přednost schválený [herní UI/UX redesign](2026-11-12-adventure-herni-ui-ux.md). Historické předání 5A je v oddílu 18.
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: herní rozhraní nad provozem aplikace, správa questů, rozvoj chaty investičními projekty a kronika skutečných výsledků

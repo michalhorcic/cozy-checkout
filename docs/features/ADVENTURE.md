@@ -42,7 +42,7 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
    dat webu. Úložiště patří konkrétnímu prohlížeči a originu: IP, jiné jméno,
    port nebo protokol mohou znamenat jinou volbu. Neplatný nebo neaktivní
    profil se neobnoví. Přepnutí profilu zruší rozpracované potvrzení questu.
-5. V **Questech** připrav zadání. V **Táboře → Najít další výpravu** přijmi
+5. Ve **Výpravách → Spravovat zadání** připrav zadání. V **Chatě → Najít další výpravu** přijmi
    nejvýše tři osobní questy. Tlačítkem **Hotovo** otevři potvrzení
    splnění. Poznámka je nepovinná (nejvýše 1000 znaků, bez minimální délky);
    případně ji rozbal přes **Přidat poznámku**. Aktér, čas a odměna se auditují
@@ -52,35 +52,69 @@ Provozní data hra pouze čte; herní akce zapisují výhradně do vlastních ta
 
 ## Herní obrazovka a nápověda
 
-Adventure používá vlastní herní rám bez administračního sidebaru. Odkaz
-**Do aplikace** vede zpět do administrace; stávající PIN chrání všechny stránky
-i události stejně jako ostatní admin. Hrdina a práce zůstávají uložené při
-přechodu mezi hrou a provozními obrazovkami.
+Adventure používá vlastní herní rám bez administračního sidebaru. **Do aplikace**
+vede do administrace; PIN dál chrání všechny stránky a události. Profil se
+vybírá po rozbalení avatara a zůstává zapamatovaný původním mechanismem.
+Osobní XP a společný postup chaty jsou oddělené.
 
-| Obrazovka | Úloha |
+| Pohled | Úloha |
 | --- | --- |
-| **Tábor** | Hrát: vybrat hrdinu, přijmout výpravu, pracovat na ní a potvrdit splnění. Tři osobní sloty, společné výpravy, mapa chaty a sezóna. |
-| **Questy** | Připravit zadání: části Jednorázové questy, Opakované questy, Projekty a Historie. Vytváření, editace, termíny, přiřazení, odměny, opakování a archivace. |
-| **Nastavení** | Sezóny, pravidla a audit. |
+| **Chata** | Ilustrovaný svět, výběr oblasti, kontextová práce, tři osobní výpravy a souhrn společných. |
+| **Výpravy** | Rozpracované osobní a společné questy; Nabídka otevře výběr další práce. Spravovat zadání vede do knihy. |
+| **Rozvoj** | Existující projekty a jejich kroky přímo v herním rámci. |
+| **Kronika** | Zlepšení chaty, splněné výpravy a oddělené sezónní výsledky. |
+| **Nastavení** | Sezóny, pravidla a audit; sekundární odkaz v horním panelu. |
 
-**Najít další výpravu** v táboře otevře nástěnku s čekajícími vlastními úkoly
-i splatnými výskyty opakovaných šablon. Při otevření se šablony výslovně
-obnoví stejným přepočtem jako v hodinovém workeru. Výběr má části **Pro mě**
-(vlastní a volné osobní úkoly), **Společné** a **Všechny**, plus hledání názvu.
-Nabídka čte jeden herní dávkový dotaz (nejvýše 100 otevřených položek),
-nikoliv pevné čtyři definice. Prázdná nástěnka odkazuje na knihu zadání.
-**Přijmout výpravu** přesune osobní quest do slotu vybraného hrdiny;
-**Vyrazit společně** ho přesune do společných výprav. Po přijetí se nabídka zavře.
+Na mobilu je hlavní navigace dole. Vstup do hry ukáže scénu a pokračování,
+nikoli všechny seznamy pod sebou. Na počítači je vedle scény jeden kontextový
+panel. Výběr oblasti nebo Služby dne na telefonu otevře samostatný detail
+s návratem, Escape, řízeným fokusem a inertním zbytkem hry. Alternativní seznam
+oblastí je dostupný přes **Seznam oblastí**. Žádná funkce nevyžaduje hover.
 
-Mapa chaty má pět oblastí: **Recepce**, **Pokoje**, **Kuchyně**, **Bar**,
-**Pokladnice** a centrum projektů **Dílna**. Dílna není další vylepšovanou
-místností; obecné projekty patří **Celé chatě**. Výběr oblasti otevře detail bez dalšího provozního
-dotazu; na mobilu je stejná mapa dostupným seznamem tlačítek. Detaily odkazují
-do existujících funkcí aplikace, samy nemění provozní stav a nepotvrzují úkol.
-Po návratu zůstává výprava rozpracovaná. Kniha zadání neobsahuje duplikované výpravy,
-katalog ani sezónní karty a nemá tlačítka k zahájení/splnění. Tábor odkazuje
-na část Historie v knize; ta uchovává i dokončené původní katalogové questy.
-Sezónní panel se jmenuje Kronika sezóny, aby se nepletl se společnými úkoly.
+Pohled určuje `view=world|expeditions|development|chronicle` na
+`/admin/adventure`; chybějící či neplatný parametr znamená `world`. Přepínání
+používá patch stejného LiveView a zachovává provozní snapshot. První vstup do
+Rozvoje výslovně načte dosavadní projektový seznam (do 2 SELECTů, při vybraném
+projektu 1 pro historii), další přepínání použije cache v socketu. Splněné
+výpravy načtou při prvním otevření historii jedním SELECTem, nejvýše 100 položek;
+přepínání cache nepřenačítá, změna hrdiny a splnění ji zneplatní. Původní adresy
+knihy, projektů a přímých questových odkazů zůstávají funkční.
+
+**Najít další výpravu** otevře nástěnku s čekajícími vlastními úkoly a splatnými
+opakováními. Používá původní výslovnou obnovu šablon a jeden dávkový seznam
+nejvýše 100 otevřených položek, s hledáním a filtry Pro mě / Společné / Všechny.
+Přijetí osobního questu obsadí slot, společného přidá společnou práci. Po přijetí
+se nabídka zavře. Vytváření a editace jsou v samostatné knize zadání; hledání je
+viditelné, ostatní filtry jsou pod **Filtry**. Správa neopakuje herní mapu.
+
+Mapa obsahuje Recepce, Pokoje, Kuchyně, Bar, Pokladnice a Dílnu. Dílna je
+vstup do společných projektů, není šestou vylepšovanou místností. Obecné projekty
+patří Celé chatě. Oblasti používají existující projekci a při výběru nedotazují
+provoz ani neudělují XP. Lokální SVG ilustrace ukazuje **jednu chatu s odkrytým interiérem**: pokoje
+a účetní/projektové koutky v patře, recepci, kuchyni a bar v přízemí. Jde
+o stylizované herní členění, nikoli skutečný stavební půdorys. Popisky jsou HTML
+tlačítka u odpovídajících místností; tabulátor prochází horní a pak dolní řadu
+zleva doprava. Stejné kotvy platí na mobilu i počítači. První převzaté zlepšení oblasti přidá praporek, dvě a více také trofej.
+Přesný počet, skutečné výsledky a přispěvatelé zůstávají v detailu; archivovaný
+převzatý projekt se dál počítá. Dekorace není provozní stav ani finanční bonus.
+
+Po novém splnění se zobrazí konkrétní název, skutečná XP a jejich příjemce.
+Nová právě načtená osobní nebo společná úroveň dostane oznámení. Nové převzetí
+projektu zobrazí výsledek a doplní již načtený svět v paměti, bez dalších dotazů
+nebo XP. Návratové virtuální příznaky `newly_completed` a `newly_accepted`
+vznikají uvnitř existujících zamčených transakcí jen při nové změně. Neukládají
+se do databáze a replay i reload vracejí `false`; souběh tak neoslaví dvakrát.
+Oznámení lze zavřít, krátká animace respektuje omezení pohybu; zvuk není přidán.
+
+Načítání, stáří, neúplnost a chyby zdrojů zůstávají viditelné u údajů. Sezónní
+přepočty a provozní obnova jsou dál odlišné akce. Zobrazení sezón používá již
+existující výpočet pražského dne v paměti, nikoli SQL při renderu. Přepínání
+načtených pohledů, oblastí a kontextových panelů má 0 SELECTů; žádný nový polling,
+N+1, provozní zdroj, migrace nebo konfigurace nebyly přidány.
+
+Samostatný schválený plán a akceptace jsou v
+[herním UI/UX plánu](../plans/2026-11-12-adventure-herni-ui-ux.md). Historické
+implementační poznámky níže popisují předchozí iterace; aktuální navigace je výše.
 
 ### Zjednodušené rozhraní
 
@@ -388,8 +422,8 @@ testy nebyly spuštěny; výsledky CI ověří uživatel. Ručně ověřit po mi
 
 Pět oblastí mapy rozlišuje plány, realizaci a počet **převzatých zlepšení**;
 Dílna je vstup do společné knihy projektů, ne šestá vylepšovaná oblast.
-Převzatá oblast dostává společný zlatý štítek a zelený rám, nikoli individuální
-ilustraci. Milník vzniká pouze z lidského převzetí projektu, ne dokončením
+Převzatá oblast dostává obecný praporek, od dvou výsledků i trofej; konkrétní
+projekty nemají individuální ilustrace. Milník vzniká pouze z lidského převzetí projektu, ne dokončením
 questů, schválením plánu nebo návštěvou stránky. Zahrnuje také projekty převzaté
 před dodáním 4C a archivované výsledky. Archivace milník neodstraní.
 
