@@ -53,264 +53,315 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           class="adventure-button"
         >Obnovit provoz</button>
       </header>
-      <div id="adventure-operation-status" role="status" aria-live="polite">
-        <p :if={@state == :loading}>Načítám společný provozní přehled…</p>
-        <p :if={@state == :error} class="adventure-operation-warning">
-          Provoz se nepodařilo načíst. Zkus ruční obnovu.
-          <span :if={@snapshot}>Poslední dostupné údaje níže nejsou čerstvé.</span>
-        </p>
-        <p :if={@snapshot} class="adventure-muted">
-          Provoz pro {date(@snapshot.today)} · načteno <time datetime={
-            DateTime.to_iso8601(@snapshot.loaded_at)
-          }>{Calendar.strftime(@snapshot.loaded_at, "%H:%M UTC")}</time>.
-          Bez automatické obnovy.
-          <strong :if={Operation.stale?(@snapshot, @checked_at) or @state == :error}>Starší údaje, obnov přehled.</strong>
-        </p>
-      </div>
-      <section
-        :if={@snapshot}
-        id="adventure-service-day"
-        class="adventure-service-day"
-        aria-labelledby="service-day-title"
-      >
-        <header>
-          <h3 id="service-day-title">Služba dne · {date(@snapshot.today)}</h3><p class="adventure-muted">
-            Podněty do {date(@snapshot.through)} · uvedené datum je příjezd, ne vznik závady.
-          </p>
-        </header>
-        <p :if={@snapshot.issues == []}>
-          Bez hlášených podnětů. Nejde o potvrzení připravenosti chaty.
-        </p>
-        <ul>
-          <li
-            :for={{issue, index} <- @snapshot.issues |> Enum.take(4) |> Enum.with_index()}
-            id={"adventure-duty-#{index}"}
-          >
-            <span><strong>{if issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"}</strong>
-            · příjezd {date(issue.on)}<br />{issue.reason}</span>
-            <.link href={~p"/admin/bookings/#{issue.booking_id}"} class="adventure-text-link">Otevřít pobyt</.link>
-            <.duty_actions
-              issue={issue}
-              link={@duty_links[Tasks.duty_key(issue)]}
-              profile={@profile}
-            />
-          </li>
-        </ul>
-        <p :if={length(@snapshot.issues) > 4}>
-          Dalších podnětů: {length(@snapshot.issues) - 4}.
-          <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Zkontrolovat v plánu jídel</.link>
-        </p>
-      </section>
+      <.operation_status {assigns} />
+      <.service_day {assigns} />
       <div class="adventure-operation-layout">
-        <nav class="adventure-village" aria-label="Oblasti chaty">
-          <div class="adventure-village-land" aria-hidden="true"><span>Jindřichův dům</span></div>
-          <button
-            :for={{key, label, icon} <- @places}
-            id={"adventure-area-#{key}"}
-            type="button"
-            phx-click="operation-area"
-            phx-value-area={key}
-            aria-pressed={to_string(@area == key)}
-            aria-controls="adventure-area-detail"
-            class={[
-              "adventure-village-place",
-              "adventure-village-place--#{key}",
-              key != "workshop" && area_count(@world, key, ["accepted"]) > 0 &&
-                "adventure-village-place--developed"
-            ]}
-          >
-            <.symbol name={icon} /><strong>{label}</strong><span>{summary(key, @snapshot)}</span>
-            <span
-              :if={key != "workshop" && area_count(@world, key, ["accepted"]) > 0}
-              class="adventure-world-milestone"
-            >{area_count(@world, key, [
-              "accepted"
-            ])} převzatých zlepšení</span>
-            <span
-              :if={
-                key != "workshop" &&
-                  area_count(@world, key, ["idea", "ready", "approved", "paused", "active"]) > 0
-              }
-              class="adventure-world-plans"
-            >{area_count(@world, key, [
-              "idea",
-              "ready",
-              "approved",
-              "paused"
-            ])} plánů · {area_count(@world, key, ["active"])} v realizaci</span>
-          </button>
-        </nav>
-        <section
-          id="adventure-area-detail"
-          class="adventure-area-detail"
-          aria-label="Detail vybrané oblasti"
-          aria-live="polite"
-        >
-          <p class="adventure-eyebrow">
-            {Enum.find_value(@places, fn {key, label, _} -> key == @area && label end)}
-          </p>
-          <div :if={@area in ["reception", "rooms"]}>
-            <h3>Kalendář, ne hlášení přítomnosti</h3>
-            <dl :if={@snapshot} class="adventure-operation-counts">
-              <div>
-                <dt>Příjezdy skupin dnes</dt><dd>{@snapshot.arrivals}</dd>
-              </div>
-              <div>
-                <dt>Odjezdy skupin dnes</dt><dd>{@snapshot.departures}</dd>
-              </div>
-              <div>
-                <dt>Osob podle kalendáře</dt><dd>{@snapshot.occupancy} / {@snapshot.capacity}</dd>
-              </div>
-            </dl>
-            <p>
-              Obsazenost zahrnuje příjezd, ne odjezd. Neověřuje přítomnost hostů ani připravenost pokojů.
-            </p>
-            <.link href={~p"/admin/bookings/calendar"} class="adventure-text-link">Otevřít kalendář rezervací</.link>
-          </div>
-          <div :if={@area == "kitchen"}>
-            <h3>Porce podle zadaného stravování</h3>
-            <dl :if={@snapshot} class="adventure-operation-counts">
-              <div :for={
-                {key, label} <- [{"breakfast", "Snídaně"}, {"lunch", "Obědy"}, {"dinner", "Večeře"}]
-              }>
-                <dt>{label}</dt><dd>
-                  {if @snapshot.incomplete > 0, do: "nejméně "}{@snapshot.portions[key].total}
-                </dd>
-              </div>
-            </dl>
-            <p :if={@snapshot && @snapshot.incomplete > 0} class="adventure-operation-warning">
-              Neúplné podklady pro {@snapshot.incomplete} skupin dnes. Počty jsou pouze známé porce, nikoli celková potřeba.
-            </p>
-            <p>Plánované porce nejsou uvařené jídlo.</p>
-            <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Otevřít plán jídel</.link>
-          </div>
-          <div :if={@area in ["bar", "treasury"]}>
-            <h3>Finance patří do kroniky</h3>
-            <p>
-              Sezónní inkaso a vyúčtování jsou uložené snapshoty, nikoli živý stav. Obnova provozu je nepřepočítává. Inkaso není zisk ani hodnota prodeje.
-            </p>
-            <a
-              href="#adventure-shared"
-              phx-click={JS.set_attribute({"open", ""}, to: "#adventure-season-disclosure")}
-              class="adventure-text-link"
-            >Přejít na kroniku sezóny a datum přepočtu</a>
-            <.link :if={@area == "bar"} href={~p"/admin/bar-stock"} class="adventure-text-link">Otevřít sklad baru</.link>
-            <.link :if={@area == "treasury"} href={~p"/admin/billing"} class="adventure-text-link">Otevřít doklady a platby</.link>
-            <p>Mapa zde neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
-          </div>
-          <div :if={@area == "workshop"}>
-            <h3>Dílna projektů</h3>
-            <p>Všechny projekty chaty a jejich questy na jednom místě.</p>
-            <.link navigate={~p"/admin/adventure/quests?section=projects"} class="adventure-text-link">Otevřít knihu projektů</.link>
-          </div>
-          <p :if={!@snapshot && @area in ["reception", "rooms", "kitchen"]}>
-            Provozní údaje zatím nejsou dostupné. Neznámý stav není nula.
-          </p>
-          <details :if={@area != "workshop"} class="adventure-world-development">
-            <summary>
-              Rozvoj oblasti · {area_count(@world, @area, ["accepted"])} milníků · {area_count(
-                @world,
-                @area,
-                ["idea", "ready", "approved", "paused"]
-              )} plánů · {area_count(@world, @area, ["active"])} v realizaci
-            </summary>
-            <p>
-              Milníky jsou lidsky převzaté výsledky, ne technická kontrola ani provozní bonus.
-            </p>
-            <article
-              :for={project <- Enum.filter(@world.projects, &(&1.area == @area))}
-              class="adventure-world-project"
-            >
-              <.link
-                navigate={
-                  ~p"/admin/adventure/quests?#{%{section: "projects", project_search: project.title, project_id: project.id}}"
-                }
-                class="adventure-text-link"
-              >{project.title}</.link>
-              <span>{project_status(project.status)}{if project.archived_at, do: " · archiv"}</span>
-              <.accepted_outcome
-                :if={project.status == "accepted"}
-                project={project}
-                profiles={@profiles}
-              />
-            </article>
-            <p :if={!Enum.any?(@world.projects, &(&1.area == @area))}>
-              V posledních 100 změněných projektech zde není žádný záznam.
-            </p>
-            <.link
-              navigate={~p"/admin/adventure/quests?#{%{section: "projects", project_area: @area}}"}
-              class="adventure-text-link"
-            >Plánovat další zlepšení</.link>
-          </details>
-        </section>
+        <.village {assigns} />
+        <.area_detail {assigns} />
       </div>
-      <details
-        id="adventure-cabin-chronicle"
-        class="adventure-cabin-chronicle"
-        aria-labelledby="cabin-chronicle-title"
-        open={!is_nil(@chronicle)}
+      <.cabin_chronicle {assigns} />
+    </section>
+    """
+  end
+
+  def operation_status(assigns) do
+    assigns = assign(assigns, :places, places())
+
+    ~H"""
+    <div id={assigns[:id] || "adventure-operation-status"} role="status" aria-live="polite">
+      <p :if={@state == :loading}>Načítám společný provozní přehled…</p>
+      <p :if={@state == :error} class="adventure-operation-warning">
+        Provoz se nepodařilo načíst. Zkus ruční obnovu.
+        <span :if={@snapshot}>Poslední dostupné údaje níže nejsou čerstvé.</span>
+      </p>
+      <p :if={@snapshot} class="adventure-muted">
+        Provoz pro {date(@snapshot.today)} · načteno <time datetime={
+          DateTime.to_iso8601(@snapshot.loaded_at)
+        }>{Calendar.strftime(@snapshot.loaded_at, "%H:%M UTC")}</time>.
+        Bez automatické obnovy.
+        <strong :if={Operation.stale?(@snapshot, @checked_at) or @state == :error}>Starší údaje, obnov přehled.</strong>
+      </p>
+    </div>
+    """
+  end
+
+  def service_day(assigns) do
+    assigns = assign(assigns, :places, places())
+
+    ~H"""
+    <section
+      :if={@snapshot}
+      id="adventure-service-day"
+      class="adventure-service-day"
+      aria-labelledby="service-day-title"
+    >
+      <header>
+        <h3 id="service-day-title">Služba dne · {date(@snapshot.today)}</h3><p class="adventure-muted">
+          Podněty do {date(@snapshot.through)} · uvedené datum je příjezd, ne vznik závady.
+        </p>
+      </header>
+      <p :if={@snapshot.issues == []}>
+        Bez hlášených podnětů. Nejde o potvrzení připravenosti chaty.
+      </p>
+      <ul>
+        <li
+          :for={{issue, index} <- @snapshot.issues |> Enum.take(4) |> Enum.with_index()}
+          id={"adventure-duty-#{index}"}
+        >
+          <span><strong>{if issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"}</strong>
+          · příjezd {date(issue.on)}<br />{issue.reason}</span>
+          <.link href={~p"/admin/bookings/#{issue.booking_id}"} class="adventure-text-link">Otevřít pobyt</.link>
+          <.duty_actions
+            issue={issue}
+            link={@duty_links[Tasks.duty_key(issue)]}
+            profile={@profile}
+          />
+        </li>
+      </ul>
+      <p :if={length(@snapshot.issues) > 4}>
+        Dalších podnětů: {length(@snapshot.issues) - 4}.
+        <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Zkontrolovat v plánu jídel</.link>
+      </p>
+    </section>
+    """
+  end
+
+  def village(assigns) do
+    assigns = assign(assigns, :places, places())
+
+    ~H"""
+    <nav class="adventure-village" aria-label="Oblasti chaty">
+      <img
+        class="adventure-village-land"
+        src={~p"/images/adventure/cabin-world.svg"}
+        alt="Horská chata se zahradou a cestami mezi oblastmi"
+        width="1200"
+        height="800"
+        fetchpriority="high"
+      />
+      <button
+        :for={{key, label, icon} <- @places}
+        id={"adventure-area-#{key}"}
+        type="button"
+        phx-click="operation-area"
+        phx-value-area={key}
+        aria-pressed={to_string(@area == key)}
+        aria-controls="adventure-area-detail"
+        class={[
+          "adventure-village-place",
+          "adventure-village-place--#{key}",
+          assigns[:highlight] == key && "adventure-village-place--new",
+          key != "workshop" && area_count(@world, key, ["accepted"]) > 0 &&
+            "adventure-village-place--developed"
+        ]}
       >
-        <summary id="cabin-chronicle-title">Kronika chaty</summary>
-        <header class="adventure-section-heading">
-          <p class="adventure-eyebrow">Výsledky napříč sezónami</p>
-          <button phx-click="refresh-world" class="adventure-button">Obnovit rozvoj</button>
-        </header>
+        <span class="adventure-place-label"><.symbol name={icon} /><strong>{label}</strong></span>
+        <span class="adventure-place-summary">{summary(key, @snapshot)}</span>
+        <span
+          :if={key != "workshop" && area_count(@world, key, ["accepted"]) > 0}
+          class="adventure-world-decoration"
+          role="img"
+          aria-label={"#{area_count(@world, key, ["accepted"])} převzatých zlepšení"}
+        >
+          <.symbol name="flag" /><.symbol
+            :if={area_count(@world, key, ["accepted"]) >= 2}
+            name="trophy"
+          />
+        </span>
+      </button>
+    </nav>
+    """
+  end
+
+  def area_detail(assigns) do
+    assigns = assign(assigns, :places, places())
+
+    ~H"""
+    <section
+      id="adventure-area-detail"
+      class="adventure-area-detail"
+      aria-label="Detail vybrané oblasti"
+      aria-live="polite"
+    >
+      <p class="adventure-eyebrow">
+        {Enum.find_value(@places, fn {key, label, _} -> key == @area && label end)}
+      </p>
+      <div :if={@area in ["reception", "rooms"]}>
+        <h3>Kalendář, ne hlášení přítomnosti</h3>
+        <dl :if={@snapshot} class="adventure-operation-counts">
+          <div>
+            <dt>Příjezdy skupin dnes</dt><dd>{@snapshot.arrivals}</dd>
+          </div>
+          <div>
+            <dt>Odjezdy skupin dnes</dt><dd>{@snapshot.departures}</dd>
+          </div>
+          <div>
+            <dt>Osob podle kalendáře</dt><dd>{@snapshot.occupancy} / {@snapshot.capacity}</dd>
+          </div>
+        </dl>
         <p>
-          Převzatá zlepšení včetně archivu, odděleně od finanční kroniky sezóny.
+          Obsazenost zahrnuje příjezd, ne odjezd. Neověřuje přítomnost hostů ani připravenost pokojů.
         </p>
-        <p class="adventure-muted">
-          Mapa ukazuje posledních 100 změněných projektů, počty milníků celou historii.
+        <.link href={~p"/admin/bookings/calendar"} class="adventure-text-link">Otevřít kalendář rezervací</.link>
+      </div>
+      <div :if={@area == "kitchen"}>
+        <h3>Porce podle zadaného stravování</h3>
+        <dl :if={@snapshot} class="adventure-operation-counts">
+          <div :for={
+            {key, label} <- [{"breakfast", "Snídaně"}, {"lunch", "Obědy"}, {"dinner", "Večeře"}]
+          }>
+            <dt>{label}</dt><dd>
+              {if @snapshot.incomplete > 0, do: "nejméně "}{@snapshot.portions[key].total}
+            </dd>
+          </div>
+        </dl>
+        <p :if={@snapshot && @snapshot.incomplete > 0} class="adventure-operation-warning">
+          Neúplné podklady pro {@snapshot.incomplete} skupin dnes. Počty jsou pouze známé porce, nikoli celková potřeba.
         </p>
-        <button
-          :if={is_nil(@chronicle)}
-          phx-click="cabin-chronicle"
-          phx-value-direction="first"
-          class="adventure-button"
-        >Otevřít výsledky napříč sezónami</button>
-        <div :if={!is_nil(@chronicle)}>
-          <p :if={@chronicle == []}>Zatím žádné další převzaté zlepšení.</p>
-          <article
-            :for={project <- Enum.take(@chronicle, 20)}
-            id={"cabin-outcome-#{project.id}"}
-            class="adventure-world-project"
-          >
-            <h4>
-              <.link
-                navigate={
-                  ~p"/admin/adventure/quests?#{%{section: "projects", project_search: project.title, project_id: project.id}}"
-                }
-                class="adventure-text-link"
-              >{project.title}</.link>
-            </h4>
-            <p>
-              {if project.area == "workshop",
-                do: "Celá chata",
-                else: Enum.find_value(@places, fn {key, label, _} -> key == project.area && label end)}{if project.archived_at,
-                do: " · archiv"}
-            </p>
-            <.accepted_outcome project={project} profiles={@profiles} />
-          </article>
-          <nav class="flex flex-wrap gap-3" aria-label="Stránky kroniky chaty">
-            <button
-              :if={@chronicle_page > 0}
-              phx-click="cabin-chronicle"
-              phx-value-direction="previous"
-              class="adventure-button"
-            >Novější výsledky</button>
-            <span>Strana {@chronicle_page + 1}</span>
-            <button
-              :if={length(@chronicle) > 20}
-              phx-click="cabin-chronicle"
-              phx-value-direction="next"
-              class="adventure-button"
-            >Starší výsledky</button>
-            <button phx-click="close-cabin-chronicle" class="adventure-button">Zavřít kroniku chaty</button>
-          </nav>
-        </div>
+        <p>Plánované porce nejsou uvařené jídlo.</p>
+        <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Otevřít plán jídel</.link>
+      </div>
+      <div :if={@area in ["bar", "treasury"]}>
+        <h3>Finance patří do kroniky</h3>
+        <p>
+          Sezónní inkaso a vyúčtování jsou uložené snapshoty, nikoli živý stav. Obnova provozu je nepřepočítává. Inkaso není zisk ani hodnota prodeje.
+        </p>
+        <a
+          href="/admin/adventure?view=chronicle"
+          class="adventure-text-link"
+        >Přejít na kroniku sezóny a datum přepočtu</a>
+        <.link :if={@area == "bar"} href={~p"/admin/bar-stock"} class="adventure-text-link">Otevřít sklad baru</.link>
+        <.link :if={@area == "treasury"} href={~p"/admin/billing"} class="adventure-text-link">Otevřít doklady a platby</.link>
+        <p>Mapa zde neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
+      </div>
+      <div :if={@area == "workshop"}>
+        <h3>Dílna projektů</h3>
+        <p>Všechny projekty chaty a jejich questy na jednom místě.</p>
+        <.link navigate={~p"/admin/adventure/quests?section=projects"} class="adventure-text-link">Otevřít knihu projektů</.link>
+      </div>
+      <p :if={!@snapshot && @area in ["reception", "rooms", "kitchen"]}>
+        Provozní údaje zatím nejsou dostupné. Neznámý stav není nula.
+      </p>
+      <details :if={@area != "workshop"} class="adventure-world-development">
+        <summary>
+          Rozvoj oblasti · {area_count(@world, @area, ["accepted"])} milníků · {area_count(
+            @world,
+            @area,
+            ["idea", "ready", "approved", "paused"]
+          )} plánů · {area_count(@world, @area, ["active"])} v realizaci
+        </summary>
+        <p>
+          Milníky jsou lidsky převzaté výsledky, ne technická kontrola ani provozní bonus.
+        </p>
+        <article
+          :for={project <- Enum.filter(@world.projects, &(&1.area == @area))}
+          class="adventure-world-project"
+        >
+          <.link
+            navigate={
+              ~p"/admin/adventure/quests?#{%{section: "projects", project_search: project.title, project_id: project.id}}"
+            }
+            class="adventure-text-link"
+          >{project.title}</.link>
+          <span>{project_status(project.status)}{if project.archived_at, do: " · archiv"}</span>
+          <.accepted_outcome
+            :if={project.status == "accepted"}
+            project={project}
+            profiles={@profiles}
+          />
+        </article>
+        <p :if={!Enum.any?(@world.projects, &(&1.area == @area))}>
+          V posledních 100 změněných projektech zde není žádný záznam.
+        </p>
+        <.link
+          navigate={~p"/admin/adventure/quests?#{%{section: "projects", project_area: @area}}"}
+          class="adventure-text-link"
+        >Plánovat další zlepšení</.link>
       </details>
     </section>
     """
   end
+
+  def cabin_chronicle(assigns) do
+    assigns = assign(assigns, :places, places())
+
+    ~H"""
+    <details
+      id="adventure-cabin-chronicle"
+      class="adventure-cabin-chronicle"
+      aria-labelledby="cabin-chronicle-title"
+      open={assigns[:expanded] || !is_nil(@chronicle)}
+    >
+      <summary id="cabin-chronicle-title">Kronika chaty</summary>
+      <header class="adventure-section-heading">
+        <p class="adventure-eyebrow">Výsledky napříč sezónami</p>
+        <button phx-click="refresh-world" class="adventure-button">Obnovit rozvoj</button>
+      </header>
+      <p>
+        Převzatá zlepšení včetně archivu, odděleně od finanční kroniky sezóny.
+      </p>
+      <p class="adventure-muted">
+        Mapa ukazuje posledních 100 změněných projektů, počty milníků celou historii.
+      </p>
+      <button
+        :if={is_nil(@chronicle)}
+        phx-click="cabin-chronicle"
+        phx-value-direction="first"
+        class="adventure-button"
+      >Otevřít výsledky napříč sezónami</button>
+      <div :if={!is_nil(@chronicle)}>
+        <p :if={@chronicle == []}>Zatím žádné další převzaté zlepšení.</p>
+        <article
+          :for={project <- Enum.take(@chronicle, 20)}
+          id={"cabin-outcome-#{project.id}"}
+          class="adventure-world-project"
+        >
+          <h4>
+            <.link
+              navigate={
+                ~p"/admin/adventure/quests?#{%{section: "projects", project_search: project.title, project_id: project.id}}"
+              }
+              class="adventure-text-link"
+            >{project.title}</.link>
+          </h4>
+          <p>
+            {if project.area == "workshop",
+              do: "Celá chata",
+              else: Enum.find_value(@places, fn {key, label, _} -> key == project.area && label end)}{if project.archived_at,
+              do: " · archiv"}
+          </p>
+          <.accepted_outcome project={project} profiles={@profiles} />
+        </article>
+        <nav class="flex flex-wrap gap-3" aria-label="Stránky kroniky chaty">
+          <button
+            :if={@chronicle_page > 0}
+            phx-click="cabin-chronicle"
+            phx-value-direction="previous"
+            class="adventure-button"
+          >Novější výsledky</button>
+          <span>Strana {@chronicle_page + 1}</span>
+          <button
+            :if={length(@chronicle) > 20}
+            phx-click="cabin-chronicle"
+            phx-value-direction="next"
+            class="adventure-button"
+          >Starší výsledky</button>
+          <button phx-click="close-cabin-chronicle" class="adventure-button">Zavřít kroniku chaty</button>
+        </nav>
+      </div>
+    </details>
+    """
+  end
+
+  def places,
+    do: [
+      {"reception", "Recepce", "house"},
+      {"rooms", "Pokoje", "mountain-snow"},
+      {"kitchen", "Kuchyně", "utensils"},
+      {"bar", "Bar", "backpack"},
+      {"treasury", "Pokladnice", "coins"},
+      {"workshop", "Dílna", "wrench"}
+    ]
 
   attr :issue, :map, required: true
   attr :link, :any, required: true
@@ -661,7 +712,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
     """
   end
 
-  defp area_count(world, area, statuses),
+  def area_count(world, area, statuses),
     do:
       Enum.reduce(world.counts, 0, fn {key, status, count}, total ->
         if key == area and status in statuses, do: total + count, else: total

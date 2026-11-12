@@ -117,39 +117,48 @@ defmodule CozyCheckoutWeb.AdventureLive.TaskComponents do
         class="grid gap-3 sm:grid-cols-3 mb-4"
       >
         <.input field={@filter_form[:search]} label="Hledat úkol" phx-debounce="300" />
-        <.input
-          field={@filter_form[:scope]}
-          type="select"
-          label="Přiřazení"
-          options={[{"Všechny", "all"}, {"Moje", "mine"}, {"Volné", "free"}, {"Společné", "shared"}]}
-        />
-        <.input
-          field={@filter_form[:status]}
-          type="select"
-          label="Stav"
-          options={[
-            {"Otevřené", "open"},
-            {"Čeká", "waiting"},
-            {"Rozpracováno", "active"},
-            {"Hotovo", "completed"},
-            {"Zrušeno", "cancelled"},
-            {"Archiv", "archived"},
-            {"Celá historie", "all"}
-          ]}
-        />
-        <.input
-          field={@filter_form[:category]}
-          type="select"
-          label="Kategorie"
-          prompt="Všechny"
-          options={Quest.categories()}
-        />
-        <.input
-          field={@filter_form[:due]}
-          type="select"
-          label="Termín"
-          options={[{"Všechny", "all"}, {"Po termínu", "overdue"}, {"Bez termínu", "none"}]}
-        />
+        <details class="adventure-filter-disclosure">
+          <summary>Filtry</summary><div class="adventure-filter-fields">
+            <.input
+              field={@filter_form[:scope]}
+              type="select"
+              label="Přiřazení"
+              options={[
+                {"Všechny", "all"},
+                {"Moje", "mine"},
+                {"Volné", "free"},
+                {"Společné", "shared"}
+              ]}
+            />
+            <.input
+              field={@filter_form[:status]}
+              type="select"
+              label="Stav"
+              options={[
+                {"Otevřené", "open"},
+                {"Čeká", "waiting"},
+                {"Rozpracováno", "active"},
+                {"Hotovo", "completed"},
+                {"Zrušeno", "cancelled"},
+                {"Archiv", "archived"},
+                {"Celá historie", "all"}
+              ]}
+            />
+            <.input
+              field={@filter_form[:category]}
+              type="select"
+              label="Kategorie"
+              prompt="Všechny"
+              options={Quest.categories()}
+            />
+            <.input
+              field={@filter_form[:due]}
+              type="select"
+              label="Termín"
+              options={[{"Všechny", "all"}, {"Po termínu", "overdue"}, {"Bez termínu", "none"}]}
+            />
+          </div>
+        </details>
       </.form>
       <p :if={@tasks == []} class="adventure-muted">Tomuto výběru zatím neodpovídá žádný úkol.</p>
       <article

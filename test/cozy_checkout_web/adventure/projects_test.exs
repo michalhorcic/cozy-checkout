@@ -417,8 +417,7 @@ defmodule CozyCheckoutWeb.AdventureProjectsLiveTest do
 
     assert has_element?(
              view,
-             "#adventure-area-rooms.adventure-village-place--developed",
-             "1 převzatých zlepšení"
+             "#adventure-area-rooms.adventure-village-place--developed .adventure-world-decoration[aria-label='1 převzatých zlepšení']"
            )
 
     refute has_element?(view, "#cabin-outcome-#{p.id}")

@@ -4,6 +4,7 @@ defmodule CozyCheckout.Adventure.Project do
   @primary_key {:id, :binary_id, autogenerate: true}
   @foreign_key_type :binary_id
   schema "adventure_projects" do
+    field :newly_accepted, :boolean, virtual: true, default: false
     field :title, :string
     field :purpose, :string, default: ""
     field :area, :string, default: "workshop"

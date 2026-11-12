@@ -53,7 +53,10 @@ defmodule CozyCheckout.Adventure.TasksTest do
     assert {:ok, done} = Tasks.complete(other.id, task.id)
     assert done.evidence["assigned_profile_id"] == p.id
     assert done.evidence["actor_profile_id"] == other.id
-    assert {:ok, _} = Tasks.complete(p.id, task.id, %{"note" => "Změnit historii"})
+    assert done.newly_completed
+    assert {:ok, replay} = Tasks.complete(p.id, task.id, %{"note" => "Změnit historii"})
+    refute replay.newly_completed
+    refute Repo.get!(Quest, task.id).newly_completed
     award = Repo.one!(XpTransaction)
     assert award.profile_id == other.id
     assert award.amount == 100

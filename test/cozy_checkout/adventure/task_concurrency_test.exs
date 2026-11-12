@@ -68,6 +68,7 @@ defmodule CozyCheckout.Adventure.TaskConcurrencyTest do
       )
 
     assert Enum.all?(results, &match?({:ok, %{status: "completed"}}, &1))
+    assert Enum.count(results, &match?({:ok, %{newly_completed: true}}, &1)) == 1
     [{:ok, a}, {:ok, b}] = results
     assert a.evidence == b.evidence
 

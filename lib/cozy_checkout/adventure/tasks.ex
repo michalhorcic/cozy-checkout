@@ -411,7 +411,7 @@ defmodule CozyCheckout.Adventure.Tasks do
           |> Changeset.validate_number(:amount, greater_than: 0)
           |> persist!(:insert)
 
-          completed
+          %{completed | newly_completed: true}
       end
     end)
   end

@@ -74,9 +74,14 @@ function browser(t, options = {}) {
     })
   }
 
+  const switcher = {open: true}
   const hook = {
     ...AdventureHero,
     el: {
+      querySelector(selector) {
+        assert.equal(selector, '#adventure-hero-switcher')
+        return switcher
+      },
       addEventListener(name, callback) {
         assert.equal(typeof callback, 'function')
         assert.equal(listeners.has(name), false, `Duplicate ${name} listener`)
@@ -105,7 +110,7 @@ function browser(t, options = {}) {
   }
 
   return {
-    hook, values, cookies, writes, events, handlers, listeners,
+    hook, switcher, values, cookies, writes, events, handlers, listeners,
     removedHandlers, removedListeners, availability,
     restoreRequests: () => events.filter(event => event.name === 'restore-profile').map(event => event.payload),
     statuses: () => events.filter(event => event.name === 'profile-storage-status').map(event => event.payload),
@@ -323,4 +328,20 @@ test('destroying the hook unregisters the server handler and the change listener
   assert.equal(state.listeners.size, 0)
   assert.deepEqual(state.removedHandlers, [reference])
   assert.deepEqual(state.removedListeners, [{name: 'change', callback: listener}])
+})
+
+
+test('hero chooser follows accepted selection and reopens after clearing', t => {
+  const state = browser(t)
+  state.hook.mounted()
+  state.serverSelected('hero')
+  assert.equal(state.switcher.open, false)
+  state.change('')
+  state.serverSelected('')
+  assert.equal(state.switcher.open, true)
+  state.change('new-hero')
+  state.serverSelected('hero')
+  assert.equal(state.switcher.open, true, 'late acknowledgement cannot close a pending choice')
+  state.serverSelected('new-hero')
+  assert.equal(state.switcher.open, false)
 })

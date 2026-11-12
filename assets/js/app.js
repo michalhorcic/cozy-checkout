@@ -32,6 +32,7 @@ import {IncomingActionBar} from "./hooks/incoming_action_bar"
 import {IncomingBatchUpload} from "./hooks/incoming_batch_upload"
 import {IncomingDocumentPreview} from "./incoming_document_preview"
 import {AdventureHelp} from "./adventure/help_dialog"
+import {AdventureContext} from "./adventure/context_panel"
 import {AdventureHero} from "./adventure/hero_preference"
 import {DesignSwitcher} from "./design_theme"
 
@@ -58,6 +59,7 @@ function liveViewStorage(name) {
 const Hooks = {
   DesignSwitcher,
   AdventureHelp,
+  AdventureContext,
   AdventureHero,
   IncomingActionBar,
   IncomingBatchUpload,
