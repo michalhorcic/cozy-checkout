@@ -226,6 +226,52 @@ Ilustrace vznikla pro Cozy Adventure; horské a herní SVG ikony jsou z Lucide
 licence a zdroje jsou v jeho `CREDITS.md` a `LUCIDE-LICENSE`. Stylování je
 izolované v `assets/css/adventure/`, dialogový hook v `assets/js/adventure/`.
 
+## Otevřená práce Služby dne (5B)
+
+V kontextovém panelu Služby dne jsou **Podněty / Otevřená práce**. Druhá
+záložka ukazuje čekající a rozpracované questy obou hrdinů i společné chaty,
+i když původní podnět zmizel z projekce nebo není mezi čtyřmi kartami.
+Archivovaná a dokončená práce patří do historie, nikoli do tohoto seznamu.
+Seznam má 20 položek na stránku, řazení od nejstarších (`inserted_at`, `id`),
+a jednu položku navíc pro zjištění další stránky. Nezjišťuje celkový počet.
+
+Stav **Práce** vychází z questu. Stav **Podklad** se zvlášť porovnává s celou
+poslední provozní projekcí, bez nového ověřování provozu. Přítomný podnět je
+potvrzený posledním načtením; změna důvodu nebo příjezdu se označí jako změna.
+Nepřítomný podnět je neověřitelný, nikoli vyřešený: mohl vypadnout z výhledu,
+změnit termín nebo zaniknout. Stará projekce, načítání a chyba obnovy nikdy
+nepotvrzují aktuální podklad. Datum načtení a rozsah zůstávají v panelu/detailu;
+podrobné vysvětlení seznamu se rozbaluje na vyžádání.
+
+Z načtené stránky lze otevřít quest i historii původního podnětu, i když pobyt
+již v aktuální projekci není. Přijetí, skutečný splnitel, přispěvatelé, poznámka,
+ruční potvrzení, tři osobní sloty a idempotence zůstávají beze změny. Mobilní
+kontextový panel během dialogu uvolní fokus a po zavření jej vrátí na původní
+ovládací prvek, pokud stále existuje. Žádný nový stavový automat nebo zápis do provozu.
+
+### Schválené dávkové čtení 5B
+
+- Mount bez otevření práce: žádný přidaný dotaz. První otevření záložky,
+  změna stránky a **Obnovit práci**: po jednom Adventure SELECTu, nejvýše 21 řádků.
+- Přepnutí načtených záložek/pohledů, změna oblasti, render i porovnání podkladu:
+  0 SELECTů. Změna hrdiny ponechá společný seznam v paměti.
+- **Obnovit provoz**: původních nejvýše 15 provozních SELECTů + původní dávka
+  vazeb (nejvýše 1) + 1 Adventure SELECT pouze pokud již byla práce otevřena
+  nebo její načtení selhalo. Stejně se seznam obnoví při chybě zdrojového loaderu,
+  pokud je Adventure DB dostupná; zdroj zůstane neověřitelný.
+- Po úspěšném vytvoření, zahájení, dokončení nebo archivaci questu: nejvýše
+  1 další SELECT pouze pro již otevřený seznam; stávající loadery se nemění.
+  Potvrzení návrhu s přiřazením a obnovou má tedy nejvýše 8 SELECTů (bez přiřazení 7),
+  pokud již byl seznam otevřen; jinak platí původních 7/6.
+- Obnova a úspěšná mutace vrací seznam na první stránku, aby po odebrání položky
+  nezůstal hráč na prázdné poslední stránce. Běžné přepnutí záložek stránku zachová.
+- Detail a historie nadále po jednom existujícím SELECTu na výslovné otevření.
+  Neznámé klientské ID/zdroj se odmítnou bez čtení. Při chybě seznamu zůstane
+  poslední obsah s upozorněním; explicitní obnova umožní opakování.
+
+Bez N+1 po kartách/pobytech, bez pollingu, migrace, konfigurace nebo nových
+provozních zdrojů. Živý Bar 5C je samostatná budoucí práce.
+
 ## Služba dne na quest (5A)
 
 Ze stávajícího podnětu Služby dne lze výslovně **Připravit quest**. Návrh používá

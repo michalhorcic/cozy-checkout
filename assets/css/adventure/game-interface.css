@@ -190,3 +190,17 @@
 }
 .adventure-village-place--new .adventure-place-label { animation: adventure-landmark 1.4s ease-out; }
 @keyframes adventure-landmark { 0%, 60% { box-shadow: 0 0 0 10px #f5d58099, 0 3px 0 #7b673c; } 100% { box-shadow: 0 3px 0 #7b673c; } }
+
+/* Duty work is a single document flow inside the existing context surface. */
+.adventure-duty-tabs, .adventure-duty-pagination { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-block: .75rem; }
+.adventure-duty-tabs [aria-pressed="true"] { border-color: #a68c4e; background: #e9e7d8; font-weight: 700; }
+.adventure-duty-work-heading { display: grid; gap: .75rem; }
+.adventure-duty-work-heading > button { justify-self: start; }
+.adventure-service-day .adventure-duty-work-list > li { display: grid; gap: .65rem; padding-block: 1rem; overflow-wrap: anywhere; }
+.adventure-duty-work-list h4 { font-weight: 700; }
+.adventure-duty-source-status { font-size: .875rem; line-height: 1.5; }
+.adventure-duty-source-status small { display: block; opacity: .8; }
+
+@media (max-width: 900px) {
+  .adventure-context--detail[data-dialog-open="true"] { visibility: hidden; pointer-events: none; }
+}

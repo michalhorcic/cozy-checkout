@@ -49,6 +49,25 @@ defmodule CozyCheckout.Adventure.Tasks do
     end
   end
 
+  @doc "One bounded Adventure query for open duty work, including sources outside the snapshot."
+  def duty_follow_up(page \\ 0) do
+    if Adventure.enabled?() and is_integer(page) and page >= 0 do
+      quests =
+        Repo.all(
+          from q in Quest,
+            where: q.managed and q.source_namespace == @duty_namespace,
+            where: q.status in ["waiting", "active"] and is_nil(q.archived_at),
+            order_by: [asc: q.inserted_at, asc: q.id],
+            offset: ^(page * 20),
+            limit: 21
+        )
+
+      %{quests: Enum.take(quests, 20), more?: length(quests) > 20}
+    else
+      %{quests: [], more?: false}
+    end
+  end
+
   def duty_history(key, page \\ 0) do
     if Adventure.enabled?() and valid_duty_key?(key) and is_integer(page) and page >= 0 do
       {id, type} = key

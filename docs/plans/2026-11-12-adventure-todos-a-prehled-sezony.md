@@ -1,6 +1,6 @@
 # Cozy Adventure – provoz a budování chaty
 
-- Stav: 3A/3B, preference hrdiny, 4A–4C, 5A (PR #122) a zjednodušení UX (PR #123) sloučené v main. Před 5B/5C má přednost schválený [herní UI/UX redesign](2026-11-12-adventure-herni-ui-ux.md). Historické předání 5A je v oddílu 18.
+- Stav: 3A/3B, preference hrdiny, 4A–4C, 5A (PR #122), zjednodušení UX (PR #123) a [herní UI/UX redesign](2026-11-12-adventure-herni-ui-ux.md) (PR #124) sloučené v main. Uživatel vyzkoušel základní UX a schválil 5B; implementace 5B je v navazující větvi, předání v oddílu 19. Živý Bar 5C zůstává budoucí práce. Historické předání 5A je v oddílu 18.
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
 - Rozsah: herní rozhraní nad provozem aplikace, správa questů, rozvoj chaty investičními projekty a kronika skutečných výsledků
@@ -1298,3 +1298,48 @@ Dotaz rozlišuje chybějící pohyby od evidované nuly a nulový limit od kladn
 Ruční obnova nepřepočítává finanční kroniku. Minutová kontrola stáří nemá SQL.
 Detaily definic jsou v dokumentaci funkce. Kontextové a LiveView regrese jsou
 připravené pro CI; lokálně se testy podle AGENTS.md nespouštějí.
+
+## 19. Schválení a implementace 5B (12. 11. 2026)
+
+Uživatel po základním vyzkoušení herního rozhraní potvrdil srozumitelnost a
+výslovně schválil předložené umístění, 20 položek na stránku a dávkové čtení.
+Základ nové větve `feat/adventure-duty-follow-up` je čerstvé `origin/main`
+`1d6d438`, merge PR #124; pracovní strom byl čistý. Předchozí UI práce se neopakuje.
+
+Implementovány záložky Podněty / Otevřená práce uvnitř kontextového panelu
+Služby dne. Otevřená práce je samostatná stránkovaná Adventure projekce pro
+oba hrdiny a společné questy, nezávislá na výhledu provozu. Zobrazuje stav
+práce a odděleně potvrzený, změněný nebo neověřitelný podklad. Porovnání vždy
+používá celou poslední projekci; nepřítomnost, stáří nebo chyba neznamenají
+vyřešení. Zachované detaily a historie jsou přístupné i pro zmizelý podnět.
+
+Schválený rozpočet: nový seznam 1 Adventure SELECT na stránku 20 + lookahead,
+načtený až při první výslovné návštěvě; přepínání cache/render/oblast 0.
+Obnova provozu ponechá nejvýše 15 zdrojových SELECTů + nejvýše 1 původní dávku
+vazeb a přidá 1 Adventure SELECT pouze pro již otevřený seznam. Úspěšné questové
+mutace přidají stejnou jednu obnovu jen pro načtený seznam. Detail/historie
+zachovávají po jednom čtení; bez nových dotazů po jednotlivých kartách/pobytech.
+Obnova a mutace vrací seznam na první stránku, přepínání záložek stránku zachová.
+
+Mobilní kontext při otevření dialogu předá fokus a uvolní inertní obsah;
+po zavření se vrátí na původní tlačítko, pokud existuje. Veřejné POS,
+provozní moduly, router, PIN, feature flag, pravidla XP a osobních slotů se
+nemění. Bez migrace, konfigurace, HTTP nebo provozních zápisů. Živý Bar 5C
+není součástí této dodávky. Významy a čtení podrobně v `docs/features/ADVENTURE.md`.
+
+Připraveny kontextové a LiveView regrese pro omezený loader, stránkování,
+izolaci provozu, zmizení a změnu podkladu, stáří/chybu, cache, obnovu,
+historii i ručně potvrzené splnění. Lokální ExUnit se podle AGENTS.md
+nespouští; výsledky CI ověří uživatel.
+
+Ověření 5B: Chromium nad běžící Phoenix aplikací a izolovanou lokální DB,
+šířky 320/390/1440 px bez vodorovného scrollu; stránky 20 + 2 položky,
+detail a historie zmizelého podnětu, návrat fokusu a skutečné přijetí/splnění
+společného questu s odstraněním z otevřené práce. Dále Enter/Escape,
+návrat na vstup Služby dne, omezený pohyb, motivy light/noir a zvětšení kořenového
+textu na 200 %. Nešlo o průchod asistivní čtečkou ani skutečnou chybu databáze;
+změněné/staré/chybující projekce mají připravené regrese pro CI. Prošly
+celoprojektový formatter, kompilace s warnings-as-errors, asset build,
+JS syntax check a git diff --check na připnutém Elixiru 1.20.4 / Erlangu 29.1.
+Přidáno 8 regresí (3 kontextové, 5 LiveView); lokální ExUnit nebyl spuštěn,
+CI ověřuje uživatel a jeho stav nebyl sledován.

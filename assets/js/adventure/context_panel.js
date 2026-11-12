@@ -5,6 +5,9 @@ export const AdventureContext = {
     this.onMedia = () => this.syncPanel()
     this.media.addEventListener("change", this.onMedia)
     this.onPointer = event => {
+      if (this.el.contains(event.target) && event.target.closest("[phx-click='open-duty-quest'], [phx-click='duty-history'], [phx-click='prepare-duty'], [phx-click='prepare-completion']")) {
+        this.dialogOpener = event.target.closest("button")
+      }
       if (!this.el.contains(event.target) && event.target.closest("[phx-click='operation-area'], [phx-click='world-panel']")) {
         this.opener = event.target.closest("button")
       }
@@ -32,7 +35,8 @@ export const AdventureContext = {
   },
   updated() { this.syncPanel() },
   syncPanel() {
-    const modal = this.media.matches && this.el.dataset.panel !== "continue" && this.el.dataset.view === "world"
+    const overlay = this.el.dataset.dialogOpen === "true"
+    const modal = this.media.matches && this.el.dataset.panel !== "continue" && this.el.dataset.view === "world" && !overlay
     if (modal === this.modal) return
     this.modal = modal
     if (modal) {
@@ -49,10 +53,12 @@ export const AdventureContext = {
         }
         child = child.parentElement
       }
-      this.el.focus()
+      const target = this.dialogOpener?.isConnected ? this.dialogOpener : this.el
+      target.focus()
+      this.dialogOpener = null
     } else {
       this.releasePanel()
-      if (this.opener?.isConnected) this.opener.focus()
+      if (!overlay && this.opener?.isConnected) this.opener.focus()
     }
   },
   releasePanel() {

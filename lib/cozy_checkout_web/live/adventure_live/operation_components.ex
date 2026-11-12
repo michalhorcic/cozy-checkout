@@ -86,43 +86,203 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   end
 
   def service_day(assigns) do
-    assigns = assign(assigns, :places, places())
+    assigns =
+      assigns
+      |> assign_new(:duty_tab, fn -> "issues" end)
+      |> assign_new(:duty_follow_up, fn -> nil end)
+      |> assign_new(:duty_follow_up_error, fn -> false end)
+      |> assign_new(:profiles, fn -> [] end)
+      |> assign_new(:state, fn -> :ready end)
+      |> assign_new(:checked_at, fn -> DateTime.utc_now() end)
 
     ~H"""
     <section
-      :if={@snapshot}
       id="adventure-service-day"
       class="adventure-service-day"
-      aria-labelledby="service-day-title"
+      aria-label="Podněty a otevřená práce"
     >
-      <header>
-        <h3 id="service-day-title">Služba dne · {date(@snapshot.today)}</h3><p class="adventure-muted">
-          Podněty do {date(@snapshot.through)} · uvedené datum je příjezd, ne vznik závady.
-        </p>
-      </header>
-      <p :if={@snapshot.issues == []}>
-        Bez hlášených podnětů. Nejde o potvrzení připravenosti chaty.
-      </p>
-      <ul>
-        <li
-          :for={{issue, index} <- @snapshot.issues |> Enum.take(4) |> Enum.with_index()}
-          id={"adventure-duty-#{index}"}
-        >
-          <span><strong>{if issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"}</strong>
-          · příjezd {date(issue.on)}<br />{issue.reason}</span>
-          <.link href={~p"/admin/bookings/#{issue.booking_id}"} class="adventure-text-link">Otevřít pobyt</.link>
-          <.duty_actions
-            issue={issue}
-            link={@duty_links[Tasks.duty_key(issue)]}
-            profile={@profile}
-          />
-        </li>
-      </ul>
-      <p :if={length(@snapshot.issues) > 4}>
-        Dalších podnětů: {length(@snapshot.issues) - 4}.
-        <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Zkontrolovat v plánu jídel</.link>
-      </p>
+      <nav class="adventure-duty-tabs" aria-label="Služba dne">
+        <button
+          type="button"
+          phx-click="duty-tab"
+          phx-value-tab="issues"
+          aria-pressed={to_string(@duty_tab == "issues")}
+          class="adventure-button"
+        >Podněty</button>
+        <button
+          type="button"
+          id="adventure-duty-work-tab"
+          phx-click="duty-tab"
+          phx-value-tab="work"
+          aria-pressed={to_string(@duty_tab == "work")}
+          class="adventure-button"
+        >Otevřená práce</button>
+      </nav>
+      <div hidden={@duty_tab != "issues"}>
+        <div :if={@snapshot}>
+          <header>
+            <h3 id="service-day-title">Služba dne · {date(@snapshot.today)}</h3><p class="adventure-muted">
+              Podněty do {date(@snapshot.through)} · uvedené datum je příjezd, ne vznik závady.
+            </p>
+          </header>
+          <p :if={@snapshot.issues == []}>
+            Bez hlášených podnětů. Nejde o potvrzení připravenosti chaty.
+          </p>
+          <ul>
+            <li
+              :for={{issue, index} <- @snapshot.issues |> Enum.take(4) |> Enum.with_index()}
+              id={"adventure-duty-#{index}"}
+            >
+              <span><strong>{if issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"}</strong>
+              · příjezd {date(issue.on)}<br />{issue.reason}</span>
+              <.link href={~p"/admin/bookings/#{issue.booking_id}"} class="adventure-text-link">Otevřít pobyt</.link>
+              <.duty_actions
+                issue={issue}
+                link={@duty_links[Tasks.duty_key(issue)]}
+                profile={@profile}
+              />
+            </li>
+          </ul>
+          <p :if={length(@snapshot.issues) > 4}>
+            Dalších podnětů: {length(@snapshot.issues) - 4}.
+            <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Zkontrolovat v plánu jídel</.link>
+          </p>
+        </div>
+        <p :if={!@snapshot}>Podněty zatím nejsou dostupné. Otevřenou práci můžeš najít i bez nich.</p>
+      </div>
+      <div hidden={@duty_tab != "work"}>
+        <.duty_work
+          follow_up={@duty_follow_up}
+          error={@duty_follow_up_error}
+          snapshot={@snapshot}
+          state={@state}
+          checked_at={@checked_at}
+          profiles={@profiles}
+        />
+      </div>
     </section>
+    """
+  end
+
+  defp duty_work(assigns) do
+    ~H"""
+    <section id="adventure-duty-work" aria-labelledby="adventure-duty-work-title">
+      <header class="adventure-duty-work-heading">
+        <div>
+          <h3 id="adventure-duty-work-title">Otevřená práce</h3>
+          <p class="adventure-muted">
+            Čekající a rozpracované questy obou hrdinů i společné chaty. Zůstávají tu i po zmizení podnětu.
+          </p>
+        </div>
+        <button type="button" phx-click="refresh-duty-work" class="adventure-button">Obnovit práci</button>
+      </header>
+      <p :if={@error} role="status" class="adventure-operation-warning">
+        Práci se nepodařilo načíst. Zkus obnovu práce.
+        <span :if={@follow_up}>Níže je poslední dostupný seznam; stav práce nemusí být aktuální.</span>
+      </p>
+      <div :if={@follow_up}>
+        <p class="adventure-muted">
+          Práce načtena <time datetime={DateTime.to_iso8601(@follow_up.loaded_at)}>{Calendar.strftime(@follow_up.loaded_at, "%H:%M UTC")}</time>. Bez automatické obnovy.
+        </p>
+        <p :if={@follow_up.quests == []}>
+          Na této stránce není žádná otevřená práce ze Služby dne. Nejde o potvrzení připravenosti chaty.
+        </p>
+        <p :if={@snapshot} class="adventure-muted">
+          Výhled podkladu: {date(@snapshot.today)} až {date(@snapshot.through)}.
+        </p>
+        <details class="adventure-duty-explanation">
+          <summary>Jak číst stav podkladu</summary>
+          <p>
+            Porovnáváme celou poslední provozní projekci, ne pouze čtyři viditelné podněty. Nepřítomný podnět mohl změnit datum, vypadnout z výhledu nebo být odstraněn. Neznamená to vyřešení. Starší údaje ani neúspěšná obnova nepotvrzují aktuální stav. Splnění práce vždy potvrzuje člověk.
+          </p>
+        </details>
+        <ul class="adventure-duty-work-list">
+          <li :for={quest <- @follow_up.quests} id={"adventure-duty-work-#{quest.id}"}>
+            <h4>{quest.definition_snapshot["title"]}</h4>
+            <p>
+              <strong>Práce: {duty_status(quest)}</strong>
+              · {profile_name(@profiles, quest.assigned_profile_id || quest.profile_id)} · {if quest.scope ==
+                                                                                                 "shared",
+                                                                                               do:
+                                                                                                 "Společná chata",
+                                                                                               else:
+                                                                                                 "Osobní odměna"}
+            </p>
+            <.duty_source_status
+              quest={quest}
+              snapshot={@snapshot}
+              state={@state}
+              checked_at={@checked_at}
+              compact={true}
+            />
+            <div class="flex flex-wrap gap-3">
+              <button
+                type="button"
+                phx-click="open-duty-quest"
+                phx-value-id={quest.id}
+                class="adventure-button adventure-button--primary"
+              >Otevřít quest</button>
+              <button
+                type="button"
+                phx-click="duty-history"
+                phx-value-source={quest.source_ref <> ":" <> quest.source_type}
+                class="adventure-text-link"
+              >Historie podnětu</button>
+            </div>
+          </li>
+        </ul>
+        <nav class="adventure-duty-pagination" aria-label="Stránky otevřené práce">
+          <button
+            :if={@follow_up.page > 0}
+            type="button"
+            phx-click="duty-work-page"
+            phx-value-direction="previous"
+            class="adventure-button"
+          >Předchozí práce</button>
+          <span>Strana {@follow_up.page + 1}</span>
+          <button
+            :if={@follow_up.more?}
+            type="button"
+            phx-click="duty-work-page"
+            phx-value-direction="next"
+            class="adventure-button"
+          >Další práce</button>
+        </nav>
+      </div>
+    </section>
+    """
+  end
+
+  defp duty_source_status(assigns) do
+    assigns = assign_new(assigns, :compact, fn -> false end)
+
+    assigns =
+      assign(
+        assigns,
+        :source_status,
+        Operation.duty_source_status(
+          assigns.quest,
+          assigns.snapshot,
+          assigns.state,
+          assigns.checked_at
+        )
+      )
+
+    ~H"""
+    <p class="adventure-duty-source-status" data-source-status={@source_status}>
+      <strong>Podklad:</strong>
+      <span :if={@source_status == :present}>Podnět potvrzený posledním načtením.</span>
+      <span :if={@source_status == :changed}>Podnět je v přehledu, jeho údaje se od založení questu změnily.</span>
+      <span :if={@source_status == :absent}>{if @compact,
+        do: "Nelze ověřit; podnět není v přehledu.",
+        else:
+          "Nelze ověřit. Podnět není v aktuálním přehledu; mohl se změnit nebo vypadnout z časového výhledu. Neznamená to vyřešení."}</span>
+      <span :if={@source_status == :stale}>Nelze ověřit. Provozní údaje jsou starší, obnov přehled.</span>
+      <span :if={@source_status == :unavailable}>Nelze ověřit. Provozní přehled se načítá nebo poslední obnova není dostupná.</span>
+      <small :if={@snapshot && !@compact}>Poslední načtení {audit_datetime(@snapshot.loaded_at)} · výhled {date(
+        @snapshot.today
+      )} až {date(@snapshot.through)}.</small>
+    </p>
     """
   end
 
@@ -550,7 +710,13 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   attr :profiles, :list, required: true
   attr :profile, :any, required: true
 
+  attr :snapshot, :any, default: nil
+  attr :state, :atom, default: :loading
+  attr :checked_at, :any, default: nil
+
   def duty_detail(assigns) do
+    assigns = assign(assigns, :checked_at, assigns.checked_at || DateTime.utc_now())
+
     ~H"""
     <article id={"adventure-duty-quest-#{@quest.id}"} class="space-y-4 break-words">
       <h2 id="adventure-duty-detail-modal-title" class="text-xl font-bold pr-8">
@@ -572,6 +738,12 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         {@quest.description}
       </p>
       <div :if={@quest.source_namespace == "operation_v1"} class="adventure-muted">
+        <.duty_source_status
+          quest={@quest}
+          snapshot={@snapshot}
+          state={@state}
+          checked_at={@checked_at}
+        />
         <p>Původní podnět: {@quest.source_context["reason"]}</p>
         <p>Příjezd {format_project_date(@quest.source_context["on"])} · nejde o termín questu.</p>
         <details>
@@ -730,6 +902,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         "cancelled" => "Zrušeno"
       }[status]
 
+  defp date(nil), do: "neznámý"
   defp date(date), do: Calendar.strftime(date, "%d. %m. %Y")
   defp summary("reception", nil), do: "Provoz zatím neznámý"
   defp summary("reception", data), do: "#{data.arrivals} příjezdů · #{data.departures} odjezdů"
