@@ -324,7 +324,11 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   end
 
   def area_detail(assigns) do
-    assigns = assign(assigns, :places, places())
+    assigns =
+      assigns
+      |> assign(:places, places())
+      |> assign_new(:game, fn -> %{campaigns: []} end)
+      |> assign_new(:selected_campaign_id, fn -> nil end)
 
     ~H"""
     <section
@@ -371,16 +375,23 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         <p>Plánované porce nejsou uvařené jídlo.</p>
         <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Otevřít plán jídel</.link>
       </div>
-      <a :if={@area == "bar"} href="/admin/adventure?view=chronicle" class="adventure-text-link">Kronika baru</a>
+      <.link
+        :if={@area == "bar"}
+        patch={~p"/admin/adventure?view=chronicle&tab=seasons"}
+        class="adventure-text-link"
+      >Kronika baru</.link>
       <div :if={@area == "treasury"}>
-        <h3>Finance patří do kroniky</h3>
+        <CozyCheckoutWeb.AdventureLive.CampaignComponents.treasury_summary
+          game={@game}
+          selected_id={@selected_campaign_id}
+        />
         <p>
           Sezónní inkaso a vyúčtování jsou uložené snapshoty, nikoli živý stav. Obnova provozu je nepřepočítává. Inkaso není zisk ani hodnota prodeje.
         </p>
-        <a
-          href="/admin/adventure?view=chronicle"
+        <.link
+          patch={~p"/admin/adventure?view=chronicle&tab=seasons"}
           class="adventure-text-link"
-        >Přejít na kroniku sezóny a datum přepočtu</a>
+        >Přejít na kroniku sezóny a datum přepočtu</.link>
         <.link :if={@area == "treasury"} href={~p"/admin/billing"} class="adventure-text-link">Otevřít doklady a platby</.link>
         <p>Tato finanční kronika neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
       </div>

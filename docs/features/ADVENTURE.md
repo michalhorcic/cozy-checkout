@@ -209,6 +209,14 @@ bez předchozího výsledku jsou hodnoty neznámé, ne nulové. Stáří alespo�
 nebo změna pražského dne označí údaje jako starší při dalším renderu. Bez pollingu
 se text sám po čase nepřekresluje, proto je vždy viditelný čas a ruční režim obnovy.
 
+Pokladnice navíc ukazuje inkaso vybrané sezóny: ubytování po vratkách a bar
+bez servisních účtů, odděleně a s datem přepočtu. Používá stejný výběr sezóny
+jako kronika (jinak aktivní nebo první dostupnou), již načtené snapshoty a
+kvalitu podkladů každé metriky. Bez sezóny nebo přepočtu ukazuje vysvětlení,
+ne nulu; chybějící metrika je nedostupná. Nejde o zisk ani dostupný zůstatek.
+Odkazy z Pokladnice a Baru otevřou přímo Kronika → Sezóny a zachovají výběr
+sezóny i načtený provoz bez dalších dotazů.
+
 Bar a Pokladnice odkazují na existující **Kroniku sezóny**, její datum přepočtu
 a původní sklad/fakturaci. Neprovádějí nové skladové ani finanční čtení. Částky
 jsou sezónní uložené snapshoty, ne živý stav či dostupný investiční rozpočet;

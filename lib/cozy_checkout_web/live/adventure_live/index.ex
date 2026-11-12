@@ -114,6 +114,11 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
         )
 
       socket =
+        if socket.assigns.game_view == "chronicle" && params["tab"] == "seasons",
+          do: assign(socket, chronicle_tab: "seasons"),
+          else: socket
+
+      socket =
         if socket.assigns.live_action == :index && socket.assigns.game_view == "development" &&
              !socket.assigns.projects_loaded, do: load_projects(socket), else: socket
 

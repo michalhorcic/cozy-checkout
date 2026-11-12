@@ -3,6 +3,60 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
   alias CozyCheckoutWeb.CurrencyHelper
   import CozyCheckoutWeb.AdventureLive.GameComponents
 
+  defp selected_season(campaigns, selected_id) do
+    readable = Enum.reject(campaigns, &(&1.status == "draft"))
+
+    Enum.find(readable, &(&1.id == selected_id)) ||
+      Enum.find(readable, &(&1.status == "active")) || List.first(readable)
+  end
+
+  attr :game, :map, required: true
+  attr :selected_id, :any, default: nil
+
+  def treasury_summary(assigns) do
+    campaign = selected_season(assigns.game.campaigns, assigns.selected_id)
+    snapshot = campaign && campaign.last_evaluation && campaign.last_evaluation.snapshot
+    assigns = assign(assigns, campaign: campaign, snapshot: snapshot)
+
+    ~H"""
+    <section id="adventure-treasury-summary" aria-label="Sezónní inkaso">
+      <h3>Inkaso za sezónu</h3>
+      <p :if={!@campaign}>Zatím není vybraná žádná sezóna. Založ ji v nastavení Adventure.</p>
+      <p :if={@campaign}>
+        <strong>{@campaign.name}</strong> · {@campaign.starts_on} – {@campaign.ends_on}
+      </p>
+      <p :if={@campaign && !@snapshot}>
+        Zatím nepřepočítáno. Částky budou dostupné po přepočtu sezóny.
+      </p>
+      <div :if={@snapshot}>
+        <p class="adventure-muted">
+          Přepočteno: {@snapshot["as_of"]} · uložený stav, bez automatické obnovy.
+        </p>
+        <div class="adventure-metrics">
+          <.chronicle_card
+            snapshot={@snapshot}
+            source="billing"
+            metric="period_net_amount"
+            label="Inkaso ubytování po vratkách"
+            symbol="coins"
+            kind="money"
+            note="Platby minus refundace v období"
+          />
+          <.chronicle_card
+            snapshot={@snapshot}
+            source="bar"
+            metric="received_amount"
+            label="Inkaso baru bez servisu"
+            symbol="coins"
+            kind="money"
+            note="Evidované platby mohou zahrnovat spropitné"
+          />
+        </div>
+      </div>
+    </section>
+    """
+  end
+
   attr :game, :map, required: true
   attr :definitions, :list, required: true
   attr :profile_selected, :boolean, required: true
@@ -15,9 +69,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
   def campaigns(assigns) do
     readable = Enum.reject(assigns.game.campaigns, &(&1.status == "draft"))
 
-    selected =
-      Enum.find(readable, &(&1.id == assigns.selected_id)) ||
-        Enum.find(readable, &(&1.status == "active")) || List.first(readable)
+    selected = selected_season(readable, assigns.selected_id)
 
     visible = if assigns.settings, do: assigns.game.campaigns, else: List.wrap(selected)
 
