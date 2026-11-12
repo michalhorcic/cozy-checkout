@@ -68,7 +68,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         end
       end
 
-      assert render(view) =~ "Kalendář, ne hlášení přítomnosti"
+      assert render(view) =~ "Dnes na chatě"
       render_click(view, "restore-profile", %{"id" => Repo.get_by!(Profile, slug: "michal").id})
       render_click(view, "picker-filter", %{"scope" => "all"})
       assert :ets.info(table, :size) == initial
@@ -103,6 +103,15 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       assert has_element?(view, "#{panel} a[href='#{href}']")
     end
 
+    for area <- ~w(reception rooms) do
+      render_click(view, "operation-area", %{"area" => area})
+      refute has_element?(view, "#adventure-area-detail", "Neověřuje přítomnost")
+      refute has_element?(view, "#adventure-area-detail", "Obsazenost zahrnuje")
+    end
+
+    render_click(view, "operation-area", %{"area" => "kitchen"})
+    refute has_element?(view, "#adventure-area-detail", "Plánované porce nejsou uvařené jídlo")
+
     render_click(view, "operation-area", %{"area" => "bar"})
 
     assert has_element?(
@@ -112,7 +121,12 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
            )
 
     render_click(view, "operation-area", %{"area" => "treasury"})
-    assert has_element?(view, "#adventure-area-detail", "Obnova provozu je nepřepočítává")
+
+    assert has_element?(
+             view,
+             "#adventure-treasury-help:not([open])",
+             "Obnova provozu je nepřepočítává"
+           )
 
     assert has_element?(
              view,
@@ -1649,12 +1663,17 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     html = render_component(summary, game: game, selected_id: historical.id)
     assert html =~ "Minulá sezóna"
-    assert html =~ "2026-11-12T10:00:00Z"
+    assert html =~ "12. 11. 2026 · 10:00 UTC"
+    assert html =~ "01. 10. 2026 — 31. 12. 2026"
+    refute html =~ "2026-11-12T10:00:00Z"
     assert html =~ CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.new("12345.50"))
     assert html =~ CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.new("0.00"))
     assert html =~ "Dílčí podklady"
     assert html =~ "Inkaso baru bez servisu"
     assert html =~ "Inkaso ubytování po vratkách"
+    document = Floki.parse_document!(html)
+    assert [_] = Floki.find(document, "details:not([open])")
+    assert Floki.find(document, ".adventure-metric small") |> Floki.text() == "Dílčí"
 
     missing = %{historical | last_evaluation: %{snapshot: %{snapshot | "sources" => %{}}}}
     assert render_component(summary, game: %{campaigns: [missing]}) =~ "Nedostupné"

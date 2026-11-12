@@ -63,6 +63,12 @@ Informaci o neznámém či starém stavu zachovat stručně, bez opakovaných po
 Datum a čas zobrazovat lidsky a krátce (např. „Právě načteno“, „Před 5 min“), bez surových timestampů,
 sekund, mikrosekund a technických údajů v běžném herním pohledu.
 
+Karty Recepce a Pokojů nyní ukazují dnešní počty bez vysvětlování kalendářové
+obsazenosti. Kuchyně neobsahuje dovětek o plánovaných a uvařených porcích.
+Pokladnice má částky a datum přepočtu hned viditelné; metodika a vysvětlivky
+jsou společně pod jediným zavřeným polem **Jak číst čísla**. Období sezóny
+a datum přepočtu používají český formát **DD. MM. YYYY**.
+
 ## Herní obrazovka a nápověda
 
 Adventure používá vlastní herní rám bez administračního sidebaru. **Do aplikace**
