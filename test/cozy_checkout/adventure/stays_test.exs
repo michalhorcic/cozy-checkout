@@ -131,4 +131,67 @@ defmodule CozyCheckout.Adventure.StaysTest do
     assert after_midnight["closed_nights"] == 5
     assert after_midnight["completeness"] == "partial"
   end
+
+  test "season without capacity retains stay metrics and only occupancy is unavailable", %{
+    campaign: c
+  } do
+    adventure_booking()
+    c = %{c | rules_version: "season_v1", capacity: nil}
+
+    {source, queries} =
+      QueryRecorder.record(fn -> Stays.evaluate(c, as_of: ~U[2026-10-06 12:00:00Z]) end)
+
+    assert length(queries) == 1
+    assert source["metrics"]["completed_stays"] == 1
+    assert source["metrics"]["realized_bednights"] == 4
+    assert source["metrics"]["occupancy_percent"] == nil
+    assert source["metrics"]["capacity_bednights"] == nil
+    assert source["quality"]["metrics"]["completed_stays"]["completeness"] == "complete"
+    assert source["quality"]["metrics"]["occupancy_percent"]["completeness"] == "unavailable"
+    assert source["quality"]["metrics"]["capacity_bednights"]["completeness"] == "unavailable"
+  end
+
+  test "season quality does not discard a completed stay because person counts are uncertain", %{
+    campaign: c
+  } do
+    adventure_booking(%{adults: 0})
+    source = Stays.evaluate(%{c | rules_version: "season_v1"}, as_of: ~U[2026-10-06 12:00:00Z])
+    assert source["metrics"]["completed_stays"] == 1
+    assert source["quality"]["metrics"]["completed_stays"]["completeness"] == "complete"
+    assert source["quality"]["metrics"]["realized_bednights"]["completeness"] == "partial"
+    assert source["quality"]["metrics"]["capacity_bednights"]["completeness"] == "complete"
+  end
+
+  test "closed historical season reads its entire period, not the first entry cutoff", %{
+    campaign: c
+  } do
+    adventure_booking(%{check_out_date: ~D[2026-10-09]})
+
+    c = %{
+      c
+      | rules_version: "season_v1",
+        historical: true,
+        status: "closed",
+        closed_at: ~U[2026-10-04 12:00:00Z]
+    }
+
+    snapshot = Stays.snapshot(c, ~U[2026-10-12 12:00:00Z])
+    assert snapshot["completed_stays"] == 1
+    assert snapshot["realized_bednights"] == 16
+    assert snapshot["reserved_bednights"] == 0
+    assert snapshot["closed_nights"] == 10
+    assert snapshot["cutoff_on"] == "2026-10-12"
+  end
+
+  test "disabled stay snapshots perform no operational reads", %{campaign: c} do
+    Application.put_env(:cozy_checkout, :adventure_enabled, false)
+
+    {_, queries} =
+      QueryRecorder.record(fn ->
+        assert {:error, :disabled} = Stays.snapshot(c)
+        assert {:error, :disabled} = Stays.evaluate(c)
+      end)
+
+    assert queries == []
+  end
 end

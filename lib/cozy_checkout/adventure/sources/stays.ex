@@ -4,7 +4,7 @@ defmodule CozyCheckout.Adventure.Sources.Stays do
   context calls. No status refreshes, writes, remote calls, or guest payloads.
   Dates follow the calendar's inclusive arrival / exclusive departure rule.
   """
-  alias CozyCheckout.Repo
+  alias CozyCheckout.{Adventure, Repo}
 
   def today, do: local_date(DateTime.utc_now())
 
@@ -18,7 +18,78 @@ defmodule CozyCheckout.Adventure.Sources.Stays do
   # Campaign cutoff is frozen on closure; as_of always describes the current
   # source read, not a claim that historical versions of bookings are available.
   def snapshot(campaign, as_of \\ DateTime.utc_now()) do
-    cutoff = campaign.closed_at || as_of
+    if Adventure.enabled?(),
+      do: read_snapshot(campaign, as_of),
+      else: {:error, :disabled}
+  end
+
+  def evaluate(campaign, opts \\ []) do
+    case snapshot(campaign, Keyword.get(opts, :as_of, DateTime.utc_now())) do
+      {:error, _} = error ->
+        error
+
+      snapshot ->
+        metrics =
+          Map.take(snapshot, [
+            "completed_stays",
+            "realized_bednights",
+            "reserved_bednights",
+            "occupancy_percent",
+            "capacity_bednights"
+          ])
+
+        metadata =
+          Map.new(metrics, fn {metric, _value} ->
+            completeness =
+              cond do
+                metric in ["occupancy_percent", "capacity_bednights"] and
+                    snapshot["occupancy_status"] == "unavailable" ->
+                  "unavailable"
+
+                metric == "completed_stays" ->
+                  if snapshot["uncertain_completed_stays"] == 0, do: "complete", else: "partial"
+
+                metric == "capacity_bednights" ->
+                  "complete"
+
+                metric == "occupancy_percent" ->
+                  snapshot["completeness"]
+
+                true ->
+                  if snapshot["uncertain_stays"] == 0, do: "complete", else: "partial"
+              end
+
+            {metric, %{"completeness" => completeness}}
+          end)
+
+        %{
+          "source" => "stays",
+          "definition_version" => 1,
+          "as_of" => snapshot["as_of"],
+          "metrics" => metrics,
+          "quality" => %{
+            "completeness" => snapshot["completeness"],
+            "uncertain_stays" => snapshot["uncertain_stays"],
+            "metrics" => metadata
+          },
+          "evidence" =>
+            Map.take(snapshot, [
+              "timezone",
+              "starts_on",
+              "ends_on",
+              "cutoff_on",
+              "closed_nights",
+              "capacity",
+              "capacity_source",
+              "definition"
+            ])
+        }
+    end
+  end
+
+  defp read_snapshot(campaign, as_of) do
+    cutoff =
+      if campaign.rules_version == "season_v1", do: as_of, else: campaign.closed_at || as_of
 
     %{columns: columns, rows: [values]} =
       Repo.query!(
@@ -58,7 +129,12 @@ defmodule CozyCheckout.Adventure.Sources.Stays do
             OR status IS NULL OR status NOT IN ('upcoming', 'active', 'completed')
             OR (status = 'upcoming' AND check_in_date < cutoff_on)
             OR (status = 'active' AND check_out_date < cutoff_on)
-            OR (status = 'completed' AND check_out_date >= cutoff_on)) AS uncertain_stays,
+             OR (status = 'completed' AND check_out_date >= cutoff_on)) AS uncertain_stays,
+          count(*) FILTER (WHERE valid_dates IS NOT TRUE
+            OR status IS NULL OR status NOT IN ('upcoming', 'active', 'completed')
+            OR (status = 'upcoming' AND check_in_date < cutoff_on)
+            OR (status = 'active' AND check_out_date < cutoff_on)
+            OR (status = 'completed' AND check_out_date >= cutoff_on)) AS uncertain_completed_stays,
           (SELECT cutoff_on FROM bounds) AS cutoff_on
         FROM stays
         """,
@@ -76,10 +152,10 @@ defmodule CozyCheckout.Adventure.Sources.Stays do
         )
       )
 
-    capacity_nights = campaign.capacity * closed_nights
+    capacity_nights = if campaign.capacity, do: campaign.capacity * closed_nights
 
     percent =
-      if capacity_nights > 0,
+      if is_integer(capacity_nights) and capacity_nights > 0,
         do:
           Decimal.div(
             Decimal.new(metrics["realized_bednights"] * 100),
@@ -100,14 +176,20 @@ defmodule CozyCheckout.Adventure.Sources.Stays do
       "closed_nights" => closed_nights,
       "capacity_bednights" => capacity_nights,
       "capacity" => campaign.capacity,
-      "capacity_source" => "self_confirmed_constant",
+      "capacity_source" =>
+        if(campaign.capacity, do: "self_confirmed_constant", else: "unavailable"),
       "occupancy_percent" =>
         if(percent, do: percent |> Decimal.round(2) |> Decimal.to_string(:normal)),
-      "occupancy_status" => if(capacity_nights == 0, do: "unavailable", else: "available"),
+      "occupancy_status" => if(is_nil(percent), do: "unavailable", else: "available"),
       "completeness" =>
         if(metrics["uncertain_stays"] == 0 and not over_capacity, do: "complete", else: "partial"),
       "definition" =>
-        "Příjezd včetně, odjezd bez noci. Realizované noci: active/completed před cutoff_on; rezervované: upcoming/active od cutoff_on. Počty osob včetně dětí a kojenců. Dokončené pobyty: odjezd v kampani před cutoff_on; milníky navíc až den po aktivaci."
+        if(campaign.rules_version == "season_v1",
+          do:
+            "Příjezd včetně, odjezd bez noci. Realizované noci: active/completed před cutoff_on; rezervované: upcoming/active od cutoff_on. Počty osob včetně dětí a kojenců. Dokončené pobyty: odjezd v sezoně před cutoff_on. Aktuální zdroj k as_of, bez automatických milníků a XP.",
+          else:
+            "Příjezd včetně, odjezd bez noci. Realizované noci: active/completed před cutoff_on; rezervované: upcoming/active od cutoff_on. Počty osob včetně dětí a kojenců. Dokončené pobyty: odjezd v kampani před cutoff_on; milníky navíc až den po aktivaci."
+        )
     })
   end
 

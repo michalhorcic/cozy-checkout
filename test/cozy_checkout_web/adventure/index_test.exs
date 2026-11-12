@@ -6,6 +6,10 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
   alias CozyCheckoutWeb.AdminAuth
 
   setup %{conn: conn} do
+    Repo.query!("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", [],
+      sandbox_subtransaction: false
+    )
+
     previous = Application.get_env(:cozy_checkout, :adventure_enabled, false)
     pin = Application.get_env(:cozy_checkout, :admin_pin_hash)
     Application.put_env(:cozy_checkout, :adventure_enabled, true)
@@ -322,7 +326,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert render(camp) =~ "nejvýše 3"
   end
 
-  test "campaign draft requires confirmation and profile; recalculation is explicit", %{
+  test "season draft requires confirmation and profile; recalculation is explicit", %{
     conn: conn
   } do
     alias CozyCheckout.Adventure.{Campaign, Evaluation}
@@ -377,5 +381,121 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     render_click(view, "evaluate-campaign", %{"id" => c.id})
     assert_redirect(view, "/admin")
     assert Repo.aggregate(Evaluation, :count) == 1
+  end
+
+  test "historical chronicle needs no goals and corrections preserve prior versions", %{
+    conn: conn
+  } do
+    alias CozyCheckout.Adventure.{Campaign, Evaluation}
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    today = CozyCheckout.Adventure.Sources.Stays.today()
+    {:ok, view, _} = live(conn, "/admin/adventure/settings")
+    refute has_element?(view, "#campaign_capacity[required]")
+    refute has_element?(view, "#campaign_completed_goal[required]")
+    view |> form("#adventure-profile", profile: %{id: p.id}) |> render_change()
+
+    view
+    |> form("#adventure-campaign-form",
+      campaign: %{
+        name: "Minulá horská sezóna",
+        starts_on: Date.to_iso8601(Date.add(today, -60)),
+        ends_on: Date.to_iso8601(Date.add(today, -30))
+      }
+    )
+    |> render_submit()
+
+    c = Repo.one!(Campaign)
+    assert c.rules_version == "season_v1"
+    assert is_nil(c.capacity)
+    assert is_nil(c.completed_goal)
+    assert has_element?(view, "#activate-campaign-#{c.id}", "Zapsat historickou sezónu")
+
+    view
+    |> form("#activate-campaign-#{c.id}", activation: %{confirmed: "true"})
+    |> render_submit()
+
+    assert Repo.get!(Campaign, c.id).status == "closed"
+    original = Repo.one!(Evaluation)
+    assert original.version == 1
+    assert has_element?(view, "#campaign-#{c.id} [data-metric=occupancy_percent]", "Nedostupné")
+    refute has_element?(view, "#evaluate-campaign-#{c.id}")
+    refute has_element?(view, "#campaign-#{c.id} .adventure-medals")
+
+    view |> form("#correct-campaign-#{c.id}", correction: %{reason: ""}) |> render_submit()
+    assert Repo.aggregate(Evaluation, :count) == 1
+
+    view
+    |> form("#correct-campaign-#{c.id}", correction: %{reason: "Doplněné konečné doklady"})
+    |> render_submit()
+
+    assert Repo.aggregate(Evaluation, :count) == 2
+    assert Repo.get!(Evaluation, original.id).snapshot == original.snapshot
+    assert render(view) =~ "Doplněné konečné doklady"
+    assert has_element?(view, "#evaluation-#{original.id}", "verze 1")
+
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    assert has_element?(camp, "#campaign-#{c.id}", "Minulá horská sezóna")
+    assert has_element?(camp, "[data-season-finances]", "Inkaso v období")
+    refute has_element?(camp, "#correct-campaign-#{c.id}")
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "camp can search and read a historical season without recalculating it", %{conn: conn} do
+    alias CozyCheckout.Adventure.{Campaigns, Evaluation}
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    today = CozyCheckout.Adventure.Sources.Stays.today()
+
+    attrs = %{
+      name: "Zimní kronika",
+      starts_on: Date.add(today, -60),
+      ends_on: Date.add(today, -30)
+    }
+
+    {:ok, winter} = Campaigns.create_historical(attrs, p.id)
+    {:ok, summer} = Campaigns.create_historical(%{attrs | name: "Letní kronika"}, p.id)
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+
+    camp |> form("#adventure-season-search", season: %{search: "Zimní"}) |> render_change()
+    assert has_element?(camp, "#adventure-season-picker button", "Zimní kronika")
+    refute has_element?(camp, "#adventure-season-picker button", "Letní kronika")
+
+    camp
+    |> element("#adventure-season-picker button[phx-value-id='#{winter.id}']")
+    |> render_click()
+
+    assert has_element?(camp, "#campaign-#{winter.id}")
+    refute has_element?(camp, "#campaign-#{summer.id}")
+    assert Repo.aggregate(Evaluation, :count) == 2
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "historical draft controls do not read the Prague date once per season", %{conn: conn} do
+    alias CozyCheckout.Adventure.{Campaigns, Sources.Stays}
+    {:ok, _} = Adventure.initialize()
+    today = Stays.today()
+
+    attrs = %{
+      rules_version: "season_v1",
+      starts_on: Date.add(today, -60),
+      ends_on: Date.add(today, -30)
+    }
+
+    {:ok, _} = Campaigns.create(Map.put(attrs, :name, "První návrh"))
+
+    {_, single_queries} =
+      CozyCheckout.QueryRecorder.record(fn -> live(conn, "/admin/adventure/settings") end)
+
+    for n <- 1..31, do: Campaigns.create(Map.put(attrs, :name, "Historický návrh #{n}"))
+
+    {_, many_queries} =
+      CozyCheckout.QueryRecorder.record(fn -> live(conn, "/admin/adventure/settings") end)
+
+    date_queries = fn queries ->
+      Enum.count(queries, &String.contains?(&1, "SELECT timezone('Europe/Prague'"))
+    end
+
+    assert date_queries.(many_queries) == date_queries.(single_queries)
   end
 end

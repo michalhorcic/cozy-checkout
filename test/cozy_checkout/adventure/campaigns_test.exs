@@ -6,6 +6,10 @@ defmodule CozyCheckout.Adventure.CampaignsTest do
   alias CozyCheckout.Adventure.Sources.Stays
 
   setup do
+    Repo.query!("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ", [],
+      sandbox_subtransaction: false
+    )
+
     previous = Application.get_env(:cozy_checkout, :adventure_enabled, false)
     Application.put_env(:cozy_checkout, :adventure_enabled, true)
     on_exit(fn -> Application.put_env(:cozy_checkout, :adventure_enabled, previous) end)
@@ -143,6 +147,38 @@ defmodule CozyCheckout.Adventure.CampaignsTest do
     {_, queries} = QueryRecorder.record(fn -> Campaigns.overview() end)
     refute Enum.any?(queries, &String.contains?(&1, "bookings"))
     assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "legacy history and awards remain unchanged when a season chronicle is added", %{
+    profile: p
+  } do
+    campaign = active_campaign(p)
+    completed_stays(1)
+
+    {{:ok, evaluated}, queries} =
+      QueryRecorder.record(fn -> Campaigns.evaluate(campaign.id, p.id) end)
+
+    legacy_evaluation = Repo.get!(Evaluation, evaluated.last_evaluation_id)
+    legacy_unlocks = Repo.all(Unlock)
+    legacy_awards = Repo.all(XpTransaction)
+    assert legacy_evaluation.version == nil
+    assert legacy_evaluation.campaign_metadata == nil
+
+    refute Enum.any?(
+             queries,
+             &Regex.match?(~r/\b(billing_payments|billing_documents|payments)\b/, &1)
+           )
+
+    attrs = campaign_attrs(%{ends_on: Date.add(Stays.today(), -1)})
+    assert {:ok, historical} = Campaigns.create_historical(attrs, p.id)
+
+    assert {:ok, _} =
+             Campaigns.evaluate(historical.id, p.id, correction_reason: "Doplnění sezony")
+
+    assert Repo.get!(Evaluation, legacy_evaluation.id) == legacy_evaluation
+    assert Repo.all(Unlock) == legacy_unlocks
+    assert Repo.all(XpTransaction) == legacy_awards
+    assert Repo.get!(Campaign, campaign.id).last_evaluation_id == legacy_evaluation.id
   end
 
   test "overview query count is bounded independently of campaign history" do

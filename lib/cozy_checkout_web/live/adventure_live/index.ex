@@ -26,6 +26,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          quest_section: section,
          task_editor_open: false,
          template_editor_open: false,
+         selected_campaign_id: nil,
+         campaign_search: "",
          task_filters: if(section == "history", do: %{"status" => "completed"}, else: %{}),
          editing_task_id: nil,
          task_form: to_form(Tasks.change(%Quest{}), as: :task)
@@ -268,6 +270,15 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp handle_game_event("new-campaign", _, socket), do: {:noreply, new_campaign(socket)}
 
+  defp handle_game_event("select-campaign", %{"id" => id}, socket) do
+    if Enum.any?(socket.assigns.game.campaigns, &(&1.id == id and &1.status != "draft")),
+      do: {:noreply, assign(socket, selected_campaign_id: id)},
+      else: result(socket, {:error, :not_found})
+  end
+
+  defp handle_game_event("search-campaigns", %{"season" => %{"search" => search}}, socket),
+    do: {:noreply, assign(socket, campaign_search: String.slice(search, 0, 100))}
+
   defp handle_game_event("activate-campaign", %{"campaign_id" => id} = params, socket) do
     confirmed = get_in(params, ["activation", "confirmed"]) == "true"
     result(socket, Campaigns.activate(id, socket.assigns.selected_profile_id, confirmed))
@@ -275,6 +286,28 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
 
   defp handle_game_event("evaluate-campaign", %{"id" => id}, socket) do
     result(socket, Campaigns.evaluate(id, socket.assigns.selected_profile_id))
+  end
+
+  defp handle_game_event(
+         "correct-campaign",
+         %{"campaign_id" => id, "correction" => attrs},
+         socket
+       ) do
+    result(
+      socket,
+      Campaigns.evaluate(id, socket.assigns.selected_profile_id,
+        correction_reason: attrs["reason"]
+      )
+    )
+  end
+
+  defp handle_game_event("archive-historical", %{"campaign_id" => id} = params, socket) do
+    confirmed = get_in(params, ["activation", "confirmed"]) == "true"
+
+    result(
+      socket,
+      Campaigns.archive_historical(id, socket.assigns.selected_profile_id, confirmed)
+    )
   end
 
   defp handle_game_event("close-campaign", %{"id" => id}, socket) do
@@ -369,7 +402,16 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           "Nejprve vyber herní profil."
 
         :confirmation_required ->
-          "Před aktivací potvrď období, cíle a kapacitu."
+          "Potvrď období a pravidla sezóny."
+
+        :correction_reason_required ->
+          "Oprava uzavřené kroniky vyžaduje důvod a vytvoří novou verzi."
+
+        :correction_reason_too_long ->
+          "Důvod opravy může mít nejvýše 1000 znaků."
+
+        :not_past_campaign ->
+          "Historickou kroniku lze zapsat až po skončení období."
 
         :past_campaign ->
           "Nelze aktivovat již skončené období."
@@ -451,14 +493,13 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp new_campaign(socket) do
+    today = CozyCheckout.Adventure.Sources.Stays.today()
+
     campaign = %Campaign{
-      name: "Zimní kampaň 2026/27",
-      starts_on: ~D[2026-12-01],
-      ends_on: ~D[2027-03-31],
-      capacity: 45,
-      completed_goal: 10,
-      reserved_goal: 1000,
-      occupancy_goal: 50
+      name: "Nová sezóna",
+      rules_version: "season_v1",
+      starts_on: today,
+      ends_on: Date.add(today, 90)
     }
 
     assign(socket,
@@ -660,6 +701,8 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
                 settings={false}
                 campaign_form={@campaign_form}
                 editing_id={@editing_campaign_id}
+                selected_id={@selected_campaign_id}
+                search={@campaign_search}
               />
             </aside>
           </div>
