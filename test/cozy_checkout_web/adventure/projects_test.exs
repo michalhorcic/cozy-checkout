@@ -43,7 +43,7 @@ defmodule CozyCheckoutWeb.AdventureProjectsLiveTest do
     {:ok, quest} = Tasks.create(actor.id, %{"title" => "Skutečná práce"})
     {:ok, view, _} = live(conn, "/admin/adventure/quests?section=projects")
     render_click(view, "restore-profile", %{"id" => actor.id})
-    assert has_element?(view, "#adventure-projects", "Kniha projektů")
+    assert has_element?(view, "#adventure-projects", "Projekty")
     refute has_element?(view, "#adventure-world-map")
     refute has_element?(view, "#project-form")
     render_click(view, "new-project")
@@ -121,6 +121,105 @@ defmodule CozyCheckoutWeb.AdventureProjectsLiveTest do
     render_click(reopened, "select-project", %{"id" => project.id})
     assert has_element?(reopened, "#project-accepted", "Převzato člověkem")
     assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
+  test "workshop is a project hub, while general projects retain their stored area", %{
+    conn: conn,
+    actor: actor
+  } do
+    {:ok, project} =
+      Projects.create(actor.id, %{"title" => "Společný plán"}, Ecto.UUID.generate())
+
+    assert project.area == "workshop"
+    {:ok, camp, _} = live(conn, "/admin/adventure")
+    render_click(camp, "operation-area", %{"area" => "workshop"})
+    assert has_element?(camp, "#adventure-area-detail", "Dílna projektů")
+    refute has_element?(camp, "#adventure-area-detail .adventure-world-development")
+    refute has_element?(camp, "#adventure-area-workshop .adventure-world-milestone")
+    refute has_element?(camp, "#adventure-area-workshop .adventure-world-plans")
+    render_click(camp, "operation-area", %{"area" => "rooms"})
+
+    assert has_element?(
+             camp,
+             "#adventure-area-detail a[href='/admin/adventure/quests?project_area=rooms&section=projects']"
+           )
+
+    {:ok, book, _} = live(conn, "/admin/adventure/quests?section=projects&project_area=rooms")
+    render_click(book, "restore-profile", %{"id" => actor.id})
+    assert has_element?(book, "#project-#{project.id}", "Celá chata")
+    render_click(book, "new-project")
+
+    assert has_element?(
+             book,
+             "#project-form select[name='project[area]'] option[value=rooms][selected]"
+           )
+
+    book
+    |> form("#project-form", project: %{title: "Pokoje mají vlastní plán"})
+    |> render_submit()
+
+    assert Repo.get_by!(Project, title: "Pokoje mají vlastní plán").area == "rooms"
+    assert Repo.get!(Project, project.id).area == "workshop"
+  end
+
+  test "project selection collapses the chooser and keeps completed work in a separate group", %{
+    conn: conn,
+    actor: actor
+  } do
+    {:ok, current} = Projects.create(actor.id, %{"title" => "Dnešní práce"}, Ecto.UUID.generate())
+    {:ok, closed} = Projects.create(actor.id, %{"title" => "Starý plán"}, Ecto.UUID.generate())
+    {:ok, _} = Projects.transition(actor.id, closed.id, "cancelled")
+    {:ok, _} = Projects.archive(actor.id, closed.id)
+    {:ok, view, _} = live(conn, "/admin/adventure/quests?section=projects")
+    assert has_element?(view, "#project-chooser[open]")
+    assert has_element?(view, "details.adventure-project-group[open] #project-#{current.id}")
+    assert has_element?(view, "details.adventure-project-group:not([open]) #project-#{closed.id}")
+    render_click(view, "select-project", %{"id" => current.id})
+    assert has_element?(view, "#project-chooser:not([open])")
+    assert has_element?(view, "#project-detail-title[tabindex='-1']", "Dnešní práce")
+
+    {_, queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn -> render_click(view, "close-project-detail") end,
+        view.pid
+      )
+
+    assert queries == []
+    assert has_element?(view, "#project-chooser[open]")
+    refute has_element?(view, "#project-detail")
+  end
+
+  test "project step leads to that exact quest in camp without starting it", %{
+    conn: conn,
+    actor: actor
+  } do
+    {:ok, project} = Projects.create(actor.id, %{"title" => "Oprava"}, Ecto.UUID.generate())
+    {:ok, quest} = Tasks.create(actor.id, %{"title" => "Konkrétní krok"})
+    {:ok, _} = Projects.add_stage(actor.id, project.id, quest.id, "Opraveno")
+
+    {:ok, view, _} =
+      live(conn, "/admin/adventure/quests?section=projects&project_id=#{project.id}")
+
+    assert has_element?(
+             view,
+             "#project-detail a[href='/admin/adventure?quest_id=#{quest.id}']",
+             "Přijmout v táboře"
+           )
+
+    {:ok, camp, _} = live(conn, "/admin/adventure?quest_id=#{quest.id}")
+    refute has_element?(camp, "#adventure-duty-detail-modal")
+    render_click(camp, "restore-profile", %{"id" => actor.id})
+    assert has_element?(camp, "#adventure-duty-detail-modal", "Konkrétní krok")
+    assert has_element?(camp, "#adventure-duty-detail-modal button[phx-click=start-task]")
+    refute has_element?(camp, "#adventure-duty-detail-modal", "Změna provozního podkladu")
+    assert Repo.get!(Quest, quest.id).status == "waiting"
+    assert Repo.aggregate(XpTransaction, :count) == 0
+    render_click(camp, "start-task", %{"id" => quest.id})
+    assert Repo.get!(Quest, quest.id).status == "active"
+    assert has_element?(camp, "#adventure-duty-detail-modal button[phx-click=prepare-completion]")
+    render_click(camp, "prepare-completion", %{"id" => quest.id})
+    assert has_element?(camp, "#adventure-completion")
+    assert Repo.aggregate(XpTransaction, :count) == 0
   end
 
   test "PIN, feature flag and explicit hero protect project actions", %{conn: conn, actor: actor} do

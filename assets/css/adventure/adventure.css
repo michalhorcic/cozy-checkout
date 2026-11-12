@@ -312,8 +312,9 @@ body:has(#adventure-help[open]) { overflow: hidden; }
 .adventure-service-day { border-top: 1px solid #cfc4ab; padding-top: 1rem; margin-block: 1.25rem; }
 .adventure-service-day ul { list-style: none; padding: 0; }
 .adventure-service-day li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-block: .75rem; border-bottom: 1px dashed #cfc4ab; }
-.adventure-village { min-height: 660px; }
-.adventure-village-place { overflow-wrap: anywhere; }
+.adventure-village { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); align-items: center; gap: 1.25rem .75rem; padding: 4rem .75rem 1.5rem; min-height: 500px; }
+.adventure-village-place { position: relative; inset: auto; width: auto; overflow-wrap: anywhere; }
+.adventure-village-place--rooms { transform: translateY(-1rem); }
 .adventure-village-place > span { font-size: .78rem; line-height: 1.45; }
 .adventure-village-place--developed { border-bottom-color: #46724a; box-shadow: 0 0 0 3px #bdca9b, 0 8px 12px #35433820; }
 .adventure-world-milestone { border: 1px solid #bba264; border-radius: .3rem; padding: .2rem .4rem; background: #f6e8b9; font-weight: 700; }
@@ -328,6 +329,9 @@ body:has(#adventure-help[open]) { overflow: hidden; }
 .adventure-template-confirm { padding: 1rem; border: 1px solid #bba264; background: #fff3d4; border-radius: .5rem; }
 .adventure-template-confirm .adventure-button { margin: .5rem .25rem 0 0; white-space: normal; }
 .adventure-cabin-chronicle .adventure-section-heading { flex-wrap: wrap; gap: .75rem; }
+.adventure-world-development > summary, .adventure-cabin-chronicle > summary { display: flex; align-items: center; gap: .5rem; min-height: 44px; font-weight: 650; }
+.adventure-world-development > summary::before, .adventure-cabin-chronicle > summary::before { content: '+'; }
+.adventure-world-development[open] > summary::before, .adventure-cabin-chronicle[open] > summary::before { content: '-'; }
 @media (max-width: 900px) {
   .adventure-operation-layout { grid-template-columns: minmax(0, 1fr); }
   .adventure-village { display: grid; grid-template-columns: minmax(0, 1fr); gap: .75rem; padding: 1rem; background: #e8e7d6; min-height: 0; }

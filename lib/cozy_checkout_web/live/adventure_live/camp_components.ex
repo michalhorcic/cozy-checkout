@@ -38,8 +38,8 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
           :for={slot <- 1..3}
           class={["adventure-slot-stone", slot <= length(@active) && "is-filled"]}
         ><.symbol name={if slot <= length(@active), do: "backpack", else: "compass"} /></span>
-        <p>
-          {if @profile, do: "Každá výprava začíná prvním krokem.", else: "Nejdřív si vyber hrdinu."}
+        <p :if={!@profile}>
+          Nejdřív si vyber hrdinu.
         </p>
       </div>
       <div class="adventure-active-list">
@@ -70,11 +70,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
         <div :if={@active == []} class="adventure-empty adventure-empty--expedition">
           <.symbol name={if @shared, do: "flag", else: "backpack"} /><h3>
             {if @shared, do: "Společná cesta je před námi", else: "Batoh je připravený"}
-          </h3><p>
-            {if @shared,
-              do: "Vyberte si práci, kterou posunete chatu společně.",
-              else: "Na nástěnce čekají tvoje další dobrodružství."}
-          </p>
+          </h3>
         </div>
       </div>
       <button
@@ -102,7 +98,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
         Kam vyrazíš dál?
       </h2>
       <p id="adventure-picker-modal-description" class="adventure-picker-intro">
-        Vyber zadání z knihy questů. Osobní výpravu převezme {@profile.display_name}; společná odmění chatu.
+        Osobní výpravu převezme {@profile.display_name}; společná odmění chatu.
       </p>
       <div class="adventure-book-tabs" aria-label="Nabídka výprav">
         <button
@@ -110,7 +106,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
           type="button"
           phx-click="picker-filter"
           phx-value-scope={value}
-          aria-pressed={@filter == value}
+          aria-pressed={to_string(@filter == value)}
         >{label}</button>
       </div>
       <.form for={@search_form} id="adventure-picker-search" phx-change="picker-search">
@@ -132,9 +128,9 @@ defmodule CozyCheckoutWeb.AdventureLive.CampComponents do
               else: "Jednorázová"} · {quest.category}</span>
           </div>
           <h3>{quest.definition_snapshot["title"]}</h3>
-          <p :if={quest.description not in [nil, ""]} class="adventure-quest-description">
-            {quest.description}
-          </p>
+          <details :if={quest.description not in [nil, ""]} class="adventure-quest-description">
+            <summary>Popis questu</summary><p>{quest.description}</p>
+          </details>
           <p class="adventure-muted">
             {if quest.scope == "shared",
               do: "Společná chata",

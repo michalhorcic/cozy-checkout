@@ -67,6 +67,40 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           <strong :if={Operation.stale?(@snapshot, @checked_at) or @state == :error}>Starší údaje, obnov přehled.</strong>
         </p>
       </div>
+      <section
+        :if={@snapshot}
+        id="adventure-service-day"
+        class="adventure-service-day"
+        aria-labelledby="service-day-title"
+      >
+        <header>
+          <h3 id="service-day-title">Služba dne · {date(@snapshot.today)}</h3><p class="adventure-muted">
+            Podněty do {date(@snapshot.through)} · uvedené datum je příjezd, ne vznik závady.
+          </p>
+        </header>
+        <p :if={@snapshot.issues == []}>
+          Bez hlášených podnětů. Nejde o potvrzení připravenosti chaty.
+        </p>
+        <ul>
+          <li
+            :for={{issue, index} <- @snapshot.issues |> Enum.take(4) |> Enum.with_index()}
+            id={"adventure-duty-#{index}"}
+          >
+            <span><strong>{if issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"}</strong>
+            · příjezd {date(issue.on)}<br />{issue.reason}</span>
+            <.link href={~p"/admin/bookings/#{issue.booking_id}"} class="adventure-text-link">Otevřít pobyt</.link>
+            <.duty_actions
+              issue={issue}
+              link={@duty_links[Tasks.duty_key(issue)]}
+              profile={@profile}
+            />
+          </li>
+        </ul>
+        <p :if={length(@snapshot.issues) > 4}>
+          Dalších podnětů: {length(@snapshot.issues) - 4}.
+          <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Zkontrolovat v plánu jídel</.link>
+        </p>
+      </section>
       <div class="adventure-operation-layout">
         <nav class="adventure-village" aria-label="Oblasti chaty">
           <div class="adventure-village-land" aria-hidden="true"><span>Jindřichův dům</span></div>
@@ -81,12 +115,24 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             class={[
               "adventure-village-place",
               "adventure-village-place--#{key}",
-              area_count(@world, key, ["accepted"]) > 0 && "adventure-village-place--developed"
+              key != "workshop" && area_count(@world, key, ["accepted"]) > 0 &&
+                "adventure-village-place--developed"
             ]}
           >
             <.symbol name={icon} /><strong>{label}</strong><span>{summary(key, @snapshot)}</span>
-            <span class="adventure-world-milestone">{area_count(@world, key, ["accepted"])} převzatých zlepšení</span>
-            <span class="adventure-world-plans">{area_count(@world, key, [
+            <span
+              :if={key != "workshop" && area_count(@world, key, ["accepted"]) > 0}
+              class="adventure-world-milestone"
+            >{area_count(@world, key, [
+              "accepted"
+            ])} převzatých zlepšení</span>
+            <span
+              :if={
+                key != "workshop" &&
+                  area_count(@world, key, ["idea", "ready", "approved", "paused", "active"]) > 0
+              }
+              class="adventure-world-plans"
+            >{area_count(@world, key, [
               "idea",
               "ready",
               "approved",
@@ -117,7 +163,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
               </div>
             </dl>
             <p>
-              Příjezd je zahrnut, odjezd vyloučen z obsazenosti. Rezervace nedokazuje fyzickou přítomnost, čistotu ani připravenost pokoje.
+              Obsazenost zahrnuje příjezd, ne odjezd. Neověřuje přítomnost hostů ani připravenost pokojů.
             </p>
             <.link href={~p"/admin/bookings/calendar"} class="adventure-text-link">Otevřít kalendář rezervací</.link>
           </div>
@@ -135,7 +181,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             <p :if={@snapshot && @snapshot.incomplete > 0} class="adventure-operation-warning">
               Neúplné podklady pro {@snapshot.incomplete} skupin dnes. Počty jsou pouze známé porce, nikoli celková potřeba.
             </p>
-            <p>Plánované porce nejsou uvařené jídlo. Menu a podklady kontroluj ve službě dne.</p>
+            <p>Plánované porce nejsou uvařené jídlo.</p>
             <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Otevřít plán jídel</.link>
           </div>
           <div :if={@area in ["bar", "treasury"]}>
@@ -143,25 +189,33 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             <p>
               Sezónní inkaso a vyúčtování jsou uložené snapshoty, nikoli živý stav. Obnova provozu je nepřepočítává. Inkaso není zisk ani hodnota prodeje.
             </p>
-            <a href="#adventure-shared" class="adventure-text-link">Přejít na kroniku sezóny a datum přepočtu</a>
+            <a
+              href="#adventure-shared"
+              phx-click={JS.set_attribute({"open", ""}, to: "#adventure-season-disclosure")}
+              class="adventure-text-link"
+            >Přejít na kroniku sezóny a datum přepočtu</a>
             <.link :if={@area == "bar"} href={~p"/admin/bar-stock"} class="adventure-text-link">Otevřít sklad baru</.link>
             <.link :if={@area == "treasury"} href={~p"/admin/billing"} class="adventure-text-link">Otevřít doklady a platby</.link>
             <p>Mapa zde neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
           </div>
           <div :if={@area == "workshop"}>
-            <h3>Místo pro příští zlepšení</h3>
-            <p>
-              Vlastní projekty propojují plánované zlepšení s existujícími questy. Rozpočet je jen plán; převzetí výsledku vždy výslovně potvrdí člověk, bez dalších XP.
-            </p>
+            <h3>Dílna projektů</h3>
+            <p>Všechny projekty chaty a jejich questy na jednom místě.</p>
             <.link navigate={~p"/admin/adventure/quests?section=projects"} class="adventure-text-link">Otevřít knihu projektů</.link>
           </div>
           <p :if={!@snapshot && @area in ["reception", "rooms", "kitchen"]}>
             Provozní údaje zatím nejsou dostupné. Neznámý stav není nula.
           </p>
-          <section class="adventure-world-development" aria-label="Rozvoj oblasti">
-            <h3>Rozvoj oblasti · {area_count(@world, @area, ["accepted"])} trvalých milníků</h3>
+          <details :if={@area != "workshop"} class="adventure-world-development">
+            <summary>
+              Rozvoj oblasti · {area_count(@world, @area, ["accepted"])} milníků · {area_count(
+                @world,
+                @area,
+                ["idea", "ready", "approved", "paused"]
+              )} plánů · {area_count(@world, @area, ["active"])} v realizaci
+            </summary>
             <p>
-              Milník vzniká až lidským převzetím. Archivace ho neodstraní. Nejde o technickou kontrolu ani provozní bonus.
+              Milníky jsou lidsky převzaté výsledky, ne technická kontrola ani provozní bonus.
             </p>
             <article
               :for={project <- Enum.filter(@world.projects, &(&1.area == @area))}
@@ -183,28 +237,29 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             <p :if={!Enum.any?(@world.projects, &(&1.area == @area))}>
               V posledních 100 změněných projektech zde není žádný záznam.
             </p>
-            <.link navigate={~p"/admin/adventure/quests?section=projects"} class="adventure-text-link">Plánovat další zlepšení</.link>
-          </section>
+            <.link
+              navigate={~p"/admin/adventure/quests?#{%{section: "projects", project_area: @area}}"}
+              class="adventure-text-link"
+            >Plánovat další zlepšení</.link>
+          </details>
         </section>
       </div>
-      <section
+      <details
         id="adventure-cabin-chronicle"
         class="adventure-cabin-chronicle"
         aria-labelledby="cabin-chronicle-title"
+        open={!is_nil(@chronicle)}
       >
+        <summary id="cabin-chronicle-title">Kronika chaty</summary>
         <header class="adventure-section-heading">
-          <div>
-            <p class="adventure-eyebrow">Trvalý rozvoj napříč sezónami</p><h3 id="cabin-chronicle-title">
-              Kronika chaty
-            </h3>
-          </div>
+          <p class="adventure-eyebrow">Výsledky napříč sezónami</p>
           <button phx-click="refresh-world" class="adventure-button">Obnovit rozvoj</button>
         </header>
         <p>
-          Výsledky výslovně převzatých projektů včetně archivu. Samostatná historie zlepšení, nikoli finanční Kronika sezóny. Bez dalších XP.
+          Převzatá zlepšení včetně archivu, odděleně od finanční kroniky sezóny.
         </p>
         <p class="adventure-muted">
-          Mapa a detail zobrazují nejvýše 100 naposledy změněných projektů; počty milníků zahrnují celou historii. Starší výsledky otevři výslovně níže.
+          Mapa ukazuje posledních 100 změněných projektů, počty milníků celou historii.
         </p>
         <button
           :if={is_nil(@chronicle)}
@@ -228,7 +283,9 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
               >{project.title}</.link>
             </h4>
             <p>
-              {Enum.find_value(@places, fn {key, label, _} -> key == project.area && label end)}{if project.archived_at,
+              {if project.area == "workshop",
+                do: "Celá chata",
+                else: Enum.find_value(@places, fn {key, label, _} -> key == project.area && label end)}{if project.archived_at,
                 do: " · archiv"}
             </p>
             <.accepted_outcome project={project} profiles={@profiles} />
@@ -250,46 +307,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             <button phx-click="close-cabin-chronicle" class="adventure-button">Zavřít kroniku chaty</button>
           </nav>
         </div>
-      </section>
-      <section
-        :if={@snapshot}
-        id="adventure-service-day"
-        class="adventure-service-day"
-        aria-labelledby="service-day-title"
-      >
-        <header>
-          <h3 id="service-day-title">Služba dne · {date(@snapshot.today)}</h3><p class="adventure-muted">
-            Podněty z Přehledu do {date(@snapshot.through)}. Datum u podnětu je příjezd skupiny, nikoli den vzniku závady.
-          </p>
-        </header>
-        <p :if={@snapshot.issues == []}>
-          Zdroj v tomto období nehlásí chybějící podklady ani problém menu. Není to potvrzení připravenosti chaty.
-        </p>
-        <ul>
-          <li
-            :for={{issue, index} <- @snapshot.issues |> Enum.take(4) |> Enum.with_index()}
-            id={"adventure-duty-#{index}"}
-          >
-            <span><strong>{if issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"}</strong>
-            · příjezd {date(issue.on)}<br />{issue.reason}</span>
-            <.link href={~p"/admin/bookings/#{issue.booking_id}"} class="adventure-text-link">Otevřít pobyt</.link>
-            <.duty_actions
-              issue={issue}
-              link={@duty_links[Tasks.duty_key(issue)]}
-              profile={@profile}
-            />
-          </li>
-        </ul>
-        <p :if={length(@snapshot.issues) > 4}>
-          Dalších podnětů: {length(@snapshot.issues) - 4}.
-          <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Zkontrolovat v plánu jídel</.link>
-        </p>
-      </section>
-      <p class="adventure-muted">
-        Provoz pouze čteme. Prohlížení ani obnova nezakládají questy a neudělují XP.
-        Quest vznikne jen výslovným uložením návrhu; podklad upravíš v hlavní aplikaci.
-        <.link href={~p"/admin"} class="adventure-text-link">Celá aplikace</.link>
-      </p>
+      </details>
     </section>
     """
   end
@@ -488,7 +506,10 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         {@quest.definition_snapshot["title"]}
       </h2>
       <p id="adventure-duty-detail-modal-description">
-        Quest ze služby dne · {duty_status(@quest)}. Změna provozního podkladu tento quest automaticky nedokončí.
+        {if @quest.source_namespace == "operation_v1",
+          do: "Quest ze služby dne",
+          else: "Quest projektu"} · {duty_status(@quest)}.
+        <span :if={@quest.source_namespace == "operation_v1"}>Změna provozního podkladu tento quest automaticky nedokončí.</span>
       </p>
       <p>
         {profile_name(@profiles, @quest.assigned_profile_id || @quest.profile_id)} · {@quest.definition_snapshot[
@@ -672,5 +693,5 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
 
   defp summary("bar", _), do: "Sezónní kronika · ne živě"
   defp summary("treasury", _), do: "Sezónní kronika · ne živě"
-  defp summary("workshop", _), do: "Vlastní plány a etapy"
+  defp summary("workshop", _), do: "Projekty celé chaty"
 end
