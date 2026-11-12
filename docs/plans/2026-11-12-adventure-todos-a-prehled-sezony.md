@@ -1,16 +1,19 @@
-# Cozy Adventure – úkolovník a kronika sezóny
+# Cozy Adventure – provoz a budování chaty
 
-- Stav: etapa 3A a herní rozdělení Tábor/Questy implementovány v PR #113; etapa 3B implementována v navazující změně, 3C zůstává další etapou
+- Stav: úkolovník a herní rozdělení hotové v PR #113, sezónní kronika v PR #115, spolehlivější zapamatování hrdiny v PR #116; další směr je budovatelská strategie podle oddílu 12, zatím pouze plán
 - Vytvořeno a aktualizováno: 2026-11-12
 - Navazuje na: [dosavadní implementační plán](2026-11-11-cozy-adventure.md), [současnou funkci](../features/ADVENTURE.md), PR #112
-- Rozsah: správa questů, opakované šablony a sezónní přehled reálného provozu
+- Rozsah: herní rozhraní nad provozem aplikace, správa questů, rozvoj chaty investičními projekty a kronika skutečných výsledků
 
 ## Směr a potvrzená rozhodnutí
 
-Questy mají sloužit jako gamifikovaný úkolovník: zapsat práci, vybrat odpovědného,
-naplánovat opakování a zaznamenat splnění. Kampaň má být především přehled sezóny.
+Hra má postupně fungovat jako kooperativní budovatelská a provozní strategie
+nad skutečnou chatou, ne pouze úkolovník doplněný XP. Questy organizují práci,
+sezóna zaznamenává skutečný provoz a investiční projekty mají zanechávat trvalá
+vylepšení chaty. Vybrané informace z Přehledu se mají objevit i v herním světě.
 Zimní sezóna má již dost rezervací; další naplňování kapacity není výchozí cíl hry.
-Současná horská grafika a čistá obrazovka zůstávají, vysvětlení patří do Průvodce.
+Horské prostředí a čitelnost zůstávají, ale hra má postupně vizuálně vyjadřovat
+stav a rozvoj chaty. Podrobnosti a vysvětlení patří do detailů a Průvodce.
 
 Uživatel potvrdil:
 
@@ -25,14 +28,23 @@ Uživatel potvrdil:
 - U každé opakované šablony volitelná působnost: vždy / během vybrané kampaně /
   jen když jsou hosté.
 - Poznámka u splnění zůstává nepovinná, hrdina zapamatovaný v prohlížeči.
+- Hra má být postupně rozhraním nad celou aplikací s herními prvky; vybrané
+  informace ze současného Přehledu patří i do hry, ne pouze za odkaz do adminu.
+- Do questů má být možné zadat investiční akce, které vylepšují celou chatu.
+- Provozní aplikace zůstává pro Adventure pouze ke čtení. Rezervace, doklady,
+  platby, sklady a další skutečné změny se zadávají existujícími funkcemi aplikace.
+  Adventure zapisuje jen vlastní herní a plánovací stav.
 
 Další návrhy v tomto dokumentu jsou doporučený rozsah, nikoli už nasazené chování.
-Implementaci uživatel následně zahájil výslovným pokynem pokračovat podle obou plánů.
+Historický souhlas s implementací se týkal dokončených etap 3A/3B, nikoli
+nových návrhů 4A–4C; ty vyžadují vlastní potvrzení rozsahu před kódem.
 
-> **Aktuální směr rozhraní (12. 11. 2026):** hra je hlavní rozhraní pro todos
-> a rozcestník do provozu chaty. Tábor slouží k hraní, Questy ke správě zadání.
-> Potvrzená rozhodnutí a pravidla dalších iterací jsou v oddílu 10; nahrazují
-> starší návrhy, které duplikují výběr či plnění na obou stránkách.
+> **Aktuální směr (12. 11. 2026 odpoledne):** Tábor je provozovaná a postupně
+> vylepšovaná chata, nikoli jen seznam úkolů a odkazů. Oddíl 12 rozpracovává
+> nový požadavek na budovatelskou strategii a určuje doporučené další dodávky.
+> Oddíly 8–11 jsou historie implementace; jejich tehdejší formulace „později“
+> nejsou aktuálním pořadím práce. Konkrétní nové mechaniky v oddílu 12 jsou
+> návrhy k odsouhlasení, nikoli nasazené chování nebo automatické schválení kódu.
 
 ## 1. Úkoly: seznam práce a tři rozpracované výpravy
 
@@ -120,8 +132,8 @@ ne každý zaškrtnutý řádek; checklist je rozšíření, nikoli podmínka pr
 ## 3. Kampaň jako kronika sezóny
 
 Základ sezóny: název, období, pásmo, zobrazené metriky a stav návrh/otevřená/uzavřená.
-Doporučení: cíle jsou volitelné. Žádné povinné shánění rezervací ani povinný cíl
-obsazenosti při založení. Kapacitu potřebuje jen procentní obsazenost; bez ní
+V novém režimu `season_v1` jsou cíle volitelné. Žádné povinné shánění rezervací
+ani povinný cíl obsazenosti při založení. Kapacitu potřebuje jen procentní obsazenost; bez ní
 zůstanou dostupné ostatní metriky a procento bude nedostupné.
 
 Přehled má umět celé historické období, i před zapnutím hry. Otevírání historické
@@ -129,11 +141,10 @@ sezóny nesmí zpětně udělit herní XP. Dobové výsledky a metadata budou sn
 po uzavření se případné opravy ukládají v nové dohledatelné verzi, původní výsledek
 zůstane zachovaný. Úprava období či výpočtů vyžaduje jasnou novou verzi.
 
-Doporučení pro herní vrstvu: odměňovat skutečné úkoly. Automatické milníky
-za pouhou obsazenost nebo příjmy nejsou povinnou součástí nové sezóny.
+Nová herní vrstva odměňuje skutečné úkoly. Automatické milníky
+za pouhou obsazenost nebo příjmy nejsou součástí `season_v1`.
 Dosavadní odměny za 1/10 pobytů zůstanou v historii; změna produktu není důvodem
-je kompenzovat. Nové sezónní přehledy mohou mít tyto milníky výchozí vypnuté.
-Toto doporučení se zatím nepropisuje do současných kampaní.
+je kompenzovat. Původní `stays_v1` se nepřevádí; implementovaný stav je v oddílu 11.
 
 ### Peníze: dva samostatné pohledy
 
@@ -188,7 +199,8 @@ Audit kódu 12. 11. 2026, bez přístupu k produkčním datům:
 | `Adventure.Sources.Stays` | Současná read-only pravidla nocí a úplnosti | Zachovat rozlišení realizace a rezervací; změny verzovat |
 | `Economics` | Lokální verzované snapshoty a účetní potvrzení | Účetní zisk až z úplných podkladů a odpovídajícího období, bez HTTP z renderu |
 
-Nové čtení patří do `Adventure.Sources.Bar` a `Adventure.Sources.Billing`.
+První finanční čtení bylo implementováno v `Adventure.Sources.Bar`
+a `Adventure.Sources.Billing`; další adaptéry se schvalují samostatně.
 Finanční doklady/platby nesmějí zmizet z historického inkasa jen proto, že se
 později smazala nebo stornovala rezervace. Filtry pro pobytové KPI nelze slepě
 přenést na finanční historii. U baru ověřit význam smazané platby proti refundaci;
@@ -210,7 +222,11 @@ dne následujícího po konci (horní hranice vyloučená), včetně DST.
 Používat Decimal a existující finanční formátování. Žádné údaje hostů do
 herních snapshotů, jen potřebné agregace a případné stabilní reference.
 
-## 5. Datový model a přechod
+## 5. Datový model a přechod etap 3A/3B
+
+Původní návrh přechodu, jeho realizace je zaznamenána v oddílech 8–11.
+Pro další implementaci modelu projektu nejprve vycházet z aktuálních schémat,
+nikoli znovu provádět již dokončené migrace níže.
 
 - Zachovat samostatný Adventure context, herní adresáře a tabulky.
 - Doplnit spravované verzované šablony; využít stávající quest instance a ledger,
@@ -236,25 +252,34 @@ Všechny zápisy jen do Adventure. Dokončení „doplnit bar“ nepřepíše sk
 N+1 riziko: finance nesčítat dotazem pro každý pobyt, účet, doklad ani den.
 Navrhnout dávkovou agregaci za období po jednotlivých zdrojích, agregovat před
 joinem (ne násobit platby počtem řádků faktury). Schválení nových dávkových dotazů
-řešit před implementací podle AGENTS.md; dosavadní souhlas se týkal pobytového
-adaptéru. V plánování se žádný nový dotaz nad provozními daty nespouští.
+řešit před implementací podle AGENTS.md. Již udělený souhlas pro pobyty
+a finanční adaptéry 3B zaznamenává oddíl 11; nové zdroje z oddílu 12 mají
+samostatnou schvalovací bránu. V plánování se žádný nový provozní dotaz nespouští.
 
-## 6. Doporučené dodávky
+## 6. Dodávky a aktuální pořadí
 
-1. **Etapa 3A – úkolovník:** jednorázové úkoly, přiřazení, velikosti, tři
+1. **Hotovo 3A – úkolovník:** jednorázové úkoly, přiřazení, velikosti, tři
    rozpracované, společné splnění a historie; spravované denní/týdenní šablony,
-   působnost a generování bez hromadění. Nejprve data model a migrační kontinuita.
-2. **Etapa 3B – sezónní přehled:** volitelné cíle, historické sezóny, rozšířené
+   působnost a generování bez hromadění, včetně migrační kontinuity.
+2. **Hotovo 3B – sezónní přehled:** volitelné cíle, historické sezóny, rozšířené
    read-only adaptéry, oddělené inkaso a vyúčtování pobytů, kvalita po metrikách.
-   Začít lůžkonocemi, inkasem baru a platbami/vyúčtováním ubytování.
-3. **Etapa 3C – porovnání a další karty:** srovnatelné sezóny, poměrové ukazatele,
-   produkty, případně checklisty a úkoly před konkrétním příjezdem.
-4. **Později:** skill tree, účetní zisk/náklady, rekonstrukce. Nejdřív užitečné
-   každodenní úkoly a důvěryhodná sezónní čísla.
+   Zahrnuje lůžkonoci, inkaso baru a platby/vyúčtování ubytování.
+3. **Návrh 4A – živý tábor:** převést vybraná data z Přehledu do oblastí
+   chaty a nabídnout jasné přechody do stávajících provozních funkcí.
+4. **Návrh 4B – investiční projekty:** dlouhodobé zlepšení chaty rozdělené na
+   skutečné questy, plánovaný rozpočet, návaznosti a ruční převzetí výsledku.
+5. **Návrh 4C – viditelný rozvoj:** dokončené projekty mění herní podobu chaty,
+   kroniku zlepšení a nabídku dalších plánů; nemění provozní čísla.
+6. **Původní 3C – porovnání a další ukazatele:** srovnatelné sezóny, poměry,
+   produkty a případně úkoly před příjezdem. Zůstává v zásobníku, není automaticky
+   další implementací před herním provozem a investicemi.
+7. **Později:** osobní skill tree, klasické osobní přihlášení, úplné účetní
+   náklady/zisk, evidence majetku a odpisy. Plánování rekonstrukce může být
+   projektem 4B; plné investiční účetnictví se tím nezavádí.
 
 Každou dodávku lze ověřit samostatně. Nezačínat automatizací plateb či skladu.
 
-## 7. Akceptační kritéria pro budoucí implementaci
+## 7. Akceptační základ etap 3A/3B
 
 - Založit vlastní úkol bez povinného termínu, odměny ručně zadávané číslem či poznámky;
   přidělit, převzít, dokončit a najít v historii. XP odpovídají skutečnému splniteli.
@@ -279,8 +304,8 @@ Každou dodávku lze ověřit samostatně. Nezačínat automatizací plateb či 
 - Ověřit SQL zápisy pouze do Adventure a nepřítomnost provozních hooků/HTTP.
 - Vypnutí modulu zastaví generování i přepočty; admin PIN, zapamatovaný hrdina
   a přiznaná self-report identita zůstanou zachované. Bez přístupu z veřejného POS.
-- Nové testy podle AGENTS.md, CI a následný ruční checklist. Tento dokument
-  zatím nepředstavuje implementaci ani výsledek nových testů.
+- Nové testy podle AGENTS.md, CI a následný ruční checklist. Výsledky již
+  provedených ověření jsou v historii níže; návrh nových etap není jejich ověřením.
 
 ## 8. První dodávka etapy 3A (12. 11. 2026)
 
@@ -309,10 +334,10 @@ přispěvateli (+250 pouze chatě), editace i archivace. Šířky 390/320 px
 neměly vodorovný přesah. Souběhové ExUnit scénáře zůstávají pro CI.
 
 Tato první dodávka byla následně ve stejném PR doplněna o opakování níže.
-Nové sezónní režimy a finanční adaptéry (etapa 3B) zůstávají další prací.
-Před jejich implementací je třeba dle AGENTS.md schválit nové dávkové čtení
-provozních zdrojů; souhlas pro působnost podle hostů se týká jen adaptéru
-`Adventure.Sources.Guests`. Dosavadní kampaně a jejich milníky se nemění.
+V této fázi ještě zbývaly sezónní režimy a finanční adaptéry; jejich pozdější
+schválení a implementaci zaznamenává oddíl 11. Souhlas pro tehdejší působnost
+podle hostů se týkal adaptéru `Adventure.Sources.Guests`, nikoli libovolného
+nového čtení. Dosavadní kampaně a jejich milníky se nemění.
 
 ## 9. Dokončení etapy 3A ve stejném PR #113 (12. 11. 2026)
 
@@ -437,7 +462,8 @@ zůstávají před rozpracováním, změny šablon pro budoucí výskyty.
   Kuchyně → stravovací plán, Bar → barový sklad, Pokladnice → doklady/platby.
   Odkazy skutečně otevřou existující části aplikace. Přechod sám nikdy
   nesplní quest, nevystaví doklad ani nezmění sklad. Po návratu zůstává
-  práce uložená a hrdina se obnoví z herní cookie.
+  práce uložená a hrdina se obnoví z preference prohlížeče; aktuální řešení
+  používá localStorage s cookie zálohou, viz oddíl 12.1.
 - Udržet světlé horské téma, materiály papíru/dřeva, konzistentní ikonografii,
   responzivitu, ovládání klávesnicí a možnost omezení pohybu. Herní podoba
   nesmí zhoršit čitelnost, orientaci ani dostupnost hlavních akcí na mobilu.
@@ -449,7 +475,8 @@ světa. Herní motivace vychází ze skutečných todos a ověřeného stavu pro
 nezavádět fiktivní finanční výsledky, automatické splnění za pouhou návštěvu
 stránky ani další kopie úkolovníku. Toto zadání nyní zahrnuje mapu oblastí;
 konkrétní provozní odkazy na jednotlivých questech lze řešit samostatně podle
-potřeby. Následný sezónní přehled z etapy 3B má tento herní rám respektovat.
+potřeby. Sezónní přehled z etapy 3B tento herní rám zachovává; nový směr provozu
+a budování rozpracovává oddíl 12.
 
 ### Akceptace této změny
 
@@ -529,3 +556,306 @@ byl proklikán historický zápis, oprava do nové verze a Tábor na šířkách
 1440/390/320 px, bez horizontálního přesahu a JS výjimek. Použit Elixir 1.20.4;
 lokální Erlang je 29.1.2, nikoli přesně připnutý 29.1. Celá testovací sada
 nebyla spouštěna; výsledky GitHub CI ověří uživatel.
+
+## 12. Další směr: kooperativní budovatelská strategie (12. 11. 2026)
+
+### 12.1 Co je potvrzené a co je návrh
+
+Uživatel chce provozovat a postupně vylepšovat skutečnou chatu skrze herní
+rozhraní nad celou aplikací, vidět ve hře část současného Přehledu a zadávat
+investiční akce do questů. Provoz je pouze ke čtení; všechny skutečné změny
+zůstávají ve stávajících funkcích. To je potvrzený směr této aktualizace.
+
+Následující mapa, projekty s etapami, vizuální odemykání a pořadí 4A–4C jsou
+doporučený návrh, nikoli již schválený detail implementace. Otázky o podobě mapy,
+hloubce projektů a prioritních datech zůstaly bez odpovědi; nevyvozovat z toho
+souhlas. Teď se mění pouze tento plán, žádné herní ani provozní chování.
+
+Implementační základ: 3A/3B jsou hotové v PR #113/#115. Oprava preference
+hrdiny `76ab72b` byla sloučena v PR #116: localStorage s cookie zálohou,
+kontrolou uložení a ochranou proti opožděné odpovědi. Ověřeno 18 JS a 17
+LiveView testů a HTTP proklik; podrobnosti v `docs/features/ADVENTURE.md`.
+Nejde o osobní přihlášení. Výchozí main při této revizi je `26121f5`;
+před další prací znovu ověřit skutečný stav a CI, nebrat hash za budoucí základ.
+
+### 12.2 Herní smyčka a inspirace
+
+Z budovatelských strategií typu Anno/Foundation přebrat srozumitelnou mapu
+oblastí, návaznosti vylepšení a viditelný trvalý rozvoj. Z managementových her
+krátký přehled „co dnes potřebuje mou pozornost“ a volbu další investice.
+Nepřebírat fiktivní těžbu měny, čekací časovače ani trestání za nepřihlášení.
+
+Herní smyčka: **prohlédnout stav → zvolit problém nebo zlepšení → připravit
+quest/projekt → udělat skutečnou práci přes existující nástroje → potvrdit
+výsledek → vidět změněnou chatu a historii → rozhodnout o dalším rozvoji**.
+
+Hra má tři jasně odlišené vrstvy:
+
+| Vrstva | Příklad | Co smí změnit |
+| --- | --- | --- |
+| Pozorovaný provoz | Podle kalendáře přijede 12 lidí; menu má neúplné podklady | Jen zobrazení read-only zdroje |
+| Práce a plán | Připravit menu; vyměnit bojler; rozhodnout o nabídce | Vlastní Adventure quest, projekt, přiřazení a termín |
+| Rozvoj světa | V kronice přibyla nová koupelna; oblast má nový vzhled | Jen herní podobu a historii po výslovném převzetí zlepšení |
+
+Peníze v účetnictví nejsou herní mince, XP nejsou mzda a level není fyzická
+kapacita. Zlepšení neudělí smyšlené +10 % příjmů nebo automaticky více lůžek.
+Základní funkce aplikace ani potřebný úklid se nikdy nezamknou za XP.
+
+### 12.3 Živý tábor místo dalšího dashboardu
+
+Doporučení: jedna přehledná 2D scéna/mapa chaty, nejprve čitelné oblasti,
+nikoli nákladná 3D simulace. Na mobilu stejný svět jako dostupný seznam oblastí;
+žádná informace či akce pouze přes hover, barvu nebo drobný objekt na mapě.
+Mapa sama nestačí jako výčet odkazů: oblasti mají viditelný stav a rozvoj.
+
+Tábor skládá krátkou službu dne, mapu oblastí, stávající tři osobní výpravy
+a společnou práci. Dlouhé tabulky a účetní vysvětlení jsou až v detailu.
+Na hlavní obrazovce jen několik důležitých údajů, ne každá metrika z adminu.
+Následující tabulka je katalog cílových možností, nikoli závazný rozsah první 4A.
+
+| Oblast světa | Užitečný read-only stav | Kde se skutečně pracuje |
+| --- | --- | --- |
+| Recepce a pokoje | Dnešní příjezdy/odjezdy, obsazenost podle kalendáře, nejbližší změna skupiny | Kalendář a detail rezervace, existující správa pokojů |
+| Kuchyně a jídelna | Snídaně/obědy/večeře, chybějící menu a podklady, další plánovaná služba | Plán jídel, menu pobytu, nákup pro kuchyň |
+| Bar a sklep | Evidované zásoby a upozornění, otevřené účty, oddělené inkaso | Barový sklad, účty, platby, statistika |
+| Pokladnice a kancelář | Kronika, známé vyúčtování/úhrady, lokálně dostupná ekonomická upozornění | Fakturace, bankovní přehledy, přijaté doklady, ekonomika |
+| Dílna a zázemí | Vlastní projekty, údržba, připravené a právě realizované investice | Adventure plán; odkazy na dostupnou evidenci a doklady |
+
+První kandidáti z `Dashboard.overview(today)`: příjezdy, odjezdy, kalendářová
+obsazenost, dnešní porce, chybějící údaje a problémy jídelníčků. Zachovat jejich
+význam a explicitně předat pražský den. Aktuální helper má výchozí UTC datum;
+nezakládat odlišné počty ručním součtem jiných tabulek. Další příjezd nemá
+znamenat prokázanou fyzickou přítomnost a připravený jídelníček není uvařené jídlo.
+Úklid či technická připravenost jsou ruční evidence práce, ne odvození z rezervace.
+
+Detail oblasti nabídne stav, související questy/projekty a konkrétní odkaz
+„Otevřít plán jídel“, „Doplnit sklad“ apod. Odkaz otevře původní stránku,
+nikoli kopii formuláře v Adventure. Žádné iframe ani simulovaný klik do adminu.
+Zůstane přímá cesta do celé aplikace; herní mapa nemusí najednou pokrýt každou
+administrativní agendu. Návrat přes navigaci/prohlížeč zachová herní práci
+a profil. Kvůli této etapě nepřidávat tlačítka do sdílených provozních layoutů.
+
+### 12.4 Pozornost a návaznost na questy
+
+Návrh „Služba dne“ shrne pár konkrétních problémů, ne abstraktní skóre zdraví
+chaty. Každý podnět má důvod, zdroj, datum a přechod na řešení. Neúplný nebo
+starý zdroj je zvláštní stav, ne zelená „vše připraveno“. Není-li stav měřený,
+např. čistota pokojů či technický stav kotle, hra ho nesmí sama tvrdit.
+
+Z podnětu lze výslovně připravit quest s odkazem na oblast/podklad. Nic se
+nezakládá za každý render ani automaticky pro každou nezaplacenou fakturu.
+Opakovaný klik nesmí duplikovat stejnou otevřenou práci; klíč podnětu zahrnuje
+typ, referenci a příslušný termín/výskyt. Zmizelý podnět sám nesplní quest,
+nepřidá XP a nesmaže historii. Zdrojový stav a self-report splnění jsou dvě věci.
+Lze pouze ukázat, že podklad se od zadání změnil; quest potvrdí člověk.
+
+### 12.5 Investice jako dlouhodobé projekty
+
+Doporučení: investiční projekt je plánované zlepšení, ne jeden obří quest
+bez konce a ne nový účetní modul. Lze mít více návrhů projektů, ale do tří
+osobních slotů vstupují jen skutečně rozpracované úkoly, ne celý projekt.
+
+Základ projektu: název a problém/přínos, oblast chaty, odpovědný hrdina,
+volitelný plánovaný termín a orientační rozpočet s měnou a základem ceny
+(např. CZK včetně DPH). Rozpočet není povinný pro rychlý nápad. Projekt může
+přesáhnout sezónu; nová sezóna ho nekopíruje a nevynuluje hotové kroky.
+
+Navržené stavy: nápad → připraveno ke schválení → schváleno → realizace →
+převzato do provozu; samostatně pozastaveno/zrušeno. Schválení je vědomé
+rozhodnutí o herním plánu, ne objednávka, rezervace peněz či podpis dodavateli.
+Bez schválené investice dál fungují běžné provozní questy i původní aplikace.
+
+Etapy používají existující questy a jejich atribuci/XP. První verzi stačí
+seznam kroků s jasnými výstupy; obecný graf závislostí a jeho editor až při
+skutečné potřebě. Nezakládat samostatnou kopii úkolovníku pro investice.
+Ukazovat „3 z 5 etap“, ne tvrdit „stavba je ze 60 % hotová“ podle počtu checkboxů.
+
+Příklad **Modernizace koupelny**:
+
+1. Zjistit závadu a určit požadovaný výsledek.
+2. Získat nabídky a schválit rozsah i plánovaný rozpočet.
+3. Domluvit termín mimo hosty; případné změny rezervací udělat v kalendáři.
+4. Nákup/objednávku vyřídit mimo Adventure; dostupnou evidenci a přijaté
+   doklady zpracovat stávajícími funkcemi aplikace.
+5. Realizovat práci a výslovně převzít funkční výsledek.
+
+Dokončené questy samy projekt neuvedou do provozu. Poslední převzetí potvrdí
+hrdina, uchová se datum, skuteční přispěvatelé a volitelné reference/popis
+výsledku. Faktura nedokazuje montáž, zaplacení ani bezpečnostní revizi. Jde
+stále o přiznanou self-report evidenci; příloha není automatické ověření.
+
+Návrh odměn: XP jen za skutečné jednotlivé questy podle dnešních pravidel.
+Převzetí projektu přidá trvalý milník/vizuální změnu chaty, ne druhé XP za
+tutéž práci. Investice nedává více XP jen kvůli vyšší ceně. Změna tohoto
+návrhu odměňování vyžaduje rozhodnutí před implementací a ochranu proti opakování.
+Zrušení, přejmenování či znovuotevření nesmí vyrábět další odměny; opravy
+zachovají původní záznam a dohledatelnou následnou událost.
+
+### 12.6 Rozpočty a doklady bez druhého účetnictví
+
+Oddělit **plánovaný odhad**, **rozsah skutečně doložených nákladů**, **úhrady**
+a **herní dokončení**. Přijatá faktura je evidence dokladu, ne důkaz zaplacení.
+První projektová verze může mít pouze plán a odkazy na existující podklady,
+bez automatického součtu „skutečně utraceno“. Chybějící doklady nejsou nula.
+
+Pokud se později budou náklady sčítat, nejprve vyřešit explicitní přiřazení
+částky/řádku k projektu, rozdělení jednoho dokladu mezi projekty, měnu, DPH,
+dobropisy a dvojí započtení kopií dokladu z různých zdrojů. Samotná vazba
+na celou fakturu není alokace. Účetní opravy a platby se dál pořizují původním
+workflow; Adventure je jen promítne podle zdroje a jeho úplnosti.
+Smazaný nebo nedostupný provozní podklad se označí jako nedostupný; nesmí
+kaskádově odstranit projekt, převzetí ani jeho historii.
+
+Ekonomický přehled je za firmu, ne nutně jen chatu. Účetní zisk, stav 211/221,
+inkaso sezóny a skladové ocenění nejsou „volné peníze na investice“.
+Volitelný ručně schválený investiční limit je plán, ne bankovní zůstatek.
+Hra při schválení nebo dokončení projektu nic finančně neodečítá.
+
+U baru zachovat nynější **Inkaso baru bez servisu** podle `payment_date`.
+Statistika prodeje počítá účty podle `inserted_at`, podle stavových/servisních
+filtrů; produktový detail sčítá položky. Datum založení účtu není datum každé
+konzumace. Nový pohled na prodej/spotřebu může být samostatný, až bude schválená
+definice období, slev, spropitného a přesahujících účtů. Tato revize nepřejmenovává
+inkaso na útratu, nesjednocuje výpočty a nepřepisuje staré snapshoty.
+
+### 12.7 Viditelný rozvoj a další vlastní nápady
+
+- **Kniha stavebních plánů:** vlastní nápady i nepovinné vzory (koupelna,
+  úspornější osvětlení, zázemí baru, vybavení kuchyně, sušárna). Vzor připraví
+  návrh projektu, nic neobjedná. Stejnou roli má i neinvestiční zlepšení procesu.
+- **Rostoucí chata:** návrh je vidět jako plán, realizace jako rozestavěná část,
+  převzaté zlepšení jako nový prvek scény a zápis do kroniky. Nepřekreslovat
+  existující skutečnou chatu jako prázdný pozemek ani uživatele nutit znovu
+  „postavit“ dnešní vybavení. Výchozí stav se zavede bez zpětných XP.
+- **Více směrů rozvoje:** pohodlí hostů, snazší obsluha, technické zázemí,
+  bezpečnost a úspory. Jsou to tematické větve skutečných projektů, ne smyšlená
+  procenta komfortu či bezpečnosti. „Nevíme“ a „nebylo kontrolováno“ mají vlastní stav.
+- **Stavební okno mezi pobyty:** read-only zobrazení možného termínu podle
+  kalendáře jako pomůcka pro plánování, ne rezervace termínu či závazek řemeslníka.
+  Nepřítomnost rezervací není automaticky bezpečné potvrzení dostupnosti.
+- **Předsezónní výprava:** dobrovolně vybraný seznam skutečné přípravy chaty,
+  propojený s existujícími questy. Žádné druhé odměny za stejné kroky ani
+  automatické kopie při každém otevření sezóny.
+- **Péče o dokončené zlepšení:** po převzetí nabídnout člověku založení/aktivaci
+  údržbové šablony. Bez souhlasu nevytvářet novou periodickou práci ani falešný
+  technický servisní interval. Využít dnešní pravidlo jednoho otevřeného výskytu.
+- **Před a po:** projekt uchová záměr a výsledek; fotografie lze řešit později.
+  Očekávaná úspora je hypotéza, ne realizovaný zisk. Pokud jsou později dostupné
+  srovnatelné podklady, lze přínos vyhodnotit, nikoli mu připsat každou změnu tržeb.
+
+Případné herní odemknutí nabídne další doporučené plány či vzhled, nikdy
+nepovolí provozní funkci, kterou už dnes aplikace umí. Převzetí nového pokoje
+nezmění `Bookings.cottage_capacity/0`, pokoje, ceník ani kapacitu staré sezóny.
+Herní vývoj přesahuje sezóny, sezónní historie zůstává verzovaná a neměnná.
+
+### 12.8 Zdrojové hranice, výkon a bezpečnost
+
+Ověřeno čtením kódu, bez nových dotazů na provozní data:
+
+- Přehled používá `Dashboard.overview/1` / `timeline/2`, místní výpočty porcí
+  a menu. Zdroj umí více oblastí najednou; nepouštět celý přehled pro každý
+  objekt mapy. Kalendářová kapacita a realizace sezóny nejsou stejná metrika.
+- Kuchyň má menu, nákupní výpočet, ruční mrazák a uložené nákladové reporty.
+  Mrazák se sám neodečítá a kalkulované náklady nejsou veškeré skutečné náklady.
+- Sklady mají zdroj evidovaných množství/limitů, ale části
+  `Inventory.list_bar_stock_products/0` a `get_stock_overview/0` dělají dotazy
+  po produktu. To je konkrétní N+1 riziko, ne vhodný přímý loader mapy.
+- Přijaté doklady nejsou hotový registr investic; v ověřených agendách nebyl
+  nalezen samostatný projektový/majetkový modul. Projektový stav patří do Adventure.
+- Ekonomiku číst jen z lokálních uložených dat, respektovat vypnutý modul,
+  datum zdroje a neúplnost. Žádný import ABRY, extrakce dokladů, vytvoření účtu
+  přes `get_or_create_*`, zajišťování kalkulace či jiný write helper při renderu.
+
+Pro 4A navrhnout jeden sdílený přehled za omezené datumové okno a dávkové
+čtení po zdrojích, detaily až pro vybranou oblast. Stejnou agregaci sdílet
+mezi mapou, hlášením dne a detailem. Žádné dotazy po pokoji, produktu,
+projektu či jednotlivém dni. Před integrací nových zdrojů, včetně opětovného
+použití existujících API, předložit konkrétní query rozpočet a schválit
+efektivní dávkové řešení podle AGENTS.md. Přímé volání známých N+1 loaderů
+není schválenou alternativou. Dřívější souhlas
+pro pobyty a finanční 3B nepokrývá libovolné nové skladové či provozní čtení.
+N+1 v původním modulu neopravovat změnou mimo Adventure v rámci tohoto zadání.
+
+Dnešní provoz je čerstvý read-only přehled s datem načtení, sezónní kronika
+zůstává explicitně přepočítávaným historickým snapshotem. Nepřepočítávat
+celou sezónu na každém renderu mapy. Interval a rozsah případné provozní obnovy
+navrhnout podle query rozpočtu; navrácení z původní stránky umožní ruční obnovu.
+Starší údaj nesmí vypadat jako právě ověřený stav. Žádné hostovské osobní údaje
+ani kopie dokladů v herních snapshotech, jen nutné agregace a stabilní reference.
+
+Projekty, etapy, vazby na questy a vizuální události jsou vlastní Adventure data.
+Použít stávající ochranu admin PINem a self-report profil, audit, transakce,
+unikátní klíče a soft-delete; zachovat UUID, historické questy a XP ledger.
+Projekt přispěvatele nepředstírá jako ověřené osobní přihlášení. Vypnutý Adventure
+modul nesmí spouštět nové provozní dotazy ani herní joby. Nové rutinní importy,
+cron rozesílky a změny globálního layoutu nejsou součástí tohoto návrhu.
+
+### 12.9 Doporučené dodávky a akceptace
+
+**4A – živý tábor, první kandidát pro další implementaci:** jedna společná
+scéna oblastí, denní provoz z Přehledu, několik položek pozornosti, detail
+oblasti a odkazy na původní formuláře. Zachovat tři osobní sloty, společnou
+práci, kroniku a zapamatovaného hrdinu. Bez nového investičního účetnictví,
+automatického generování questů z výstrah a bez změny významu barových částek.
+Nejmenší doporučený rozsah čerstvých dat: Recepce a Kuchyně ze společného
+provozního zdroje; Bar/Pokladnice dál z dosavadní kroniky a odkazů, Dílna zatím
+bez předstírání existujícího projektového modulu. Nové skladové a ekonomické
+agregace i připravení questu z podnětu lze dodat zvlášť po ověření tohoto základu.
+
+**4B – první investiční projekt:** vlastní plán a etapy propojené s questy,
+volitelný odhad a reference na podklady, přehled postupu a výslovné převzetí.
+Začít jedním reálným projektem, nepředělávat celou aplikaci na projektový systém.
+Pokročilé závislosti, alokace dokladů a součet skutečných nákladů nejsou podmínkou.
+
+**4C – rozvoj světa:** viditelné změny z dokončených projektů, kronika chaty,
+tematické větve plánů a případně údržbové šablony po výslovném schválení.
+Vzhled a odměny řešit tak, aby se skutečná práce nezapočetla dvakrát.
+Porovnávání sezón z původní 3C lze dál dodat samostatně, neplést oba názvy etap.
+
+Akceptace pro nové dodávky:
+
+- Vybrané denní počty odpovídají zdroji ze současného Přehledu pro shodný
+  pražský den, stav a interval. Neúplné porce ani staré údaje nejsou tiché nuly.
+- Z oblasti mapy je vidět skutečný stav a cesta k řešení, nikoli jen dekorace.
+  Stejné informace jsou dostupné klávesnicí a na mobilu bez hoveru.
+- Změna menu/skladu/rezervace/platby proběhne pouze v původním workflow;
+  živé provozní údaje se promítnou obnovou přehledu bez nového provozního zápisu.
+  Finanční metriky kroniky se změní až výslovným přepočtem; u uzavřené sezóny
+  vznikne nová verze s důvodem. Návrat ze stránky plateb sám kroniku nepřepočte.
+- Opakované připravení questu z téhož podnětu neduplikuje otevřenou práci.
+  Vyřešený podklad sám neudělí XP. Převzetí projektu odliší kroky od výsledku.
+- Jeden projekt může přejít přes sezónu a více hrdinů bez kopie historie,
+  podruhé přidělených XP či násobení milníků po opakovaném kliknutí.
+- Doklad bez úhrady zůstane dokladem, ne zaplacenou investicí. Bez alokace
+  nevznikne domnělý součet nákladů ani dostupná investiční hotovost.
+- Zlepšení mění pouze Adventure svět; počet lůžek, účetní čísla, sklad a staré
+  snapshoty zůstanou stejné. Ruční tvrzení a zdrojově doložený fakt jsou odlišené.
+- Query test porovná málo i mnoho oblastí/projektů/produktů: žádné N+1.
+  Ověřit pouze Adventure doménové zápisy, žádné HTTP/hooky a blokaci modulem.
+- Ověřit původní role Tábora/Questů, admin PIN, obnovu profilu, 390/320 px
+  a přístupnost. Testy a CI podle AGENTS.md; plán sám nové testy nenahrazuje.
+
+## 13. Předání do dalšího vlákna
+
+Přečíst tento plán (hlavně oddíl 12), `docs/features/ADVENTURE.md` a aktuální
+`AGENTS.md`. Ověřit čerstvý main; 3A/3B a preference hrdiny jsou již implementované,
+nezačínat je znovu. Staré formulace „rekonstrukce později“ nezaměňovat za zákaz
+projektů podle nového směru. Současné zadání je plánovací, nespouští etapu 4A.
+
+Před implementací krátce potvrdit:
+
+1. Hlavní plocha: mapa/ilustrace s viditelným rozvojem, nebo přechodně oblastní karty?
+2. První rozsah: které konkrétní informace Přehledu mají přednost v 4A?
+3. Investice: projekt s etapami podle návrhu, nebo zatím označený investiční quest;
+   který první skutečný projekt a jaká kritéria převzetí?
+4. Odměny a peníze: souhlas s XP jen za kroky, vizuálním milníkem bez dalších XP
+   a rozpočtem pouze jako plánem; bez automatického účtování či bonusů příjmů?
+5. Technický rozsah: konkrétní dávkové zdroje/query rozpočet a souhlas s novým
+   čtením. Pouze Adventure změny; provozní moduly, globální CSS/layouty a router
+   zůstávají ke čtení, nutnou výjimku nejprve předložit, ne tiše provést.
+
+Příští vývoj má začít malou samostatnou dodávkou podle odsouhlaseného rozsahu,
+ne současně mapou, kompletním projekťákem, novým přihlášením a účetnictvím.
+Neprovozovat klasické zápisy prostřednictvím herních akcí a nezaměňovat
+inkaso baru za statistiku prodeje. Stav cizích rozpracovaných souborů ověřit
+a zachovat; `rel/env.sh.eex` a `generated_images/` nejsou součástí této revize.
