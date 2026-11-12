@@ -116,3 +116,18 @@ rollback databáze. Pokračování 5B/5C se řeší samostatně po ověření to
 - Neověřeno browserem: všechny varianty neúplných/chybujících zdrojů,
   blokování obou úložišť, skutečný čtečkový průchod a 200% zvětšení textu.
   Pro tyto stavy zůstávají zachované regrese a manuální akceptace.
+
+### Oprava po hlášeném CI (12. 11. 2026)
+
+Sedm hlášených pádů mělo dvě příčiny: inline nabídka se vykreslovala také ve
+skrytém pohledu Výpravy současně s modalem, takže měla duplicitní ID; starší
+profilové aserce hledaly jméno a úroveň v původním XP panelu. Inline nabídka nyní
+vzniká pouze při `view=expeditions`, zatímco ostatní pohledy používají modal.
+Profilové testy kontrolují jméno a úroveň u avatara a XP odděleně.
+
+Přidána regrese pro otevření, zavření a přepínání obou umístění nabídky. Lokálně
+spuštěny soubory `test/cozy_checkout_web/adventure/index_test.exs` a
+`test/cozy_checkout_web/adventure/projects_test.exs`: **47 testů prošlo**.
+Tento cílený běh nahrazuje předchozí omezení lokálního ověření pro tyto dva
+soubory; ostatní testovací sady zůstávají na CI. Bez nových dotazů, migrace,
+konfigurace nebo změny herních pravidel.

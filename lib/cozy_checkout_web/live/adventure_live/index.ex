@@ -1505,7 +1505,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
               />
             </div>
             <.quest_picker
-              :if={@finding && @data.profile}
+              :if={@finding && @data.profile && @game_view == "expeditions"}
               quests={visible_offers(@camp_quests, @data.profile.id, @picker_filter, @picker_search)}
               profiles={@data.profiles}
               profile={@data.profile}

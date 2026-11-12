@@ -621,7 +621,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     view |> element("#adventure-initialize") |> render_click()
     profile = Repo.get_by!(Profile, slug: "michal")
     view |> form("#adventure-profile", profile: %{id: profile.id}) |> render_change()
-    assert has_element?(view, "#adventure-progress", "Michal · úroveň 1")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Úroveň 1")
 
     {:ok, quest} =
       Tasks.create(profile.id, %{"title" => "Zavést jedno provozní zlepšení", "xp" => 250})
@@ -651,7 +652,8 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     p = Repo.get_by!(Profile, slug: "michal")
     {:ok, view, _} = live(conn, "/admin/adventure")
     render_click(view, "restore-profile", %{"id" => p.id})
-    assert has_element?(view, "#adventure-progress", "Michal · úroveň 1")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Úroveň 1")
     profile_id = p.id
 
     assert_push_event(view, "adventure:hero-selected", %{
@@ -680,11 +682,13 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
 
     render_click(view, "profile-storage-status", %{"persistent" => false})
     assert has_element?(view, "#adventure-profile-storage-warning", "Prohlížeč blokuje")
-    assert has_element?(view, "#adventure-progress", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-progress", "0 XP")
 
     render_click(view, "profile-storage-status", %{"persistent" => true})
     refute has_element?(view, "#adventure-profile-storage-warning")
-    assert has_element?(view, "#adventure-progress", "Michal")
+    assert has_element?(view, "#adventure-hero-switcher summary", "Michal")
+    assert has_element?(view, "#adventure-progress", "0 XP")
     assert Repo.aggregate(XpTransaction, :count) == 0
   end
 
@@ -1276,5 +1280,28 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert developed =~ "adventure-symbol--trophy"
     assert developed =~ "3 převzatých zlepšení"
     refute developed =~ "8 převzatých zlepšení"
+  end
+
+  test "quest offers render once as a camp modal or inline in expeditions", %{conn: conn} do
+    {:ok, _} = Adventure.initialize()
+    profile = Repo.get_by!(Profile, slug: "michal")
+    {:ok, quest} = Tasks.create(profile.id, %{"title" => "Jedna nabídka"})
+    {:ok, view, _} = live(conn, "/admin/adventure")
+    render_click(view, "restore-profile", %{"id" => profile.id})
+    render_click(view, "find-quests")
+    assert has_element?(view, "#adventure-picker-modal #pick-quest-#{quest.id}")
+    refute has_element?(view, "#adventure-expeditions-view #adventure-quest-picker")
+
+    render_click(view, "close-picker")
+    refute has_element?(view, "#adventure-quest-picker")
+    render_patch(view, "/admin/adventure?view=expeditions")
+    render_click(view, "find-quests")
+    assert has_element?(view, "#adventure-expeditions-view #pick-quest-#{quest.id}")
+    refute has_element?(view, "#adventure-picker-modal")
+    render_patch(view, "/admin/adventure?view=world")
+    refute has_element?(view, "#adventure-quest-picker")
+    render_click(view, "find-quests")
+    assert has_element?(view, "#adventure-picker-modal #pick-quest-#{quest.id}")
+    refute has_element?(view, "#adventure-expeditions-view #adventure-quest-picker")
   end
 end
