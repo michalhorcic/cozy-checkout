@@ -55,9 +55,17 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       assert initial > 0
       assert initial <= 15
 
-      for area <- ["rooms", "kitchen", "bar", "treasury", "workshop", "reception"] do
+      areas = ["rooms", "kitchen", "bar", "treasury", "workshop", "reception"]
+      assert has_element?(view, "#adventure-area-reception[aria-pressed=true]")
+      assert has_element?(view, "#adventure-area-rooms[aria-pressed=false]")
+
+      for area <- areas do
         view |> element("#adventure-area-#{area}") |> render_click()
         assert has_element?(view, "#adventure-area-#{area}[aria-pressed=true]")
+
+        for other <- areas -- [area] do
+          assert has_element?(view, "#adventure-area-#{other}[aria-pressed=false]")
+        end
       end
 
       assert render(view) =~ "Kalendář, ne hlášení přítomnosti"
@@ -146,7 +154,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: nil,
         checked_at: checked_at,
         state: :loading,
-        area: "kitchen"
+        area: "kitchen",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert loading =~ "Načítám společný provozní přehled"
@@ -157,7 +169,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: nil,
         checked_at: checked_at,
         state: :error,
-        area: "reception"
+        area: "reception",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert failed =~ "Provoz se nepodařilo načíst"
@@ -170,7 +186,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: snapshot,
         checked_at: checked_at,
         state: :ready,
-        area: "kitchen"
+        area: "kitchen",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert stale =~ "Starší údaje, obnov přehled"
@@ -180,7 +200,11 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
         snapshot: snapshot,
         checked_at: checked_at,
         state: :error,
-        area: "reception"
+        area: "reception",
+        world: %{counts: [], projects: []},
+        chronicle: nil,
+        chronicle_page: 0,
+        profiles: []
       )
 
     assert retained =~ "Poslední dostupné údaje níže nejsou čerstvé"

@@ -69,7 +69,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             type="button"
             phx-click="operation-area"
             phx-value-area={key}
-            aria-pressed={@area == key}
+            aria-pressed={to_string(@area == key)}
             aria-controls="adventure-area-detail"
             class={[
               "adventure-village-place",

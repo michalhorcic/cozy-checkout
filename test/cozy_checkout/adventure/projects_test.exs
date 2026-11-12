@@ -466,17 +466,13 @@ defmodule CozyCheckout.Adventure.ProjectsTest do
           "UPDATE adventure_project_events SET action = 'rewrite' WHERE project_id = $1",
           "DELETE FROM adventure_project_events WHERE project_id = $1"
         ] do
-      Repo.query!("SAVEPOINT project_audit_check")
-
+      # Let Sandbox manage query savepoints; its release also removes nested SQL savepoints.
       assert_raise Postgrex.Error, ~r/Adventure project history is immutable/, fn ->
-        Repo.query!(statement, [Ecto.UUID.dump!(p.id)])
+        Repo.query!(statement, [Ecto.UUID.dump!(p.id)], mode: :savepoint)
       end
 
-      Repo.query!("ROLLBACK TO SAVEPOINT project_audit_check")
-      Repo.query!("RELEASE SAVEPOINT project_audit_check")
+      assert [%{action: "created"}] = Projects.history(p.id)
     end
-
-    assert [%{action: "created"}] = Projects.history(p.id)
   end
 
   test "disabled module blocks new queries and writes", %{actor: actor} do

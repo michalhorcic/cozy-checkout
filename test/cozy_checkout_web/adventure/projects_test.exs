@@ -438,6 +438,16 @@ defmodule CozyCheckoutWeb.AdventureProjectsLiveTest do
     assert has_element?(view, "#template-#{t.id}", "Archivováno")
     refute has_element?(view, "#template-#{t.id} button[phx-click=resume-template]")
 
+    {_, current_queries} =
+      CozyCheckout.QueryRecorder.record(
+        fn -> render_click(view, "template-view", %{"view" => "current"}) end,
+        view.pid
+      )
+
+    assert length(current_queries) == 2
+    assert Enum.all?(current_queries, &String.starts_with?(&1, "SELECT"))
+    refute has_element?(view, "#template-#{t.id}")
+
     {_, history_queries} =
       CozyCheckout.QueryRecorder.record(
         fn -> render_click(view, "template-history") end,

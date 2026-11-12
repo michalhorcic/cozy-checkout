@@ -875,7 +875,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   end
 
   defp new_template(socket) do
-    draft = %TaskTemplate{starts_on: CozyCheckout.Adventure.Sources.Stays.today()}
+    draft = %TaskTemplate{starts_on: CozyCheckout.Adventure.Sources.Operation.today()}
 
     assign(socket,
       editing_template_id: nil,
