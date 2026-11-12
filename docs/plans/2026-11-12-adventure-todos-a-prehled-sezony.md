@@ -1282,3 +1282,19 @@ CI ověřuje uživatel, nebylo sledováno. Modul nové migrace prošel samostatn
 kompilací bez startu aplikace; migrace nebyla lokálně aplikována.
 Ověření předchozí projektové migrace i browserový checklist zůstávají otevřené.
 Žádná nová konfigurace. Změny jsou připravené v pracovní větvi bez commitu/pushe.
+
+## 19. Schválená omezená 5C – sklad baru
+
+Uživatel v této navazující práci výslovně schválil rozsah skladu podle 17.7
+včetně jednoho agregovaného SELECTu na načtení a ruční obnovu, nezávislého na
+počtu produktů. Otevřené účty a příprava questů nejsou součástí dodávky.
+Implementace vychází z `origin/main` `1d6d438` na větvi
+`feat/adventure-5c-live-bar`.
+
+Samostatný `Adventure.Sources.BarStock` a `BarStockComponent` oddělují čtení,
+stav a události od Služby dne. Zapojení je ve `world_components.ex`, bez změn
+`index.ex`, questů, provozních modulů, routeru, konfigurace nebo migrací.
+Dotaz rozlišuje chybějící pohyby od evidované nuly a nulový limit od kladného.
+Ruční obnova nepřepočítává finanční kroniku. Minutová kontrola stáří nemá SQL.
+Detaily definic jsou v dokumentaci funkce. Kontextové a LiveView regrese jsou
+připravené pro CI; lokálně se testy podle AGENTS.md nespouštějí.

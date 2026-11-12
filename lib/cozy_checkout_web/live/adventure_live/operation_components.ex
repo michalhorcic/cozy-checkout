@@ -232,7 +232,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         >Přejít na kroniku sezóny a datum přepočtu</a>
         <.link :if={@area == "bar"} href={~p"/admin/bar-stock"} class="adventure-text-link">Otevřít sklad baru</.link>
         <.link :if={@area == "treasury"} href={~p"/admin/billing"} class="adventure-text-link">Otevřít doklady a platby</.link>
-        <p>Mapa zde neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
+        <p>Tato finanční kronika neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
       </div>
       <div :if={@area == "workshop"}>
         <h3>Dílna projektů</h3>
@@ -742,7 +742,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
     do:
       "#{data.portions["breakfast"].total} · #{data.portions["lunch"].total} · #{data.portions["dinner"].total} porcí S/O/V"
 
-  defp summary("bar", _), do: "Sezónní kronika · ne živě"
+  defp summary("bar", _), do: "Sklad baru · otevřít detail"
   defp summary("treasury", _), do: "Sezónní kronika · ne živě"
   defp summary("workshop", _), do: "Projekty celé chaty"
 end

@@ -843,3 +843,26 @@ repozitářovou sadu a výsledky CI dále ověřuje uživatel.
 Ověření herního rozdělení: lokálně prošlo 76 testů Adventure včetně LiveView,
 cesty kniha → tábor → výběr → dokončení, osobních/společných slotů, mapy,
 vyřazení pevných nabídek a oddělení opakovaných výskytů od editace zadání.
+
+### Živý sklad baru (5C)
+
+Detail Baru má samostatný read-only přehled evidence skladu. Na připojení hry
+načte jedním agregovaným SELECTem nesmazané sledované produkty a součet jejich
+barových pohybů. Další čtení spouští pouze **Obnovit sklad baru**. Přepínání oblastí,
+obnova provozu ani minutová kontrola stáří sklad znovu nenačítají. Sezónní kronika
+se touto akcí nepřepočítává.
+
+Přehled počítá sledované produkty, evidované stavy ≤ 0, kladné stavy na kladném
+limitu nebo pod ním, produkty bez pohybů a produkty bez kladného limitu.
+Seznam upozornění zahrnuje i chybějící evidenci a nenastavené limity. Produkt bez
+pohybů nemá domnělou nulovou zásobu. Nulový limit nezaručuje dostatečnou zásobu.
+Objemové jednotky ml/L/cl používají stejné uložení jako existující sklad
+(součet v ml, zobrazení v L); ostatní množství zůstávají v produktové jednotce,
+při chybějící jednotce v pcs podle původního skladu. Limity už jsou v zobrazované
+jednotce. Množství ani jednotky se mezi produkty nesčítají.
+
+Čas načtení je v UTC. Od 15 minut se zobrazí zastarání, kontrolované každou minutu
+bez SQL. Při chybě zůstane poslední úspěšný přehled s upozorněním; bez něj je stav
+neznámý. Jde o evidenci, nikoli fyzickou inventuru. Panel nepíše do skladu,
+neotevírá účty, nevytváří questy ani XP. Odkaz vede do původního admin skladu
+se zachovanou PIN autentizací.

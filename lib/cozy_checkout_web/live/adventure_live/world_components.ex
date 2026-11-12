@@ -162,6 +162,12 @@ defmodule CozyCheckoutWeb.AdventureLive.WorldComponents do
             <.quest_focus quest={@focus} profile={@data.profile} />
           </div>
           <div hidden={@world_panel != "area"}>
+            <div hidden={@operation_area != "bar"}>
+              <.live_component
+                module={CozyCheckoutWeb.AdventureLive.BarStockComponent}
+                id="adventure-bar-stock"
+              />
+            </div>
             <Operation.area_detail
               area={@operation_area}
               snapshot={@operation}
