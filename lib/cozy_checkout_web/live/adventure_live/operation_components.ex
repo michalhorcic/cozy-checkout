@@ -340,7 +340,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         {Enum.find_value(@places, fn {key, label, _} -> key == @area && label end)}
       </p>
       <div :if={@area in ["reception", "rooms"]}>
-        <h3>Kalendář, ne hlášení přítomnosti</h3>
+        <h3>Dnes na chatě</h3>
         <dl :if={@snapshot} class="adventure-operation-counts">
           <div>
             <dt>Příjezdy skupin dnes</dt><dd>{@snapshot.arrivals}</dd>
@@ -352,9 +352,6 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             <dt>Osob podle kalendáře</dt><dd>{@snapshot.occupancy} / {@snapshot.capacity}</dd>
           </div>
         </dl>
-        <p>
-          Obsazenost zahrnuje příjezd, ne odjezd. Neověřuje přítomnost hostů ani připravenost pokojů.
-        </p>
         <.link href={~p"/admin/bookings/calendar"} class="adventure-text-link">Otevřít kalendář rezervací</.link>
       </div>
       <div :if={@area == "kitchen"}>
@@ -371,7 +368,6 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
         <p :if={@snapshot && @snapshot.incomplete > 0} class="adventure-operation-warning">
           Neúplné podklady pro {@snapshot.incomplete} skupin dnes. Počty jsou pouze známé porce, nikoli celková potřeba.
         </p>
-        <p>Plánované porce nejsou uvařené jídlo.</p>
         <.link href={~p"/admin/meal-planner"} class="adventure-text-link">Otevřít plán jídel</.link>
       </div>
       <.link
@@ -384,15 +380,11 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           game={@game}
           selected_id={@selected_campaign_id}
         />
-        <p>
-          Sezónní inkaso a vyúčtování jsou uložené snapshoty, nikoli živý stav. Obnova provozu je nepřepočítává. Inkaso není zisk ani hodnota prodeje.
-        </p>
         <.link
           patch={~p"/admin/adventure?view=chronicle&tab=seasons"}
           class="adventure-text-link"
         >Přejít na kroniku sezóny a datum přepočtu</.link>
         <.link :if={@area == "treasury"} href={~p"/admin/billing"} class="adventure-text-link">Otevřít doklady a platby</.link>
-        <p>Tato finanční kronika neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
       </div>
       <div :if={@area == "workshop"}>
         <h3>Dílna projektů</h3>

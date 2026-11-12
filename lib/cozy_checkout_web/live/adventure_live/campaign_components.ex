@@ -23,14 +23,14 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
       <h3>Inkaso za sezónu</h3>
       <p :if={!@campaign}>Zatím není vybraná žádná sezóna. Založ ji v nastavení Adventure.</p>
       <p :if={@campaign}>
-        <strong>{@campaign.name}</strong> · {@campaign.starts_on} – {@campaign.ends_on}
+        <strong>{@campaign.name}</strong> · {period(@campaign)}
       </p>
       <p :if={@campaign && !@snapshot}>
         Zatím nepřepočítáno. Částky budou dostupné po přepočtu sezóny.
       </p>
       <div :if={@snapshot}>
         <p class="adventure-muted">
-          Přepočteno: {@snapshot["as_of"]} · uložený stav, bez automatické obnovy.
+          Přepočteno: {checked_at(@snapshot["as_of"])}
         </p>
         <div class="adventure-metrics">
           <.chronicle_card
@@ -40,6 +40,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
             label="Inkaso ubytování po vratkách"
             symbol="coins"
             kind="money"
+            compact
             note="Platby minus refundace v období"
           />
           <.chronicle_card
@@ -49,10 +50,22 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
             label="Inkaso baru bez servisu"
             symbol="coins"
             kind="money"
+            compact
             note="Evidované platby mohou zahrnovat spropitné"
           />
         </div>
       </div>
+      <details id="adventure-treasury-help" class="adventure-audit-details">
+        <summary>Jak číst čísla</summary>
+        <p>Ubytování: platby minus refundace v období sezóny.</p>
+        <p>Bar: evidované platby bez servisních účtů; mohou zahrnovat spropitné.</p>
+        <p>
+          Sezónní inkaso a vyúčtování jsou uložené snapshoty, nikoli živý stav.
+          Obnova provozu je nepřepočítává. Inkaso není zisk ani hodnota prodeje.
+        </p>
+        <p>Tato finanční kronika neověřuje zásoby, otevřené účty ani dostupné peníze.</p>
+        <p>Dílčí podklady znamenají, že část údajů chybí. Nedostupné údaje nejsou nula.</p>
+      </details>
     </section>
     """
   end
@@ -638,6 +651,7 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
   attr :symbol, :string, required: true
   attr :note, :string, required: true
   attr :kind, :string, default: "number"
+  attr :compact, :boolean, default: false
 
   defp chronicle_card(assigns) do
     source = get_in(assigns.snapshot, ["sources", assigns.source]) || %{}
@@ -667,11 +681,11 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
             do: "Nedostupné",
             else: CurrencyHelper.format_number(@value, precision: 0)
       end}</strong>
-      <small>{@note}</small>
-      <small>{case @quality do
+      <small :if={!@compact}>{@note}</small>
+      <small :if={!@compact || @quality != "complete"}>{case @quality do
         "complete" -> "Podklady úplné v rámci evidence"
         "unavailable" -> "Nedostupné podklady"
-        _ -> "Dílčí podklady"
+        _ -> if @compact, do: "Dílčí", else: "Dílčí podklady"
       end}</small>
     </div>
     """
@@ -745,12 +759,12 @@ defmodule CozyCheckoutWeb.AdventureLive.CampaignComponents do
 
   defp period(campaign),
     do:
-      Calendar.strftime(campaign.starts_on, "%d. %m.") <>
+      Calendar.strftime(campaign.starts_on, "%d. %m. %Y") <>
         " — " <> Calendar.strftime(campaign.ends_on, "%d. %m. %Y")
 
   defp checked_at(value) do
     case DateTime.from_iso8601(value) do
-      {:ok, at, _} -> Calendar.strftime(at, "%d. %m. · %H:%M UTC")
+      {:ok, at, _} -> Calendar.strftime(at, "%d. %m. %Y · %H:%M UTC")
       _ -> value
     end
   end
