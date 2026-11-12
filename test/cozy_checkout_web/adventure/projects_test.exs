@@ -138,13 +138,14 @@ defmodule CozyCheckoutWeb.AdventureProjectsLiveTest do
     refute has_element?(camp, "#adventure-area-workshop .adventure-world-milestone")
     refute has_element?(camp, "#adventure-area-workshop .adventure-world-plans")
     render_click(camp, "operation-area", %{"area" => "rooms"})
+    projects_path = ~p"/admin/adventure/quests?#{%{section: "projects", project_area: "rooms"}}"
 
     assert has_element?(
              camp,
-             "#adventure-area-detail a[href='/admin/adventure/quests?project_area=rooms&section=projects']"
+             "#adventure-area-detail a[href='#{projects_path}']"
            )
 
-    {:ok, book, _} = live(conn, "/admin/adventure/quests?section=projects&project_area=rooms")
+    {:ok, book, _} = live(conn, projects_path)
     render_click(book, "restore-profile", %{"id" => actor.id})
     assert has_element?(book, "#project-#{project.id}", "Celá chata")
     render_click(book, "new-project")
