@@ -291,12 +291,14 @@ Ze stávajícího podnětu Služby dne lze výslovně **Připravit quest**. Náv
 poslední načtenou provozní projekci, nikoli nové ověření pobytu. Obsahuje
 upravitelný název, volitelné přiřazení a velikost; další nastavení jsou sbalená.
 Výchozí je malý osobní nepřiřazený quest kategorie Kuchyně za 50 XP, bez termínu.
-**Vytvořit čekající quest** práci nezahájí, neobsadí osobní slot a neudělí XP.
+**Vytvořit quest** práci nezahájí, neobsadí osobní slot a neudělí XP.
 Zavření návrhu nic nezapisuje. Přijetí a splnění používají dosavadní tábor.
 
-Podnět má původní odkaz do aplikace, české datum příjezdu jako kontext a čas
-načtení zdroje; příjezd není termín práce. Zachovává se upozornění na starší
-nebo chybující zdroj. Obnova zdroje questy nikdy nesplní ani nezruší. Zmizelý
+Kartička questu ukazuje název, stav, XP a přiřazení, případně skutečný termín.
+Odkaz na pobyt má krátké datum příjezdu; u data z jiného roku zůstává i rok.
+Stav podkladu je jediný krátký řádek, bez timestampů, opakovaného důvodu a
+rozbalování původu. Dobový kontext v datech zůstává zachovaný. Upozornění na starší
+nebo chybující zdroj zůstává stručné. Příjezd není termín práce. Obnova zdroje questy nikdy nesplní ani nezruší. Zmizelý
 podnět není důkaz vyřešení a existující quest zůstává v běžné evidenci práce.
 
 Identita je namespace `operation_v1`, UUID pobytu a typ `details` nebo `menu`.
