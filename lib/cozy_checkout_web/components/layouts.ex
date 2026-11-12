@@ -168,7 +168,6 @@ defmodule CozyCheckoutWeb.Layouts do
       >
         <.icon name="hero-arrow-left" class="h-4 w-4" />Zpět do administrace
       </.link>
-      <.admin_controls theme_id={@id <> "-design"} />
     </nav>
     """
   end
@@ -380,24 +379,22 @@ defmodule CozyCheckoutWeb.Layouts do
     """
   end
 
-  attr :theme_id, :string, default: "admin-design-switcher"
-
   def admin_controls(assigns) do
     ~H"""
-    <div class="flex flex-wrap items-center gap-2 print:hidden">
-      <.theme_toggle id={@theme_id} />
+    <div class="admin-controls flex flex-wrap items-center gap-2 print:hidden">
+      <.theme_toggle id="admin-design-switcher" />
       <.link
         navigate={~p"/pos"}
         class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
       >
-        <.icon name="hero-arrow-top-right-on-square" class="h-4 w-4" />Pokladna
+        <.icon name="hero-arrow-top-right-on-square" class="h-4 w-4" /><span class="admin-control-label">Pokladna</span>
       </.link>
       <form action={~p"/admin/logout"} method="post">
         <input type="hidden" name="_csrf_token" value={Phoenix.Controller.get_csrf_token()} />
         <button
           type="submit"
           class="inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm text-primary-400 hover:bg-secondary-50 focus-visible:outline-2 focus-visible:outline-tertiary-500"
-        ><.icon name="hero-lock-closed" class="h-4 w-4" />Zamknout</button>
+        ><.icon name="hero-lock-closed" class="h-4 w-4" /><span class="admin-control-label">Zamknout</span></button>
       </form>
     </div>
     """

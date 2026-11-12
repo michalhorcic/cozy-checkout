@@ -55,8 +55,10 @@ defmodule CozyCheckoutWeb.ApplicationIdentityLiveTest do
 
     {:ok, food, _} = live(conn, ~p"/admin/recipes")
     assert has_element?(food, "#food-desktop img[src='/images/cozy-knot.svg']")
-    assert has_element?(food, "#food-desktop-design button[data-design-theme='noir']")
-    assert has_element?(food, "#food-mobile-design button[data-design-theme='light']")
+    assert has_element?(food, "#admin-brand-header #admin-design-switcher")
+    assert length(Floki.find(render(food), ".design-switcher")) == 1
+    refute has_element?(food, "#food-desktop .design-switcher")
+    refute has_element?(food, "#food-mobile .design-switcher")
     result = food |> element("#food-desktop a[href='/admin']") |> render_click()
     {:ok, dashboard, _} = follow_redirect(result, conn, ~p"/admin")
     assert has_element?(dashboard, "#admin-brand-header a[href='/admin']", "Cozy Checkout")

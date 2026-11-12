@@ -242,7 +242,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 1.5rem 1.25rem 0.25rem;
+    padding: 1rem 1.25rem;
     color: white;
     font: 400 1.4rem/1 var(--font-serif);
   }
@@ -273,10 +273,10 @@
     border-color: #353b36;
   }
   [data-theme="noir"] .brand-header {
-    padding-block: 1.25rem;
+    padding-block: 0.5rem;
   }
   [data-theme="noir"] .brand-header-inner {
-    min-height: 80px;
+    min-height: 56px;
     align-items: center;
     flex-wrap: wrap;
   }
@@ -286,20 +286,16 @@
   [data-theme="noir"] .brand-house {
     display: block;
     font: 500 10px/1.5 var(--font-sans);
-    letter-spacing: 0.3em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
   }
   [data-theme="noir"] .brand-app {
-    display: block;
-    margin-top: 0.25rem;
-    font-size: 11px;
-    font-weight: 400;
-    color: #dadfd8;
+    display: none;
   }
   [data-theme="noir"] .brand-section {
     display: block;
-    margin-top: 0.25rem;
-    font: 600 clamp(1.6rem, 3vw, 2.4rem)/1.2 var(--font-serif);
+    margin-top: 0.125rem;
+    font: 600 clamp(1.25rem, 2vw, 1.5rem)/1.2 var(--font-serif);
   }
   [data-theme="noir"] .brand-header :focus-visible {
     outline-color: white;
@@ -323,11 +319,21 @@
     letter-spacing: 0.22em;
     text-transform: uppercase;
   }
-  [data-theme="noir"] body:has(#food-layout) #admin-brand-header {
-    display: block;
-  }
   [data-theme="noir"] .food-layout .btn {
     color: white;
+  }
+
+  [data-theme="noir"] .admin-controls {
+    gap: 0.25rem;
+  }
+  [data-theme="noir"] #admin-sidebar > p {
+    padding-block: 0.75rem;
+  }
+  [data-theme="noir"] #food-main {
+    padding-block: 1rem;
+  }
+  [data-theme="noir"] #food-main > nav {
+    margin-bottom: 1rem;
   }
 
   /* Adventure keeps the illustrated game world and meaningful gold/green rewards. */
@@ -402,17 +408,27 @@
         url("/images/cozy-noir-mountains-mobile.webp");
     }
     [data-theme="noir"] .brand-header {
-      padding-block: 0.75rem;
+      padding-block: 0.5rem;
     }
     [data-theme="noir"] .brand-header-inner {
-      min-height: 64px;
+      min-height: 48px;
       gap: 0.5rem;
     }
     [data-theme="noir"] .brand-header .brand-section {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
     }
-    [data-theme="noir"] .brand-header .brand-app {
-      display: none;
+    [data-theme="noir"] .admin-controls :is(a, button[type="submit"]) {
+      min-width: 44px;
+      justify-content: center;
+      padding-inline: 0.5rem;
+    }
+    [data-theme="noir"] .admin-control-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
     [data-theme="noir"] .brand-header .brand-header-inner > div {
       width: 100%;
