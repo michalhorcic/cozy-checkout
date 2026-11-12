@@ -217,8 +217,15 @@ defmodule CozyCheckoutWeb.AdventureProjectsLiveTest do
     assert Repo.aggregate(XpTransaction, :count) == 0
     render_click(camp, "start-task", %{"id" => quest.id})
     assert Repo.get!(Quest, quest.id).status == "active"
-    assert has_element?(camp, "#adventure-duty-detail-modal button[phx-click=prepare-completion]")
-    render_click(camp, "prepare-completion", %{"id" => quest.id})
+    refute has_element?(camp, "#adventure-duty-detail-modal")
+    assert has_element?(camp, "#adventure-context[data-panel=continue]", "Konkrétní krok")
+
+    camp
+    |> element(
+      "#adventure-context .adventure-quest-focus button[phx-click=prepare-completion][phx-value-id='#{quest.id}']"
+    )
+    |> render_click()
+
     assert has_element?(camp, "#adventure-completion")
     assert Repo.aggregate(XpTransaction, :count) == 0
   end
