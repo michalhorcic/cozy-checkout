@@ -1,0 +1,417 @@
+/* Presentation only. Import from app.css; the original light workspace is unchanged. */
+@media screen {
+  [data-theme="noir"] .dashboard-workspace {
+    min-width: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-theme="noir"] .dashboard-workspace :is(h2, h3) {
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+  }
+
+  [data-theme="noir"]
+    .dashboard-workspace
+    :is(.dashboard-attention, .dashboard-panel, #dashboard-stays) {
+    border-radius: 0.5rem;
+    box-shadow: none;
+  }
+
+  [data-theme="noir"] .dashboard-metrics {
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid var(--color-secondary-200);
+    border-radius: 0.5rem;
+    background: white;
+  }
+
+  [data-theme="noir"] .dashboard-metric {
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 1.25rem;
+  }
+
+  [data-theme="noir"] .dashboard-metric + .dashboard-metric {
+    border-top: 1px solid var(--color-secondary-200);
+  }
+
+  [data-theme="noir"] .dashboard-metric-value {
+    margin-block: 0.375rem;
+    font-size: 2.5rem;
+    line-height: 1.1;
+  }
+
+  [data-theme="noir"] .dashboard-columns > *,
+  [data-theme="noir"] .dashboard-side-panels {
+    min-width: 0;
+  }
+
+  [data-theme="noir"] #dashboard-stays-scroll {
+    overscroll-behavior-x: contain;
+    scrollbar-gutter: stable;
+  }
+
+  [data-theme="noir"] .pos-workspace {
+    min-width: 0;
+    background: var(--noir-chalk);
+    color: var(--color-primary-500);
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-theme="noir"] .pos-workspace :is(h2, h3) {
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+  }
+
+  [data-theme="noir"]
+    .pos-workspace
+    :is(button, a[href], input:not([type="radio"])) {
+    min-height: 2.75rem;
+  }
+
+  [data-theme="noir"] .pos-workspace button {
+    border-radius: 0.5rem;
+    box-shadow: none;
+    transition:
+      background-color 0.15s,
+      border-color 0.15s,
+      color 0.15s;
+  }
+
+  [data-theme="noir"] .pos-workspace :is(button, a[href], input):focus-visible,
+  [data-theme="noir"] #dashboard-stays-scroll:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 3px;
+  }
+
+  [data-theme="noir"] .pos-workspace button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Neutral surfaces only: success, warning and error indicators keep their meaning. */
+  [data-theme="noir"]
+    .pos-workspace
+    :is(.bg-slate-50, .bg-slate-100, .bg-slate-200) {
+    background-color: var(--color-secondary-50);
+  }
+
+  [data-theme="noir"]
+    .pos-workspace
+    :is(.text-slate-400, .text-slate-500, .text-slate-600, .text-gray-400) {
+    color: var(--color-primary-400);
+  }
+
+  [data-theme="noir"]
+    .pos-workspace
+    :is(.text-slate-700, .text-slate-800, .text-slate-900) {
+    color: var(--color-primary-500);
+  }
+
+  [data-theme="noir"]
+    .pos-workspace
+    :is(.border-slate-100, .border-slate-200, .border-slate-300) {
+    border-color: var(--color-secondary-200);
+  }
+
+  [data-theme="noir"] .pos-workspace :is(.text-purple-600, .text-purple-700) {
+    color: var(--color-primary-500);
+  }
+
+  [data-theme="noir"] .pos-workspace .bg-purple-100 {
+    background-color: var(--color-secondary-100);
+  }
+
+  [data-theme="noir"] .pos-service-switch {
+    background-color: var(--color-secondary-300);
+  }
+
+  [data-theme="noir"] .pos-service-switch[aria-checked="true"] {
+    background-color: var(--color-primary-500);
+  }
+
+  [data-theme="noir"] .pos-welcome > [aria-hidden="true"] {
+    display: none;
+  }
+
+  [data-theme="noir"] .pos-account-tile {
+    min-width: 0;
+    background: white;
+    border: 1px solid var(--color-secondary-200);
+    border-radius: 0.5rem;
+  }
+
+  [data-theme="noir"] .pos-account-tile:hover {
+    border-color: var(--color-primary-500);
+    box-shadow: none;
+  }
+
+  [data-theme="noir"] .pos-account-name {
+    overflow-wrap: anywhere;
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+  }
+
+  [data-theme="noir"] .pos-account-total {
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-theme="noir"] .pos-order-header {
+    flex-shrink: 0;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    box-shadow: none;
+  }
+
+  [data-theme="noir"] .pos-order-identity,
+  [data-theme="noir"] .pos-order-name {
+    min-width: 0;
+  }
+
+  [data-theme="noir"] .pos-order-name h1 {
+    overflow-wrap: anywhere;
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+  }
+
+  [data-theme="noir"] .pos-order-name > div {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  [data-theme="noir"] .pos-order-total {
+    flex-shrink: 0;
+  }
+
+  [data-theme="noir"] .pos-order-total > p {
+    color: var(--color-primary-500);
+    white-space: nowrap;
+  }
+
+  [data-theme="noir"] .pos-order-columns,
+  [data-theme="noir"] .pos-catalog {
+    min-width: 0;
+    min-height: 0;
+  }
+
+  [data-theme="noir"] .pos-categories {
+    flex-shrink: 0;
+    padding: 0.75rem 1.25rem;
+    overscroll-behavior-x: contain;
+  }
+
+  [data-theme="noir"] .pos-category {
+    min-height: 3rem;
+    border: 1px solid transparent;
+  }
+
+  [data-theme="noir"] .pos-category[aria-pressed="true"] {
+    background: var(--color-primary-500);
+    color: white;
+    border-color: var(--color-primary-500);
+    text-decoration: underline;
+    text-underline-offset: 0.3em;
+  }
+
+  [data-theme="noir"] .pos-products-scroll {
+    padding: 1.25rem;
+  }
+
+  [data-theme="noir"] .pos-product-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+    align-items: stretch;
+    gap: 0.875rem;
+  }
+
+  [data-theme="noir"] .pos-product-tile {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    border: 1px solid var(--color-secondary-200);
+    border-radius: 0.5rem;
+    box-shadow: none;
+  }
+
+  [data-theme="noir"] .pos-product-tile:hover {
+    border-color: var(--color-primary-400);
+    box-shadow: none;
+  }
+
+  [data-theme="noir"] .pos-product-name,
+  [data-theme="noir"] .pos-product-description {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  [data-theme="noir"] .pos-product-name {
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+
+  [data-theme="noir"] .pos-product-actions {
+    margin-top: auto;
+    gap: 0.5rem;
+  }
+
+  [data-theme="noir"] .pos-product-actions button {
+    min-height: 3.25rem;
+    padding-block: 0.75rem;
+  }
+
+  [data-theme="noir"] .pos-product-actions button:first-child,
+  [data-theme="noir"] .pos-workspace button[phx-click="create_new"],
+  [data-theme="noir"] .pos-cart-summary button[phx-click="open_payment_modal"],
+  [data-theme="noir"]
+    .pos-cart-summary
+    button[phx-click="open_split_payment_modal"] {
+    background: var(--color-primary-500);
+    color: white;
+  }
+
+  [data-theme="noir"] .pos-product-actions button:last-child {
+    border: 1px solid var(--color-secondary-300);
+    background: var(--color-secondary-50);
+    color: var(--color-primary-500);
+  }
+
+  [data-theme="noir"] .pos-cart {
+    width: clamp(20rem, 32vw, 26rem);
+    min-width: 0;
+    flex-shrink: 0;
+  }
+
+  [data-theme="noir"] .pos-cart button[phx-click="delete_item"],
+  [data-theme="noir"] .pos-cart button[phx-click="split_adjust"] {
+    min-width: 2.75rem;
+  }
+
+  [data-theme="noir"] .pos-cart-summary {
+    scroll-margin-top: 1rem;
+  }
+
+  /* Keep every existing dialog usable on small screens and with the keyboard open. */
+  [data-theme="noir"] .pos-workspace .fixed.inset-0 > div {
+    max-height: 90dvh;
+    overflow-y: auto;
+    border-radius: 0.625rem;
+  }
+
+  @media (min-width: 640px) {
+    [data-theme="noir"] .dashboard-metric + .dashboard-metric {
+      border-top: 0;
+      border-left: 1px solid var(--color-secondary-200);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    [data-theme="noir"] .pos-order-workspace {
+      height: auto;
+      min-height: calc(100dvh - var(--pos-brand-height));
+    }
+
+    [data-theme="noir"] .pos-order-columns {
+      display: block;
+      overflow: visible;
+    }
+
+    [data-theme="noir"] .pos-order-header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+
+    [data-theme="noir"] .pos-catalog,
+    [data-theme="noir"] .pos-products-scroll {
+      overflow: visible;
+    }
+
+    [data-theme="noir"] .pos-cart {
+      width: 100%;
+      border-left: 0;
+      border-top: 1px solid var(--color-secondary-200);
+    }
+
+    [data-theme="noir"] .pos-cart-jump {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--color-secondary-300);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    [data-theme="noir"] .pos-cart-summary {
+      scroll-margin-top: 12rem;
+    }
+  }
+
+  @media (max-width: 639px) {
+    [data-theme="noir"] .pos-order-header {
+      display: contents;
+    }
+
+    [data-theme="noir"] .pos-order-identity {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+    }
+
+    [data-theme="noir"] .pos-order-name {
+      flex-basis: 100%;
+    }
+
+    [data-theme="noir"] .pos-order-total {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      width: 100%;
+      padding: 0.5rem 1rem;
+      border-bottom: 1px solid var(--color-secondary-200);
+      background: white;
+      text-align: left;
+    }
+
+    [data-theme="noir"] .pos-order-total > p {
+      font-size: 1.5rem;
+    }
+
+    [data-theme="noir"] .pos-products-scroll,
+    [data-theme="noir"] .pos-categories {
+      padding: 0.75rem;
+    }
+
+    [data-theme="noir"] .pos-product-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.5rem;
+    }
+
+    [data-theme="noir"] .pos-product-tile {
+      padding: 0.75rem;
+    }
+
+    [data-theme="noir"] .pos-order-selection {
+      padding: 1rem;
+    }
+
+    [data-theme="noir"] .pos-selection-heading > div {
+      flex-wrap: wrap;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-theme="noir"] .pos-workspace button,
+    [data-theme="noir"] .pos-workspace .animate-bounce-in {
+      animation: none;
+      transition: none;
+      transform: none;
+    }
+  }
+}

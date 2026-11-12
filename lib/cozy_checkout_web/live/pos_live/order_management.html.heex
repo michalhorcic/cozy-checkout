@@ -1,10 +1,15 @@
 <Layouts.pos page_title={@page_title}>
-  <div phx-hook="KeepAlive" id="pos-keep-alive" class="h-screen flex flex-col bg-slate-50">
+  <div
+    phx-hook="KeepAlive"
+    id="pos-keep-alive"
+    class="pos-workspace pos-order-workspace h-screen flex flex-col bg-slate-50"
+  >
     <!-- Fixed Header -->
-    <div class="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
-      <div class="flex items-center gap-4">
+    <div class="pos-order-header bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shadow-sm">
+      <div class="pos-order-identity flex items-center gap-4">
         <button
           phx-click="back_to_guests"
+          aria-label="Zpět na účty"
           class="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all"
         >
           <.icon name="hero-arrow-left" class="w-6 h-6 text-slate-700" />
@@ -18,7 +23,7 @@
           <.icon name="hero-lock-closed" class="h-5 w-5" />
           <span>Admin</span>
         </a>
-        <div>
+        <div class="pos-order-name">
           <p class="mb-1 text-xs font-semibold text-primary-400">Jindřichův dům</p>
           <div class="flex items-center gap-3">
             <.account_stamp stamp={CozyCheckout.Sales.AccountStamps.key(@order)} />
@@ -49,7 +54,7 @@
       </div>
 
       <!-- Order Total -->
-      <div class="text-right">
+      <div class="pos-order-total text-right">
         <div class="flex items-center justify-end gap-2 mb-1">
           <p class="text-sm text-slate-600">Total</p>
           <%= if total_out_of_sync?(@order) do %>
@@ -67,21 +72,23 @@
         >
           Recalculate total
         </button>
+        <a href="#pos-cart-summary" class="pos-cart-jump hidden">Zobrazit účet</a>
       </div>
     </div>
 
     <!-- Main Content Area with Two Columns -->
-    <div class="flex-1 flex overflow-hidden">
+    <div class="pos-order-columns flex-1 flex overflow-hidden">
       <!-- Left Column: Products -->
-      <div class="flex-1 flex flex-col overflow-hidden">
+      <div class="pos-catalog flex-1 flex flex-col overflow-hidden">
         <!-- Category Filter Tabs -->
-        <div class="bg-white border-b border-slate-200 px-6 py-4 overflow-x-auto">
+        <div class="pos-categories bg-white border-b border-slate-200 px-6 py-4 overflow-x-auto">
           <div class="flex gap-3 min-w-max">
             <button
               phx-click="select_category"
               phx-value-category-id="all"
+              aria-pressed={to_string(is_nil(@selected_category_id))}
               class={[
-                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                "pos-category px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
                 if(is_nil(@selected_category_id),
                   do: "bg-tertiary-600 text-white shadow-lg",
                   else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
@@ -94,8 +101,9 @@
               :for={category <- @categories}
               phx-click="select_category"
               phx-value-category-id={category.id}
+              aria-pressed={to_string(@selected_category_id == category.id)}
               class={[
-                "px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
+                "pos-category px-6 py-3 rounded-xl font-semibold text-base transition-all active:scale-95",
                 if(@selected_category_id == category.id,
                   do: "bg-tertiary-600 text-white shadow-lg",
                   else: "bg-slate-100 text-slate-700 hover:bg-slate-200"
@@ -108,22 +116,22 @@
         </div>
 
         <!-- Product Grid -->
-        <div class="flex-1 overflow-y-auto p-6">
-          <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="pos-products-scroll flex-1 overflow-y-auto p-6">
+          <div class="pos-product-grid grid grid-cols-2 lg:grid-cols-3 gap-4">
             <%= if is_nil(@selected_category_id) do %>
               <!-- Show Popular Products -->
               <div
                 :for={shortcut <- @popular_shortcuts}
-                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+                class="pos-product-tile bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
               >
                 <div class="flex items-center gap-4 mb-3">
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                    <h3 class="pos-product-name text-base font-bold text-slate-900 mb-1 truncate">
                       {shortcut.product.name}
                     </h3>
                     <p
                       :if={shortcut.product.category}
-                      class="text-xs text-slate-500 mb-1 truncate"
+                      class="pos-product-description text-xs text-slate-500 mb-1 truncate"
                     >
                       {shortcut.product.category.name}
                     </p>
@@ -165,10 +173,11 @@
                 </div>
 
                 <!-- Quick Quantity Selector -->
-                <div class="grid grid-cols-3 gap-3">
+                <div class="pos-product-actions grid grid-cols-3 gap-3">
                   <button
                     phx-click="add_pos_shortcut"
                     phx-value-shortcut-id={shortcut.id}
+                    aria-label={"#{if shortcut.unit_amount, do: "Add", else: "Add 1×"}: #{shortcut.product.name}"}
                     class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
                   >
                     {if shortcut.unit_amount, do: "Add", else: "Add 1×"}
@@ -176,6 +185,7 @@
                   <button
                     phx-click="show_shortcut_quantity"
                     phx-value-shortcut-id={shortcut.id}
+                    aria-label={"5+ / Choose quantity: #{shortcut.product.name}"}
                     class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
                   >
                     5+
@@ -192,11 +202,11 @@
               <!-- Show Category Products -->
               <div
                 :for={product <- filter_products(@products, @selected_category_id)}
-                class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
+                class="pos-product-tile bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 p-4 border-2 border-transparent hover:border-tertiary-500"
               >
                 <div class="flex items-center gap-4 mb-3">
                   <div class="flex-1 min-w-0">
-                    <h3 class="text-base font-bold text-slate-900 mb-1 truncate">
+                    <h3 class="pos-product-name text-base font-bold text-slate-900 mb-1 truncate">
                       {product.name}
                     </h3>
                     <%= if product.pricing_info do %>
@@ -218,11 +228,12 @@
                 </div>
 
                 <!-- Quick Quantity Selector -->
-                <div class="grid grid-cols-3 gap-3">
+                <div class="pos-product-actions grid grid-cols-3 gap-3">
                   <button
                     phx-click="add_product"
                     phx-value-product-id={product.id}
                     phx-value-quantity={1}
+                    aria-label={"Add 1×: #{product.name}"}
                     class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
                   >
                     Add 1×
@@ -230,6 +241,7 @@
                   <button
                     phx-click="show_custom_quantity"
                     phx-value-product-id={product.id}
+                    aria-label={"5+ / Choose quantity: #{product.name}"}
                     class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
                   >
                     5+
@@ -242,7 +254,7 @@
       </div>
 
       <!-- Right Column: Order Cart -->
-      <div class="w-[450px] bg-white border-l border-slate-200 flex flex-col">
+      <div class="pos-cart w-[450px] bg-white border-l border-slate-200 flex flex-col">
         <div class={["px-6 py-4 border-b border-slate-200", @split_mode && "bg-amber-50"]}>
           <div class="flex items-center justify-between">
             <div>
@@ -313,6 +325,7 @@
                 <div class="flex items-center gap-3">
                   <button
                     phx-click="split_adjust"
+                    aria-label={"Snížit množství: #{group.product.name}"}
                     phx-value-product-id={group.product.id}
                     phx-value-unit-amount={group.unit_amount || ""}
                     phx-value-delta="-1"
@@ -326,6 +339,7 @@
                   </span>
                   <button
                     phx-click="split_adjust"
+                    aria-label={"Zvýšit množství: #{group.product.name}"}
                     phx-value-product-id={group.product.id}
                     phx-value-unit-amount={group.unit_amount || ""}
                     phx-value-delta="1"
@@ -443,6 +457,7 @@
                             </p>
                             <button
                               phx-click="delete_item"
+                              aria-label={"Odebrat položku: #{group.product.name}"}
                               phx-value-item-id={hd(group.items).id}
                               class="text-error hover:text-error-dark active:scale-95"
                             >
@@ -490,6 +505,7 @@
                               </p>
                               <button
                                 phx-click="delete_item"
+                                aria-label={"Odebrat položku: #{group.product.name}"}
                                 phx-value-item-id={item.id}
                                 class="text-error hover:text-error-dark active:scale-95"
                               >
@@ -509,7 +525,10 @@
         <%!-- end @split_mode --%>
 
         <!-- Cart Summary -->
-        <div class="border-t border-slate-200 p-6 bg-slate-50">
+        <div
+          id="pos-cart-summary"
+          class="pos-cart-summary border-t border-slate-200 p-6 bg-slate-50"
+        >
           <% order_total = @order.total_amount || Decimal.new("0")
 
           total_paid =

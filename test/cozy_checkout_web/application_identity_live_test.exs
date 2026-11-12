@@ -20,6 +20,20 @@ defmodule CozyCheckoutWeb.ApplicationIdentityLiveTest do
   } do
     {:ok, pos, _} = live(conn, ~p"/pos")
     assert has_element?(pos, "#pos-house-name", "Jindřichův dům")
+    assert has_element?(pos, "#pos-design-switcher[role='group'][aria-label='Barevný design']")
+
+    assert has_element?(
+             pos,
+             "#pos-design-switcher button[type='button'][data-design-theme='light']",
+             "Původní"
+           )
+
+    assert has_element?(
+             pos,
+             "#pos-design-switcher button[type='button'][data-design-theme='noir']",
+             "Cozy Noir"
+           )
+
     refute has_element?(pos, "#admin-brand-header")
     refute has_element?(pos, "img[src='/images/cozy-knot.svg']")
 
@@ -37,9 +51,12 @@ defmodule CozyCheckoutWeb.ApplicationIdentityLiveTest do
 
     {:ok, admin, _} = live(conn, ~p"/admin")
     assert has_element?(admin, "#admin-brand-header a[href='/admin']", "Cozy Checkout")
+    assert has_element?(admin, "#admin-design-switcher[phx-hook='DesignSwitcher']")
 
     {:ok, food, _} = live(conn, ~p"/admin/recipes")
     assert has_element?(food, "#food-desktop img[src='/images/cozy-knot.svg']")
+    assert has_element?(food, "#food-desktop-design button[data-design-theme='noir']")
+    assert has_element?(food, "#food-mobile-design button[data-design-theme='light']")
     result = food |> element("#food-desktop a[href='/admin']") |> render_click()
     {:ok, dashboard, _} = follow_redirect(result, conn, ~p"/admin")
     assert has_element?(dashboard, "#admin-brand-header a[href='/admin']", "Cozy Checkout")

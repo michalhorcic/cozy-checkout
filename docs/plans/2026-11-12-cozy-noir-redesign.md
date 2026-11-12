@@ -240,17 +240,49 @@ Optimalizovat fotografie a fonty; nesnížit rychlost dotykového POS.
 
 ## Průběh a předání dalšímu chatu
 
-- Hotovo: schválený výtvarný směr, připomínka bez produktových fotografií,
-  ověření vybraných souborů na GitHubu a tento implementační plán.
-- Zbývá: veškerá implementace, assety, vizuální kontrola a CI.
-- Blokuje: nic pro zahájení; původ finální fotografie vyřešit před nasazením.
-- Tento dokument sám aplikaci nemění. AGENTS.md se tímto PR nemění.
-- Při přípravě plánu lokální git fetch selhal kvůli zákazu zápisu do
-  .git/FETCH_HEAD; větev a dokument byly proto vytvořeny přes GitHub z main.
-- Lokální testy nebyly spuštěny; CI výsledky ověří uživatel.
-  Lokálně je Elixir 1.20.5 místo požadovaného 1.20.4-otp-29,
-  proto nebylo ověřeno formátování přesně připnutým toolchainem.
-  PR mění pouze Markdown, nikoli Elixir/HEEx/CSS kód.
+- Implementace pokračuje ve stejné větvi `docs/cozy-noir-redesign-plan`
+  a PR #114; aktuální `origin/main` je již jejím předkem. AGENTS.md se nemění.
+- Hotovo: nové tokeny, sdílená navigace a hlavička, dashboard, všechny tři POS
+  kroky a sladění Adventure. Bez migrací, runtime konfigurace, změn autentizace,
+  finanční logiky či dotazů; redesign nepřidává N+1 dotazy.
+- Výchozí vzhled je **Cozy Noir**. Přepínač **Původní / Cozy Noir** v administraci,
+  stravování a POS uchovává volbu pouze v prohlížeči pod
+  `localStorage["cozy-design"]`, synchronizuje záložky a aplikuje se před
+  vykreslením. Při zablokovaném úložišti funguje přepnutí v otevřené stránce.
+- Nové styly jsou v `assets/css/noir.css` a `assets/css/noir-workspaces.css`,
+  omezené na obrazovku. Dosavadní tiskové styly a archivovaná PDF se nemění.
+- Inter, Playfair Display i původní Open Sans a Libre Baskerville jsou lokální
+  WOFF2 s češtinou a přiloženými OFL licencemi. Google Fonts CDN se nepoužívá.
+- Hlavička používá lokální černobílou fotografii **Hills in Mist**,
+  Martin Vorel / LibreShot, Horní Malá Úpa, Krkonoše, zveřejněnou pod CC0.
+  Zdroj, licence a úpravy jsou v
+  `priv/static/images/cozy-noir-mountains.LICENSE.txt`.
+  WebP má přibližně 101 KiB pro desktop a 13 KiB pro mobil; fallback je tmavý.
+- POS zůstává bez produktových fotografií. Účty jsou nativní tlačítka,
+  kategorie mají `aria-pressed`, názvy produktů se zalamují, mobil má dostupný
+  součet a odkaz na účet. Události, stabilní ID a finanční výpočty jsou zachovány.
+  Responzivní skládání katalogu a účtu je sdílené oběma tématy; opravuje také
+  původní přetékání dlouhého názvu účtu a nulovou šířku katalogu na mobilu.
+  Dialog nového účtu má pojmenovanou dialogovou roli, přesun a uzamčení focusu,
+  zavření přes Escape a návrat na otevírací tlačítko; ověřeno na obou šířkách.
+- Doplněny LiveView testy přepínačů, přístupných účtů a stavů kategorií.
+  ExUnit testy se lokálně nespouštějí; výsledky CI ověří uživatel, CI se nepolluje.
+- Chrome smoke kontrola na 390 a 1440 px ověřila obě témata, uložení volby,
+  navigaci, dlouhé názvy v POS, lokální fonty a fungování při zablokovaném
+  `localStorage` i `sessionStorage`. Zkontrolovány POS, dashboard, stravování,
+  příchozí doklady, ekonomika a barové účty. Bez horizontálního přetékání,
+  konzolových výjimek či neúspěšných HTTP odpovědí ve finální kontrole.
+  Kvůli zastaralému lokálnímu testovacímu schématu proběhl náhled v oddělené
+  dočasné databázi s aktuálními migracemi a syntetickými produkty/účtem,
+  bez zásahu do stávajících dat, skutečných plateb nebo odesílání e-mailů.
+  Prázdné finanční a stravovací přehledy nenahrazují kontrolu reálných dokladů.
+- Prošel build assetů, kompilace bez varování a celoprojektová kontrola
+  formátování na dostupném **Elixiru 1.20.5 / OTP 29.1.2**.
+  Dokumentace prošla přes `.venv-docs/bin/mkdocs build --strict`.
+  Připnutý **1.20.4-otp-29 / Erlang 29.1** není nainstalovaný,
+  proto není ověřena přesná shoda formatteru s CI.
+- Zbývá před finálním nasazením: ověření CI uživatelem a provozní průchod
+  placením, tiskem a hustými tabulkami nad reprezentativními daty.
 
 ### Zadání pro navazující vlákno
 

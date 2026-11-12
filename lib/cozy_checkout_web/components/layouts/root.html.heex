@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="cs" data-theme="noir">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -22,20 +22,17 @@
     >
       {assigns[:page_title]}
     </.live_title>
-    <%!-- Google Fonts --%>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&family=Open+Sans:wght@300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
     <script>
       (() => {
-        // Force light theme always
-        document.documentElement.setAttribute("data-theme", "light");
+        // Apply the saved design before paint, even when storage is unavailable.
+        let theme = "noir";
+        try {
+          if (localStorage.getItem("cozy-design") === "light") theme = "light";
+        } catch (_) {}
+        document.documentElement.setAttribute("data-theme", theme);
       })();
     </script>
   </head>
