@@ -130,9 +130,9 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       refute has_element?(view, "#adventure-duty-modal")
       view |> element("#adventure-duty-0 button", "Připravit quest") |> render_click()
       assert has_element?(view, "#adventure-duty-modal [role=dialog][aria-modal=true]")
-      assert has_element?(view, "#adventure-duty-modal-title", "Návrh questu")
-      assert has_element?(view, "#adventure-duty-source", "příjezd")
-      assert has_element?(view, "#adventure-duty-source", "Datum příjezdu není termín")
+      assert has_element?(view, "#adventure-duty-modal-title", "Nový quest")
+      assert has_element?(view, "#adventure-duty-source", "Příjezd")
+      refute has_element?(view, "#adventure-duty-source", "UTC")
       assert has_element?(view, "#duty_size option[value=small][selected]")
       assert has_element?(view, "#duty_scope option[value=personal][selected]")
       refute has_element?(view, "#duty_due_on[value]:not([value=''])")
@@ -141,7 +141,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
       assert has_element?(view, "#adventure-duty-form")
       render_click(view, "duty-profile-open")
       render_click(view, "duty-profile-select", %{"id" => ""})
-      view |> element("#adventure-duty-modal button", "Zpět bez uložení") |> render_click()
+      view |> element("#adventure-duty-modal button", "Zpět") |> render_click()
       refute has_element?(view, "#adventure-duty-modal")
       assert :ets.info(queries, :size) == 0
     end)
@@ -464,7 +464,7 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert has_element?(
              view,
              "#adventure-duty-work-#{quest.id} [data-source-status=absent]",
-             "podnět není v přehledu"
+             "Podnět už není v přehledu"
            )
 
     {_, queries} =

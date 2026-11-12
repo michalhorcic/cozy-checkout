@@ -6,7 +6,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   import CozyCheckoutWeb.KitchenComponents, only: [searchable_picker: 1]
 
   import CozyCheckoutWeb.AdventureLive.ProjectComponents,
-    only: [format_project_date: 1, audit_datetime: 1]
+    only: [format_project_date: 1]
 
   import CozyCheckoutWeb.AdventureLive.TaskComponents, only: [profile_name: 2]
 
@@ -213,7 +213,6 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
               snapshot={@snapshot}
               state={@state}
               checked_at={@checked_at}
-              compact={true}
             />
             <div class="flex flex-wrap gap-3">
               <button
@@ -254,8 +253,6 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
   end
 
   defp duty_source_status(assigns) do
-    assigns = assign_new(assigns, :compact, fn -> false end)
-
     assigns =
       assign(
         assigns,
@@ -270,18 +267,11 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
 
     ~H"""
     <p class="adventure-duty-source-status" data-source-status={@source_status}>
-      <strong>Podklad:</strong>
-      <span :if={@source_status == :present}>Podnět potvrzený posledním načtením.</span>
-      <span :if={@source_status == :changed}>Podnět je v přehledu, jeho údaje se od založení questu změnily.</span>
-      <span :if={@source_status == :absent}>{if @compact,
-        do: "Nelze ověřit; podnět není v přehledu.",
-        else:
-          "Nelze ověřit. Podnět není v aktuálním přehledu; mohl se změnit nebo vypadnout z časového výhledu. Neznamená to vyřešení."}</span>
-      <span :if={@source_status == :stale}>Nelze ověřit. Provozní údaje jsou starší, obnov přehled.</span>
-      <span :if={@source_status == :unavailable}>Nelze ověřit. Provozní přehled se načítá nebo poslední obnova není dostupná.</span>
-      <small :if={@snapshot && !@compact}>Poslední načtení {audit_datetime(@snapshot.loaded_at)} · výhled {date(
-        @snapshot.today
-      )} až {date(@snapshot.through)}.</small>
+      <span :if={@source_status == :present}>Podnět trvá</span>
+      <span :if={@source_status == :changed}>Podnět se změnil</span>
+      <span :if={@source_status == :absent}>Podnět už není v přehledu</span>
+      <span :if={@source_status == :stale}>Starší podklad · obnov Službu dne</span>
+      <span :if={@source_status == :unavailable}>Podklad teď nelze ověřit</span>
     </p>
     """
   end
@@ -583,33 +573,19 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
     ~H"""
     <div class="space-y-4">
       <h2 id="adventure-duty-modal-title" class="text-xl font-bold pr-8">
-        Návrh questu ze služby dne
+        Nový quest
       </h2>
       <p id="adventure-duty-modal-description">
-        Vznikne čekající quest, nikoli zahájená práce. Bez termínu, pokud ho sám nedoplníš. Stav podkladu a stav questu jsou oddělené.
+        Ze služby dne do nabídky výprav.
       </p>
-      <div id="adventure-duty-source" class="adventure-muted">
-        <p>
-          {if @draft.issue.kind == :details, do: "Podklady stravování", else: "Jídelníček"} · příjezd {date(
-            @draft.issue.on
-          )}
-        </p>
-        <p>{@draft.issue.reason}</p>
-        <p>
-          Podnět pro období {date(@draft.snapshot.today)} až {date(@draft.snapshot.through)} · načteno {Calendar.strftime(
-            @draft.snapshot.loaded_at,
-            "%d. %m. %Y %H:%M UTC"
-          )}.
-        </p>
-        <p>Datum příjezdu není termín questu ani den vzniku závady.</p>
-        <p
+      <div id="adventure-duty-source" class="flex flex-wrap items-center gap-3 text-sm">
+        <span>Příjezd {short_date(@draft.issue.on)}</span>
+        <.link href={~p"/admin/bookings/#{@draft.issue.booking_id}"} class="adventure-text-link">Pobyt</.link>
+        <span
           :if={Operation.stale?(@draft.snapshot, @checked_at) or @state != :ready}
           role="status"
           class="adventure-operation-warning"
-        >
-          Starší nebo neověřené údaje. {if @state == :error, do: "Poslední obnova selhala. "}Zavři návrh a ručně obnov provoz, pokud potřebuješ čerstvé podklady.
-        </p>
-        <.link href={~p"/admin/bookings/#{@draft.issue.booking_id}"} class="adventure-text-link">Otevřít původní pobyt</.link>
+        >Starší nebo neověřený podklad</span>
       </div>
       <div :if={@draft.previous_id} id="adventure-duty-previous" class="adventure-operation-warning">
         <p>
@@ -617,7 +593,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           · {duty_status(@draft.previous_quest)} · {@draft.previous_quest.definition_snapshot["xp"]} XP.
         </p>
         <p>
-          Pro tento pobyt a typ podnětu už existuje uzavřená práce. Přetrvávající podnět neznamená, že předchozí quest nebyl splněn. Další quest zahájí nové řešení a zachová historii.
+          Navázat dalším questem?
         </p>
         <button
           :if={!@draft.confirmed}
@@ -625,7 +601,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           type="button"
           phx-click="prepare-next-duty"
           class="adventure-button"
-        >Výslovně připravit další quest</button>
+        >Připravit další quest</button>
       </div>
       <.form
         :if={@draft.confirmed}
@@ -642,7 +618,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
             %{id: "", name: "Volný úkol", hint: "Bez přiřazení"}
             | Enum.map(@profiles, &%{id: &1.id, name: &1.display_name, hint: ""})
           ]}
-          label="Přiřazení (nepovinné)"
+          label="Pro koho"
           prompt="Volný úkol"
           required={false}
           index="duty-profile"
@@ -665,9 +641,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           ]}
         />
         <p id="adventure-duty-reward" class="adventure-muted">
-          Po uložení: Čeká · {@reward} XP pro {if @form[:scope].value == "shared",
-            do: "společnou chatu",
-            else: "skutečného splnitele"}. Bez automatického zahájení nebo udělení XP.
+          {@reward} XP{if @form[:scope].value == "shared", do: " pro chatu"}
         </p>
         <details>
           <summary>Další podrobnosti (nepovinné)</summary>
@@ -699,9 +673,9 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           type="submit"
           class="adventure-button adventure-button--primary"
           phx-disable-with="Ukládám…"
-        >Uložit čekající quest</button>
+        >Vytvořit quest</button>
       </.form>
-      <button type="button" phx-click="cancel-duty" class="adventure-button">Zpět bez uložení</button>
+      <button type="button" phx-click="cancel-duty" class="adventure-button">Zpět</button>
     </div>
     """
   end
@@ -722,36 +696,29 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
       <h2 id="adventure-duty-detail-modal-title" class="text-xl font-bold pr-8">
         {@quest.definition_snapshot["title"]}
       </h2>
-      <p id="adventure-duty-detail-modal-description">
-        {if @quest.source_namespace == "operation_v1",
-          do: "Quest ze služby dne",
-          else: "Quest projektu"} · {duty_status(@quest)}.
-        <span :if={@quest.source_namespace == "operation_v1"}>Změna provozního podkladu tento quest automaticky nedokončí.</span>
-      </p>
-      <p>
-        {profile_name(@profiles, @quest.assigned_profile_id || @quest.profile_id)} · {@quest.definition_snapshot[
-          "xp"
-        ]} XP · {if @quest.scope == "shared", do: "Společná chata", else: "Osobní odměna"}
-      </p>
-      <p :if={@quest.due_on}>Termín: {date(@quest.due_on)}</p>
+      <div
+        id="adventure-duty-detail-modal-description"
+        class="flex flex-wrap items-center gap-3 text-sm"
+      >
+        <span class="font-bold">{duty_status(@quest)}</span>
+        <span class="font-bold">{@quest.definition_snapshot["xp"]} XP{if @quest.scope == "shared",
+          do: " pro chatu"}</span>
+        <span>{profile_name(@profiles, @quest.assigned_profile_id || @quest.profile_id)}</span>
+        <span :if={@quest.due_on}>Do {short_date(@quest.due_on)}</span>
+      </div>
       <p :if={@quest.description not in [nil, ""]} class="whitespace-pre-wrap">
         {@quest.description}
       </p>
-      <div :if={@quest.source_namespace == "operation_v1"} class="adventure-muted">
+      <div :if={@quest.source_namespace == "operation_v1"} class="text-sm">
         <.duty_source_status
           quest={@quest}
           snapshot={@snapshot}
           state={@state}
           checked_at={@checked_at}
         />
-        <p>Původní podnět: {@quest.source_context["reason"]}</p>
-        <p>Příjezd {format_project_date(@quest.source_context["on"])} · nejde o termín questu.</p>
-        <details>
-          <summary>Původ podnětu</summary><p>
-            Načteno {audit_datetime(@quest.source_context["loaded_at"])} · historický podklad, nikoli živé ověření.
-          </p>
-        </details>
-        <.link href={~p"/admin/bookings/#{@quest.source_ref}"} class="adventure-text-link">Otevřít původní pobyt</.link>
+        <.link href={~p"/admin/bookings/#{@quest.source_ref}"} class="adventure-text-link">Pobyt · {short_date(
+          @quest.source_context["on"]
+        )}</.link>
       </div>
       <p :if={@quest.evidence["note"] not in [nil, ""]} class="whitespace-pre-wrap">
         {@quest.evidence["note"]}
@@ -763,7 +730,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           phx-click="start-task"
           phx-value-id={@quest.id}
           class="adventure-button adventure-button--primary"
-        >Přijmout a zahájit</button>
+        >Vyrazit</button>
         <button
           :if={@quest.status == "active"}
           type="button"
@@ -779,7 +746,7 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
           class="adventure-button"
         >Archivovat</button>
       </div>
-      <button type="button" phx-click="close-duty-detail" class="adventure-button">Zavřít quest</button>
+      <button type="button" phx-click="close-duty-detail" class="adventure-button">Zpět</button>
     </article>
     """
   end
@@ -831,6 +798,22 @@ defmodule CozyCheckoutWeb.AdventureLive.OperationComponents do
     </section>
     """
   end
+
+  defp short_date(%Date{} = day) do
+    Calendar.strftime(
+      day,
+      if(day.year == Operation.today().year, do: "%-d. %-m.", else: "%-d. %-m. %Y")
+    )
+  end
+
+  defp short_date(value) when is_binary(value) do
+    case Date.from_iso8601(value) do
+      {:ok, day} -> short_date(day)
+      _ -> ""
+    end
+  end
+
+  defp short_date(_), do: ""
 
   defp duty_open?(quest), do: quest.status in ["waiting", "active"] && is_nil(quest.archived_at)
 
