@@ -404,7 +404,7 @@ h1, h2, h3, h4, h5, h6,
   outline-offset: 3px;
 }
 #bar-stock-workspace button { min-height: 2.75rem; }
-.bar-stock-primary, .bar-stock-secondary {
+.bar-stock-primary, .bar-stock-secondary, .bar-stock-loss-submit {
   display: inline-flex;
   min-height: 2.75rem;
   flex-shrink: 0;
@@ -432,3 +432,45 @@ h1, h2, h3, h4, h5, h6,
   .bar-stock-history td[data-label] { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .75rem; }
   .bar-stock-history td[data-label]::before { content: attr(data-label); color: var(--color-gray-500); font-size: .75rem; font-weight: 500; }
 }
+
+/* Each bar action opens one focused form; loss is available without opening settings. */
+.bar-stock-action {
+  border: 1px solid var(--color-gray-200);
+  border-radius: .75rem;
+  background: white;
+}
+.bar-stock-action > summary {
+  display: flex;
+  min-height: 4rem;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem;
+  list-style: none;
+  cursor: pointer;
+  border-radius: inherit;
+  transition: background-color .15s;
+}
+.bar-stock-action > summary:hover { background: var(--color-gray-50); }
+.bar-stock-action-icon {
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: .625rem;
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+.bar-stock-action--count { border-color: var(--color-emerald-200); }
+.bar-stock-action--count > summary { color: var(--color-emerald-800); background: var(--color-emerald-50); }
+.bar-stock-action--count > summary:hover { background: var(--color-emerald-100); }
+.bar-stock-action--count .bar-stock-action-icon { background: var(--color-emerald-700); color: white; }
+.bar-stock-action--loss .bar-stock-action-icon { background: var(--color-rose-50); color: var(--color-rose-700); }
+.bar-stock-action[open] > summary { border-bottom: 1px solid var(--color-gray-200); border-radius: .75rem .75rem 0 0; }
+.bar-stock-action-panel { padding: 1rem .75rem; }
+.bar-stock-action-chevron, .bar-stock-settings-chevron { transition: transform .15s; }
+.bar-stock-action[open] > summary .bar-stock-action-chevron,
+.bar-stock-settings[open] > summary .bar-stock-settings-chevron { transform: rotate(180deg); }
+.bar-stock-loss-submit { background: var(--color-rose-700); color: white; }
+.bar-stock-loss-submit:hover { background: var(--color-rose-800); }
