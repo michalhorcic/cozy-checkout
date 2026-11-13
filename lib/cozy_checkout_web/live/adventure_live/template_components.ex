@@ -71,7 +71,14 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
             field={@form[:cadence]}
             type="select"
             label="Opakování"
-            options={[{"Denně", "daily"}, {"Týdně", "weekly"}, {"Jednou (původní katalog)", "once"}]}
+            options={[
+              {"Denně", "daily"},
+              {"Týdně", "weekly"},
+              {"Měsíčně", "monthly"},
+              {"Půlročně", "semiannual"},
+              {"Ročně", "yearly"},
+              {"Jednou (původní katalog)", "once"}
+            ]}
           />
           <fieldset :if={@form[:cadence].value == "weekly"} class="sm:col-span-2">
             <legend>Dny v týdnu</legend>
@@ -90,7 +97,16 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
             </label>
             <p :for={error <- @form[:weekdays].errors} class="text-error">{translate_error(error)}</p>
           </fieldset>
-          <.input field={@form[:starts_on]} type="date" label="Platí od" required />
+          <.input
+            field={@form[:starts_on]}
+            type="date"
+            label={
+              if @form[:cadence].value in ["monthly", "semiannual", "yearly"],
+                do: "První termín",
+                else: "Platí od"
+            }
+            required
+          />
           <.input
             field={@form[:applicability]}
             type="select"
@@ -318,7 +334,15 @@ defmodule CozyCheckoutWeb.AdventureLive.TemplateComponents do
     do: %{"paused" => "Pozastaveno", "active" => "Spuštěno", "archived" => "Archivováno"}[status]
 
   defp cadence_label(cadence),
-    do: %{"daily" => "Denně", "weekly" => "Týdně", "once" => "Jednou"}[cadence]
+    do:
+      %{
+        "daily" => "Denně",
+        "weekly" => "Týdně",
+        "monthly" => "Měsíčně",
+        "semiannual" => "Půlročně",
+        "yearly" => "Ročně",
+        "once" => "Jednou"
+      }[cadence]
 
   defp applicability_label(value),
     do:

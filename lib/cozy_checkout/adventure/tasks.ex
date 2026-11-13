@@ -349,6 +349,47 @@ defmodule CozyCheckout.Adventure.Tasks do
     end)
   end
 
+  @doc "Creates a one-off quest once per server-held draft ID; personal start is atomic."
+  def quick_create(actor_id, attrs, draft_id, disposition) do
+    action(
+      actor_id,
+      fn actor ->
+        with {:ok, id} <- Ecto.UUID.cast(draft_id),
+             true <- is_map(attrs) and disposition in ["mine", "free", "later"] do
+          case Repo.get(Quest, id) do
+            nil ->
+              attrs =
+                attrs
+                |> Map.take(["title", "size", "category"])
+                |> Map.merge(%{
+                  "scope" => "personal",
+                  "assigned_profile_id" => if(disposition == "free", do: nil, else: actor.id)
+                })
+
+              task = create_task!(actor, attrs, %{id: id})
+              if disposition == "mine", do: start_task!(actor, task), else: task
+
+            %Quest{
+              created_by_id: owner,
+              managed: true,
+              template_id: nil,
+              source_namespace: nil,
+              code: "task:" <> _
+            } = task
+            when owner == actor.id ->
+              task
+
+            _ ->
+              Repo.rollback(:invalid_request)
+          end
+        else
+          _ -> Repo.rollback(:invalid_request)
+        end
+      end,
+      "FOR NO KEY UPDATE"
+    )
+  end
+
   defp create_task!(actor, attrs, source \\ %{}) do
     task =
       struct!(
@@ -366,6 +407,7 @@ defmodule CozyCheckout.Adventure.Tasks do
     changeset =
       task
       |> change(attrs)
+      |> Changeset.unique_constraint(:id, name: :adventure_quests_pkey)
       |> Changeset.unique_constraint(:source_ref, name: :adventure_duty_open_work)
       |> Changeset.unique_constraint(:source_request_key)
       |> Changeset.unique_constraint(:source_attempt, name: :adventure_duty_attempt)

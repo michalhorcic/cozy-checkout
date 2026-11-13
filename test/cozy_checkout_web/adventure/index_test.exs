@@ -1241,6 +1241,46 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert Repo.aggregate(XpTransaction, :count) == 1
   end
 
+  test "calendar recurrence choices create and edit templates with an explicit first due date", %{
+    conn: conn
+  } do
+    alias CozyCheckout.Adventure.TaskTemplate
+    {:ok, _} = Adventure.initialize()
+    p = Repo.get_by!(Profile, slug: "michal")
+    {:ok, view, _} = live(conn, "/admin/adventure/quests?section=templates")
+    render_click(view, "restore-profile", %{"id" => p.id})
+
+    for {label, cadence} <- [
+          {"Měsíčně", "monthly"},
+          {"Půlročně", "semiannual"},
+          {"Ročně", "yearly"}
+        ] do
+      assert has_element?(view, "#template_cadence option[value=#{cadence}]", label)
+    end
+
+    view
+    |> form("#adventure-template-form", template: %{cadence: "semiannual"})
+    |> render_change()
+
+    assert has_element?(view, "#adventure-template-form label", "První termín")
+    refute has_element?(view, "#adventure-template-form fieldset legend", "Dny v týdnu")
+
+    view
+    |> form("#adventure-template-form",
+      template: %{title: "Sanace pivních cest", cadence: "semiannual", starts_on: "2027-01-31"}
+    )
+    |> render_submit()
+
+    template = Repo.get_by!(TaskTemplate, title: "Sanace pivních cest")
+    assert template.cadence == "semiannual"
+    assert template.starts_on == ~D[2027-01-31]
+    assert has_element?(view, "#template-#{template.id}", "Půlročně")
+    render_click(view, "edit-template", %{"id" => template.id})
+    view |> form("#adventure-template-form", template: %{cadence: "yearly"}) |> render_submit()
+    assert Repo.get!(TaskTemplate, template.id).cadence == "yearly"
+    assert has_element?(view, "#template-#{template.id}", "Ročně")
+  end
+
   test "recurring templates are managed from quests and pause explicitly retains the task", %{
     conn: conn
   } do
@@ -1671,9 +1711,9 @@ defmodule CozyCheckoutWeb.AdventureLiveTest do
     assert html =~ "Dílčí podklady"
     assert html =~ "Inkaso baru bez servisu"
     assert html =~ "Inkaso ubytování po vratkách"
-    document = Floki.parse_document!(html)
-    assert [_] = Floki.find(document, "details:not([open])")
-    assert Floki.find(document, ".adventure-metric small") |> Floki.text() == "Dílčí"
+    document = LazyHTML.from_fragment(html)
+    assert Enum.count(LazyHTML.query(document, "details:not([open])")) == 1
+    assert LazyHTML.query(document, ".adventure-metric small") |> LazyHTML.text() == "Dílčí"
 
     missing = %{historical | last_evaluation: %{snapshot: %{snapshot | "sources" => %{}}}}
     assert render_component(summary, game: %{campaigns: [missing]}) =~ "Nedostupné"

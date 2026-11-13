@@ -567,12 +567,36 @@ skutečného stavu rezervace, zálohy či nákupního plánu.
 
 ## Vlastní jednorázové úkoly
 
+**+ Nový quest** je přímo u Tvých výprav v Chatě a v záložce Výpravy.
+Otevře malou ilustrovanou kartičku s názvem, volbou **Pro mě / Pro všechny**,
+velikostí (50/100/250 XP) a výběrem **kategorie**. Jediný povinný nový vstup je
+název; výchozí volba je Pro mě, malý quest, kategorie Provoz. Kategorie dál
+slouží k organizaci a filtrování, neovlivňuje odměnu.
+
+**Vytvořit a vyrazit** uloží a zahájí osobní quest v jedné transakci, zavře
+kartičku a vrátí Chatu s novou aktivní výpravou v hlavním panelu. **Vyvěsit quest**
+vytvoří nepřiřazený osobní quest k převzetí libovolným hrdinou. Pokud už jsou
+obsazené tři sloty, osobní volba nabídne **Uložit na později**: quest bude čekat
+přiřazený aktuálnímu hrdinovi. Pokud poslední slot mezitím obsadila jiná akce,
+neúspěšné zahájení nezanechá napůl vytvořený quest; návrh s textem a kategorií
+zůstane otevřený a čeká na výslovné uložení na později. Otevření, úpravy a zrušení
+kartičky nemají SQL dotazy. Po vytvoření se obnoví běžná herní projekce, nikoli
+provozní přehled. Nevznikají XP, změny zásob, platby ani jiné provozní zápisy.
+
+Server drží ID návrhu, které při uložení použije jako UUID questu. Profilový
+zámek a primární klíč chrání opakované potvrzení před kopiemi, bez nové tabulky
+či další migrace. Kontext nového osobního zahájení má konstantní čtyři SELECTy
+(profil, opakovaný request, platnost přiřazení, agregace slotů); volná tvorba dva,
+přiřazený zásobník tři. Nové N+1 čtení ani provozní zdroj nepřibývá. Změna hrdiny
+starý návrh zahodí. Pokročilé zadání s termínem a dalšími údaji zůstává ve správě.
+
 Ve **Questech → Jednorázové questy** může vybraný hrdina založit úkol pouhým
 názvem. Volitelné jsou přiřazení, termín, priorita, kategorie a popis.
 Velikost dává výchozích 50 / 100 / 250 XP, vlastní odměnu lze zadat před
 rozpracováním (1–10 000 XP). Priorita neurčuje XP.
 
-- Úkol začíná ve stavu **Čeká**. Zásobník může mít více než tři položky.
+- Při uložení ve správě nebo na později začíná úkol ve stavu **Čeká**.
+  Zásobník může mít více než tři položky; rychlá osobní tvorba může rovnou zahájit výpravu.
 - V táboře **Najít další výpravu → Přijmout výpravu** přiřadí osobní úkol právě vybranému hrdinovi.
   Předchozí přiřazení a aktér převzetí zůstávají v auditu. Do tří osobních
   rozpracovaných se společně počítají vlastní i katalogové questy.
@@ -603,12 +627,29 @@ kompenzované odměny. Sezónní finanční přehled zůstává další etapou.
 
 ## Opakované šablony
 
-V **Questech → Opakované questy** založ název, denní/týdenní opakování,
-vybrané dny týdne, platnost od, kategorii, přiřazení, velikost/XP a působnost.
+V **Questech → Opakované questy** založ název, opakování (denně, týdně,
+měsíčně, půlročně nebo ročně), případné dny týdne, první termín, kategorii,
+přiřazení, velikost/XP a působnost.
 Změna velikosti předvyplní 50/100/250 XP; částku lze upravit. Nová šablona
 začíná pozastavená. Tlačítko **Přidat 7 doporučených šablon** založí jednou
 příklady z plánu (pokoje, úklid, jídelníček, nákup, vaření, společné prostory,
 bar). Jejich nastavení a spuštění určuje správce. Opakovaný klik zachová úpravy.
+
+Měsíční, půlroční (každých 6 měsíců) a roční opakování vycházejí z data
+**První termín**. Harmonogram je pevný, nepočítá se od skutečného splnění.
+Sanace pivních cest od 13. 11. půlročně připadne na 13. 5. a znovu 13. 11.
+Pokud cílový měsíc nemá původní den, použije se jeho poslední den; další termín
+se znovu počítá z původního data. Měsíčně od 31. 1. tedy znamená 28./29. 2.
+a poté 31. 3.; ročně od 29. 2. používá v nepřestupném roce 28. 2. a v přestupném
+znovu 29. 2. Dny v týdnu se u těchto intervalů nevybírají. Působnost, jediný
+otevřený výskyt, historie posunů a skutečně dokončením udělené XP se nemění.
+Výpočet dalšího i posledního termínu je konstantní, bez dotazů a procházení
+všech zmeškaných měsíců.
+
+Rozšíření vyžaduje migraci `20261113090000_extend_adventure_recurrence.exs`,
+která rozšiřuje povolené frekvence v existujícím databázovém omezení, bez změny
+ostatních pravidel a záznamů. Rollback PostgreSQL odmítne, pokud nějaká šablona
+stále používá novou frekvenci; žádné termíny automaticky nepřevádí ani nemaže.
 
 **Spustit / obnovit** plánuje od dneška nebo pozdějšího data platnosti.
 Hodinový `Adventure.RecurrenceWorker` a ruční **Obnovit opakované úkoly**

@@ -147,7 +147,7 @@ defmodule CozyCheckoutWeb.AdventureLive.WorldComponents do
           data-panel={@world_panel}
           data-view={@game_view}
           data-dialog-open={
-            to_string(!!(@duty_draft || @duty_detail || @duty_history || @completing))
+            to_string(!!(@quick_task || @duty_draft || @duty_detail || @duty_history || @completing))
           }
           class={["adventure-context", @world_panel != "continue" && "adventure-context--detail"]}
           aria-label="Vybraná práce nebo oblast"
@@ -202,8 +202,15 @@ defmodule CozyCheckoutWeb.AdventureLive.WorldComponents do
       </div>
       <div class="adventure-quest-dock">
         <section id="adventure-expeditions">
-          <header>
+          <header class="adventure-quick-heading">
             <h2>Tvoje výpravy</h2><span>{length(@active)} / 3</span>
+            <button
+              id="adventure-quick-new-world"
+              type="button"
+              phx-click="new-quick-task"
+              disabled={!@data.profile}
+              class="adventure-text-link"
+            ><.icon name="hero-plus" class="size-4" /> Nový quest</button>
           </header><div class="adventure-dock-items">
             <button
               :for={quest <- @active}

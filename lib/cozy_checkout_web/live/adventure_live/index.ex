@@ -10,6 +10,7 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
   import CozyCheckoutWeb.AdventureLive.OperationComponents
   import CozyCheckoutWeb.AdventureLive.ProjectComponents, only: [projects: 1]
   alias CozyCheckoutWeb.AdventureLive.WorldComponents, as: World
+  alias CozyCheckoutWeb.AdventureLive.QuickQuestComponents, as: Quick
   alias CozyCheckout.Adventure.Projects
   alias CozyCheckoutWeb.AdventureLive.ProjectComponents
 
@@ -45,6 +46,9 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
          duty_tab: "issues",
          duty_follow_up: nil,
          duty_follow_up_error: false,
+         quick_task: nil,
+         quick_task_form: nil,
+         quick_task_full: false,
          duty_draft: nil,
          duty_form: nil,
          duty_detail: nil,
@@ -868,6 +872,90 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
      )}
   end
 
+  defp handle_game_event("new-quick-task", _, socket) do
+    if socket.assigns.live_action == :index && socket.assigns.data.profile &&
+         is_nil(socket.assigns.quick_task) do
+      full = Enum.count(socket.assigns.data.quests, &(&1.status == "active")) >= 3
+
+      {:noreply,
+       assign(socket,
+         quick_task: %{id: Ecto.UUID.generate()},
+         quick_task_full: full,
+         quick_task_form: quick_task_form(%{}),
+         duty_draft: nil,
+         duty_detail: nil,
+         duty_history: nil,
+         completing: nil,
+         finding: false
+       )}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp handle_game_event("cancel-quick-task", _, socket),
+    do: {:noreply, assign(socket, quick_task: nil, quick_task_form: nil, quick_task_full: false)}
+
+  defp handle_game_event("validate-quick-task", %{"quick" => attrs}, socket) do
+    if socket.assigns.quick_task,
+      do: {:noreply, assign(socket, quick_task_form: quick_task_form(attrs, :validate))},
+      else: {:noreply, socket}
+  end
+
+  defp handle_game_event("save-quick-task", %{"quick" => attrs}, socket) do
+    if draft = socket.assigns.quick_task do
+      form = quick_task_form(attrs)
+      socket = assign(socket, quick_task_form: form)
+
+      mode =
+        case {form.params["disposition"], attrs["intent"]} do
+          {"free", _} -> "free"
+          {"mine", "later"} -> "later"
+          {"mine", _} -> "mine"
+          _ -> "invalid"
+        end
+
+      case Tasks.quick_create(socket.assigns.selected_profile_id, form.params, draft.id, mode) do
+        {:ok, quest} ->
+          socket =
+            socket
+            |> assign(quick_task: nil, quick_task_form: nil, quick_task_full: false)
+            |> load()
+            |> clear_flash(:error)
+
+          if quest.status == "active" &&
+               quest.assigned_profile_id == socket.assigns.selected_profile_id do
+            {:noreply,
+             socket
+             |> assign(game_view: "world", world_panel: "continue", focus_quest_id: quest.id)
+             |> put_flash(:info, "Výprava začíná!")
+             |> push_patch(to: ~p"/admin/adventure?view=world")}
+          else
+            {:noreply,
+             put_flash(
+               socket,
+               :info,
+               if(mode == "free", do: "Quest je na nástěnce.", else: "Quest čeká na později.")
+             )}
+          end
+
+        {:error, %Ecto.Changeset{}} ->
+          {:noreply, assign(socket, quick_task_form: quick_task_form(form.params, :validate))}
+
+        {:error, :active_limit} ->
+          {:noreply,
+           socket
+           |> assign(quick_task_full: true)
+           |> put_flash(:error, "Tři výpravy už běží. Ulož tuhle na později.")}
+
+        error ->
+          result(socket, error)
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
   defp handle_game_event("save-task", %{"task" => attrs}, socket) do
     outcome =
       if socket.assigns.editing_task_id,
@@ -1099,6 +1187,9 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
       socket
       |> assign(
         selected_profile_id: id,
+        quick_task: nil,
+        quick_task_form: nil,
+        quick_task_full: false,
         success: nil,
         focus_quest_id: nil,
         history_tasks: [],
@@ -1438,6 +1529,17 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
     )
   end
 
+  defp quick_task_form(attrs, action \\ nil) do
+    attrs =
+      Map.merge(
+        %{"size" => "small", "category" => "Provoz", "disposition" => "mine"},
+        Map.take(attrs, ["title", "size", "category", "disposition"])
+      )
+
+    changeset = Tasks.change(%Quest{}, attrs)
+    to_form(changeset, as: :quick, action: action)
+  end
+
   defp reset_task(socket) do
     assign(socket,
       editing_task_id: nil,
@@ -1597,7 +1699,16 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
             <header class="adventure-view-heading">
               <div>
                 <p class="adventure-eyebrow">Malé kroky, společné výsledky</p><h1>Naše výpravy</h1>
-              </div><.link navigate={~p"/admin/adventure/quests"} class="adventure-button">Spravovat zadání</.link>
+              </div><div class="adventure-quick-actions">
+                <button
+                  id="adventure-quick-new-expeditions"
+                  type="button"
+                  phx-click="new-quick-task"
+                  disabled={!@data.profile}
+                  class="adventure-button adventure-button--primary"
+                ><.icon name="hero-plus" class="size-4" /> Nový quest</button>
+                <.link navigate={~p"/admin/adventure/quests"} class="adventure-text-link">Spravovat zadání</.link>
+              </div>
             </header>
             <div class="adventure-book-tabs" aria-label="Výpravy">
               <button type="button" phx-click="close-picker" aria-pressed={to_string(!@finding)}>Rozpracované</button><button
@@ -1744,6 +1855,14 @@ defmodule CozyCheckoutWeb.AdventureLive.Index do
           </footer>
         </div>
         <.help_overlay />
+        <.modal
+          :if={@quick_task}
+          id="adventure-quick-task-modal"
+          show
+          on_cancel={JS.push("cancel-quick-task")}
+        >
+          <Quick.card form={@quick_task_form} profile={@data.profile} full={@quick_task_full} />
+        </.modal>
         <.modal :if={@duty_draft} id="adventure-duty-modal" show on_cancel={JS.push("cancel-duty")}>
           <.duty_draft
             draft={@duty_draft}

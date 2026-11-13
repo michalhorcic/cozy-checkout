@@ -46,6 +46,7 @@ defmodule CozyCheckout.Adventure.TaskTemplate do
       :applicability,
       :campaign_id
     ])
+    |> normalize_calendar_weekdays()
     |> update_change(:title, fn value ->
       if is_binary(value), do: String.trim(value), else: value
     end)
@@ -73,13 +74,19 @@ defmodule CozyCheckout.Adventure.TaskTemplate do
     |> validate_inclusion(:scope, ["personal", "shared"])
     |> validate_inclusion(:priority, ["low", "normal", "high"])
     |> validate_inclusion(:size, ["small", "medium", "large"])
-    |> validate_inclusion(:cadence, ["daily", "weekly", "once"])
+    |> validate_inclusion(:cadence, ["daily", "weekly", "monthly", "semiannual", "yearly", "once"])
     |> validate_inclusion(:applicability, ["always", "campaign", "guests"])
     |> validate_number(:xp, greater_than: 0, less_than_or_equal_to: 10000)
     |> normalize_scope()
     |> foreign_key_constraint(:assigned_profile_id)
     |> foreign_key_constraint(:campaign_id)
     |> check_constraint(:scope, name: :adventure_template_rules)
+  end
+
+  defp normalize_calendar_weekdays(changeset) do
+    if get_field(changeset, :cadence) in ["monthly", "semiannual", "yearly"],
+      do: put_change(changeset, :weekdays, [1]),
+      else: changeset
   end
 
   defp normalize_scope(changeset) do
