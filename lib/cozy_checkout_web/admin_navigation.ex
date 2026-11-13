@@ -38,14 +38,6 @@ defmodule CozyCheckoutWeb.AdminNavigation do
          {"Pokoje", "/admin/rooms"},
          {"Import rezervací", "/admin/ical-import"}
        ]},
-      {"Skladová evidence",
-       [
-         {"Celkový sklad", "/admin/stock"},
-         {"Naskladnění", "/admin/stock/restock"},
-         {"Nákupní objednávky", "/admin/purchase_orders"},
-         {"Skladové korekce", "/admin/stock-adjustments"},
-         {"Skladové reporty", "/admin/inventory-reports"}
-       ]},
       {"Produkty a ceny",
        [
          {"Produkty", "/admin/products"},

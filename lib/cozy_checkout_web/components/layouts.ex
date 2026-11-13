@@ -375,6 +375,10 @@ defmodule CozyCheckoutWeb.Layouts do
           class="block px-3 py-2 text-sm text-primary-400 hover:underline"
         >Fronta úloh</.link>
       </details>
+      <div class="mx-3 mt-5 flex flex-wrap items-center gap-2 border-t border-secondary-200 pt-4 text-primary-400">
+        <h3 class="text-xs font-semibold">Skladová evidence</h3>
+        <span class="rounded-full bg-secondary-100 px-2 py-0.5 text-[10px]">Nyní se nepoužívá</span>
+      </div>
     </nav>
     """
   end
