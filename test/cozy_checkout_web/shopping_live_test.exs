@@ -31,6 +31,20 @@ defmodule CozyCheckoutWeb.ShoppingLiveTest do
     href
   end
 
+  test "recipe exclusions can be restored, toggled and kept after refresh", %{conn: conn} do
+    {ingredient, recipe} = shopping_recipe()
+    shopping_booking(recipe)
+    {:ok, view, _} = live(conn, path())
+    assert has_element?(view, "#rows-#{ingredient.id}")
+    render_hook(view, "restore_excluded_recipes", %{ids: [recipe.id]})
+    refute has_element?(view, "#rows-#{ingredient.id}")
+    render_click(view, "refresh")
+    refute has_element?(view, "#rows-#{ingredient.id}")
+    view |> element("#exclude-recipe-#{recipe.id}") |> render_click()
+    assert has_element?(view, "#rows-#{ingredient.id}")
+    assert_push_event(view, "shopping-exclusions-saved", %{ids: []})
+  end
+
   test "shopping displays totals, recipe provenance and contextual recipe calculator", %{
     conn: conn
   } do

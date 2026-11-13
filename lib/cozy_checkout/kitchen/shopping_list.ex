@@ -24,6 +24,49 @@ defmodule CozyCheckout.Kitchen.ShoppingList do
     end
   end
 
+  @doc "Removes recipe contributions before rounding the remaining shopping quantities."
+  def exclude_recipes(result, excluded_ids) do
+    excluded = MapSet.new(excluded_ids)
+
+    rows =
+      Enum.flat_map(result.rows, fn row ->
+        sources = Enum.reject(row.sources, &MapSet.member?(excluded, &1.recipe.id))
+
+        if sources == [] do
+          []
+        else
+          quantity = Enum.reduce(sources, Decimal.new(0), &Decimal.add(&1.quantity, &2))
+          row = purchase(%{row | sources: sources, quantity: quantity})
+          [Map.put(row, :fingerprint, fingerprint(row))]
+        end
+      end)
+
+    purchase_issues =
+      for row <- rows, row.purchase_issue do
+        %{
+          id: "ingredient-#{row.id}",
+          booking: nil,
+          item: nil,
+          ingredient: row.ingredient,
+          message: row.purchase_issue
+        }
+      end
+
+    %{
+      result
+      | rows: rows,
+        issues: Enum.reject(result.issues, &(not is_nil(&1.ingredient))) ++ purchase_issues,
+        buffet?:
+          Enum.any?(result.meal_services, fn service ->
+            Enum.any?(
+              service.recipes,
+              &(&1.source_key == "kitchen:breakfast-buffet:v1" and
+                  not MapSet.member?(excluded, &1.id))
+            )
+          end)
+    }
+  end
+
   def validate_range(%Date{} = first, %Date{} = last) do
     if Date.diff(last, first) in 0..365, do: :ok, else: {:error, :invalid_range}
   end

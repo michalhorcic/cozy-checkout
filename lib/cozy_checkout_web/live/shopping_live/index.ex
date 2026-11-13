@@ -9,6 +9,7 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
   def mount(_, _, socket) do
     {:ok,
      socket
+     |> assign(:excluded_recipes, [])
      |> assign(:search, "")
      |> assign(:category, "")
      |> assign(:mode, "")
@@ -74,6 +75,27 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
      |> assign(:category, p["category"] || "")
      |> assign(:mode, p["mode"] || "")
      |> filter_rows()}
+  end
+
+  def handle_event("restore_excluded_recipes", %{"ids" => ids}, socket) when is_list(ids) do
+    {:noreply, update_exclusions(socket, Enum.filter(ids, &is_binary/1))}
+  end
+
+  def handle_event("clear_excluded_recipes", _, socket) do
+    {:noreply,
+     socket
+     |> update_exclusions([])
+     |> push_event("shopping-exclusions-saved", %{ids: []})}
+  end
+
+  def handle_event("toggle_recipe", %{"id" => id}, socket) do
+    ids = socket.assigns.excluded_recipes
+    ids = if id in ids, do: List.delete(ids, id), else: [id | ids]
+
+    {:noreply,
+     socket
+     |> update_exclusions(ids)
+     |> push_event("shopping-exclusions-saved", %{ids: ids})}
   end
 
   def handle_event("toggle_sources", %{"id" => id}, socket) do
@@ -161,7 +183,26 @@ defmodule CozyCheckoutWeb.ShoppingLive.Index do
     end
   end
 
+  defp update_exclusions(socket, ids) do
+    socket = assign(socket, :excluded_recipes, ids)
+
+    if socket.assigns.result do
+      assign_result(socket, socket.assigns.unfiltered_result, socket.assigns.booking_id)
+    else
+      socket
+    end
+  end
+
   defp assign_result(socket, result, booking_id) do
+    recipes = result.meal_services |> Enum.flat_map(& &1.recipes) |> Enum.uniq_by(& &1.id)
+
+    socket =
+      socket
+      |> assign(:unfiltered_result, result)
+      |> assign(:recipe_options, Enum.sort_by(recipes, &Recipes.normalize(&1.name)))
+
+    result = ShoppingList.exclude_recipes(result, socket.assigns.excluded_recipes)
+
     options = [
       {"Všechny skupiny", ""}
       | Enum.map(result.booking_options, fn b ->

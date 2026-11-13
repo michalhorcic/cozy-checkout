@@ -8,6 +8,7 @@
 >
   <div
     id="kitchen-shopping-page"
+    phx-hook="ShoppingExclusions"
     class={[
       "kitchen-shopping food-page print:bg-white print:p-0",
       @live_action == :print && "shopping-print"
@@ -272,6 +273,52 @@
               class={field_class()}
             />
           </.form>
+          <details
+            :if={@live_action != :print}
+            id="shopping-recipe-exclusions"
+            class="mb-3 print:hidden"
+          >
+            <summary class="cursor-pointer text-sm font-semibold">
+              Vyřadit recepty z nákupu ({length(@excluded_recipes)})
+            </summary>
+            <p class="my-2 text-xs">
+              Volba se pamatuje v tomto prohlížeči a platí i pro tisk. Suroviny ostatních receptů zůstanou započítané.
+            </p>
+            <button
+              :if={@excluded_recipes != []}
+              type="button"
+              phx-click="clear_excluded_recipes"
+              class="mb-2 text-sm underline"
+            >Zahrnout všechny recepty</button>
+            <input
+              type="search"
+              aria-label="Najít recept k vyřazení"
+              placeholder="Najít recept…"
+              data-recipe-search
+              class="input mb-2 w-full"
+            />
+            <div class="max-h-64 overflow-y-auto">
+              <label
+                :for={recipe <- @recipe_options}
+                data-recipe-option={Recipes.normalize(recipe.name)}
+                class="flex items-center gap-2 py-2 text-sm"
+              >
+                <input
+                  type="checkbox"
+                  id={"exclude-recipe-#{recipe.id}"}
+                  checked={recipe.id in @excluded_recipes}
+                  phx-click="toggle_recipe"
+                  phx-value-id={recipe.id}
+                  class="checkbox checkbox-sm"
+                />
+                {recipe.name}
+              </label>
+            </div>
+          </details>
+          <p :if={@live_action == :print && @excluded_recipes != []} class="mb-3 text-sm">
+            Vyřazené recepty: {Enum.filter(@recipe_options, &(&1.id in @excluded_recipes))
+            |> Enum.map_join(", ", & &1.name)}
+          </p>
           <div
             :if={@live_action != :print}
             class="mb-2 flex flex-wrap items-center justify-between gap-2 text-xs text-primary-400 print:hidden"
