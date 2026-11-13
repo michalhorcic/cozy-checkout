@@ -5,11 +5,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  [data-theme="noir"] .dashboard-workspace :is(h2, h3) {
-    font-family: var(--font-sans);
-    letter-spacing: 0;
-  }
-
   [data-theme="noir"]
     .dashboard-workspace
     :is(.dashboard-attention, .dashboard-panel, #dashboard-stays) {
@@ -71,18 +66,13 @@
     font-variant-numeric: tabular-nums;
   }
 
-  [data-theme="noir"] .pos-workspace :is(h2, h3) {
-    font-family: var(--font-sans);
-    letter-spacing: 0;
-  }
-
   [data-theme="noir"]
     .pos-workspace
-    :is(button, a[href], input:not([type="radio"])) {
+    :is(button:not(.pos-service-switch), a[href], input:not([type="radio"])) {
     min-height: 2.75rem;
   }
 
-  [data-theme="noir"] .pos-workspace button {
+  [data-theme="noir"] .pos-workspace button:not(.pos-service-switch) {
     border-radius: 0.5rem;
     box-shadow: none;
     transition:
@@ -160,7 +150,6 @@
 
   [data-theme="noir"] .pos-account-name {
     overflow-wrap: anywhere;
-    font-family: var(--font-sans);
     letter-spacing: 0;
   }
 
@@ -182,7 +171,6 @@
 
   [data-theme="noir"] .pos-order-name h1 {
     overflow-wrap: anywhere;
-    font-family: var(--font-sans);
     font-size: 1.25rem;
   }
 
