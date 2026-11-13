@@ -26,6 +26,78 @@ defmodule CozyCheckout.Adventure.TemplatesTest do
 
   defp at(day), do: DateTime.new!(day, ~T[12:00:00], "Etc/UTC")
 
+  test "calendar templates roll a single open task, retain history and repeat only on schedule",
+       %{p: p, today: day} do
+    for {cadence, index} <- Enum.with_index(~w(monthly semiannual yearly), 1) do
+      first = ~D[2020-01-31]
+      template = active(p, first, %{"cadence" => cadence, "weekdays" => []})
+      assert template.weekdays == [1]
+      {:ok, _} = Templates.generate(at(day))
+      task = Repo.one!(from q in Quest, where: q.template_id == ^template.id)
+      assert task.first_due_on == first
+      assert task.due_on == CozyCheckout.Adventure.Recurrence.latest(template, day)
+      assert task.definition_snapshot["cadence"] == cadence
+      snapshot = task.definition_snapshot
+      {:ok, _} = Tasks.start(p.id, task.id)
+      {:ok, _} = Tasks.complete(p.id, task.id)
+      {:ok, _} = Templates.generate(at(day))
+      assert Repo.aggregate(from(q in Quest, where: q.template_id == ^template.id), :count) == 1
+      next = CozyCheckout.Adventure.Recurrence.next(template, Date.add(day, 1))
+      assert Repo.get!(TaskTemplate, template.id).next_due_on == next
+      {:ok, _} = Templates.generate(at(next))
+      {:ok, _} = Templates.generate(at(next))
+      tasks = Repo.all(from q in Quest, where: q.template_id == ^template.id)
+      assert length(tasks) == 2
+      assert Enum.count(tasks, &(&1.status == "waiting")) == 1
+      assert Repo.get!(Quest, task.id).definition_snapshot == snapshot
+      assert Repo.aggregate(XpTransaction, :count) == index
+    end
+  end
+
+  test "long calendar gaps move the same open quest without copies or XP", %{p: p} do
+    for {cadence, due} <- [
+          {"monthly", ~D[2050-06-30]},
+          {"semiannual", ~D[2050-01-31]},
+          {"yearly", ~D[2050-01-31]}
+        ] do
+      first = ~D[2028-01-31]
+      template = active(p, first, %{"cadence" => cadence})
+      {:ok, _} = Templates.generate(at(first))
+      original = Repo.one!(from q in Quest, where: q.template_id == ^template.id)
+      {:ok, _} = Templates.generate(at(~D[2050-07-20]))
+      {:ok, _} = Templates.generate(at(~D[2050-07-20]))
+      [rolled] = Repo.all(from q in Quest, where: q.template_id == ^template.id)
+      assert rolled.id == original.id
+      assert rolled.first_due_on == first
+      assert rolled.due_on == due
+      assert rolled.definition_snapshot == original.definition_snapshot
+      assert length(rolled.schedule_history["shifts"]) == 1
+    end
+
+    assert Repo.aggregate(XpTransaction, :count) == 0
+  end
+
+  test "changing cadence preserves the completed definition and versions the new calendar", %{
+    p: p,
+    today: day
+  } do
+    template = active(p, day)
+    {:ok, _} = Templates.generate(at(day))
+    task = Repo.one!(Quest)
+    {:ok, _} = Tasks.start(p.id, task.id)
+    {:ok, _} = Tasks.complete(p.id, task.id)
+    snapshot = task.definition_snapshot
+
+    for cadence <- ~w(monthly semiannual yearly) do
+      assert {:ok, changed} = Templates.update(p.id, template.id, %{"cadence" => cadence})
+      assert changed.cadence == cadence
+      assert Repo.get!(Quest, task.id).definition_snapshot == snapshot
+    end
+
+    assert Repo.get!(TaskTemplate, template.id).version == template.version + 3
+    assert Repo.aggregate(XpTransaction, :count) == 1
+  end
+
   test "compact pages batch open work and hide irreversible archives with two selects", %{
     p: p,
     today: day

@@ -603,12 +603,29 @@ kompenzované odměny. Sezónní finanční přehled zůstává další etapou.
 
 ## Opakované šablony
 
-V **Questech → Opakované questy** založ název, denní/týdenní opakování,
-vybrané dny týdne, platnost od, kategorii, přiřazení, velikost/XP a působnost.
+V **Questech → Opakované questy** založ název, opakování (denně, týdně,
+měsíčně, půlročně nebo ročně), případné dny týdne, první termín, kategorii,
+přiřazení, velikost/XP a působnost.
 Změna velikosti předvyplní 50/100/250 XP; částku lze upravit. Nová šablona
 začíná pozastavená. Tlačítko **Přidat 7 doporučených šablon** založí jednou
 příklady z plánu (pokoje, úklid, jídelníček, nákup, vaření, společné prostory,
 bar). Jejich nastavení a spuštění určuje správce. Opakovaný klik zachová úpravy.
+
+Měsíční, půlroční (každých 6 měsíců) a roční opakování vycházejí z data
+**První termín**. Harmonogram je pevný, nepočítá se od skutečného splnění.
+Sanace pivních cest od 13. 11. půlročně připadne na 13. 5. a znovu 13. 11.
+Pokud cílový měsíc nemá původní den, použije se jeho poslední den; další termín
+se znovu počítá z původního data. Měsíčně od 31. 1. tedy znamená 28./29. 2.
+a poté 31. 3.; ročně od 29. 2. používá v nepřestupném roce 28. 2. a v přestupném
+znovu 29. 2. Dny v týdnu se u těchto intervalů nevybírají. Působnost, jediný
+otevřený výskyt, historie posunů a skutečně dokončením udělené XP se nemění.
+Výpočet dalšího i posledního termínu je konstantní, bez dotazů a procházení
+všech zmeškaných měsíců.
+
+Rozšíření vyžaduje migraci `20261113090000_extend_adventure_recurrence.exs`,
+která rozšiřuje povolené frekvence v existujícím databázovém omezení, bez změny
+ostatních pravidel a záznamů. Rollback PostgreSQL odmítne, pokud nějaká šablona
+stále používá novou frekvenci; žádné termíny automaticky nepřevádí ani nemaže.
 
 **Spustit / obnovit** plánuje od dneška nebo pozdějšího data platnosti.
 Hodinový `Adventure.RecurrenceWorker` a ruční **Obnovit opakované úkoly**
