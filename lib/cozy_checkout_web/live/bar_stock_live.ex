@@ -587,125 +587,181 @@ defmodule CozyCheckoutWeb.BarStockLive do
                   </p>
                 </div>
               </div>
-              <div class="grid gap-4 border-t border-gray-100 bg-gray-50/70 p-4 sm:p-5">
-                <.form
-                  for={%{}}
-                  as={:count}
-                  id={"bar-count-#{item.product.id}"}
-                  phx-submit="count"
-                  class="min-w-0"
+              <div class="space-y-2 border-t border-gray-100 p-4 sm:p-5">
+                <details
+                  id={"bar-action-count-#{item.product.id}"}
+                  name={"bar-action-#{item.product.id}"}
+                  class="bar-stock-action bar-stock-action--count"
                 >
-                  <input type="hidden" name="product_id" value={item.product.id} />
-                  <label
-                    for={"count-#{item.product.id}"}
-                    class="mb-2 block text-sm font-semibold text-gray-800"
-                  >Actual count <span class="font-normal text-gray-500">({item.display_unit})</span></label>
-                  <div class="flex gap-2">
-                    <input
-                      id={"count-#{item.product.id}"}
-                      aria-label={"Counted amount for #{item.product.name}"}
-                      name="quantity"
-                      type="number"
-                      inputmode="decimal"
-                      min="0"
-                      step="0.01"
-                      value={format_quantity(non_negative(item.stock))}
-                      required
-                      class="min-w-0 flex-1"
-                    />
-                    <button
-                      type="submit"
-                      aria-label={"Save count for #{item.product.name}"}
-                      phx-disable-with="Saving…"
-                      class="bar-stock-primary"
-                    >Save count</button>
+                  <summary>
+                    <span class="bar-stock-action-icon"><.icon
+                      name="hero-clipboard-document-check"
+                      class="size-5"
+                    /></span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-sm font-semibold">Count stock</span>
+                      <span class="mt-0.5 block text-xs font-normal text-gray-500">Enter what is actually in the bar</span>
+                    </span>
+                    <.icon name="hero-chevron-down" class="bar-stock-action-chevron size-5 shrink-0" />
+                  </summary>
+                  <div class="bar-stock-action-panel">
+                    <.form
+                      for={%{}}
+                      as={:count}
+                      id={"bar-count-#{item.product.id}"}
+                      phx-submit="count"
+                      class="min-w-0"
+                    >
+                      <input type="hidden" name="product_id" value={item.product.id} />
+                      <label
+                        for={"count-#{item.product.id}"}
+                        class="mb-2 block text-sm font-semibold text-gray-800"
+                      >Actual count
+                      <span class="font-normal text-gray-500">({item.display_unit})</span></label>
+                      <div class="flex gap-2">
+                        <input
+                          id={"count-#{item.product.id}"}
+                          aria-label={"Counted amount for #{item.product.name}"}
+                          name="quantity"
+                          type="number"
+                          inputmode="decimal"
+                          min="0"
+                          step="0.01"
+                          value={format_quantity(non_negative(item.stock))}
+                          required
+                          class="min-w-0 flex-1"
+                        />
+                        <button
+                          type="submit"
+                          aria-label={"Save count for #{item.product.name}"}
+                          phx-disable-with="Saving…"
+                          class="bar-stock-primary gap-2"
+                        ><.icon name="hero-check" class="size-5" /> Save count</button>
+                      </div>
+                    </.form>
                   </div>
-                </.form>
-                <.form
-                  for={%{}}
-                  as={:restock}
-                  id={"bar-restock-#{item.product.id}"}
-                  phx-submit="restock"
-                  class="min-w-0"
+                </details>
+                <details
+                  id={"bar-action-restock-#{item.product.id}"}
+                  name={"bar-action-#{item.product.id}"}
+                  class="bar-stock-action bar-stock-action--restock"
                 >
-                  <input type="hidden" name="product_id" value={item.product.id} />
-                  <label
-                    for={"restock-#{item.product.id}"}
-                    class="mb-2 block text-sm font-semibold text-gray-800"
-                  >Add to bar <span class="font-normal text-gray-500">({item.display_unit})</span></label>
-                  <div class="flex gap-2">
-                    <input
-                      id={"restock-#{item.product.id}"}
-                      aria-label={"Amount to add for #{item.product.name}"}
-                      name="quantity"
-                      type="number"
-                      inputmode="decimal"
-                      min="0.01"
-                      step="0.01"
-                      placeholder="0"
-                      required
-                      class="min-w-0 flex-1"
-                    />
-                    <button
-                      type="submit"
-                      aria-label={"Add stock for #{item.product.name}"}
-                      phx-disable-with="Adding…"
-                      class="bar-stock-secondary"
-                    >Add stock</button>
+                  <summary>
+                    <span class="bar-stock-action-icon"><.icon name="hero-plus-circle" class="size-5" /></span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-sm font-semibold">Add stock</span>
+                      <span class="mt-0.5 block text-xs font-normal text-gray-500">Enter the amount you are adding</span>
+                    </span>
+                    <.icon name="hero-chevron-down" class="bar-stock-action-chevron size-5 shrink-0" />
+                  </summary>
+                  <div class="bar-stock-action-panel">
+                    <.form
+                      for={%{}}
+                      as={:restock}
+                      id={"bar-restock-#{item.product.id}"}
+                      phx-submit="restock"
+                      class="min-w-0"
+                    >
+                      <input type="hidden" name="product_id" value={item.product.id} />
+                      <label
+                        for={"restock-#{item.product.id}"}
+                        class="mb-2 block text-sm font-semibold text-gray-800"
+                      >Add to bar <span class="font-normal text-gray-500">({item.display_unit})</span></label>
+                      <div class="flex gap-2">
+                        <input
+                          id={"restock-#{item.product.id}"}
+                          aria-label={"Amount to add for #{item.product.name}"}
+                          name="quantity"
+                          type="number"
+                          inputmode="decimal"
+                          min="0.01"
+                          step="0.01"
+                          placeholder="0"
+                          required
+                          class="min-w-0 flex-1"
+                        />
+                        <button
+                          type="submit"
+                          aria-label={"Add stock for #{item.product.name}"}
+                          phx-disable-with="Adding…"
+                          class="bar-stock-secondary gap-2"
+                        ><.icon name="hero-plus" class="size-5" /> Add stock</button>
+                      </div>
+                    </.form>
                   </div>
-                </.form>
+                </details>
+                <details
+                  id={"bar-action-loss-#{item.product.id}"}
+                  name={"bar-action-#{item.product.id}"}
+                  class="bar-stock-action bar-stock-action--loss"
+                >
+                  <summary>
+                    <span class="bar-stock-action-icon"><.icon
+                      name="hero-exclamation-triangle"
+                      class="size-5"
+                    /></span>
+                    <span class="min-w-0 flex-1">
+                      <span class="block text-sm font-semibold">Log loss</span>
+                      <span class="mt-0.5 block text-xs font-normal text-gray-500">Record spillage, breakage or other loss</span>
+                    </span>
+                    <.icon name="hero-chevron-down" class="bar-stock-action-chevron size-5 shrink-0" />
+                  </summary>
+                  <div class="bar-stock-action-panel">
+                    <.form
+                      for={%{}}
+                      as={:waste}
+                      id={"bar-loss-#{item.product.id}"}
+                      phx-submit="log_waste"
+                      class="space-y-2"
+                    >
+                      <input type="hidden" name="product_id" value={item.product.id} />
+                      <label
+                        for={"loss-#{item.product.id}"}
+                        class="block text-sm font-semibold text-gray-800"
+                      >Log loss ({item.display_unit})</label>
+                      <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
+                        <input
+                          id={"loss-#{item.product.id}"}
+                          aria-label={"Amount lost for #{item.product.name}"}
+                          name="quantity"
+                          type="number"
+                          inputmode="decimal"
+                          min="0.01"
+                          step="0.01"
+                          placeholder="0"
+                          required
+                        />
+                        <select
+                          aria-label={"Loss reason for #{item.product.name}"}
+                          name="reason"
+                          required
+                        >
+                          <option value="">Select reason</option>
+                          <option :for={reason <- @waste_reasons} value={reason}>
+                            {String.capitalize(reason)}
+                          </option>
+                        </select>
+                      </div>
+                      <button
+                        type="submit"
+                        aria-label={"Log loss for #{item.product.name}"}
+                        phx-disable-with="Saving…"
+                        class="bar-stock-loss-submit w-full gap-2"
+                      ><.icon name="hero-check" class="size-5" /> Record loss</button>
+                    </.form>
+                  </div>
+                </details>
               </div>
-              <details id={"bar-options-#{item.product.id}"} class="group border-t border-gray-100">
-                <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-900 sm:px-5">
-                  Loss &amp; settings
-                  <.icon
-                    name="hero-chevron-down"
-                    class="size-4 transition-transform group-open:rotate-180"
-                  />
+              <details
+                id={"bar-options-#{item.product.id}"}
+                class="bar-stock-settings border-t border-gray-100"
+              >
+                <summary class="flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-600 hover:bg-gray-50 hover:text-gray-900 sm:px-5">
+                  <.icon name="hero-cog-6-tooth" class="size-5 shrink-0" />
+                  <span class="flex-1">Stock settings</span>
+                  <.icon name="hero-chevron-down" class="bar-stock-settings-chevron size-5 shrink-0" />
                 </summary>
                 <div class="space-y-5 px-4 pb-5 sm:px-5">
-                  <.form
-                    for={%{}}
-                    as={:waste}
-                    id={"bar-loss-#{item.product.id}"}
-                    phx-submit="log_waste"
-                    class="space-y-2"
-                  >
-                    <input type="hidden" name="product_id" value={item.product.id} />
-                    <label
-                      for={"loss-#{item.product.id}"}
-                      class="block text-sm font-semibold text-gray-800"
-                    >Log loss ({item.display_unit})</label>
-                    <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
-                      <input
-                        id={"loss-#{item.product.id}"}
-                        aria-label={"Amount lost for #{item.product.name}"}
-                        name="quantity"
-                        type="number"
-                        inputmode="decimal"
-                        min="0.01"
-                        step="0.01"
-                        placeholder="0"
-                        required
-                      />
-                      <select
-                        aria-label={"Loss reason for #{item.product.name}"}
-                        name="reason"
-                        required
-                      >
-                        <option value="">Select reason</option>
-                        <option :for={reason <- @waste_reasons} value={reason}>
-                          {String.capitalize(reason)}
-                        </option>
-                      </select>
-                    </div>
-                    <button
-                      type="submit"
-                      aria-label={"Log loss for #{item.product.name}"}
-                      phx-disable-with="Saving…"
-                      class="bar-stock-secondary w-full text-rose-700"
-                    >Record loss</button>
-                  </.form>
                   <.form
                     for={%{}}
                     as={:threshold}
