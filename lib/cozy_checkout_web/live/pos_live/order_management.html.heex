@@ -16,12 +16,12 @@
         </button>
         <a
           href={~p"/admin"}
-          aria-label="Open administration with PIN"
-          title="Admin"
+          aria-label="Otevřít správu pomocí PINu"
+          title="Správa"
           class="inline-flex items-center gap-2 rounded-xl bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-200 active:scale-95"
         >
           <.icon name="hero-lock-closed" class="h-5 w-5" />
-          <span>Admin</span>
+          <span>Správa</span>
         </a>
         <div class="pos-order-name">
           <p class="mb-1 text-xs font-semibold text-primary-400">Jindřichův dům</p>
@@ -30,15 +30,15 @@
             <h1 class="text-2xl font-bold text-slate-900">
               {Sales.get_order_display_name(@order)}
               <span :if={@order.booking && @order.booking.room_number} class="text-slate-500">
-                - Room {@order.booking.room_number}
+                - Pokoj {@order.booking.room_number}
               </span>
             </h1>
           </div>
           <div class="flex items-center gap-3">
-            <p class="text-sm text-slate-600">Order #{@order.order_number}</p>
+            <p class="text-sm text-slate-600">Účet #{@order.order_number}</p>
             <%= if @order.is_service_order do %>
               <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
-                Service Order
+                Účet obsluhy
               </span>
             <% end %>
             <%= if @order.status != "paid" do %>
@@ -46,7 +46,9 @@
                 phx-click="toggle_service_order"
                 class="text-xs text-purple-600 hover:text-purple-800 underline"
               >
-                {if @order.is_service_order, do: "Convert to Standard", else: "Convert to Service"}
+                {if @order.is_service_order,
+                  do: "Přepnout na běžný účet",
+                  else: "Přepnout na účet obsluhy"}
               </button>
             <% end %>
           </div>
@@ -56,10 +58,10 @@
       <!-- Order Total -->
       <div class="pos-order-total text-right">
         <div class="flex items-center justify-end gap-2 mb-1">
-          <p class="text-sm text-slate-600">Total</p>
+          <p class="text-sm text-slate-600">Celkem</p>
           <%= if total_out_of_sync?(@order) do %>
             <span class="px-2 py-1 bg-error-light text-red-700 text-xs font-semibold rounded-full">
-              Out of sync
+              Částky nesouhlasí
             </span>
           <% end %>
         </div>
@@ -70,7 +72,7 @@
           phx-click="open_recalculate_modal"
           class="text-xs text-tertiary-600 hover:text-tertiary-800 underline mt-1"
         >
-          Recalculate total
+          Přepočítat částku
         </button>
         <a href="#pos-cart-summary" class="pos-cart-jump hidden">Zobrazit účet</a>
       </div>
@@ -95,7 +97,7 @@
                 )
               ]}
             >
-              Popular
+              Oblíbené
             </button>
             <button
               :for={category <- @categories}
@@ -156,7 +158,16 @@
                             <% :single -> %>
                               {format_currency(shortcut.product.pricing_info.price)}
                             <% :tiers -> %>
-                              Multiple prices
+                              <span
+                                :for={tier <- shortcut.product.pricing_info.tiers}
+                                class="block text-sm"
+                              >
+                                {format_number(
+                                  decimal_amount(tier["unit_amount"] || tier[:unit_amount])
+                                )} {shortcut.product.unit} · {format_currency(
+                                  decimal_amount(tier["price"] || tier[:price])
+                                )}
+                              </span>
                             <% :none -> %>
                               —
                           <% end %>
@@ -164,10 +175,13 @@
                       <% end %>
                     <% end %>
                     <span
-                      :if={shortcut.product.unit && is_nil(shortcut.unit_amount)}
+                      :if={
+                        shortcut.product.unit && is_nil(shortcut.unit_amount) &&
+                          shortcut.product.pricing_info.type != :tiers
+                      }
                       class="text-xs text-slate-600"
                     >
-                      per {shortcut.product.unit}
+                      za {shortcut.product.unit}
                     </span>
                   </div>
                 </div>
@@ -177,15 +191,15 @@
                   <button
                     phx-click="add_pos_shortcut"
                     phx-value-shortcut-id={shortcut.id}
-                    aria-label={"#{if shortcut.unit_amount, do: "Add", else: "Add 1×"}: #{shortcut.product.name}"}
+                    aria-label={"#{if shortcut.unit_amount, do: "Přidat", else: "Přidat 1×"}: #{shortcut.product.name}"}
                     class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
                   >
-                    {if shortcut.unit_amount, do: "Add", else: "Add 1×"}
+                    {if shortcut.unit_amount, do: "Přidat", else: "Přidat 1×"}
                   </button>
                   <button
                     phx-click="show_shortcut_quantity"
                     phx-value-shortcut-id={shortcut.id}
-                    aria-label={"5+ / Choose quantity: #{shortcut.product.name}"}
+                    aria-label={"5+ / Vybrat počet: #{shortcut.product.name}"}
                     class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
                   >
                     5+
@@ -196,7 +210,7 @@
                 :if={@popular_shortcuts == []}
                 class="col-span-full rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center text-slate-500"
               >
-                No quick products configured. Choose a category above.
+                Nejsou nastavené rychlé volby. Vyberte kategorii výše.
               </p>
             <% else %>
               <!-- Show Category Products -->
@@ -215,14 +229,23 @@
                           <% :single -> %>
                             {format_currency(product.pricing_info.price)}
                           <% :tiers -> %>
-                            Multiple prices
+                            <span :for={tier <- product.pricing_info.tiers} class="block text-sm">
+                              {format_number(
+                                decimal_amount(tier["unit_amount"] || tier[:unit_amount])
+                              )} {product.unit} · {format_currency(
+                                decimal_amount(tier["price"] || tier[:price])
+                              )}
+                            </span>
                           <% :none -> %>
                             —
                         <% end %>
                       </p>
                     <% end %>
-                    <span :if={product.unit} class="text-xs text-slate-600">
-                      per {product.unit}
+                    <span
+                      :if={product.unit && product.pricing_info.type != :tiers}
+                      class="text-xs text-slate-600"
+                    >
+                      za {product.unit}
                     </span>
                   </div>
                 </div>
@@ -233,15 +256,15 @@
                     phx-click="add_product"
                     phx-value-product-id={product.id}
                     phx-value-quantity={1}
-                    aria-label={"Add 1×: #{product.name}"}
+                    aria-label={"Přidat 1×: #{product.name}"}
                     class="col-span-2 bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all text-lg"
                   >
-                    Add 1×
+                    Přidat 1×
                   </button>
                   <button
                     phx-click="show_custom_quantity"
                     phx-value-product-id={product.id}
-                    aria-label={"5+ / Choose quantity: #{product.name}"}
+                    aria-label={"5+ / Vybrat počet: #{product.name}"}
                     class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-4 rounded-lg active:scale-95 transition-all"
                   >
                     5+
@@ -260,15 +283,15 @@
             <div>
               <h2 class="text-xl font-bold text-slate-900">
                 <%= if @split_mode do %>
-                  Split Bill
+                  Rozdělit účet
                 <% else %>
-                  Current Order
+                  Aktuální účet
                 <% end %>
               </h2>
               <p class="text-sm text-slate-600">
                 {Enum.count(@grouped_items)} {if Enum.count(@grouped_items) == 1,
-                  do: "item",
-                  else: "items"}
+                  do: "položka",
+                  else: "položek"}
               </p>
             </div>
             <%= if @split_mode do %>
@@ -276,7 +299,7 @@
                 phx-click="exit_split_mode"
                 class="flex items-center gap-1 px-3 py-2 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 text-sm font-semibold active:scale-95 transition-all"
               >
-                <.icon name="hero-x-mark" class="w-4 h-4" /> Exit Split
+                <.icon name="hero-x-mark" class="w-4 h-4" /> Ukončit rozdělení
               </button>
             <% end %>
           </div>
@@ -286,7 +309,7 @@
         <%= if @split_mode do %>
           <div class="flex-1 overflow-y-auto p-4">
             <p class="text-xs font-semibold text-amber-700 uppercase tracking-wide px-1 mb-3">
-              Select items for this person
+              Vyberte položky pro tuto osobu
             </p>
             <div class="space-y-3">
               <div
@@ -309,9 +332,9 @@
                       {format_currency(group.price_per_unit)} each
                     </p>
                     <p class="text-xs text-slate-400 mt-0.5">
-                      {available_qty}/{total_qty} available
+                      {available_qty}/{total_qty} k dispozici
                       <%= if allocated_qty > 0 do %>
-                        · {allocated_qty} already split
+                        · {allocated_qty} již rozděleno
                       <% end %>
                     </p>
                   </div>
@@ -383,14 +406,14 @@
                                 2
                               )}
                             <% else %>
-                              Qty: {Decimal.round(group.total_quantity, 2)}
+                              Počet: {Decimal.round(group.total_quantity, 2)}
                             <% end %>
                             <span class="ml-2 text-xs bg-tertiary-100 text-tertiary-800 px-2 py-1 rounded-full">
-                              {length(group.items)} items
+                              {length(group.items)} položek
                             </span>
                           </p>
                           <p class="text-xs text-slate-500 mt-1">
-                            Added: {format_item_timestamp(
+                            Přidáno: {format_item_timestamp(
                               Enum.max_by(group.items, & &1.inserted_at).inserted_at
                             )}
                           </p>
@@ -410,10 +433,11 @@
                         class="mt-3 w-full text-sm text-tertiary-600 hover:text-tertiary-800 font-medium flex items-center justify-center gap-1"
                       >
                         <%= if group.expanded? do %>
-                          <.icon name="hero-chevron-up" class="w-4 h-4" /> Hide individual items
+                          <.icon name="hero-chevron-up" class="w-4 h-4" />
+                          Skrýt jednotlivé položky
                         <% else %>
                           <.icon name="hero-chevron-down" class="w-4 h-4" />
-                          Show {length(group.items)} individual items
+                          Zobrazit jednotlivé položky ({length(group.items)})
                         <% end %>
                       </button>
                     </div>
@@ -444,11 +468,11 @@
                                   2
                                 )}
                               <% else %>
-                                Qty: {Decimal.round(group.total_quantity, 2)}
+                                Počet: {Decimal.round(group.total_quantity, 2)}
                               <% end %>
                             </p>
                             <p class="text-xs text-slate-500 mt-1">
-                              Added: {format_item_timestamp(hd(group.items).inserted_at)}
+                              Přidáno: {format_item_timestamp(hd(group.items).inserted_at)}
                             </p>
                           </div>
                           <div class="flex items-center gap-3">
@@ -492,7 +516,7 @@
                                 <%= if item.unit_amount do %>
                                   {Decimal.round(item.unit_amount, 2)}{item.product.unit} × {item.quantity}
                                 <% else %>
-                                  Qty: {item.quantity}
+                                  Počet: {item.quantity}
                                 <% end %>
                               </p>
                               <p class="text-xs text-slate-500 mt-0.5">
@@ -539,19 +563,19 @@
           remaining = Decimal.sub(order_total, total_paid) %>
           <div class="space-y-2 mb-4">
             <div class="flex justify-between text-slate-700">
-              <span>Order total</span>
+              <span>Celková částka</span>
               <span class="font-semibold">{format_currency(order_total)}</span>
             </div>
             <div
               :if={@order.discount_amount && Decimal.gt?(@order.discount_amount, 0)}
               class="flex justify-between text-error"
             >
-              <span>Discount</span>
+              <span>Sleva</span>
               <span class="font-semibold">-{format_currency(@order.discount_amount)}</span>
             </div>
             <%= if Decimal.gt?(total_paid, 0) do %>
               <div class="flex justify-between text-success-dark">
-                <span>Paid so far</span>
+                <span>Již zaplaceno</span>
                 <span class="font-semibold">-{format_currency(total_paid)}</span>
               </div>
             <% end %>
@@ -559,7 +583,7 @@
           <div class={[
             "flex justify-between items-center text-xl font-bold text-slate-900 pt-4 border-t border-slate-300 mb-4"
           ]}>
-            <span>{if Decimal.gt?(total_paid, 0), do: "Remaining", else: "Total"}</span>
+            <span>{if Decimal.gt?(total_paid, 0), do: "Zbývá uhradit", else: "Celkem"}</span>
             <span class={[
               "text-2xl",
               if(Decimal.gt?(total_paid, 0), do: "text-amber-600", else: "text-success-dark")
@@ -579,7 +603,7 @@
                 class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg disabled:opacity-40 disabled:cursor-not-allowed mb-2"
               >
                 <.icon name="hero-credit-card" class="w-6 h-6 inline-block mr-2" />
-                Collect {format_currency(split_amount)}
+                Zaplatit {format_currency(split_amount)}
               </button>
             <% @order.status in ["open", "partially_paid"] && Decimal.gt?(order_total, 0) -> %>
               <div class="grid grid-cols-5 gap-2">
@@ -587,18 +611,19 @@
                   phx-click="open_payment_modal"
                   class="col-span-3 bg-success hover:bg-success-dark text-white font-bold py-5 px-4 rounded-2xl text-lg active:scale-95 transition-all shadow-lg"
                 >
-                  <.icon name="hero-credit-card" class="w-5 h-5 inline-block mr-1" /> Pay Order
+                  <.icon name="hero-credit-card" class="w-5 h-5 inline-block mr-1" />
+                  Zaplatit účet
                 </button>
                 <button
                   phx-click="enter_split_mode"
                   class="col-span-2 bg-amber-100 hover:bg-amber-200 border-2 border-amber-400 text-amber-900 font-bold py-5 px-4 rounded-2xl text-base active:scale-95 transition-all"
                 >
-                  <.icon name="hero-users" class="w-5 h-5 inline-block" /> Split
+                  <.icon name="hero-users" class="w-5 h-5 inline-block" /> Rozdělit
                 </button>
               </div>
             <% @order.status == "paid" -> %>
               <div class="bg-success-light border-2 border-green-600 text-success-dark font-bold py-4 px-6 rounded-2xl text-center">
-                <.icon name="hero-check-circle" class="w-6 h-6 inline-block mr-2" /> Paid
+                <.icon name="hero-check-circle" class="w-6 h-6 inline-block mr-2" /> Zaplaceno
               </div>
             <% true -> %>
           <% end %>
@@ -630,13 +655,13 @@
           {@selected_product.name}
         </h2>
         <p class="text-lg text-slate-600 mb-6">
-          Select amount ({@selected_product.unit})
+          Vyberte množství ({@selected_product.unit})
         </p>
 
         <!-- Quick Select Buttons -->
         <%= if @selected_product.default_unit_amounts do %>
           <div class="mb-6">
-            <p class="text-sm font-semibold text-slate-700 mb-3">Select Amount</p>
+            <p class="text-sm font-semibold text-slate-700 mb-3">Select Množství</p>
             <div class="grid grid-cols-3 gap-3">
               <%= for amount <- parse_default_amounts(@selected_product.default_unit_amounts) do %>
                 <button
@@ -658,7 +683,7 @@
           <!-- For products without predefined amounts, show a simple add button -->
           <div class="mb-6">
             <p class="text-sm text-slate-600 mb-4">
-              This product doesn't have predefined amounts.
+              Tento produkt nemá přednastavená množství.
             </p>
             <button
               type="button"
@@ -666,7 +691,7 @@
               phx-value-unit_amount="0"
               class="w-full bg-success hover:bg-success-dark text-white font-bold py-6 px-4 rounded-2xl text-2xl active:scale-95 transition-all shadow-lg"
             >
-              Add to Order
+              Přidat na účet
             </button>
           </div>
         <% end %>
@@ -678,7 +703,7 @@
             phx-click="cancel_unit_modal"
             class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
           >
-            Cancel
+            Zrušit
           </button>
         </div>
       </div>
@@ -701,13 +726,13 @@
           <%= if @quantity_unit_amount do %>
             {Decimal.to_string(Decimal.normalize(@quantity_unit_amount), :normal)} {@quantity_product.unit} ·
           <% end %>
-          How many would you like to add?
+          Kolik kusů chcete přidat?
         </p>
 
         <form phx-submit="add_with_quantity">
           <div class="mb-6">
             <label class="block text-sm font-semibold text-slate-700 mb-2">
-              Quantity
+              Počet
             </label>
             <input
               type="number"
@@ -725,14 +750,14 @@
               type="submit"
               class="w-full bg-success hover:bg-success-dark text-white font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all shadow-lg"
             >
-              Add to Order
+              Přidat na účet
             </button>
             <button
               type="button"
               phx-click="cancel_quantity_modal"
               class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
             >
-              Cancel
+              Zrušit
             </button>
           </div>
         </form>
@@ -747,7 +772,7 @@
     >
       <div class="flex items-center gap-3">
         <.icon name="hero-check-circle" class="w-6 h-6" />
-        <span class="font-semibold text-lg">Item added!</span>
+        <span class="font-semibold text-lg">Položka přidána!</span>
       </div>
     </div>
 
@@ -765,8 +790,8 @@
           <div class="inline-flex items-center justify-center w-16 h-16 bg-error-light rounded-full mb-4">
             <.icon name="hero-trash" class="w-8 h-8 text-error" />
           </div>
-          <h2 class="text-2xl font-bold text-slate-900 mb-2">Delete Item?</h2>
-          <p class="text-slate-600">This action cannot be undone.</p>
+          <h2 class="text-2xl font-bold text-slate-900 mb-2">Odebrat položku?</h2>
+          <p class="text-slate-600">Tuto akci nelze vrátit zpět.</p>
         </div>
 
         <div class="bg-slate-50 rounded-xl p-4 mb-6">
@@ -776,12 +801,12 @@
           <div class="space-y-1 text-sm text-slate-700">
             <p>
               <%= if @item_to_delete.unit_amount do %>
-                Amount: {Decimal.round(@item_to_delete.unit_amount, 2)}{@item_to_delete.product.unit}
+                Množství: {Decimal.round(@item_to_delete.unit_amount, 2)}{@item_to_delete.product.unit}
               <% end %>
             </p>
-            <p>Quantity: {@item_to_delete.quantity}</p>
+            <p>Počet: {@item_to_delete.quantity}</p>
             <p class="font-semibold text-base text-slate-900 mt-2">
-              Price: {format_currency(@item_to_delete.subtotal)}
+              Cena: {format_currency(@item_to_delete.subtotal)}
             </p>
           </div>
         </div>
@@ -791,13 +816,13 @@
             phx-click="confirm_delete"
             class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
           >
-            Yes, Delete Item
+            Ano, odebrat položku
           </button>
           <button
             phx-click="cancel_delete"
             class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
           >
-            Cancel
+            Zrušit
           </button>
         </div>
       </div>
@@ -813,12 +838,12 @@
         class="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full mx-4"
         phx-click={JS.exec("phx:stop-propagation")}
       >
-        <h2 class="text-2xl font-bold text-slate-900 mb-6">Recalculate Order Total</h2>
+        <h2 class="text-2xl font-bold text-slate-900 mb-6">Přepočítat celkovou částku</h2>
 
         <div class="space-y-4 mb-6">
           <!-- Current Total -->
           <div class="bg-slate-50 rounded-xl p-4">
-            <p class="text-sm text-slate-600 mb-1">Current Total (Database)</p>
+            <p class="text-sm text-slate-600 mb-1">Aktuální uložená částka</p>
             <p class="text-2xl font-bold text-slate-900">
               {format_currency(@order.total_amount || Decimal.new("0"))}
             </p>
@@ -832,7 +857,9 @@
               else: "bg-yellow-50 border-2 border-yellow-200"
             )
           ]}>
-            <p class="text-sm text-slate-600 mb-1">Recalculated Total (Items, Discount & Tips)</p>
+            <p class="text-sm text-slate-600 mb-1">
+              Přepočtená částka (položky, sleva a spropitné)
+            </p>
             <p class="text-2xl font-bold text-slate-900">
               {format_currency(@recalculated_total || Decimal.new("0"))}
             </p>
@@ -841,12 +868,12 @@
           <!-- Difference -->
           <%= if !Decimal.equal?(@recalculated_total, @order.total_amount) do %>
             <div class="bg-error-light border-2 border-red-200 rounded-xl p-4">
-              <p class="text-sm text-error mb-1 font-semibold">Difference</p>
+              <p class="text-sm text-error mb-1 font-semibold">Rozdíl</p>
               <p class="text-xl font-bold text-red-700">
                 {format_currency(Decimal.sub(@recalculated_total, @order.total_amount))}
               </p>
               <p class="text-xs text-error mt-2">
-                The database total doesn't match the sum of order items.
+                Uložená částka neodpovídá součtu položek účtu.
               </p>
             </div>
           <% else %>
@@ -854,7 +881,7 @@
               <div class="flex items-center gap-2">
                 <.icon name="hero-check-circle" class="w-5 h-5 text-success-dark" />
                 <p class="text-sm text-green-700 font-semibold">
-                  Totals match! No update needed.
+                  Částky souhlasí. Aktualizace není potřeba.
                 </p>
               </div>
             </div>
@@ -862,7 +889,7 @@
 
           <!-- Item Breakdown -->
           <div class="bg-slate-50 rounded-xl p-4">
-            <p class="text-sm font-semibold text-slate-700 mb-3">Items Breakdown</p>
+            <p class="text-sm font-semibold text-slate-700 mb-3">Rozpis položek</p>
             <div class="space-y-2 text-sm">
               <%= for item <- @order.order_items do %>
                 <div class="flex justify-between text-slate-700">
@@ -878,15 +905,15 @@
                 </div>
               <% end %>
               <div class="border-t border-slate-300 pt-2 mt-2 flex justify-between font-semibold">
-                <span>Sum of Items:</span>
+                <span>Součet položek:</span>
                 <span>{format_currency(@recalculated_items_total)}</span>
               </div>
               <div class="flex justify-between text-red-700">
-                <span>Discount:</span>
+                <span>Sleva:</span>
                 <span>-{format_currency(@order.discount_amount || Decimal.new("0"))}</span>
               </div>
               <div class="flex justify-between text-slate-700">
-                <span>Tips:</span>
+                <span>Spropitné:</span>
                 <span>{format_currency(@order.tips_amount || Decimal.new("0"))}</span>
               </div>
             </div>
@@ -900,14 +927,14 @@
               phx-click="apply_recalculation"
               class="w-full bg-tertiary-600 hover:bg-tertiary-700 text-white font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
             >
-              Update Total to {format_currency(@recalculated_total)}
+              Změnit částku na {format_currency(@recalculated_total)}
             </button>
           <% end %>
           <button
             phx-click="close_recalculate_modal"
             class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
           >
-            Cancel
+            Zrušit
           </button>
         </div>
       </div>
@@ -928,12 +955,12 @@
             <.icon name="hero-lock-closed" class="h-7 w-7" />
           </div>
           <h2 class="text-2xl font-bold text-slate-900">
-            PIN required to {if @payment_pin_mode == :delete_empty_order,
-              do: "delete an empty account",
-              else: "collect payment"}
+            PIN je vyžadován pro {if @payment_pin_mode == :delete_empty_order,
+              do: "smazání prázdného účtu",
+              else: "přijetí platby"}
           </h2>
           <p class="mt-2 text-sm text-slate-500">
-            Enter the staff PIN to continue.
+            Pro pokračování zadejte PIN obsluhy.
           </p>
         </div>
 
@@ -958,13 +985,13 @@
               class="w-full rounded-xl bg-amber-700 px-5 py-4 text-lg font-bold text-white transition-colors hover:bg-amber-800"
             >
               {if @payment_pin_mode == :delete_empty_order,
-                do: "Continue to delete account",
-                else: "Continue to payment"}
+                do: "Pokračovat ke smazání účtu",
+                else: "Pokračovat k platbě"}
             </button>
           </form>
         <% else %>
           <p class="rounded-lg bg-rose-50 p-4 text-sm text-rose-800">
-            Staff PIN is not configured on this server.
+            Na tomto serveru není nastaven PIN obsluhy.
           </p>
         <% end %>
 
@@ -973,7 +1000,7 @@
           phx-click="cancel_payment_pin"
           class="mt-3 w-full rounded-xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
         >
-          Cancel
+          Zrušit
         </button>
       </div>
     </div>
@@ -992,9 +1019,9 @@
           <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-rose-100 text-rose-700">
             <.icon name="hero-trash" class="h-7 w-7" />
           </div>
-          <h2 class="text-2xl font-bold text-slate-900">Delete empty account?</h2>
+          <h2 class="text-2xl font-bold text-slate-900">Smazat prázdný účet?</h2>
           <p class="mt-2 text-sm text-slate-600">
-            This account has no items or payments and a zero total. It will be removed from the POS.
+            Tento účet nemá položky ani platby a má nulovou částku. Bude odstraněn z pokladny.
           </p>
         </div>
 
@@ -1004,13 +1031,13 @@
             phx-click="confirm_delete_empty_order"
             class="w-full rounded-2xl bg-rose-700 px-5 py-4 text-lg font-bold text-white transition-colors hover:bg-rose-800 active:scale-95"
           >
-            Delete account
+            Smazat účet
           </button>
           <button
             phx-click="cancel_empty_order_delete"
             class="w-full rounded-2xl bg-slate-100 px-5 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
           >
-            Cancel
+            Zrušit
           </button>
         </div>
       </div>
@@ -1092,49 +1119,49 @@
           <%= if @payment_method == "qr_preview" do %>
             <!-- QR Code Preview — payment not yet recorded -->
             <div class="text-center">
-              <h2 class="text-3xl font-bold text-slate-900 mb-1">Scan to Pay</h2>
+              <h2 class="text-3xl font-bold text-slate-900 mb-1">Naskenujte a zaplaťte</h2>
               <p class="text-sm text-slate-500 mb-5">
-                Show this QR code to the customer. Confirm once the bank transfer is complete.
+                Ukažte tento QR kód zákazníkovi. Potvrďte po dokončení bankovního převodu.
               </p>
 
               <div class="bg-white p-6 rounded-2xl border-4 border-blue-300 mb-5 inline-block">
                 <%= if @payment_qr_svg do %>
                   <img
                     src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
-                    alt="Payment QR Code"
+                    alt="Platební QR kód"
                     class="w-64 h-64"
                   />
                 <% else %>
-                  <p class="text-error">Failed to generate QR code</p>
+                  <p class="text-error">QR kód se nepodařilo vygenerovat</p>
                 <% end %>
               </div>
 
               <div class="bg-tertiary-50 border-2 border-blue-200 rounded-xl p-4 mb-5">
-                <p class="text-slate-700 font-semibold mb-1">Amount to Pay</p>
+                <p class="text-slate-700 font-semibold mb-1">Částka k úhradě</p>
                 <p class="text-4xl font-bold text-success-dark">
                   {format_currency(@payment_preview_amount || @order.total_amount)}
                 </p>
               </div>
 
               <div class="text-left space-y-1 text-sm text-slate-600 mb-6">
-                <p>• Open your banking app</p>
-                <p>• Scan the QR code above</p>
-                <p>• Verify the amount</p>
-                <p>• Complete the payment, then tap "Mark as Paid" below</p>
+                <p>• Otevřete bankovní aplikaci</p>
+                <p>• Naskenujte QR kód výše</p>
+                <p>• Zkontrolujte částku</p>
+                <p>• Dokončete platbu a poté klepněte na „Označit jako zaplacené“</p>
               </div>
 
               <button
                 phx-click="confirm_qr_payment"
                 class="w-full bg-success-light hover:bg-green-200 border-4 border-green-600 text-green-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all flex items-center justify-center gap-2 mb-3"
               >
-                <.icon name="hero-check-circle" class="w-6 h-6" /> Mark as Paid
+                <.icon name="hero-check-circle" class="w-6 h-6" /> Označit jako zaplacené
               </button>
 
               <button
                 phx-click="close_payment_modal"
                 class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-4 px-6 rounded-2xl text-lg active:scale-95 transition-all"
               >
-                Cancel
+                Zrušit
               </button>
             </div>
           <% else %>
@@ -1156,7 +1183,7 @@
                   <%= if @payment_qr_svg do %>
                     <img
                       src={"data:image/svg+xml;base64,#{@payment_qr_svg}"}
-                      alt="Payment QR Code"
+                      alt="Platební QR kód"
                       class="w-48 h-48"
                     />
                   <% end %>
@@ -1208,17 +1235,17 @@
               <%= if @split_payment_amount do %>
                 <%!-- Split payment: skip tips/discount, show the selected amount only --%>
                 <div class="text-center mb-6">
-                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Collect Payment</h2>
-                  <p class="text-sm text-slate-500 mb-5">Payment for selected items</p>
+                  <h2 class="text-3xl font-bold text-slate-900 mb-2">Přijmout platbu</h2>
+                  <p class="text-sm text-slate-500 mb-5">Platba za vybrané položky</p>
                   <div class="bg-amber-50 border-2 border-amber-300 rounded-2xl p-6 mb-6">
-                    <p class="text-sm font-semibold text-amber-800 mb-1">Amount to Collect</p>
+                    <p class="text-sm font-semibold text-amber-800 mb-1">Částka k úhradě</p>
                     <p class="text-5xl font-bold text-amber-900">
                       {format_currency(@split_payment_amount)}
                     </p>
                   </div>
                 </div>
 
-                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Vyberte způsob platby</h3>
 
                 <div class="grid grid-cols-1 gap-4 mb-6">
                   <button
@@ -1229,8 +1256,8 @@
                     <div class="flex items-center justify-between">
                       <div>
                         <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
-                        <div class="text-2xl font-bold">Cash</div>
-                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                        <div class="text-2xl font-bold">Hotovost</div>
+                        <div class="text-sm font-normal mt-1">Zaznamenat platbu v hotovosti</div>
                       </div>
                       <.icon name="hero-arrow-right" class="w-8 h-8" />
                     </div>
@@ -1243,8 +1270,8 @@
                     <div class="flex items-center justify-between">
                       <div>
                         <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
-                        <div class="text-2xl font-bold">QR Code</div>
-                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                        <div class="text-2xl font-bold">QR kód</div>
+                        <div class="text-sm font-normal mt-1">Vygenerovat platební QR kód</div>
                       </div>
                       <.icon name="hero-arrow-right" class="w-8 h-8" />
                     </div>
@@ -1255,12 +1282,12 @@
                   phx-click="close_payment_modal"
                   class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
                 >
-                  Cancel
+                  Zrušit
                 </button>
               <% else %>
                 <%!-- Normal full-order payment: tips/discount form + full total --%>
                 <!-- Payment Method Selection -->
-                <h2 class="text-3xl font-bold text-slate-900 mb-6">Payment Details</h2>
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Podrobnosti platby</h2>
 
                 <!-- Tips and Discount Form -->
                 <div class="space-y-4 mb-6 bg-slate-50 p-6 rounded-2xl">
@@ -1269,7 +1296,7 @@
                       <!-- Discount Amount -->
                       <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">
-                          Discount Amount
+                          Výše slevy
                         </label>
                         <input
                           type="number"
@@ -1285,7 +1312,7 @@
                       <!-- Tips Amount -->
                       <div>
                         <label class="block text-sm font-semibold text-slate-700 mb-2">
-                          Tips Amount
+                          Spropitné
                         </label>
                         <input
                           type="number"
@@ -1302,14 +1329,14 @@
                     <!-- Discount Reason -->
                     <div class="mt-4">
                       <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        Discount Reason (optional)
+                        Důvod slevy (nepovinné)
                       </label>
                       <input
                         type="text"
                         name="discount_reason"
                         value={@discount_reason}
                         class="w-full px-4 py-3 border-2 border-slate-300 rounded-xl focus:border-tertiary-500 focus:ring-2 focus:ring-blue-200 transition-all text-lg"
-                        placeholder="e.g., Staff discount, Promotional offer"
+                        placeholder="Např. sleva pro obsluhu, akční nabídka"
                       />
                     </div>
                   </form>
@@ -1338,25 +1365,25 @@
                     |> Decimal.add(tips_dec) %>
                   <div class="border-t-2 border-slate-200 pt-4 mt-4 space-y-2">
                     <div class="flex justify-between text-slate-700">
-                      <span>Subtotal (Items):</span>
+                      <span>Mezisoučet položek:</span>
                       <span class="font-semibold">
                         {format_currency(items_subtotal)}
                       </span>
                     </div>
                     <%= if Decimal.gt?(discount_dec, 0) do %>
                       <div class="flex justify-between text-error">
-                        <span>Discount:</span>
+                        <span>Sleva:</span>
                         <span class="font-semibold">-{format_currency(discount_dec)}</span>
                       </div>
                     <% end %>
                     <%= if Decimal.gt?(tips_dec, 0) do %>
                       <div class="flex justify-between text-success-dark">
-                        <span>Tips:</span>
+                        <span>Spropitné:</span>
                         <span class="font-semibold">+{format_currency(tips_dec)}</span>
                       </div>
                     <% end %>
                     <div class="flex justify-between text-xl font-bold text-slate-900 pt-2 border-t-2 border-slate-300">
-                      <span>Final Total:</span>
+                      <span>Celkem k úhradě:</span>
                       <span class="text-success-dark">
                         {format_currency(final_total)}
                       </span>
@@ -1364,7 +1391,7 @@
                   </div>
                 </div>
 
-                <h3 class="text-xl font-bold text-slate-900 mb-4">Select Payment Method</h3>
+                <h3 class="text-xl font-bold text-slate-900 mb-4">Vyberte způsob platby</h3>
 
                 <div class="grid grid-cols-1 gap-4 mb-6">
                   <!-- Cash Payment -->
@@ -1376,8 +1403,8 @@
                     <div class="flex items-center justify-between">
                       <div>
                         <.icon name="hero-banknotes" class="w-12 h-12 mb-2" />
-                        <div class="text-2xl font-bold">Cash</div>
-                        <div class="text-sm font-normal mt-1">Record cash payment</div>
+                        <div class="text-2xl font-bold">Hotovost</div>
+                        <div class="text-sm font-normal mt-1">Zaznamenat platbu v hotovosti</div>
                       </div>
                       <.icon name="hero-arrow-right" class="w-8 h-8" />
                     </div>
@@ -1392,8 +1419,8 @@
                     <div class="flex items-center justify-between">
                       <div>
                         <.icon name="hero-qr-code" class="w-12 h-12 mb-2" />
-                        <div class="text-2xl font-bold">QR Code</div>
-                        <div class="text-sm font-normal mt-1">Generate payment QR code</div>
+                        <div class="text-2xl font-bold">QR kód</div>
+                        <div class="text-sm font-normal mt-1">Vygenerovat platební QR kód</div>
                       </div>
                       <.icon name="hero-arrow-right" class="w-8 h-8" />
                     </div>
@@ -1404,7 +1431,7 @@
                   phx-click="close_payment_modal"
                   class="w-full bg-slate-200 hover:bg-slate-300 text-slate-900 font-bold py-5 px-6 rounded-2xl text-xl active:scale-95 transition-all"
                 >
-                  Cancel
+                  Zrušit
                 </button>
               <% end %>
               <%!-- end split_payment_amount conditional --%>

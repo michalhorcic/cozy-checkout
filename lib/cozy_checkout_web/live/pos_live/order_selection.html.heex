@@ -14,7 +14,7 @@
       <h1 class="text-4xl font-bold text-primary-500 mb-2">
         {@booking.guest.name}
         <span :if={@booking.room_number} class="text-primary-300">
-          - Room {@booking.room_number}
+          - Pokoj {@booking.room_number}
         </span>
       </h1>
       <div class="flex items-center gap-4">
@@ -29,7 +29,7 @@
           :if={@total_guests > 1}
           class="px-3 py-1 bg-tertiary-100 text-tertiary-800 text-sm font-semibold rounded-full"
         >
-          {length(@orders)} / {@total_guests} guests with orders
+          {length(@orders)} / {@total_guests} hostů s účtem
         </span>
       </div>
     </div>
@@ -48,21 +48,21 @@
       >
         <!-- Guest Name -->
         <span class="mb-4 block">
-          <span class="block text-sm text-primary-300 mb-1">Guest</span>
+          <span class="block text-sm text-primary-300 mb-1">Host</span>
           <span class="pos-account-name block text-lg font-semibold text-primary-500">
-            {if order.guest, do: order.guest.name, else: "Unknown"}
+            {if order.guest, do: order.guest.name, else: "Neznámý"}
           </span>
         </span>
 
         <!-- Order Number -->
         <span class="mb-4 block">
-          <span class="block text-sm text-slate-500 mb-1">Order Number</span>
+          <span class="block text-sm text-slate-500 mb-1">Číslo účtu</span>
           <span class="block text-xl font-bold text-slate-900">{order.order_number}</span>
         </span>
 
         <!-- Items Count -->
         <span class="mb-4 block">
-          <span class="block text-sm text-slate-500 mb-1">Items</span>
+          <span class="block text-sm text-slate-500 mb-1">Položky</span>
           <span class="block text-2xl font-bold text-tertiary-600">
             {Enum.count(Enum.filter(order.order_items, &is_nil(&1.deleted_at)))}
           </span>
@@ -70,7 +70,7 @@
 
         <!-- Total Amount -->
         <span class="pos-account-total mb-4 block">
-          <span class="block text-sm text-slate-500 mb-1">Total</span>
+          <span class="block text-sm text-slate-500 mb-1">Celkem</span>
           <span class="block text-2xl font-bold text-success-dark">
             {format_currency(order.total_amount || Decimal.new("0"))}
           </span>
@@ -85,7 +85,16 @@
               else: "bg-warning-light text-warning-dark"
             )
           ]}>
-            {String.replace(order.status, "_", " ") |> String.capitalize()}
+            {Map.get(
+              %{
+                "open" => "Otevřený",
+                "paid" => "Zaplacený",
+                "partially_paid" => "Částečně zaplacený",
+                "cancelled" => "Zrušený"
+              },
+              order.status,
+              order.status
+            )}
           </span>
         </span>
       </button>
@@ -97,7 +106,7 @@
         phx-click="create_new"
         class="w-full bg-success text-white text-xl font-bold py-6 px-8 rounded-2xl shadow-lg hover:shadow-xl active:scale-95 transition-all duration-200 hover:bg-success-dark"
       >
-        <.icon name="hero-plus-circle" class="w-8 h-8 inline-block mr-3" /> Create New Order
+        <.icon name="hero-plus-circle" class="w-8 h-8 inline-block mr-3" /> Založit nový účet
       </button>
     </div>
 
@@ -111,7 +120,7 @@
         class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8"
         phx-click="stop_propagation"
       >
-        <h2 class="text-3xl font-bold text-slate-900 mb-6">Select Guest for Order</h2>
+        <h2 class="text-3xl font-bold text-slate-900 mb-6">Vyberte hosta pro účet</h2>
 
         <div class="space-y-4">
           <button
@@ -143,7 +152,7 @@
                   :if={booking_guest.is_primary}
                   class="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-tertiary-600 text-white"
                 >
-                  Primary
+                  Hlavní host
                 </span>
               </div>
             </div>
@@ -155,7 +164,7 @@
             phx-click="hide_guest_modal"
             class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-lg transition-colors"
           >
-            Cancel
+            Zrušit
           </button>
         </div>
       </div>

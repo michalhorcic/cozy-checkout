@@ -74,6 +74,36 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     assert_redirect(view, "/pos/orders/#{service.id}")
   end
 
+  test "POS shows both size prices before adding a product", %{conn: conn} do
+    {:ok, product} =
+      CozyCheckout.Catalog.create_product(%{
+        name: "Pivo s více cenami",
+        unit: "ml",
+        default_unit_amounts: "[300,500]"
+      })
+
+    {:ok, _} =
+      CozyCheckout.Catalog.create_pricelist(%{
+        product_id: product.id,
+        vat_rate: "0",
+        valid_from: Date.utc_today(),
+        price_tiers: [
+          %{"unit_amount" => 300, "price" => 45},
+          %{"unit_amount" => 500, "price" => 70}
+        ]
+      })
+
+    {:ok, _} = CozyCheckout.Catalog.create_pos_shortcut(%{product_id: product.id, position: 0})
+    order = order_fixture()
+    {:ok, view, _} = live(conn, "/pos/orders/#{order.id}")
+
+    assert has_element?(view, ".pos-product-tile", "300 ml · 45 CZK")
+    assert has_element?(view, ".pos-product-tile", "500 ml · 70 CZK")
+    assert has_element?(view, "button[phx-click='add_pos_shortcut']", "Přidat 1×")
+    refute has_element?(view, "[phx-click='select_unit_amount']")
+    assert Sales.get_order!(order.id).order_items == []
+  end
+
   test "empty POS creates a named account without a reservation", %{conn: conn} do
     {:ok, view, html} = live(conn, "/")
     assert html =~ "Zatím tu nejsou žádné otevřené účty"

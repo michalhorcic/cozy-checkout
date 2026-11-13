@@ -50,7 +50,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       {:ok,
        socket
        |> assign(:order_id, order_id)
-       |> assign(:page_title, "Order")
+       |> assign(:page_title, "Účet")
        |> assign(:selected_category_id, nil)
        |> assign(:show_unit_modal, false)
        |> assign(:selected_product, nil)
@@ -111,7 +111,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
     cond do
       is_nil(product) ->
-        {:noreply, put_flash(socket, :error, "This product is no longer available.")}
+        {:noreply, put_flash(socket, :error, "Tento produkt již není dostupný.")}
 
       # If 5+ button clicked, show quantity modal
       params["custom"] == "true" ->
@@ -139,7 +139,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   def handle_event("add_pos_shortcut", %{"shortcut-id" => shortcut_id}, socket) do
     case Enum.find(socket.assigns.popular_shortcuts, &(&1.id == shortcut_id)) do
       nil ->
-        {:noreply, put_flash(socket, :error, "This POS shortcut is no longer available.")}
+        {:noreply, put_flash(socket, :error, "Tato rychlá volba již není dostupná.")}
 
       shortcut when not is_nil(shortcut.unit_amount) ->
         if shortcut_amount_available?(shortcut) do
@@ -149,7 +149,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
            put_flash(
              socket,
              :error,
-             "This shortcut size is no longer configured for the product. Update the shortcut."
+             "Množství této rychlé volby již není u produktu nastaveno. Upravte rychlou volbu."
            )}
         end
 
@@ -162,7 +162,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
   def handle_event("show_shortcut_quantity", %{"shortcut-id" => shortcut_id}, socket) do
     case Enum.find(socket.assigns.popular_shortcuts, &(&1.id == shortcut_id)) do
       nil ->
-        {:noreply, put_flash(socket, :error, "This POS shortcut is no longer available.")}
+        {:noreply, put_flash(socket, :error, "Tato rychlá volba již není dostupná.")}
 
       shortcut ->
         if is_nil(shortcut.unit_amount) || shortcut_amount_available?(shortcut) do
@@ -176,7 +176,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
            put_flash(
              socket,
              :error,
-             "This shortcut size is no longer configured for the product. Update the shortcut."
+             "Množství této rychlé volby již není u produktu nastaveno. Upravte rychlou volbu."
            )}
         end
     end
@@ -230,7 +230,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:quantity_product, product)
        |> assign(:quantity_unit_amount, nil)}
     else
-      {:noreply, put_flash(socket, :error, "This product is no longer available.")}
+      {:noreply, put_flash(socket, :error, "Tento produkt již není dostupný.")}
     end
   end
 
@@ -270,7 +270,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         add_multiple_items_to_order(socket, product.id, nil, quantity)
 
       true ->
-        {:noreply, put_flash(socket, :error, "Select a product before adding a quantity.")}
+        {:noreply, put_flash(socket, :error, "Před zadáním počtu vyberte produkt.")}
     end
   end
 
@@ -351,13 +351,13 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         {:noreply,
          socket
          |> load_order()
-         |> put_flash(:info, "Order type updated successfully")}
+         |> put_flash(:info, "Typ účtu byl změněn.")}
 
       {:error, :cannot_convert_paid_order} ->
-        {:noreply, put_flash(socket, :error, "Cannot convert paid orders")}
+        {:noreply, put_flash(socket, :error, "Zaplacené účty nelze převést.")}
 
       {:error, _} ->
-        {:noreply, put_flash(socket, :error, "Failed to update order type")}
+        {:noreply, put_flash(socket, :error, "Typ účtu se nepodařilo změnit.")}
     end
   end
 
@@ -372,7 +372,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       {:noreply, request_payment_pin(socket, :delete_empty_order)}
     else
       {:noreply,
-       put_flash(socket, :error, "Only an empty, unpaid account with a zero total can be deleted")}
+       put_flash(socket, :error, "Smazat lze pouze prázdný nezaplacený účet s nulovou částkou.")}
     end
   end
 
@@ -395,21 +395,21 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
            |> assign(:show_empty_order_delete_confirm, false)
            |> assign(:empty_order_delete_pin_authorized, false)
            |> push_navigate(to: ~p"/pos")
-           |> put_flash(:info, "Empty account deleted")}
+           |> put_flash(:info, "Prázdný účet byl smazán.")}
 
         {:error, _reason} ->
           {:noreply,
            socket
            |> assign(:show_empty_order_delete_confirm, false)
            |> assign(:empty_order_delete_pin_authorized, false)
-           |> put_flash(:error, "This account can no longer be deleted")}
+           |> put_flash(:error, "Tento účet již nelze smazat.")}
       end
     else
       {:noreply,
        socket
        |> assign(:show_empty_order_delete_confirm, false)
        |> assign(:empty_order_delete_pin_authorized, false)
-       |> put_flash(:error, "A staff PIN is required to delete an empty account")}
+       |> put_flash(:error, "Ke smazání prázdného účtu je nutný PIN obsluhy.")}
     end
   end
 
@@ -487,13 +487,16 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         {:noreply,
          socket
          |> assign(:show_payment_pin, false)
-         |> put_flash(:error, "Staff PIN is not configured")}
+         |> put_flash(:error, "PIN obsluhy není nastaven.")}
 
       not AdminAuthRateLimiter.allowed?(rate_limit_key) ->
         {:noreply,
          socket
          |> assign(:payment_pin, "")
-         |> put_flash(:error, "Too many incorrect PIN attempts. Wait one minute and try again.")}
+         |> put_flash(
+           :error,
+           "Příliš mnoho chybných pokusů o PIN. Počkejte minutu a zkuste to znovu."
+         )}
 
       AdminAuth.verify_pin(pin) ->
         AdminAuthRateLimiter.reset(rate_limit_key)
@@ -524,7 +527,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
              |> assign(:show_payment_pin, false)
              |> assign(:payment_pin, "")
              |> assign(:payment_pin_mode, nil)
-             |> put_flash(:error, "No action is waiting for PIN authorization")}
+             |> put_flash(:error, "Žádná akce nečeká na ověření PINem.")}
         end
 
       true ->
@@ -533,7 +536,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
         {:noreply,
          socket
          |> assign(:payment_pin, "")
-         |> put_flash(:error, "Incorrect PIN")}
+         |> put_flash(:error, "Nesprávný PIN")}
     end
   end
 
@@ -576,7 +579,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     if socket.assigns.payment_pin_authorized do
       handle_cash_payment(socket)
     else
-      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+      {:noreply, put_flash(socket, :error, "Nejprve zadejte platební PIN.")}
     end
   end
 
@@ -614,10 +617,10 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
          |> assign(:recalculated_total, nil)
          |> assign(:recalculated_items_total, nil)
          |> load_order()
-         |> put_flash(:info, "Order total updated successfully")}
+         |> put_flash(:info, "Celková částka byla aktualizována.")}
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to update order total")}
+        {:noreply, put_flash(socket, :error, "Celkovou částku se nepodařilo aktualizovat.")}
     end
   end
 
@@ -626,7 +629,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     if socket.assigns.payment_pin_authorized do
       show_qr_payment_preview(socket)
     else
-      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+      {:noreply, put_flash(socket, :error, "Nejprve zadejte platební PIN.")}
     end
   end
 
@@ -635,7 +638,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     if socket.assigns.payment_pin_authorized do
       record_qr_payment(socket)
     else
-      {:noreply, put_flash(socket, :error, "Enter the payment PIN first")}
+      {:noreply, put_flash(socket, :error, "Nejprve zadejte platební PIN.")}
     end
   end
 
@@ -691,7 +694,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
              |> load_order()}
 
           {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            {:noreply, put_flash(socket, :error, "Platbu se nepodařilo vytvořit.")}
         end
 
       split_amount ->
@@ -722,7 +725,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
              |> load_order()}
 
           {:error, _changeset} ->
-            {:noreply, put_flash(socket, :error, "Failed to create payment")}
+            {:noreply, put_flash(socket, :error, "Platbu se nepodařilo vytvořit.")}
         end
     end
   end
@@ -744,7 +747,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
             amount: payment_amount,
             currency: "CZK",
             variable_symbol: socket.assigns.order.order_number,
-            message: "Order #{socket.assigns.order.order_number}"
+            message: "Účet #{socket.assigns.order.order_number}"
           })
 
         {:noreply,
@@ -762,7 +765,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
             amount: split_amount,
             currency: "CZK",
             variable_symbol: order.order_number,
-            message: "Order #{order.order_number}"
+            message: "Účet #{order.order_number}"
           })
 
         {:noreply,
@@ -788,7 +791,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
        |> assign(:payment_preview_amount, nil)
        |> put_flash(
          :error,
-         "Order changed after the QR code was generated. Create a new QR code."
+         "Účet se po vygenerování QR kódu změnil. Vytvořte nový QR kód."
        )}
     else
       payment_attrs = %{
@@ -841,7 +844,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
          |> load_order()}
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to record payment")}
+        {:noreply, put_flash(socket, :error, "Platbu se nepodařilo zaznamenat.")}
     end
   end
 
@@ -894,13 +897,13 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
 
     cond do
       not AdminAuth.enabled?() ->
-        put_flash(socket, :error, "Staff PIN is not configured")
+        put_flash(socket, :error, "PIN obsluhy není nastaven.")
 
       not AdminAuthRateLimiter.allowed?(rate_limit_key) ->
         put_flash(
           socket,
           :error,
-          "Too many incorrect PIN attempts. Wait one minute and try again."
+          "Příliš mnoho chybných pokusů o PIN. Počkejte minutu a zkuste to znovu."
         )
 
       true ->
@@ -974,7 +977,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
          |> push_event("item-added", %{})}
 
       {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, "Failed to add item")}
+        {:noreply, put_flash(socket, :error, "Položku se nepodařilo přidat.")}
     end
   end
 
@@ -984,11 +987,11 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     page_title =
       cond do
         # Standalone order (no booking)
-        is_nil(order.booking_id) -> "Order: #{order.name}"
+        is_nil(order.booking_id) -> "Účet: #{order.name}"
         # Regular order with guest
-        order.guest -> "Order: #{order.guest.name}"
+        order.guest -> "Účet: #{order.guest.name}"
         # Fallback
-        true -> "Order: #{order.name || "Unknown"}"
+        true -> "Účet: #{order.name || "Neznámý"}"
       end
 
     grouped_items = OrderItemGrouper.group_order_items(order.order_items)
@@ -1159,7 +1162,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
       Calendar.strftime(datetime, "%H:%M")
     else
       # Other day: show date and time
-      Calendar.strftime(datetime, "%b %-d, %H:%M")
+      Calendar.strftime(datetime, "%d. %m. %Y, %H:%M")
     end
   end
 

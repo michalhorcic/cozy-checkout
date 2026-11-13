@@ -25,7 +25,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
 
     {:ok,
      socket
-     |> assign(:page_title, "Select Order")
+     |> assign(:page_title, "Výběr účtu")
      |> assign(:booking, booking)
      |> assign(:orders, orders)
      |> assign(:show_guest_modal, false)
@@ -73,7 +73,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
          socket
          |> put_flash(
            :error,
-           "All guests already have orders. Select an existing order or add more guests to the booking."
+           "Všichni hosté již mají účet. Vyberte existující účet nebo přidejte další hosty k pobytu."
          )
          |> assign(:show_guest_modal, false)}
 
@@ -126,7 +126,7 @@ defmodule CozyCheckoutWeb.PosLive.OrderSelection do
      socket
      |> assign(:show_guest_modal, false)
      |> assign(:orders, orders)
-     |> put_flash(:info, "Order created for #{order.guest.name}")
+     |> put_flash(:info, "Účet založen pro #{order.guest.name}")
      |> push_navigate(to: ~p"/pos/orders/#{order.id}")}
   end
 end
