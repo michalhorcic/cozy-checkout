@@ -33,7 +33,7 @@ defmodule CozyCheckoutWeb.BarLeaderboardComponents do
 
       <ol
         :if={@entries != []}
-        class="mt-4 grid gap-3 sm:grid-cols-3"
+        class="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1"
         aria-label="Stupně vítězů podle útraty"
       >
         <li
