@@ -193,13 +193,12 @@ defmodule CozyCheckout.Inventory do
   ## Bar Stock
 
   def list_bar_stock_products do
-    Product
-    |> where([p], is_nil(p.deleted_at) and p.track_bar_stock == true)
-    |> preload(:category)
-    |> order_by([p], asc: p.name)
+    bar_stock_products_query()
+    |> join(:left, [p], m in BarStockMovement, on: m.product_id == p.id)
+    |> group_by([p], p.id)
+    |> select([p, m], {p, coalesce(sum(m.quantity), 0)})
     |> Repo.all()
-    |> Enum.map(fn product ->
-      raw_stock = get_bar_stock_level(product.id)
+    |> Enum.map(fn {product, raw_stock} ->
       volume_based? = product.unit in ["ml", "L", "cl"]
       stock = if volume_based?, do: Decimal.div(raw_stock, 1000), else: raw_stock
       display_unit = if volume_based?, do: "L", else: product.unit || "pcs"
@@ -243,14 +242,24 @@ defmodule CozyCheckout.Inventory do
   Accepts optional `:start_date` / `:end_date` (`Date`) to scope to a period.
   """
   def get_bar_stock_loss_summary(filters \\ %{}) do
-    Product
-    |> where([p], is_nil(p.deleted_at) and p.track_bar_stock == true)
-    |> preload(:category)
-    |> order_by([p], asc: p.name)
+    movements = apply_movement_date_filter(BarStockMovement, filters)
+
+    bar_stock_products_query()
+    |> join(:left, [p], m in subquery(movements), on: m.product_id == p.id)
+    |> group_by([p], p.id)
+    |> select([p, m], {
+      p,
+      coalesce(sum(m.quantity) |> filter(m.movement_type in ["sale", "sale_reversal"]), 0),
+      coalesce(
+        sum(m.quantity)
+        |> filter(m.movement_type in ["count_adjustment", "waste"] and m.quantity < 0),
+        0
+      )
+    })
     |> Repo.all()
-    |> Enum.map(fn product ->
-      sold = get_bar_stock_net_sold(product.id, filters)
-      loss = get_bar_stock_loss_quantity(product.id, filters)
+    |> Enum.map(fn {product, net_sales, negative_loss} ->
+      sold = Decimal.max(Decimal.negate(net_sales), Decimal.new("0"))
+      loss = Decimal.abs(negative_loss)
       volume_based? = product.unit in ["ml", "L", "cl"]
       display_unit = if volume_based?, do: "L", else: product.unit || "pcs"
       display_sold = if volume_based?, do: Decimal.div(sold, 1000), else: sold
@@ -576,35 +585,11 @@ defmodule CozyCheckout.Inventory do
     )
   end
 
-  # Net units removed via sales: sale movements are negative, reversals positive.
-  defp get_bar_stock_net_sold(product_id, filters) do
-    sum =
-      from(m in BarStockMovement,
-        where: m.product_id == ^product_id and m.movement_type in ["sale", "sale_reversal"]
-      )
-      |> apply_movement_date_filter(filters)
-      |> select([m], coalesce(sum(m.quantity), 0))
-      |> Repo.one()
-      |> Kernel.||(Decimal.new("0"))
-
-    negated = Decimal.negate(sum)
-    if Decimal.compare(negated, 0) == :lt, do: Decimal.new("0"), else: negated
-  end
-
-  # Only negative differences count as loss; positive overages are ignored.
-  defp get_bar_stock_loss_quantity(product_id, filters) do
-    sum =
-      from(m in BarStockMovement,
-        where:
-          m.product_id == ^product_id and m.movement_type in ["count_adjustment", "waste"] and
-            m.quantity < 0
-      )
-      |> apply_movement_date_filter(filters)
-      |> select([m], coalesce(sum(m.quantity), 0))
-      |> Repo.one()
-      |> Kernel.||(Decimal.new("0"))
-
-    Decimal.abs(sum)
+  defp bar_stock_products_query do
+    Product
+    |> where([p], is_nil(p.deleted_at) and p.track_bar_stock == true)
+    |> preload(:category)
+    |> order_by([p], asc: p.name)
   end
 
   defp apply_movement_date_filter(query, filters) do

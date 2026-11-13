@@ -349,7 +349,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
       show_header={false}
       flash_info_class="alert-success"
     >
-      <div class="px-4 py-8 sm:px-6 lg:px-8">
+      <div id="bar-stock-workspace" class="min-w-0 px-4 py-6 sm:px-6 lg:px-8">
         <div class="mb-8">
           <.link
             navigate={~p"/admin"}
@@ -357,8 +357,8 @@ defmodule CozyCheckoutWeb.BarStockLive do
           >
             ← Back to Dashboard
           </.link>
-          <div class="flex items-end justify-between gap-4">
-            <h1 class="text-4xl font-bold text-primary-500">Bar Stock</h1>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h1 class="text-3xl font-bold text-primary-500 sm:text-4xl">Bar Stock</h1>
             <.link
               navigate={~p"/admin/stock"}
               class="inline-flex flex-shrink-0 items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
@@ -368,14 +368,19 @@ defmodule CozyCheckoutWeb.BarStockLive do
           </div>
         </div>
 
-        <section class="mb-6 rounded-lg bg-white p-6 shadow-lg">
+        <section class="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
           <h2 class="mb-3 flex items-center gap-2 text-base font-semibold text-gray-900">
             <.icon name="hero-magnifying-glass" class="h-5 w-5 text-gray-400" />
             Add product to bar stock
           </h2>
-          <form id="bar-stock-search-form" phx-change="search_products" phx-submit="noop">
+          <form
+            id="bar-stock-search-form"
+            phx-change="search_products"
+            phx-submit={JS.dispatch("blur", to: "#bar-stock-product-search")}
+          >
             <div class="relative">
               <input
+                aria-label="Search products to add to bar stock"
                 id="bar-stock-product-search"
                 type="text"
                 name="search"
@@ -476,12 +481,22 @@ defmodule CozyCheckoutWeb.BarStockLive do
             >
               <input type="hidden" name="bar_stock[product_id]" value={@selected_product.id} />
               <div>
-                <label for="bar-stock-initial" class="mb-1 block text-sm font-medium text-gray-700">Current bar amount</label>
+                <label for="bar-stock-initial" class="mb-1 block text-sm font-medium text-gray-700">Current bar amount ({if @selected_product.unit in [
+                                                                                                                              "ml",
+                                                                                                                              "L",
+                                                                                                                              "cl"
+                                                                                                                            ],
+                                                                                                                            do:
+                                                                                                                              "L",
+                                                                                                                            else:
+                                                                                                                              @selected_product.unit ||
+                                                                                                                                "pcs"})</label>
                 <input
                   id="bar-stock-initial"
                   name="bar_stock[initial_quantity]"
                   type="number"
                   min="0"
+                  inputmode="decimal"
                   step="0.01"
                   value="0"
                   required
@@ -489,12 +504,22 @@ defmodule CozyCheckoutWeb.BarStockLive do
                 />
               </div>
               <div>
-                <label for="bar-stock-threshold" class="mb-1 block text-sm font-medium text-gray-700">Alert below</label>
+                <label for="bar-stock-threshold" class="mb-1 block text-sm font-medium text-gray-700">Alert below ({if @selected_product.unit in [
+                                                                                                                         "ml",
+                                                                                                                         "L",
+                                                                                                                         "cl"
+                                                                                                                       ],
+                                                                                                                       do:
+                                                                                                                         "L",
+                                                                                                                       else:
+                                                                                                                         @selected_product.unit ||
+                                                                                                                           "pcs"})</label>
                 <input
                   id="bar-stock-threshold"
                   name="bar_stock[threshold]"
                   type="number"
                   min="0"
+                  inputmode="decimal"
                   step="0.01"
                   value="0"
                   required
@@ -502,12 +527,10 @@ defmodule CozyCheckoutWeb.BarStockLive do
                 />
               </div>
               <div class="flex items-center justify-between gap-3">
-                <span class="text-sm text-gray-500">{if @selected_product.unit in ["ml", "L", "cl"],
-                  do: "L",
-                  else: @selected_product.unit || "pcs"}</span>
                 <button
                   type="submit"
-                  class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-emerald-700"
+                  class="bar-stock-primary w-full justify-center"
+                  phx-disable-with="Adding…"
                 >
                   <.icon name="hero-plus" class="h-4 w-4" /> Add to bar
                 </button>
@@ -516,212 +539,230 @@ defmodule CozyCheckoutWeb.BarStockLive do
           <% end %>
         </section>
 
-        <div class="mb-6 rounded-lg bg-white p-4 shadow-lg">
-          <div class="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-            <div class="flex items-center gap-2">
-              <span class="h-4 w-4 rounded bg-rose-500"></span><span class="text-sm text-gray-700">Out of Stock</span>
+        <section id="bar-stock-items" class="mb-10" aria-labelledby="bar-stock-items-heading">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 id="bar-stock-items-heading" class="text-xl font-semibold text-gray-900">
+                In the bar
+              </h2>
+              <p class="mt-1 text-sm text-gray-500">Count what is here. Restock only what you add.</p>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="h-4 w-4 rounded bg-amber-500"></span><span class="text-sm text-gray-700">Low Stock</span>
-            </div>
-            <div class="flex items-center gap-2">
-              <span class="h-4 w-4 rounded bg-emerald-500"></span><span class="text-sm text-gray-700">In Stock</span>
-            </div>
+            <span class="rounded-full bg-white px-3 py-1 text-sm font-medium text-gray-600 ring-1 ring-gray-200">
+              {length(@bar_stock_items)} products
+            </span>
           </div>
-        </div>
-
-        <div class="mb-8 overflow-hidden rounded-lg bg-white shadow-lg">
-          <table class="min-w-full divide-y divide-gray-200 text-sm">
-            <thead class="bg-gradient-to-r from-primary-500 to-secondary-600 text-left text-xs font-medium uppercase text-white">
-              <tr>
-                <th class="whitespace-nowrap px-2 py-3">Status</th>
-                <th class="px-2 py-3">Product</th>
-                <th class="px-2 py-3">Category</th>
-                <th class="whitespace-nowrap px-2 py-3">Current Stock</th>
-                <th class="whitespace-nowrap px-2 py-3">Low Stock Alert</th>
-                <th class="px-2 py-3">Restock</th>
-                <th class="px-2 py-3">Count</th>
-                <th class="px-2 py-3">Log Loss</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200 bg-white">
-              <%= for item <- @bar_stock_items do %>
-                <tr class={[
-                  "transition-colors hover:bg-gray-50",
-                  item.status == :out_of_stock && "bg-rose-50",
-                  item.status == :low_stock && "bg-amber-50"
-                ]}>
-                  <td class="whitespace-nowrap px-2 py-3">
-                    <span class={[
-                      "inline-block h-3 w-3 rounded-full",
-                      item.status == :out_of_stock && "bg-rose-500",
-                      item.status == :low_stock && "bg-amber-500",
-                      item.status == :in_stock && "bg-emerald-500"
-                    ]}></span>
-                  </td>
-                  <td class="px-2 py-3 text-sm font-medium text-gray-900">
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="truncate">{item.product.name}</span>
-                      <button
-                        type="button"
-                        phx-click="untrack_product"
-                        phx-value-product_id={item.product.id}
-                        data-confirm={"Stop tracking #{item.product.name} in the bar? Current stock (#{format_quantity(item.stock)} #{item.display_unit}) will no longer be monitored, but past movements are kept."}
-                        aria-label={"Stop tracking #{item.product.name}"}
-                        title="Stop tracking this product"
-                        class="flex-shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-rose-600"
-                      >
-                        <.icon name="hero-eye-slash" class="size-4" />
-                      </button>
-                    </div>
-                  </td>
-                  <td class="whitespace-nowrap px-2 py-3 text-sm text-gray-900">
+          <div class="grid min-w-0 items-start gap-4 lg:grid-cols-2">
+            <article
+              :for={item <- @bar_stock_items}
+              id={"bar-stock-item-#{item.product.id}"}
+              class="bar-stock-card min-w-0 rounded-2xl border border-gray-200 bg-white shadow-sm"
+            >
+              <div class="flex items-start justify-between gap-3 p-4 sm:p-5">
+                <div class="min-w-0">
+                  <p class="mb-1 text-xs font-medium text-gray-500">
                     {item.product.category && item.product.category.name}
-                  </td>
-                  <td class="whitespace-nowrap px-2 py-3">
-                    <div class={[
-                      "text-sm font-semibold",
-                      item.status == :out_of_stock && "text-rose-600",
-                      item.status == :low_stock && "text-amber-600",
-                      item.status == :in_stock && "text-emerald-600"
-                    ]}>
-                      {format_quantity(item.stock)} {item.display_unit}
-                    </div>
-                  </td>
-                  <td class="whitespace-nowrap px-2 py-3 text-sm text-gray-500">
-                    <.form
-                      for={%{}}
-                      as={:threshold}
-                      phx-submit="update_threshold"
-                      class="flex items-center gap-1"
-                    >
-                      <input type="hidden" name="product_id" value={item.product.id} />
+                  </p>
+                  <h3 class="break-words text-lg font-semibold leading-snug text-gray-900">
+                    {item.product.name}
+                  </h3>
+                  <span class={[
+                    "mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold",
+                    item.status == :out_of_stock && "bg-rose-50 text-rose-700",
+                    item.status == :low_stock && "bg-amber-50 text-amber-800",
+                    item.status == :in_stock && "bg-emerald-50 text-emerald-700"
+                  ]}>
+                    <span class="size-1.5 rounded-full bg-current"></span>
+                    {case item.status do
+                      :out_of_stock -> "Out of stock"
+                      :low_stock -> "Low stock"
+                      :in_stock -> "In stock"
+                    end}
+                  </span>
+                </div>
+                <div class="shrink-0 text-right">
+                  <p class="text-xs text-gray-500">Expected</p>
+                  <p class="mt-1 text-2xl font-bold tabular-nums text-gray-900">
+                    {format_quantity(item.stock)}
+                    <span class="text-sm font-normal text-gray-500">{item.display_unit}</span>
+                  </p>
+                </div>
+              </div>
+              <div class="grid gap-4 border-t border-gray-100 bg-gray-50/70 p-4 sm:p-5">
+                <.form
+                  for={%{}}
+                  as={:count}
+                  id={"bar-count-#{item.product.id}"}
+                  phx-submit="count"
+                  class="min-w-0"
+                >
+                  <input type="hidden" name="product_id" value={item.product.id} />
+                  <label
+                    for={"count-#{item.product.id}"}
+                    class="mb-2 block text-sm font-semibold text-gray-800"
+                  >Actual count <span class="font-normal text-gray-500">({item.display_unit})</span></label>
+                  <div class="flex gap-2">
+                    <input
+                      id={"count-#{item.product.id}"}
+                      aria-label={"Counted amount for #{item.product.name}"}
+                      name="quantity"
+                      type="number"
+                      inputmode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={format_quantity(non_negative(item.stock))}
+                      required
+                      class="min-w-0 flex-1"
+                    />
+                    <button
+                      type="submit"
+                      aria-label={"Save count for #{item.product.name}"}
+                      phx-disable-with="Saving…"
+                      class="bar-stock-primary"
+                    >Save count</button>
+                  </div>
+                </.form>
+                <.form
+                  for={%{}}
+                  as={:restock}
+                  id={"bar-restock-#{item.product.id}"}
+                  phx-submit="restock"
+                  class="min-w-0"
+                >
+                  <input type="hidden" name="product_id" value={item.product.id} />
+                  <label
+                    for={"restock-#{item.product.id}"}
+                    class="mb-2 block text-sm font-semibold text-gray-800"
+                  >Add to bar <span class="font-normal text-gray-500">({item.display_unit})</span></label>
+                  <div class="flex gap-2">
+                    <input
+                      id={"restock-#{item.product.id}"}
+                      aria-label={"Amount to add for #{item.product.name}"}
+                      name="quantity"
+                      type="number"
+                      inputmode="decimal"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="0"
+                      required
+                      class="min-w-0 flex-1"
+                    />
+                    <button
+                      type="submit"
+                      aria-label={"Add stock for #{item.product.name}"}
+                      phx-disable-with="Adding…"
+                      class="bar-stock-secondary"
+                    >Add stock</button>
+                  </div>
+                </.form>
+              </div>
+              <details id={"bar-options-#{item.product.id}"} class="group border-t border-gray-100">
+                <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 text-sm font-medium text-gray-600 hover:text-gray-900 sm:px-5">
+                  Loss &amp; settings
+                  <.icon
+                    name="hero-chevron-down"
+                    class="size-4 transition-transform group-open:rotate-180"
+                  />
+                </summary>
+                <div class="space-y-5 px-4 pb-5 sm:px-5">
+                  <.form
+                    for={%{}}
+                    as={:waste}
+                    id={"bar-loss-#{item.product.id}"}
+                    phx-submit="log_waste"
+                    class="space-y-2"
+                  >
+                    <input type="hidden" name="product_id" value={item.product.id} />
+                    <label
+                      for={"loss-#{item.product.id}"}
+                      class="block text-sm font-semibold text-gray-800"
+                    >Log loss ({item.display_unit})</label>
+                    <div class="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] gap-2">
                       <input
-                        aria-label={"Low stock threshold for #{item.product.name}"}
-                        name="threshold"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={format_quantity(item.threshold)}
-                        class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
-                      />
-                      <span class="text-xs text-gray-500">{item.display_unit}</span>
-                      <button
-                        type="submit"
-                        aria-label={"Save threshold for #{item.product.name}"}
-                        class="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                      >
-                        <.icon name="hero-check" class="size-4" />
-                      </button>
-                    </.form>
-                  </td>
-                  <td class="px-2 py-3">
-                    <.form
-                      for={%{}}
-                      as={:restock}
-                      phx-submit="restock"
-                      class="flex items-center gap-1"
-                    >
-                      <input type="hidden" name="product_id" value={item.product.id} />
-                      <input
-                        aria-label={"Amount to add for #{item.product.name}"}
+                        id={"loss-#{item.product.id}"}
+                        aria-label={"Amount lost for #{item.product.name}"}
                         name="quantity"
                         type="number"
+                        inputmode="decimal"
                         min="0.01"
                         step="0.01"
-                        placeholder={item.display_unit}
+                        placeholder="0"
                         required
-                        class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
                       />
-                      <button
-                        type="submit"
-                        aria-label={"Add stock for #{item.product.name}"}
-                        class="rounded p-1 text-emerald-700 hover:bg-emerald-50"
-                      >
-                        <.icon name="hero-plus" class="size-4" />
-                      </button>
-                    </.form>
-                  </td>
-                  <td class="px-2 py-3">
-                    <.form
-                      for={%{}}
-                      as={:count}
-                      phx-submit="count"
-                      class="flex items-center gap-1"
-                    >
-                      <input type="hidden" name="product_id" value={item.product.id} />
-                      <input
-                        aria-label={"Counted amount for #{item.product.name}"}
-                        name="quantity"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={format_quantity(non_negative(item.stock))}
-                        required
-                        class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
-                      />
-                      <span class="text-xs text-gray-500">{item.display_unit}</span>
-                      <button
-                        type="submit"
-                        aria-label={"Save count for #{item.product.name}"}
-                        class="rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                      >
-                        <.icon name="hero-clipboard-document-check" class="size-4" />
-                      </button>
-                    </.form>
-                  </td>
-                  <td class="px-2 py-3">
-                    <.form
-                      for={%{}}
-                      as={:waste}
-                      phx-submit="log_waste"
-                      class="flex w-40 flex-col items-stretch gap-1"
-                    >
-                      <input type="hidden" name="product_id" value={item.product.id} />
-                      <div class="flex items-center gap-1">
-                        <input
-                          aria-label={"Amount lost for #{item.product.name}"}
-                          name="quantity"
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          placeholder={item.display_unit}
-                          required
-                          class="w-14 rounded-md border-gray-300 text-xs shadow-sm"
-                        />
-                        <button
-                          type="submit"
-                          aria-label={"Log loss for #{item.product.name}"}
-                          class="rounded p-1 text-rose-700 hover:bg-rose-50"
-                        >
-                          <.icon name="hero-exclamation-triangle" class="size-4" />
-                        </button>
-                      </div>
                       <select
                         aria-label={"Loss reason for #{item.product.name}"}
                         name="reason"
                         required
-                        class="w-full rounded-md border-gray-300 text-xs shadow-sm"
                       >
-                        <option value="">Reason</option>
-                        <%= for reason <- @waste_reasons do %>
-                          <option value={reason}>{String.capitalize(reason)}</option>
-                        <% end %>
+                        <option value="">Select reason</option>
+                        <option :for={reason <- @waste_reasons} value={reason}>
+                          {String.capitalize(reason)}
+                        </option>
                       </select>
-                    </.form>
-                  </td>
-                </tr>
-              <% end %>
-              <%= if @bar_stock_items == [] do %>
-                <tr>
-                  <td colspan="8" class="px-4 py-10 text-center text-gray-500">
-                    No products are being tracked in the bar yet.
-                  </td>
-                </tr>
-              <% end %>
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                    <button
+                      type="submit"
+                      aria-label={"Log loss for #{item.product.name}"}
+                      phx-disable-with="Saving…"
+                      class="bar-stock-secondary w-full text-rose-700"
+                    >Record loss</button>
+                  </.form>
+                  <.form
+                    for={%{}}
+                    as={:threshold}
+                    id={"bar-threshold-#{item.product.id}"}
+                    phx-submit="update_threshold"
+                  >
+                    <input type="hidden" name="product_id" value={item.product.id} />
+                    <label
+                      for={"threshold-#{item.product.id}"}
+                      class="mb-2 block text-sm font-semibold text-gray-800"
+                    >Alert below ({item.display_unit})</label>
+                    <div class="flex gap-2">
+                      <input
+                        id={"threshold-#{item.product.id}"}
+                        aria-label={"Low stock threshold for #{item.product.name}"}
+                        name="threshold"
+                        type="number"
+                        inputmode="decimal"
+                        min="0"
+                        step="0.01"
+                        value={format_quantity(item.threshold)}
+                        required
+                        class="min-w-0 flex-1"
+                      />
+                      <button
+                        type="submit"
+                        aria-label={"Save threshold for #{item.product.name}"}
+                        phx-disable-with="Saving…"
+                        class="bar-stock-secondary"
+                      >Save alert</button>
+                    </div>
+                  </.form>
+                  <button
+                    type="button"
+                    phx-click="untrack_product"
+                    phx-value-product_id={item.product.id}
+                    data-confirm={"Stop tracking #{item.product.name} in the bar? Current stock (#{format_quantity(item.stock)} #{item.display_unit}) will no longer be monitored, but past movements are kept."}
+                    aria-label={"Stop tracking #{item.product.name}"}
+                    class="flex min-h-11 items-center gap-2 text-sm font-medium text-gray-500 hover:text-rose-700"
+                  >
+                    <.icon name="hero-eye-slash" class="size-4" /> Stop tracking product
+                  </button>
+                </div>
+              </details>
+            </article>
+          </div>
+          <div
+            :if={@bar_stock_items == []}
+            class="rounded-2xl border border-dashed border-gray-300 bg-white px-5 py-10 text-center"
+          >
+            <.icon name="hero-archive-box" class="mx-auto mb-3 size-8 text-gray-400" />
+            <h3 class="text-base font-semibold text-gray-900">Your bar stock starts here</h3>
+            <p class="mt-2 text-sm text-gray-500">
+              Search for a product above and enter how much is in the bar.
+            </p>
+          </div>
+        </section>
 
         <section class="mb-10">
           <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
@@ -733,7 +774,10 @@ defmodule CozyCheckoutWeb.BarStockLive do
                   else: "(selected period)"}
               </span>
             </h2>
-            <form phx-change="filter_loss_summary" class="flex flex-wrap items-end gap-2">
+            <form
+              phx-change="filter_loss_summary"
+              class="bar-stock-filters grid w-full grid-cols-2 items-end gap-2 sm:w-auto sm:grid-cols-3"
+            >
               <div>
                 <label class="mb-1 block text-xs font-medium text-gray-600" for="loss-start-date">
                   From
@@ -767,7 +811,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
               </button>
             </form>
           </div>
-          <div class="overflow-x-auto border-y border-gray-200">
+          <div class="bar-stock-history overflow-hidden rounded-xl border border-gray-200">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
               <thead class="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
                 <tr>
@@ -780,17 +824,22 @@ defmodule CozyCheckoutWeb.BarStockLive do
               <tbody class="divide-y divide-gray-200 bg-white">
                 <%= for row <- @loss_summary do %>
                   <tr class={Decimal.compare(row.loss_rate, 5) == :gt && "bg-rose-50"}>
-                    <td class="px-4 py-3 font-medium text-gray-900">{row.product.name}</td>
-                    <td class="whitespace-nowrap px-4 py-3 text-gray-700">
+                    <td data-label="Product" class="px-4 py-3 font-medium text-gray-900">
+                      {row.product.name}
+                    </td>
+                    <td data-label="Sold" class="whitespace-nowrap px-4 py-3 text-gray-700">
                       {format_quantity(row.sold)} {row.display_unit}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-3 text-gray-700">
+                    <td data-label="Loss" class="whitespace-nowrap px-4 py-3 text-gray-700">
                       {format_quantity(row.loss)} {row.display_unit}
                     </td>
-                    <td class={[
-                      "whitespace-nowrap px-4 py-3 font-semibold",
-                      Decimal.compare(row.loss_rate, 5) == :gt && "text-rose-700"
-                    ]}>
+                    <td
+                      data-label="Loss rate"
+                      class={[
+                        "whitespace-nowrap px-4 py-3 font-semibold",
+                        Decimal.compare(row.loss_rate, 5) == :gt && "text-rose-700"
+                      ]}
+                    >
                       {format_percent(row.loss_rate)}%
                     </td>
                   </tr>
@@ -814,7 +863,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
             for={%{}}
             as={:movement_filter}
             phx-submit="filter_movements"
-            class="mb-4 flex flex-wrap items-end gap-3 rounded-lg bg-gray-50 p-4"
+            class="bar-stock-filters mb-4 grid gap-3 rounded-xl border border-gray-200 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4"
           >
             <div>
               <label for="movement-search" class="mb-1 block text-xs font-medium text-gray-600">
@@ -826,7 +875,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
                 name="search"
                 value={@movement_search}
                 placeholder="Search by product name..."
-                class="w-48 rounded-md border-gray-300 text-sm shadow-sm"
+                class="w-full rounded-md border-gray-300 text-sm shadow-sm"
               />
             </div>
             <div>
@@ -882,7 +931,7 @@ defmodule CozyCheckoutWeb.BarStockLive do
             </button>
           </.form>
 
-          <div class="overflow-x-auto border-y border-gray-200">
+          <div class="bar-stock-history overflow-hidden rounded-xl border border-gray-200">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
               <thead class="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
                 <tr>
@@ -896,19 +945,22 @@ defmodule CozyCheckoutWeb.BarStockLive do
               <tbody class="divide-y divide-gray-200 bg-white">
                 <%= for movement <- @recent_movements do %>
                   <tr>
-                    <td class="whitespace-nowrap px-4 py-3 text-gray-500">
+                    <td data-label="When" class="whitespace-nowrap px-4 py-3 text-gray-500">
                       {Calendar.strftime(movement.inserted_at, "%d.%m.%Y %H:%M")}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-3 font-medium text-gray-900">
+                    <td
+                      data-label="Product"
+                      class="whitespace-nowrap px-4 py-3 font-medium text-gray-900"
+                    >
                       {movement.product.name}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-3 font-semibold">
+                    <td data-label="Change" class="whitespace-nowrap px-4 py-3 font-semibold">
                       {format_movement_quantity(movement.quantity, movement.product)}
                     </td>
-                    <td class="whitespace-nowrap px-4 py-3 text-gray-700">
+                    <td data-label="Movement" class="whitespace-nowrap px-4 py-3 text-gray-700">
                       {movement_label(movement.movement_type)}
                     </td>
-                    <td class="px-4 py-3 text-gray-500">
+                    <td data-label="Details" class="px-4 py-3 text-gray-500">
                       {if movement.order_item && movement.order_item.order,
                         do: "Order #{movement.order_item.order.order_number}",
                         else: movement.notes}
