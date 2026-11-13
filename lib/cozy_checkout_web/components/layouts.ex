@@ -471,7 +471,19 @@ defmodule CozyCheckoutWeb.Layouts do
     <header id="pos-brand-header" class="pos-brand-header print:hidden">
       <div class="pos-brand-inner">
         <span class="pos-brand-house">Jindřichův dům</span>
-        <.theme_toggle id="pos-design-switcher" />
+        <div class="flex shrink-0 items-center gap-2">
+          <.theme_toggle id="pos-design-switcher" />
+          <.link
+            id="pos-admin-link"
+            href={~p"/admin"}
+            aria-label="Otevřít správu pomocí PINu"
+            title="Správa"
+            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-current/20 px-3 text-sm font-semibold transition-colors hover:bg-primary-400/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current"
+          >
+            <.icon name="hero-lock-closed" class="h-5 w-5" />
+            <span class="hidden sm:inline">Správa</span>
+          </.link>
+        </div>
       </div>
     </header>
     {render_slot(@inner_block)}
