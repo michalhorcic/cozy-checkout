@@ -64,3 +64,37 @@ export const ShoppingChecklist = {
     if (done) done.hidden = !(rows.length > 0 && rows.every(row => row.hidden))
   }
 }
+
+// Recipe exclusions apply to every range, including the dedicated print view.
+export const ShoppingExclusions = {
+  mounted() {
+    this.storageKey = 'cozy:kitchen-shopping:excluded-recipes:v1'
+    this.restoreExclusions()
+    this.handleEvent('shopping-exclusions-saved', ({ids}) => {
+      try { localStorage.setItem(this.storageKey, JSON.stringify(ids)) } catch { /* usable without storage */ }
+    })
+    this.onRecipeSearch = event => {
+      if (!event.target.matches('[data-recipe-search]')) return
+      this.filterRecipes()
+    }
+    this.el.addEventListener('input', this.onRecipeSearch)
+  },
+  reconnected() { this.restoreExclusions() },
+  restoreExclusions() {
+    let ids = []
+    try {
+      const stored = JSON.parse(localStorage.getItem(this.storageKey) || '[]')
+      if (Array.isArray(stored)) ids = stored.filter(id => typeof id === 'string')
+    } catch { /* usable without storage */ }
+    this.pushEvent('restore_excluded_recipes', {ids})
+  },
+  updated() { this.filterRecipes() },
+  filterRecipes() {
+    const query = (this.el.querySelector('[data-recipe-search]')?.value || '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+    this.el.querySelectorAll('[data-recipe-option]').forEach(option => {
+      option.style.display = option.dataset.recipeOption.includes(query) ? '' : 'none'
+    })
+  },
+  destroyed() { this.el.removeEventListener('input', this.onRecipeSearch) }
+}

@@ -7,6 +7,31 @@ defmodule CozyCheckout.Kitchen.ShoppingListTest do
   alias CozyCheckout.Kitchen.ShoppingList
   alias CozyCheckout.Recipes.{Links, Recipe}
 
+  test "excluding a recipe preserves shared ingredients and rerounds remaining packages" do
+    {_, recipe} = shopping_recipe()
+    shopping_booking(recipe)
+    {:ok, result} = ShoppingList.generate(~D[2027-01-08], ~D[2027-01-10])
+    [row] = result.rows
+    [source | _] = row.sources
+    other_id = Ecto.UUID.generate()
+
+    other_source = %{
+      source
+      | recipe: %{source.recipe | id: other_id},
+        quantity: Decimal.new("0.4")
+    }
+
+    mixed = %{result | rows: [%{row | sources: row.sources ++ [other_source]}]}
+
+    [remaining] = ShoppingList.exclude_recipes(mixed, [recipe.id]).rows
+    assert remaining.sources == [other_source]
+    assert Decimal.equal?(remaining.quantity, "0.4")
+    assert Decimal.equal?(remaining.packages, "1")
+    assert remaining.fingerprint != row.fingerprint
+    assert ShoppingList.exclude_recipes(result, [recipe.id]).rows == []
+    assert ShoppingList.exclude_recipes(result, []).rows == result.rows
+  end
+
   test "all groups sum before package rounding and retain a complete provenance trail" do
     {ingredient, recipe} = shopping_recipe()
     {first, _} = shopping_booking(recipe)
