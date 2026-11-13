@@ -97,8 +97,8 @@ defmodule CozyCheckoutWeb.PosAccountsLiveTest do
     order = order_fixture()
     {:ok, view, _} = live(conn, "/pos/orders/#{order.id}")
 
-    assert has_element?(view, ".pos-product-tile", "300 ml · 45 CZK")
-    assert has_element?(view, ".pos-product-tile", "500 ml · 70 CZK")
+    assert has_element?(view, ".pos-product-tile", "300 ml · 45.00 CZK")
+    assert has_element?(view, ".pos-product-tile", "500 ml · 70.00 CZK")
     assert has_element?(view, "button[phx-click='add_pos_shortcut']", "Přidat 1×")
     refute has_element?(view, "[phx-click='select_unit_amount']")
     assert Sales.get_order!(order.id).order_items == []
