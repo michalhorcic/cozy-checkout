@@ -72,58 +72,70 @@
       </div>
     </header>
 
-    <.bar_podium :if={!@service_mode} entries={@leaderboard} />
+    <div class={[
+      "grid items-start gap-5",
+      !@service_mode && "lg:grid-cols-[minmax(0,1fr)_22rem]"
+    ]}>
+      <div class="min-w-0">
+        <!-- Účty Section -->
+        <div :if={@orders != []} class="mb-4">
+          <h2 class="text-lg font-bold text-primary-500 mb-2">Účty</h2>
+          <div class={[
+            "pos-account-grid grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4",
+            if(@service_mode,
+              do: "lg:grid-cols-5 xl:grid-cols-6",
+              else: "lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+            )
+          ]}>
+            <button
+              :for={order <- @orders}
+              type="button"
+              id={"pos-order-#{order.id}"}
+              phx-click="select_order"
+              phx-value-order-id={order.id}
+              class={[
+                "pos-account-tile text-left bg-tertiary-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
+                "p-4 cursor-pointer active:scale-95 border-2 border-tertiary-200 hover:border-tertiary-400",
+                "min-h-[120px] flex flex-col justify-between"
+              ]}
+            >
+              <span class="block">
+                <span class="mb-3 block">
+                  <.account_stamp stamp={AccountStamps.key(order)} />
+                </span>
+                <span class="pos-account-name font-heading block text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
+                  {Sales.get_order_display_name(order)}
+                </span>
+                <span class="block text-xs text-primary-300">
+                  Účet #{order.order_number}
+                </span>
+                <span :if={Map.has_key?(@bar_badges, order.id)} class="mt-2 block">
+                  <.bar_badge entry={@bar_badges[order.id]} />
+                </span>
+              </span>
 
-    <!-- Účty Section -->
-    <div :if={@orders != []} class="mb-4">
-      <h2 class="text-lg font-bold text-primary-500 mb-2">Účty</h2>
-      <div class="pos-account-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
-        <button
-          :for={order <- @orders}
-          type="button"
-          id={"pos-order-#{order.id}"}
-          phx-click="select_order"
-          phx-value-order-id={order.id}
-          class={[
-            "pos-account-tile text-left bg-tertiary-50 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-200",
-            "p-4 cursor-pointer active:scale-95 border-2 border-tertiary-200 hover:border-tertiary-400",
-            "min-h-[120px] flex flex-col justify-between"
-          ]}
+              <span class="pos-account-total mt-2 block w-full pt-2 border-t border-tertiary-200">
+                <span class="text-sm font-semibold text-tertiary-700">
+                  {format_currency(order.total_amount)}
+                </span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div
+          :if={@orders == []}
+          class="rounded-xl border border-secondary-200 bg-white px-4 py-8 text-center"
         >
-          <span class="block">
-            <span class="mb-3 block">
-              <.account_stamp stamp={AccountStamps.key(order)} />
-            </span>
-            <span class="pos-account-name font-heading block text-lg font-bold text-primary-500 mb-2 break-words leading-tight">
-              {Sales.get_order_display_name(order)}
-            </span>
-            <span class="block text-xs text-primary-300">
-              Účet #{order.order_number}
-            </span>
-            <span :if={Map.has_key?(@bar_badges, order.id)} class="mt-2 block">
-              <.bar_badge entry={@bar_badges[order.id]} />
-            </span>
-          </span>
-
-          <span class="pos-account-total mt-2 block w-full pt-2 border-t border-tertiary-200">
-            <span class="text-sm font-semibold text-tertiary-700">
-              {format_currency(order.total_amount)}
-            </span>
-          </span>
-        </button>
+          <.account_stamp stamp="mug" class="mx-auto mb-3 h-16 w-16" />
+          <h2 class="text-lg font-bold text-primary-400 mb-1">
+            Zatím tu nejsou žádné otevřené účty
+          </h2>
+          <p class="text-sm text-primary-400">Nový účet můžete založit tlačítkem výše.</p>
+        </div>
       </div>
-    </div>
-
-    <!-- Empty State -->
-    <div
-      :if={@orders == []}
-      class="rounded-xl border border-secondary-200 bg-white px-4 py-8 text-center"
-    >
-      <.account_stamp stamp="mug" class="mx-auto mb-3 h-16 w-16" />
-      <h2 class="text-lg font-bold text-primary-400 mb-1">
-        Zatím tu nejsou žádné otevřené účty
-      </h2>
-      <p class="text-sm text-primary-400">Nový účet můžete založit tlačítkem výše.</p>
+      <.bar_podium :if={!@service_mode} entries={@leaderboard} />
     </div>
 
     <!-- Quick Order Modal -->
