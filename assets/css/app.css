@@ -386,3 +386,49 @@ h1, h2, h3, h4, h5, h6,
   .incoming-overview-table .incoming-overview-action { margin-top: 0.75rem; }
   .incoming-overview-table .incoming-company-label { display: inline; }
 }
+
+/* Bar stock keeps every action within reach, including at narrow phone widths. */
+#bar-stock-workspace :is(input:not([type="hidden"]), select) {
+  min-width: 0;
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--color-gray-300);
+  border-radius: .625rem;
+  background-color: white;
+  padding: .625rem .75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+#bar-stock-workspace :is(input, select, button, summary):focus-visible {
+  outline: 2px solid var(--color-tertiary-500);
+  outline-offset: 3px;
+}
+#bar-stock-workspace button { min-height: 2.75rem; }
+.bar-stock-primary, .bar-stock-secondary {
+  display: inline-flex;
+  min-height: 2.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: .625rem;
+  padding: .625rem .875rem;
+  font-size: .875rem;
+  font-weight: 600;
+  transition: background-color .15s;
+}
+.bar-stock-primary { background: var(--color-emerald-700); color: white; }
+.bar-stock-primary:hover { background: var(--color-emerald-800); }
+.bar-stock-secondary { border: 1px solid var(--color-gray-300); background: white; }
+.bar-stock-secondary:hover { background: var(--color-gray-100); }
+#bar-stock-workspace button:disabled { cursor: wait; opacity: .6; }
+.bar-stock-card summary::-webkit-details-marker { display: none; }
+.bar-stock-history table { table-layout: fixed; }
+.bar-stock-history td { overflow-wrap: anywhere; white-space: normal; }
+@media (max-width: 639px) {
+  .bar-stock-history :is(table, tbody, tr, td) { display: block; width: 100%; }
+  .bar-stock-history thead { display: none; }
+  .bar-stock-history tr { padding: .75rem 1rem; }
+  .bar-stock-history td { padding: .375rem 0; }
+  .bar-stock-history td[data-label] { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: .75rem; }
+  .bar-stock-history td[data-label]::before { content: attr(data-label); color: var(--color-gray-500); font-size: .75rem; font-weight: 500; }
+}
