@@ -167,13 +167,24 @@ defmodule CozyCheckoutWeb.DashboardLiveTest do
     assert has_element?(view, "#portions-incomplete")
   end
 
-  test "all existing areas remain reachable, active navigation follows routes, and locking works",
+  test "active areas remain in navigation, unused stock is hidden, and locking works",
        %{conn: conn} do
     {:ok, view, _} = live(conn, "/admin")
 
     for path <-
-          ~w(/admin/bookings/calendar /admin/meal-planner /admin/bar-stock /admin/emails /admin/orders /admin/payments /admin/categories /admin/products /admin/pos-shortcuts /admin/pricelists /admin/pricelists/management /admin/pricelists/print /admin/purchase_orders /admin/stock /admin/stock/restock /admin/stock-adjustments /admin/inventory-reports /admin/guests /admin/rooms /admin/bookings /admin/bookings/timeline /admin/ical-import /admin/economy /admin/statistics /admin/pohoda-export) do
+          ~w(/admin/bookings/calendar /admin/meal-planner /admin/bar-stock /admin/emails /admin/orders /admin/payments /admin/categories /admin/products /admin/pos-shortcuts /admin/pricelists /admin/pricelists/management /admin/pricelists/print /admin/guests /admin/rooms /admin/bookings /admin/bookings/timeline /admin/ical-import /admin/economy /admin/statistics /admin/pohoda-export) do
       assert has_element?(view, "#admin-desktop a[href='#{path}']")
+    end
+
+    for nav <- ["#admin-desktop", "#admin-mobile"] do
+      assert has_element?(view, "#{nav} > div:last-child h3", "Skladová evidence")
+      assert has_element?(view, "#{nav} > div:last-child span", "Nyní se nepoužívá")
+      assert has_element?(view, "#{nav} a[href='/admin/bar-stock']")
+
+      for path <-
+            ~w(/admin/purchase_orders /admin/stock /admin/stock/restock /admin/stock-adjustments /admin/inventory-reports) do
+        refute has_element?(view, "#{nav} a[href='#{path}']")
+      end
     end
 
     result =

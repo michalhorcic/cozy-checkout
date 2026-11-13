@@ -1166,6 +1166,12 @@ defmodule CozyCheckoutWeb.PosLive.OrderManagement do
     end
   end
 
+  defp size_price_label(tier, unit) do
+    amount = decimal_amount(tier["unit_amount"] || tier[:unit_amount])
+    price = decimal_amount(tier["price"] || tier[:price])
+    "#{format_number(amount)} #{unit} · #{format_currency(price)}"
+  end
+
   defp get_price_for_amount(product, amount) do
     if product.pricing_info && product.pricing_info.type == :tiers do
       case decimal_amount(amount) do

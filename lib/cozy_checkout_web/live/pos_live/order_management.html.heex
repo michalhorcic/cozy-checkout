@@ -162,11 +162,7 @@
                                 :for={tier <- shortcut.product.pricing_info.tiers}
                                 class="block text-sm"
                               >
-                                {format_number(
-                                  decimal_amount(tier["unit_amount"] || tier[:unit_amount])
-                                )} {shortcut.product.unit} · {format_currency(
-                                  decimal_amount(tier["price"] || tier[:price])
-                                )}
+                                {size_price_label(tier, shortcut.product.unit)}
                               </span>
                             <% :none -> %>
                               —
@@ -230,11 +226,7 @@
                             {format_currency(product.pricing_info.price)}
                           <% :tiers -> %>
                             <span :for={tier <- product.pricing_info.tiers} class="block text-sm">
-                              {format_number(
-                                decimal_amount(tier["unit_amount"] || tier[:unit_amount])
-                              )} {product.unit} · {format_currency(
-                                decimal_amount(tier["price"] || tier[:price])
-                              )}
+                              {size_price_label(tier, product.unit)}
                             </span>
                           <% :none -> %>
                             —
