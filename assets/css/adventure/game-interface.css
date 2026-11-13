@@ -241,3 +241,15 @@
   .adventure-duty-history-entry > button { margin-left: 54px; }
   .adventure-duty-history-story { flex: 1 1 calc(100% - 54px); }
 }
+
+.adventure-quick-actions, .adventure-quick-heading { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.adventure-quick-heading h2 { flex: 1; }
+.adventure-quick-heading button { min-height: 36px; }
+.adventure-quick-size { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.adventure-quick-size label { cursor: pointer; position: relative; }
+.adventure-quick-size input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.adventure-quick-size label > span { display: grid; gap: 3px; text-align: center; padding: 10px 6px; border: 2px solid #dcd8bc; border-radius: 12px; background: #fcfaef; }
+.adventure-quick-size label:has(input:checked) > span { border-color: #537b4e; background: #ecf2dc; }
+.adventure-quick-size label:has(input:focus-visible) > span { outline: 3px solid #ad8337; outline-offset: 3px; }
+.adventure-quick-size small { font-size: 12px; color: #876515; }
+@media (max-width: 420px) { .adventure-quick-heading button { flex-basis: 100%; justify-content: flex-start; } }
