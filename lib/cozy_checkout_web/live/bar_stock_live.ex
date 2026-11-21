@@ -1017,9 +1017,15 @@ defmodule CozyCheckoutWeb.BarStockLive do
                       {movement_label(movement.movement_type)}
                     </td>
                     <td data-label="Details" class="px-4 py-3 text-gray-500">
-                      {if movement.order_item && movement.order_item.order,
-                        do: "Order #{movement.order_item.order.order_number}",
-                        else: movement.notes}
+                      <%= if order = movement.order_item && movement.order_item.order do %>
+                        <%= if String.trim(order.name || "") == "" do %>
+                          Order {order.order_number}
+                        <% else %>
+                          <span title={"Order #{order.order_number}"}>{order.name}</span>
+                        <% end %>
+                      <% else %>
+                        {movement.notes}
+                      <% end %>
                     </td>
                   </tr>
                 <% end %>
