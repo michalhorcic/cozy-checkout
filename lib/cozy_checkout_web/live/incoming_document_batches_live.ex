@@ -14,6 +14,7 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
        batch: nil,
        rows: [],
        page: 0,
+       archived: false,
        accounting_options: [],
        accounting_error: nil,
        preset: "",
@@ -40,7 +41,8 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
     socket =
       case socket.assigns.live_action do
         :index ->
-          assign(socket, batches: Batches.list(socket.assigns.page))
+          archived = params["archived"] == "true"
+          assign(socket, archived: archived, page: 0, batches: Batches.list(0, archived))
 
         :new ->
           assign(socket, batch: nil)
@@ -66,9 +68,14 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
   def handle_info(:refresh, socket) do
     socket =
       case socket.assigns.live_action do
-        :index -> assign(socket, batches: Batches.list(socket.assigns.page))
-        :show -> reload(socket)
-        _ -> socket
+        :index ->
+          assign(socket, batches: Batches.list(socket.assigns.page, socket.assigns.archived))
+
+        :show ->
+          reload(socket)
+
+        _ ->
+          socket
       end
 
     Process.send_after(self(), :refresh, 2000)
@@ -220,9 +227,33 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
     end
   end
 
+  def handle_event(action, %{"id" => id}, socket) when action in ["archive", "restore"] do
+    outcome = if action == "archive", do: Batches.archive(id), else: Batches.restore(id)
+
+    case outcome do
+      {:ok, _} ->
+        socket =
+          put_flash(
+            socket,
+            :info,
+            if(action == "archive", do: "Dávka archivována.", else: "Dávka obnovena.")
+          )
+
+        if socket.assigns.live_action == :index do
+          {:noreply,
+           assign(socket, batches: Batches.list(socket.assigns.page, socket.assigns.archived))}
+        else
+          {:noreply, reload(socket)}
+        end
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, "Změnu archivace se nepodařilo uložit.")}
+    end
+  end
+
   def handle_event("page", %{"delta" => delta}, socket) do
     page = max(0, socket.assigns.page + String.to_integer(delta))
-    {:noreply, assign(socket, page: page, batches: Batches.list(page))}
+    {:noreply, assign(socket, page: page, batches: Batches.list(page, socket.assigns.archived))}
   end
 
   defp upload_progress(:sources, entry, socket) do
@@ -347,13 +378,24 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
         navigate={~p"/admin/incoming-documents"}
         class="btn btn-ghost min-h-11"
       ><.icon name="hero-arrow-left" class="size-4" /> Zpět na dávky</.link>
+      <nav :if={@live_action == :index} aria-label="Archiv dávek" class="flex gap-2">
+        <.link patch={~p"/admin/incoming-documents"} class={["btn", !@archived && "btn-primary"]}>Aktivní dávky</.link>
+        <.link
+          patch={~p"/admin/incoming-documents?archived=true"}
+          class={["btn", @archived && "btn-primary"]}
+        >Archivované dávky</.link>
+      </nav>
       <div :if={@live_action == :index} id="batch-list" class="space-y-4">
         <p
           :if={@batches == []}
           class="rounded-xl border border-base-300 bg-base-100 p-6 text-base-content/60"
         >
           {if @page == 0,
-            do: "Zatím tu nejsou žádné dávky. Začněte tlačítkem Nahrát doklady.",
+            do:
+              if(@archived,
+                do: "Archiv neobsahuje žádné dávky.",
+                else: "Žádné aktivní dávky. Začněte tlačítkem Nahrát doklady nebo otevřete archiv."
+              ),
             else: "Na této stránce nejsou další dávky."}
         </p>
         <div
@@ -402,6 +444,11 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
                     navigate={batch_action_path(row)}
                     class="btn btn-outline btn-sm min-h-11 w-full sm:w-auto"
                   >{batch_action(row)}</.link>
+                  <button
+                    class="btn btn-ghost btn-sm min-h-11"
+                    phx-click={if @archived, do: "restore", else: "archive"}
+                    phx-value-id={row.batch.id}
+                  >{if @archived, do: "Obnovit", else: "Archivovat"}</button>
                 </td>
               </tr>
             </tbody>
@@ -442,6 +489,16 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLive do
       </.form>
       <div :if={@live_action == :show && @batch} class="space-y-5">
         <h2 class="text-2xl font-bold">{@batch.name}</h2>
+        <p :if={@batch.archived_at} class="badge badge-neutral">Archivovaná dávka</p>
+        <button
+          id="batch-archive-toggle"
+          class="btn btn-outline"
+          phx-click={if @batch.archived_at, do: "restore", else: "archive"}
+          phx-value-id={@batch.id}
+        >{if @batch.archived_at, do: "Obnovit dávku", else: "Archivovat dávku"}</button>
+        <p class="text-sm text-base-content/60">
+          Archivace pouze skryje dávku z aktivního přehledu. Doklady i probíhající zpracování zůstanou zachovány.
+        </p>
         <p>{IncomingDocuments.agenda_label(@batch.agenda)} · Firma ABRA: {@batch.company_id}</p>
         <section :if={!@batch.started_at} class="space-y-4">
           <details id="batch-upload-help" phx-mounted={JS.ignore_attributes("open")}>

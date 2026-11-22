@@ -86,6 +86,39 @@ defmodule CozyCheckoutWeb.IncomingDocumentBatchesLiveTest do
     Batches.refresh(batch.id)
   end
 
+  test "unsent batches can be archived, found after refresh and restored", %{conn: conn} do
+    batch = batch()
+    id = source(batch, "%PDF-archive")
+    ready(batch, [id])
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-documents")
+    view |> element("#batch-#{batch.id} button[phx-click=archive]") |> render_click()
+    refute has_element?(view, "#batch-#{batch.id}")
+    send(view.pid, :refresh)
+    refute has_element?(view, "#batch-#{batch.id}")
+
+    view |> element("a", "Archivované dávky") |> render_click()
+    assert_patch(view, "/admin/incoming-documents?archived=true")
+    assert has_element?(view, "#batch-#{batch.id}")
+    send(view.pid, :refresh)
+    assert has_element?(view, "#batch-#{batch.id}")
+    view |> element("#batch-#{batch.id} button[phx-click=restore]") |> render_click()
+    refute has_element?(view, "#batch-#{batch.id}")
+    view |> element("a", "Aktivní dávky") |> render_click()
+    assert has_element?(view, "#batch-#{batch.id}")
+  end
+
+  test "detail allows archiving and restoring without changing documents", %{conn: conn} do
+    batch = batch()
+    id = source(batch, "%PDF-archive-detail")
+    ready(batch, [id])
+    {:ok, view, _} = live(admin(conn), "/admin/incoming-document-batches/#{batch.id}")
+    view |> element("#batch-archive-toggle", "Archivovat dávku") |> render_click()
+    assert Batches.get!(batch.id).archived_at
+    assert has_element?(view, "#batch-documents")
+    view |> element("#batch-archive-toggle", "Obnovit dávku") |> render_click()
+    assert is_nil(Batches.get!(batch.id).archived_at)
+  end
+
   test "PIN protects batch routes", %{conn: conn} do
     for path <- [
           "/admin/incoming-documents",
