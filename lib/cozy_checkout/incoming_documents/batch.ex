@@ -12,6 +12,7 @@ defmodule CozyCheckout.IncomingDocuments.Batch do
     field :model, :string
     field :started_at, :utc_datetime
     field :extraction_finished_at, :utc_datetime
+    field :archived_at, :utc_datetime
     field :deleted_at, :utc_datetime
     timestamps(type: :utc_datetime)
   end

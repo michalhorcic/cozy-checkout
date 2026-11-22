@@ -9,6 +9,17 @@ Formulář používá stejné tři vzory, připojení ABRA, soukromé originály
 Responses API a Oban worker. Obsahuje účetní předpis, volitelný dry-run, stažení
 XML i přímé odeslání tlačítkem; není potřeba přecházet na další obrazovku.
 
+## Archivace dávek
+
+Přehled `/admin/incoming-documents` standardně zobrazuje pouze aktivní dávky.
+Tlačítko **Archivovat** v přehledu nebo **Archivovat dávku** v detailu uloží
+čas archivace, a to i u dávek s neodeslanými doklady nebo běžícím vytěžováním.
+Archivace nemaže ani nemění doklady a nezastavuje rozpracované úlohy.
+Dávka i její doklady zůstávají přístupné na původních adresách.
+Přepínač **Archivované dávky** otevře archiv (`?archived=true`), kde lze dávku
+vrátit mezi aktivní tlačítkem **Obnovit**; obnovení je dostupné i v detailu.
+Existující dávky zůstávají po migraci aktivní. Archivace je pouze ruční.
+
 ## Stav převzatého řešení
 
 Větev `codex/prijate-doklady` na commitu `d45647a` již obsahuje nahrávání,

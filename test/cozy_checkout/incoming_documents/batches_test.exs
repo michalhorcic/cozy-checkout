@@ -52,6 +52,39 @@ defmodule CozyCheckout.IncomingDocuments.BatchesTest do
     )
   end
 
+  test "archive hides an unsent batch without changing its documents and restore returns it" do
+    batch = batch()
+    doc = source(batch)
+    assert Enum.any?(Batches.list(), &(&1.batch.id == batch.id))
+
+    assert {:ok, archived} = Batches.archive(batch.id)
+    assert archived.archived_at
+    refute Enum.any?(Batches.list(), &(&1.batch.id == batch.id))
+    assert [%{batch: %{id: id}, total: 1, sent: 0}] = Batches.list(0, true)
+    assert id == batch.id
+    assert IncomingDocuments.get!(doc.id) == doc
+    assert Batches.get!(batch.id).deleted_at == nil
+    assert {:ok, again} = Batches.archive(batch.id)
+    assert again.archived_at == archived.archived_at
+
+    assert {:ok, restored} = Batches.restore(batch.id)
+    assert is_nil(restored.archived_at)
+    assert Enum.any?(Batches.list(), &(&1.batch.id == batch.id))
+    assert Batches.list(0, true) == []
+  end
+
+  test "archiving a running batch preserves extraction jobs and status" do
+    batch = batch()
+    doc = source(batch)
+    assert {:ok, _} = Batches.start(batch.id)
+    before = IncomingDocuments.get!(doc.id)
+    jobs = Repo.all(Oban.Job)
+    assert {:ok, _} = Batches.archive(batch.id)
+    assert IncomingDocuments.get!(doc.id) == before
+    assert Repo.all(Oban.Job) == jobs
+    assert Batches.get!(batch.id).started_at
+  end
+
   test "staging survives reload without jobs or runs; invalid source does not undo good uploads" do
     batch = batch()
     doc = source(batch)

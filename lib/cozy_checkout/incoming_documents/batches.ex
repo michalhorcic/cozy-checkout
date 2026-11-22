@@ -48,8 +48,12 @@ defmodule CozyCheckout.IncomingDocuments.Batches do
 
   def get!(id), do: Repo.one!(from b in Batch, where: b.id == ^id and is_nil(b.deleted_at))
 
+  def archive(id), do: locked(id, &update!(&1, archived_at: &1.archived_at || now()))
+
+  def restore(id), do: locked(id, &update!(&1, archived_at: nil))
+
   # One grouped query, including persistent completion notices. No large document fields.
-  def list(page \\ 0) do
+  def list(page \\ 0, archived \\ false) do
     Repo.all(
       from b in Batch,
         left_join: d in Document,
@@ -57,6 +61,7 @@ defmodule CozyCheckout.IncomingDocuments.Batches do
         left_join: r in ExtractionRun,
         on: r.id == d.initial_extraction_run_id,
         where: is_nil(b.deleted_at),
+        where: ^archived == not is_nil(b.archived_at),
         group_by: b.id,
         order_by: [desc: b.inserted_at, desc: b.id],
         limit: 25,
