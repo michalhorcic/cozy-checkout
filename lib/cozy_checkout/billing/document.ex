@@ -6,6 +6,7 @@ defmodule CozyCheckout.Billing.Document do
     belongs_to :billing_account, CozyCheckout.Billing.Account
     belongs_to :booking, CozyCheckout.Bookings.Booking
     belongs_to :parent, __MODULE__
+    field :deleted_at, :utc_datetime
     field :kind, :string
     field :number, :string
     field :variable_symbol, :string

@@ -46,6 +46,27 @@ defmodule CozyCheckout.Abra.Accommodation do
     :ok
   end
 
+  def cancel_document!(doc) do
+    export =
+      Repo.one(from e in AccommodationExport, where: e.document_id == ^doc.id, lock: "FOR UPDATE")
+
+    if export do
+      if export.state not in ["synced", "outdated"],
+        do: Repo.rollback("Nejprve dokončete přenos do ABRA; poté fakturu smažte")
+
+      cfg = checked_config!()
+      check_target!(export, cfg)
+
+      case CozyCheckout.Abra.InvoiceCancellation.cancel(export, doc, cfg) do
+        :ok ->
+          export |> Ecto.Changeset.change(state: "cancelled", error: nil) |> Repo.update!()
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end
+  end
+
   def check_advance_update!(doc) do
     export =
       Repo.one(from e in AccommodationExport, where: e.document_id == ^doc.id, lock: "FOR UPDATE")
@@ -171,7 +192,7 @@ defmodule CozyCheckout.Abra.Accommodation do
       not enabled?() ->
         {:snooze, 60}
 
-      export.state in ["synced", "outdated"] ->
+      export.state in ["synced", "outdated", "cancelled"] ->
         :ok
 
       export.verification["kind"] == "final" and not FinalInvoiceExport.enabled?(cfg) ->

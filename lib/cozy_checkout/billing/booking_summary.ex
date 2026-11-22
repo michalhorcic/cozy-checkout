@@ -75,7 +75,7 @@ defmodule CozyCheckout.Billing.BookingSummary do
 
     advance_values =
       from d in Document,
-        where: d.kind == "advance",
+        where: d.kind == "advance" and is_nil(d.deleted_at),
         select: %{
           billing_account_id: d.billing_account_id,
           percent:
@@ -113,7 +113,7 @@ defmodule CozyCheckout.Billing.BookingSummary do
         left_join: i in BookingInvoice,
         on: i.billing_account_id == b.id,
         left_join: f in Document,
-        on: f.billing_account_id == b.id and f.kind == "final",
+        on: f.billing_account_id == b.id and f.kind == "final" and is_nil(f.deleted_at),
         left_join: c in subquery(corrections),
         on: c.parent_id == f.id,
         left_join: p in subquery(payments),

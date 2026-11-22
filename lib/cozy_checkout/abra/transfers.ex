@@ -77,6 +77,7 @@ defmodule CozyCheckout.Abra.Transfers do
     from e in AccommodationExport,
       join: d in Document,
       on: d.id == e.document_id,
+      where: is_nil(d.deleted_at),
       select: %{
         id: e.id,
         category: "document",
@@ -95,6 +96,7 @@ defmodule CozyCheckout.Abra.Transfers do
       on: p.id == c.payment_id,
       join: d in Document,
       on: d.id == coalesce(p.tax_document_id, p.document_id),
+      where: is_nil(d.deleted_at),
       select: %{
         id: c.id,
         category: "payment",
