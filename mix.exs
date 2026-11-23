@@ -40,7 +40,7 @@ defmodule CozyCheckout.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.8.16"},
+      {:phoenix, "~> 1.8.17"},
       {:phoenix_ecto, "~> 4.7"},
       {:ecto, "~> 3.14.3"},
       {:ecto_sql, "~> 3.14"},
