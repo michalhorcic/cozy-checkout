@@ -42,6 +42,31 @@ defmodule CozyCheckout.DocumentDeletionTest do
     assert {:error, _} = Billing.delete_document(doc.id)
   end
 
+  test "accepts payment for an active final but rejects a deleted document without recording money" do
+    %{booking: booking} = billing_fixture()
+    deleted = issue_without_abra!(booking, "final")
+    assert {:ok, _} = Billing.delete_document(deleted.id)
+    active = issue_without_abra!(booking, "final")
+
+    attrs = %{
+      "request_id" => Ecto.UUID.generate(),
+      "kind" => "receipt",
+      "amount" => "1",
+      "paid_on" => to_string(active.tax_date),
+      "method" => "bank",
+      "document_id" => deleted.id
+    }
+
+    assert {:error, "Doklad nepatří této rezervaci"} = Billing.record_payment(booking.id, attrs)
+    assert Billing.list_payments(booking.id) == []
+
+    assert {:ok, payment} =
+             Billing.record_payment(booking.id, Map.put(attrs, "document_id", active.id))
+
+    assert payment.document_id == active.id
+    assert {:error, _} = Billing.delete_document(active.id)
+  end
+
   test "ABRA cancellation verifies the remote result and is idempotent" do
     alias CozyCheckout.Abra.{Client, InvoiceCancellation}
 

@@ -1074,10 +1074,10 @@ defmodule CozyCheckout.Billing do
           linked =
             if payment.document_id,
               do:
-                Repo.get_by(Document,
-                  id: payment.document_id,
-                  billing_account_id: scope_id,
-                  deleted_at: nil
+                Repo.one(
+                  from d in Document,
+                    where: d.id == ^payment.document_id and d.billing_account_id == ^scope_id,
+                    where: is_nil(d.deleted_at)
                 ) ||
                   fail("Doklad nepatří této rezervaci")
 
