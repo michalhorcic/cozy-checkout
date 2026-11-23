@@ -536,6 +536,7 @@ defmodule CozyCheckout.Billing do
   def list_documents(filters \\ %{}) do
     query =
       from d in Document,
+        where: is_nil(d.deleted_at),
         order_by: [desc: d.inserted_at, desc: d.id],
         select: map(d, ^document_fields())
 
@@ -579,10 +580,36 @@ defmodule CozyCheckout.Billing do
       :lines,
       :total,
       :inserted_at,
-      :request_id
+      :request_id,
+      :deleted_at
     ]
 
-  def get_document!(id), do: Repo.get!(Document, id)
+  def get_document!(id),
+    do: Repo.one!(from d in Document, where: d.id == ^id and is_nil(d.deleted_at))
+
+  @doc "Hide an unpaid invoice, preserving its identity, PDF and audit history."
+  def delete_document(id) do
+    transaction(fn ->
+      original = Repo.get!(Document, id)
+      lock_booking!(original.booking_id)
+      doc = Repo.get!(Document, id)
+      if doc.deleted_at, do: fail("Faktura již byla smazána")
+
+      if doc.kind not in ["advance", "final"],
+        do: fail("Smazat lze pouze zálohovou nebo konečnou fakturu")
+
+      # Unassigned advances and deductions also count: never remove a document
+      # from a payer with a payment history, even if the money was refunded.
+      if Repo.exists?(from p in Payment, where: p.billing_account_id == ^doc.billing_account_id),
+        do: fail("Plátce již má evidovanou platbu; fakturu nelze smazat")
+
+      if Repo.exists?(from d in Document, where: d.parent_id == ^id),
+        do: fail("Faktura má navazující doklady; nelze ji smazat")
+
+      CozyCheckout.Abra.Accommodation.cancel_document!(doc)
+      doc |> Ecto.Changeset.change(deleted_at: DateTime.utc_now(:second)) |> Repo.update!()
+    end)
+  end
 
   def list_payments(booking_id),
     do:
@@ -687,7 +714,9 @@ defmodule CozyCheckout.Billing do
     do:
       Repo.one(
         from d in Document,
-          where: d.billing_account_id == ^account_id(booking_id) and d.kind == "final",
+          where:
+            d.billing_account_id == ^account_id(booking_id) and d.kind == "final" and
+              is_nil(d.deleted_at),
           select: struct(d, ^document_fields())
       )
 
@@ -1045,7 +1074,11 @@ defmodule CozyCheckout.Billing do
           linked =
             if payment.document_id,
               do:
-                Repo.get_by(Document, id: payment.document_id, billing_account_id: scope_id) ||
+                Repo.one(
+                  from d in Document,
+                    where: d.id == ^payment.document_id and d.billing_account_id == ^scope_id,
+                    where: is_nil(d.deleted_at)
+                ) ||
                   fail("Doklad nepatří této rezervaci")
 
           if linked && linked.kind not in ["advance", "final", "correction"],

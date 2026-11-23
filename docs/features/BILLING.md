@@ -229,8 +229,13 @@ skupin. Plná oprava zachová původní zaokrouhlení. Po konečném vyúčtová
 opravuje konečná faktura, nikoli již odpočtený daňový doklad zálohy.
 
 Změna dodavatele v nastavení nemění kopie na dokladech. Odběratele po prvním
-vystavení nelze přepsat; změnu identifikace musí řešit účetní opravou. Vystavené
-daňové doklady se v administraci neupravují, nemažou ani nevracejí do konceptu.
+vystavení nelze přepsat; změnu identifikace musí řešit účetní opravou. Zálohovou i konečnou fakturu lze smazat z detailu dokladu po potvrzení.
+Mazání blokuje jakákoli platba plátce (i částečná nebo později vrácená) a navazující
+doklady. Číslo, PDF a historie zůstanou uložené pro audit; běžné přehledy a párování
+banky smazaný doklad vynechají. Nová faktura dostane nové číslo.
+Přenesená faktura se nejprve stornuje v ABRA po kontrole nulové úhrady.
+Při chybě zůstane místní faktura zachovaná a smazání lze opakovat. Nedokončený
+export je potřeba nejprve dokončit. Ostatní daňové doklady se nemažou.
 Zálohové výzvy lze aktualizovat postupem výše.
 
 Vratku evidujte až po skutečném odeslání peněz a po potřebné opravě dokladu.

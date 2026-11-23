@@ -333,7 +333,7 @@ defmodule CozyCheckout.Abra.Bank do
         from d in Document,
           join: b in Booking,
           on: b.id == d.booking_id,
-          where: d.variable_symbol == ^base.movement.variable_symbol,
+          where: d.variable_symbol == ^base.movement.variable_symbol and is_nil(d.deleted_at),
           where: d.kind in ["advance", "final"] and b.inserted_at >= ^cfg[:enabled_from],
           where: is_nil(b.deleted_at),
           select: struct(d, ^Billing.document_fields())
@@ -345,7 +345,8 @@ defmodule CozyCheckout.Abra.Bank do
         target =
           Repo.one(
             from d in Document,
-              where: d.billing_account_id == ^account_id and d.kind == "final",
+              where:
+                d.billing_account_id == ^account_id and d.kind == "final" and is_nil(d.deleted_at),
               select: struct(d, ^Billing.document_fields())
           )
 

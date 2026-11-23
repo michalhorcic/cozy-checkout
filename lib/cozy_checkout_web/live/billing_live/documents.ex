@@ -61,6 +61,19 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
      )}
   end
 
+  def handle_event("delete-document", _, socket) do
+    case Billing.delete_document(socket.assigns.document.id) do
+      {:ok, _} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Faktura byla smazána")
+         |> push_navigate(to: ~p"/admin/billing")}
+
+      {:error, reason} ->
+        {:noreply, put_flash(socket, :error, reason)}
+    end
+  end
+
   def handle_event("advance-change", _, socket),
     do: {:noreply, assign(socket, :advance_preview, nil)}
 
@@ -218,6 +231,13 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
           </div>
         </div>
         <div :if={@document} class="space-y-6">
+          <button
+            :if={@document.kind in ["advance", "final"]}
+            id="delete-document"
+            class="btn btn-error btn-outline"
+            phx-click="delete-document"
+            data-confirm="Smazat celou fakturu? Pokud byla přenesena do ABRA, bude také stornována. Doklad zůstane uložen v historii."
+          >Smazat fakturu</button>
           <section class="bg-white p-6 rounded-xl space-y-4">
             <h2 class="text-2xl font-bold">
               {Billing.kind_label(@document.kind)} {@document.number}
