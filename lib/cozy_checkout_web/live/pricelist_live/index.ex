@@ -265,10 +265,12 @@ defmodule CozyCheckoutWeb.PricelistLive.Index do
                     {pricelist.vat_rate}%
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
-                    {pricelist.valid_from}
+                    {Calendar.strftime(pricelist.valid_from, "%d. %m. %Y")}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-primary-400">
-                    {pricelist.valid_to || "—"}
+                    {if pricelist.valid_to,
+                      do: Calendar.strftime(pricelist.valid_to, "%d. %m. %Y"),
+                      else: "—"}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span class={[
