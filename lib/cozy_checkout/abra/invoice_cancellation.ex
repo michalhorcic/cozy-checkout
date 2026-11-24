@@ -8,25 +8,12 @@ defmodule CozyCheckout.Abra.InvoiceCancellation do
       if remote["storno"] in [true, "true"] do
         :ok
       else
-        payload = %{
-          "winstrom" => %{
-            "faktura-vydana" => [
-              %{
-                "id" => export.external_id,
-                "@update" => "ok",
-                "@create" => "fail",
-                "storno" => true
-              }
-            ]
-          }
-        }
-
-        with {:ok, _} <- Client.create_invoice(payload, cfg),
+        with {:ok, response} <- Client.cancel_invoice(export.external_id, cfg),
              {:ok, confirmed} <- Client.read_invoice(export.external_id, cfg),
              :ok <- unpaid_original(confirmed, export, doc) do
           if confirmed["storno"] in [true, "true"],
             do: :ok,
-            else: {:error, "ABRA nepotvrdila storno; opakujte smazání"}
+            else: {:error, unconfirmed_reason(confirmed, response)}
         else
           :not_found -> {:error, "ABRA po stornu nevrátila původní fakturu; opakujte smazání"}
           error -> error
@@ -36,6 +23,15 @@ defmodule CozyCheckout.Abra.InvoiceCancellation do
       :not_found -> {:error, "Původní faktura v ABRA chybí; smazání je zastaveno"}
       error -> error
     end
+  end
+
+  defp unconfirmed_reason(remote, response) do
+    reason = if response.messages == "", do: "ABRA neuvedla důvod", else: response.messages
+
+    "ABRA nepotvrdila storno: po akci storno (HTTP #{response.http_status}) " <>
+      "vrátila storno=#{inspect(remote["storno"])}; " <>
+      "stav zámku=#{inspect(remote["zamekK"])}. #{reason}. " <>
+      "Místní faktura nebyla smazána; zkontrolujte doklad v ABRA a poté opakujte smazání."
   end
 
   defp unpaid_original(remote, export, doc) do

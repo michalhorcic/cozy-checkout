@@ -101,9 +101,7 @@ defmodule CozyCheckout.DocumentDeletionTest do
                  "faktura-vydana" => [
                    %{
                      "id" => export.external_id,
-                     "@update" => "ok",
-                     "@create" => "fail",
-                     "storno" => true
+                     "@action" => "storno"
                    }
                  ]
                }
