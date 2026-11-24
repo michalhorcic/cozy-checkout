@@ -27,7 +27,7 @@ defmodule CozyCheckoutWeb.PricelistManagementTest do
     {product, _} = product_fixture()
 
     {:ok, product} =
-      CozyCheckout.Catalog.update_product(product, %{unit: "l", default_unit_amounts: "[0.5,1,2]"})
+      CozyCheckout.Catalog.update_product(product, %{unit: "L", default_unit_amounts: "[0.5,1,2]"})
 
     latest = %{
       price(product.id, Date.add(Date.utc_today(), -1), "55")
@@ -53,10 +53,14 @@ defmodule CozyCheckoutWeb.PricelistManagementTest do
         })
       )
 
-    document = Floki.parse_document!(html)
-    assert Floki.attribute(document, "input[id='price_0.5']", "value") == ["55"]
-    assert Floki.attribute(document, "#price_1", "value") == ["100"]
-    assert Floki.attribute(document, "#price_2", "value") == []
+    document = LazyHTML.from_fragment(html)
+
+    assert LazyHTML.query(document, "input[id='price_0.5']") |> LazyHTML.attribute("value") == [
+             "55"
+           ]
+
+    assert LazyHTML.query(document, "#price_1") |> LazyHTML.attribute("value") == ["100"]
+    assert LazyHTML.query(document, "#price_2") |> LazyHTML.attribute("value") == []
   end
 
   test "products without expired prices start with a blank price" do

@@ -11,7 +11,12 @@ defmodule CozyCheckout.Abra.InvoiceCancellation do
         payload = %{
           "winstrom" => %{
             "faktura-vydana" => [
-              %{"id" => export.external_id, "@update" => "must", "storno" => true}
+              %{
+                "id" => export.external_id,
+                "@update" => "ok",
+                "@create" => "fail",
+                "storno" => true
+              }
             ]
           }
         }
