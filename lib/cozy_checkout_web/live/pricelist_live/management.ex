@@ -27,9 +27,13 @@ defmodule CozyCheckoutWeb.PricelistLive.Management do
   def handle_event("open_add_price_modal", %{"product_id" => product_id}, socket) do
     product = Catalog.get_product!(product_id)
 
+    previous_pricelist =
+      latest_expired_pricelist(socket.assigns.products_expired_prices, product.id)
+
     changeset =
       %Pricelist{
         product_id: product.id,
+        price: previous_pricelist && previous_pricelist.price,
         valid_from: Date.utc_today(),
         valid_to: Date.add(Date.utc_today(), 365),
         vat_rate: Decimal.new("0"),
@@ -41,6 +45,7 @@ defmodule CozyCheckoutWeb.PricelistLive.Management do
       socket
       |> assign(:show_add_modal, true)
       |> assign(:selected_product, product)
+      |> assign(:previous_pricelist, previous_pricelist)
       |> assign(:form, to_form(changeset))
 
     {:noreply, socket}
@@ -151,6 +156,33 @@ defmodule CozyCheckoutWeb.PricelistLive.Management do
     |> assign(:products_no_prices, issues.no_prices)
     |> assign(:products_expired_prices, issues.expired_prices)
     |> assign(:products_incomplete_tiers, issues.incomplete_tiers)
+  end
+
+  defp latest_expired_pricelist(products, product_id) do
+    case Enum.find(products, &(&1.id == product_id)) do
+      nil ->
+        nil
+
+      product ->
+        product.pricelists
+        |> Enum.filter(fn pricelist ->
+          pricelist.active && pricelist.valid_to &&
+            Date.before?(pricelist.valid_to, Date.utc_today())
+        end)
+        |> Enum.max_by(
+          &{Date.to_gregorian_days(&1.valid_to), Date.to_gregorian_days(&1.valid_from), &1.id},
+          fn -> nil end
+        )
+    end
+  end
+
+  defp previous_tier_price(nil, _amount), do: nil
+
+  defp previous_tier_price(pricelist, amount) do
+    case Pricelist.get_price_for_amount(pricelist, amount) do
+      {:ok, price} -> price
+      _ -> nil
+    end
   end
 
   defp get_missing_tiers(product) do
