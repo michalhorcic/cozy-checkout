@@ -33,6 +33,72 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  @doc "Cancel an existing invoice through an explicit action, retaining ABRA diagnostics."
+  def cancel_invoice(external_id, cfg) do
+    url = "#{cfg[:base_url]}/c/#{cfg[:company_id]}/faktura-vydana.json"
+
+    # Storno is an action, not an editable boolean field. Actions require an existing ID.
+    # https://podpora.flexibee.eu/cs/articles/4725960-provadeni-akci
+    payload = %{
+      "winstrom" => %{"faktura-vydana" => [%{"id" => external_id, "@action" => "storno"}]}
+    }
+
+    case Req.post(url,
+           json: payload,
+           auth: {:basic, "#{cfg[:username]}:#{cfg[:password]}"},
+           headers: [{"Accept", "application/json"}],
+           retry: false
+         ) do
+      {:ok, %{status: status, body: body}} ->
+        root = if is_map(body), do: body["winstrom"], else: nil
+        root = if is_map(root), do: root, else: %{}
+        rows = Enum.filter([root | List.wrap(root["results"])], &is_map/1)
+        messages = cancellation_messages(rows)
+
+        failed? =
+          root["success"] in [false, "false"] or
+            Enum.any?(rows, &(Map.get(&1, "errors", []) not in [nil, []]))
+
+        if status in [200, 201] and not failed? do
+          case parse_abra_id(body) do
+            {:ok, _} -> {:ok, %{http_status: status, messages: messages}}
+            {:error, _} -> {:error, "ABRA storno HTTP #{status}: neplatné potvrzení. #{messages}"}
+          end
+        else
+          reason = if messages == "", do: "ABRA neuvedla důvod odmítnutí", else: messages
+          {:error, "ABRA odmítla storno (HTTP #{status}): #{reason}"}
+        end
+
+      {:error, exception} ->
+        {:error,
+         "Volání storna ABRA selhalo: #{Exception.message(exception)}. Výsledek ověřte opakováním smazání."}
+    end
+  end
+
+  # Keep only human-readable API messages and codes, never the full response or invoice.
+  defp cancellation_messages(rows) do
+    for row <- rows,
+        key <- ["errors", "warnings", "messages"],
+        message <- List.wrap(Map.get(row, key)),
+        text = cancellation_message(message),
+        text != "" do
+      text
+    end
+    |> Enum.uniq()
+    |> Enum.join("; ")
+    |> String.slice(0, 1500)
+  end
+
+  defp cancellation_message(message) when is_binary(message), do: message
+
+  defp cancellation_message(message) when is_map(message) do
+    [message["code"], message["message"]]
+    |> Enum.filter(&is_binary/1)
+    |> Enum.join(": ")
+  end
+
+  defp cancellation_message(_), do: ""
+
   @doc "Reads an invoice by stable external identity without changing it."
   def find_invoice(external_id, cfg) do
     id = URI.encode(external_id, &URI.char_unreserved?/1)
