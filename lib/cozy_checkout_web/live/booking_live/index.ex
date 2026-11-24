@@ -18,26 +18,16 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   # Apply default filter to show only current and future bookings
   defp apply_default_filters(params) do
-    # Only apply default if no "show_all" param and no existing filter on check_out_date
-    if Map.get(params, "show_all") == "true" || has_custom_filters?(params) do
+    if Map.get(params, "show_all") == "true" do
       params
     else
-      # Add default filter: show_current_and_future = true
       Map.put(params, "show_current_and_future", "true")
     end
   end
 
-  # Check if user has applied custom filters
-  defp has_custom_filters?(params) do
-    # If there are any filters in params, don't apply default
-    Map.has_key?(params, "filters") ||
-      Map.has_key?(params, "invoice_state") ||
-      Map.has_key?(params, "guest_search")
-  end
-
   @impl true
   def handle_params(params, _url, socket) do
-    # Apply default filter to show only current and future bookings if no filters are set
+    # Keep the selected date scope when searching or filtering bookings
     params_with_defaults = apply_default_filters(params)
 
     # Normalize params: convert indexed maps to arrays for Flop
