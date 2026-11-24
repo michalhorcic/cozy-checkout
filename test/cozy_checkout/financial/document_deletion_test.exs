@@ -96,8 +96,18 @@ defmodule CozyCheckout.DocumentDeletionTest do
       assert conn.method == "POST"
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
-      assert get_in(Jason.decode!(body), ["winstrom", "faktura-vydana", Access.at(0), "storno"]) ==
-               true
+      assert Jason.decode!(body) == %{
+               "winstrom" => %{
+                 "faktura-vydana" => [
+                   %{
+                     "id" => export.external_id,
+                     "@update" => "ok",
+                     "@create" => "fail",
+                     "storno" => true
+                   }
+                 ]
+               }
+             }
 
       Req.Test.json(conn, %{"winstrom" => %{"results" => [%{"id" => 42}]}})
     end)
