@@ -642,3 +642,60 @@ ubytování. Původní samostatné proměnné s koncovkami `AUTO_EXPORT_ENABLED`
 `FINAL_BANK_CONFIRMATION_ENABLED` se již nečtou a lze je z deploye odstranit.
 Připojení, účetní mapování a `ABRA_ACCOMMODATION_ENABLED_FROM` zůstávají beze
 změny. Barová integrace je nadále oddělená. Změna nevyžaduje další migraci.
+
+## Zpětné čtení úhrad a zbývající částky pobytu
+
+Po migraci `20261125120000_add_abra_payment_status.exs` běží každých 15 minut
+`AbraPaymentStatusWorker`. Používá stávající připojení ubytování a přepínač
+`ABRA_ACCOMMODATION_ENABLED`; nové proměnné nejsou potřeba. V administraci
+fakturace pobytu a v detailu dokladu lze zařadit **Ověřit úhrady v ABRA**.
+Ověřují se i dříve zaplacené doklady, takže další průchod zachytí zrušení
+nebo změnu párování účetní.
+
+Jde výhradně o GET vydaných faktur podle uloženého vzdáleného ID úspěšného
+exportu ve stejné instanci a firmě. Nejvýše 50 ID se čte jedním požadavkem;
+seznam pobytů používá SQL agregaci místních pozorování, bez HTTP nebo
+samostatného dotazu na každého plátce. Synchronizace nečte ani nevytváří ZDD,
+nepáruje banku, nevolá `Billing.record_payment/2` a nemění doklady ani PDF.
+Samotné bankovní příjmy bez přiřazení ke sledovanému dokladu nejsou úhradou
+pobytu. Doklady vzniklé jen v ABRA bez uložené vazby exportu se automaticky
+nepřiřazují podle VS.
+
+U dokladu se ukládá `sumCelkem`, `zbyvaUhradit` a čas ověření. Kontroluje se
+ID, číslo a VS dokladu, CZK, známý nestornovaný stav a platné haléřové částky.
+Chybějící faktura, neúplná odpověď nebo výpadek se nikdy nepřevede na nulu.
+Poslední úspěšné údaje zůstávají viditelné s upozorněním; upozornění se
+zobrazuje také při stáří přes 30 minut nebo vypnutí integrace. Odpověď
+staršího souběžného požadavku nepřepíše novější pozorování. Aktualizace
+zálohové výzvy předchozí pozorování zneplatní.
+
+**Zaplacená záloha neznamená zaplacený pobyt.** Před konečnou fakturou se
+zbývající částka počítá z aktuální kalkulace plátce minus součet úhrad jeho
+aktivních zálohových výzev (`sumCelkem - zbyvaUhradit`). Musí být ověřené
+všechny výzvy; chybějící pozorování nesmí vytvořit neúplný součet. Změna
+kalkulace proto může změnit očekávaný doplatek, nikoli stav úhrady výzvy.
+Po vystavení konečné faktury se přebírá její `zbyvaUhradit` přímo. Zálohy,
+odpočty ani místní platby se od této částky podruhé neodečítají. Nulová
+konečná faktura plně pokrytá odpočty je uhrazená.
+
+Čtený model má přednost v přehledu pobytů, filtrech úhrad, záložkách plátců
+a souhrnu fakturace. Místní platby se k úhradám ABRA nepřičítají. Dokud
+není kompletní pozorování, souhrn používá dosavadní místní evidenci a
+fakturace ji výslovně označuje. Celkový zůstatek rezervace se ukáže pouze,
+pokud je známý zůstatek každého plátce. Jde o dosavadní čistý součet jejich
+zůstatků; přeplatek jednoho plátce nepřepne druhého neuhrazeného plátce na
+zaplaceného. Zdroj úhrad a stáří jsou viditelné u jednotlivých dokladů i
+souhrnů. Před konečnou fakturou zůstává cena pobytu cenou aktuální kalkulace.
+
+Tento čtený model neslouží k vystavování dalších dokladů ani opravování
+účetnictví. Místní procesy evidence plateb a vystavení konečné faktury nadále
+pracují s místními doklady a platbami; synchronizace je automaticky nedoplní.
+Stávající ruční bankovní potvrzování může dále vytvářet místní ZDD, pokud je
+obsluha výslovně použije. Pro samotné zobrazení úhrad z ABRA je nepotřebuje.
+
+Regrese jsou v `abra_payment_status_test.exs` a
+`abra_payment_status_live_test.exs`: ruční spárování a jeho zrušení, záloha
+oproti pobytu, odpočty konečné faktury, výpadky, neplatná data, identita firmy,
+stránkované dávky, opakované úlohy, souběh a zachování dokladů i plateb.
+Lokální testy nebyly spuštěny; výsledky CI ověří uživatel. Živá ABRA nebyla
+ověřena.

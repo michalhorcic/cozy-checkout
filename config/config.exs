@@ -91,6 +91,7 @@ config :cozy_checkout, Oban,
        {"* * * * *", CozyCheckout.Workers.IncomingBatchReconcileWorker},
        {"0 * * * *", CozyCheckout.Workers.AbraBankDownloadWorker},
        {"*/15 * * * *", CozyCheckout.Workers.AbraBankWorker},
+       {"*/15 * * * *", CozyCheckout.Workers.AbraPaymentStatusWorker},
        {"0 4 * * *", CozyCheckout.Economics.SyncWorker},
        {"0 * * * *", CozyCheckout.Adventure.RecurrenceWorker}
      ]}

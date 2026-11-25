@@ -1,6 +1,7 @@
 defmodule CozyCheckoutWeb.BillingLive.Booking do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.{Billing, Bookings, Guests}
+  alias CozyCheckout.Abra.PaymentStatus
   alias CozyCheckout.Billing.{BookingSummary, Presentation}
   alias CozyCheckout.Bookings.BookingInvoiceItem
   alias CozyCheckoutWeb.BillingLive.Helpers
@@ -76,11 +77,12 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     Process.send_after(self(), :abra_tick, 10_000)
 
     {:noreply,
-     assign(
-       socket,
+     socket
+     |> assign(
        :abra_transfers,
        CozyCheckout.Abra.Transfers.for_documents(socket.assigns.documents)
-     )}
+     )
+     |> refresh_payment_status()}
   end
 
   def handle_info({:manual_delivery_changed, _id}, socket) do
@@ -104,6 +106,13 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     do: {:noreply, assign(socket, :manual_document, nil)}
 
   def handle_event("refresh", _, socket), do: {:noreply, refresh(socket)}
+
+  def handle_event("check-abra-payments", _, socket) do
+    case PaymentStatus.enqueue(socket.assigns.booking.id) do
+      {:ok, _} -> {:noreply, put_flash(socket, :info, "Ověření úhrad v ABRA zařazeno")}
+      {:error, error} -> {:noreply, put_flash(socket, :error, Helpers.error(error))}
+    end
+  end
 
   def handle_event("compose-email", %{"id" => id}, socket) do
     case Enum.find(socket.assigns.documents, &(&1.id == id)) do
@@ -561,6 +570,8 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
         balance: Billing.balance(id)
       )
 
+    socket = refresh_payment_status(socket, false)
+
     if calculation && (is_nil(socket.assigns.item_rows) or !socket.assigns.items_dirty?) do
       socket
       |> assign(
@@ -571,6 +582,35 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
     else
       socket
     end
+  end
+
+  defp refresh_payment_status(socket, reload? \\ true) do
+    id = socket.assigns.booking.id
+
+    summaries =
+      if reload?, do: BookingSummary.for_accounts(id), else: socket.assigns.account_summaries
+
+    group =
+      if reload?, do: BookingSummary.for_bookings([id])[id], else: socket.assigns.group_summary
+
+    summary = summaries[socket.assigns.billing_scope.id]
+    local = socket.assigns.balance
+
+    display =
+      if summary && summary.abra_checked_at && summary.outstanding do
+        %{local | received: summary.received, outstanding: summary.outstanding}
+      else
+        local
+      end
+
+    assign(socket,
+      account_summaries: summaries,
+      group_summary: group,
+      display_balance: display,
+      payment_summary: summary,
+      abra_payments: PaymentStatus.for_documents(socket.assigns.documents),
+      abra_payments_enabled?: PaymentStatus.configured?()
+    )
   end
 
   defp editor_row(item) do
@@ -1217,18 +1257,58 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
           id="payer-financial-summary"
           class="grid gap-2 rounded-xl border border-secondary-200 bg-secondary-50 p-3 sm:grid-cols-2 xl:grid-cols-4"
         >
-          <p><b>{Billing.payment_state(@balance)}</b></p>
+          <p><b>{Billing.payment_state(@display_balance)}</b></p>
           <p>
             Cena:
-            <b>{if @balance.total, do: Presentation.amount(@balance.total), else: "Chybí ceny"}</b>
-          </p><p>Přijato po vratkách: <b>{Presentation.amount(@balance.received)}</b></p><p :if={
-            @balance.outstanding
-          }>
-            {Presentation.balance_label(@balance.outstanding)}:
-            <b>{Presentation.balance_amount(@balance.outstanding)}</b>
+            <b>{if @display_balance.total,
+              do: Presentation.amount(@display_balance.total),
+              else: "Chybí ceny"}</b>
+          </p><p :if={!@payment_summary.abra_checked_at}>
+            Přijato po vratkách: <b>{Presentation.amount(@display_balance.received)}</b>
+          </p><p :if={@display_balance.outstanding}>
+            {Presentation.balance_label(@display_balance.outstanding)}:
+            <b>{Presentation.balance_amount(@display_balance.outstanding)}</b>
           </p>
         </div>
 
+        <div :if={not @personal?} class="space-y-2 text-sm">
+          <CozyCheckoutWeb.BillingComponents.abra_balance_freshness
+            :if={@payment_summary.abra_checked_at}
+            checked_at={@payment_summary.abra_checked_at}
+            error={@payment_summary.abra_error}
+          />
+          <p :if={!@payment_summary.abra_checked_at} class="text-primary-400">
+            Stav a zůstatek podle místní evidence. Úhrady z ABRA zatím nejsou ověřené.
+          </p>
+          <p :if={@group_summary.outstanding} id="booking-total-outstanding" class="font-semibold">
+            Celý pobyt · {Presentation.balance_label(@group_summary.outstanding)}: {Presentation.balance_amount(
+              @group_summary.outstanding
+            )}
+          </p>
+          <p
+            :if={
+              @group_summary.abra_account_count > 0 &&
+                @group_summary.abra_account_count < @group_summary.account_count
+            }
+            class="text-primary-400"
+          >
+            Úhrady ABRA ověřeny pro {@group_summary.abra_account_count}/{@group_summary.account_count} plátců.
+            Součet zahrnuje také místní evidenci ostatních plátců.
+          </p>
+          <p :if={is_nil(@group_summary.outstanding)} id="booking-total-outstanding">
+            Zůstatek celého pobytu zatím nelze určit pro všechny plátce.
+          </p>
+          <button
+            :if={@abra_payments_enabled?}
+            id="check-abra-payments"
+            type="button"
+            class="btn btn-sm"
+            phx-click="check-abra-payments"
+            phx-disable-with="Zařazuji…"
+          >
+            Ověřit úhrady v ABRA
+          </button>
+        </div>
         <div :if={not @personal?} class="grid items-start gap-6 xl:grid-cols-2">
           <section class="min-w-0 rounded-xl border border-secondary-200 bg-white p-4 sm:p-6">
             <h2 class="text-xl font-bold mb-4">Odběratel</h2>
@@ -1386,6 +1466,10 @@ defmodule CozyCheckoutWeb.BillingLive.Booking do
               >
                 Odesláno ručně · {Presentation.date(Map.get(@manual_delivery_summaries, doc.id))}
               </p>
+              <CozyCheckoutWeb.BillingComponents.abra_payment_status
+                :if={Map.has_key?(@abra_payments, doc.id)}
+                status={@abra_payments[doc.id]}
+              />
               <CozyCheckoutWeb.BillingComponents.abra_status
                 document={doc}
                 statuses={Map.get(@abra_transfers, doc.id, [])}

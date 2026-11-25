@@ -1,7 +1,7 @@
 defmodule CozyCheckoutWeb.BillingLive.Documents do
   use CozyCheckoutWeb, :live_view
   alias CozyCheckout.Billing
-  alias CozyCheckout.Abra.{Accommodation, PdfAttachments, Transfers}
+  alias CozyCheckout.Abra.{Accommodation, PaymentStatus, PdfAttachments, Transfers}
   alias CozyCheckout.Billing.Presentation
   alias CozyCheckoutWeb.BillingLive.Helpers
 
@@ -17,7 +17,10 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
       {:noreply, refresh_abra(socket)}
     else
       {:noreply,
-       assign(socket, :abra_transfers, Transfers.for_documents(socket.assigns.documents))}
+       assign(socket,
+         abra_transfers: Transfers.for_documents(socket.assigns.documents),
+         abra_payments: PaymentStatus.for_documents(socket.assigns.documents)
+       )}
     end
   end
 
@@ -34,6 +37,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
        advance_attrs: %{},
        advance_form: to_form(advance_defaults(doc), as: :advance),
        abra_export: Accommodation.get_export(id),
+       abra_payment: PaymentStatus.for_documents([doc])[id],
        abra_pdf: PdfAttachments.status(id),
        abra_pdf_enabled?: PdfAttachments.enabled?(),
        abra_enabled?:
@@ -57,6 +61,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
        document: nil,
        documents: documents,
        abra_transfers: Transfers.for_documents(documents),
+       abra_payments: PaymentStatus.for_documents(documents),
        filter_form: to_form(Map.take(params, ["kind", "number"]), as: :filter)
      )}
   end
@@ -119,6 +124,13 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
 
   def handle_event("filter", %{"filter" => attrs}, socket),
     do: {:noreply, push_patch(socket, to: ~p"/admin/billing?#{attrs}")}
+
+  def handle_event("abra-payment-refresh", _, socket) do
+    case PaymentStatus.enqueue(socket.assigns.document.booking_id) do
+      {:ok, _} -> {:noreply, put_flash(socket, :info, "Ověření úhrad zařazeno")}
+      {:error, reason} -> {:noreply, put_flash(socket, :error, Helpers.error(reason))}
+    end
+  end
 
   def handle_event("abra-export", _, socket) do
     case Accommodation.enqueue(socket.assigns.document.id) do
@@ -220,6 +232,10 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
                   </td><td>
                     {Presentation.amount(doc.total)}
                   </td><td>
+                    <CozyCheckoutWeb.BillingComponents.abra_payment_status
+                      :if={Map.has_key?(@abra_payments, doc.id)}
+                      status={@abra_payments[doc.id]}
+                    />
                     <CozyCheckoutWeb.BillingComponents.abra_status
                       document={doc}
                       statuses={Map.get(@abra_transfers, doc.id, [])}
@@ -352,6 +368,19 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
             class="bg-white p-6 rounded-xl space-y-4"
           >
             <h2 class="text-xl font-bold">ABRA · ubytování</h2>
+            <CozyCheckoutWeb.BillingComponents.abra_payment_status
+              :if={@abra_payment}
+              status={@abra_payment}
+            />
+            <button
+              :if={@abra_payment && @abra_enabled?}
+              id="abra-payment-refresh"
+              phx-click="abra-payment-refresh"
+              class="btn"
+              phx-disable-with="Zařazuji…"
+            >
+              Ověřit úhrady v ABRA
+            </button>
             <p :if={!@abra_export}>Doklad zatím nebyl exportován.</p>
             <div :if={@abra_export}>
               <p>Stav: {abra_state(@abra_export.state)} · pokusů: {@abra_export.attempts}</p>
@@ -485,6 +514,7 @@ defmodule CozyCheckoutWeb.BillingLive.Documents do
 
     assign(socket,
       abra_export: Accommodation.get_export(id),
+      abra_payment: PaymentStatus.for_documents([socket.assigns.document])[id],
       abra_pdf: PdfAttachments.status(id),
       abra_pdf_enabled?: PdfAttachments.enabled?()
     )

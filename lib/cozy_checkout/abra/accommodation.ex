@@ -87,7 +87,15 @@ defmodule CozyCheckout.Abra.Accommodation do
   def invalidate_advance!(doc) do
     if export = get_export(doc.id) do
       export
-      |> Ecto.Changeset.change(state: "outdated", error: nil)
+      |> Ecto.Changeset.change(
+        state: "outdated",
+        error: nil,
+        payment_total: nil,
+        payment_remaining: nil,
+        payment_checked_at: nil,
+        payment_error: nil,
+        payment_attempted_at: DateTime.utc_now()
+      )
       |> Repo.update!()
     end
   end

@@ -864,7 +864,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             </span>
           </p>
           <p
-            :if={@summary.outstanding && not Decimal.equal?(@summary.outstanding, 0)}
+            :if={@summary.outstanding}
             id={"booking-balance-#{@booking.id}"}
             class={["flex items-center justify-between gap-4"]}
           >
@@ -874,6 +874,14 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
             <span class={["whitespace-nowrap font-semibold tabular-nums"]}>
               {CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.abs(@summary.outstanding))}
             </span>
+          </p>
+          <CozyCheckoutWeb.BillingComponents.abra_balance_freshness
+            :if={@summary.abra_checked_at}
+            checked_at={@summary.abra_checked_at}
+            error={@summary.abra_error}
+          />
+          <p :if={@summary.abra_account_count > 0} class="text-xs text-primary-400">
+            Úhrady ABRA ověřeny pro {@summary.abra_account_count}/{@summary.account_count} plátců.
           </p>
           <p
             :if={@summary.overdue}
