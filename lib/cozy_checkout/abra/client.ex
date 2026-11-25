@@ -289,7 +289,7 @@ defmodule CozyCheckout.Abra.Client do
   end
 
   @doc "Pairs an existing bank movement; never supplies fields that create a bank receipt."
-  def match_bank(bank_id, invoice_id, amount, cfg) do
+  def match_bank(bank_id, invoice_id, amount, cfg, remainder \\ "ne") do
     payload = %{
       "winstrom" => %{
         "banka" => [
@@ -305,7 +305,7 @@ defmodule CozyCheckout.Abra.Client do
                   "@content" => to_string(invoice_id)
                 }
               ],
-              "zbytek" => "ne"
+              "zbytek" => remainder
             }
           }
         ]

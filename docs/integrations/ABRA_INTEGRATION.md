@@ -314,9 +314,21 @@ výsledky CI ověří uživatel. Skutečné API testovací firmy nebylo ověřen
 Tento blok pro zálohy dovoluje v přehledu banky výslovně potvrdit **celý bankovní
 příjem k jedné zálohové výzvě**. Vyžaduje již úspěšný export výzvy do stejné
 firmy, nový pobyt, CZK a shodný VS. Potvrzení je samostatné od importu banky.
-Celý příjem lze potvrdit i při přeplatku zbývající částky výzvy. Platba, ZDD
-a vazba úhrady používají skutečnou částku včetně přeplatku; původní výzva se
-nemění. Není zaveden limit přeplatku ani automatické zaokrouhlení. Další příjem
+Celý příjem lze potvrdit i při přeplatku zbývající částky výzvy. Platba a ZDD
+používají skutečnou částku včetně přeplatku; původní výzva se nemění. Úhrada výzvy
+v ABRA je omezena na zbývající částku (`@castka`); při přeplatku se použije
+`zbytek=ignorovat`. Rozdíl zůstává na bankovním pohybu, nevytváří se interní
+doklad ani automatický odpis. Výzva je uhrazena, bankovní pohyb může zůstat
+se stavem `sparovano=false`. To odpovídá [dokumentaci ABRA](https://podpora.flexibee.eu/cs/articles/4729375-parovani-plateb).
+
+Migrace `20261125100000_add_bank_confirmation_source_payment_amount.exs` ukládá
+částku přidělenou výzvě odděleně od skutečné platby. Přenos ověřuje přesnou
+uloženou částku vazby i při opakování po ztracené odpovědi. Starší rozpracované
+přenosy bez uložené částky ji jednorázově doplní z čerstvě ověřeného zůstatku
+před párováním. Již vytvořené ZDD i místní platba se znovu použijí; po nasazení
+lze u původní chyby zvolit opakování přenosu.
+
+Není zaveden limit přeplatku ani automatické zaokrouhlení. Další příjem
 na již plně uhrazenou výzvu se zablokuje. Příjmy bez výzvy, vratky a rozdělení
 pohybu tato implementace nepotvrzuje.
 Konečné faktury mají [samostatný postup potvrzení doplatku](#bankovní-doplatek-konečné-faktury).

@@ -130,6 +130,7 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
                before.source_paired?
              )
            ),
+         {:ok, confirmation} <- ensure_source_amount(confirmation, remote_source, before),
          {:ok, receipt_id} <- ensure_receipt(confirmation, invoice, remote_receipt, cfg),
          :ok <- ensure_match(confirmation, source, before, cfg),
          {:ok, paired} <- checked_bank(confirmation, source, %{"id" => receipt_id}, cfg),
@@ -176,7 +177,8 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
           snapshot,
           confirmation.bank_snapshot,
           source.remote_id,
-          if(receipt, do: to_string(receipt["id"]))
+          if(receipt, do: to_string(receipt["id"])),
+          confirmation.source_payment_amount
         )
       )
     else
@@ -196,14 +198,63 @@ defmodule CozyCheckout.Abra.BankPaymentSync do
     end
   end
 
+  # Persist before the remote write so retries after a lost response verify the
+  # same allocation, even though ABRA's remaining balance is now zero.
+  defp ensure_source_amount(
+         %{source_payment_amount: %Decimal{} = amount} = confirmation,
+         remote,
+         links
+       ) do
+    remaining = BankVerification.amount(remote["zbyvaUhradit"])
+
+    if links.source_paired? or (remaining && Decimal.compare(remaining, amount) != :lt),
+      do: {:ok, confirmation},
+      else: {:conflict, "Zbývající částka výzvy se změnila; uloženou úhradu nelze přenést"}
+  end
+
+  defp ensure_source_amount(confirmation, remote, links) do
+    amount =
+      BankPayments.source_payment_amount(
+        remote,
+        confirmation.movement.amount,
+        links.source_paired?
+      )
+
+    Repo.transaction(fn ->
+      current =
+        Repo.one!(
+          from(c in BankConfirmation, where: c.id == ^confirmation.id, lock: "FOR UPDATE")
+        )
+
+      cond do
+        current.state == "conflict" ->
+          Repo.rollback("Přenos vyžaduje účetní kontrolu")
+
+        current.source_payment_amount ->
+          %{confirmation | source_payment_amount: current.source_payment_amount}
+
+        is_nil(amount) or not Decimal.positive?(amount) ->
+          Repo.rollback("Nelze ověřit částku úhrady výzvy")
+
+        true ->
+          current |> Ecto.Changeset.change(source_payment_amount: amount) |> Repo.update!()
+          %{confirmation | source_payment_amount: amount}
+      end
+    end)
+  end
+
   defp ensure_match(_confirmation, _source, %{source_paired?: true}, _cfg), do: :ok
 
   defp ensure_match(confirmation, source, _before, cfg) do
     Client.match_bank(
       confirmation.movement.remote_id,
       source.remote_id,
-      confirmation.movement.amount,
-      cfg
+      confirmation.source_payment_amount,
+      cfg,
+      if(Decimal.lt?(confirmation.source_payment_amount, confirmation.movement.amount),
+        do: "ignorovat",
+        else: "ne"
+      )
     )
   end
 

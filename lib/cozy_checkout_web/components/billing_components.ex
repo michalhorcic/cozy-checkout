@@ -31,6 +31,10 @@ defmodule CozyCheckoutWeb.BillingComponents do
       <p :if={@preview.document.kind == "advance"}>
         Potvrzením vznikne skutečná platba a uzamčený daňový doklad k přijaté záloze. Zaeviduje se celá přijatá částka včetně případného přeplatku výzvy. Účetní vazby se následně přenesou do ABRA. Potvrzení nelze jednoduše vrátit zpět.
       </p>
+      <p :if={@preview.document.kind == "advance" && Map.get(@preview, :source_payment_amount)}>
+        V ABRA se výzvě přiřadí {Presentation.amount(@preview.source_payment_amount)}.
+        Případný přeplatek zůstane na bankovním pohybu.
+      </p>
       <button
         id={@confirm_id}
         class="btn btn-primary mt-4"
