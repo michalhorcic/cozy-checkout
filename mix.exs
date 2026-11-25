@@ -63,7 +63,7 @@ defmodule CozyCheckout.MixProject do
       {:chromic_pdf, "~> 1.17"},
       {:req, "~> 0.7.5"},
       {:qr_code, "~> 3.2"},
-      {:flop, "~> 0.29.1"},
+      {:flop, "~> 0.29.2"},
       {:telemetry_metrics, "~> 1.2"},
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0.0"},
