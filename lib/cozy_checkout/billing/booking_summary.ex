@@ -107,6 +107,8 @@ defmodule CozyCheckout.Billing.BookingSummary do
         group_by: d.parent_id,
         select: %{parent_id: d.parent_id, total: sum(d.total)}
 
+    remote = CozyCheckout.Abra.PaymentStatus.account_balances()
+
     balances =
       from b in Account,
         where: is_nil(b.deleted_at),
@@ -120,6 +122,8 @@ defmodule CozyCheckout.Billing.BookingSummary do
         on: p.billing_account_id == b.id,
         left_join: a in subquery(advances),
         on: a.billing_account_id == b.id,
+        left_join: r in subquery(remote),
+        on: r.account_id == b.id,
         select: %{
           booking_id: b.booking_id,
           account_id: b.id,
@@ -127,8 +131,11 @@ defmodule CozyCheckout.Billing.BookingSummary do
           final_id: f.id,
           final_number: f.number,
           due_on: f.due_on,
-          outstanding: f.total + coalesce(c.total, 0) - coalesce(p.received, 0),
-          received: coalesce(p.received, 0),
+          outstanding:
+            coalesce(r.outstanding, f.total + coalesce(c.total, 0) - coalesce(p.received, 0)),
+          received: coalesce(r.received, coalesce(p.received, 0)),
+          abra_checked_at: r.checked_at,
+          abra_error: coalesce(r.error, false),
           receipts: coalesce(p.receipts, 0),
           advances: coalesce(a.count, 0),
           advance_percent: a.percent
@@ -142,6 +149,8 @@ defmodule CozyCheckout.Billing.BookingSummary do
         account_id: s.account_id,
         personal: s.personal,
         received: s.received,
+        abra_checked_at: s.abra_checked_at,
+        abra_error: s.abra_error,
         advance_count: s.advances,
         advance_percent: s.advance_percent,
         final_id: s.final_id,
@@ -159,7 +168,7 @@ defmodule CozyCheckout.Billing.BookingSummary do
         payment_state:
           fragment(
             "CASE WHEN ? IS NULL THEN NULL WHEN ? < 0 THEN 'overpaid' WHEN ? = 0 THEN 'paid' WHEN ? > 0 THEN 'partial' ELSE 'unpaid' END",
-            s.final_id,
+            s.outstanding,
             s.outstanding,
             s.outstanding,
             s.received
@@ -179,7 +188,13 @@ defmodule CozyCheckout.Billing.BookingSummary do
           completed: not is_nil(b.allocation_completed_at),
           accounts: count(s.account_id),
           finals: filter(count(s.account_id), not is_nil(s.final_id)),
+          tracked: filter(count(s.account_id), not is_nil(s.payment_state)),
+          remote_accounts: filter(count(s.account_id), not is_nil(s.abra_checked_at)),
+          abra_checked_at: min(s.abra_checked_at),
+          abra_error: fragment("bool_or(?)", s.abra_error),
           paid: filter(count(s.account_id), s.payment_state == "paid"),
+          paid_finals:
+            filter(count(s.account_id), s.payment_state == "paid" and not is_nil(s.final_id)),
           overpaid: filter(count(s.account_id), s.payment_state == "overpaid"),
           partial: filter(count(s.account_id), s.payment_state == "partial"),
           unpaid: filter(count(s.account_id), s.payment_state == "unpaid"),
@@ -188,7 +203,12 @@ defmodule CozyCheckout.Billing.BookingSummary do
           advance_returned: filter(count(s.account_id), s.state == "advance_returned"),
           advance_issued: filter(count(s.account_id), s.state == "advance_issued"),
           overdue_count: filter(count(s.account_id), s.overdue),
-          outstanding: sum(s.outstanding),
+          outstanding:
+            fragment(
+              "CASE WHEN COUNT(?) = COUNT(*) THEN SUM(?) END",
+              s.outstanding,
+              s.outstanding
+            ),
           final_id: fragment("MIN(?::text)", s.final_id),
           final_number: min(s.final_number)
         }
@@ -201,9 +221,12 @@ defmodule CozyCheckout.Billing.BookingSummary do
         final_id: s.final_id,
         final_number: s.final_number,
         outstanding: s.outstanding,
+        abra_checked_at: s.abra_checked_at,
+        abra_error: coalesce(s.abra_error, false),
+        abra_account_count: coalesce(s.remote_accounts, 0),
         account_count: coalesce(s.accounts, 0),
         final_count: coalesce(s.finals, 0),
-        paid_count: coalesce(s.paid, 0),
+        paid_count: coalesce(s.paid_finals, 0),
         state:
           fragment(
             "CASE WHEN ? > 0 AND ? = ? THEN 'personal' WHEN ? > 0 THEN 'final' WHEN ? > 0 THEN 'advance_received' WHEN ? > 0 THEN 'advance_returned' WHEN ? > 0 THEN 'advance_issued' ELSE 'no_document' END",
@@ -218,13 +241,13 @@ defmodule CozyCheckout.Billing.BookingSummary do
         payment_state:
           fragment(
             "CASE WHEN COALESCE(?, 0) = 0 THEN NULL WHEN ? > 0 THEN 'partial' WHEN ? > 0 THEN 'unpaid' WHEN ? > 0 THEN 'overpaid' WHEN ? AND ? > 0 AND ? = ? AND ? = ? THEN 'paid' ELSE 'unpaid' END",
-            s.finals,
+            s.tracked,
             s.partial,
             s.unpaid,
             s.overpaid,
             s.completed,
             s.accounts,
-            s.finals,
+            s.tracked,
             s.accounts,
             s.paid,
             s.accounts

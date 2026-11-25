@@ -25,8 +25,15 @@ defmodule CozyCheckoutWeb.BookingLive.InvoiceComponent do
           {@summary.account_count - @summary.final_count} plátci čekají na fakturu · {@summary.paid_count}/{@summary.final_count} faktur uhrazeno
         </p>
         <p :if={@summary.outstanding}>
-          Zůstatek dokladů: {Presentation.amount(@summary.outstanding)}
+          {Presentation.balance_label(@summary.outstanding)}: {Presentation.balance_amount(
+            @summary.outstanding
+          )}
         </p>
+        <CozyCheckoutWeb.BillingComponents.abra_balance_freshness
+          :if={@summary.abra_checked_at}
+          checked_at={@summary.abra_checked_at}
+          error={@summary.abra_error}
+        />
         <p :if={is_nil(@booking.allocation_completed_at)}>Rozdělení zatím není dokončeno.</p>
       </div>
       <.link

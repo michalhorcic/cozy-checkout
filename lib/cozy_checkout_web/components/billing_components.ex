@@ -86,6 +86,54 @@ defmodule CozyCheckoutWeb.BillingComponents do
     """
   end
 
+  attr :checked_at, :any, required: true
+  attr :error, :any, default: nil
+
+  def abra_balance_freshness(assigns) do
+    assigns =
+      assign(
+        assigns,
+        :stale?,
+        CozyCheckout.Abra.PaymentStatus.stale?(%{
+          checked_at: assigns.checked_at,
+          error: assigns.error
+        })
+      )
+
+    ~H"""
+    <p class={if @stale?, do: "text-amber-700", else: "text-primary-400"}>
+      Zdroj úhrad: ABRA · poslední ověření <time datetime={DateTime.to_iso8601(@checked_at)}>
+        před {max(div(DateTime.diff(DateTime.utc_now(), @checked_at), 60), 0)} min
+      </time>.
+      <span :if={@stale?}>Údaje mohou být neaktuální. Znovu ověřte úhrady.</span>
+    </p>
+    """
+  end
+
+  attr :status, :map, required: true
+
+  def abra_payment_status(assigns) do
+    assigns =
+      assign(assigns, :payment_state, CozyCheckout.Abra.PaymentStatus.state(assigns.status))
+
+    ~H"""
+    <div id={"abra-payment-#{@status.document_id}"} class="mt-2 space-y-1 text-sm">
+      <p :if={@payment_state} class="font-semibold">
+        Úhrada dokladu v ABRA: {CozyCheckout.Billing.BookingSummary.label(@payment_state)} · {Presentation.balance_label(
+          @status.payment_remaining
+        )}: {Presentation.balance_amount(@status.payment_remaining)}
+      </p>
+      <p :if={!@payment_state}>Úhrada v ABRA zatím nebyla ověřena.</p>
+      <.abra_balance_freshness
+        :if={@status.payment_checked_at}
+        checked_at={@status.payment_checked_at}
+        error={@status.payment_error}
+      />
+      <p :if={@status.payment_error} class="text-amber-700">{@status.payment_error}</p>
+    </div>
+    """
+  end
+
   attr :id, :string, required: true
   attr :document, :map, required: true
 

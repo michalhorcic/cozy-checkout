@@ -216,6 +216,22 @@ defmodule CozyCheckout.Abra.Client do
     end
   end
 
+  @doc "Read payment balances in batches by internal invoice IDs; never changes accounting."
+  def invoice_payment_balances(ids, cfg) when length(ids) in 1..50 do
+    if Enum.all?(ids, &Regex.match?(~r/^[1-9][0-9]*$/, &1)) do
+      # IDs originate from persisted export acknowledgements, never from VS matching.
+      path = URI.encode("faktura-vydana/(id in (#{Enum.join(ids, ",")}))")
+
+      read_records(path, "faktura-vydana", cfg,
+        detail: "custom:id,kod,varSym,mena,storno,sumCelkem,zbyvaUhradit",
+        limit: 50,
+        order: "id"
+      )
+    else
+      {:error, "Neplatná vzdálená identita faktury"}
+    end
+  end
+
   def advance_invoice_snapshot(id, cfg) do
     path = "faktura-vydana/#{URI.encode(to_string(id), &URI.char_unreserved?/1)}"
 

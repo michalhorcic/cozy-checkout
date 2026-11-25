@@ -16,6 +16,11 @@ defmodule CozyCheckout.Abra.AccommodationExport do
     field :attempts, :integer, default: 0
     field :error, :string
     field :synced_at, :utc_datetime
+    field :payment_total, :decimal
+    field :payment_remaining, :decimal
+    field :payment_checked_at, :utc_datetime_usec
+    field :payment_attempted_at, :utc_datetime_usec
+    field :payment_error, :string
     timestamps(type: :utc_datetime)
   end
 end
