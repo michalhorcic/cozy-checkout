@@ -25,6 +25,82 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     )
   end
 
+  test "missing final invoices only highlight stays after departure", %{
+    conn: conn,
+    booking: booking
+  } do
+    today = Billing.today()
+
+    for {status, arrival, departure, attention?} <- [
+          {"upcoming", 2, 5, false},
+          {"active", -1, 1, false},
+          {"active", -1, 0, false},
+          {"upcoming", -10, -7, true},
+          {"completed", -1, 0, true},
+          {"cancelled", -10, -7, false},
+          {"upcoming", 2, nil, false}
+        ] do
+      Bookings.get_booking!(booking.id)
+      |> Ecto.Changeset.change(
+        status: status,
+        check_in_date: Date.add(today, arrival),
+        check_out_date: if(departure, do: Date.add(today, departure))
+      )
+      |> Repo.update!()
+
+      {:ok, view, _} = live(conn, "/admin/bookings?show_all=true")
+      assert has_element?(view, "#booking-row-#{booking.id}")
+
+      assert has_element?(view, ~s([id="booking-row-#{booking.id}"][class~="bg-warning/5"])) ==
+               attention?
+    end
+  end
+
+  test "a routine advance before arrival does not highlight the booking", %{
+    conn: conn,
+    booking: booking
+  } do
+    issue!(booking, "advance", %{"amount" => "1000"})
+    receipt!(booking, "1000")
+
+    booking
+    |> Ecto.Changeset.change(
+      check_in_date: Date.add(Billing.today(), 2),
+      check_out_date: Date.add(Billing.today(), 5)
+    )
+    |> Repo.update!()
+
+    {:ok, view, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(view, "#booking-billing-trigger-#{booking.id}", "Záloha přijata")
+    refute has_element?(view, ~s([id="booking-row-#{booking.id}"][class~="bg-warning/5"]))
+  end
+
+  test "invoice attention clears after payment while the paid badge stays visible", %{
+    conn: conn,
+    booking: booking
+  } do
+    final = issue!(booking, "final")
+    {:ok, _} = Billing.complete_allocation(booking.id)
+    {:ok, unpaid, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(unpaid, ~s([id="booking-row-#{booking.id}"][class~="bg-warning/5"]))
+
+    final |> Ecto.Changeset.change(due_on: Date.add(Billing.today(), -1)) |> Repo.update!()
+    {:ok, overdue, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(overdue, ~s([id="booking-row-#{booking.id}"][class~="bg-error/5"]))
+    refute has_element?(overdue, ~s([id="booking-row-#{booking.id}"][class~="bg-warning/5"]))
+
+    receipt!(booking, Decimal.to_string(final.total), %{
+      "document_id" => final.id,
+      "paid_on" => to_string(final.tax_date)
+    })
+
+    {:ok, paid, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(paid, "#booking-payment-#{booking.id}.bg-success-light", "Uhrazeno")
+    refute has_element?(paid, ~s([id="booking-row-#{booking.id}"][class~="bg-success/5"]))
+    refute has_element?(paid, ~s([id="booking-row-#{booking.id}"][class~="bg-warning/5"]))
+    refute has_element?(paid, ~s([id="booking-row-#{booking.id}"][class~="bg-error/5"]))
+  end
+
   test "records, corrects and cancels external invoice sending from booking and document screens",
        %{conn: conn, booking: booking} do
     document = issue!(booking, "final")
@@ -166,6 +242,9 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
              ~s(#booking-welcome-email-#{booking.id}[aria-label="Uvítací e-mail: neodesláno"])
            )
 
+    assert has_element?(view, "#booking-welcome-email-#{booking.id} .hero-envelope")
+    refute has_element?(view, "#booking-welcome-email-#{booking.id} .hero-check")
+
     Repo.insert!(%CozyCheckout.Billing.Delivery{
       document_id: document.id,
       request_id: Ecto.UUID.generate(),
@@ -194,6 +273,8 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
              refreshed,
              ~s(#booking-welcome-email-#{booking.id}[aria-label="Uvítací e-mail: čeká na odeslání"])
            )
+
+    assert has_element?(refreshed, "#booking-welcome-email-#{booking.id} .hero-clock")
 
     {:ok, filtered, _} = live(conn, "/admin/bookings?show_all=true&invoice_state=advance_issued")
     assert has_element?(filtered, "#booking-advance-coverage", ~r/100(?:,0+)? %/)

@@ -257,6 +257,8 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   @impl true
   def render(assigns) do
+    assigns = assign(assigns, :billing_today, CozyCheckout.Billing.today())
+
     ~H"""
     <Layouts.app
       flash={@flash}
@@ -486,7 +488,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                     id={"booking-row-#{booking.id}"}
                     class={[
                       "grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-primary-200/60 p-3 transition-colors 2xl:table-row 2xl:rounded-none 2xl:border-0 2xl:p-0",
-                      billing_row_class(booking.billing_summary)
+                      billing_row_class(booking, @billing_today)
                     ]}
                   >
                     <td class="col-span-2 min-w-0 px-0 py-2 align-top text-sm text-primary-500 2xl:px-3 2xl:py-3.5">
@@ -792,7 +794,12 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         navigate={~p"/admin/bookings/#{@booking.id}"}
         class={[
           "inline-flex min-h-6 items-center gap-1 rounded hover:underline focus-visible:outline-2",
-          if(@summary.welcome == :failed, do: "text-error", else: "text-primary-400")
+          case @summary.welcome do
+            :failed -> "text-error"
+            :unsent -> "text-warning-dark"
+            :sent -> "text-success-dark"
+            _ -> "text-primary-400"
+          end
         ]}
         title={"Uvítací e-mail: " <> welcome_label(@summary.welcome)}
         aria-label={"Uvítací e-mail: " <> welcome_label(@summary.welcome)}
@@ -802,7 +809,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         <.icon
           :if={@summary.welcome != :failed}
           name={welcome_icon(@summary.welcome)}
-          class="size-3.5"
+          class="size-4 shrink-0"
         />
       </.link>
     </div>
@@ -816,7 +823,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   defp welcome_icon(:sent), do: "hero-check"
   defp welcome_icon(:pending), do: "hero-clock"
-  defp welcome_icon(_), do: "hero-minus"
+  defp welcome_icon(:unsent), do: "hero-envelope"
 
   defp stay_label("upcoming"), do: "Přijede"
   defp stay_label("active"), do: "Na místě"
@@ -824,16 +831,26 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp stay_label("cancelled"), do: "Zrušeno"
   defp stay_label(status), do: status
 
-  defp billing_row_class(%{state: "personal"}), do: "hover:bg-secondary-50"
-  defp billing_row_class(%{overdue: true}), do: "bg-error/5 hover:bg-error/10"
+  defp billing_row_class(booking, today) do
+    summary = booking.billing_summary
 
-  defp billing_row_class(summary) do
+    stay_ended? =
+      booking.status != "cancelled" and
+        (booking.status == "completed" or
+           (not is_nil(booking.check_out_date) and Date.before?(booking.check_out_date, today)))
+
+    missing_final? = summary.final_count < summary.account_count or summary.state == "no_document"
+
     cond do
-      summary.payment_state == "paid" and summary.final_count == summary.account_count ->
-        "bg-success/5 hover:bg-success/10"
+      summary.state == "personal" ->
+        "hover:bg-secondary-50"
 
-      summary.payment_state in ["unpaid", "partial", "overpaid"] or
-        summary.final_count < summary.account_count or summary.state == "no_document" ->
+      summary.overdue ->
+        "bg-error/5 hover:bg-error/10"
+
+      summary.payment_state == "overpaid" or
+        (summary.final_count > 0 and summary.payment_state in ["unpaid", "partial"]) or
+          (stay_ended? and missing_final?) ->
         "bg-warning/5 hover:bg-warning/10"
 
       true ->
