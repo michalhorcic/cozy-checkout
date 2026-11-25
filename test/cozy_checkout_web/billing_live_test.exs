@@ -71,7 +71,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     |> Repo.update!()
 
     {:ok, view, _} = live(conn, "/admin/bookings?show_all=true")
-    assert has_element?(view, "#booking-document-status-#{booking.id}", "Záloha přijata")
+    assert has_element?(view, "#booking-billing-trigger-#{booking.id}", "Záloha přijata")
     refute has_element?(view, ~s([id="booking-row-#{booking.id}"][class~="bg-warning/5"]))
   end
 
