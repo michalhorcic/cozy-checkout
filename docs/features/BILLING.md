@@ -147,6 +147,10 @@ původní souhrnný text. Již uložená PDF se nemění.
 Každá skutečně přijatá záloha před dokončením pobytu se zapisuje s datem, částkou,
 způsobem a referencí. Vznikne vlastní daňový doklad k přijaté platbě. Platba může
 být bez výzvy; několik dílčích plateb vytvoří několik daňových dokladů.
+Při potvrzení bankovní platby k dosud neuhrazené zálohové výzvě se zapíše celá
+skutečně přijatá částka, i když převyšuje zbývající zálohu (například o 0,50 Kč).
+Stejná částka se použije pro daňový doklad i párování v ABRA; původní výzva se
+nemění. Již plně uhrazenou výzvu nelze znovu potvrdit další platbou.
 
 Konečnou fakturu před vystavením zkontrolujte v náhledu, včetně DUZP a splatnosti.
 Budoucí DUZP není podporováno. Zálohy se odpočítají v původních základech a DPH,

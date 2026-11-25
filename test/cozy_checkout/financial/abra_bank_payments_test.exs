@@ -101,6 +101,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
           linked: false,
           fault: nil,
           overrides: %{},
+          source_overrides: %{},
           foreign: false,
           posts: []
         }
@@ -286,17 +287,67 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert {:error, _} = BankPayments.preview(ctx.movement.id, ctx.document.id)
   end
 
-  test "pending or manually recorded installments cannot exceed the local advance request", ctx do
+  test "an installment may overpay the remaining advance request", ctx do
     receipt!(ctx.booking, "800.00", %{
       "paid_on" => to_string(ctx.movement.paid_on),
       "document_id" => ctx.document.id
     })
 
+    Agent.update(ctx.remote, &%{&1 | source_overrides: %{"zbyvaUhradit" => "434.57"}})
     {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    assert {:ok, confirmation} = BankPayments.confirm(preview.token)
+    assert Decimal.equal?(Repo.get!(Payment, confirmation.payment_id).amount, "600.00")
+    assert Repo.aggregate(Payment, :count) == 2
+    assert Repo.aggregate(BankConfirmation, :count) == 1
+  end
+
+  test "a 50 haler overpayment records and syncs the full amount exactly once", ctx do
+    amount = "1235.07"
+
+    movement =
+      ctx.movement
+      |> Ecto.Changeset.change(
+        amount: Decimal.new(amount),
+        raw: Map.put(ctx.movement.raw, "sumCelkem", amount)
+      )
+      |> Repo.update!()
+
+    Agent.update(ctx.remote, &%{&1 | overrides: %{"sumCelkem" => amount}})
+    assert {:ok, preview} = BankPayments.preview(movement.id, ctx.document.id)
+    assert Decimal.equal?(preview.tax_preview.total, amount)
+    assert {:ok, confirmation} = BankPayments.confirm(preview.token)
+    assert {:ok, repeated} = BankPayments.confirm(preview.token)
+    assert repeated.id == confirmation.id
+    payment = Repo.get!(Payment, confirmation.payment_id)
+    assert Decimal.equal?(payment.amount, amount)
+    assert Decimal.equal?(Billing.get_document!(payment.tax_document_id).total, amount)
+    assert Billing.get_document!(ctx.document.id).total == ctx.document.total
+    Agent.update(ctx.remote, &%{&1 | fault: :pair_timeout})
+    assert {:error, _} = BankPaymentSync.sync(confirmation.id)
+    assert :ok = BankPaymentSync.sync(confirmation.id)
+    assert :ok = BankPaymentSync.sync(confirmation.id)
+    assert Enum.sort(Agent.get(ctx.remote, & &1.posts)) == Enum.sort([:create, :pair, :link])
+    assert Repo.aggregate(Payment, :count) == 1
+  end
+
+  test "an already locally paid advance cannot receive another bank confirmation", ctx do
+    receipt!(ctx.booking, "1234.57", %{"document_id" => ctx.document.id})
+    assert {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
     assert {:error, reason} = BankPayments.confirm(preview.token)
-    assert reason =~ "zbývá méně"
+    assert reason =~ "plně uhrazena"
     assert Repo.aggregate(Payment, :count) == 1
     assert Repo.aggregate(BankConfirmation, :count) == 0
+    assert Agent.get(ctx.remote, & &1.posts) == []
+  end
+
+  test "settled or unknown remote balances still block unpaired advances", ctx do
+    for remaining <- ["0", "-0.50", nil] do
+      Agent.update(ctx.remote, &%{&1 | source_overrides: %{"zbyvaUhradit" => remaining}})
+      assert {:error, _} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    end
+
+    assert Repo.aggregate(Payment, :count) == 0
+    assert Agent.get(ctx.remote, & &1.posts) == []
   end
 
   test "false pairing flag does not permit partially consumed or unknown relationships", ctx do
@@ -455,9 +506,20 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
             "id" => 42,
             "sumCelkem" => "1234.57",
             "storno" => false,
-            "zbyvaUhradit" => if(state.paired, do: "634.57", else: "1234.57")
+            "zbyvaUhradit" =>
+              if(state.paired,
+                do:
+                  to_string(
+                    Decimal.sub(
+                      Decimal.new("1234.57"),
+                      Map.get(state.overrides, "sumCelkem", "600.00")
+                    )
+                  ),
+                else: "1234.57"
+              )
           })
 
+        remote_source = Map.merge(remote_source, state.source_overrides)
         Req.Test.json(conn, %{"winstrom" => %{"faktura-vydana" => [remote_source]}})
 
       conn.method == "GET" and String.starts_with?(path, "/c/test/faktura-vydana/") ->
@@ -491,7 +553,10 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
               [movement] = payload["banka"]
               assert movement["@create"] == "fail"
               refute Map.has_key?(movement, "sumCelkem")
-              assert hd(movement["sparovani"]["uhrazovanaFak"])["@castka"] == "600.00"
+
+              assert hd(movement["sparovani"]["uhrazovanaFak"])["@castka"] ==
+                       Map.get(Map.get(state, :overrides, %{}), "sumCelkem", "600.00")
+
               {:pair, %{paired: true}}
 
             hd(payload["faktura-vydana"])["vytvor-vazbu-zdd"] ->
@@ -547,7 +612,10 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
   defp relations(state) do
     pairs =
       if state.paired or state.foreign,
-        do: [{11, if(state.foreign, do: 99, else: 42), "typVazbyDokl.uhradaZALOHY", "600.00"}],
+        do: [
+          {11, if(state.foreign, do: 99, else: 42), "typVazbyDokl.uhradaZALOHY",
+           Map.get(Map.get(state, :overrides, %{}), "sumCelkem", "600.00")}
+        ],
         else: []
 
     pairs =

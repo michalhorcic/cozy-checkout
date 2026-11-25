@@ -29,7 +29,7 @@ defmodule CozyCheckoutWeb.BillingComponents do
         Potvrzením se zaeviduje doplatek a existující bankovní pohyb se spáruje s konečnou fakturou v ABRA. Nevznikne ZDD ani nový bankovní pohyb.
       </p>
       <p :if={@preview.document.kind == "advance"}>
-        Potvrzením vznikne skutečná platba a uzamčený daňový doklad k přijaté záloze. Účetní vazby se následně přenesou do ABRA. Potvrzení nelze jednoduše vrátit zpět.
+        Potvrzením vznikne skutečná platba a uzamčený daňový doklad k přijaté záloze. Zaeviduje se celá přijatá částka včetně případného přeplatku výzvy. Účetní vazby se následně přenesou do ABRA. Potvrzení nelze jednoduše vrátit zpět.
       </p>
       <button
         id={@confirm_id}

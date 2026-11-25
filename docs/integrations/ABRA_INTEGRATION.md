@@ -314,8 +314,11 @@ výsledky CI ověří uživatel. Skutečné API testovací firmy nebylo ověřen
 Tento blok pro zálohy dovoluje v přehledu banky výslovně potvrdit **celý bankovní
 příjem k jedné zálohové výzvě**. Vyžaduje již úspěšný export výzvy do stejné
 firmy, nový pobyt, CZK a shodný VS. Potvrzení je samostatné od importu banky.
-Příjmy bez výzvy, vratky, rozdělení pohybu a přeplatky nad
-zbývající částku výzvy tato implementace nepotvrzuje.
+Celý příjem lze potvrdit i při přeplatku zbývající částky výzvy. Platba, ZDD
+a vazba úhrady používají skutečnou částku včetně přeplatku; původní výzva se
+nemění. Není zaveden limit přeplatku ani automatické zaokrouhlení. Další příjem
+na již plně uhrazenou výzvu se zablokuje. Příjmy bez výzvy, vratky a rozdělení
+pohybu tato implementace nepotvrzuje.
 Konečné faktury mají [samostatný postup potvrzení doplatku](#bankovní-doplatek-konečné-faktury).
 
 Přidávací migrace `20261026160000_create_abra_bank_confirmations.exs` zavádí
