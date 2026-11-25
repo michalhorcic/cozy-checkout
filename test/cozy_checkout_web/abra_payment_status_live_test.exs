@@ -107,6 +107,8 @@ defmodule CozyCheckoutWeb.AbraPaymentStatusLiveTest do
     {:ok, bookings, _} = live(conn, "/admin/bookings?show_all=true")
     assert has_element?(bookings, "#booking-row-#{b.id}")
     assert has_element?(bookings, "#booking-payment-#{b.id}", "Částečně uhrazeno")
+    assert has_element?(bookings, ~s([id="booking-row-#{b.id}"][class~="bg-warning/5"]))
+    assert has_element?(bookings, "#booking-document-status-#{b.id}", "Záloha přijata")
 
     assert has_element?(
              bookings,
