@@ -98,6 +98,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
         %{
           receipt: nil,
           paired: false,
+          pair_amount: nil,
           linked: false,
           fault: nil,
           overrides: %{},
@@ -299,6 +300,8 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert Decimal.equal?(Repo.get!(Payment, confirmation.payment_id).amount, "600.00")
     assert Repo.aggregate(Payment, :count) == 2
     assert Repo.aggregate(BankConfirmation, :count) == 1
+    assert Decimal.equal?(confirmation.source_payment_amount, "434.57")
+    assert :ok = BankPaymentSync.sync(confirmation.id)
   end
 
   test "a 50 haler overpayment records and syncs the full amount exactly once", ctx do
@@ -318,6 +321,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert {:ok, confirmation} = BankPayments.confirm(preview.token)
     assert {:ok, repeated} = BankPayments.confirm(preview.token)
     assert repeated.id == confirmation.id
+    assert Decimal.equal?(confirmation.source_payment_amount, "1234.57")
     payment = Repo.get!(Payment, confirmation.payment_id)
     assert Decimal.equal?(payment.amount, amount)
     assert Decimal.equal?(Billing.get_document!(payment.tax_document_id).total, amount)
@@ -328,6 +332,66 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
     assert :ok = BankPaymentSync.sync(confirmation.id)
     assert Enum.sort(Agent.get(ctx.remote, & &1.posts)) == Enum.sort([:create, :pair, :link])
     assert Repo.aggregate(Payment, :count) == 1
+  end
+
+  test "legacy failed overpayment resumes without creating another payment or ZDD", ctx do
+    amount = "1235.07"
+
+    movement =
+      ctx.movement
+      |> Ecto.Changeset.change(
+        amount: Decimal.new(amount),
+        raw: Map.put(ctx.movement.raw, "sumCelkem", amount)
+      )
+      |> Repo.update!()
+
+    Agent.update(ctx.remote, &%{&1 | overrides: %{"sumCelkem" => amount}})
+    {:ok, preview} = BankPayments.preview(movement.id, ctx.document.id)
+    {:ok, confirmation} = BankPayments.confirm(preview.token)
+    # The previous worker created ZDD before ABRA rejected the full allocation.
+    Agent.update(ctx.remote, &%{&1 | fault: :create_timeout})
+    assert {:error, _} = BankPaymentSync.sync(confirmation.id)
+
+    confirmation
+    |> Ecto.Changeset.change(source_payment_amount: nil, state: "failed")
+    |> Repo.update!()
+
+    assert {:ok, _} = BankPayments.retry(confirmation.id)
+    assert :ok = BankPaymentSync.sync(confirmation.id)
+
+    assert Decimal.equal?(
+             Repo.get!(BankConfirmation, confirmation.id).source_payment_amount,
+             "1234.57"
+           )
+
+    assert Enum.sort(Agent.get(ctx.remote, & &1.posts)) == Enum.sort([:create, :pair, :link])
+    assert Repo.aggregate(Payment, :count) == 1
+    assert Repo.aggregate(Document, :count) == 2
+  end
+
+  test "a changed source balance invalidates preview and blocks a stored larger allocation",
+       ctx do
+    {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    Agent.update(ctx.remote, &%{&1 | source_overrides: %{"zbyvaUhradit" => "500.00"}})
+    assert {:error, _} = BankPayments.confirm(preview.token)
+    assert Repo.aggregate(Payment, :count) == 0
+
+    Agent.update(ctx.remote, &%{&1 | source_overrides: %{}})
+    {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    {:ok, confirmation} = BankPayments.confirm(preview.token)
+    Agent.update(ctx.remote, &%{&1 | source_overrides: %{"zbyvaUhradit" => "500.00"}})
+    assert {:cancel, _} = BankPaymentSync.sync(confirmation.id)
+    assert BankPayments.get(ctx.movement.id).state == "conflict"
+    assert Agent.get(ctx.remote, & &1.posts) == []
+  end
+
+  test "a partial bank binding must match the stored allocation exactly", ctx do
+    {:ok, preview} = BankPayments.preview(ctx.movement.id, ctx.document.id)
+    {:ok, confirmation} = BankPayments.confirm(preview.token)
+    Agent.update(ctx.remote, &%{&1 | paired: true, pair_amount: "100.00"})
+    assert {:cancel, _} = BankPaymentSync.sync(confirmation.id)
+    assert BankPayments.get(ctx.movement.id).state == "conflict"
+    assert Agent.get(ctx.remote, & &1.posts) == []
   end
 
   test "an already locally paid advance cannot receive another bank confirmation", ctx do
@@ -506,20 +570,19 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
             "id" => 42,
             "sumCelkem" => "1234.57",
             "storno" => false,
-            "zbyvaUhradit" =>
-              if(state.paired,
-                do:
-                  to_string(
-                    Decimal.sub(
-                      Decimal.new("1234.57"),
-                      Map.get(state.overrides, "sumCelkem", "600.00")
-                    )
-                  ),
-                else: "1234.57"
-              )
+            "zbyvaUhradit" => "1234.57"
           })
+          |> Map.merge(state.source_overrides)
 
-        remote_source = Map.merge(remote_source, state.source_overrides)
+        remote_source =
+          if state.paired do
+            Map.update!(remote_source, "zbyvaUhradit", fn remaining ->
+              to_string(Decimal.sub(Decimal.new(remaining), state.pair_amount || "600.00"))
+            end)
+          else
+            remote_source
+          end
+
         Req.Test.json(conn, %{"winstrom" => %{"faktura-vydana" => [remote_source]}})
 
       conn.method == "GET" and String.starts_with?(path, "/c/test/faktura-vydana/") ->
@@ -531,7 +594,13 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
         if state.fault == :unavailable do
           Plug.Conn.send_resp(conn, 503, "")
         else
-          data = bank |> Map.put("sparovano", state.paired) |> Map.merge(state.overrides)
+          bank_amount = Map.get(state.overrides, "sumCelkem", "600.00")
+
+          fully_paired? =
+            state.paired and
+              Decimal.equal?(Decimal.new(state.pair_amount || "600.00"), bank_amount)
+
+          data = bank |> Map.put("sparovano", fully_paired?) |> Map.merge(state.overrides)
           Req.Test.json(conn, %{"winstrom" => %{"banka" => [data]}})
         end
 
@@ -554,10 +623,17 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
               assert movement["@create"] == "fail"
               refute Map.has_key?(movement, "sumCelkem")
 
-              assert hd(movement["sparovani"]["uhrazovanaFak"])["@castka"] ==
-                       Map.get(Map.get(state, :overrides, %{}), "sumCelkem", "600.00")
+              bank_amount = Decimal.new(Map.get(state.overrides, "sumCelkem", "600.00"))
+              remaining = Decimal.new(Map.get(state.source_overrides, "zbyvaUhradit", "1234.57"))
+              expected = Decimal.min(bank_amount, remaining)
+              actual = hd(movement["sparovani"]["uhrazovanaFak"])["@castka"]
+              # Model ABRA's real restriction: the allocation cannot overpay the request.
+              assert Decimal.equal?(Decimal.new(actual), expected)
 
-              {:pair, %{paired: true}}
+              assert movement["sparovani"]["zbytek"] ==
+                       if(Decimal.lt?(expected, bank_amount), do: "ignorovat", else: "ne")
+
+              {:pair, %{paired: true, pair_amount: actual}}
 
             hd(payload["faktura-vydana"])["vytvor-vazbu-zdd"] ->
               {:link, %{linked: true}}
@@ -614,7 +690,7 @@ defmodule CozyCheckout.AbraBankPaymentsTest do
       if state.paired or state.foreign,
         do: [
           {11, if(state.foreign, do: 99, else: 42), "typVazbyDokl.uhradaZALOHY",
-           Map.get(Map.get(state, :overrides, %{}), "sumCelkem", "600.00")}
+           Map.get(state, :pair_amount) || "600.00"}
         ],
         else: []
 

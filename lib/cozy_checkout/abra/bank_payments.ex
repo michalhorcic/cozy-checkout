@@ -152,6 +152,8 @@ defmodule CozyCheckout.Abra.BankPayments do
              document: doc,
              export: export,
              bank_snapshot: snapshot.bank,
+             source_payment_amount:
+               source_payment_amount(remote, movement.amount, links.source_paired?),
              tax_preview: tax_preview,
              config: cfg
            }}
@@ -267,6 +269,7 @@ defmodule CozyCheckout.Abra.BankPayments do
             %BankConfirmation{}
             |> Ecto.Changeset.change(
               kind: doc.kind,
+              source_payment_amount: Map.get(prepared, :source_payment_amount),
               movement_id: movement.id,
               payment_id: payment.id,
               source_export_id: prepared.export.id,
@@ -311,10 +314,20 @@ defmodule CozyCheckout.Abra.BankPayments do
   defp digest(prepared) do
     {prepared.document.id, prepared.export.id,
      BankVerification.fingerprint(prepared.bank_snapshot), prepared.tax_preview.token,
-     Map.get(prepared, :remote_digest), Keyword.drop(prepared.config, [:username, :password])}
+     Map.get(prepared, :remote_digest), Map.get(prepared, :source_payment_amount),
+     Keyword.drop(prepared.config, [:username, :password])}
     |> :erlang.term_to_binary()
     |> then(&:crypto.hash(:sha256, &1))
     |> Base.encode16()
+  end
+
+  def source_payment_amount(_remote, amount, true), do: amount
+
+  def source_payment_amount(remote, amount, false) do
+    case BankVerification.amount(remote["zbyvaUhradit"]) do
+      %Decimal{} = remaining -> Decimal.min(amount, remaining)
+      _ -> nil
+    end
   end
 
   def verify_source(export, remote, _amount, paired?) do

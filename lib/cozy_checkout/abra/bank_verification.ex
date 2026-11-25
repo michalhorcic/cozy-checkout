@@ -16,9 +16,15 @@ defmodule CozyCheckout.Abra.BankVerification do
      end}
   end
 
-  def check(snapshot, expected, source_id, receipt_id \\ nil)
+  def check(snapshot, expected, source_id, receipt_id \\ nil, source_amount \\ nil)
 
-  def check(%{bank: bank, links: links, amounts: amounts}, expected, source_id, receipt_id)
+  def check(
+        %{bank: bank, links: links, amounts: amounts},
+        expected,
+        source_id,
+        receipt_id,
+        source_amount
+      )
       when is_map(bank) and is_list(links) and is_list(amounts) do
     cond do
       fingerprint(bank) != fingerprint(expected) ->
@@ -37,19 +43,19 @@ defmodule CozyCheckout.Abra.BankVerification do
         {:error, "Neplatná částka příjmu"}
 
       true ->
-        check_links(bank, links, amounts, source_id, receipt_id)
+        check_links(bank, links, amounts, source_id, receipt_id, source_amount)
     end
   end
 
-  def check(_, _, _, _), do: {:error, "ABRA nevrátila platný pohyb a úplné vazby"}
+  def check(_, _, _, _, _), do: {:error, "ABRA nevrátila platný pohyb a úplné vazby"}
 
-  defp check_links(bank, links, amounts, source_id, receipt_id) do
+  defp check_links(bank, links, amounts, source_id, receipt_id, source_amount) do
     # This is a document graph, not just payment edges. Its root can be the
     # bank movement itself. Discard only an identifiable root with no binding ID.
     links = Enum.reject(links, &bank_root?(&1, bank))
 
     with {:ok, links} <- active(links), {:ok, amounts} <- active(amounts) do
-      expected_amount = amount(bank["sumCelkem"])
+      expected_amount = source_amount || amount(bank["sumCelkem"])
 
       checks =
         Enum.map(links, fn link ->

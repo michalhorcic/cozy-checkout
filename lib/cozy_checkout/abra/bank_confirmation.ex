@@ -7,6 +7,7 @@ defmodule CozyCheckout.Abra.BankConfirmation do
     belongs_to :payment, CozyCheckout.Billing.Payment
     belongs_to :source_export, CozyCheckout.Abra.AccommodationExport
     field :kind, :string, default: "advance"
+    field :source_payment_amount, :decimal
     field :base_url, :string
     field :company_id, :string
     field :bank_snapshot, :map
