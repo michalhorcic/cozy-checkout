@@ -65,7 +65,13 @@ defmodule CozyCheckoutWeb.AbraPaymentStatusLiveTest do
     assert has_element?(view, "#payer-financial-summary", expected)
     assert has_element?(view, "#booking-total-outstanding", expected)
     assert has_element?(view, "#abra-payment-#{doc.id}", "Uhrazeno")
-    assert has_element?(view, "#abra-payment-#{doc.id}", "0,00 Kč")
+
+    assert has_element?(
+             view,
+             "#abra-payment-#{doc.id}",
+             CozyCheckout.Billing.Presentation.balance_amount(Decimal.new(0))
+           )
+
     view |> element("#check-abra-payments") |> render_click()
 
     assert_enqueued(
@@ -98,7 +104,8 @@ defmodule CozyCheckoutWeb.AbraPaymentStatusLiveTest do
     assert has_element?(detail, "#abra-payment-#{doc.id}", "Údaje mohou být neaktuální")
     {:ok, booking_detail, _} = live(conn, "/admin/bookings/#{b.id}")
     assert has_element?(booking_detail, "#booking-billing-summary", "Údaje mohou být neaktuální")
-    {:ok, bookings, _} = live(conn, "/admin/bookings")
+    {:ok, bookings, _} = live(conn, "/admin/bookings?show_all=true")
+    assert has_element?(bookings, "#booking-row-#{b.id}")
     assert has_element?(bookings, "#booking-payment-#{b.id}", "Částečně uhrazeno")
 
     assert has_element?(

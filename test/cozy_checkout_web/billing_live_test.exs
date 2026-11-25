@@ -758,7 +758,13 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     {:ok, view, _} = live(conn, "/admin/bookings?invoice_state=paid&show_all=true")
     assert has_element?(view, "#booking-payment-#{booking.id}", "Uhrazeno")
     refute has_element?(view, "#booking-overdue-#{booking.id}")
-    refute has_element?(view, "#booking-balance-#{booking.id}")
+    assert has_element?(view, "#booking-balance-#{booking.id}", "K úhradě")
+
+    assert has_element?(
+             view,
+             "#booking-balance-#{booking.id}",
+             CozyCheckoutWeb.CurrencyHelper.format_currency(Decimal.new(0))
+           )
 
     assert has_element?(
              view,
