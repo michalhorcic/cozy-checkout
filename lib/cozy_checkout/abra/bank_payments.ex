@@ -217,8 +217,13 @@ defmodule CozyCheckout.Abra.BankPayments do
               do: CozyCheckout.Abra.FinalBankPayments.payable(doc),
               else: doc.total
 
-          if Decimal.gt?(movement.amount, Decimal.sub(limit, recorded)),
+          remaining = Decimal.sub(limit, recorded)
+
+          if doc.kind == "final" and Decimal.gt?(movement.amount, remaining),
             do: Repo.rollback("Na dokladu již místně zbývá méně; přeplatek vyřešte ručně")
+
+          if doc.kind == "advance" and not Decimal.positive?(remaining),
+            do: Repo.rollback("Zálohová výzva je již místně plně uhrazena")
 
           duplicate =
             Repo.exists?(
@@ -312,7 +317,7 @@ defmodule CozyCheckout.Abra.BankPayments do
     |> Base.encode16()
   end
 
-  def verify_source(export, remote, amount, paired?) do
+  def verify_source(export, remote, _amount, paired?) do
     [invoice] = export.payload["winstrom"]["faktura-vydana"]
 
     expected =
@@ -334,8 +339,8 @@ defmodule CozyCheckout.Abra.BankPayments do
       not valid? ->
         {:error, "Zdrojová výzva v ABRA neodpovídá uloženému exportu"}
 
-      not paired? and (is_nil(remaining) or Decimal.lt?(remaining, amount)) ->
-        {:error, "Výzva nemá dostatečnou zbývající částku; přeplatek nebo úhradu vyřešte ručně"}
+      not paired? and (is_nil(remaining) or not Decimal.positive?(remaining)) ->
+        {:error, "Výzva je již uhrazena nebo nelze ověřit její zbývající částku"}
 
       true ->
         :ok
