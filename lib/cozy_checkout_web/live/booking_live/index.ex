@@ -455,20 +455,21 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                       >
                         Odjezd <.sort_icon meta={@meta} field={:check_out_date} />
                       </.link>
+                      <.link
+                        id="bookings-sort-status"
+                        patch={
+                          build_path(~p"/admin/bookings", @meta, :order, :status, @current_params)
+                        }
+                        class="inline-flex items-center gap-1 hover:text-tertiary-600"
+                      >
+                        Stav <.sort_icon meta={@meta} field={:status} />
+                      </.link>
                     </div>
                   </th>
                   <th class="px-2 py-3">Stravování</th>
                   <th class="px-2 py-3">Menu</th>
                   <th class="px-2 py-3">Osoby</th>
-                  <.sortable_header
-                    meta={@meta}
-                    field={:status}
-                    path={~p"/admin/bookings"}
-                    raw_params={@current_params}
-                    class="!px-2 !tracking-normal !normal-case"
-                  >
-                    Stav / faktura
-                  </.sortable_header>
+                  <th class="px-2 py-3">Úhrada / fakturace</th>
                   <th class="px-2 py-3 text-right">Akce</th>
                 </tr>
               </thead>
@@ -483,18 +484,120 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                   <tr
                     :for={booking <- @bookings}
                     id={"booking-row-#{booking.id}"}
-                    class="grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-primary-200/60 p-3 hover:bg-secondary-50 2xl:table-row 2xl:rounded-none 2xl:border-0 2xl:p-0"
+                    class={[
+                      "grid min-w-0 grid-cols-2 gap-x-3 rounded-lg border border-primary-200/60 p-3 transition-colors 2xl:table-row 2xl:rounded-none 2xl:border-0 2xl:p-0",
+                      billing_row_class(booking.billing_summary)
+                    ]}
                   >
                     <td class="col-span-2 min-w-0 px-0 py-2 align-top text-sm text-primary-500 2xl:px-3 2xl:py-3.5">
-                      <.link
-                        navigate={
-                          build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
-                        }
-                        title={booking.guest.name}
-                        class="block truncate font-semibold text-tertiary-700 hover:underline"
-                      >
-                        {booking.guest.name}
-                      </.link>
+                      <div class="flex min-w-0 items-center gap-2">
+                        <.link
+                          navigate={
+                            build_path_with_params(~p"/admin/bookings/#{booking}", @current_params)
+                          }
+                          title={booking.guest.name}
+                          class="min-w-0 flex-1 truncate font-semibold text-tertiary-700 hover:underline"
+                        >
+                          {booking.guest.name}
+                        </.link>
+                        <div
+                          class="relative shrink-0"
+                          id={"booking-status-#{booking.id}"}
+                          phx-click-away={JS.hide(to: "#status-menu-#{booking.id}")}
+                        >
+                          <button
+                            type="button"
+                            phx-click={JS.toggle(to: "#status-menu-#{booking.id}")}
+                            class="max-w-full min-w-0 text-left inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity"
+                            title={"Stav rezervace: " <> stay_label(booking.status)}
+                            aria-label={"Změnit stav rezervace: " <> stay_label(booking.status)}
+                          >
+                            <span class={[
+                              "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                              status_badge_class(booking.status)
+                            ]}>
+                              {stay_label(booking.status)}
+                            </span>
+                            <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
+                          </button>
+
+                          <div
+                            id={"status-menu-#{booking.id}"}
+                            class="hidden absolute right-0 z-10 mt-1 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
+                          >
+                            <div class="py-1" role="menu">
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="upcoming"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("upcoming")
+                                ]}>
+                                  Přijede
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="active"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("active")
+                                ]}>
+                                  Na místě
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="completed"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("completed")
+                                ]}>
+                                  Odjel
+                                </span>
+                              </button>
+                              <button
+                                type="button"
+                                phx-click={
+                                  JS.push("update_booking_status")
+                                  |> JS.hide(to: "#status-menu-#{booking.id}")
+                                }
+                                phx-value-id={booking.id}
+                                phx-value-status="cancelled"
+                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
+                              >
+                                <span class={[
+                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
+                                  status_badge_class("cancelled")
+                                ]}>
+                                  Zrušeno
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                       <span
                         :if={booking.short_note}
                         class="mt-1 inline-block max-w-full truncate rounded bg-info-light px-1.5 text-xs text-tertiary-800"
@@ -550,108 +653,9 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
                     />
                     <td class="min-w-0 py-2 align-top 2xl:px-2 2xl:py-3.5">
                       <div class="mb-1 text-xs font-medium text-primary-400 2xl:hidden">
-                        Stav / faktura
+                        Úhrada / fakturace
                       </div>
-                      <div class="space-y-2">
-                        <div
-                          class="relative"
-                          id={"booking-status-#{booking.id}"}
-                          phx-click-away={JS.hide(to: "#status-menu-#{booking.id}")}
-                        >
-                          <button
-                            type="button"
-                            phx-click={JS.toggle(to: "#status-menu-#{booking.id}")}
-                            class="max-w-full min-w-0 text-left inline-flex items-center gap-1.5 hover:opacity-80 transition-opacity"
-                            title={"Stav rezervace: " <> String.capitalize(booking.status)}
-                            aria-label="Změnit stav rezervace"
-                          >
-                            <.icon name="hero-bookmark" class="size-3.5 shrink-0 text-primary-400" />
-                            <span class={[
-                              "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                              status_badge_class(booking.status)
-                            ]}>
-                              {String.capitalize(booking.status)}
-                            </span>
-                            <.icon name="hero-chevron-down" class="w-3 h-3 text-primary-400" />
-                          </button>
-
-                          <div
-                            id={"status-menu-#{booking.id}"}
-                            class="hidden absolute right-0 z-10 mt-1 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5"
-                          >
-                            <div class="py-1" role="menu">
-                              <button
-                                type="button"
-                                phx-click={
-                                  JS.push("update_booking_status")
-                                  |> JS.hide(to: "#status-menu-#{booking.id}")
-                                }
-                                phx-value-id={booking.id}
-                                phx-value-status="upcoming"
-                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                              >
-                                <span class={[
-                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                  status_badge_class("upcoming")
-                                ]}>
-                                  Upcoming
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                phx-click={
-                                  JS.push("update_booking_status")
-                                  |> JS.hide(to: "#status-menu-#{booking.id}")
-                                }
-                                phx-value-id={booking.id}
-                                phx-value-status="active"
-                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                              >
-                                <span class={[
-                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                  status_badge_class("active")
-                                ]}>
-                                  Active
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                phx-click={
-                                  JS.push("update_booking_status")
-                                  |> JS.hide(to: "#status-menu-#{booking.id}")
-                                }
-                                phx-value-id={booking.id}
-                                phx-value-status="completed"
-                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                              >
-                                <span class={[
-                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                  status_badge_class("completed")
-                                ]}>
-                                  Completed
-                                </span>
-                              </button>
-                              <button
-                                type="button"
-                                phx-click={
-                                  JS.push("update_booking_status")
-                                  |> JS.hide(to: "#status-menu-#{booking.id}")
-                                }
-                                phx-value-id={booking.id}
-                                phx-value-status="cancelled"
-                                class="block w-full text-left px-4 py-2 text-sm hover:bg-secondary-50 transition-colors"
-                              >
-                                <span class={[
-                                  "min-w-0 truncate px-2 text-xs leading-5 font-semibold rounded-full",
-                                  status_badge_class("cancelled")
-                                ]}>
-                                  Cancelled
-                                </span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
+                      <div class="space-y-1.5">
                         <.billing_summary booking={booking} summary={booking.billing_summary} />
                         <.communication_summary booking={booking} summary={booking.communications} />
                         <button
@@ -757,29 +761,51 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
 
   defp communication_summary(assigns) do
     ~H"""
-    <.link
+    <div
       id={"booking-emails-#{@booking.id}"}
-      navigate={~p"/admin/bookings/#{@booking.id}"}
-      class="block space-y-0.5 rounded text-xs text-primary-500 hover:text-tertiary-700 focus-visible:outline-2"
-      title="Odesláno = přijato poskytovatelem k odeslání. Podrobnosti v historii e-mailů rezervace a u dokladů ve fakturaci."
+      class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
     >
-      <p id={"booking-invoice-email-#{@booking.id}"}>
-        Faktury:
-        <%= if @summary.invoice_count == 0 do %>
-          bez dokladu
-        <% else %>
-          odesláno {@summary.invoice_sent}/{@summary.invoice_count}
-        <% end %>
-        <span :if={@summary.invoice_pending > 0}> · čeká {@summary.invoice_pending}</span>
-        <span :if={@summary.invoice_failed > 0} class="text-error"> · chyba {@summary.invoice_failed}</span>
-      </p>
-      <p
-        id={"booking-welcome-email-#{@booking.id}"}
-        class={@summary.welcome == :failed && "text-error"}
+      <.link
+        id={"booking-invoice-email-#{@booking.id}"}
+        navigate={~p"/admin/bookings/#{@booking.id}/billing"}
+        class={[
+          "inline-flex min-h-6 items-center gap-1 rounded hover:underline focus-visible:outline-2",
+          cond do
+            @summary.invoice_failed > 0 -> "font-semibold text-error"
+            @summary.invoice_pending > 0 -> "text-warning-dark"
+            true -> "text-primary-500"
+          end
+        ]}
+        title="Odeslání faktur: přijato poskytovatelem k odeslání nebo předáno ručně. Podrobnosti ve fakturaci."
       >
-        Uvítání: {welcome_label(@summary.welcome)}
-      </p>
-    </.link>
+        <.icon name="hero-envelope" class="size-3.5 shrink-0" />
+        <%= if @summary.invoice_count == 0 do %>
+          Bez faktur
+        <% else %>
+          Odesláno {@summary.invoice_sent}/{@summary.invoice_count}
+        <% end %>
+        <span :if={@summary.invoice_pending > 0}>· čeká {@summary.invoice_pending}</span>
+        <span :if={@summary.invoice_failed > 0} class="font-semibold text-error">· chyba {@summary.invoice_failed}</span>
+      </.link>
+      <.link
+        id={"booking-welcome-email-#{@booking.id}"}
+        navigate={~p"/admin/bookings/#{@booking.id}"}
+        class={[
+          "inline-flex min-h-6 items-center gap-1 rounded hover:underline focus-visible:outline-2",
+          if(@summary.welcome == :failed, do: "text-error", else: "text-primary-400")
+        ]}
+        title={"Uvítací e-mail: " <> welcome_label(@summary.welcome)}
+        aria-label={"Uvítací e-mail: " <> welcome_label(@summary.welcome)}
+      >
+        <.icon name="hero-hand-raised" class="size-3.5 shrink-0" />
+        <span :if={@summary.welcome == :failed}>Chyba uvítání</span>
+        <.icon
+          :if={@summary.welcome != :failed}
+          name={welcome_icon(@summary.welcome)}
+          class="size-3.5"
+        />
+      </.link>
+    </div>
     """
   end
 
@@ -787,6 +813,40 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   defp welcome_label(:pending), do: "čeká na odeslání"
   defp welcome_label(:failed), do: "chyba odeslání"
   defp welcome_label(:unsent), do: "neodesláno"
+
+  defp welcome_icon(:sent), do: "hero-check"
+  defp welcome_icon(:pending), do: "hero-clock"
+  defp welcome_icon(_), do: "hero-minus"
+
+  defp stay_label("upcoming"), do: "Přijede"
+  defp stay_label("active"), do: "Na místě"
+  defp stay_label("completed"), do: "Odjel"
+  defp stay_label("cancelled"), do: "Zrušeno"
+  defp stay_label(status), do: status
+
+  defp billing_row_class(%{state: "personal"}), do: "hover:bg-secondary-50"
+  defp billing_row_class(%{overdue: true}), do: "bg-error/5 hover:bg-error/10"
+
+  defp billing_row_class(summary) do
+    cond do
+      summary.payment_state == "paid" and summary.final_count == summary.account_count ->
+        "bg-success/5 hover:bg-success/10"
+
+      summary.payment_state in ["unpaid", "partial", "overpaid"] or
+        summary.final_count < summary.account_count or summary.state == "no_document" ->
+        "bg-warning/5 hover:bg-warning/10"
+
+      true ->
+        "hover:bg-secondary-50"
+    end
+  end
+
+  defp document_label(%{state: "personal"}), do: "Soukromý"
+  defp document_label(%{final_count: 0} = summary), do: BookingSummary.label(summary.state)
+
+  defp document_label(summary) do
+    "Faktury #{summary.final_count}/#{summary.account_count}"
+  end
 
   defp status_badge_class("upcoming"), do: "bg-tertiary-100 text-tertiary-800"
   defp status_badge_class("active"), do: "bg-success-light text-success-dark"
@@ -801,7 +861,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
     assigns = assign(assigns, :status, assigns.summary.payment_state || assigns.summary.state)
 
     ~H"""
-    <div id={"booking-billing-#{@booking.id}"} phx-hook="BillingPopover" class={["text-xs"]}>
+    <div id={"booking-billing-#{@booking.id}"} phx-hook="BillingPopover" class="text-xs">
       <button
         id={"booking-billing-trigger-#{@booking.id}"}
         type="button"
@@ -811,27 +871,35 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
         aria-expanded="false"
         aria-label={"Podrobnosti fakturace: " <> BookingSummary.label(@status)}
         class={[
-          "group inline-flex max-w-full cursor-help items-center gap-1.5 rounded-md text-left transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-tertiary-500"
+          "group flex max-w-full flex-wrap items-center gap-1.5 rounded-md text-left hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-tertiary-500"
         ]}
       >
-        <.icon
-          name="hero-document-currency-dollar"
-          class="size-3.5 shrink-0 text-primary-400"
-        />
         <span
           id={if @summary.payment_state, do: "booking-payment-#{@booking.id}"}
           class={[
-            "inline-flex min-w-0 items-center gap-1 rounded-full px-2 font-semibold leading-5",
-            billing_badge_class(@status)
+            "inline-flex min-w-0 items-center gap-1 rounded-full px-2 py-0.5 font-bold leading-5",
+            if(@summary.overdue,
+              do: "bg-error-light text-error-dark",
+              else: billing_badge_class(@status)
+            )
           ]}
         >
-          <span class={["truncate"]}>{BookingSummary.label(@status)}</span>
+          <span>{BookingSummary.label(@status)}</span>
           <.icon
             :if={@summary.overdue}
             name="hero-exclamation-circle"
             class="size-3.5 shrink-0 text-error"
           />
         </span>
+        <span
+          :if={@summary.payment_state}
+          id={"booking-document-status-#{@booking.id}"}
+          class="inline-flex items-center gap-1 text-primary-500"
+        >
+          <.icon name="hero-document-text" class="size-3.5 shrink-0" />
+          {document_label(@summary)}
+        </span>
+        <span :if={@summary.overdue} class="font-semibold text-error">Po splatnosti</span>
       </button>
       <div
         id={"booking-billing-details-#{@booking.id}"}
@@ -909,6 +977,7 @@ defmodule CozyCheckoutWeb.BookingLive.Index do
   end
 
   defp billing_badge_class("personal"), do: "bg-secondary-100 text-primary-500"
+  defp billing_badge_class("unpaid"), do: "bg-warning-light text-warning-dark"
   defp billing_badge_class("paid"), do: "bg-success-light text-success-dark"
 
   defp billing_badge_class(state) when state in ["partial", "advance_received", "overpaid"],

@@ -74,7 +74,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     {:ok, reloaded, _} = live(conn, "/admin/bookings/#{booking.id}/billing")
     refute has_element?(reloaded, "#manual-delivery-status-#{document.id}")
     {:ok, list, _} = live(conn, "/admin/bookings?show_all=true")
-    assert has_element?(list, "#booking-invoice-email-#{booking.id}", "odesláno 0/1")
+    assert has_element?(list, "#booking-invoice-email-#{booking.id}", "Odesláno 0/1")
   end
 
   test "manual invoice sending counts each document once and preserves application sending history",
@@ -100,7 +100,7 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     assert has_element?(detail, "#delivery-history-#{email.id}", "Ve frontě")
     assert has_element?(detail, "#delivery-history-#{email.id}", "test@example.com")
     {:ok, list, _} = live(conn, "/admin/bookings?show_all=true")
-    assert has_element?(list, "#booking-invoice-email-#{booking.id}", "odesláno 1/1")
+    assert has_element?(list, "#booking-invoice-email-#{booking.id}", "Odesláno 1/1")
     refute has_element?(list, "#booking-invoice-email-#{booking.id}", "čeká")
   end
 
@@ -154,8 +154,17 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     {:ok, view, _} = live(conn, "/admin/bookings?show_all=true&page_size=1")
     assert has_element?(view, "#booking-advance-coverage", ~r/50(?:,0+)? %/)
     assert has_element?(view, "#booking-advance-coverage", "1/2 rezervací")
-    assert has_element?(view, "#booking-invoice-email-#{booking.id}", "odesláno 0/1")
-    assert has_element?(view, "#booking-welcome-email-#{booking.id}", "neodesláno")
+
+    assert has_element?(
+             view,
+             ~s(#booking-invoice-email-#{booking.id}[href="/admin/bookings/#{booking.id}/billing"]),
+             "Odesláno 0/1"
+           )
+
+    assert has_element?(
+             view,
+             ~s(#booking-welcome-email-#{booking.id}[aria-label="Uvítací e-mail: neodesláno"])
+           )
 
     Repo.insert!(%CozyCheckout.Billing.Delivery{
       document_id: document.id,
@@ -179,8 +188,12 @@ defmodule CozyCheckoutWeb.BillingLiveTest do
     })
 
     {:ok, refreshed, _} = live(conn, "/admin/bookings?show_all=true&page_size=1")
-    assert has_element?(refreshed, "#booking-invoice-email-#{booking.id}", "odesláno 1/1")
-    assert has_element?(refreshed, "#booking-welcome-email-#{booking.id}", "čeká na odeslání")
+    assert has_element?(refreshed, "#booking-invoice-email-#{booking.id}", "Odesláno 1/1")
+
+    assert has_element?(
+             refreshed,
+             ~s(#booking-welcome-email-#{booking.id}[aria-label="Uvítací e-mail: čeká na odeslání"])
+           )
 
     {:ok, filtered, _} = live(conn, "/admin/bookings?show_all=true&invoice_state=advance_issued")
     assert has_element?(filtered, "#booking-advance-coverage", ~r/100(?:,0+)? %/)
